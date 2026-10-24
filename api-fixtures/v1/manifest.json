@@ -19286,6 +19286,12 @@
                         "type": "array"
                       }
                     },
+                    "staydown_matches_has_more": {
+                      "required": true,
+                      "schema": {
+                        "type": "boolean"
+                      }
+                    },
                     "targets": {
                       "required": true,
                       "schema": {
@@ -104076,7 +104082,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "8dca2d3b5d75e1271dc62fe49e7f21b6bf44fbc54670a7064e8b1ec67115ee09",
+        "hash": "35086540fa8660873771f630ca6e6b962374ad585b735175422f4107b98ced76",
         "key": "web.copyright.staff-queue.territorial"
       },
       "route": {
@@ -104101,7 +104107,7 @@
       ],
       "path": "/api/v1/copyright-notices/review-queue",
       "responseSchema": {
-        "hash": "1adddc2ace8fae19c1894d0f4fe171b675253a3990ec9b7c9d7dd97833f1dbc8",
+        "hash": "dd491e9123313c06724d5067378954cc5ac0831665e4b98db5dd64e49396fb8b",
         "key": "web.copyright.staff-queue.default"
       },
       "route": {

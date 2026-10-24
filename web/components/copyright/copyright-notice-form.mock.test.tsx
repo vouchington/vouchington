@@ -134,24 +134,27 @@ describe('CopyrightNoticeForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit notice' }))
 
     await waitFor(() => {
-      expect(mockCreateNotice).toHaveBeenCalledWith({
-        claimant_display_name: 'Claimant',
-        claimant_contact: '1 Main St',
-        claimant_email: 'tests+51c2846f@voucha.ai',
-        work_description: 'Claimed photograph',
-        electronic_signature: 'Claimant',
-        has_good_faith_belief: true,
-        has_accuracy_authority_under_penalty_of_perjury: true,
-        targets: [
-          {
-            surface: 'post-image',
-            post_id: '019f0000-0000-7000-8000-000000000001',
-            image_id: '019f0000-0000-7000-8000-000000000003',
-            target_url: 'https://voucha.ai/discussion/hosted-material',
-          },
-        ],
-        cf_turnstile_response: 'turnstile-token',
-      })
+      expect(mockCreateNotice).toHaveBeenCalledWith(
+        {
+          claimant_display_name: 'Claimant',
+          claimant_contact: '1 Main St',
+          claimant_email: 'tests+51c2846f@voucha.ai',
+          work_description: 'Claimed photograph',
+          electronic_signature: 'Claimant',
+          has_good_faith_belief: true,
+          has_accuracy_authority_under_penalty_of_perjury: true,
+          targets: [
+            {
+              surface: 'post-image',
+              post_id: '019f0000-0000-7000-8000-000000000001',
+              image_id: '019f0000-0000-7000-8000-000000000003',
+              target_url: 'https://voucha.ai/discussion/hosted-material',
+            },
+          ],
+          cf_turnstile_response: 'turnstile-token',
+        },
+        'user:claimant-user',
+      )
     })
     await waitFor(() => expect(mockNav.push).toHaveBeenCalledWith('/copyright/notices'))
     expect(screen.queryByTestId('copyright-guest-receipt')).not.toBeInTheDocument()

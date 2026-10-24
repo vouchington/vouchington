@@ -30,24 +30,29 @@ export {
   referCopyrightEuDisputeSettlement,
 } from './copyright-territorial-redress'
 export type { CopyrightNoticeTargetInput } from './copyright-notice-input'
-
-export function createCopyrightNotice(input: {
-  claimant_display_name: string
-  claimant_contact: string
-  claimant_email: string
-  work_description: string
-  electronic_signature: string
-  has_good_faith_belief: boolean
-  has_accuracy_authority_under_penalty_of_perjury: boolean
-  targets: CopyrightNoticeTargetInput[]
-  cf_turnstile_response?: string
-}): Promise<{ copyright_notice: { id: string }; is_duplicate: boolean }> {
+export function createCopyrightNotice(
+  input: {
+    claimant_display_name: string
+    claimant_contact: string
+    claimant_email: string
+    work_description: string
+    electronic_signature: string
+    has_good_faith_belief: boolean
+    has_accuracy_authority_under_penalty_of_perjury: boolean
+    targets: CopyrightNoticeTargetInput[]
+    cf_turnstile_response?: string
+  },
+  expectedFiler: 'guest' | `user:${string}`,
+): Promise<{ copyright_notice: { id: string }; is_duplicate: boolean }> {
   const body = { jurisdiction: 'us_dmca' as const, ...input }
   return admissionIdempotency.run(
-    { route: 'copyright-notices.create', body: withoutCopyrightCaptcha(body) },
+    {
+      route: 'copyright-notices.create',
+      body: { ...withoutCopyrightCaptcha(body), expectedFiler },
+    },
     idempotencyKey =>
       clientApi.post('/api/v1/copyright-notices', body, {
-        headers: { 'Idempotency-Key': idempotencyKey },
+        headers: { 'Idempotency-Key': idempotencyKey, 'X-Voucha-Expected-Filer': expectedFiler },
       }),
   )
 }

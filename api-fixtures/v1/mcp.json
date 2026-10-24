@@ -43609,6 +43609,9 @@
                         },
                         "type": "array"
                       },
+                      "staydown_matches_has_more": {
+                        "type": "boolean"
+                      },
                       "targets": {
                         "items": {
                           "additionalProperties": false,
@@ -44003,6 +44006,7 @@
                       "received_at",
                       "restrictions",
                       "staydown_matches",
+                      "staydown_matches_has_more",
                       "targets",
                       "waiting_since",
                       "work_description"

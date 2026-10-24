@@ -84,6 +84,7 @@ export async function deliverCopyrightInAppNotification(intentId: string): Promi
 /** `correspondenceId` is null for a reply to a declined email intake, which has no case correspondence. */
 export async function prepareCopyrightEmailDelivery(intentId: string): Promise<{
   leaseToken: string
+  deliveryKind: ClaimedCopyrightDeliveryIntent['delivery_kind']
   correspondenceId: string | null
   recipientEmail: string
   subject: string
@@ -100,6 +101,7 @@ export async function prepareCopyrightEmailDelivery(intentId: string): Promise<{
     await recordCopyrightDeliveryRecipient({ intentId: intent.id, recipientEmail })
     return {
       leaseToken: intent.lease_token,
+      deliveryKind: intent.delivery_kind,
       correspondenceId: intent.copyright_notice_correspondence_message_id,
       recipientEmail,
       subject: copyrightEmailSubject(intent.delivery_kind),

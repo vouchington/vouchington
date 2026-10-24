@@ -198,6 +198,7 @@ function makeNotice(): CopyrightStaffQueueItem {
       },
     ],
     staydown_matches: [],
+    staydown_matches_has_more: false,
     email_correspondence: [],
     reasons: ['action_failed', 'delivery_failed'],
     waiting_since: '2026-01-01T00:00:00.000Z',

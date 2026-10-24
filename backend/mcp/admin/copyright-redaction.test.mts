@@ -80,6 +80,7 @@ describe('copyright MCP read redaction', () => {
       action_intents: [],
       delivery_intents: [],
       staydown_matches: [],
+      staydown_matches_has_more: false,
       email_correspondence: [],
       appeals: [
         {

@@ -21,6 +21,7 @@
       "received_at": "2026-10-04T09:00:00.000Z",
       "restrictions": [],
       "staydown_matches": [],
+      "staydown_matches_has_more": false,
       "targets": [],
       "territorial": {
         "acknowledgment": {
@@ -83,6 +84,7 @@
         }
       ],
       "staydown_matches": [],
+      "staydown_matches_has_more": false,
       "targets": [
         {
           "hosted_use_url": "https://voucha.ai/discussion/park-photo",

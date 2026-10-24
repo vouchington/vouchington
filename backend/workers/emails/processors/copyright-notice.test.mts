@@ -1,5 +1,5 @@
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import {
   createTestUser,
@@ -170,6 +170,42 @@ describe('processSendCopyrightNoticeEmail', () => {
     await expect(readCopyrightEmailIntakeResponses(intakeId)).resolves.toEqual([
       { id: intentId, delivery_kind: 'email_intake_needs_information', state: 'sent' },
     ])
+  })
+
+  it('marks an automatic intake receipt as auto-replied', async () => {
+    vi.stubEnv('COPYRIGHT_INTAKE_ENABLED', 'true')
+    onTestFinished(() => {
+      vi.unstubAllEnvs()
+    })
+    vi.spyOn(ses, 'sendEmail').mockResolvedValue({
+      MessageId: `ses-${crypto.randomUUID()}`,
+    } as never)
+    const sesMessageId = `ses-arrival-${crypto.randomUUID()}`
+    const { intake } = await createCopyrightEmailIntake({
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${sesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 9),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await recordCopyrightEmailParse(intake, {
+      status: 'succeeded',
+      fromEmail: `claimant-${crypto.randomUUID()}@example.test`,
+      subject: 'Copyright complaint',
+      bodyText: 'A copyright complaint.',
+      messageId: null,
+      replyReferences: [],
+      attachments: [],
+    })
+    const [receipt] = await readCopyrightEmailIntakeResponses(intake.id)
+    expect(receipt?.delivery_kind).toBe('email_intake_received')
+
+    await expect(processSendCopyrightNoticeEmail({ intentId: receipt!.id })).resolves.toBe(true)
+    expect(ses.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ headers: { 'Auto-Submitted': 'auto-replied' } }),
+    )
   })
 
   it('retries a claimed intake response when SES omits its MessageId', async () => {

@@ -15,6 +15,7 @@ export type SendClassifiedEmailOptions = {
   source?: string
   replyToAddress?: string
   allowGlobalBcc?: boolean
+  headers?: Record<string, string>
   beforeDispatch?: () => Promise<boolean>
 }
 
@@ -36,6 +37,8 @@ export async function sendClassifiedEmail(
   const params = buildClassifiedSendParams(type, {
     userId: options.userId,
   })
+  const headers =
+    params.headers || options.headers ? { ...options.headers, ...params.headers } : undefined
 
   if (options.beforeDispatch && !(await options.beforeDispatch())) return null
 
@@ -45,7 +48,7 @@ export async function sendClassifiedEmail(
       subject: options.subject,
       html: options.html,
       text: options.text,
-      headers: params.headers,
+      headers,
     })
   }
 
@@ -54,7 +57,7 @@ export async function sendClassifiedEmail(
     subject: options.subject,
     html: options.html,
     text: options.text,
-    headers: params.headers,
+    headers,
     configurationSetName: params.configurationSetName,
     source: options.source,
     replyToAddress: options.replyToAddress,

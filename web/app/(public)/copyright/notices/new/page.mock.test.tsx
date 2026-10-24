@@ -117,6 +117,7 @@ describe('NewCopyrightNoticePage for a signed-out visitor', () => {
         claimant_email: 'tests+claimant@voucha.ai',
         cf_turnstile_response: 'turnstile-token',
       }),
+      'guest',
     )
     const receipt = screen.getByTestId('copyright-guest-receipt')
     expect(receipt).toHaveTextContent(noticeId)

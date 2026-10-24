@@ -20,6 +20,7 @@ import {
 } from './email-threading.mts'
 import {
   validateCopyrightEmailParseInput,
+  isHumanCopyrightEmail,
   type CopyrightEmailParseInput,
 } from './email-intake-parse-input.mts'
 import {
@@ -80,6 +81,7 @@ export async function recordCopyrightEmailParse(
   if (
     rowCount &&
     input.status === 'succeeded' &&
+    isHumanCopyrightEmail(input) &&
     copyrightEmailReplyHeaders(input).inReplyTo.length === 0 &&
     copyrightEmailReplyHeaders(input).references.length === 0 &&
     isCopyrightIntakeEnabled()

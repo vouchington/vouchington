@@ -6,7 +6,6 @@ import type {
   CopyrightLegalHoldGuidance,
 } from '@/types/copyright-notices'
 import { CopyrightStaffQueue } from './copyright-staff-queue'
-
 const guidance: CopyrightFormGuidance = {
   summary: 'Claims an unlicensed copy of a photograph.',
   elements: [
@@ -162,6 +161,7 @@ describe('CopyrightStaffQueue', () => {
                 action_intents: [],
                 delivery_intents: [],
                 staydown_matches: [],
+                staydown_matches_has_more: false,
                 email_correspondence: [],
                 reasons: [
                   'counter_notice_review',
@@ -272,6 +272,7 @@ describe('CopyrightStaffQueue', () => {
                 action_intents: [],
                 delivery_intents: [],
                 staydown_matches: [],
+                staydown_matches_has_more: false,
                 email_correspondence: [],
                 reasons: ['deadline_due'],
                 waiting_since: '2026-01-05T00:00:00.000Z',

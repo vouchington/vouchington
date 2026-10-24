@@ -55,6 +55,27 @@ describe('SES inbound MIME parsing', () => {
     })
   })
 
+  it('carries automatic and mailing-list headers to the intake boundary', async () => {
+    const raw = Buffer.from(
+      [
+        'From: sender@example.test',
+        'To: support@voucha.ai',
+        'Auto-Submitted: auto-generated',
+        'Precedence: bulk',
+        'List-Id: <notices.example.test>',
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        'Automatic message.',
+      ].join('\r\n'),
+    )
+
+    await expect(parseSesInboundMime(Readable.from([raw]))).resolves.toMatchObject({
+      autoSubmitted: 'auto-generated',
+      precedence: 'bulk',
+      listId: expect.any(String),
+    })
+  })
+
   it('preserves quoted message IDs across commas, folds, and multiple headers', async () => {
     const raw = Buffer.from(
       [

@@ -55,6 +55,11 @@ export function CopyrightStaffStaydownMatches({
           </Button>
         </div>
       ))}
+      {notice.staydown_matches_has_more && (
+        <p className='text-muted-foreground text-sm'>
+          More matches are waiting. Review these to see the next ones.
+        </p>
+      )}
     </section>
   )
 }

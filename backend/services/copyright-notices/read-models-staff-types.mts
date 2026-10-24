@@ -133,6 +133,8 @@ export type CopyrightStaffCase = {
     hamming_distance: number
     matched_at: Date
   }>
+  /** More unreviewed matches are waiting beyond the first staff page. */
+  staydown_matches_has_more: boolean
   email_correspondence: Array<{
     submission_id: string | null
     kind: FiniteValue<'copyright_notice_email_correspondence_review_kinds'>

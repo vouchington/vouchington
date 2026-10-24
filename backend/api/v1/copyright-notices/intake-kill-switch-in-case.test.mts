@@ -239,6 +239,7 @@ describe('copyright in-case responses with intake switched off', () => {
       .expect(201)
     await claimantRequest
       .post(`${euNotice}/supervised-complaints`)
+      .set('Idempotency-Key', crypto.randomUUID())
       .send({
         authority_reference: `dsc-${crypto.randomUUID()}`,
         explanation: 'Complaint filed with the authority',

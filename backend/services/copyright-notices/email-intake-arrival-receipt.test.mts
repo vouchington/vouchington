@@ -52,6 +52,15 @@ describe('authenticated email arrival receipts', () => {
       text: copyrightReceiptText(),
     })
   })
+  it.each([
+    { autoSubmitted: 'auto-generated' },
+    { precedence: 'bulk' },
+    { listId: '<list.example.test>' },
+  ])('does not answer automated or list mail: %j', async headers => {
+    const message = await intake()
+    await recordCopyrightEmailParse(message, { ...parsed(), ...headers })
+    expect(await readCopyrightEmailIntakeResponses(message.id)).toEqual([])
+  })
   it('keeps receipt and reply separate and never replays a failed receipt as a staff reply', async () => {
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const message = await intake()

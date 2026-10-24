@@ -41,6 +41,14 @@ app.route('/api/v1/copyright-notices').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-notices')
   if (currentUser) assertNotSuspended(currentUser)
+  const expectedFiler = ctx.req.headers['x-voucha-expected-filer']
+  ctx.assert(!Array.isArray(expectedFiler), 400, 'Invalid expected filer')
+  if (expectedFiler !== undefined)
+    ctx.assert(
+      expectedFiler === (currentUser ? `user:${currentUser.id}` : 'guest'),
+      409,
+      'Your sign-in state changed. Review the filer disclosure and submit again.',
+    )
   const body = (await parseJsonBody(ctx, '1mb')) as CopyrightNoticeFormRequest
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-notices.create' })
   const input = parseCopyrightNoticeForm(body)

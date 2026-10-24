@@ -127,7 +127,8 @@ export async function getPendingCopyrightStaffCases(
           legal_holds: legalHolds.get(notice.id) ?? [],
           action_intents: actionIntents.get(notice.id) ?? [],
           delivery_intents: deliveryIntents.get(notice.id) ?? [],
-          staydown_matches: staydownMatches.get(notice.id) ?? [],
+          staydown_matches: staydownMatches.get(notice.id)?.matches ?? [],
+          staydown_matches_has_more: staydownMatches.get(notice.id)?.hasMore ?? false,
           email_correspondence: emailCorrespondence.get(notice.id) ?? [],
         },
       ]

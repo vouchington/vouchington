@@ -25173,6 +25173,10 @@
           "definition": "CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))",
           "validated": true
         },
+        "chk_copyright_eu_supervised_complaints__idempotency": {
+          "definition": "CHECK ((char_length(idempotency_key) = 36))",
+          "validated": true
+        },
         "chk_copyright_eu_supervised_complaints__jurisdiction": {
           "definition": "CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))",
           "validated": true
@@ -25191,7 +25195,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "copyright_notice_id": {
           "comment": "EU notice this supervised complaint concerns.",
@@ -25211,7 +25215,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "explanation_ciphertext": {
           "comment": "Encrypted explanation of the supervised complaint.",
@@ -25221,7 +25225,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -25232,6 +25236,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
+        },
+        "idempotency_key": {
+          "comment": "Caller-supplied UUID replay key, scoped to the recording user and jurisdiction.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
         },
         "jurisdiction": {
           "comment": "Always eu_dsa. The composite foreign key requires the notice to be an eu_dsa notice.",
@@ -25251,10 +25265,10 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "recorded_by_id": {
-          "comment": "Staff user who recorded the complaint. Null after that account is deleted.",
+          "comment": "User who recorded the complaint. Null after that account is deleted.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -25330,6 +25344,47 @@
           "unique": false,
           "valid": true
         },
+        "uq_copyright_eu_supervised_complaints__idempotency": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__idempotency ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id, jurisdiction, idempotency_key)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "recorded_by_id",
+              "descending": false,
+              "expression": "recorded_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "jurisdiction",
+              "descending": false,
+              "expression": "jurisdiction",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "uq_copyright_eu_supervised_complaints__reference": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -25383,6 +25438,9 @@
         }
       },
       "uniqueConstraints": {
+        "uq_copyright_eu_supervised_complaints__idempotency": {
+          "columns": ["recorded_by_id", "jurisdiction", "idempotency_key"]
+        },
         "uq_copyright_eu_supervised_complaints__reference": {
           "columns": ["copyright_notice_id", "jurisdiction", "authority_reference"]
         }

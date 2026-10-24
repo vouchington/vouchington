@@ -24084,6 +24084,7 @@
     "copyright_eu_supervised_complaints": {
       "checkConstraints": {
         "chk_copyright_eu_supervised_complaints__explanation": "CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))",
+        "chk_copyright_eu_supervised_complaints__idempotency": "CHECK ((char_length(idempotency_key) = 36))",
         "chk_copyright_eu_supervised_complaints__jurisdiction": "CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))",
         "chk_copyright_eu_supervised_complaints__reference": "CHECK (((char_length(authority_reference) >= 1) AND (char_length(authority_reference) <= 200)))"
       },
@@ -24096,7 +24097,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "copyright_notice_id": {
@@ -24118,7 +24119,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "explanation_ciphertext": {
@@ -24129,7 +24130,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "id": {
@@ -24142,6 +24143,17 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "idempotency_key": {
+          "collation": null,
+          "comment": "Caller-supplied UUID replay key, scoped to the recording user and jurisdiction.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "text"
         },
         "jurisdiction": {
           "collation": null,
@@ -24162,12 +24174,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "recorded_by_id": {
           "collation": null,
-          "comment": "Staff user who recorded the complaint. Null after that account is deleted.",
+          "comment": "User who recorded the complaint. Null after that account is deleted.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -24240,6 +24252,40 @@
           "unique": false,
           "valid": true
         },
+        "uq_copyright_eu_supervised_complaints__idempotency": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__idempotency ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id, jurisdiction, idempotency_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "recorded_by_id",
+              "descending": false,
+              "expression": "recorded_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "jurisdiction",
+              "descending": false,
+              "expression": "jurisdiction",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "idempotency_key",
+              "descending": false,
+              "expression": "idempotency_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "uq_copyright_eu_supervised_complaints__reference": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -24286,6 +24332,10 @@
         "trigger_copyright_eu_supervised_complaints_immutable": "CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
       "uniqueConstraints": {
+        "uq_copyright_eu_supervised_complaints__idempotency": {
+          "columns": ["recorded_by_id", "jurisdiction", "idempotency_key"],
+          "definition": "UNIQUE (recorded_by_id, jurisdiction, idempotency_key)"
+        },
         "uq_copyright_eu_supervised_complaints__reference": {
           "columns": ["copyright_notice_id", "jurisdiction", "authority_reference"],
           "definition": "UNIQUE (copyright_notice_id, jurisdiction, authority_reference)"

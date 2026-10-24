@@ -197,6 +197,7 @@ CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   copyright_notice_id uuid NOT NULL,
   jurisdiction copyright_jurisdictions NOT NULL,
   recorded_by_id uuid,
+  idempotency_key text NOT NULL,
   authority_reference text NOT NULL,
   explanation_ciphertext text NOT NULL,
   received_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -205,7 +206,11 @@ CREATE TABLE IF NOT EXISTS copyright_eu_supervised_complaints (
   CONSTRAINT uq_copyright_eu_supervised_complaints__reference UNIQUE (
     copyright_notice_id, jurisdiction, authority_reference
   ),
+  CONSTRAINT uq_copyright_eu_supervised_complaints__idempotency UNIQUE (
+    recorded_by_id, jurisdiction, idempotency_key
+  ),
   CONSTRAINT chk_copyright_eu_supervised_complaints__jurisdiction CHECK (jurisdiction = 'eu_dsa'),
+  CONSTRAINT chk_copyright_eu_supervised_complaints__idempotency CHECK (char_length(idempotency_key) = 36),
   CONSTRAINT chk_copyright_eu_supervised_complaints__reference CHECK (
     char_length(authority_reference) BETWEEN 1 AND 200
   ),
@@ -441,7 +446,9 @@ COMMENT ON COLUMN copyright_eu_supervised_complaints.copyright_notice_id IS
 COMMENT ON COLUMN copyright_eu_supervised_complaints.jurisdiction IS
   'Always eu_dsa. The composite foreign key requires the notice to be an eu_dsa notice.';
 COMMENT ON COLUMN copyright_eu_supervised_complaints.recorded_by_id IS
-  'Staff user who recorded the complaint. Null after that account is deleted.';
+  'User who recorded the complaint. Null after that account is deleted.';
+COMMENT ON COLUMN copyright_eu_supervised_complaints.idempotency_key IS
+  'Caller-supplied UUID replay key, scoped to the recording user and jurisdiction.';
 COMMENT ON COLUMN copyright_eu_supervised_complaints.authority_reference IS
   'Authority reference for this complaint. Unique per notice.';
 COMMENT ON COLUMN copyright_eu_supervised_complaints.explanation_ciphertext IS

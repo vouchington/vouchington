@@ -203,6 +203,7 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     )
     await expect(
       recordEuCopyrightSupervisedComplaint(claimant, euC.notice_id, {
+        idempotencyKey: crypto.randomUUID(),
         authorityReference: `DSC-${crypto.randomUUID()}`,
         explanation: 'The notified decision merits supervisory review.',
       }),

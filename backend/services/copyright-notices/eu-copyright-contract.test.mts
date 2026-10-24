@@ -245,6 +245,7 @@ describe('EU copyright notice contracts', () => {
     })
     expect(decision.staff_disposition).toBe('revoke')
     const complaint = await recordEuCopyrightSupervisedComplaint(claimant, receipt.notice_id, {
+      idempotencyKey: crypto.randomUUID(),
       authorityReference: `DSC-${crypto.randomUUID()}`,
       explanation: 'Complaint filed with the authority',
     })
