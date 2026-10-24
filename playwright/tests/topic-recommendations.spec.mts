@@ -94,10 +94,10 @@ test.describe('Topic Recommendations', () => {
       .fill('A topic created from the browser test.')
     await page
       .getByTestId('topic-recommendation-form-topic-hostname')
-      .fill(`playwright-${stamp}.example.com`)
+      .fill(`playwright-${stamp}.example.net`)
     await page
       .getByTestId('topic-recommendation-form-topic-hostnames')
-      .fill(`playwright-${stamp}.example.com`)
+      .fill(`playwright-${stamp}.example.net`)
     await page
       .getByTestId('topic-recommendation-form-markdown')
       .fill('This topic is repeatedly discussed and should be promoted into the topic catalog.')
