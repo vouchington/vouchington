@@ -64,6 +64,7 @@ export function ActiveSessionsConfirmationDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={disabled}>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
+            data-pw='active-sessions-confirmation-dialog-confirm'
             disabled={disabled}
             onClick={onConfirm}
           >

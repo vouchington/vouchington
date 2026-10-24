@@ -139,3 +139,22 @@ export async function insertTestEmptyReferralProgram(suffix: string): Promise<{ 
   )
   return { topicId: topic.id }
 }
+
+/**
+ * Insert (or reuse) the enabled Amex referral program topic, whose links expose the unfurl control.
+ */
+export async function insertTestAmexReferralProgram(): Promise<{ topicId: string }> {
+  const topic = await insertTestTopic(
+    'American Express Referral Program',
+    'amex-referral-program',
+    'referral_program',
+  )
+  await write(
+    allowUnannotatedQuery(`INSERT INTO referral_program_topics (topic_id, enabled_at)
+     VALUES ($1, CURRENT_TIMESTAMP)
+     ON CONFLICT (topic_id) DO UPDATE
+     SET enabled_at = CURRENT_TIMESTAMP, disabled_at = NULL`),
+    [topic.id],
+  )
+  return { topicId: topic.id }
+}

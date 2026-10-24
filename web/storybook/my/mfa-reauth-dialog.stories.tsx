@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MfaReauthDialog } from '@/components/my/mfa-reauth-dialog'
-import { EmailVerificationPane } from '@/components/my/mfa-reauth-dialog/verification-panes'
+import { MethodSelector } from '@/components/my/mfa-reauth-dialog/method-selector'
+import {
+  EmailVerificationPane,
+  TotpVerificationPane,
+} from '@/components/my/mfa-reauth-dialog/verification-panes'
 import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 
@@ -62,4 +66,37 @@ function SentEmailCode() {
 
 export const EmailCodeSent: Story = {
   render: () => <SentEmailCode />,
+}
+
+export const MethodChoice: Story = {
+  render: () => (
+    <StoryFrame width='max-w-md'>
+      <MethodSelector
+        loading={false}
+        method='totp'
+        setEmailCode={() => {}}
+        setEmailSent={() => {}}
+        setMethod={() => {}}
+        setSentToEmail={() => {}}
+      />
+    </StoryFrame>
+  ),
+}
+
+function TotpCode() {
+  const [totpCode, setTotpCode] = useState('')
+  return (
+    <StoryFrame width='max-w-md'>
+      <TotpVerificationPane
+        handleTotpVerify={() => {}}
+        loading={false}
+        setTotpCode={setTotpCode}
+        totpCode={totpCode}
+      />
+    </StoryFrame>
+  )
+}
+
+export const AuthenticatorPane: Story = {
+  render: () => <TotpCode />,
 }

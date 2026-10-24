@@ -98,6 +98,7 @@ export function OAuthConnection({
             )}
           </div>
           <Button
+            data-pw='oauth-connection-disconnect'
             variant='outline'
             size='sm'
             onClick={handleDisconnect}

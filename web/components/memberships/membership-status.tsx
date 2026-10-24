@@ -132,6 +132,7 @@ export function MembershipStatus({ membership, management = null }: MembershipSt
         ) : management?.provider === 'stripe' ||
           ('has_stripe_subscription' in membership && membership.has_stripe_subscription) ? (
           <Button
+            data-pw='membership-status-manage-billing-portal'
             variant='outline'
             loading={portalLoading}
             disabled={portalLoading}

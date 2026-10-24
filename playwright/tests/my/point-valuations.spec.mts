@@ -1,4 +1,4 @@
-import { test } from '../../helpers/test.mts'
+import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 import {
@@ -48,6 +48,16 @@ test.describe('My Point Valuations', () => {
     await clearManagerInputWithFill(page, 'point-valuation-edit-cpp-input')
     await clickManagerControl(page, 'point-valuation-edit-save-button')
     await assertManagerErrorToast(page, 'Please enter a valid value per point')
+  })
+
+  test('shows edit cancel, remove confirmation and add submit controls', async ({ page }) => {
+    await expect(page.getByTestId('add-valuation-form-add')).toBeAttached()
+    await page.getByTestId('point-valuation-edit-button').first().click()
+    await expect(page.getByTestId('valuation-list-cancel')).toBeVisible()
+    await page.getByTestId('valuation-list-cancel').click()
+    await page.getByTestId('valuation-summary-remove').first().click()
+    await expect(page.getByTestId('valuation-summary-confirm')).toBeVisible()
+    await expect(page.getByTestId('valuation-summary-cancel')).toBeVisible()
   })
 
   test('responsive layout on mobile', async ({ page }) => {

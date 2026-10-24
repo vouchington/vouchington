@@ -170,6 +170,7 @@ function CategoryEditForm({
           {t('extracted.spendingCategoriesManager.categoryList.save_1509f561')}
         </Button>
         <Button
+          data-pw='category-list-cancel'
           size='sm'
           type='button'
           variant='outline'

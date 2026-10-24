@@ -128,6 +128,7 @@ function ReferralLinkRow({
                 className='h-8 max-w-xs text-sm'
               />
               <Button
+                data-pw='referral-link-groups-save'
                 size='sm'
                 onClick={() => onSaveLabel(link)}
                 disabled={loadingIds.has(`edit-${link.id}`)}
@@ -135,6 +136,7 @@ function ReferralLinkRow({
                 {t('extracted.referralLinksManager.referralLinkGroups.save_1509f561')}
               </Button>
               <Button
+                data-pw='referral-link-groups-cancel'
                 size='sm'
                 variant='outline'
                 onClick={() => setEditingId(null)}

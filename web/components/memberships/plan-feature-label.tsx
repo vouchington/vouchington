@@ -26,6 +26,7 @@ export function PlanFeatureLabel({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                data-pw='plan-feature-label-trigger'
                 type='button'
                 variant='ghost'
                 className={className}

@@ -57,6 +57,7 @@ export function ImportExportManager({ feedType }: Props) {
         <CardContent className='flex flex-wrap gap-3'>
           {isTopics ? (
             <Button
+              data-pw='import-export-manager-export-topics-json'
               variant='outline'
               onClick={() => handleExport('opml')}
               loading={exporting}

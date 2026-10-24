@@ -33,6 +33,12 @@ test.describe('Landing page content editing', () => {
 
     // The item should appear in the draft list before saving
     await expect(page.getByText('My Website')).toBeVisible()
+    await expect(page.getByTestId('draft-items-list-move-item-up').first()).toBeAttached()
+    await expect(page.getByTestId('draft-items-list-move-item-down').first()).toBeAttached()
+    await expect(page.getByTestId('draft-items-list-remove').first()).toBeVisible()
+    await expect(page.getByTestId('page-forms-make-default')).toBeVisible()
+    await expect(page.getByTestId('page-forms-delete')).toBeVisible()
+    await expect(page.getByTestId('page-forms-save-page-details')).toBeVisible()
 
     // Save the content. Wait for the success toast before navigating away — otherwise the
     // full-page navigation aborts the in-flight PUT (or the force-dynamic public page fetches

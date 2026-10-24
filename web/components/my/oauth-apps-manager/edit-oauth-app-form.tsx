@@ -80,6 +80,7 @@ export function EditOAuthAppForm({ app, onCancel, onSave }: EditOAuthAppFormProp
           {t('extracted.oauthAppsManager.editOauthAppForm.save_1509f561')}
         </Button>
         <Button
+          data-pw='edit-oauth-app-form-cancel'
           type='button'
           size='sm'
           variant='outline'

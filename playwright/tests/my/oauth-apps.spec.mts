@@ -46,6 +46,7 @@ async function openSettingsWithOwnedApp(page: Page) {
 
 async function renameApp(row: Locator, name: string) {
   await row.getByTestId('oauth-app-edit-button').click()
+  await expect(row.getByTestId('edit-oauth-app-form-cancel')).toBeVisible()
   const nameInput = row.getByTestId('oauth-app-edit-form').getByTestId('oauth-app-name-input')
   await nameInput.clear()
   await nameInput.pressSequentially(name)
@@ -71,6 +72,7 @@ test.describe('My OAuth Apps', () => {
 
     await expect(page.getByTestId('oauth-app-secret-alert')).toBeVisible()
     await expect(page.getByTestId('oauth-app-client-secret-input')).not.toHaveValue('')
+    await expect(page.getByTestId('client-secret-alert-copy')).toBeVisible()
     await page.getByTestId('oauth-app-secret-dismiss-button').click()
     await expect(page.getByTestId('oauth-app-secret-alert')).toBeHidden()
     await expect(form.getByTestId('oauth-app-name-input')).toHaveValue('')
@@ -158,6 +160,7 @@ test.describe('My OAuth Apps', () => {
     await expect(renamedRow.getByTestId('oauth-app-edit-form')).toHaveCount(0)
 
     await renamedRow.getByTestId('oauth-app-rotate-secret-button').click()
+    await expect(renamedRow.getByTestId('oauth-app-row-cancel')).toBeVisible()
     const rotation = waitForOAuthAppRequest(page, 'POST', /\/oauth-apps\/[^/]+\/client-secrets$/)
     await renamedRow.getByTestId('oauth-app-confirm-button').click()
     expect((await rotation).status()).toBe(201)

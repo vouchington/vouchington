@@ -46,6 +46,7 @@ export function AddEmailForm({
       </div>
       <div className='flex gap-2'>
         <Button
+          data-pw='add-email-form-send-verification-code'
           type='submit'
           loading={loading}
           disabled={loading}
@@ -55,6 +56,7 @@ export function AddEmailForm({
             : t('extracted.emailManager.addEmailForm.sendVerificationCode_19e86d2b')}
         </Button>
         <Button
+          data-pw='add-email-form-cancel'
           type='button'
           variant='outline'
           onClick={onCancel}

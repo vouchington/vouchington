@@ -110,6 +110,7 @@ function ProfileLinkFormUI({
 
       <div className='flex gap-2'>
         <Button
+          data-pw='profile-link-form-submit'
           type='submit'
           loading={loading}
           disabled={loading}
@@ -121,6 +122,7 @@ function ProfileLinkFormUI({
               : t('extracted.my.profileLinkForm.addLink_dfe9ca4d')}
         </Button>
         <Button
+          data-pw='profile-link-form-cancel'
           type='button'
           variant='outline'
           onClick={onCancel}
