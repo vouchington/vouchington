@@ -14,7 +14,6 @@ import { archivePost } from '../archive.mts'
 import { auditReviewSuccessionHistory, pageReviewSuccessionHistoryAuditRows } from './audit.mts'
 import type { ReviewSuccessionHistoryAuditRow } from './audit-query.mts'
 import { reconcileReviewSuccessionsForPostIds } from './reconcile.mts'
-import { normalizeReviewSuccessionPostIds } from './list.mts'
 
 const source = [
   readFileSync(new URL('./audit.mts', import.meta.url), 'utf8'),
@@ -92,6 +91,11 @@ describe('review succession history audit', () => {
   })
 
   it('only continues when a lookahead row proves another page exists', () => {
+    expect(pageReviewSuccessionHistoryAuditRows([])).toEqual({
+      rows: [],
+      cursor: null,
+      hasMore: false,
+    })
     const rows = Array.from({ length: 100 }, (_, index) => auditRow(index))
 
     expect(pageReviewSuccessionHistoryAuditRows([...rows, auditRow(100)]).rows).toHaveLength(100)
@@ -183,8 +187,10 @@ describe('review succession history audit', () => {
     }
   })
 
-  it('rejects malformed post IDs before listing succession evidence', () => {
-    expect(() => normalizeReviewSuccessionPostIds(['not-a-uuid'])).toThrow('must be UUIDs')
+  it('rejects malformed post IDs before reconciling succession evidence', async () => {
+    await expect(reconcileReviewSuccessionsForPostIds(['not-a-uuid'])).rejects.toThrow(
+      'must be UUIDs',
+    )
   })
 })
 

@@ -17,7 +17,7 @@ import {
 import { archivePost, unarchivePost } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
 import { reconcileReviewSuccessionsForPostIds } from './index.mts'
-import { listReviewSuccessionsForPostIds } from './list.mts'
+import { listReviewSuccessionsForPostIds } from '@voucha/test-helpers/post-review-successions'
 import { terminalizeActiveReviewSuccessionForManualPost } from './manual.mts'
 
 describe('review successions', () => {

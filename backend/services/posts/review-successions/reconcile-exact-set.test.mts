@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { reconcileReviewSuccessionsForPostIds } from './index.mts'
-import { listReviewSuccessionsForPostIds } from './list.mts'
+import { listReviewSuccessionsForPostIds } from '@voucha/test-helpers/post-review-successions'
 
 describe('review succession exact-topic routing', () => {
   let administrator: PrivateUser

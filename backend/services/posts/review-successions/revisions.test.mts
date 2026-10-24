@@ -17,7 +17,7 @@ import {
   type EntityReconciliationCandidate,
 } from '@services/entity-listener-reconciliation/reconciliation'
 import { reconcileReviewSuccessionsForPostIds } from './index.mts'
-import { listReviewSuccessionsForPostIds } from './list.mts'
+import { listReviewSuccessionsForPostIds } from '@voucha/test-helpers/post-review-successions'
 
 async function createReviewPair() {
   const administrator = await createTestUser({ administrator: true })
