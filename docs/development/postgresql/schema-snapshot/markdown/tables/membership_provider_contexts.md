@@ -30,6 +30,7 @@ _none_
 
 **Indexes:**
 
+- `idx_membership_provider_contexts__id_provider`: `CREATE UNIQUE INDEX idx_membership_provider_contexts__id_provider ON public.membership_provider_contexts USING btree (id, provider)`
 - `membership_provider_contexts_pkey`: `CREATE UNIQUE INDEX membership_provider_contexts_pkey ON public.membership_provider_contexts USING btree (id)`
 - `uq_membership_provider_contexts__identity`: `CREATE UNIQUE INDEX uq_membership_provider_contexts__identity ON public.membership_provider_contexts USING btree (provider, environment, application_id)`
 

@@ -6,23 +6,24 @@ Current and retained historical user-facing access projection rows derived from 
 
 Not partitioned — growth: unbounded.
 
-| Column                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                       |
-| ----------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------- |
-| `id`                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                               |
-| `user_id`                     | `uuid`                     | no       |                              |          |           |           | User currently receiving projected membership access.                                                         |
-| `membership_source_id`        | `uuid`                     | no       |                              |          |           |           | Source that currently owns this access projection.                                                            |
-| `membership_product_id`       | `uuid`                     | no       |                              |          |           |           | Canonical product currently projected as access.                                                              |
-| `effective_at`                | `timestamp with time zone` | no       |                              |          |           |           | When the projected membership became effective.                                                               |
-| `expires_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the projected membership expires, if finite.                                                             |
-| `cancelled_at`                | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a cancelled state.                                                                |
-| `expired_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered an expired state.                                                                 |
-| `past_due_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a past-due state.                                                                 |
-| `paused_at`                   | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a paused state.                                                                   |
-| `should_cancel_at_period_end` | `boolean`                  | no       | `false`                      |          |           |           | Whether cancellation takes effect after the current period.                                                   |
-| `latest_change_id`            | `uuid`                     | yes      |                              |          |           |           | Latest append-only audit row for this projection.                                                             |
-| `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                               |
-| `updated_at`                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                               |
-| `projection_ended_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When this projection stopped being the user's live membership projection; its historical ID remains retained. |
+| Column                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                       |
+| ----------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `id`                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                               |
+| `user_id`                     | `uuid`                     | no       |                              |          |           |           | User currently receiving projected membership access.                                                                         |
+| `membership_source_id`        | `uuid`                     | no       |                              |          |           |           | Source that currently owns this access projection.                                                                            |
+| `source_kind`                 | `membership_source_kinds`  | no       |                              |          |           |           | Source category copied under a composite foreign key so ordered expiry work can select administrator grants before its limit. |
+| `membership_product_id`       | `uuid`                     | no       |                              |          |           |           | Canonical product currently projected as access.                                                                              |
+| `effective_at`                | `timestamp with time zone` | no       |                              |          |           |           | When the projected membership became effective.                                                                               |
+| `expires_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the projected membership expires, if finite.                                                                             |
+| `cancelled_at`                | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a cancelled state.                                                                                |
+| `expired_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered an expired state.                                                                                 |
+| `past_due_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a past-due state.                                                                                 |
+| `paused_at`                   | `timestamp with time zone` | yes      |                              |          |           |           | When the projection entered a paused state.                                                                                   |
+| `should_cancel_at_period_end` | `boolean`                  | no       | `false`                      |          |           |           | Whether cancellation takes effect after the current period.                                                                   |
+| `latest_change_id`            | `uuid`                     | yes      |                              |          |           |           | Latest append-only audit row for this projection.                                                                             |
+| `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                               |
+| `updated_at`                  | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                               |
+| `projection_ended_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When this projection stopped being the user's live membership projection; its historical ID remains retained.                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -35,6 +36,7 @@ _none_
 
 **Foreign keys:**
 
+- `fk_memberships__source_kind`: `FOREIGN KEY (membership_source_id, source_kind) REFERENCES membership_sources(id, source_kind) ON DELETE RESTRICT`
 - `fk_memberships__source_user`: `FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT`
 - `fk_memberships_latest_change_id`: `FOREIGN KEY (latest_change_id) REFERENCES membership_changes(id) ON DELETE SET NULL`
 - `memberships_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_membership_identities(id) ON DELETE RESTRICT`
@@ -44,6 +46,7 @@ _none_
 
 **Indexes:**
 
+- `idx_memberships__admin_grant_expires_at`: `CREATE INDEX idx_memberships__admin_grant_expires_at ON public.memberships USING btree (expires_at, id) INCLUDE (user_id) WHERE ((source_kind = 'admin_grant'::membership_source_kinds) AND (projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (expires_at IS NOT NULL))`
 - `idx_memberships__effective_user`: `CREATE UNIQUE INDEX idx_memberships__effective_user ON public.memberships USING btree (user_id) WHERE (projection_ended_at IS NULL)`
 - `idx_memberships__expires_at`: `CREATE INDEX idx_memberships__expires_at ON public.memberships USING btree (expires_at, id) WHERE ((projection_ended_at IS NULL) AND (expires_at IS NOT NULL))`
 - `idx_memberships__latest_change_id`: `CREATE INDEX idx_memberships__latest_change_id ON public.memberships USING btree (latest_change_id) WHERE (latest_change_id IS NOT NULL)`

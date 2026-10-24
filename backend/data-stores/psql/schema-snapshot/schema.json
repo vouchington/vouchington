@@ -53477,7 +53477,9 @@
       }
     },
     "membership_google_play_recovery_cursors": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "membership_google_play_recovery_cursors_revision_check": "CHECK ((revision >= 0))"
+      },
       "columns": {
         "cursor_evidence_id": {
           "collation": null,
@@ -53501,6 +53503,17 @@
           "ordinalPosition": 1,
           "type": "membership_google_play_recovery_sweeps"
         },
+        "revision": {
+          "collation": null,
+          "comment": "Monotonic compare-and-set version that fences replay even after a completed sweep resets both UUID cursors to null.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "bigint"
+        },
         "sweep_upper_bound_evidence_id": {
           "collation": null,
           "comment": "Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work.",
@@ -53520,7 +53533,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         }
       },
@@ -57157,6 +57170,33 @@
       "foreignKeys": {},
       "growth": "unbounded",
       "indexes": {
+        "idx_membership_provider_contexts__id_provider": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX idx_membership_provider_contexts__id_provider ON public.membership_provider_contexts USING btree (id, provider)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "provider",
+              "descending": false,
+              "expression": "provider",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "membership_provider_contexts_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -57246,7 +57286,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "encrypted_evidence": {
@@ -57257,7 +57297,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "bytea"
         },
         "evidence_lookup_sha256": {
@@ -57268,7 +57308,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         },
         "id": {
@@ -57301,8 +57341,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
+        },
+        "provider": {
+          "collation": null,
+          "comment": "Provider copied under a composite foreign key so recovery can page one provider in global evidence ID order.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "membership_provider_kinds"
         },
         "provider_event_id": {
           "collation": null,
@@ -57312,7 +57363,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "received_at": {
@@ -57323,7 +57374,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "rejected_at": {
@@ -57334,7 +57385,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "rejection_reason": {
@@ -57345,7 +57396,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "verified_at": {
@@ -57356,12 +57407,21 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         }
       },
       "comment": "Encrypted provider evidence retained for verification, replay protection, and audit.",
       "foreignKeys": {
+        "fk_membership_provider_evidence_records__context_provider": {
+          "columns": ["membership_provider_context_id", "provider"],
+          "definition": "FOREIGN KEY (membership_provider_context_id, provider) REFERENCES membership_provider_contexts(id, provider) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "provider"],
+          "referencedTable": "membership_provider_contexts",
+          "validated": true
+        },
         "fk_membership_provider_evidence_records__lineage_context": {
           "columns": ["membership_provider_lineage_id", "membership_provider_context_id"],
           "definition": "FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT",
@@ -57383,6 +57443,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id ON public.membership_provider_evidence_records USING btree (id, membership_provider_context_id) WHERE ((provider = 'google_play'::membership_provider_kinds) AND (provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((provider = 'google_play'::membership_provider_kinds) AND (provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_provider_evidence_records__context_event": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -61604,7 +61691,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -61615,7 +61702,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "effective_at": {
@@ -61626,7 +61713,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "expired_at": {
@@ -61637,7 +61724,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "expires_at": {
@@ -61648,7 +61735,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -61670,7 +61757,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "membership_product_id": {
@@ -61681,7 +61768,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "membership_source_id": {
@@ -61703,7 +61790,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "paused_at": {
@@ -61714,7 +61801,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "projection_ended_at": {
@@ -61725,7 +61812,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "should_cancel_at_period_end": {
@@ -61736,8 +61823,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "boolean"
+        },
+        "source_kind": {
+          "collation": null,
+          "comment": "Source category copied under a composite foreign key so ordered expiry work can select administrator grants before its limit.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "membership_source_kinds"
         },
         "updated_at": {
           "collation": null,
@@ -61747,7 +61845,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -61764,6 +61862,15 @@
       },
       "comment": "Current and retained historical user-facing access projection rows derived from a single membership source.",
       "foreignKeys": {
+        "fk_memberships__source_kind": {
+          "columns": ["membership_source_id", "source_kind"],
+          "definition": "FOREIGN KEY (membership_source_id, source_kind) REFERENCES membership_sources(id, source_kind) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "source_kind"],
+          "referencedTable": "membership_sources",
+          "validated": true
+        },
         "fk_memberships__source_user": {
           "columns": ["membership_source_id", "user_id"],
           "definition": "FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT",
@@ -61821,6 +61928,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_memberships__admin_grant_expires_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_memberships__admin_grant_expires_at ON public.memberships USING btree (expires_at, id) INCLUDE (user_id) WHERE ((source_kind = 'admin_grant'::membership_source_kinds) AND (projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (expires_at IS NOT NULL))",
+          "includedColumns": ["user_id"],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((source_kind = 'admin_grant'::membership_source_kinds) AND (projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (expires_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_memberships__effective_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
