@@ -66,6 +66,7 @@ export function IntegrityPenaltiesHeader({
           size='touchSm'
         >
           <Link
+            data-pw='integrity-penalties-header-penalties'
             href={props.penaltiesPath}
             prefetch={false}
           >
@@ -98,6 +99,7 @@ export function IntegrityPenaltiesHeader({
         </SelectContent>
       </Select>
       <Button
+        data-pw='integrity-penalties-header-refresh'
         variant='outline'
         size='touchIcon'
         onClick={props.onRefresh}

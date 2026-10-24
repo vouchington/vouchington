@@ -1,9 +1,23 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { insertTestUrlHostname } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin Domains', () => {
   test.use({ storageState: AUTH_STATE })
+  let blockedHostname = ''
+
+  test.beforeAll(async () => {
+    blockedHostname = `pw-unblock-${randomSuffix()}.example.com`
+    await insertTestUrlHostname({ hostname: blockedHostname, is_blocked: true })
+  })
+
+  test('shows the unblock confirmation for an isolated blocked hostname', async ({ page }) => {
+    await navigateTo(page, `/domain/${blockedHostname}`)
+    await page.getByTestId('domain-tab-moderation').click()
+    await page.getByTestId('hostname-blocked-switch').click()
+    await expect(page.getByTestId('hostname-moderation-controls-unblock')).toBeVisible()
+  })
 
   test('allows anonymous users to view domains list without admin filters', async ({ page }) => {
     await page.context().clearCookies()
@@ -35,6 +49,14 @@ test.describe('Admin Domains', () => {
 
     // Quick-add block form is visible for admins
     await expect(page.getByTestId('block-hostname-quick-add')).toBeVisible()
+    await expect(page.getByTestId('block-hostname-quick-add-block-hostname')).toBeVisible()
+    await page
+      .getByTestId('block-hostname-quick-add')
+      .locator('input')
+      .pressSequentially('pw-id-check.example.com')
+    await page.getByTestId('block-hostname-quick-add-block-hostname').click()
+    await expect(page.getByTestId('block-hostname-quick-add-confirm-block-hostname')).toBeVisible()
+    await page.getByRole('alertdialog').press('Escape')
 
     await expect(page.getByTestId('domains-search-input')).toBeVisible()
   })
@@ -74,6 +96,9 @@ test.describe('Admin Domains', () => {
     // Moderation controls should be visible with interactive switches
     await expect(page.getByTestId('hostname-moderation-controls')).toBeVisible()
     await expect(page.getByTestId('hostname-blocked-switch')).toBeVisible()
+    await page.getByTestId('hostname-blocked-switch').click()
+    await expect(page.getByTestId('hostname-moderation-controls-block-hostname')).toBeVisible()
+    await page.getByRole('alertdialog').press('Escape')
     await expect(page.getByTestId('hostname-crawlable-switch')).toBeVisible()
     await expect(page.getByTestId('hostname-link-rel-follow-switch')).toBeVisible()
 

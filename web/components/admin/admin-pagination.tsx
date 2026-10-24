@@ -25,6 +25,7 @@ export function AdminPagination({ nextHref, previousHref }: AdminPaginationProps
           variant='outline'
         >
           <Link
+            data-pw='admin-pagination-previous'
             prefetch={false}
             href={previousHref}
           >
@@ -39,6 +40,7 @@ export function AdminPagination({ nextHref, previousHref }: AdminPaginationProps
           variant='outline'
         >
           <Link
+            data-pw='admin-pagination-next'
             prefetch={false}
             href={nextHref}
           >

@@ -35,6 +35,18 @@ function waitForVerificationChange(page: Page, method: 'PUT' | 'DELETE') {
 test.describe('Admin OAuth Clients', () => {
   test.use({ storageState: AUTH_STATE })
 
+  test.beforeAll(async () => {
+    await Promise.all(Array.from({ length: 26 }, () => registerOwnedApp()))
+  })
+
+  test('shows both pagination links for an owned-app list spanning pages', async ({ page }) => {
+    await navigateTo(page, '/admin/oauth-clients?verification=all')
+    const next = page.getByTestId('admin-pagination-next')
+    await expect(next).toBeVisible()
+    await next.click()
+    await expect(page.getByTestId('admin-pagination-previous')).toBeVisible()
+  })
+
   test('verifies an owned app and removes the verification', async ({ page }) => {
     const { app } = await registerOwnedApp()
     await navigateTo(page, '/admin/oauth-clients')
@@ -44,6 +56,7 @@ test.describe('Admin OAuth Clients', () => {
     await expect(row).toContainText(app.client_id)
     await expect(row).toContainText('mcp.user:read')
     await expect(row).toContainText('Unverified')
+    await expect(row.getByTestId('oauth-client-verification-row-user-link')).toBeVisible()
 
     const verification = waitForVerificationChange(page, 'PUT')
     await row.getByTestId('admin-oauth-client-verification-button').click()

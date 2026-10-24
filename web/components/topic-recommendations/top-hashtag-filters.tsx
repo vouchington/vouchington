@@ -33,20 +33,30 @@ export function TopHashtagFilters({
         className='flex gap-2'
         data-pw='top-hashtags-mapping'
       >
-        {(['all', 'linked', 'unlinked'] as const).map(value => (
-          <Button
-            key={value}
-            type='button'
-            variant={mapping === value ? 'default' : 'outline'}
-            onClick={() => onSearch(value)}
-          >
-            {value === 'all'
-              ? t('extracted.topicRecommendations.topHashtags.all_29d0b7c7')
-              : value === 'linked'
-                ? t('extracted.topicRecommendations.topHashtags.linked_bf62c230')
-                : t('extracted.topicRecommendations.topHashtags.unlinked_2ed77046')}
-          </Button>
-        ))}
+        <Button
+          data-pw='top-hashtag-filters-all'
+          type='button'
+          variant={mapping === 'all' ? 'default' : 'outline'}
+          onClick={() => onSearch('all')}
+        >
+          {t('extracted.topicRecommendations.topHashtags.all_29d0b7c7')}
+        </Button>
+        <Button
+          data-pw='top-hashtag-filters-linked'
+          type='button'
+          variant={mapping === 'linked' ? 'default' : 'outline'}
+          onClick={() => onSearch('linked')}
+        >
+          {t('extracted.topicRecommendations.topHashtags.linked_bf62c230')}
+        </Button>
+        <Button
+          data-pw='top-hashtag-filters-unlinked'
+          type='button'
+          variant={mapping === 'unlinked' ? 'default' : 'outline'}
+          onClick={() => onSearch('unlinked')}
+        >
+          {t('extracted.topicRecommendations.topHashtags.unlinked_2ed77046')}
+        </Button>
       </div>
     </div>
   )

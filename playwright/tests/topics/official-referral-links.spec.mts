@@ -41,6 +41,9 @@ test.describe('Official Referral Links — admin management', () => {
     await page.getByTestId('official-referral-link-submit').click()
     // After create + router.refresh(), the delete button appears for the new row
     await expect(page.getByTestId('official-referral-link-delete').first()).toBeVisible()
+    await expect(
+      page.getByTestId('official-referral-links-table-external-link').first(),
+    ).toBeVisible()
 
     // Navigate to the public referral-links tab to verify the badge
     await navigateTo(page, `/referral-program/${program.referralProgramTopicSlug}/referral-links`)

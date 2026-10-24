@@ -39,11 +39,12 @@ test.describe('Admin URLs', () => {
 
     // URL text opens externally
     const urlExternalLink = page
-      .getByTestId('external-link')
+      .getByTestId('url-list-page-external-link')
       .filter({ hasText: 'https://example.com/page1' })
       .first()
     await expect(urlExternalLink).toHaveAttribute('href', 'https://example.com/page1')
     await expect(urlExternalLink).toHaveAttribute('target', '_blank')
+    await expect(page.getByTestId('url-list-page-view').first()).toBeVisible()
 
     // Hostname links to the in-app domain page
     await expect(page.getByTestId('url-hostname-link').first()).toHaveAttribute(
@@ -102,8 +103,13 @@ test.describe('Admin URLs', () => {
     await expect(page.locator('tbody tr').first()).toContainText('200')
 
     // Trigger Crawl button is in the aside (complementary region)
-    const triggerCrawlBtn = page.locator('button').filter({ hasText: /trigger crawl/i })
+    const triggerCrawlBtn = page.getByTestId('trigger-url-crawl-button-crawl')
     await expect(triggerCrawlBtn).toBeVisible()
+  })
+
+  test('shows the RSS sync control on a feed URL', async ({ page }) => {
+    await navigateTo(page, '/url/019c64e6-f8b0-7000-b000-000000000001')
+    await expect(page.getByTestId('trigger-url-crawl-button-rss-sync')).toBeVisible()
   })
 
   test('should trigger URL crawl', async ({ page }) => {

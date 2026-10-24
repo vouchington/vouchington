@@ -118,7 +118,10 @@ export function HostnameModerationControls({
                       <AlertDialogCancel>
                         {t('extracted.domains.hostnameModerationControls.cancel_19766ed6')}
                       </AlertDialogCancel>
-                      <AlertDialogAction onClick={() => handleBlock(false)}>
+                      <AlertDialogAction
+                        data-pw='hostname-moderation-controls-unblock'
+                        onClick={() => handleBlock(false)}
+                      >
                         {t('extracted.domains.hostnameModerationControls.unblock_712da631')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -142,6 +145,7 @@ export function HostnameModerationControls({
                         {t('extracted.domains.hostnameModerationControls.cancel_19766ed6')}
                       </AlertDialogCancel>
                       <AlertDialogAction
+                        data-pw='hostname-moderation-controls-block-hostname'
                         className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
                         onClick={() => handleBlock(true)}
                       >

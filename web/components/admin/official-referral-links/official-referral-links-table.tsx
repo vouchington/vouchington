@@ -58,6 +58,7 @@ export function OfficialReferralLinksTable({
             <tr key={link.id}>
               <td className='max-w-xs truncate px-4 py-3 text-sm text-foreground'>
                 <ExternalLink
+                  data-pw='official-referral-links-table-external-link'
                   href={link.url}
                   className='hover:underline'
                 >

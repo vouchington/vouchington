@@ -40,6 +40,12 @@ test.describe('Topic Recommendations page', () => {
 
     await expect(page.getByTestId('topic-recommendations-table')).toBeVisible()
     await expect(page.getByText(topicTitle)).toBeVisible()
+    await expect(
+      page.getByTestId('topic-recommendations-table-row-open-post-from-topic').first(),
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('topic-recommendations-table-row-open-post-from-date').first(),
+    ).toBeVisible()
   })
 
   test('submitter username link is visible in the row', async ({ page }) => {

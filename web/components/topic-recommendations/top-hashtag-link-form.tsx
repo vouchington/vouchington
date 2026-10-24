@@ -26,6 +26,7 @@ export function TopHashtagLinkForm({
       />
       <div className='flex gap-2'>
         <Button
+          data-pw='top-hashtag-link-form-link-topic'
           type='button'
           disabled={!selectedTopic}
           onClick={onLink}
@@ -33,6 +34,7 @@ export function TopHashtagLinkForm({
           {t('extracted.topicRecommendations.topHashtags.linkTopic_4d3e8c3d')}
         </Button>
         <Button
+          data-pw='top-hashtag-link-form-cancel'
           type='button'
           variant='outline'
           onClick={onCancel}

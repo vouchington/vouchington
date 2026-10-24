@@ -24,6 +24,7 @@ test.describe('PostgreSQL Dashboard', () => {
   })
 
   test('has a refresh button', async ({ page }) => {
+    await expect(page.getByTestId('postgresql-header-refresh')).toBeVisible()
     const buttons = page.locator('button')
     await expect(buttons.filter({ hasText: 'Refresh' })).toBeVisible()
     // The dashboard loading glyph is the shared Spinner. Reference it for selector coverage.
@@ -31,11 +32,13 @@ test.describe('PostgreSQL Dashboard', () => {
   })
 
   test('shows Create Partitions button', async ({ page }) => {
+    await expect(page.getByTestId('postgresql-partition-create')).toBeVisible()
     const buttons = page.locator('button')
     await expect(buttons.filter({ hasText: 'Create Partitions' })).toBeVisible()
   })
 
   test('shows Cleanup Partitions button', async ({ page }) => {
+    await expect(page.getByTestId('postgresql-partition-cleanup')).toBeVisible()
     const buttons = page.locator('button')
     await expect(buttons.filter({ hasText: 'Cleanup Partitions' })).toBeVisible()
   })
@@ -45,6 +48,7 @@ test.describe('PostgreSQL Dashboard', () => {
     await expect(buttons.filter({ hasText: 'Run Migrations' })).toBeVisible()
     await buttons.filter({ hasText: 'Create Partitions' }).click()
     await expect(page.getByRole('alertdialog')).toBeVisible()
+    await expect(page.getByTestId('partition-confirm-dialog-confirm')).toBeVisible()
   })
 
   test('Cleanup Partitions button opens confirmation dialog', async ({ page }) => {

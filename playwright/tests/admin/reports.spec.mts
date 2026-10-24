@@ -1,4 +1,5 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
+import { randomBytes } from 'node:crypto'
 import {
   createTestUser,
   insertTestPost,
@@ -6,6 +7,9 @@ import {
   insertTestReportJudgement,
   reviewPendingTestModerationReportsByPostSlugPrefixes,
   reviewPendingTestModerationReportsByReporterUsernamePrefixes,
+  setPostModerationContentSha256,
+  setPostSpamDetectionResults,
+  reviewTestModerationReports,
 } from '../../../backend/test-helpers/index.mts'
 import { loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, openRadixDropdown, randomSuffix } from 'vouchington-tooling/playwright'
@@ -83,6 +87,54 @@ test.beforeAll(async () => {
 test.describe('Admin moderation reports', () => {
   test.describe.configure({ mode: 'serial' })
 
+  test.describe('duplicate-post cluster controls', () => {
+    const duplicateReportIds: string[] = []
+
+    test.beforeAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
+      const suffix = randomSuffix()
+      const hash = randomBytes(32)
+      const owner = await createTestUser({ username: `rpt-dup-owner-${suffix}` })
+      const reporter = await createTestUser({ username: `rpt-dup-reporter-${suffix}` })
+      if (!owner || !reporter) throw new Error('Failed to create duplicate-cluster users')
+      const ids = await Promise.all(
+        Array.from({ length: 3 }, async (_, index) => {
+          const duplicatePostId = await insertTestPost({
+            title: `Duplicate cluster ${suffix} ${index}`,
+            slug: `rpt-dup-${suffix}-${index}`,
+            createdById: owner.id,
+            markdown: 'Duplicate-cluster fixture body.',
+          })
+          await setPostModerationContentSha256(duplicatePostId, hash)
+          await setPostSpamDetectionResults(duplicatePostId, [
+            { signal: 'content_hash_duplicate', score: 1, flagged: true },
+          ])
+          return insertTestModerationReport({
+            reporterUserId: reporter.id,
+            entityType: 'post',
+            entityId: duplicatePostId,
+            reason: 'spam',
+            createdAt: new Date(Date.UTC(2803, 0, 2)),
+          })
+        }),
+      )
+      duplicateReportIds.push(...ids)
+    })
+
+    test.afterAll(async () => {
+      if (duplicateReportIds.length > 0) await reviewTestModerationReports(duplicateReportIds)
+    })
+
+    test('shows removal confirmation for a seeded duplicate-post cluster', async ({ page }) => {
+      await loginAsAdmin(page)
+      await navigateTo(page, seededReportsUrl)
+      const remove = page.getByTestId('report-duplicate-cluster-card-remove-all').first()
+      await expect(remove).toBeVisible()
+      await remove.click()
+      await expect(page.getByTestId('report-duplicate-cluster-card-remove-posts')).toBeVisible()
+    })
+  })
+
   test('admin sees pending reports page heading', async ({ page }) => {
     await loginAsAdmin(page)
     await navigateTo(page, seededReportsUrl)
@@ -99,6 +151,13 @@ test.describe('Admin moderation reports', () => {
     const reportCluster = page.getByTestId('report-cluster-row').filter({ hasText: postTitle })
     await expect(reportCluster).toBeVisible()
     await expect(reportCluster).toContainText('spam 3')
+    await expect(reportCluster.getByTestId('report-cluster-card-toggle')).toBeVisible()
+    await expect(reportCluster.getByTestId('report-cluster-actions-review-loaded')).toBeVisible()
+    await expect(reportCluster.getByTestId('report-cluster-actions-dismiss-loaded')).toBeVisible()
+    await expect(reportCluster.getByTestId('report-cluster-actions-remove-target')).toBeVisible()
+    await expect(
+      reportCluster.getByTestId('report-cluster-detail-re-run-judgement').first(),
+    ).toBeVisible()
   })
 
   test('admin can see flat report sort controls and badges', async ({ page }) => {
@@ -107,6 +166,9 @@ test.describe('Admin moderation reports', () => {
 
     const reportRow = page.getByTestId('report-row').filter({ hasText: postTitle }).first()
     await expect(reportRow).toBeVisible()
+    await expect(reportRow.getByTestId('admin-report-row-reviewed')).toBeVisible()
+    await expect(reportRow.getByTestId('admin-report-row-dismiss')).toBeVisible()
+    await expect(reportRow.getByTestId('admin-report-row-rerun-ai-judgement')).toBeVisible()
     await expect(reportRow.getByTestId('admin-reports-reason')).toHaveText('spam')
     await expect(reportRow.getByTestId('moderation-sla-badge')).toBeVisible()
     await expect(reportRow.getByTestId('moderation-report-count-badge')).toBeVisible()

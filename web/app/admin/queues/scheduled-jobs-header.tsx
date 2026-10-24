@@ -29,6 +29,7 @@ export function ScheduledJobsHeader({
         title={t('extracted.queues.scheduledJobsHeader.queues_be77db11')}
       >
         <Button
+          data-pw='scheduled-jobs-header-refresh'
           disabled={loading}
           loading={loading}
           onClick={onRefresh}

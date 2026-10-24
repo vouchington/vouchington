@@ -37,6 +37,8 @@ test.describe('Admin Vote Integrity', () => {
     await page.getByTestId('vote-integrity-penalties-tab').click()
     await expect(page).toHaveURL(/\/vote-integrity\/penalties$/)
     await expect(page.getByTestId('vote-integrity-penalties-heading')).toBeVisible()
+    await expect(page.getByTestId('integrity-penalties-header-penalties')).toBeVisible()
+    await expect(page.getByTestId('integrity-penalties-header-refresh')).toBeVisible()
     await expect(page.getByTestId('vote-integrity-penalties-status-filter')).toBeVisible()
     await expect(page.getByTestId('vote-integrity-flags-tab')).toBeVisible()
     const row = page.locator(`[data-integrity-penalty-id="${penaltyId}"]`)

@@ -71,6 +71,9 @@ test.describe('Topic Recommendations', () => {
     await expect(search).toHaveValue('credit-cards')
     await search.press('Enter')
     await expect(hashtags.getByTestId('top-hashtags-mapping')).toBeVisible()
+    await expect(hashtags.getByTestId('top-hashtag-filters-all')).toBeVisible()
+    await expect(hashtags.getByTestId('top-hashtag-filters-linked')).toBeVisible()
+    await expect(hashtags.getByTestId('top-hashtag-filters-unlinked')).toBeVisible()
   })
 
   test('logged-in user can create and approve a topic recommendation', async ({ page }) => {
@@ -84,6 +87,7 @@ test.describe('Topic Recommendations', () => {
     await expect(page.getByTestId('topic-recommendations-table')).toBeVisible()
 
     await page.getByTestId('new-topic-recommendation-link').click()
+    await expect(page.getByTestId('topic-recommendation-form-cancel')).toBeVisible()
     await page.getByTestId('topic-recommendation-form-topic-title').fill(topicTitle)
     await page.getByTestId('topic-recommendation-form-topic-slug').fill(topicSlug)
     await page
