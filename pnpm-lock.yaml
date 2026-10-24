@@ -11301,9 +11301,6 @@ importers:
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
-      '@services/entity-cache':
-        specifier: workspace:^
-        version: link:../entity-cache
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames

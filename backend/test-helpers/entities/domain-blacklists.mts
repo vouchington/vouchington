@@ -138,15 +138,3 @@ export async function explainBlocklistedDomainOrderPlan(
   )
   return explained.rows.map(row => row['QUERY PLAN']).join('\n')
 }
-
-/**
- * Count total blacklist sources
- */
-export async function countBlacklistSources(): Promise<number> {
-  const result = await read(
-    allowUnannotatedQuery(sql`
-    SELECT COUNT(*)::int as count FROM domain_blocklist_sources
-  `),
-  )
-  return result.rows[0].count
-}
