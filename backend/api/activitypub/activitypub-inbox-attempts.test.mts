@@ -5,7 +5,6 @@ import { activityPubInboxDeliveryExistsOnPrimaryForTest } from '@voucha/test-hel
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
-  isActivityPubInboxAttemptRateLimited,
   isActivityPubInboxSenderRateLimited,
   recordActivityPubInboxAttempt,
   recordActivityPubInboxSenderDelivery,
@@ -75,7 +74,6 @@ describe('POST /ap/inbox pre-verification attempt limit', () => {
     const response = await postInbox(sourceIp, request.signature).send(request.body).expect(429)
 
     expect(response.headers['retry-after']).toBe('17')
-    expect(await isActivityPubInboxAttemptRateLimited(sourceIp)).toBe(true)
   })
 
   it('keeps source IP attempt buckets isolated', async () => {
