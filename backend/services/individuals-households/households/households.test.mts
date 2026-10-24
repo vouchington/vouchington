@@ -9,7 +9,7 @@ import {
 import { encodeCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { createHousehold, getOrCreateHousehold } from './households.mts'
+import { createHousehold } from './households.mts'
 import { getHouseholdMemberships, getHouseholdsByUser } from './household-lists.mts'
 
 describe('households', () => {
@@ -275,25 +275,5 @@ describe('households', () => {
     const created = await Promise.all(Array.from({ length: 4 }, () => createHousehold(user)))
 
     expect(new Set(created.map(household => household.id)).size).toBe(4)
-  })
-
-  it('deterministically returns the newest owned household from getOrCreateHousehold', async () => {
-    const user = await createTestUserDirect()
-    await deleteOwnedHouseholdsForTestUser(user.id)
-    await insertTestHousehold(user.id, new Date('2026-06-01T00:00:00.000Z'))
-    const newest = await insertTestHousehold(user.id, new Date('2026-06-02T00:00:00.000Z'))
-
-    expect((await getOrCreateHousehold(user)).id).toBe(newest.id)
-  })
-
-  it('creates one household for a user and returns it on later access', async () => {
-    const user = await createTestUserDirect()
-    expect(await deleteOwnedHouseholdsForTestUser(user.id)).toBe(1)
-
-    const created = await getOrCreateHousehold(user)
-    const existing = await getOrCreateHousehold(user)
-
-    expect(created.owner_user_id).toBe(user.id)
-    expect(existing.id).toBe(created.id)
   })
 })

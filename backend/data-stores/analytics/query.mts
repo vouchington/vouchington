@@ -41,7 +41,8 @@ async function refreshPendingViews(connection: DuckDBConnection): Promise<void> 
 //    concurrency would need one connection per caller (via DuckDBInstance.connect()), which is a
 //    bigger change than this queue buys back.
 // 2. The connection's views are also global, mutable catalog state: refreshPendingViews() can
-//    replace a pending table's stub view with its real one. Callers like getLandingPageAnalytics
+//    replace a pending table's stub view with its real one. Callers like
+//    getLandingPageAnalyticsByPageId
 //    fire several query() calls concurrently via Promise.all — without serializing here, one
 //    call's view swap can happen out from under another call's still-running select.
 // Chaining every call through this queue makes each refresh-then-select pair atomic from every

@@ -114,7 +114,7 @@ describe('analytics', () => {
       expect(rows.map(row => row.event_id)).toEqual([id])
     })
 
-    it('executes the landing page aggregate queries used by getLandingPageAnalytics', async () => {
+    it('executes the landing page aggregate queries used by getLandingPageAnalyticsByPageId', async () => {
       const pageId = crypto.randomUUID()
       const itemId = crypto.randomUUID()
       const clock = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')

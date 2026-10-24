@@ -5,7 +5,7 @@ import {
   insertTestHouseholdMembership,
   insertTestSpendingCategory,
 } from '@voucha/test-helpers'
-import { getOrCreateHousehold } from '@services/individuals-households'
+import { createHousehold } from '@services/individuals-households'
 import type { PrivateUser } from '@services/users/types'
 
 describe('GET /api/v1/my/spending-categories', () => {
@@ -69,7 +69,7 @@ describe('GET /api/v1/my/spending-categories', () => {
   it('returns shared household entries as read-only to members and rejects member mutations', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
-    const household = await getOrCreateHousehold(owner)
+    const household = await createHousehold(owner)
     await insertTestHouseholdMembership({
       householdId: household.id,
       individualId: member.individual_id!,
