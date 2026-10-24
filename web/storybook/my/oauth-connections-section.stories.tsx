@@ -20,14 +20,6 @@ const none: Record<OAuthProvider, OAuthAccountInfo | null> = {
   github: null,
 }
 
-export const NothingConnected: Story = {
-  render: () => (
-    <StoryFrame width='max-w-xl'>
-      <OAuthConnectionsSection accounts={none} />
-    </StoryFrame>
-  ),
-}
-
 export const SomeConnected: Story = {
   render: () => (
     <StoryFrame width='max-w-xl'>
