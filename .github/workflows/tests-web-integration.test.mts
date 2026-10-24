@@ -19,7 +19,7 @@ describe('web integration workflow', () => {
     expect(workflow).toContain('total: ${{ steps.shard-total.outputs.shard-total }}')
     expect(workflow).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
     expect(workflow).toContain('uses: ./.github/actions/build-web-targets')
-    expect(workflow).toContain('--project web-integration --shard ${{ matrix.shard }}')
+    expect(workflow).toContain('--project web-integration --shard "$CI_SHARD"')
     expect(workflow).not.toContain('--project web-api')
     expect(workflow).not.toContain('max-parallel')
     expect(workflow).toContain(

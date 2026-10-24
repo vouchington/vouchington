@@ -51,9 +51,7 @@ describe('Web Tests workflow', () => {
     expect(tests).toContain('fail-fast: false')
     expect(tests).toContain('shard: ${{ fromJSON(needs.prep.outputs.shard-matrix) }}')
     expect(tests).toContain("VITEST_MAX_WORKERS: '4'")
-    expect(tests).toContain(
-      'vitest run --bail=3 --project web --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}',
-    )
+    expect(tests).toContain('vitest run --bail=3 --project web --shard "$CI_SHARD"')
     // Worker count is never a CLI flag here — the root vitest.config.mts computes
     // `maxWorkers: parseVitestMaxWorkers(process.env.VITEST_MAX_WORKERS)` for every project,
     // and this workflow owns its four-worker override in the job environment.
