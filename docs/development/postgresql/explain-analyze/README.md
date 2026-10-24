@@ -137,10 +137,10 @@ The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.y
 per-batch timing and resource samples to the results artifact so a seed that hits the CI step limit
 shows which operation was interrupted.
 
-The workflow runs `node backend/scripts/explain-analyze/assert-native-contracts.mts` after
-migration, before seeding. This standalone preflight owns the scratch-table DDL needed to verify
-prepared-plan choice, transaction-local planner settings, and rollback of an explained write;
-Vitest tests and helpers cannot mutate schema. To diagnose a failure locally, initialize an owned
-PostgreSQL worktree with a role permitted to set `track_functions`, source its `.env`, and run that
-command. The CLI attempts to drop its owned scratch tables and close registered data-store
-connections even when an assertion fails, and reports cleanup failures.
+The `backend-data-stores` Vitest owner verifies prepared-target custom and generic plans,
+transaction-local settings, and rollback of an explained write against an owned user fixture.
+These mechanism checks use the existing schema. To reproduce them locally, initialize an owned
+PostgreSQL worktree with a role permitted to set `track_functions`, source its `.env`, and run
+`pnpm exec vitest run --project backend-data-stores backend/data-stores/psql/explain-analyze.test.mts`.
+Scale-dependent scan choices belong to the EXPLAIN workload plans, where the relevant data
+distribution and indexes are present.

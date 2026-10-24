@@ -1,4 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import {
+  createTestUserDirect,
+  createTestUsername,
+  getTestPrivateUserById,
+} from '@voucha/test-helpers'
+import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 
 import { read } from './index.mts'
 import {
@@ -7,6 +13,10 @@ import {
   explainAnalyze,
   functionCallsSince,
 } from './explain-analyze.mts'
+
+function rootPlan(result: Awaited<ReturnType<typeof explainAnalyze>>): Record<string, unknown> {
+  return (result.plan as { Plan: Record<string, unknown> }).Plan
+}
 
 describe('buildExplainAnalyzeText', () => {
   it('excludes setup-time calls and orders equal-call functions by name', () => {
@@ -101,6 +111,53 @@ describe('buildExplainAnalyzeText', () => {
     } finally {
       if (originalMode === undefined) delete process.env.EXPLAIN_JIT_MODE
       else process.env.EXPLAIN_JIT_MODE = originalMode
+    }
+  })
+
+  it('uses custom and generic plans for the prepared target parameter', async () => {
+    const query = '/* explainPlanCacheTarget */ SELECT 1 WHERE $1::boolean'
+    const custom = await explainAnalyze('custom-target', query, [false], {
+      planCacheMode: 'force_custom_plan',
+    })
+    const generic = await explainAnalyze('generic-target', query, [false], {
+      planCacheMode: 'force_generic_plan',
+    })
+
+    expect(rootPlan(custom)['One-Time Filter']).toBe('false')
+    expect(rootPlan(generic)['One-Time Filter']).toMatch(/\$1/)
+    expect(rootPlan(custom)['Actual Rows']).toBe(0)
+    expect(rootPlan(generic)['Actual Rows']).toBe(0)
+  })
+
+  it('applies a transaction-local setting to the target and clears it afterward', async () => {
+    const query = `/* explainLocalSetting */
+      SELECT 1 WHERE current_setting('random_page_cost')::numeric > 999999`
+    const before = await explainAnalyze('setting-before', query)
+    const local = await explainAnalyze('setting-local', query, undefined, {
+      localSettings: { random_page_cost: '1000000' },
+    })
+    const after = await explainAnalyze('setting-after', query)
+
+    expect(rootPlan(before)['Actual Rows']).toBe(0)
+    expect(rootPlan(local)['Actual Rows']).toBe(1)
+    expect(rootPlan(after)['Actual Rows']).toBe(0)
+  })
+
+  it('rolls back an explained write to one owned user', async () => {
+    const user = await createTestUserDirect()
+    const replacement = createTestUsername()
+    try {
+      const explained = await explainAnalyze(
+        'owned-write-rollback',
+        `/* explainOwnedWriteRollback */
+          UPDATE users SET username = $2 WHERE id = $1::uuid RETURNING id`,
+        [user.id, replacement],
+      )
+
+      expect(rootPlan(explained)['Actual Rows']).toBe(1)
+      expect((await getTestPrivateUserById(user.id))?.username).toBe(user.username)
+    } finally {
+      await deleteTestUser(user.id)
     }
   })
 })

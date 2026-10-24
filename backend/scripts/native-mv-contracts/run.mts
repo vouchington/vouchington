@@ -5,7 +5,6 @@ import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatch
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { checkTrendingHttpContracts } from './trending-http.mts'
 import { checkTrendingServiceContracts } from './trending-service.mts'
-import { checkRefreshLockContracts } from './refresh-lock.mts'
 import { checkRssWorkerContracts } from './rss-worker.mts'
 import { checkRssWorkerPagedContracts } from './rss-worker-paged.mts'
 import { checkCrawlTierContracts } from './crawl-tiers.mts'
@@ -20,7 +19,6 @@ import { checkHashtagSearchRssContracts } from './hashtag-search-rss.mts'
 const contracts: ReadonlyArray<readonly [string, () => Promise<void>]> = [
   ['trending HTTP', checkTrendingHttpContracts],
   ['trending service', checkTrendingServiceContracts],
-  ['refresh lock', checkRefreshLockContracts],
   ['RSS worker paged', checkRssWorkerPagedContracts],
   ['RSS worker', checkRssWorkerContracts],
   ['crawl tiers', checkCrawlTierContracts],
