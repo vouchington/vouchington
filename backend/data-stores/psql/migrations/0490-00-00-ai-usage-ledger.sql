@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_community_monthly_rollups (
   cost_microunits BIGINT NOT NULL DEFAULT 0 CHECK (cost_microunits >= 0),
   currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT
     CHECK (currency_code = 'usd'),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   UNIQUE (community_id, month_start_on)
 );
 COMMENT ON TABLE ai_usage_community_monthly_rollups IS 'All-time cost facts for live communities, folded from old per-call usage in bounded atomic pages.';
@@ -95,6 +96,7 @@ COMMENT ON COLUMN ai_usage_community_monthly_rollups.output_tokens IS 'Sum of fo
 COMMENT ON COLUMN ai_usage_community_monthly_rollups.unpriced_request_count IS 'Count of folded calls without known pricing.';
 COMMENT ON COLUMN ai_usage_community_monthly_rollups.cost_microunits IS 'Exact sum of priced USD costs in millionths of a dollar.';
 COMMENT ON COLUMN ai_usage_community_monthly_rollups.currency_code IS 'USD denomination of this community-month cost; priced source calls are constrained to USD.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.created_at IS 'When this monthly total row was first created; the usage month is month_start_on.';
 CREATE INDEX IF NOT EXISTS idx_ai_usage_community_monthly_rollups__currency_code
   ON ai_usage_community_monthly_rollups (currency_code);
 
@@ -107,7 +109,8 @@ CREATE TABLE IF NOT EXISTS ai_usage_global_monthly_rollups (
   unpriced_request_count BIGINT NOT NULL DEFAULT 0 CHECK (unpriced_request_count >= 0),
   cost_microunits BIGINT NOT NULL DEFAULT 0 CHECK (cost_microunits >= 0),
   currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT
-    CHECK (currency_code = 'usd')
+    CHECK (currency_code = 'usd'),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE ai_usage_global_monthly_rollups IS 'All provider calls, including calls without a community, after per-call usage expires.';
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.id IS 'Stable identifier of this platform-month total.';
@@ -118,6 +121,7 @@ COMMENT ON COLUMN ai_usage_global_monthly_rollups.output_tokens IS 'Sum of folde
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.unpriced_request_count IS 'Count of folded calls without known pricing.';
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.cost_microunits IS 'Exact sum of priced USD costs in millionths of a dollar.';
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.currency_code IS 'USD denomination of this platform-month cost; priced source calls are constrained to USD.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.created_at IS 'When this monthly total row was first created; the usage month is month_start_on.';
 CREATE INDEX IF NOT EXISTS idx_ai_usage_global_monthly_rollups__currency_code
   ON ai_usage_global_monthly_rollups (currency_code);
 
