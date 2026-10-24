@@ -144,6 +144,7 @@ function ValuationEditForm({
           {t('extracted.pointValuationsManager.valuationList.save_1509f561')}
         </Button>
         <Button
+          data-pw='valuation-list-cancel'
           size='sm'
           type='button'
           variant='outline'

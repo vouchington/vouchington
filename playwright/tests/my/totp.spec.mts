@@ -49,11 +49,14 @@ async function performSetupFlow(page: Page, authenticatorName: string) {
 
   await addButton.click()
   await expect(nameInput).toBeVisible()
+  await expect(page.getByTestId('setup-flow-name-cancel')).toBeVisible()
 
   await nameInput.fill(authenticatorName)
   await page.getByTestId('totp-start-setup-button').click()
 
   await expect(page.getByTestId('totp-setup-qr-prompt')).toBeVisible()
+  await expect(page.getByTestId('setup-flow-verify-and-save')).toBeVisible()
+  await expect(page.getByTestId('setup-flow-verify-cancel')).toBeVisible()
 
   // Enter the 6-digit verification code — auto-submits at 6 digits
   const otpInput = page.locator('input[inputmode="numeric"]').first()
@@ -97,6 +100,8 @@ test.describe('TOTP authenticator management', () => {
 
     const authenticatorItem = page.getByTestId(`totp-authenticator-item-${MOCK_AUTHENTICATOR_ID}`)
     await authenticatorItem.getByTestId('totp-rename-button').click()
+    await expect(authenticatorItem.getByTestId('totp-rename-save')).toBeVisible()
+    await expect(authenticatorItem.getByTestId('totp-rename-cancel')).toBeVisible()
 
     const renameInput = page.getByTestId('totp-rename-input')
     await renameInput.fill(newName)
@@ -135,10 +140,22 @@ test.describe('TOTP authenticator management', () => {
     await authenticatorItem.getByTestId('totp-remove-button').click()
     const confirmButton = authenticatorItem.getByTestId('totp-remove-confirm-button')
     await expect(confirmButton).toBeVisible()
+    await expect(authenticatorItem.getByTestId('totp-remove-cancel')).toBeVisible()
     await confirmButton.click()
 
     await expect(page.getByTestId('mfa-reauth-dialog')).toBeVisible()
     await expect(page.getByTestId('mfa-reauth-dialog-title')).toBeVisible()
+
+    await page.route('**/api/v1/auth/mfa/re-auth/email/tokens', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ email_address: 'tests+pw-reauth@voucha.ai' }),
+      }),
+    )
+    await page.getByTestId('verification-panes-email-send-code').click()
+    await expect(page.getByTestId('verification-panes-email-verify')).toBeVisible()
+    await expect(page.getByTestId('verification-panes-email-resend')).toBeVisible()
 
     // Cancel — authenticator should still be in the list
     await page.getByTestId('mfa-reauth-dialog-cancel-button').click()

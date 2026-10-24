@@ -143,6 +143,7 @@ test.describe('My API Keys Page', () => {
 
     const keyRow = page.getByTestId('api-key-active-row').filter({ hasText: label })
     await keyRow.getByTestId('api-key-revoke-start').click()
+    await expect(keyRow.getByTestId('api-key-revoke-cancel')).toBeVisible()
     await keyRow.getByTestId('api-key-revoke-confirm').click()
     await expect(page.getByTestId('api-key-revoked-row').filter({ hasText: label })).toBeVisible()
   })

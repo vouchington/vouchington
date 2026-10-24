@@ -23,6 +23,34 @@ test.describe('My Data', () => {
     await page.getByTestId('delete-account-cancel-button').click()
   })
 
+  test('offers a data export request when none exists', async ({ page }) => {
+    await page.route('**/api/v1/users/*/data-request', route =>
+      route.fulfill({ status: 404, contentType: 'application/json', body: '{}' }),
+    )
+    await navigateTo(page, '/my/data')
+
+    await expect(page.getByTestId('data-request-section-request-export')).toBeVisible()
+  })
+
+  test('offers a new data export request after the previous export expired', async ({ page }) => {
+    await page.route('**/api/v1/users/*/data-request', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: '019f0000-0000-7000-8000-0000000000aa',
+          status: 'expired',
+          expires_at: null,
+          created_at: new Date().toISOString(),
+          download_url: null,
+        }),
+      }),
+    )
+    await navigateTo(page, '/my/data')
+
+    await expect(page.getByTestId('data-request-section-request-data-export')).toBeVisible()
+  })
+
   test('unauthenticated user is redirected to login', async ({ page }) => {
     await page.context().clearCookies()
     await navigateTo(page, '/my/data')

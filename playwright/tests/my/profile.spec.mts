@@ -1,6 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from 'vouchington-tooling/playwright'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
+import { withCleanUser } from '../../helpers/auth.mts'
 
 test.describe('My Profile', () => {
   test.use({ storageState: AUTH_STATE })
@@ -29,5 +30,23 @@ test.describe('My Profile', () => {
     await expect(page.locator('[data-sonner-toast][data-type="error"]')).toBeVisible({
       timeout: 5000,
     })
+  })
+
+  test('shows profile link add, row and edit controls', async ({ page }) => {
+    await withCleanUser(page)
+    await navigateTo(page, '/my/profile')
+
+    await page.getByTestId('profile-links-add-link').click()
+    await expect(page.getByTestId('profile-link-form-cancel')).toBeVisible()
+    await page
+      .getByLabel('URL', { exact: true })
+      .pressSequentially(`https://www.python.org/pw-${randomSuffix()}`)
+    await page.getByTestId('profile-link-form-submit').click()
+
+    await expect(page.getByTestId('profile-link-row-move-up')).toBeAttached()
+    await expect(page.getByTestId('profile-link-row-move-down')).toBeAttached()
+    await expect(page.getByTestId('profile-link-row-delete')).toBeVisible()
+    await page.getByTestId('profile-link-row-edit').click()
+    await expect(page.getByTestId('profile-link-form-submit')).toBeVisible()
   })
 })

@@ -35,6 +35,7 @@ export function EmailList({ emails, loading, onRemove, onSetPrimary }: EmailList
             {!email.is_primary && (
               <>
                 <Button
+                  data-pw='email-list-set-primary'
                   variant='outline'
                   size='sm'
                   onClick={() => onSetPrimary(email.email_address)}
@@ -43,6 +44,7 @@ export function EmailList({ emails, loading, onRemove, onSetPrimary }: EmailList
                   {t('extracted.emailManager.emailList.setPrimary_2de22c7d')}
                 </Button>
                 <Button
+                  data-pw='email-list-remove'
                   variant='outline'
                   size='sm'
                   onClick={() => onRemove(email.email_address)}

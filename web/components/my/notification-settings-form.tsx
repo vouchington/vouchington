@@ -40,6 +40,7 @@ export function NotificationSettingsForm({
           <AlertDescription className='flex flex-wrap items-center justify-between gap-3'>
             <span>{t('settings.notificationSettings.loadError')}</span>
             <Button
+              data-pw='notification-settings-form-retry'
               variant='outline'
               size='touchSm'
               loading={loadingSettings}

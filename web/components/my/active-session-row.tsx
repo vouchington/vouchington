@@ -81,6 +81,7 @@ export function ActiveSessionRow({
                       })}
                     </span>
                     <Button
+                      data-pw='active-session-row-revoke-mcp-access'
                       variant='outline'
                       size='sm'
                       loading={revokingGrantId === connection.grant_id}

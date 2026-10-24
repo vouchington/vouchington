@@ -38,6 +38,7 @@ test.describe('My Connected Apps', () => {
     await expect(row).toContainText('Unverified')
 
     await row.getByTestId('connected-app-revoke-button').click()
+    await expect(row.getByTestId('connected-app-row-cancel')).toBeVisible()
     const revocation = waitForGrantRevocation(page)
     await row.getByTestId('connected-app-revoke-confirm-button').click()
     expect((await revocation).status()).toBe(204)

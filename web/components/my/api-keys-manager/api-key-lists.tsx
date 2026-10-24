@@ -121,6 +121,7 @@ export function ActiveApiKeysList({
                     {t('extracted.apiKeysManager.apiKeyLists.confirm_eebdd24a')}
                   </Button>
                   <Button
+                    data-pw='api-key-revoke-cancel'
                     size='sm'
                     variant='outline'
                     onClick={onCancelRevoke}

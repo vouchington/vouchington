@@ -99,6 +99,7 @@ export function ConnectedAppRow({ grant, onRevoke }: ConnectedAppRowProps) {
               {t('extracted.connectedAppsManager.connectedAppRow.confirm_eebdd24a')}
             </Button>
             <Button
+              data-pw='connected-app-row-cancel'
               size='sm'
               variant='outline'
               disabled={revoking}

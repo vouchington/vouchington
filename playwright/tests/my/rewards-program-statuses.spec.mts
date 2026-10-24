@@ -32,6 +32,15 @@ test.describe('My Rewards Program Statuses', () => {
     await page.getByTestId('rewards-status-edit-button').click()
     await expect(page.getByTestId('rewards-status-since-label')).toBeVisible()
     await expect(page.getByTestId('rewards-status-until-label')).toBeVisible()
+    await expect(page.getByTestId('status-list-save')).toBeVisible()
+    await expect(page.getByTestId('status-list-cancel')).toBeVisible()
+  })
+
+  test('shows remove confirmation controls and the add submit control', async ({ page }) => {
+    await expect(page.getByTestId('add-status-form-add')).toBeAttached()
+    await page.getByTestId('status-summary-remove').click()
+    await expect(page.getByTestId('status-summary-confirm')).toBeVisible()
+    await expect(page.getByTestId('status-summary-cancel')).toBeVisible()
   })
 
   test('responsive layout on mobile', async ({ page }) => {

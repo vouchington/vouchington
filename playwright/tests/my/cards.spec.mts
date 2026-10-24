@@ -46,6 +46,13 @@ test.describe('My Cards', () => {
     await expect(loadMoreParents).toHaveCount(0)
   })
 
+  test('shows remove confirmation controls and the add submit control', async ({ page }) => {
+    await expect(page.getByTestId('add-card-form-add')).toBeAttached()
+    await page.getByTestId('card-row-remove').first().click()
+    await expect(page.getByTestId('card-row-confirm').first()).toBeVisible()
+    await expect(page.getByTestId('card-row-cancel').first()).toBeVisible()
+  })
+
   test('can cancel editing a card', async ({ page }) => {
     await page.getByTestId('cards-row-edit-button').first().click()
     await page.getByTestId('cards-edit-cancel-button').click()

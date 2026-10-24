@@ -142,6 +142,7 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
 
       {step === 'list' && (
         <Button
+          data-pw='email-manager-add-email-address'
           variant='outline'
           onClick={() => setStep('add')}
         >

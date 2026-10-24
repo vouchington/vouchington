@@ -53,6 +53,7 @@ export function ValuationSummary({
               {t('extracted.pointValuationsManager.valuationSummary.remove_9fe2f243')}
             </span>
             <Button
+              data-pw='valuation-summary-confirm'
               size='sm'
               variant='destructive'
               onClick={onConfirmDelete}
@@ -61,6 +62,7 @@ export function ValuationSummary({
               {t('extracted.pointValuationsManager.valuationSummary.confirm_eebdd24a')}
             </Button>
             <Button
+              data-pw='valuation-summary-cancel'
               size='sm'
               variant='outline'
               onClick={onCancelDelete}
@@ -80,6 +82,7 @@ export function ValuationSummary({
               {t('extracted.pointValuationsManager.valuationSummary.edit_464c4ffd')}
             </Button>
             <Button
+              data-pw='valuation-summary-remove'
               size='sm'
               variant='outline'
               onClick={onStartDelete}

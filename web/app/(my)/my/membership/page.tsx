@@ -35,7 +35,10 @@ export default async function MembershipPage() {
           <p className='mb-4 text-muted-foreground'>
             {t('extracted.membership.page.youDonTHaveAnActive_06226256')}
           </p>
-          <Button asChild>
+          <Button
+            data-pw='membership-view-plans'
+            asChild
+          >
             <Link
               href='/plans'
               prefetch={false}
