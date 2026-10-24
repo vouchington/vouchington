@@ -76,15 +76,21 @@ describe('ActivityPub operational retention', () => {
     expect(await countOperationalActiveLikesForTest(query, postId)).toBe(1)
   })
 
-  it('evicts only unreferenced actor cache while retaining an undone Follow cycle identity', async () => {
+  it('pages past protected actor cache before evicting stale cache and retaining Follow identity', async () => {
     const window = createTestExpiryWindow()
     await using query = await beginTransaction()
     await resetOperationalRetentionCursorForTest(query, 'remote_actors')
     const { postId, userId } = await insertOperationalLocalPostForTest(query)
-    const stale = await insertOperationalRemoteActorForTest(query, window.firstEligibleDate)
     const followed = await insertOperationalRemoteActorForTest(query, window.firstEligibleDate)
-    const liked = await insertOperationalRemoteActorForTest(query, window.firstEligibleDate)
-    const queued = await insertOperationalRemoteActorForTest(query, window.firstEligibleDate)
+    const liked = await insertOperationalRemoteActorForTest(
+      query,
+      new Date(window.firstEligibleDate.getTime() + 1),
+    )
+    const queued = await insertOperationalRemoteActorForTest(
+      query,
+      new Date(window.firstEligibleDate.getTime() + 2),
+    )
+    const stale = await insertOperationalRemoteActorForTest(query, window.secondEligibleDate)
     const recent = await insertOperationalRemoteActorForTest(query, window.afterUpperBoundDate)
     const oldFollowActivity = await insertOperationalUndoneFollowCycleForTest(
       query,
@@ -95,13 +101,26 @@ describe('ActivityPub operational retention', () => {
     await recordLike(postId, liked.id, `${liked.actorUri}/likes/live`, { query })
     await insertOperationalInboxWorkForTest(query, queued.id, queued.actorUri)
 
+    const options = {
+      batchSize: 1,
+      now: new Date(window.upperBoundDate.getTime() + 90 * DAY_MS),
+      lowerBoundDate: window.lowerBoundDate,
+      borrowedQuery: query,
+    }
     expect(
       await cleanupOperationalTombstones('remote_actors', {
-        batchSize: 1,
+        ...options,
         maxBatches: 1,
-        now: new Date(window.upperBoundDate.getTime() + 90 * DAY_MS),
-        lowerBoundDate: window.lowerBoundDate,
-        borrowedQuery: query,
+      }),
+    ).toMatchObject({
+      deleted: 0,
+      hasMore: true,
+      continuation: { id: followed.id },
+    })
+    expect(
+      await cleanupOperationalTombstones('remote_actors', {
+        ...options,
+        maxBatches: 4,
       }),
     ).toMatchObject({ deleted: 1, hasMore: false })
     expect(await operationalRowExistsForTest(query, 'remote_actors', stale.id)).toBe(false)

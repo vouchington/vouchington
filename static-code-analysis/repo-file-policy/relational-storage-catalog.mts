@@ -49,8 +49,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   // Cleanup positions survive deletion of the scanned auth or subscription row.
   'auth_session_retention_cleanup_cursors.cursor_id',
   'follower_distribution_deliveries.delivery_id',
-  'follower_distribution_retention_cursors.cursor_distribution_position',
-  'follower_distribution_retention_cursors.sweep_upper_bound_distribution_position',
   'membership_google_play_recovery_cursors.cursor_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id',
   'membership_microsoft_store_recovery_cursors.cursor_source_id',

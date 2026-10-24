@@ -91,6 +91,22 @@ describe('0000-00-01b-entity-relation-indexes', () => {
     expect(sql.match(new RegExp(`ADD CONSTRAINT ${constraint}`, 'g'))).toHaveLength(1)
   })
 
+  it('guards the remote Follow cycle against its retained actor identity', () => {
+    const sql = idempotent()
+    const constraint = 'fk_remote_follow__inbound_follow_activity_row_id'
+    const definition =
+      'FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_identity_id, target_user_id, id)'
+
+    expect(sql).toContain(`${definition} ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED`)
+    expect(sql).toContain(`${definition} DEFERRABLE INITIALLY DEFERRED`)
+    expect(sql).toContain(`VALIDATE CONSTRAINT ${constraint}`)
+    expect(sql).toContain(
+      'Remote Follow activity FK is missing, unvalidated, or has an unexpected definition',
+    )
+    expect(sql.match(new RegExp(`ADD CONSTRAINT ${constraint}`, 'g'))).toHaveLength(1)
+    expect(sql).not.toContain('activitypub_remote_follow_activities_remote_actor_id_fkey')
+  })
+
   it('has no differently-named indexes with an identical definition shape', async () => {
     const collisions = findIndexShapeCollisions(await extractIndexShapes(idempotent()))
 

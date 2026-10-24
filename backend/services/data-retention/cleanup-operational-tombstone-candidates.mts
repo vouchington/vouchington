@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import type { Plan, Cursor, Candidate } from './cleanup-operational-tombstones.mts'
+import type { Cursor, Candidate } from './cleanup-operational-tombstones.mts'
+import type { Plan } from './cleanup-operational-tombstone-plans.mts'
 
 export async function listCandidates(
   query: TransactionQuery,
@@ -27,7 +28,7 @@ export async function listCandidates(
      FROM ${plan.table} source
      WHERE ${plan.timestamp} < $1::timestamptz
        ${lowerBound}
-       AND ${plan.predicate}
+       AND ${plan.candidatePredicate ?? plan.predicate}
        ${afterCursor}
      ORDER BY ${plan.timestamp}, source.id
      LIMIT $${limitParameter}

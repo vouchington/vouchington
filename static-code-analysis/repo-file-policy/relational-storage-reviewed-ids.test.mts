@@ -43,13 +43,13 @@ function snapshot(tableName: string, columns: Record<string, ReturnType<typeof c
 const noFreshness = { enforceCatalogFreshness: false }
 
 describe('reviewed token and audit snapshot identifiers', () => {
-  it.each([
-    ['follower_distribution_retention_cursors', 'cursor_distribution_position'],
-    ['follower_distribution_retention_cursors', 'sweep_upper_bound_distribution_position'],
-    ['operational_tombstone_retention_cursors', 'cursor_id'],
-  ])('accepts only the reviewed deletion-stable %s.%s cursor', (table, name) => {
+  it('accepts only the reviewed operational deletion-stable cursor', () => {
+    const name = 'cursor_id'
     expect(
-      checkRelationalStorage(snapshot(table, { [name]: column('uuid') }), noFreshness),
+      checkRelationalStorage(
+        snapshot('operational_tombstone_retention_cursors', { [name]: column('uuid') }),
+        noFreshness,
+      ),
     ).toEqual([])
     expect(
       checkRelationalStorage(snapshot('new_records', { [name]: column('uuid') }), noFreshness),
