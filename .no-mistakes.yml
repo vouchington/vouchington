@@ -5304,6 +5304,39 @@ rules:
         - acknowledged
       minLifecycleColumns: 2
 
+  - name: shared web components have Storybook stories
+    rule: require-storybook-stories
+    projects: [web]
+    options:
+      stories: ['storybook/**/*.stories.tsx']
+      includeAllReactNamedExports: true
+      allowComponents:
+        'components/sequential-suspense.tsx#SequentialSuspense': >-
+          Behavior-only Suspense nesting for async server components, which Storybook cannot render
+          client-side; it has no UI of its own.
+        'components/service-worker-registrar.tsx#ServiceWorkerRegistrar': >-
+          Renders null; it only registers the service worker and push binding in an effect.
+        'components/sources/browse-feed-page.tsx#BrowseFeedPage': >-
+          Async server component that fetches feeds and the current user; its rendered body is
+          covered by the BrowseFeedResults, BrowsePageHeader, and PageWithAside stories.
+      exclude:
+        - 'app/**'
+        - 'lib/**'
+        - 'storybook/**'
+        - 'test-helpers/**'
+        # pending backfill batches (#3761): remove each line as its stories land
+        - 'components/copyright/**'
+        - 'components/users/**'
+        - 'components/my/**'
+        - 'components/topics/**'
+        - 'components/asides/**'
+        - 'components/communities/**'
+        - 'components/home/**'
+        - 'components/tags/**'
+        - 'components/posts/**'
+        - 'components/compare/**'
+        - 'components/feed/**'
+
   - name: Actions checkout does not persist credentials
     rule: github-actions-checkout-credentials
     scope: repository

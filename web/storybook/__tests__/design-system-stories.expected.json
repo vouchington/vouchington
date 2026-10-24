@@ -2,10 +2,16 @@
   "accordion.stories.tsx": ["Single", "Multiple"],
   "admin-curated-asides.stories.tsx": ["TableWithItems", "EmptyTable"],
   "admin-integrity-flags.stories.tsx": ["Report", "Vote"],
+  "admin-divided-table-shell.stories.tsx": ["WithRows", "Empty"],
   "admin-integrity-penalties.stories.tsx": [
     "Header",
     "RowRequiringReconciliation",
     "ActiveRowAwaitingRevokeConfirmation"
+  ],
+  "admin-integrity-penalties-table.stories.tsx": [
+    "VoteTable",
+    "ReportTableWithoutMultiplier",
+    "EmptyTable"
   ],
   "admin-layout.stories.tsx": ["ListPageShell"],
   "admin-official-referral-links.stories.tsx": ["LinksTable", "EmptyLinksTable"],
@@ -33,7 +39,7 @@
   "avatar.stories.tsx": ["WithImage", "Fallback", "Sizes"],
   "badge.stories.tsx": ["Variants", "States"],
   "breadcrumb.stories.tsx": ["Basic", "WithEllipsis", "CompositeFromItems"],
-  "brand.stories.tsx": ["LogoMarks"],
+  "brand.stories.tsx": ["LogoMarks", "InlineSvgIcons"],
   "button.stories.tsx": ["Variants", "Sizes", "WithIcon", "Disabled", "AsLink", "ClickInteraction"],
   "button-group.stories.tsx": ["Default", "Vertical"],
   "button-loading.stories.tsx": [

@@ -6,6 +6,7 @@ import {
   TableBody,
   TableCaption,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -50,6 +51,12 @@ export const InvoiceTable: Story = {
           </TableRow>
         ))}
       </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableCell colSpan={3}>Total</TableCell>
+          <TableCell className='text-right'>$1,200.00</TableCell>
+        </TableRow>
+      </TableFooter>
     </Table>
   ),
 }
