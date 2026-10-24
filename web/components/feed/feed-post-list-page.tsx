@@ -3,18 +3,15 @@
  * Fetches post feed data and renders tabs, sub-filters, and list
  */
 
-import type { ReactNode } from 'react'
-import Link from 'next/link'
 import { getPostFeed } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
 import { PostList } from '@/components/posts/post-list'
 import { PostFilters } from '@/components/posts/post-filters'
 import { PostViewToggle } from '@/components/posts/post-view-toggle'
-import { EmptyState } from '@/components/shared/empty-state'
 import { ListSearchError } from '@/components/shared/list-search-error'
-import { Button } from '@/components/ui/button'
 import { FeedTopSection } from './feed-top-section'
+import { FeedPostEmptyState } from './feed-post-empty-state'
 import { FEED_PAGE_LIMIT, type PostFeedRouteConfig } from '@/lib/feed-route-configs'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { getTranslations } from '@/lib/i18n/get-translations'
@@ -59,86 +56,24 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
   const searchError = hasSearchError ? dataResult.error : null
   const data = hasSearchError ? null : dataResult
 
-  let emptyState: ReactNode = undefined
-
-  if (config.feedType === 'any') {
-    emptyState = (
-      <EmptyState
-        icon='message-square'
-        title={t('extracted.feed.feedPostListPage.yourFeedIsEmpty_2a96dd2d')}
-        description={t('extracted.feed.feedPostListPage.followTopicsAndPeopleToSee_99857186')}
-      >
-        <div className='flex gap-2'>
-          <Button
-            asChild
-            variant='outline'
-            size='default'
-          >
-            <Link
-              href='/topics'
-              prefetch={false}
-            >
-              {t('extracted.feed.feedPostListPage.browseTopics_58b290ad')}
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant='outline'
-            size='default'
-          >
-            <Link
-              href='/my/friend-recommendations'
-              prefetch={false}
-            >
-              {t('extracted.feed.feedPostListPage.findFriends_d4864039')}
-            </Link>
-          </Button>
-        </div>
-      </EmptyState>
-    )
-  } else if (config.feedType === 'follow_users') {
-    emptyState = (
-      <EmptyState
-        icon='message-square'
-        title={t('extracted.feed.feedPostListPage.noPostsFromPeopleYouFollow_386b3367')}
-        description={t('extracted.feed.feedPostListPage.followPeopleToSeeTheirPosts_87fa9671')}
-      >
-        <Button
-          asChild
-          variant='outline'
-          size='default'
-        >
-          <Link
-            href='/my/friend-recommendations'
-            prefetch={false}
-          >
-            {t('extracted.feed.feedPostListPage.findFriends_d4864039')}
-          </Link>
-        </Button>
-      </EmptyState>
-    )
-  } else if (config.feedType === 'follow_topics') {
-    emptyState = (
-      <EmptyState
-        icon='message-square'
-        title={t('extracted.feed.feedPostListPage.noPostsYet_f2bd6770')}
-        description={t('extracted.feed.feedPostListPage.followSomeTopicsToSeePosts_75c6faaf')}
-      >
-        <Button
-          asChild
-          variant='outline'
-          size='default'
-        >
-          <Link
-            href='/topics'
-            prefetch={false}
-          >
-            {t('extracted.feed.feedPostListPage.browseTopics_5a51754b')}
-          </Link>
-        </Button>
-      </EmptyState>
-    )
-  }
+  const emptyState = (
+    <FeedPostEmptyState
+      feedType={config.feedType}
+      labels={{
+        yourFeedIsEmpty: t('extracted.feed.feedPostListPage.yourFeedIsEmpty_2a96dd2d'),
+        followTopicsAndPeople: t(
+          'extracted.feed.feedPostListPage.followTopicsAndPeopleToSee_99857186',
+        ),
+        noPostsFromPeople: t('extracted.feed.feedPostListPage.noPostsFromPeopleYouFollow_386b3367'),
+        followPeople: t('extracted.feed.feedPostListPage.followPeopleToSeeTheirPosts_87fa9671'),
+        noPostsYet: t('extracted.feed.feedPostListPage.noPostsYet_f2bd6770'),
+        followSomeTopics: t('extracted.feed.feedPostListPage.followSomeTopicsToSeePosts_75c6faaf'),
+        browseTopics: t('extracted.feed.feedPostListPage.browseTopics_58b290ad'),
+        browseFollowedTopics: t('extracted.feed.feedPostListPage.browseTopics_5a51754b'),
+        findFriends: t('extracted.feed.feedPostListPage.findFriends_d4864039'),
+      }}
+    />
+  )
 
   return (
     <div className='space-y-4'>

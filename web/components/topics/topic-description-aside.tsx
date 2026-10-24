@@ -54,6 +54,7 @@ export function TopicDescriptionAside({
             date: contentUpdateDateFormatter.format(new Date(contentUpdate.updated_at)),
           })}{' '}
           <UserLink
+            data-pw='topic-description-aside-user-link'
             user={contentUpdate.updated_by}
             className='font-medium text-foreground hover:underline'
           >

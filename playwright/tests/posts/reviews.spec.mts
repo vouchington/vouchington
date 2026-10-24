@@ -188,6 +188,8 @@ test.describe('Create Review Form', () => {
 
     // Add Topic button should be visible
     await expect(page.getByTestId('review-add-topic-button')).toBeVisible()
+    await expect(page.getByTestId('post-form-sections-move-topic-up').first()).toBeVisible()
+    await expect(page.getByTestId('post-form-sections-move-topic-down').first()).toBeVisible()
   })
 
   test('shows content-length counter when review is too short', async ({ page }) => {
@@ -212,6 +214,7 @@ test.describe('Create Review Form', () => {
 
     // Click Add Topic
     await page.getByTestId('review-add-topic-button').click()
+    await expect(page.getByTestId('post-form-sections-remove-topic').first()).toBeVisible()
 
     // Wait for the second topic row's search input to appear and be focused
     const searchInputs = page.getByTestId('topic-autocomplete-input')

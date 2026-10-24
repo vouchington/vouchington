@@ -215,6 +215,9 @@ test.describe('Topic Detail Pages', () => {
     await expect(page.getByTestId('follow-button').first()).toBeVisible()
     // RSS feed link is also visible for logged-in users (.first() — aside renders in both desktop and mobile drawer)
     await expect(page.getByTestId('topic-rss-feed-aside').first()).toBeVisible()
+    await expect(page.getByTestId('topic-actions-aside-write-review').first()).toBeVisible()
+    await expect(page.getByTestId('topic-actions-aside-share-data-point').first()).toBeVisible()
+    await expect(page.getByTestId('topic-actions-aside-start-discussion').first()).toBeVisible()
   })
 
   test('logged-in source topic with linked rss_feed shows Follow Source and Follow Topic buttons', async ({

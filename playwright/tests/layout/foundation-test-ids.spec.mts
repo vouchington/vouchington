@@ -42,7 +42,7 @@ test.describe('Signed-out foundation test ids', () => {
   test('videos page exposes the PeerTube search action', async ({ page }) => {
     await setFeatureFlags(page, { fediverse: true })
     await navigateTo(page, '/videos')
-    await expect(page.getByTestId('videos-search-peertube')).toBeAttached()
+    await expect(page.getByTestId('videos-search-peertube')).toBeVisible()
   })
 
   test('referral visitors see the sign up aside on topic pages', async ({ page }) => {

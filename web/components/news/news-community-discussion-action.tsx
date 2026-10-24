@@ -100,6 +100,7 @@ export function NewsCommunityDiscussionAction({
     <>
       <div className='pl-1'>
         <Button
+          data-pw='news-community-discussion-action-discuss'
           variant='ghost'
           size='sm'
           className='min-h-[44px] px-2 text-xs text-muted-foreground hover:text-foreground'

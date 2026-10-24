@@ -41,6 +41,8 @@ test.describe('Route coverage baseline', () => {
     const pageWrapper = page.getByTestId('page-content-wrapper')
     await expect(pageWrapper).toBeVisible()
     await expect(pageWrapper.getByRole('heading', { name: 'Fediverse' })).toBeVisible()
+    await expect(page.getByTestId('fediverse-submit')).toBeVisible()
+    await expect(page.getByTestId('fediverse-filter-link').first()).toBeVisible()
     // Reference command-search Fediverse group selector for coverage reporting.
     void page.getByTestId('search-group-fediverse')
   })
@@ -51,6 +53,12 @@ test.describe('Route coverage baseline', () => {
 
     await expect(page).toHaveURL('/instances')
     await expect(page.getByRole('heading', { name: 'Fediverse Instances' })).toBeVisible()
+  })
+
+  test('covers the PeerTube search link on /videos', async ({ page }) => {
+    await setFeatureFlags(page, { fediverse: true })
+    await navigateTo(page, '/videos')
+    await expect(page.getByTestId('videos-search-peertube')).toBeVisible()
   })
 
   test('covers /notification-redirect without a notification id', async ({ page }) => {
@@ -101,6 +109,9 @@ test.describe('Route coverage baseline', () => {
     await navigateTo(page, `/user/${TEST_USER_USERNAME}`)
 
     await expect(page).toHaveURL(`/user/${TEST_USER_USERNAME}`)
+    await expect(page.getByTestId('user-profile-header-admin')).toBeVisible()
+    await expect(page.getByTestId('share-landing-page-banner-copy-link')).toBeVisible()
+    await expect(page.getByTestId('share-landing-page-banner-edit')).toBeVisible()
     // Reference data-pw selectors on user profile header for coverage reporting
     void page.getByTestId('identity-verified-badge')
   })

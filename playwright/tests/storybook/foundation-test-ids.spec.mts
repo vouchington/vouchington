@@ -9,6 +9,32 @@ async function openStory(page: StoryPage, id: string) {
 }
 
 test.describe('Storybook shared interactive test ids', () => {
+  test('default user and post image controls expose their ids', async ({ page }) => {
+    await openStory(page, 'entities-users--links')
+    await expect(page.getByTestId('user-link').first()).toBeVisible()
+
+    await openStory(page, 'posts-image-button--lounge-photo')
+    await expect(page.getByTestId('post-detail-image-button')).toBeVisible()
+  })
+
+  test('community news discussion button opens its dialog', async ({ page }) => {
+    await openStory(page, 'news-news-community-discussion-action--discuss-button')
+    const discussButton = page.getByTestId('news-community-discussion-action-discuss')
+    await expect(discussButton).toBeVisible()
+    await discussButton.click()
+    await expect(
+      page.getByTestId('news-community-discussion-dialog-start-discussion'),
+    ).toBeVisible()
+  })
+
+  test('empty post lists expose their create and sign-in links', async ({ page }) => {
+    await openStory(page, 'posts-post-list-empty-state--can-create')
+    await expect(page.getByTestId('post-list-page-create')).toBeVisible()
+
+    await openStory(page, 'posts-post-list-empty-state--sign-in-to-create')
+    await expect(page.getByTestId('post-list-page-sign-in')).toBeVisible()
+  })
+
   test('auth steps expose their action buttons', async ({ page }) => {
     await openStory(page, 'auth-login-code-step--ready')
     await expect(page.getByTestId('login-code-step-resend-code')).toBeAttached()

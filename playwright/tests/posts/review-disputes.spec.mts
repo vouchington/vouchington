@@ -57,7 +57,7 @@ test.beforeAll(async () => {
       user: reviewer,
       name: `Claim verification test topic ${suffix}`,
       slug: `claim-verification-test-${suffix}`,
-      hostname: `claim-verification-${suffix}.example.com`,
+      hostname: `claim-verification-${suffix}.voucha.ai`,
     })
   ).id
   verificationClaimId = await insertTestTopicClaim({
@@ -159,6 +159,7 @@ test.describe('Topic claim form states', () => {
 
     await expect(page.getByTestId('domain-verification-panel')).toBeVisible()
     await expect(page.getByRole('tab', { name: 'DNS TXT Record' })).toBeVisible()
+    await expect(page.getByTestId('domain-tabs-generate-verification-token')).toBeVisible()
   })
 
   test('claimed topic without a hostname renders manual evidence', async ({ page }) => {
@@ -167,6 +168,7 @@ test.describe('Topic claim form states', () => {
 
     await expect(page.getByTestId('domain-verification-panel')).toBeVisible()
     await expect(page.getByTestId('evidence-textarea')).toBeVisible()
+    await expect(page.getByTestId('domain-tabs-submit-for-review')).toBeVisible()
   })
 
   test('domain verification exposes its backend failure', async ({ page }) => {
@@ -181,8 +183,12 @@ test.describe('Topic claim form states', () => {
         }),
     )
     await navigateTo(page, `/topic-claims/${verificationTopicId}`)
-    await page.getByRole('button', { name: 'Generate verification token' }).click()
+    await page.getByTestId('domain-tabs-generate-verification-token').click()
+    await expect(page.getByTestId('verification-token-instructions-copy-dns-value')).toBeVisible()
     await expect(page.getByTestId('verify-domain')).toBeVisible()
+    await page.getByRole('tab', { name: /well.known file/i }).click()
+    await expect(page.getByTestId('verification-token-instructions-verify-now')).toBeVisible()
+    await page.getByRole('tab', { name: 'DNS TXT Record' }).click()
     await page.getByTestId('verify-domain').click()
     await expect(page.getByTestId('verification-error')).toContainText(
       'Verification record was not found.',

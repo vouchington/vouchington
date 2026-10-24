@@ -74,6 +74,7 @@ test.describe('Referral Links Tab', () => {
 
     const labelInput = page.getByTestId('referral-link-form-label')
     await expect(labelInput).toBeVisible()
+    await expect(page.getByTestId('referral-link-form-save-link')).toBeVisible()
   })
 
   test('signed-out user does not see add form', async ({ page }) => {
@@ -145,11 +146,19 @@ test.describe('Referral Link Form Submission — create', () => {
 
     await page.getByTestId('referral-link-form-label').pressSequentially('My test link')
 
-    await page.getByRole('button', { name: 'Add Link' }).click()
+    await page.getByTestId('referral-link-form-save-link').click()
 
     await expect(
       page.locator('[data-sonner-toast]').filter({ hasText: 'Referral link saved' }),
     ).toBeVisible()
+    await expect(page.getByTestId('referral-link-form-delete')).toBeVisible()
+    const showAll = page.getByTestId('referral-links-show-all')
+    await showAll.scrollIntoViewIfNeeded()
+    await waitForBelowFoldHydration(page)
+    await showAll.click()
+    await expect(page.getByTestId('referral-links-all-heading')).toBeVisible()
+    await expect(page.getByTestId('referral-link-card-external-link').first()).toBeVisible()
+    await expect(page.getByTestId('referral-link-card-open').first()).toBeVisible()
   })
 })
 

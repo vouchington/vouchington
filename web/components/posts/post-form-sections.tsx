@@ -46,6 +46,7 @@ export function ReviewTopicsFieldset({
         >
           <div className='flex flex-col gap-0.5'>
             <Button
+              data-pw='post-form-sections-move-topic-up'
               type='button'
               variant='ghost'
               size='sm'
@@ -57,6 +58,7 @@ export function ReviewTopicsFieldset({
               <ChevronUp className='h-3 w-3' />
             </Button>
             <Button
+              data-pw='post-form-sections-move-topic-down'
               type='button'
               variant='ghost'
               size='sm'
@@ -91,6 +93,7 @@ export function ReviewTopicsFieldset({
           </div>
           {reviewTopics.length > 1 && (
             <Button
+              data-pw='post-form-sections-remove-topic'
               type='button'
               variant='ghost'
               size='sm'

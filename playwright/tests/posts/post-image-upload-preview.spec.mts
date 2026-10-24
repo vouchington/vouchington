@@ -93,6 +93,9 @@ test.describe('Selected post image previews', () => {
 
     const previews = page.getByTestId('upload-image-preview')
     await expect(previews).toHaveCount(3)
+    await expect(page.getByTestId('post-form-images-fieldset-move-up').first()).toBeVisible()
+    await expect(page.getByTestId('post-form-images-fieldset-move-down').first()).toBeVisible()
+    await expect(page.getByTestId('post-form-images-fieldset-remove-image').first()).toBeVisible()
     await expect
       .poll(() =>
         previews.evaluateAll(images =>

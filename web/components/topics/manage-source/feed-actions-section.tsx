@@ -64,6 +64,7 @@ export function FeedActionsSection({
             : t('extracted.manageSource.feedActionsSection.makeDiscoverable_f4310831')}
         </Button>
         <Button
+          data-pw='feed-actions-section-trigger-crawl'
           type='button'
           variant='secondary'
           onClick={onRefresh}
@@ -130,6 +131,7 @@ function DeleteControls({
           : t('extracted.manageSource.feedActionsSection.confirmDelete_a7f54311')}
       </Button>
       <Button
+        data-pw='feed-actions-section-cancel'
         type='button'
         variant='secondary'
         onClick={() => onConfirmDeleteChange(false)}

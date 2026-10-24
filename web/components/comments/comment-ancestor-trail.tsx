@@ -54,6 +54,7 @@ export function CommentAncestorTrail({
             </p>
           )}
           <Button
+            data-pw='comment-ancestor-trail-retry'
             variant='outline'
             size='sm'
             disabled={pagination.loadingMore}

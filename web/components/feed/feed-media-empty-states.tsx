@@ -124,6 +124,7 @@ function renderEmptyState({ title, description, actions }: EmptyStateSpec): Reac
             size='default'
           >
             <Link
+              data-pw='feed-media-empty-states-action'
               href={href}
               prefetch={false}
             >

@@ -164,6 +164,10 @@ test.describe('Typed topic settings route families', () => {
 })
 
 async function expectTopicType(page: Page, topicType: string): Promise<void> {
+  await expect(page.getByTestId('topic-type-section-save-topic-type')).toBeVisible()
+  if (topicType === 'card') {
+    await expect(page.getByTestId('type-attributes-section-submit')).toBeVisible()
+  }
   const trigger = page.getByTestId('topic-type-trigger')
   await trigger.scrollIntoViewIfNeeded()
   await waitForBelowFoldHydration(page)
@@ -187,7 +191,7 @@ async function addOwnedAlias(page: Page, alias: string): Promise<void> {
 }
 
 async function persistOwnedDomain(page: Page, id: string, suffix: string): Promise<void> {
-  const hostname = `owned-domain-${suffix}.example.com`
+  const hostname = `owned-domain-${suffix}.voucha.ai`
   const input = page.getByTestId('primary-domain-input')
   await input.scrollIntoViewIfNeeded()
   await waitForBelowFoldHydration(page)

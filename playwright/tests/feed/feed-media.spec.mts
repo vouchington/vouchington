@@ -19,6 +19,7 @@ test.describe('Feed media rendering', () => {
 
     // Episode player widget should show a play button (audio lives in global mini-player)
     await expect(podcastCard.getByTestId('podcast-episode-player')).toBeVisible()
+    await expect(podcastCard.getByTestId('podcast-episode-player-play-episode')).toBeVisible()
 
     // Duration should be displayed (1830s = 30:30)
     await expect(podcastCard.getByTestId('podcast-episode-duration')).toHaveText('Duration: 30:30')

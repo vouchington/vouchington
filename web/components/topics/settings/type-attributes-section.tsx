@@ -126,6 +126,7 @@ function TypeAttributesSectionForTopic({
           onAnnualFeeChange={() => setAnnualFeeError(null)}
         />
         <Button
+          data-pw='type-attributes-section-submit'
           type='submit'
           loading={typeAttrSaving}
           disabled={typeAttrSaving}

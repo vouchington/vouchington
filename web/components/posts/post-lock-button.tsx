@@ -20,6 +20,7 @@ export function PostLockButton({ postIdOrSlug, lockedAt }: PostLockButtonProps) 
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            data-pw='post-lock-button-toggle'
             type='button'
             variant='outline'
             size='touchSm'
