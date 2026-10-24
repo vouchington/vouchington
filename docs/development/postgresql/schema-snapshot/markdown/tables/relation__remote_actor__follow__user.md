@@ -26,7 +26,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_remote_follow__inbound_follow_activity_row_id`: `FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) DEFERRABLE INITIALLY DEFERRED`
+- `fk_remote_follow__inbound_follow_activity_row_id`: `FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_identity_id, target_user_id, id) DEFERRABLE INITIALLY DEFERRED`
 - `relation__remote_actor__follow__user_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `relation__remote_actor__follow__user_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `relation__remote_actor__follow__user_object_id_fkey`: `FOREIGN KEY (object_id) REFERENCES users(id) ON DELETE CASCADE`

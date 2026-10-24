@@ -1007,6 +1007,16 @@
     "oauth_response_types": {
       "values": ["code"]
     },
+    "operational_tombstone_retention_names": {
+      "values": [
+        "activitypub_post_likes",
+        "remote_actors",
+        "feed_hostname_blocks",
+        "other_hostname_blocks",
+        "deleted_conversations",
+        "app_attestation_keys"
+      ]
+    },
     "passkey_device_types": {
       "values": ["singleDevice", "multiDevice"]
     },
@@ -3017,11 +3027,22 @@
       },
       "uniqueConstraints": {}
     },
-    "activitypub_post_likes": {
+    "activitypub_post_like_activities": {
       "checkConstraints": {
-        "activitypub_post_likes_like_activitypub_id_check": "CHECK (((char_length(like_activitypub_id) > 0) AND (char_length(like_activitypub_id) <= 2048)))"
+        "activitypub_post_like_activities_activity_id_check": "CHECK (((char_length(activity_id) >= 1) AND (char_length(activity_id) <= 2048)))"
       },
       "columns": {
+        "activity_id": {
+          "collation": null,
+          "comment": "Exact external Like activity URI; unique across active and undone cycles.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -3031,17 +3052,6 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "deleted_at": {
-          "collation": null,
-          "comment": "Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; an undone id is never reactivated.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -3055,16 +3065,232 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "like_activitypub_id": {
+        "post_id": {
           "collation": null,
-          "comment": "The inbound Like activity's ActivityPub id; unique across active and undone cycles so an old Like cannot reactivate after inbox dedup expiry.",
+          "comment": "Retained local post identity of the Like target.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "remote_actor_identity_id": {
+          "collation": null,
+          "comment": "Retained signing actor identity, checked against a live verified actor before any mutation.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4,
-          "type": "text"
+          "type": "uuid"
+        },
+        "undone_at": {
+          "collation": null,
+          "comment": "When this Like activity was undone or replaced; an undone activity never reactivates.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Exact immutable Like activity identity and Undo scope retained after the tally payload and remote signing-key cache expire; never authorizes an actor.",
+      "foreignKeys": {
+        "fk_ap_post_like_activities__post_identity": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        },
+        "fk_ap_post_like_activities__remote_actor_identity": {
+          "columns": ["remote_actor_identity_id"],
+          "definition": "FOREIGN KEY (remote_actor_identity_id) REFERENCES remote_actor_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "remote_actor_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "activitypub_post_like_activities_activity_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX activitypub_post_like_activities_activity_id_key ON public.activitypub_post_like_activities USING btree (activity_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "activity_id",
+              "descending": false,
+              "expression": "activity_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "activitypub_post_like_activities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX activitypub_post_like_activities_pkey ON public.activitypub_post_like_activities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_post_like_activities__post_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_post_like_activities__post_id ON public.activitypub_post_like_activities USING btree (post_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_activitypub_post_like_activities__remote_actor_identity_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_post_like_activities__remote_actor_identity_id ON public.activitypub_post_like_activities USING btree (remote_actor_identity_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "remote_actor_identity_id",
+              "descending": false,
+              "expression": "remote_actor_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_ap_post_like_activities__scope_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_ap_post_like_activities__scope_id ON public.activitypub_post_like_activities USING btree (id, post_id, remote_actor_identity_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "remote_actor_identity_id",
+              "descending": false,
+              "expression": "remote_actor_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "activitypub_post_like_activities_activity_id_key": {
+          "columns": ["activity_id"],
+          "definition": "UNIQUE (activity_id)"
+        },
+        "uq_ap_post_like_activities__scope_id": {
+          "columns": ["id", "post_id", "remote_actor_identity_id"],
+          "definition": "UNIQUE (id, post_id, remote_actor_identity_id)"
+        }
+      }
+    },
+    "activitypub_post_likes": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "deleted_at": {
+          "collation": null,
+          "comment": "Set by Undo(Like), including Undo before Like, or by a fresh replacement Like; tombstones expire after 30 days.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "post_id": {
           "collation": null,
@@ -3089,7 +3315,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local posts. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.",
+      "comment": "Live Like tally payload and recent Undo tombstones. Old tombstones expire while exact replay scope remains in activitypub_post_like_activities.",
       "foreignKeys": {
         "activitypub_post_likes_post_id_fkey": {
           "columns": ["post_id"],
@@ -3102,11 +3328,20 @@
         },
         "activitypub_post_likes_remote_actor_id_fkey": {
           "columns": ["remote_actor_id"],
-          "definition": "FOREIGN KEY (remote_actor_id) REFERENCES remote_actors(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (remote_actor_id) REFERENCES remote_actors(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "remote_actors",
+          "validated": true
+        },
+        "fk_activitypub_post_likes__activity_scope": {
+          "columns": ["id", "post_id", "remote_actor_id"],
+          "definition": "FOREIGN KEY (id, post_id, remote_actor_id) REFERENCES activitypub_post_like_activities(id, post_id, remote_actor_identity_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "post_id", "remote_actor_identity_id"],
+          "referencedTable": "activitypub_post_like_activities",
           "validated": true
         }
       },
@@ -3128,26 +3363,6 @@
           ],
           "predicate": null,
           "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_activitypub_post_likes__like_activitypub_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_activitypub_post_likes__like_activitypub_id ON public.activitypub_post_likes USING btree (like_activitypub_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "like_activitypub_id",
-              "descending": false,
-              "expression": "like_activitypub_id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -3218,6 +3433,33 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_activitypub_post_likes__undone_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_post_likes__undone_retention ON public.activitypub_post_likes USING btree (deleted_at, id) WHERE (deleted_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_at",
+              "descending": false,
+              "expression": "deleted_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
@@ -3270,9 +3512,9 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "remote_actor_id": {
+        "remote_actor_identity_id": {
           "collation": null,
-          "comment": "Signing remote actor that sent the Follow.",
+          "comment": "Retained identity of the signing remote actor that sent the Follow.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -3304,24 +3546,24 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Per-activity remote Follow identity and durable Undo state. An undone activity cannot reactivate a follow after inbox dedup retention.",
+      "comment": "Per-activity remote Follow identity and durable Undo state retained after cache eviction. A retained identity never authorizes a deleted actor or user.",
       "foreignKeys": {
-        "activitypub_remote_follow_activities_remote_actor_id_fkey": {
-          "columns": ["remote_actor_id"],
-          "definition": "FOREIGN KEY (remote_actor_id) REFERENCES remote_actors(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+        "fk_ap_remote_follow_activities__remote_actor_identity": {
+          "columns": ["remote_actor_identity_id"],
+          "definition": "FOREIGN KEY (remote_actor_identity_id) REFERENCES remote_actor_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "remote_actors",
+          "referencedTable": "remote_actor_identities",
           "validated": true
         },
-        "activitypub_remote_follow_activities_target_user_id_fkey": {
+        "fk_ap_remote_follow_activities__target_user_identity": {
           "columns": ["target_user_id"],
-          "definition": "FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (target_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         }
       },
@@ -3390,13 +3632,13 @@
         "uq_ap_remote_follow_activities__scope_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_ap_remote_follow_activities__scope_id ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, target_user_id, id)",
+          "definition": "CREATE UNIQUE INDEX uq_ap_remote_follow_activities__scope_id ON public.activitypub_remote_follow_activities USING btree (remote_actor_identity_id, target_user_id, id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "remote_actor_id",
+              "column": "remote_actor_identity_id",
               "descending": false,
-              "expression": "remote_actor_id",
+              "expression": "remote_actor_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -3436,8 +3678,8 @@
           "definition": "UNIQUE (activity_id)"
         },
         "uq_ap_remote_follow_activities__scope_id": {
-          "columns": ["remote_actor_id", "target_user_id", "id"],
-          "definition": "UNIQUE (remote_actor_id, target_user_id, id)"
+          "columns": ["remote_actor_identity_id", "target_user_id", "id"],
+          "definition": "UNIQUE (remote_actor_identity_id, target_user_id, id)"
         }
       }
     },
@@ -7446,7 +7688,7 @@
         },
         "last_used_at": {
           "collation": null,
-          "comment": "Timestamp of the most recently verified assertion for this key.",
+          "comment": "Coalesced timestamp of successful assertion use, advanced at most once per day for retention.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -7480,7 +7722,7 @@
       },
       "comment": "Apple App Attest keys, one row per device-generated attestation key, used to verify subsequent per-request assertions.",
       "foreignKeys": {},
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "app_attestation_keys_key_id_key": {
           "accessMethod": "btree",
@@ -7532,6 +7774,33 @@
               "column": "did",
               "descending": false,
               "expression": "did",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_app_attestation_keys__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_app_attestation_keys__retention ON public.app_attestation_keys USING btree (COALESCE(last_used_at, uuid_extract_timestamp(id)), id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(last_used_at, uuid_extract_timestamp(id))",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -22578,6 +22847,33 @@
             }
           ],
           "predicate": "(deleted_by_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_conversations__deleted_chat_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_conversations__deleted_chat_retention ON public.conversations USING btree (deleted_at, id) WHERE ((deleted_at IS NOT NULL) AND (channel_type = ANY (ARRAY['chat'::conversation_channel_types, 'direct_message'::conversation_channel_types])))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_at",
+              "descending": false,
+              "expression": "deleted_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NOT NULL) AND (channel_type = ANY (ARRAY['chat'::conversation_channel_types, 'direct_message'::conversation_channel_types])))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -74504,6 +74800,105 @@
         }
       }
     },
+    "operational_tombstone_retention_cursors": {
+      "checkConstraints": {
+        "operational_tombstone_retention_cursors_check": "CHECK (((cursor_at IS NULL) = (cursor_id IS NULL)))",
+        "operational_tombstone_retention_cursors_check1": "CHECK (((cursor_id IS NULL) OR (sweep_cutoff_at IS NOT NULL)))"
+      },
+      "columns": {
+        "cleanup_name": {
+          "collation": null,
+          "comment": "Independent finite retention family.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "operational_tombstone_retention_names"
+        },
+        "cursor_at": {
+          "collation": null,
+          "comment": "Exact timestamp keyset position, preserved at PostgreSQL microsecond precision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "cursor_id": {
+          "collation": null,
+          "comment": "UUIDv7 tie-breaker position, not an entity reference.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "sweep_cutoff_at": {
+          "collation": null,
+          "comment": "Fixed age cutoff for the unfinished pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Most recent cursor checkpoint.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable keyset positions for capped operational retention sweeps.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "operational_tombstone_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX operational_tombstone_retention_cursors_pkey ON public.operational_tombstone_retention_cursors USING btree (cleanup_name)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "cleanup_name",
+              "descending": false,
+              "expression": "cleanup_name",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["cleanup_name"],
+        "definition": "PRIMARY KEY (cleanup_name)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_operational_tombstone_retention_cursors_updated_at": "CREATE TRIGGER trigger_operational_tombstone_retention_cursors_updated_at BEFORE UPDATE ON public.operational_tombstone_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "payment_operational_cleanup_cursors": {
       "checkConstraints": {},
       "columns": {
@@ -90765,10 +91160,10 @@
       "foreignKeys": {
         "fk_remote_follow__inbound_follow_activity_row_id": {
           "columns": ["subject_id", "object_id", "inbound_follow_activity_row_id"],
-          "definition": "FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) DEFERRABLE INITIALLY DEFERRED",
+          "definition": "FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_identity_id, target_user_id, id) DEFERRABLE INITIALLY DEFERRED",
           "onDelete": "no action",
           "onUpdate": "no action",
-          "referencedColumns": ["remote_actor_id", "target_user_id", "id"],
+          "referencedColumns": ["remote_actor_identity_id", "target_user_id", "id"],
           "referencedTable": "activitypub_remote_follow_activities",
           "validated": true
         },
@@ -107938,12 +108333,14 @@
       },
       "uniqueConstraints": {}
     },
-    "remote_actors": {
-      "checkConstraints": {},
+    "remote_actor_identities": {
+      "checkConstraints": {
+        "remote_actor_identities_actor_uri_check": "CHECK (((char_length(actor_uri) >= 1) AND (char_length(actor_uri) <= 2048)))"
+      },
       "columns": {
         "actor_uri": {
           "collation": null,
-          "comment": "The remote actor's stable ActivityPub id (e.g. https://remote.example/users/alice).",
+          "comment": "Exact ActivityPub actor URI, retained to map a freshly verified document back to its durable replay identity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -107960,7 +108357,93 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Stable external actor URI identity for exact ActivityPub replay after the signing-key cache expires; identity alone never authorizes an actor.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "remote_actor_identities_actor_uri_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX remote_actor_identities_actor_uri_key ON public.remote_actor_identities USING btree (actor_uri)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "actor_uri",
+              "descending": false,
+              "expression": "actor_uri",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "remote_actor_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX remote_actor_identities_pkey ON public.remote_actor_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "remote_actor_identities_actor_uri_key": {
+          "columns": ["actor_uri"],
+          "definition": "UNIQUE (actor_uri)"
+        }
+      }
+    },
+    "remote_actors": {
+      "checkConstraints": {},
+      "columns": {
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "deleted_at": {
@@ -107971,7 +108454,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "deleted_by_id": {
@@ -107982,7 +108465,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "fetched_at": {
@@ -107993,7 +108476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "hostname_id": {
@@ -108004,13 +108487,13 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "id": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "uuidv7()",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -108026,7 +108509,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "key_id": {
@@ -108037,7 +108520,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 2,
           "type": "text"
         },
         "public_key_pem": {
@@ -108048,7 +108531,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "shared_inbox_url": {
@@ -108059,7 +108542,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "updated_at": {
@@ -108070,7 +108553,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         }
       },
@@ -108093,28 +108576,44 @@
           "referencedColumns": ["id"],
           "referencedTable": "url_hostnames",
           "validated": true
+        },
+        "remote_actors_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES remote_actor_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "remote_actor_identities",
+          "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_remote_actors__actor_uri": {
+        "idx_remote_actors__cache_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_remote_actors__actor_uri ON public.remote_actors USING btree (actor_uri) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_remote_actors__cache_retention ON public.remote_actors USING btree (fetched_at, id) WHERE (deleted_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "actor_uri",
+              "column": "fetched_at",
               "descending": false,
-              "expression": "actor_uri",
+              "expression": "fetched_at",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(deleted_at IS NULL)",
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_remote_actors__hostname_id": {
@@ -123736,6 +124235,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostname_blocks__feed_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__feed_retention ON public.url_hostname_blocks USING btree (lifted_at, id) WHERE ((lifted_at IS NOT NULL) AND (domain_blocklist_source_id IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_at",
+              "descending": false,
+              "expression": "lifted_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((lifted_at IS NOT NULL) AND (domain_blocklist_source_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostname_blocks__hostname": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -123751,6 +124277,33 @@
             }
           ],
           "predicate": "(lifted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_blocks__other_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__other_retention ON public.url_hostname_blocks USING btree (lifted_at, id) WHERE ((lifted_at IS NOT NULL) AND (domain_blocklist_source_id IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "lifted_at",
+              "descending": false,
+              "expression": "lifted_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((lifted_at IS NOT NULL) AND (domain_blocklist_source_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
