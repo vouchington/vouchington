@@ -59,6 +59,7 @@ export function ImagesFieldset({
         >
           <div className='flex flex-col gap-0.5'>
             <Button
+              data-pw='post-form-images-fieldset-move-up'
               type='button'
               variant='ghost'
               size='sm'
@@ -70,6 +71,7 @@ export function ImagesFieldset({
               <ChevronUp className='h-3 w-3' />
             </Button>
             <Button
+              data-pw='post-form-images-fieldset-move-down'
               type='button'
               variant='ghost'
               size='sm'
@@ -129,6 +131,7 @@ export function ImagesFieldset({
             </div>
           </div>
           <Button
+            data-pw='post-form-images-fieldset-remove-image'
             type='button'
             variant='ghost'
             size='sm'

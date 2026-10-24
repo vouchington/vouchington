@@ -56,6 +56,7 @@ export function ShareLandingPageBanner({ username }: ShareLandingPageBannerProps
       </div>
       <div className='flex items-center gap-2'>
         <Button
+          data-pw='share-landing-page-banner-copy-link'
           type='button'
           variant='outline'
           size='sm'
@@ -72,6 +73,7 @@ export function ShareLandingPageBanner({ username }: ShareLandingPageBannerProps
           size='sm'
         >
           <Link
+            data-pw='share-landing-page-banner-edit'
             href='/my/landing-pages'
             prefetch={false}
           >

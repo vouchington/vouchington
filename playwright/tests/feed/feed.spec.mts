@@ -8,6 +8,7 @@ import {
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
 import { ensureSidebarOpen } from '../../helpers/layout-collapse.mts'
+import { withCleanUser } from '../../helpers/auth.mts'
 
 test.describe('Feed Routes', () => {
   test.use({ storageState: AUTH_STATE })
@@ -37,6 +38,22 @@ test.describe('Feed Routes', () => {
     await navigateTo(page, '/feed/posts/topics')
     await expect(page.getByRole('heading', { level: 1 })).toContainText('My Posts Feed')
     await expect(page.getByTestId('feed-sub-filter-trigger')).toContainText('Topics')
+  })
+
+  test('clean user sees feed discovery actions', async ({ page }) => {
+    await withCleanUser(page)
+    await navigateTo(page, '/feed/posts')
+    await expect(page.getByTestId('feed-post-list-page-any-browse-topics')).toBeVisible()
+    await expect(page.getByTestId('feed-post-list-page-any-find-friends')).toBeVisible()
+
+    await navigateTo(page, '/feed/posts/friends')
+    await expect(page.getByTestId('feed-post-list-page-follow-users-find-friends')).toBeVisible()
+
+    await navigateTo(page, '/feed/posts/topics')
+    await expect(page.getByTestId('feed-post-list-page-follow-topics-browse-topics')).toBeVisible()
+
+    await navigateTo(page, '/feed/podcasts')
+    await expect(page.getByTestId('feed-media-empty-states-action').first()).toBeVisible()
   })
 
   test('/feed/news renders with dropdown filters', async ({ page }) => {

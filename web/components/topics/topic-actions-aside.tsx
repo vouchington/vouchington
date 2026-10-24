@@ -93,6 +93,7 @@ export function TopicActionsAside({
                 asChild
               >
                 <Link
+                  data-pw='topic-actions-aside-write-review'
                   href={`/reviews/create${topicParam}`}
                   prefetch={false}
                 >
@@ -109,6 +110,7 @@ export function TopicActionsAside({
                 asChild
               >
                 <Link
+                  data-pw='topic-actions-aside-share-data-point'
                   href={`/data-points/create${topicParam}`}
                   prefetch={false}
                 >
@@ -124,6 +126,7 @@ export function TopicActionsAside({
               asChild
             >
               <Link
+                data-pw='topic-actions-aside-start-discussion'
                 href={`/discussions/create${topicParam}`}
                 prefetch={false}
               >

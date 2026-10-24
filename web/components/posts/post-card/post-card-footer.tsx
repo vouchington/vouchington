@@ -101,6 +101,7 @@ export function PostCardFooter({
       </Link>
       {post.created_by?.username ? (
         <UserLink
+          data-pw='post-card-footer-user-link'
           user={post.created_by}
           tab={userTabForPostType(post.post_type)}
           className='hover:text-foreground'

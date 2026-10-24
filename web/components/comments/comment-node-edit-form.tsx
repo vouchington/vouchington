@@ -77,6 +77,7 @@ export function CommentNodeEditForm({
             : t('extracted.comments.commentNodeEditForm.save_1509f561')}
         </Button>
         <Button
+          data-pw='comment-node-edit-form-cancel'
           type='button'
           variant='ghost'
           size='sm'

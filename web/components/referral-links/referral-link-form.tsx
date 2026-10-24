@@ -143,6 +143,7 @@ export function ReferralLinkForm({
       </div>
       <div className='flex gap-2'>
         <Button
+          data-pw='referral-link-form-save-link'
           type='submit'
           loading={isPending}
           disabled={isPending || (!existingLink && !url.trim())}
@@ -154,6 +155,7 @@ export function ReferralLinkForm({
         </Button>
         {existingLink && (
           <Button
+            data-pw='referral-link-form-delete'
             type='button'
             variant='destructive'
             disabled={isPending}

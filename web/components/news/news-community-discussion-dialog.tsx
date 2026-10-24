@@ -106,6 +106,7 @@ export function NewsCommunityDiscussionDialog({
         <TurnstileField turnstile={turnstile} />
         <DialogFooter>
           <Button
+            data-pw='news-community-discussion-dialog-start-discussion'
             type='button'
             onClick={onSubmit}
             loading={isSubmitting}

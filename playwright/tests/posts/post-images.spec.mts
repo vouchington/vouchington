@@ -8,6 +8,7 @@ import {
 } from '../../../backend/test-helpers/entities/images.mts'
 import { allowTestPostImageDelivery } from '../../../backend/test-helpers/entities/post-images.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
+import { setPostOpenAIModerationFlaggedOnly } from '../../../backend/test-helpers/index.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
@@ -72,6 +73,28 @@ test.describe('Post Images', () => {
     expect(src).toMatch(/\/images\/[^?]+\?w=\d+/)
   })
 
+  test('offers a retry when moderator exposure state cannot load', async ({ page }) => {
+    const suffix = randomSuffix()
+    const slug = `image-exposure-retry-${suffix}`
+    const postId = await insertTestPost({
+      title: `Image Exposure Retry ${suffix}`,
+      slug,
+      createdById: TEST_USER_ID,
+      markdown: 'Sensitive post with an image.',
+      clearanceStatus: 'in_review',
+    })
+    await setPostOpenAIModerationFlaggedOnly(postId, true)
+    const imageId = await insertTestImage(TEST_USER_ID)
+    await insertTestPostImage({ postId, imageId })
+    await allowTestPostImageDelivery({ postId, imageId })
+    await page.route('**/api/v1/moderation/exposure', route =>
+      route.fulfill({ status: 503, body: '{}' }),
+    )
+
+    await navigateTo(page, `/discussion/${slug}`)
+    await expect(page.getByTestId('post-detail-images-exposure-gate-retry')).toBeVisible()
+  })
+
   test('opens fullscreen lightbox when post detail image is clicked', async ({ page }) => {
     const suffix = randomSuffix()
     const slug = `lightbox-test-${suffix}`
@@ -96,7 +119,7 @@ test.describe('Post Images', () => {
     await expect(page.getByRole('dialog')).toBeHidden()
 
     // Click the image button to open lightbox
-    await page.getByTestId('post-detail-image-button').click()
+    await page.getByTestId('post-detail-images-single-image').click()
 
     // Lightbox dialog should open
     await expect(page.getByRole('dialog')).toBeVisible()
@@ -137,6 +160,7 @@ test.describe('Post Images', () => {
     // Both carousel nav buttons should be rendered
     await expect(page.getByTestId('carousel-previous').first()).toBeVisible()
     await expect(page.getByTestId('carousel-next').first()).toBeVisible()
+    await expect(page.getByTestId('post-detail-images-carousel-image').first()).toBeVisible()
   })
 
   test('compact list view thumbnail navigates to post detail when clicked', async ({ page }) => {

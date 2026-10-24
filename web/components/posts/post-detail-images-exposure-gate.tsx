@@ -28,6 +28,7 @@ export function ExposureGatedPostImages({
         </SensitiveMedia>
         {cooldown.exposureStateIsStale && (
           <Button
+            data-pw='post-detail-images-exposure-gate-retry'
             type='button'
             variant='outline'
             size='sm'

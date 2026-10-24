@@ -74,6 +74,7 @@ test.describe('Comment Edit', () => {
 
     const editForm = page.getByTestId('comment-edit-form')
     await expect(editForm).toBeVisible()
+    await expect(editForm.getByTestId('comment-node-edit-form-cancel')).toBeVisible()
 
     const updatedText = `Updated comment text ${suffix}`
     const textarea = editForm.getByTestId('comment-edit-textarea')

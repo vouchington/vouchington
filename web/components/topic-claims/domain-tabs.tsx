@@ -40,6 +40,7 @@ export function DomainTabs({
   const t = useTranslations()
   const generateBtn = (
     <Button
+      data-pw='domain-tabs-generate-verification-token'
       onClick={onIssueToken}
       loading={loading === 'issue'}
       disabled={loading === 'issue'}
@@ -131,6 +132,7 @@ export function DomainTabs({
           data-pw='evidence-textarea'
         />
         <Button
+          data-pw='domain-tabs-submit-for-review'
           onClick={onManualSubmit}
           loading={loading === 'manual'}
           disabled={loading === 'manual' || !evidence.trim()}

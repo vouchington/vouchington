@@ -2,13 +2,11 @@
  * Feed referral links list page component (Server Component)
  * Fetches referral links from followed/mutual users and renders the feed
  */
-import Link from 'next/link'
 import { getReferralLinksFeed } from '@/lib/api/server/feeds'
 import { FeedTopSection } from './feed-top-section'
+import { FeedReferralLinksEmptyState } from './feed-referral-links-empty-state'
 import { ReferralLinkFeedList } from './referral-link-feed-list'
-import { EmptyState } from '@/components/shared/empty-state'
 import { ListSearchError } from '@/components/shared/list-search-error'
-import { Button } from '@/components/ui/button'
 import { FEED_PAGE_LIMIT, type ReferralLinksFeedRouteConfig } from '@/lib/feed-route-configs'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { getTranslations } from '@/lib/i18n/get-translations'
@@ -33,40 +31,14 @@ export async function FeedReferralLinksListPage({ config }: FeedReferralLinksLis
   const data = hasSearchError ? null : dataResult
 
   const emptyState = (
-    <EmptyState
-      icon='inbox'
+    <FeedReferralLinksEmptyState
       title={t('extracted.feed.feedReferralLinksListPage.noReferralLinksYet_17b1386e')}
       description={t(
         'extracted.feed.feedReferralLinksListPage.followFriendsToSeeTheirReferral_3297ffe2',
       )}
-    >
-      <div className='flex gap-2'>
-        <Button
-          asChild
-          variant='outline'
-          size='default'
-        >
-          <Link
-            href='/my/friend-recommendations'
-            prefetch={false}
-          >
-            {t('extracted.feed.feedReferralLinksListPage.findFriends_d4864039')}
-          </Link>
-        </Button>
-        <Button
-          asChild
-          variant='outline'
-          size='default'
-        >
-          <Link
-            href='/my/referral-links'
-            prefetch={false}
-          >
-            {t('extracted.feed.feedReferralLinksListPage.shareYourLinks_282c0fc6')}
-          </Link>
-        </Button>
-      </div>
-    </EmptyState>
+      findFriendsLabel={t('extracted.feed.feedReferralLinksListPage.findFriends_d4864039')}
+      shareYourLinksLabel={t('extracted.feed.feedReferralLinksListPage.shareYourLinks_282c0fc6')}
+    />
   )
 
   return (

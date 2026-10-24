@@ -16,6 +16,8 @@ test.describe('/feed/referral-links', () => {
     await expect(page.getByTestId('feed-title-dropdown-trigger')).toBeVisible()
     // The seeded test-friend referral link should appear
     await expect(page.getByTestId('referral-link-feed-card').first()).toBeVisible()
+    await expect(page.getByTestId('referral-link-feed-card-user-link').first()).toBeVisible()
+    await expect(page.getByTestId('referral-link-feed-card-open').first()).toBeVisible()
   })
 
   test('sub-filter dropdown switches between Following and Mutual Friends', async ({ page }) => {
@@ -56,6 +58,7 @@ test.describe('/feed/referral-links empty state', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('My Referral Link Feed')
     // Clean user has no follows → empty state; feed card should not appear
     await expect(page.getByTestId('referral-link-feed-card')).toHaveCount(0)
-    await expect(page.getByRole('link', { name: /Find Friends/i })).toBeVisible()
+    await expect(page.getByTestId('feed-referral-links-list-page-find-friends')).toBeVisible()
+    await expect(page.getByTestId('feed-referral-links-list-page-share-your-links')).toBeVisible()
   })
 })

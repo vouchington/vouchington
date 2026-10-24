@@ -143,6 +143,7 @@ export function UserProfileHeader({
                 variant='outline'
               >
                 <Link
+                  data-pw='user-profile-header-admin'
                   href={createUserPathname(encodeURIComponent(user.username ?? user.id), '/admin')}
                   prefetch={false}
                 >
