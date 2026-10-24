@@ -63,6 +63,15 @@ describe('createImageUploadUrl', () => {
     ).rejects.toThrow('Unsupported format: pdf')
   })
 
+  it.each(['text/jpeg', 'application/png', 'image/jpeg/extra'])(
+    'rejects an unaccepted complete media type: %s',
+    async contentType => {
+      await expect(
+        createImageUploadUrl(user, { contentType, contentLength: 1024 }),
+      ).rejects.toMatchObject({ status: 400 })
+    },
+  )
+
   it('should preserve invalid content type message', async () => {
     await expect(
       createImageUploadUrl(user, {

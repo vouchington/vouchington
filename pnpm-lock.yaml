@@ -10191,6 +10191,9 @@ importers:
       '@modules/rss-feed-cover-art':
         specifier: workspace:^
         version: link:../../modules/rss-feed-cover-art
+      '@modules/search-utils':
+        specifier: workspace:^
+        version: link:../../modules/search-utils
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
