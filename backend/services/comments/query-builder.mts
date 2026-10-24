@@ -1,5 +1,6 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { CommentSort, CommentTreeOptions } from '@voucha/types/entities/comment'
+import type { CommentTreeOptions } from './types.mts'
+import type { CommentSort } from '@voucha/types/entities/comment'
 import { clampMaxDepth, detectCommentSort } from '@modules/search-utils'
 
 export default function buildCommentTreeQuery(
