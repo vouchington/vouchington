@@ -42,6 +42,13 @@ CREATE INDEX idx_url_hostname_blocks__domain_blocklist_source_id
   ON url_hostname_blocks (domain_blocklist_source_id)
   WHERE domain_blocklist_source_id IS NOT NULL;
 
+CREATE INDEX idx_url_hostname_blocks__feed_retention
+  ON url_hostname_blocks (lifted_at, id)
+  WHERE lifted_at IS NOT NULL AND domain_blocklist_source_id IS NOT NULL;
+CREATE INDEX idx_url_hostname_blocks__other_retention
+  ON url_hostname_blocks (lifted_at, id)
+  WHERE lifted_at IS NOT NULL AND domain_blocklist_source_id IS NULL;
+
 -- Project active URL blocks in one update per statement. Email blocks never change crawl policy.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_insert()

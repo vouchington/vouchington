@@ -71,6 +71,8 @@ import {
   cleanupRetainedMediaBindings,
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
+import { cleanupOperationalTombstones } from './cleanup-operational-tombstones.mts'
+import type { OperationalTombstoneCleanupResult } from './cleanup-operational-tombstone-types.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -140,6 +142,12 @@ type DataRetentionCleanupOptions = {
     Parameters<typeof cleanupFederationRetention>[0],
     'batchSize' | 'maxBatches'
   >
+  undoneActivityPubLikes?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  staleRemoteActors?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  feedHostnameBlocks?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  otherHostnameBlocks?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  deletedConversations?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  appAttestationKeys?: OptionalRetentionLimits<ExpiryCleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -167,6 +175,12 @@ type DataRetentionCleanupResult = {
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
   federationRetention: FederationRetentionResult
+  undoneActivityPubLikes: OperationalTombstoneCleanupResult
+  staleRemoteActors: OperationalTombstoneCleanupResult
+  feedHostnameBlocks: OperationalTombstoneCleanupResult
+  otherHostnameBlocks: OperationalTombstoneCleanupResult
+  deletedConversations: OperationalTombstoneCleanupResult
+  appAttestationKeys: OperationalTombstoneCleanupResult
 }
 
 export async function runDataRetentionCleanup(
@@ -251,6 +265,30 @@ export async function runDataRetentionCleanup(
     ...limits,
     ...options.federationRetention,
   })
+  const undoneActivityPubLikes = await cleanupOperationalTombstones(
+    'activitypub_post_likes',
+    withLimits(options.undoneActivityPubLikes),
+  )
+  const staleRemoteActors = await cleanupOperationalTombstones(
+    'remote_actors',
+    withLimits(options.staleRemoteActors),
+  )
+  const feedHostnameBlocks = await cleanupOperationalTombstones(
+    'feed_hostname_blocks',
+    withLimits(options.feedHostnameBlocks),
+  )
+  const otherHostnameBlocks = await cleanupOperationalTombstones(
+    'other_hostname_blocks',
+    withLimits(options.otherHostnameBlocks),
+  )
+  const deletedConversations = await cleanupOperationalTombstones(
+    'deleted_conversations',
+    withLimits(options.deletedConversations),
+  )
+  const appAttestationKeys = await cleanupOperationalTombstones(
+    'app_attestation_keys',
+    withLimits(options.appAttestationKeys),
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -290,6 +328,12 @@ export async function runDataRetentionCleanup(
     oldModerationQueueClaims,
     oldModerationMediaReveals,
     federationRetention,
+    undoneActivityPubLikes,
+    staleRemoteActors,
+    feedHostnameBlocks,
+    otherHostnameBlocks,
+    deletedConversations,
+    appAttestationKeys,
   }
 }
 

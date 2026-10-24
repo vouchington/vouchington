@@ -18,6 +18,8 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
     const batchSize = Math.min(1000, count - start)
     const actorValues: unknown[] = []
     const actorRows: string[] = []
+    const identityValues: unknown[] = []
+    const identityRows: string[] = []
     const relationValues: unknown[] = []
     const relationRows: string[] = []
     for (let offset = 0; offset < batchSize; offset++) {
@@ -30,16 +32,18 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
       )
       actorValues.push(
         actorId,
-        actorUri,
         `${actorUri}#main-key`,
         'explain-seed-public-key',
         `${actorUri}/inbox`,
         hostnameId,
       )
-      const actorBase = actorValues.length - 5
+      const actorBase = actorValues.length - 4
       actorRows.push(
-        `($${actorBase}, $${actorBase + 1}, $${actorBase + 2}, $${actorBase + 3}, $${actorBase + 4}, $${actorBase + 5})`,
+        `($${actorBase}, $${actorBase + 1}, $${actorBase + 2}, $${actorBase + 3}, $${actorBase + 4})`,
       )
+      identityValues.push(actorId, actorUri)
+      const identityBase = identityValues.length - 1
+      identityRows.push(`($${identityBase}, $${identityBase + 1})`)
 
       relationValues.push(actorId, targetUserId, targetUserId)
       const relationBase = relationValues.length - 2
@@ -47,8 +51,13 @@ export async function seedRemoteFollowers(count = REMOTE_FOLLOWER_SEED_COUNT): P
     }
 
     await query(
+      `/* seedExplainData */ INSERT INTO remote_actor_identities (id, actor_uri)
+         VALUES ${identityRows.join(', ')} ON CONFLICT DO NOTHING`,
+      identityValues,
+    )
+    await query(
       `/* seedExplainData */ INSERT INTO remote_actors
-           (id, actor_uri, key_id, public_key_pem, inbox_url, hostname_id)
+           (id, key_id, public_key_pem, inbox_url, hostname_id)
          VALUES ${actorRows.join(', ')} ON CONFLICT DO NOTHING`,
       actorValues,
     )

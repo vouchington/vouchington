@@ -36,20 +36,30 @@ async function recordLikeInTransaction(
       'activitypub-like:' || ${postId} || ':' || ${remoteActorId}, 0
     ))
   `)
-  const { rows } = await query<{ id: string }>(sql`/* findActivityPubLikeIdentity */
-    SELECT id FROM activitypub_post_likes WHERE like_activitypub_id = ${likeApId} LIMIT 1
+  const { rows } = await query<{ id: string }>(sql`/* reserveActivityPubLikeIdentity */
+    INSERT INTO activitypub_post_like_activities (activity_id, post_id, remote_actor_identity_id)
+    VALUES (${likeApId}, ${postId}, ${remoteActorId})
+    ON CONFLICT (activity_id) DO NOTHING
+    RETURNING id
   `)
-  if (rows.length > 0) return
+  const activityId = rows[0]?.id
+  // Any existing id, including an undone one or a conflicting actor/target, is inert.
+  if (!activityId) return
 
   // A different live Like id replaces the actor's prior cycle without overwriting its identity.
   await query(sql`/* retireReplacedActivityPubLike */
-    UPDATE activitypub_post_likes SET deleted_at = clock_timestamp()
-    WHERE post_id = ${postId} AND remote_actor_id = ${remoteActorId}
-      AND deleted_at IS NULL
+    WITH retired AS (
+      UPDATE activitypub_post_likes SET deleted_at = clock_timestamp()
+      WHERE post_id = ${postId} AND remote_actor_id = ${remoteActorId}
+        AND deleted_at IS NULL
+      RETURNING id, deleted_at
+    )
+    UPDATE activitypub_post_like_activities activity
+    SET undone_at = retired.deleted_at
+    FROM retired WHERE activity.id = retired.id AND activity.undone_at IS NULL
   `)
   await query(sql`/* insertActivityPubLikeCycle */
-    INSERT INTO activitypub_post_likes (post_id, remote_actor_id, like_activitypub_id)
-    VALUES (${postId}, ${remoteActorId}, ${likeApId})
-    ON CONFLICT (like_activitypub_id) DO NOTHING
+    INSERT INTO activitypub_post_likes (id, post_id, remote_actor_id)
+    VALUES (${activityId}, ${postId}, ${remoteActorId})
   `)
 }

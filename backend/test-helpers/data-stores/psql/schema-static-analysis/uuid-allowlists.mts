@@ -1,5 +1,4 @@
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
-import { FEDERATION_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './federation-retention-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
@@ -7,9 +6,12 @@ import { NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './notific
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
+import { FEDERATION_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './federation-retention-uuid-allowlists.mts'
+import { OPERATIONAL_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './operational-retention-uuid-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   ...FEDERATION_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
+  ...OPERATIONAL_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'user_rss_feed_import_row_discoveries.generation',
     'Opaque per-attempt crawl outcome fence; not a durable relationship.',
@@ -37,18 +39,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'retained_identity_cleanup_cursors.cursor_identity_id',
     'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
-  ],
-  [
-    'payment_operational_cleanup_cursors.cursor_id',
-    'Operational keyset position survives deletion of the swept row; it is not a relationship.',
-  ],
-  [
-    'auth_session_retention_cleanup_cursors.cursor_id',
-    'Keyset scan position survives deletion of the scanned auth, session, or subscription row.',
-  ],
-  [
-    'auth_session_retention_cleanup_cursors.cursor_partition_key',
-    'Subscription partition tie-breaker survives deletion of its user and subscription rows.',
   ],
   [
     'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',

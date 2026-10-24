@@ -6,6 +6,7 @@ import {
 import { verifyAssertionSignature } from './assertion-core.mts'
 import { buildCanonicalRequestString, sha256Hex } from './request-canonical.mts'
 import { checkAndStoreRequestNonce } from './request-nonce.mts'
+import { markAttestationKeyUsed } from './store.mts'
 
 export const ATTESTED_BODY_LIMIT = '1mb'
 const TIMESTAMP_TOLERANCE_SECONDS = 300
@@ -81,4 +82,5 @@ export async function verifyRequestSignature(params: VerifyRequestSignatureParam
     payload: canonical,
     signCountFloor: -1,
   })
+  await markAttestationKeyUsed(Buffer.from(keyId, 'base64'))
 }

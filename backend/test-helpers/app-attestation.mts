@@ -80,6 +80,22 @@ export async function insertAttestationKey(params: {
   }
 }
 
+export async function setAppAttestationKeyLastUsedAtForTest(
+  keyId: Buffer,
+  lastUsedAt: Date,
+): Promise<void> {
+  await write(sql`/* setAppAttestationKeyLastUsedAtForTest */
+    UPDATE app_attestation_keys SET last_used_at = ${lastUsedAt} WHERE key_id = ${keyId}`)
+}
+
+export async function getAppAttestationKeyLastUsedAtForTest(keyId: Buffer): Promise<Date | null> {
+  const { rows } = await write<{
+    last_used_at: Date | null
+  }>(sql`/* getAppAttestationKeyLastUsedAtForTest */
+    SELECT last_used_at FROM app_attestation_keys WHERE key_id = ${keyId}`)
+  return rows[0]?.last_used_at ?? null
+}
+
 export type AppAttestAssertionHeaders = {
   'x-app-attest-key-id': string
   'x-app-attest-assertion': string

@@ -8,8 +8,14 @@ import {
   createAppAttestRequestHeaders,
   type AppAttestRequestHeaders,
 } from '@voucha/test-helpers/app-attestation-fabricator'
+import {
+  getAppAttestationKeyLastUsedAtForTest,
+  readTestDatabaseTimestamp,
+  setAppAttestationKeyLastUsedAtForTest,
+} from '@voucha/test-helpers'
 import { appAttestationConfig } from './config.mts'
 import { verifyRequestSignature } from './request-signature.mts'
+import { markAttestationKeyUsed } from './store.mts'
 
 const NOW_SECONDS = 1_700_000_000
 
@@ -60,9 +66,29 @@ describe('verifyRequestSignature', () => {
       body,
       timestamp: NOW_SECONDS,
     })
+    const keyId = Buffer.from(h['x-app-attest-key-id'], 'base64')
+    const oldUse = new Date('2020-01-01T00:00:00.000Z')
+    await setAppAttestationKeyLastUsedAtForTest(keyId, oldUse)
     await expect(
       verifyRequestSignature(headersToParams(h, did, method, path, body)),
     ).resolves.toBeUndefined()
+    expect((await getAppAttestationKeyLastUsedAtForTest(keyId))?.getTime()).toBeGreaterThan(
+      oldUse.getTime(),
+    )
+  })
+
+  it('coalesces another successful key use inside the daily touch window', async () => {
+    const did = randomUUID()
+    const h = await createAppAttestRequestHeaders({
+      did,
+      method: 'GET',
+      path: '/api/v1/session',
+    })
+    const keyId = Buffer.from(h['x-app-attest-key-id'], 'base64')
+    const recentUse = new Date(await readTestDatabaseTimestamp())
+    await setAppAttestationKeyLastUsedAtForTest(keyId, recentUse)
+    await markAttestationKeyUsed(keyId)
+    expect(await getAppAttestationKeyLastUsedAtForTest(keyId)).toEqual(recentUse)
   })
 
   it('rejects when timestamp is too old', async () => {
@@ -132,9 +158,13 @@ describe('verifyRequestSignature', () => {
       method: 'GET',
       path: '/api/v1/session',
     })
+    const keyId = Buffer.from(h['x-app-attest-key-id'], 'base64')
+    const oldUse = new Date('2020-01-01T00:00:00.000Z')
+    await setAppAttestationKeyLastUsedAtForTest(keyId, oldUse)
     await expect(verifyRequestSignature(headersToParams(h, callerDid))).rejects.toMatchObject({
       code: 'ATTESTATION_REJECTED',
     })
+    expect(await getAppAttestationKeyLastUsedAtForTest(keyId)).toEqual(oldUse)
   })
 
   it('accepts development keys when development attestation is allowed', async () => {

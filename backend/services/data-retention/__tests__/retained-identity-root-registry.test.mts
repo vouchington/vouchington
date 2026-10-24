@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest'
+import { v7 } from 'uuid'
+import {
+  deleteOperationalRetainedReplayAnchorsForTest,
+  hasTestRetainedIdentityRoot,
+  insertOperationalRetainedReplayAnchorsForTest,
+  insertTestRetainedIdentityRoot,
+} from '@voucha/test-helpers'
 import {
   readTestRetainedIdentityForeignKeys,
   type RetainedIdentityForeignKey,
 } from '@voucha/test-helpers/entities/retained-identity-foreign-keys'
-import { ROOT_FAMILIES } from '../cleanup-retained-identities.mts'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { cleanupRetainedIdentityRoots, ROOT_FAMILIES } from '../cleanup-retained-identities.mts'
 
 type Registry = Record<string, { table: string; references: readonly (readonly string[])[] }>
 
@@ -59,5 +67,27 @@ describe('retained identity root registry', () => {
     expect(unregisteredRetainedForeignKeys(foreignKeys, withoutClearance)).toEqual([
       'post_clearance_changes.changed_by_id -> retained_user_identities',
     ])
+  })
+
+  it('keeps deleted post and user roots while compact Like and Follow replay anchors remain', async () => {
+    const postId = v7()
+    const userId = v7()
+    const anchors = await withCommittedPostgresTransactionForTest(async query => {
+      await insertTestRetainedIdentityRoot('post', postId, { query })
+      await insertTestRetainedIdentityRoot('user', userId, { query })
+      return insertOperationalRetainedReplayAnchorsForTest(query, postId, userId)
+    })
+    try {
+      await cleanupRetainedIdentityRoots(1_000, { post: [postId], user: [userId] })
+      expect(await hasTestRetainedIdentityRoot('post', postId)).toBe(true)
+      expect(await hasTestRetainedIdentityRoot('user', userId)).toBe(true)
+    } finally {
+      await withCommittedPostgresTransactionForTest(query =>
+        deleteOperationalRetainedReplayAnchorsForTest(query, anchors),
+      )
+      await cleanupRetainedIdentityRoots(1_000, { post: [postId], user: [userId] })
+    }
+    expect(await hasTestRetainedIdentityRoot('post', postId)).toBe(false)
+    expect(await hasTestRetainedIdentityRoot('user', userId)).toBe(false)
   })
 })

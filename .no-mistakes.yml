@@ -5017,8 +5017,8 @@ rules:
           reason: 'Decision 13 allowed URL group: HTTPS URL of the Client ID Metadata Document for a client identified by URL; NULL for clients registered through dynamic client registration.'
         - object: 'column:podcast_shows.cover_art_url'
           reason: 'Decision 13 allowed URL group: Raw <itunes:image href> value. Proxied to /sideload/ at API-response time.'
-        - object: 'column:remote_actors.actor_uri'
-          reason: "Decision 13 allowed URL group: The remote actor's stable ActivityPub id (e.g. https://remote.example/users/alice)."
+        - object: 'column:remote_actor_identities.actor_uri'
+          reason: "Decision 13 allowed URL group: The remote actor's stable ActivityPub id is retained for exact replay after its live cache expires; enrolling unknown remote hosts in crawlable urls would change federation behavior."
         - object: 'column:remote_actors.inbox_url'
           reason: "Decision 13 allowed URL group: The remote actor's inbox URL for outbound deliveries addressed to this actor specifically."
         - object: 'column:remote_actors.shared_inbox_url'

@@ -1334,6 +1334,15 @@
 
 - `code`
 
+## `operational_tombstone_retention_names`
+
+- `activitypub_post_likes`
+- `remote_actors`
+- `feed_hostname_blocks`
+- `other_hostname_blocks`
+- `deleted_conversations`
+- `app_attestation_keys`
+
 ## `passkey_device_types`
 
 - `singleDevice`

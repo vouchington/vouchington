@@ -4,10 +4,8 @@ import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
 
 function retainedRelationReferences(subjectType: string): [string, string][] {
-  return electedRelationMetadata.flatMap(metadata =>
-    metadata.subject_type === subjectType
-      ? [[`retained_${metadata.table_name}`, 'subject_id']]
-      : [],
+  return electedRelationMetadata.flatMap(({ subject_type, table_name }) =>
+    subject_type === subjectType ? [[`retained_${table_name}`, 'subject_id']] : [],
   )
 }
 
@@ -44,6 +42,7 @@ export const ROOT_FAMILIES = {
       ['review_dispute_lifecycle_changes', 'changed_by_id'],
       ['rss_feed_setting_changes', 'changed_by_id'],
       ['mcp_call_audit_events', 'actor_user_id'],
+      ['activitypub_remote_follow_activities', 'target_user_id'],
       ['user_legal_preservation_holds', 'account_user_id'],
       ['user_legal_preservation_holds', 'placed_by_id'],
       ['user_legal_preservation_holds', 'released_by_id'],
@@ -89,6 +88,7 @@ export const ROOT_FAMILIES = {
       ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
+      ['activitypub_post_like_activities', 'post_id'],
       ...retainedRelationReferences('post'),
     ],
   },

@@ -8,7 +8,6 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'images',
   'user_lists',
   'podcast_shows',
-  'remote_actors',
   'rss_category_identities',
   'rss_feeds',
   'topics',
@@ -52,7 +51,6 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'vote_integrity_flags',
 ] as const
 const INDEFINITE_EDGE_TABLES = [
-  'activitypub_post_likes',
   'activitypub_remote_follow_activities',
   'bluesky_follow_records',
   'community_list_posts',
@@ -103,6 +101,22 @@ export function buildUnboundedUnpartitionedTables(
       },
     ],
     entries: [
+      [
+        'remote_actor_identities',
+        'Exact external actor URI replay identities survive signing-key cache eviction; one identity per distinct remote actor URI.',
+      ],
+      [
+        'activitypub_post_like_activities',
+        'Exact Like activity IDs and Undo scope survive inbox dedup and payload retention; one identity per distinct external Like ID.',
+      ],
+      [
+        'activitypub_post_likes',
+        'Active remote Likes grow with live posts; bounded retention deletes undone tally payloads after 30 days.',
+      ],
+      [
+        'remote_actors',
+        'Live signing-key caches remain while follow, Like, or inbox work references them; a capped sweep removes unreferenced cache rows after 90 days.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []

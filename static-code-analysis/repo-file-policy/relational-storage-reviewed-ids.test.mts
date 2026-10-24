@@ -43,6 +43,19 @@ function snapshot(tableName: string, columns: Record<string, ReturnType<typeof c
 const noFreshness = { enforceCatalogFreshness: false }
 
 describe('reviewed token and audit snapshot identifiers', () => {
+  it('accepts only the reviewed operational deletion-stable cursor', () => {
+    const name = 'cursor_id'
+    expect(
+      checkRelationalStorage(
+        snapshot('operational_tombstone_retention_cursors', { [name]: column('uuid') }),
+        noFreshness,
+      ),
+    ).toEqual([])
+    expect(
+      checkRelationalStorage(snapshot('new_records', { [name]: column('uuid') }), noFreshness),
+    ).toEqual([expect.stringContaining(`new_records.${name}`)])
+  })
+
   it('accepts a reviewed token and a reviewed audit snapshot id without a foreign key', () => {
     expect(
       checkRelationalStorage(snapshot('post_votes', { device_id: column('uuid') }), noFreshness),
