@@ -115,6 +115,7 @@ export function OAuthAppRow({ app, onRevoke, onRotate, onUpdate }: OAuthAppRowPr
             {t('extracted.oauthAppsManager.oauthAppRow.confirm_eebdd24a')}
           </Button>
           <Button
+            data-pw='oauth-app-row-cancel'
             size='sm'
             variant='outline'
             disabled={busy}

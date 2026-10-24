@@ -21,6 +21,7 @@ export function RssBookmarkTypeFilter({ listType }: { listType: 'saved' | 'hidde
         const isActive = pathname.startsWith(tab.hrefBase)
         return (
           <Button
+            data-pw='rss-bookmark-type-filter-tab'
             key={tab.hrefBase}
             variant={isActive ? 'default' : 'outline'}
             size='sm'

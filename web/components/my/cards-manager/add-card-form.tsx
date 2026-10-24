@@ -42,6 +42,7 @@ export function AddCardForm({
         disabled={loading}
       />
       <Button
+        data-pw='add-card-form-add'
         type='submit'
         size='sm'
         className='sr-only'

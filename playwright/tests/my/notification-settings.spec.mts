@@ -23,4 +23,18 @@ test.describe('My Notification Settings', () => {
     await expect(page.getByTestId('moderation-email-day-6')).toHaveCount(0)
     await expect(page.getByTestId('moderation-email-day-7')).toHaveCount(0)
   })
+
+  test('offers a retry when the settings fail to load', async ({ page }) => {
+    await page.route('**/api/v1/my/email-preferences', route => {
+      if (route.request().method() !== 'GET') return route.continue()
+      return route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Injected failure' }),
+      })
+    })
+    await navigateTo(page, '/my/notification-settings')
+
+    await expect(page.getByTestId('notification-settings-form-retry')).toBeVisible()
+  })
 })

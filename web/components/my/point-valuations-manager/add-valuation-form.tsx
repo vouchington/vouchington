@@ -101,6 +101,7 @@ export function AddValuationForm({
       </div>
       <div className='flex gap-2'>
         <Button
+          data-pw='add-valuation-form-add'
           size='sm'
           type='submit'
           loading={loading}

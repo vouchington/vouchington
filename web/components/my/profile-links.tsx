@@ -157,6 +157,7 @@ export function ProfileLinks({ initialLinks }: Props) {
         />
       ) : (
         <Button
+          data-pw='profile-links-add-link'
           variant='outline'
           onClick={() => setShowAddForm(true)}
         >

@@ -57,6 +57,7 @@ export function StatusSummary({
               {t('extracted.rewardsProgramStatusesManager.statusSummary.remove_9fe2f243')}
             </span>
             <Button
+              data-pw='status-summary-confirm'
               size='sm'
               variant='destructive'
               onClick={onConfirmDelete}
@@ -65,6 +66,7 @@ export function StatusSummary({
               {t('extracted.rewardsProgramStatusesManager.statusSummary.confirm_eebdd24a')}
             </Button>
             <Button
+              data-pw='status-summary-cancel'
               size='sm'
               variant='outline'
               onClick={onCancelDelete}
@@ -84,6 +86,7 @@ export function StatusSummary({
               {t('extracted.rewardsProgramStatusesManager.statusSummary.edit_464c4ffd')}
             </Button>
             <Button
+              data-pw='status-summary-remove'
               size='sm'
               variant='outline'
               onClick={onStartDelete}

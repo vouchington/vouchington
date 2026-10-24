@@ -118,6 +118,7 @@ function ItemActions({
   return (
     <div className='flex gap-1'>
       <Button
+        data-pw='draft-items-list-move-item-up'
         type='button'
         variant='ghost'
         size='sm'
@@ -129,6 +130,7 @@ function ItemActions({
         {t('extracted.landingPagesManager.draftItemsList.text_d2e966bf')}
       </Button>
       <Button
+        data-pw='draft-items-list-move-item-down'
         type='button'
         variant='ghost'
         size='sm'
@@ -140,6 +142,7 @@ function ItemActions({
         {t('extracted.landingPagesManager.draftItemsList.text_07a2abcd')}
       </Button>
       <Button
+        data-pw='draft-items-list-remove'
         type='button'
         variant='ghost'
         size='sm'

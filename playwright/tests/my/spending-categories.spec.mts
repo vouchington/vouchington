@@ -62,6 +62,16 @@ test.describe('My Spending Categories', () => {
     await assertManagerErrorToast(page, 'Please enter a valid amount')
   })
 
+  test('shows edit cancel, remove confirmation and add submit controls', async ({ page }) => {
+    await expect(page.getByTestId('add-category-form-add')).toBeAttached()
+    await page.getByTestId('spending-category-edit-button').first().click()
+    await expect(page.getByTestId('category-list-cancel')).toBeVisible()
+    await page.getByTestId('category-list-cancel').click()
+    await page.getByTestId('spending-category-remove-button').first().click()
+    await expect(page.getByTestId('category-summary-confirm')).toBeVisible()
+    await expect(page.getByTestId('category-summary-cancel')).toBeVisible()
+  })
+
   test('responsive layout on mobile', async ({ page }) => {
     await useIphoneSeViewport(page)
     await navigateTo(page, '/my/spending-categories')

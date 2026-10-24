@@ -97,6 +97,7 @@ test.describe('Topics Import / Export — /my/topics/import-export', () => {
     await navigateTo(page, '/my/topics/import-export')
     await expect(page.getByTestId('settings-page-header')).toBeVisible()
     await expect(page.getByTestId('import-urls-button')).toBeVisible()
+    await expect(page.getByTestId('import-export-manager-export-topics-json')).toBeVisible()
   })
 
   test('does not show source-type dropdown', async ({ page }) => {

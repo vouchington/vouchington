@@ -72,6 +72,7 @@ export function ReferralLinkActions({
   return (
     <div className='flex shrink-0 flex-wrap gap-2'>
       <Button
+        data-pw='referral-link-actions-edit-label'
         size='sm'
         variant='outline'
         onClick={() => {
@@ -82,6 +83,7 @@ export function ReferralLinkActions({
         {t('extracted.referralLinksManager.referralLinkActions.editLabel_6756cc16')}
       </Button>
       <Button
+        data-pw='referral-link-actions-deactivate'
         size='sm'
         variant='outline'
         onClick={() => onToggleActive(link)}
@@ -102,6 +104,7 @@ export function ReferralLinkActions({
           }
         >
           <Button
+            data-pw='referral-link-actions-unfurl'
             size='sm'
             variant='outline'
             onClick={() => onUnfurl(link)}
@@ -117,6 +120,7 @@ export function ReferralLinkActions({
             {t('extracted.referralLinksManager.referralLinkActions.remove_9fe2f243')}
           </span>
           <Button
+            data-pw='referral-link-actions-confirm'
             size='sm'
             variant='destructive'
             onClick={() => onDelete(link.id)}
@@ -125,6 +129,7 @@ export function ReferralLinkActions({
             {t('extracted.referralLinksManager.referralLinkActions.confirm_eebdd24a')}
           </Button>
           <Button
+            data-pw='referral-link-actions-cancel'
             size='sm'
             variant='outline'
             onClick={() => setConfirmingDeleteId(null)}
@@ -134,6 +139,7 @@ export function ReferralLinkActions({
         </>
       ) : (
         <Button
+          data-pw='referral-link-actions-delete'
           size='sm'
           variant='outline'
           onClick={() => setConfirmingDeleteId(link.id)}

@@ -128,6 +128,7 @@ export function FriendRecommendationsList({
             const actions = (
               <ButtonGroup>
                 <Button
+                  data-pw='friend-recommendations-list-follow'
                   size='touchSm'
                   variant='outline'
                   onClick={() => handleFollow(recommendation.id)}
@@ -136,6 +137,7 @@ export function FriendRecommendationsList({
                   {t('extracted.my.friendRecommendationsList.follow_641d1ef6')}
                 </Button>
                 <Button
+                  data-pw='friend-recommendations-list-dismiss'
                   size='touchSm'
                   variant='outline'
                   onClick={() => handleDismiss(recommendation.id)}

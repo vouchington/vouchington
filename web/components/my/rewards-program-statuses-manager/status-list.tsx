@@ -133,6 +133,7 @@ function StatusEditForm({
       </div>
       <div className='flex gap-2'>
         <Button
+          data-pw='status-list-save'
           size='sm'
           type='submit'
           loading={loading}
@@ -141,6 +142,7 @@ function StatusEditForm({
           {t('extracted.rewardsProgramStatusesManager.statusList.save_1509f561')}
         </Button>
         <Button
+          data-pw='status-list-cancel'
           size='sm'
           type='button'
           variant='outline'
