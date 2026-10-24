@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
-import { getRecentlyViewedIds } from '@services/recently-viewed'
+import { searchRecentlyViewed } from '@services/recently-viewed'
 import { v7 } from 'uuid'
 
 describe('POST /api/v1/rss-feeds/:rssFeedId/views', () => {
@@ -39,7 +39,7 @@ describe('POST /api/v1/rss-feeds/:rssFeedId/views', () => {
     const res = await request.post(`/api/v1/rss-feeds/${rssFeedId}/views`).expect(200)
 
     expect(res.body.ok).toBe(true)
-    const viewed = await getRecentlyViewedIds(sid, null, 'rss_feed')
+    const viewed = await searchRecentlyViewed('rss_feed', sid, null)
     expect(viewed).toContain(rssFeedId)
   })
 
@@ -77,7 +77,7 @@ describe('POST /api/v1/rss-feeds/:rssFeedId/views', () => {
 
     await secondRequest.post(`/api/v1/rss-feeds/${rssFeedId}/views`).expect(200)
 
-    const viewed = await getRecentlyViewedIds(secondSession.sid, null, 'rss_feed')
+    const viewed = await searchRecentlyViewed('rss_feed', secondSession.sid, null)
     expect(viewed).toContain(rssFeedId)
   })
 
@@ -102,7 +102,7 @@ describe('POST /api/v1/rss-feeds/:rssFeedId/views', () => {
       .expect(200)
 
     expect(res.body.ok).toBe(true)
-    const viewed = await getRecentlyViewedIds(sid, null, 'rss_feed')
+    const viewed = await searchRecentlyViewed('rss_feed', sid, null)
     expect(viewed).not.toContain(rssFeedId)
   })
 

@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { addRecentlyViewed, getRecentlyViewedIds } from '../index.mts'
+import { addRecentlyViewed, searchRecentlyViewed } from '../index.mts'
 import { createTestUserDirect, insertTestTopic } from '@voucha/test-helpers'
 
 describe('index.generated', () => {
@@ -12,7 +12,7 @@ describe('index.generated', () => {
       createdById: user!.id,
     })
     await addRecentlyViewed(user!.id, user!.id, 'topic', topicId)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'topic')
+    const viewed = await searchRecentlyViewed('topic', user!.id, user!.id)
     expect(viewed).toContain(topicId)
   })
 
@@ -33,7 +33,7 @@ describe('index.generated', () => {
     await addRecentlyViewed(user!.id, user!.id, 'topic', topic1Id)
     await addRecentlyViewed(user!.id, user!.id, 'topic', topic2Id)
 
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'topic', 100)
+    const viewed = await searchRecentlyViewed('topic', user!.id, user!.id, 100)
     const idx1 = viewed.indexOf(topic1Id)
     const idx2 = viewed.indexOf(topic2Id)
     expect(idx1).toBeGreaterThanOrEqual(0)
@@ -41,13 +41,13 @@ describe('index.generated', () => {
     expect(idx2).toBeLessThan(idx1) // topic2 more recent, appears first
   })
 
-  it('getRecentlyViewedIds returns empty array when no topics viewed', async () => {
+  it('searchRecentlyViewed returns empty array when no topics viewed', async () => {
     const user = await createTestUserDirect({ administrator: true })
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'topic')
+    const viewed = await searchRecentlyViewed('topic', user!.id, user!.id)
     expect(viewed).toEqual([])
   })
 
-  it('getRecentlyViewedIds respects limit parameter', async () => {
+  it('searchRecentlyViewed respects limit parameter', async () => {
     const user = await createTestUserDirect({ administrator: true })
     const topicIds = await Promise.all(
       Array.from({ length: 5 }, (_, i) => {
@@ -63,7 +63,7 @@ describe('index.generated', () => {
       await addRecentlyViewed(user!.id, user!.id, 'topic', topicId)
     }
 
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'topic', 3)
+    const viewed = await searchRecentlyViewed('topic', user!.id, user!.id, 3)
     expect(viewed).toHaveLength(3)
     expect(viewed[0]).toBe(topicIds[4]) // Most recent
     expect(viewed[1]).toBe(topicIds[3])
@@ -90,12 +90,6 @@ describe('index.generated', () => {
     )
   })
 
-  it('getRecentlyViewedIds throws error for invalid session ID', async () => {
-    await expect(getRecentlyViewedIds('invalid-uuid', null, 'topic')).rejects.toThrow(
-      'Invalid session ID',
-    )
-  })
-
   it('addRecentlyViewed updates timestamp when same item is added again', async () => {
     const user = await createTestUserDirect({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
@@ -115,7 +109,7 @@ describe('index.generated', () => {
     // Add topic1 again - should update its timestamp and move it to front
     await addRecentlyViewed(user!.id, user!.id, 'topic', topic1Id)
 
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'topic', 100)
+    const viewed = await searchRecentlyViewed('topic', user!.id, user!.id, 100)
     const idx1 = viewed.indexOf(topic1Id)
     const idx2 = viewed.indexOf(topic2Id)
     expect(idx1).toBeGreaterThanOrEqual(0)

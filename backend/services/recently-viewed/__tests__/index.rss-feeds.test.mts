@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { addRecentlyViewed, getRecentlyViewedIds } from '../index.mts'
+import { addRecentlyViewed, searchRecentlyViewed } from '../index.mts'
 import { createTestTopic, createTestUser, insertTestRssFeed } from '@voucha/test-helpers'
 
 describe('index.rss-feeds', () => {
@@ -17,7 +17,7 @@ describe('index.rss-feeds', () => {
       title: `Test Feed ${random}`,
     })
     await addRecentlyViewed(user!.id, user!.id, 'rss_feed', rssFeedId)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'rss_feed')
+    const viewed = await searchRecentlyViewed('rss_feed', user!.id, user!.id)
     expect(viewed).toContain(rssFeedId)
   })
 
@@ -46,7 +46,7 @@ describe('index.rss-feeds', () => {
     })
     await addRecentlyViewed(user!.id, user!.id, 'rss_feed', rssFeed1Id)
     await addRecentlyViewed(user!.id, user!.id, 'rss_feed', rssFeed2Id)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'rss_feed', 100)
+    const viewed = await searchRecentlyViewed('rss_feed', user!.id, user!.id, 100)
     const idx1 = viewed.indexOf(rssFeed1Id)
     const idx2 = viewed.indexOf(rssFeed2Id)
     expect(idx1).toBeGreaterThanOrEqual(0)
@@ -54,9 +54,9 @@ describe('index.rss-feeds', () => {
     expect(idx2).toBeLessThan(idx1) // rssFeed2 more recent, appears first
   })
 
-  it('getRecentlyViewedIds returns empty array when no rss_feeds viewed', async () => {
+  it('searchRecentlyViewed returns empty array when no rss_feeds viewed', async () => {
     const user = await createTestUser({ administrator: true })
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'rss_feed')
+    const viewed = await searchRecentlyViewed('rss_feed', user!.id, user!.id)
     expect(viewed).toEqual([])
   })
 })
