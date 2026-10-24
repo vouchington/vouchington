@@ -12,19 +12,11 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertSystemUser } from '@services/users/system-users'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 
 let testUser: PrivateUser
-
-const projectionDependencies = {
-  dispatchStoryPostRelationEffects: async () => {},
-  enqueueOnPostCreated: () => Promise.resolve(),
-  enqueueStoryPostAgent: async () => {},
-  enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-  invalidateStories: async () => {},
-}
 
 describe('story post RSS URL revisions', () => {
   beforeAll(async () => {
@@ -54,7 +46,8 @@ describe('story post RSS URL revisions', () => {
       setTestItemStoryId(revisionItem.id, story.id),
       setTestItemStoryId(companionItem.id, story.id),
     ])
-    const { post } = await createStoryPost(story.id, testUser, {}, projectionDependencies)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    const { post } = prepared.response
     await drainProjection(post.id)
 
     const original = await getRssFeedItemById(revisionItem.id)
@@ -100,7 +93,8 @@ describe('story post RSS URL revisions', () => {
       setTestItemStoryId(revisionItem.id, story.id),
       setTestItemStoryId(companionItem.id, story.id),
     ])
-    const { post } = await createStoryPost(story.id, testUser, {}, projectionDependencies)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    const { post } = prepared.response
     await drainProjection(post.id)
     const original = await getRssFeedItemById(revisionItem.id)
     const companion = await getRssFeedItemById(companionItem.id)

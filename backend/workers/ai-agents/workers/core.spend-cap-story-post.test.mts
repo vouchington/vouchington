@@ -11,7 +11,7 @@ import {
 import { loadServiceModelSelection, type DailyAiCostTotal } from '@services/ai-usage'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '@services/stories/story-posts'
+import { prepareStoryPost } from '@services/stories/story-posts'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData, StoryPostJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
@@ -98,9 +98,11 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
 
   it('does not defer a non-force retry once a summary already exists, during a breach', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser, {
+    const prepared = await prepareStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already set.',
     })
+    await prepared.finalize()
+    const result = prepared.response
 
     const job = mockJob(result.post.id)
     const processAIAgent = vi
@@ -124,7 +126,9 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
 
   it('defers an eligible (would call OpenAI) unsummarized post during a breach', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
 
     const job = mockJob(result.post.id)
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()
@@ -154,7 +158,9 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
 
   it('replays a reserved result for an unsummarized post despite a daily cap breach', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
     const provider = makeAgentModelCaller({
       title: 'Receipt title',
       ai_summary_markdown: 'Receipt summary.',
@@ -187,9 +193,11 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
 
   it('defers a forced retry even once a summary already exists, during a breach', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser, {
+    const prepared = await prepareStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already set.',
     })
+    await prepared.finalize()
+    const result = prepared.response
 
     const job = mockJob(result.post.id, true)
     const processAIAgent = vi.fn<(job: Job<AIAgentJobData>) => Promise<unknown>>()

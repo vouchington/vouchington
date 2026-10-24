@@ -15,7 +15,7 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import type { PrivateUser } from '@services/users/types'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 
@@ -44,18 +44,8 @@ describe('story post related URL projection', () => {
         urlId: url!.id,
         count: itemCount,
       })
-      const { post } = await createStoryPost(
-        story.id,
-        testUser,
-        {},
-        {
-          dispatchStoryPostRelationEffects: async () => {},
-          enqueueOnPostCreated: () => Promise.resolve(),
-          enqueueStoryPostAgent: async () => {},
-          enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-          invalidateStories: async () => {},
-        },
-      )
+      const prepared = await prepareStoryPost(story.id, testUser)
+      const { post } = prepared.response
 
       let processed = 0
       let maxPageSize = 0
@@ -103,18 +93,8 @@ describe('story post related URL projection', () => {
       urlId: initialUrl!.id,
       count: 2,
     })
-    const { post } = await createStoryPost(
-      story.id,
-      testUser,
-      {},
-      {
-        dispatchStoryPostRelationEffects: async () => {},
-        enqueueOnPostCreated: () => Promise.resolve(),
-        enqueueStoryPostAgent: async () => {},
-        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-        invalidateStories: async () => {},
-      },
-    )
+    const prepared = await prepareStoryPost(story.id, testUser)
+    const { post } = prepared.response
     await insertTestStoryRssFeedItemsBatch({
       storyId: story.id,
       urlId: laterUrl!.id,
@@ -154,18 +134,8 @@ describe('story post related URL projection', () => {
       insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: firstUrl.id, count: 2 }),
       insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: secondUrl.id, count: 2 }),
     ])
-    const { post } = await createStoryPost(
-      story.id,
-      testUser,
-      {},
-      {
-        dispatchStoryPostRelationEffects: async () => {},
-        enqueueOnPostCreated: () => Promise.resolve(),
-        enqueueStoryPostAgent: async () => {},
-        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-        invalidateStories: async () => {},
-      },
-    )
+    const prepared = await prepareStoryPost(story.id, testUser)
+    const { post } = prepared.response
     const relatedUrl = getEntityRelationMetadataOrThrow({
       subjectType: 'post',
       predicate: 'related',
@@ -256,18 +226,8 @@ async function createProjectablePost(label: string) {
   )
   if (!url) throw new Error('Expected a public projection test URL')
   await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: url.id, count: 2 })
-  const { post } = await createStoryPost(
-    story.id,
-    testUser,
-    {},
-    {
-      dispatchStoryPostRelationEffects: async () => {},
-      enqueueOnPostCreated: () => Promise.resolve(),
-      enqueueStoryPostAgent: async () => {},
-      enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-      invalidateStories: async () => {},
-    },
-  )
+  const prepared = await prepareStoryPost(story.id, testUser)
+  const { post } = prepared.response
   return { post, story }
 }
 

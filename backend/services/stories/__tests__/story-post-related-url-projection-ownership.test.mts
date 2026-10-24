@@ -9,7 +9,7 @@ import {
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 
@@ -28,18 +28,8 @@ describe('story post related URL projection ownership', () => {
     ])
     if (!user || !sourceUrl || !manualUrl) throw new Error('Expected projection test fixtures')
     await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: sourceUrl.id, count: 2 })
-    const { post } = await createStoryPost(
-      story.id,
-      user,
-      {},
-      {
-        dispatchStoryPostRelationEffects: async () => {},
-        enqueueOnPostCreated: () => Promise.resolve(),
-        enqueueStoryPostAgent: async () => {},
-        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-        invalidateStories: async () => {},
-      },
-    )
+    const prepared = await prepareStoryPost(story.id, user)
+    const { post } = prepared.response
     await drainProjection(post.id)
     await refreshStoryPostForStory(story.id)
     const relatedUrl = getEntityRelationMetadataOrThrow({

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { replayClusteredStory } from '../cluster-retry.mts'
 import { completeStoryClusteringRun } from '../clustering/completion.mts'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import type { StoryPostRefreshResult } from '../refresh-story-post.mts'
 import {
   addCategoryToRssFeedItem,
@@ -92,7 +92,9 @@ describe('story clustering retry', () => {
     const currentTopic = await createTestTopic()
 
     await addCategoryToRssFeedItem(priorItemId, priorTopic.id)
-    const { post } = await createStoryPost(story.id, user)
+    const prepared = await prepareStoryPost(story.id, user)
+    await prepared.finalize()
+    const { post } = prepared.response
     await settleStoryPostTopicVoteCapture(post.id, priorTopic.id)
     const initialWork = await getTestPostPublicationDirtyWorkForScope({
       type: 'post',

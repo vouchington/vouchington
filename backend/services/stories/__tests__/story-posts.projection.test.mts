@@ -23,7 +23,7 @@ import {
 } from '@services/elections-votes/entity-relation'
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
 import { getPrivateUserByAny } from '@services/users'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -75,12 +75,14 @@ describe('story post projection', () => {
     )
     await addCategoryToRssFeedItem(itemIds[0]!, topic.id)
 
-    const result = await createStoryPost(
+    const prepared = await prepareStoryPost(
       story.id,
       testUser,
       {},
       { enqueueOnPostCreated: () => Promise.resolve() },
     )
+    await prepared.finalize()
+    const result = prepared.response
     await drainStoryPostRelatedUrlProjection(result.post.id)
     const [relation] = (await getEntityRelation(
       'relation__post__category__topic',
@@ -134,7 +136,7 @@ describe('story post projection', () => {
     const reportedErrors: Error[] = []
     const effects: string[] = []
 
-    const result = await createStoryPost(
+    const prepared = await prepareStoryPost(
       story.id,
       testUser,
       {},
@@ -157,6 +159,8 @@ describe('story post projection', () => {
         },
       },
     )
+    await prepared.finalize()
+    const result = prepared.response
 
     expect(Object.keys(result).toSorted()).toEqual(['post', 'postStory', 'story'])
     expect(reportedErrors).toEqual([dispatchError])

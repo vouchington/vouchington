@@ -13,7 +13,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '@services/stories/story-posts'
+import { prepareStoryPost } from '@services/stories/story-posts'
 import { getStoryItemSummaries } from '@services/stories/get'
 import { loadServiceModelSelection, spendCapConfig } from '@services/ai-usage'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -46,7 +46,9 @@ describe('story-post receipt admission by slug', () => {
       await setTestItemStoryId(itemId, story.id)
     }
     const poster = await createTestUserDirect()
-    const { post } = await createStoryPost(story.id, poster)
+    const prepared = await prepareStoryPost(story.id, poster)
+    await prepared.finalize()
+    const { post } = prepared.response
     const slug = post.slug
     if (!slug) throw new Error('Expected generated story-post slug')
     const selection = await loadServiceModelSelection('story-post')

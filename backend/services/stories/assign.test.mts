@@ -21,7 +21,7 @@ import {
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createHash, randomUUID } from 'node:crypto'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from './story-posts.mts'
+import { prepareStoryPost } from './story-posts.mts'
 import { refreshStoryPostForStory } from './refresh-story-post.mts'
 import {
   acknowledgePostPublicationDirtyWork,
@@ -69,7 +69,9 @@ describe('assign', () => {
       await setTestItemStoryId(itemId, story.id)
       itemIds.push(itemId)
     }
-    const { post } = await createStoryPost(story.id, storyPostUser)
+    const prepared = await prepareStoryPost(story.id, storyPostUser)
+    await prepared.finalize()
+    const { post } = prepared.response
     return { story, post, itemIds }
   }
   beforeAll(async () => {

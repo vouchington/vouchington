@@ -8,7 +8,7 @@ import {
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 import { writeStoryPostRelatedUrlProjectionRelations } from '../story-post-related-url-projection-relations.mts'
@@ -80,18 +80,8 @@ async function createProjectablePost() {
   await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: url.id, count: 2 })
   const user = await createTestUserDirect()
   if (!user) throw new Error('Expected test user')
-  const { post } = await createStoryPost(
-    story.id,
-    user,
-    {},
-    {
-      dispatchStoryPostRelationEffects: async () => {},
-      enqueueOnPostCreated: () => Promise.resolve(),
-      enqueueStoryPostAgent: async () => {},
-      enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-      invalidateStories: async () => {},
-    },
-  )
+  const prepared = await prepareStoryPost(story.id, user)
+  const { post } = prepared.response
   return { post, story, url }
 }
 

@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '@services/stories/story-posts'
+import { prepareStoryPost } from '@services/stories/story-posts'
 import { getPostByAny } from '@services/posts/get'
 import { getStoryPostSpendState, processStoryPost } from './process-story-post.mts'
 import type { StoryPostJobData } from '@queues/ai-agents/types'
@@ -79,7 +79,9 @@ describe('process-story-post', () => {
       ai_summary_markdown: 'Agent summary.',
     })
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
 
     await processStoryPost(makeJob(result.post.id))
 
@@ -89,9 +91,11 @@ describe('process-story-post', () => {
 
   it('processStoryPost — does not call agent if ai_summary_markdown already set', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser, {
+    const prepared = await prepareStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already set.',
     })
+    await prepared.finalize()
+    const result = prepared.response
 
     callStoryPostAgentSpy.mockClear()
     await processStoryPost(makeJob(result.post.id))
@@ -101,9 +105,11 @@ describe('process-story-post', () => {
 
   it('processStoryPost — preserves completed moderation for summarized stories', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser, {
+    const prepared = await prepareStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already moderated.',
     })
+    await prepared.finalize()
+    const result = prepared.response
     await updatePostModerationData(
       result.post.id,
       Buffer.alloc(32, 7),
@@ -136,7 +142,9 @@ describe('process-story-post', () => {
       ai_summary_markdown: 'Summary.',
     })
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
     const originalTitle = result.post.title
 
     await processStoryPost(makeJob(result.post.id))
@@ -152,7 +160,9 @@ describe('process-story-post', () => {
 
   it('getStoryPostSpendState — true for a fresh unsummarized story post', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
 
     await expect(getStoryPostSpendState(result.post.id, false)).resolves.toEqual({
       postId: result.post.id,
@@ -162,9 +172,11 @@ describe('process-story-post', () => {
 
   it('getStoryPostSpendState — false for a non-force retry once a summary exists', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser, {
+    const prepared = await prepareStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already set.',
     })
+    await prepared.finalize()
+    const result = prepared.response
 
     await expect(getStoryPostSpendState(result.post.id, false)).resolves.toEqual({
       postId: result.post.id,
@@ -174,9 +186,11 @@ describe('process-story-post', () => {
 
   it('getStoryPostSpendState — true for a forced retry even once a summary exists', async () => {
     const { story, testUser } = await makeStoryWithItem()
-    const result = await createStoryPost(story.id, testUser, {
+    const prepared = await prepareStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already set.',
     })
+    await prepared.finalize()
+    const result = prepared.response
 
     await expect(getStoryPostSpendState(result.post.id, true)).resolves.toEqual({
       postId: result.post.id,
