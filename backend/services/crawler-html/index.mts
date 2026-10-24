@@ -77,6 +77,13 @@ export async function fetchCrawlerHtml(
     return output
   }
 
+  // Redirect handling consumes only status and headers. An unused body must not delay or
+  // prevent following the Location, even when the origin never finishes sending it.
+  if ([301, 302, 303, 307, 308].includes(response.status) && response.headers.get('location')) {
+    cancelResponseBody(response)
+    return output
+  }
+
   handleHttpErrors({ response, url })
   const contentType = response.headers?.get('content-type')
   if (!contentType || !isHtmlContentType(contentType)) {
