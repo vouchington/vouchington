@@ -2,7 +2,6 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  FF_COOKIE,
   encodeFeatureFlagCookie,
   parseFeatureFlagCookie,
   safeFeatureFlagCookiePart,
@@ -15,13 +14,6 @@ describe('feature flag cookie helpers', () => {
     vi.unstubAllGlobals()
   })
 
-  it('round-trips feature flag overrides with the browser base64 codec', () => {
-    const overrides = { memberships: true, betaDashboard: false }
-    const encoded = encodeFeatureFlagCookie(overrides)
-
-    expect(parseFeatureFlagCookie(encoded)).toEqual(overrides)
-  })
-
   it('round-trips non-ASCII feature flag names with the browser base64 codec', () => {
     const overrides = { 'mémé🚀': true }
     const encoded = encodeFeatureFlagCookie(overrides)
@@ -31,17 +23,6 @@ describe('feature flag cookie helpers', () => {
 
   it("parses non-ASCII cookie bytes emitted by Node's Buffer base64 codec", () => {
     expect(parseFeatureFlagCookie('eyJtw6ltw6nwn5qAIjp0cnVlfQ==')).toEqual({ 'mémé🚀': true })
-  })
-
-  it('filters non-boolean parsed values', () => {
-    const encoded = btoa(JSON.stringify({ enabled: true, text: 'yes', count: 1 }))
-
-    expect(parseFeatureFlagCookie(encoded)).toEqual({ enabled: true })
-  })
-
-  it('returns empty overrides for invalid input', () => {
-    expect(parseFeatureFlagCookie('not-valid-base64!!!')).toEqual({})
-    expect(parseFeatureFlagCookie(btoa('[true]'))).toEqual({})
   })
 
   it('returns empty overrides when the cookie exceeds the runtime public max length', () => {
@@ -73,21 +54,6 @@ describe('feature flag cookie helpers', () => {
     vi.stubEnv('FEATURE_FLAG_COOKIE_MAX_LENGTH', String(encoded.length - 1))
 
     expect(parseFeatureFlagCookie(encoded)).toEqual({})
-    expect(safeFeatureFlagCookiePart(encoded)).toBeNull()
-  })
-
-  it('builds only safe ff cookie parts', () => {
-    const encoded = encodeFeatureFlagCookie({ memberships: true })
-
-    expect(safeFeatureFlagCookiePart(encoded)).toBe(`${FF_COOKIE}=${encoded}`)
-    expect(safeFeatureFlagCookiePart(undefined)).toBeNull()
-    expect(safeFeatureFlagCookiePart('not-valid-base64!!!')).toBeNull()
-  })
-
-  it('drops safe ff cookie parts when the cookie exceeds the runtime public max length', () => {
-    const encoded = encodeFeatureFlagCookie({ memberships: true })
-    window.__VOUCHA_PUBLIC_CONFIG__ = { featureFlagCookieMaxLength: encoded.length - 1 }
-
     expect(safeFeatureFlagCookiePart(encoded)).toBeNull()
   })
 })

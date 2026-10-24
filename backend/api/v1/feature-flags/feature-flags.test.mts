@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import { Buffer } from 'node:buffer'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { encodeFeatureFlagCookie } from '@services/feature-flags'
 
 describe('feature-flags', () => {
   let regularUser: PrivateUser
@@ -35,7 +35,7 @@ describe('feature-flags', () => {
     it('returns merged flags when ff cookie is set', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
-      const ffCookie = encodeFeatureFlagCookie({ memberships: true })
+      const ffCookie = Buffer.from(JSON.stringify({ memberships: true })).toString('base64')
       const response = await request
         .get('/api/v1/feature-flags')
         .set('Cookie', `${request.authCookie}; ff=${ffCookie}`)
@@ -60,7 +60,8 @@ describe('feature-flags', () => {
     it('does not apply overrides from base64 with invalid trailing characters', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
-      const malformedFfCookie = `${encodeFeatureFlagCookie({ memberships: true })}!!!`
+      const encodedFfCookie = Buffer.from(JSON.stringify({ memberships: true })).toString('base64')
+      const malformedFfCookie = `${encodedFfCookie}!!!`
       const response = await request
         .get('/api/v1/feature-flags')
         .set('Cookie', `${request.authCookie}; ff=${malformedFfCookie}`)
