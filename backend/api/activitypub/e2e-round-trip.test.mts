@@ -11,7 +11,7 @@ import {
 import { updateUserFields } from '@services/users'
 import { getOrFetchRemoteActorByKeyId } from '@services/remote-actors'
 import { getEntityRelations } from '@services/entity-relations'
-import { getApPostLikesTally } from '@services/ap-post-likes'
+import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
 import { getActorUri, getPostUri, getWebfingerAcct } from '@modules/activitypub-uris'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { getSiteOrigin } from '@modules/utils'
@@ -155,7 +155,7 @@ describe('ActivityPub inbound round trip (Phase C6)', () => {
     })
     await deliverSignedActivity(inboxUrl, likeBody, keyId, privateKeyPem).expect(202)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })

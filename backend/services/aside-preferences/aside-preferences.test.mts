@@ -1,23 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { getDismissedAsides } from './get-dismissed.mts'
 import { dismissAside } from './dismiss.mts'
 import { restoreAside } from './restore.mts'
 import { listAsidePreferences } from './list.mts'
 
 describe('aside-preferences service', () => {
-  it('getDismissedAsides returns empty set for user with no preferences', async () => {
-    const user = await createTestUser()
-    const result = await getDismissedAsides(user.id)
-    expect(result).toBeInstanceOf(Set)
-  })
-
   it('dismissAside adds an aside key to dismissed set', async () => {
     const user = await createTestUser()
     await dismissAside(user.id, 'trending-topics')
 
-    const result = await getDismissedAsides(user.id)
-    expect(result.has('trending-topics')).toBe(true)
+    const preferences = await listAsidePreferences(user.id)
+    expect(preferences.map(preference => preference.aside_key)).toContain('trending-topics')
   })
 
   it('dismissAside is idempotent (upsert)', async () => {
@@ -25,8 +18,8 @@ describe('aside-preferences service', () => {
     await dismissAside(user.id, 'trending-topics')
     await dismissAside(user.id, 'trending-topics')
 
-    const result = await getDismissedAsides(user.id)
-    expect(result.has('trending-topics')).toBe(true)
+    const preferences = await listAsidePreferences(user.id)
+    expect(preferences.map(preference => preference.aside_key)).toContain('trending-topics')
   })
 
   it('restoreAside removes a dismissed aside key', async () => {
@@ -34,8 +27,8 @@ describe('aside-preferences service', () => {
     await dismissAside(user.id, 'curated-topics')
     await restoreAside(user.id, 'curated-topics')
 
-    const result = await getDismissedAsides(user.id)
-    expect(result.has('curated-topics')).toBe(false)
+    const preferences = await listAsidePreferences(user.id)
+    expect(preferences.map(preference => preference.aside_key)).not.toContain('curated-topics')
   })
 
   it('restoreAside is a no-op if key was not dismissed', async () => {

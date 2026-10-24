@@ -1,41 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import type { Story, StoryWithItemCount } from './types.mts'
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getStoryWithItemCount(
-  id: string,
-  options: QueryOptions = {},
-): Promise<StoryWithItemCount | null> {
-  const { rows } = await read(
-    sql`/* getStoryWithItemCount */
-    SELECT
-      s.id,
-      s.title,
-      s.cluster_reason,
-      s.published_at,
-      s.official_rss_feed_item_id,
-      s.official_locked_at,
-      uuid_extract_timestamp(s.id) AS created_at,
-      s.updated_at,
-      s.deleted_at,
-      COUNT(rfi.id)::int AS item_count
-    FROM stories s
-    -- no-mistakes-disable-next-line postgres-required-predicates: story membership can attach already-created items, so item IDs may predate story_id
-    LEFT JOIN rss_feed_items rfi ON rfi.story_id = s.id AND rfi.deleted_at IS NULL
-    WHERE s.id = ${id}
-      AND s.deleted_at IS NULL
-    GROUP BY s.id
-    LIMIT 1
-  `,
-    options,
-  )
-  return (rows[0] as StoryWithItemCount) ?? null
-}
+import type { Story } from './types.mts'
 
 export async function getStoryItemIds(
   storyId: string,

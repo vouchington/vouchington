@@ -10,10 +10,6 @@ export type Story = {
   deleted_at: Date | null
 }
 
-export type StoryWithItemCount = Story & {
-  item_count: number
-}
-
 export type PostStory = {
   post_id: string
   story_id: string

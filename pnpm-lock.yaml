@@ -1357,9 +1357,6 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../modules/structured-decisions
-      '@services/ap-post-likes':
-        specifier: workspace:^
-        version: link:../services/ap-post-likes
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../services/openai-agents

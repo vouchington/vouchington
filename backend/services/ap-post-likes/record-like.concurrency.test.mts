@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTestPost } from '@voucha/test-helpers'
+import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
 import { recordLike } from './record-like.mts'
-import { getApPostLikesTally } from './get-tally.mts'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fixtures'
 
 // Regression test for the TOCTOU race fn_project_activitypub_post_likes used to have (see the trigger's
@@ -29,7 +29,7 @@ describe('recordLike concurrency', () => {
       ),
     )
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 8,
       activitypub_likes_count: 8,
     })

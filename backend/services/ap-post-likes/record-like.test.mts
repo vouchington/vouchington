@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createTestPost } from '@voucha/test-helpers'
+import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
 import { recordLike } from './record-like.mts'
 import { undoLike } from './undo-like.mts'
-import { getApPostLikesTally } from './get-tally.mts'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fixtures'
 
 describe('recordLike', () => {
@@ -12,7 +12,7 @@ describe('recordLike', () => {
 
     await recordLike(post.id, remoteActor.id, `https://remote.example/activities/${remoteActor.id}`)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })
@@ -26,7 +26,7 @@ describe('recordLike', () => {
     await recordLike(post.id, remoteActor.id, likeApId)
     await recordLike(post.id, remoteActor.id, likeApId)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })
@@ -40,7 +40,7 @@ describe('recordLike', () => {
     await recordLike(post.id, first.id, `https://remote.example/activities/${first.id}`)
     await recordLike(post.id, second.id, `https://remote.example/activities/${second.id}`)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 2,
       activitypub_likes_count: 2,
     })
@@ -56,7 +56,7 @@ describe('recordLike', () => {
       `https://remote.example/activities/${remoteActor.id}-first-like`,
     )
     await undoLike(post.id, remoteActor.id)
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
       activitypub_likes_count: 0,
     })
@@ -67,7 +67,7 @@ describe('recordLike', () => {
       `https://remote.example/activities/${remoteActor.id}-second-like`,
     )
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })
@@ -91,7 +91,7 @@ describe('recordLike', () => {
       `https://remote.example/activities/${remoteActor.id}-final`,
     )
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })

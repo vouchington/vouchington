@@ -1,12 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto'
 import { it, expect, beforeAll, describe } from 'vitest'
 import { getStoryById } from '@services/feeds/rss-feed-items/get-story-by-id'
-import {
-  getStoryWithItemCount,
-  getStoryItemIds,
-  getStoriesByIdBatch,
-  getStoryItemSummaries,
-} from './get.mts'
+import { getStoryItemIds, getStoriesByIdBatch, getStoryItemSummaries } from './get.mts'
 import { getPostStoryIdsByStoryIds, getVisiblePostStoryIdsByStoryIds } from './get-post-stories.mts'
 import { createStory } from './create.mts'
 import {
@@ -61,18 +56,6 @@ describe('get', () => {
 
     const fetched = await getStoryById(story.id)
     expect(fetched!.cluster_reason).toBe(reason)
-  })
-
-  it('getStoryWithItemCount returns item_count for empty story', async () => {
-    const newStory = await insertTestStory({ title: 'Item Count Test' })
-    const result = await getStoryWithItemCount(newStory.id)
-    expect(result).toBeDefined()
-    expect(result!.item_count).toBe(0)
-  })
-
-  it('getStoryWithItemCount returns null for unknown id', async () => {
-    const result = await getStoryWithItemCount(randomUUID())
-    expect(result).toBeNull()
   })
 
   it('getStoryItemIds returns empty array for story with no items', async () => {
