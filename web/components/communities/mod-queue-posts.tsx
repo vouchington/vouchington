@@ -291,6 +291,7 @@ export function ModQueuePosts({
                         : t('extracted.communities.modQueuePosts.confirmReject_48426f9f')}
                     </Button>
                     <Button
+                      data-pw='mod-queue-posts-cancel'
                       size='sm'
                       variant='outline'
                       disabled={bulkDisabled}

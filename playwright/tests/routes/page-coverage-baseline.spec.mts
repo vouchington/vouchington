@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { TEST_USER_USERNAME } from '../../helpers/auth.mts'
+import { TEST_USER_USERNAME, withCleanUser } from '../../helpers/auth.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
@@ -99,10 +99,12 @@ test.describe('Route coverage baseline', () => {
   })
 
   test('covers /moderation-transparency', async ({ page }) => {
+    await withCleanUser(page)
     await navigateTo(page, '/moderation-transparency')
 
     await expect(page).toHaveURL('/moderation-transparency')
     await expect(page.getByTestId('moderation-transparency-page')).toBeVisible()
+    await expect(page.getByTestId('moderation-transparency-panel-view-plans')).toBeVisible()
   })
 
   test('covers /user/[idOrUsername] profile header', async ({ page }) => {

@@ -87,6 +87,7 @@ export function DisputeRow({
         {isPending ? (
           <div className='flex flex-wrap gap-1'>
             <Button
+              data-pw='dispute-row-re-run-ai'
               size='touchSm'
               variant='outline'
               disabled={disabled || !canRerun}

@@ -319,6 +319,7 @@ export function ModQueueReports({
               ) : (
                 <>
                   <Button
+                    data-pw='mod-queue-reports-reviewed'
                     size='sm'
                     disabled={bulkDisabled || loading === report.id}
                     onClick={() => onResolve(report, 'reviewed')}
@@ -327,6 +328,7 @@ export function ModQueueReports({
                     {t('extracted.communities.modQueueReports.reviewed_fad6057b')}
                   </Button>
                   <Button
+                    data-pw='mod-queue-reports-dismiss'
                     size='sm'
                     variant='outline'
                     disabled={bulkDisabled || loading === report.id}

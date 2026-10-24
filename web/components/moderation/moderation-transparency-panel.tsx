@@ -76,6 +76,7 @@ export function ModerationTransparencyPanel({
           <Button asChild>
             <Link
               href='/plans'
+              data-pw='moderation-transparency-panel-view-plans'
               prefetch={false}
             >
               {t('extracted.tags.tagLimitCta.viewPlans_a72e2bd3')}

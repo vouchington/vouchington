@@ -108,6 +108,7 @@ test.describe('Admin - topic claims and dispute queue', () => {
     await expect(disputeRows.first().getByTestId('dispute-context')).toBeVisible()
     // Staff controls should be present
     await expect(page.getByTestId('dispute-public-response').first()).toBeVisible()
+    await expect(page.getByTestId('dispute-row-re-run-ai').first()).toBeVisible()
     await expect(page.getByTestId('dispute-approve').first()).toBeVisible()
     await expect(page.getByTestId('dispute-send').first()).toBeVisible()
     await expect(page.getByTestId('dispute-annotate').first()).toBeVisible()

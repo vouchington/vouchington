@@ -52,6 +52,7 @@ export function InviteItem({ invite, loading, onRevoke }: Props) {
         <Badge variant={status.variant}>{status.label}</Badge>
         {isPending && (
           <Button
+            data-pw='invite-item-revoke'
             size='sm'
             variant='outline'
             loading={loading}

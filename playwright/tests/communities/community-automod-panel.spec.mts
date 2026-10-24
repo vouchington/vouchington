@@ -98,6 +98,9 @@ test.describe('Community automod review panel', () => {
     await expect(page.getByTestId('community-automod-review-panel')).toBeVisible({
       timeout: 10_000,
     })
+    await expect(
+      page.getByTestId('community-automod-review-action-reason-select').first(),
+    ).toBeVisible()
     await expect(page.getByTestId('automod-approve-button').first()).toBeVisible()
     await expect(page.getByTestId('automod-reject-button').first()).toBeVisible()
   })

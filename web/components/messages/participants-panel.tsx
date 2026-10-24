@@ -143,6 +143,7 @@ export function ParticipantsPanel({
                     {t('extracted.messages.participantsPanel.remove_c3812fc4')}
                   </Button>
                   <Button
+                    data-pw='participants-panel-cancel-remove'
                     size='sm'
                     variant='outline'
                     onClick={() => setPendingRemoveId(null)}
@@ -183,6 +184,7 @@ export function ParticipantsPanel({
               dataPw={{ input: 'add-participant-input', item: 'add-participant-item' }}
             />
             <Button
+              data-pw='participants-panel-cancel-add'
               size='sm'
               variant='outline'
               onClick={() => setShowAddForm(false)}

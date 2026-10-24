@@ -89,6 +89,7 @@ export function CommunityAgentPromptForm({ communitySlug, onPromptCreated }: Pro
         </p>
       ) : null}
       <Button
+        data-pw='community-agent-prompt-form-create-prompt'
         type='submit'
         size='touch'
         disabled={disabled}

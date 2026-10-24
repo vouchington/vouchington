@@ -22,6 +22,7 @@ export function NotificationRow({ notification, onOpen, onDelete, compact }: Not
     return (
       <div className='flex items-start gap-2 border-b px-3 py-3 last:border-b-0'>
         <Button
+          data-pw='notification-row-open-compact'
           type='button'
           variant='ghost'
           className='h-auto min-w-0 flex-1 flex-col items-start justify-start gap-0 px-0 py-0 text-left hover:bg-transparent'
@@ -41,6 +42,7 @@ export function NotificationRow({ notification, onOpen, onDelete, compact }: Not
           ) : null}
         </Button>
         <Button
+          data-pw='notification-row-delete-compact'
           type='button'
           variant='ghost'
           size='icon'
@@ -61,6 +63,7 @@ export function NotificationRow({ notification, onOpen, onDelete, compact }: Not
       data-pw={`notification-item-${notification.entity_type}`}
     >
       <Button
+        data-pw='notification-row-open-full'
         type='button'
         variant='ghost'
         className='h-auto min-w-0 flex-1 flex-col items-start justify-start gap-0 px-0 py-0 text-left hover:bg-transparent'
@@ -86,6 +89,7 @@ export function NotificationRow({ notification, onOpen, onDelete, compact }: Not
         </span>
       </Button>
       <Button
+        data-pw='notification-row-delete-full'
         type='button'
         variant='ghost'
         size='touchIcon'

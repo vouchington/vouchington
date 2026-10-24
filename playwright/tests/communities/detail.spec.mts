@@ -64,6 +64,7 @@ test.describe('Community Detail Page', () => {
   test('shows moderators aside', async ({ page }) => {
     await navigateTo(page, `/communities/${COMMUNITY_SLUG}`)
     await expect(page.getByTestId('community-moderators-aside')).toBeVisible()
+    await expect(page.getByTestId('community-moderators-aside-user-link').first()).toBeVisible()
   })
 
   test('shows Posts as default tab (no Overview tab)', async ({ page }) => {

@@ -37,6 +37,7 @@ export function CommunityAgentPromptItemActions({
       {isEditing ? (
         <>
           <Button
+            data-pw='community-agent-prompt-item-actions-save'
             size='touchSm'
             onClick={onSaveEdit}
             disabled={disabled}
@@ -44,6 +45,7 @@ export function CommunityAgentPromptItemActions({
             {t('extracted.communities.communityAgentPromptItem.save_1509f561')}
           </Button>
           <Button
+            data-pw='community-agent-prompt-item-actions-cancel'
             size='touchSm'
             variant='ghost'
             onClick={onCancelEdit}
@@ -54,6 +56,7 @@ export function CommunityAgentPromptItemActions({
         </>
       ) : (
         <Button
+          data-pw='community-agent-prompt-item-actions-edit'
           size='touchSm'
           variant='outline'
           onClick={onStartEdit}
@@ -63,6 +66,7 @@ export function CommunityAgentPromptItemActions({
         </Button>
       )}
       <Button
+        data-pw='community-agent-prompt-item-actions-toggle-allocation'
         size='touchSm'
         variant='outline'
         onClick={onToggleAllocation}
@@ -71,6 +75,7 @@ export function CommunityAgentPromptItemActions({
         {prompt.is_slot_allocated ? 'Deallocate' : 'Allocate'}
       </Button>
       <Button
+        data-pw='community-agent-prompt-item-actions-test'
         size='touchSm'
         variant='outline'
         onClick={onToggleTesting}
@@ -81,6 +86,7 @@ export function CommunityAgentPromptItemActions({
       </Button>
       {confirmDelete ? (
         <Button
+          data-pw='community-agent-prompt-item-actions-confirm-delete'
           size='touchSm'
           variant='destructive'
           onClick={onDelete}
@@ -90,6 +96,7 @@ export function CommunityAgentPromptItemActions({
         </Button>
       ) : (
         <Button
+          data-pw='community-agent-prompt-item-actions-delete'
           size='touchSm'
           variant='ghost'
           onClick={onRequestDelete}

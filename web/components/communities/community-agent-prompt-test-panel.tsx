@@ -149,6 +149,7 @@ export function CommunityAgentPromptTestPanel({ prompt, communitySlug }: Props) 
             </Select>
           </div>
           <Button
+            data-pw='community-agent-prompt-test-panel-run-test'
             type='submit'
             size='touch'
             disabled={isPending}

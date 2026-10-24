@@ -89,6 +89,7 @@ test.describe('/review/[id] — dispute filing for verified topic claimant', () 
     await expect(page.getByTestId('dispute-reason-select')).toBeVisible()
     await expect(page.getByTestId('claim-text')).toBeVisible()
     await expect(page.getByTestId('dispute-submit')).toBeVisible()
+    await expect(page.getByTestId('dispute-form-cancel')).toBeVisible()
     await expect(page.getByTestId('turnstile-container')).toBeVisible()
   })
 
@@ -153,5 +154,6 @@ test.describe('/review/[id] — dispute filing for verified topic claimant', () 
 
     // Confirm submitted state is shown
     await expect(page.getByTestId('dispute-submitted')).toBeVisible()
+    await expect(page.getByTestId('dispute-form-close')).toBeVisible()
   })
 })
