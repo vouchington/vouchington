@@ -62,7 +62,7 @@ test.describe('typed topic recommendations', () => {
     // The landing page URLs field should now be visible — fill it before other fields
     const landingPageUrlsField = page.getByTestId('topic-recommendation-form-landing-page-urls')
     await expect(landingPageUrlsField).toBeVisible()
-    await landingPageUrlsField.fill(`https://bank-${stamp}.example.com/card-apply`)
+    await landingPageUrlsField.fill(`https://bank-${stamp}.example.net/card-apply`)
 
     await page.getByTestId('topic-recommendation-form-topic-title').pressSequentially(topicTitle)
     await page.getByTestId('topic-recommendation-form-topic-slug').fill(topicSlug)

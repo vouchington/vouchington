@@ -8,7 +8,7 @@ let targetUsername = ''
 let targetEmail = ''
 let landingPageSlug = ''
 let viewerId = ''
-let holdTargetId = ''
+let holdTargetUsername = ''
 
 test.beforeAll(async () => {
   protectPlaywrightHookTimeouts(test.info())
@@ -26,7 +26,7 @@ test.beforeAll(async () => {
   viewerId = viewer.id
   const holdTarget = await createTestUser({ username: `users-hold-${suffix}` })
   if (!holdTarget) throw new Error('Failed to create preservation-hold user')
-  holdTargetId = holdTarget.id
+  holdTargetUsername = holdTarget.username!
 })
 
 test.describe('Users search and admin management', () => {
@@ -103,7 +103,7 @@ test.describe('Users search and admin management', () => {
 
   test('shows place and release actions for an isolated preservation hold', async ({ page }) => {
     await loginAsAdmin(page)
-    await navigateTo(page, `/user/${holdTargetId}/admin`)
+    await navigateTo(page, `/user/${holdTargetUsername}/admin`)
     const placeHold = page.getByTestId('user-preservation-hold-card-place-hold')
     await expect(placeHold).toBeVisible()
     await page
