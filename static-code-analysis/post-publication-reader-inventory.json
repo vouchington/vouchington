@@ -87,8 +87,15 @@
       "classification": "public-view"
     },
     {
-      "path": "backend/services/communities/list-items/get.mts",
+      "path": "backend/services/communities/list-items/item-type-sql.mts",
       "classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/communities/list-items/get.mts",
+      "classification": "raw-hydrator",
+      "reason": "List item reader delegates its post eligibility predicates to item-type-sql.",
+      "owner_path": "backend/services/communities/list-items/item-type-sql.mts",
+      "owner_classification": "mixed-discovery-sql"
     },
     {
       "path": "backend/api/v1/communities/news.mts",
