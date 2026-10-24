@@ -7,67 +7,35 @@ import onError from '@modules/on-error'
 const TERMINAL_STATUS_PUBLISH_ATTEMPTS = 3
 const TERMINAL_STATUS_PUBLISH_RETRY_MS = 100
 
-type ArticleSyncProcessorDependencies = {
-  getPrivateUserByAny: typeof getPrivateUserByAny
-  publishTerminalStatus: typeof publishTerminalStatus
-  syncArticles: typeof syncArticles
-}
-
-type PublishTerminalStatusDependencies = {
-  onError: typeof onError
-  publish: typeof articleSyncPubSub.publish
-  sleep: typeof sleep
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/README.md`.
- */
-export async function publishTerminalStatus(
-  jobId: string,
-  status: ArticleSyncStatus,
-  dependencies?: Partial<PublishTerminalStatusDependencies>,
-): Promise<void> {
-  const publish =
-    dependencies?.publish ??
-    ((publishJobId, publishStatus) => articleSyncPubSub.publish(publishJobId, publishStatus))
-  const reportError = dependencies?.onError ?? onError
-  const wait = dependencies?.sleep ?? sleep
+async function publishTerminalStatus(jobId: string, status: ArticleSyncStatus): Promise<void> {
   let lastError: unknown
   for (let attempt = 1; attempt <= TERMINAL_STATUS_PUBLISH_ATTEMPTS; attempt++) {
     try {
       // oxlint-disable-next-line no-await-in-loop -- the next terminal-status publish runs only after this attempt fails
-      await publish(jobId, status)
+      await articleSyncPubSub.publish(jobId, status)
       return
     } catch (err) {
       lastError = err
       if (attempt < TERMINAL_STATUS_PUBLISH_ATTEMPTS) {
         // oxlint-disable-next-line no-await-in-loop -- retry backoff must finish before the next publish attempt starts
-        await wait(TERMINAL_STATUS_PUBLISH_RETRY_MS)
+        await sleep(TERMINAL_STATUS_PUBLISH_RETRY_MS)
       }
     }
   }
-  reportError(lastError instanceof Error ? lastError : new Error(String(lastError)))
+  onError(lastError instanceof Error ? lastError : new Error(String(lastError)))
 }
 
-export async function processArticleSync(
-  userId: string,
-  jobId?: string,
-  dependencies?: Partial<ArticleSyncProcessorDependencies>,
-) {
-  const getUser = dependencies?.getPrivateUserByAny ?? getPrivateUserByAny
-  const publishStatus = dependencies?.publishTerminalStatus ?? publishTerminalStatus
-  const syncUserArticles = dependencies?.syncArticles ?? syncArticles
+export async function processArticleSync(userId: string, jobId?: string) {
   try {
-    const user = await getUser(userId)
+    const user = await getPrivateUserByAny(userId)
     if (!user) throw new UnrecoverableError(`User ${userId} not found`)
-    const result = await syncUserArticles(user)
-    if (jobId) await publishStatus(jobId, { status: 'completed', result })
+    const result = await syncArticles(user)
+    if (jobId) await publishTerminalStatus(jobId, { status: 'completed', result })
     return result
   } catch (err) {
     if (jobId) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      await publishStatus(jobId, { status: 'failed', error: errorMsg })
+      await publishTerminalStatus(jobId, { status: 'failed', error: errorMsg })
     }
     throw err
   }
