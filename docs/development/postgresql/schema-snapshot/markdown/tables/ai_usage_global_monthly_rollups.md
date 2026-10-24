@@ -6,15 +6,16 @@ All provider calls, including calls without a community, after per-call usage ex
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type     | Nullable | Default    | Identity | Generated | Collation | Comment                                                     |
-| ------------------------ | -------- | -------- | ---------- | -------- | --------- | --------- | ----------------------------------------------------------- |
-| `id`                     | `uuid`   | no       | `uuidv7()` |          |           |           | Stable identifier of this platform-month total.             |
-| `month_start_on`         | `date`   | no       |            |          |           |           | UTC first day of the call month.                            |
-| `request_count`          | `bigint` | no       | `0`        |          |           |           | Count of folded provider calls.                             |
-| `input_tokens`           | `bigint` | no       | `0`        |          |           |           | Sum of folded input tokens.                                 |
-| `output_tokens`          | `bigint` | no       | `0`        |          |           |           | Sum of folded output tokens.                                |
-| `unpriced_request_count` | `bigint` | no       | `0`        |          |           |           | Count of folded calls without known pricing.                |
-| `cost_microunits`        | `bigint` | no       | `0`        |          |           |           | Exact sum of priced costs in millionths of a currency unit. |
+| Column                   | Type             | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                   |
+| ------------------------ | ---------------- | -------- | ---------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
+| `id`                     | `uuid`           | no       | `uuidv7()` |          |           |           | Stable identifier of this platform-month total.                                           |
+| `month_start_on`         | `date`           | no       |            |          |           |           | UTC first day of the call month.                                                          |
+| `request_count`          | `bigint`         | no       | `0`        |          |           |           | Count of folded provider calls.                                                           |
+| `input_tokens`           | `bigint`         | no       | `0`        |          |           |           | Sum of folded input tokens.                                                               |
+| `output_tokens`          | `bigint`         | no       | `0`        |          |           |           | Sum of folded output tokens.                                                              |
+| `unpriced_request_count` | `bigint`         | no       | `0`        |          |           |           | Count of folded calls without known pricing.                                              |
+| `cost_microunits`        | `bigint`         | no       | `0`        |          |           |           | Exact sum of priced USD costs in millionths of a dollar.                                  |
+| `currency_code`          | `currency_codes` | no       |            |          |           |           | USD denomination of this platform-month cost; priced source calls are constrained to USD. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,18 +26,21 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `ai_usage_global_monthly_rollups_cost_microunits_check`: `CHECK ((cost_microunits >= 0))`
+- `ai_usage_global_monthly_rollups_currency_code_check`: `CHECK ((currency_code = 'usd'::currency_codes))`
 - `ai_usage_global_monthly_rollups_input_tokens_check`: `CHECK ((input_tokens >= 0))`
 - `ai_usage_global_monthly_rollups_output_tokens_check`: `CHECK ((output_tokens >= 0))`
 - `ai_usage_global_monthly_rollups_request_count_check`: `CHECK ((request_count >= 0))`
 - `ai_usage_global_monthly_rollups_unpriced_request_count_check`: `CHECK ((unpriced_request_count >= 0))`
 
 **Foreign keys:**
-_none_
+
+- `ai_usage_global_monthly_rollups_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `ai_usage_global_monthly_rollups_month_start_on_key`: `CREATE UNIQUE INDEX ai_usage_global_monthly_rollups_month_start_on_key ON public.ai_usage_global_monthly_rollups USING btree (month_start_on)`
 - `ai_usage_global_monthly_rollups_pkey`: `CREATE UNIQUE INDEX ai_usage_global_monthly_rollups_pkey ON public.ai_usage_global_monthly_rollups USING btree (id)`
+- `idx_ai_usage_global_monthly_rollups__currency_code`: `CREATE INDEX idx_ai_usage_global_monthly_rollups__currency_code ON public.ai_usage_global_monthly_rollups USING btree (currency_code)`
 
 **Triggers:**
 _none_

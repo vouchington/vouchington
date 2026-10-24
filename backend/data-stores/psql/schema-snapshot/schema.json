@@ -5635,6 +5635,7 @@
     "ai_usage_community_monthly_rollups": {
       "checkConstraints": {
         "ai_usage_community_monthly_rollups_cost_microunits_check": "CHECK ((cost_microunits >= 0))",
+        "ai_usage_community_monthly_rollups_currency_code_check": "CHECK ((currency_code = 'usd'::currency_codes))",
         "ai_usage_community_monthly_rollups_input_tokens_check": "CHECK ((input_tokens >= 0))",
         "ai_usage_community_monthly_rollups_output_tokens_check": "CHECK ((output_tokens >= 0))",
         "ai_usage_community_monthly_rollups_request_count_check": "CHECK ((request_count >= 0))",
@@ -5654,7 +5655,7 @@
         },
         "cost_microunits": {
           "collation": null,
-          "comment": "Exact sum of priced costs in millionths of a currency unit.",
+          "comment": "Exact sum of priced USD costs in millionths of a dollar.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -5662,6 +5663,17 @@
           "nullable": false,
           "ordinalPosition": 8,
           "type": "bigint"
+        },
+        "currency_code": {
+          "collation": null,
+          "comment": "USD denomination of this community-month cost; priced source calls are constrained to USD.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "currency_codes"
         },
         "id": {
           "collation": null,
@@ -5740,6 +5752,15 @@
           "referencedColumns": ["id"],
           "referencedTable": "communities",
           "validated": true
+        },
+        "ai_usage_community_monthly_rollups_currency_code_fkey": {
+          "columns": ["currency_code"],
+          "definition": "FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["code"],
+          "referencedTable": "currencies",
+          "validated": true
         }
       },
       "growth": "unbounded",
@@ -5790,6 +5811,26 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "idx_ai_usage_community_monthly_rollups__currency_code": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_usage_community_monthly_rollups__currency_code ON public.ai_usage_community_monthly_rollups USING btree (currency_code)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "currency_code",
+              "descending": false,
+              "expression": "currency_code",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
@@ -5810,6 +5851,7 @@
     "ai_usage_global_monthly_rollups": {
       "checkConstraints": {
         "ai_usage_global_monthly_rollups_cost_microunits_check": "CHECK ((cost_microunits >= 0))",
+        "ai_usage_global_monthly_rollups_currency_code_check": "CHECK ((currency_code = 'usd'::currency_codes))",
         "ai_usage_global_monthly_rollups_input_tokens_check": "CHECK ((input_tokens >= 0))",
         "ai_usage_global_monthly_rollups_output_tokens_check": "CHECK ((output_tokens >= 0))",
         "ai_usage_global_monthly_rollups_request_count_check": "CHECK ((request_count >= 0))",
@@ -5818,7 +5860,7 @@
       "columns": {
         "cost_microunits": {
           "collation": null,
-          "comment": "Exact sum of priced costs in millionths of a currency unit.",
+          "comment": "Exact sum of priced USD costs in millionths of a dollar.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -5826,6 +5868,17 @@
           "nullable": false,
           "ordinalPosition": 7,
           "type": "bigint"
+        },
+        "currency_code": {
+          "collation": null,
+          "comment": "USD denomination of this platform-month cost; priced source calls are constrained to USD.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "currency_codes"
         },
         "id": {
           "collation": null,
@@ -5895,7 +5948,17 @@
         }
       },
       "comment": "All provider calls, including calls without a community, after per-call usage expires.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "ai_usage_global_monthly_rollups_currency_code_fkey": {
+          "columns": ["currency_code"],
+          "definition": "FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["code"],
+          "referencedTable": "currencies",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
         "ai_usage_global_monthly_rollups_month_start_on_key": {
@@ -5936,6 +5999,26 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_ai_usage_global_monthly_rollups__currency_code": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_usage_global_monthly_rollups__currency_code ON public.ai_usage_global_monthly_rollups USING btree (currency_code)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "currency_code",
+              "descending": false,
+              "expression": "currency_code",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -6105,7 +6188,7 @@
         "ai_usage_records_cached_input_tokens_check": "CHECK ((cached_input_tokens >= 0))",
         "ai_usage_records_check": "CHECK ((((cached_input_tokens + cache_write_5m_input_tokens) + cache_write_1h_input_tokens) <= input_tokens))",
         "ai_usage_records_check1": "CHECK ((reasoning_output_tokens <= output_tokens))",
-        "ai_usage_records_check2": "CHECK ((((pricing_status = 'priced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NOT NULL) AND (currency_code IS NOT NULL)) OR ((pricing_status = 'unpriced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NULL) AND (currency_code IS NULL))))",
+        "ai_usage_records_check2": "CHECK ((((pricing_status = 'priced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NOT NULL) AND (currency_code = 'usd'::currency_codes)) OR ((pricing_status = 'unpriced'::ai_usage_record_pricing_statuses) AND (cost_microunits IS NULL) AND (currency_code IS NULL))))",
         "ai_usage_records_cost_microunits_check": "CHECK (((cost_microunits >= 0) AND (cost_microunits <= '9007199254740991'::bigint)))",
         "ai_usage_records_input_tokens_check": "CHECK ((input_tokens >= 0))",
         "ai_usage_records_latency_milliseconds_check": "CHECK ((latency_milliseconds >= 0))",
@@ -6204,7 +6287,7 @@
         },
         "currency_code": {
           "collation": null,
-          "comment": "Currency of the estimated cost; NULL when unpriced.",
+          "comment": "USD for a priced estimated cost; NULL when unpriced.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
