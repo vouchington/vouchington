@@ -10,12 +10,6 @@ import { fetchRobotsTxtOutcome, type RobotsDependencies } from './fetch-retry.mt
 
 export { checkDomainBlacklisted }
 export { fetchRobotsTxtCached }
-/** @internal Cache identities exposed for real-Valkey tests. */
-export {
-  ROBOTS_RULES_CACHE_PREFIX,
-  ROBOTS_UNREACHABLE_CACHE_PREFIX,
-  ROBOTS_UNREACHABLE_MARKER,
-} from './fetch-cache.mts'
 
 export const fetchRobotsTxt = async (
   domain: string,

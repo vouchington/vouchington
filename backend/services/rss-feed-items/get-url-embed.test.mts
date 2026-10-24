@@ -8,7 +8,7 @@ import {
   setRssFeedItemVideoMetadata,
 } from '@voucha/test-helpers/entities/rss-feed-items'
 import { insertTestRssFeedDirect } from '@voucha/test-helpers/entities/rss-feeds'
-import { updateUrl } from '@services/urls/update'
+import { setCanonicalUrl } from '@services/urls/set-canonical'
 import { addUrl } from '@services/urls/upsert'
 import { getUrlEmbedByUrlId, getUrlEmbedsByUrlIds } from './get-url-embed.mts'
 
@@ -107,7 +107,7 @@ describe('getUrlEmbedByUrlId', () => {
   it('returns crawl data from the canonical URL when the original URL is a redirect', async () => {
     const originalUrlId = await createTestUrlWithHostname()
     const canonicalUrlId = await createTestUrlWithHostname()
-    await updateUrl(originalUrlId, { canonical_url_id: canonicalUrlId })
+    await setCanonicalUrl(originalUrlId, canonicalUrlId)
     await insertTestCrawl({
       urlId: canonicalUrlId,
       statusCode: 200,

@@ -6,7 +6,7 @@ import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
 import { insertTestRssFeedDirect } from '@voucha/test-helpers/entities/rss-feeds'
 import { insertTestRssFeedItem } from '@voucha/test-helpers/entities/rss-feed-items'
 import { setRssFeedItemMediaDetails } from '@voucha/test-helpers/entities/rss-feed-items-media'
-import { updateUrl } from '@services/urls/update'
+import { setCanonicalUrl } from '@services/urls/set-canonical'
 import { enableQueryCapture, stopTestQueryCapture } from '../../test-helpers/query-capture.mts'
 import { getRssFeedItemEmbedsByItems } from './get-rss-feed-item-embeds.mts'
 import { getUrlEmbedByUrlId, getUrlEmbedsByUrlIds } from './get-url-embed.mts'
@@ -98,7 +98,7 @@ describe('URL embed response contract', () => {
     )
     const crawledSourceUrl = `https://audio-${randomUUID()}.example.com/articles/current`
     const crawledUrl = await insertTestUrlDirect(null, crawledSourceUrl)
-    await updateUrl(originalUrl!.id, { canonical_url_id: crawledUrl!.id })
+    await setCanonicalUrl(originalUrl!.id, crawledUrl!.id)
     const feed = await insertTestRssFeedDirect({})
     const itemId = await insertTestRssFeedItem({
       rssFeedId: feed.id,
