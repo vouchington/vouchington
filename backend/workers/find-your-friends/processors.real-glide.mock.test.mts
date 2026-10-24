@@ -56,13 +56,13 @@ describe('friend dispatcher continuations', () => {
           ...data,
           sweepStartedAt: '1970-01-01T00:00:00.000Z',
         }),
-      ).toEqual({ count: 0, hasMore: false })
+      ).toEqual({ count: 0, hasMore: true })
       expect(
         await processFindYourFriendsDispatcher(undefined, {
           ...data,
           upperIds: { facebook: null, x: null, github: null, [provider]: accountIds[0]! },
         }),
-      ).toEqual({ count: 1, hasMore: false })
+      ).toEqual({ count: 1, hasMore: true })
       const saved: FriendsDispatchData[] = []
       expect(
         await processFindYourFriendsDispatcher(undefined, data, async next => {
@@ -85,7 +85,13 @@ describe('friend dispatcher continuations', () => {
           ...resumed,
           afterIds: { ...resumed.afterIds, [provider]: accountIds[1]! },
         }),
-      ).toEqual({ count: 1, hasMore: false })
+      ).toEqual({ count: 1, hasMore: true })
+      expect(
+        await processFindYourFriendsDispatcher(undefined, {
+          ...resumed,
+          afterIds: { ...resumed.afterIds, [provider]: accountIds[2]! },
+        }),
+      ).toEqual({ count: 0, hasMore: false })
       // No sync job has run: the first account remains eligible and is retried on a new sweep.
       expect(await processFindYourFriendsDispatcher(undefined, data)).toEqual({
         count: 1,

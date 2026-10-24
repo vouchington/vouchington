@@ -1,9 +1,12 @@
 import { write } from '@data-stores/psql'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
+import { getPostPublicationWorkLimit } from './work-limits.mts'
 import { readPublicationCandidateAncestors } from './candidate-ancestors.mts'
-import { readPublicationAncestorRootHints } from './candidate-root-hints.mts'
+import {
+  readPublicationAncestorRootHints,
+  readPublicationPostScanFloor,
+} from './candidate-root-hints.mts'
 
-const DEFAULT_RAW_PAGE_SIZE = 500
 const ANCESTOR_READ_BUDGET = 100
 
 /**
@@ -21,9 +24,8 @@ export async function readRawPublicationCandidatePage(
   pendingAncestorId: string | null
 }> {
   if (work.pending_post_identity_id && work.pending_ancestor_post_identity_id) {
-    // A retained identity preserves the cursor key after deletion, but does not
-    // authorize a deleted post. Resolve both live links on the writer before
-    // resuming the bounded parent walk.
+    // Retained identities preserve cursor keys but never authorize deleted posts.
+    // Resolve both live links on the writer before resuming the parent walk.
     const { rows: pending } = await write<{
       post_id: string | null
       ancestor_post_id: string | null
@@ -76,7 +78,11 @@ export async function readRawPublicationCandidatePage(
     }
   }
   const ancestorRoots = await readPublicationAncestorRootHints(work)
-  const rawLimit = Math.max(DEFAULT_RAW_PAGE_SIZE, eligibleLimit)
+  const scanFloor = await readPublicationPostScanFloor(work)
+  const rawLimit = Math.max(
+    getPostPublicationWorkLimit('raw_candidate_scan_page_size'),
+    eligibleLimit,
+  )
   // A claimed work generation and its captured keys live on the writer. Reading a
   // lagging replica could make an absent page look like EOF and acknowledge it.
   const { rows } = await write<{
@@ -101,7 +107,7 @@ export async function readRawPublicationCandidatePage(
       -- Keep the optional cursor in the generic plan's btree range condition.
       -- DISTINCT FROM removes the cursor row while retaining an all-zero UUID at EOF start.
       SELECT id, parent_post_id, root_post_id, created_by_id, post_type FROM posts
-      WHERE id >= COALESCE($3::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
+      WHERE id >= COALESCE($3::uuid, $5::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         AND id IS DISTINCT FROM $3::uuid
       ORDER BY id LIMIT $4::integer + 1
     )
@@ -150,7 +156,7 @@ export async function readRawPublicationCandidatePage(
     ) root ON TRUE
     CROSS JOIN live_scope scope
     ORDER BY candidate.id`,
-    [work.id, work.generation, work.cursor_post_id, rawLimit],
+    [work.id, work.generation, work.cursor_post_id, rawLimit, scanFloor],
   )
   const postIds: string[] = []
   let inspectedCount = 0

@@ -20,7 +20,7 @@ import {
   buildFollowNewsSourceItems,
   buildFollowTopicsItems,
   buildReferralProgramItems,
-} from './dispatch-engagement-emails.mts'
+} from './recommendation-items.mts'
 
 describe('dispatchEngagementEmails', () => {
   afterEach(() => {

@@ -12,12 +12,6 @@ import { dispatchFollowTopicsEmail } from './dispatch-follow-topics.mts'
 import { dispatchPostReferralLinkRecipients } from './dispatch-post-referral.mts'
 import { dispatchFollowNewsSourcesEmail } from './dispatch-follow-news.mts'
 
-export {
-  buildFollowTopicsItems,
-  buildReferralProgramItems,
-  buildFollowNewsSourceItems,
-} from './recommendation-items.mts'
-
 export async function dispatchEngagementEmails(userIds?: readonly string[]): Promise<void> {
   if (userIds?.length === 0) return
   const dispatchStartedAt = new Date()

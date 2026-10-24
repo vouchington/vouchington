@@ -20,6 +20,7 @@ export type GooglePlayNotificationRecoveryBatch = {
   notifications: RecoverableGooglePlayNotification[]
   previousCursor: string | null
   previousUpperBound: string | null
+  previousRevision: string
   sweepUpperBound: string | null
   nextCursor: string | null
   completesSweep: boolean

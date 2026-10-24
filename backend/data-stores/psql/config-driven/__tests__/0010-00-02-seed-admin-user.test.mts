@@ -31,7 +31,9 @@ describe('0010-00-02-seed-admin-user', () => {
     expect(sql).toContain('jong@voucha.ai')
     expect(sql).toContain('is_primary = TRUE')
     expect(sql).toContain('NOT EXISTS')
-    expect(sql).toContain('ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = TRUE')
+    expect(sql).toContain('ON CONFLICT (user_id, email_address) DO NOTHING')
+    expect(sql).toContain('UPDATE user_email_addresses SET is_primary = TRUE')
+    expect(sql).not.toContain('INSERT INTO user_engagement_email_candidates')
     expect(sql).toContain("WHERE u.username = 'jong' AND u.platform_account_kind = 'official'")
   })
 

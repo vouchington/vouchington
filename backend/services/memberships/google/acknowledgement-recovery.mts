@@ -11,6 +11,7 @@ export type GooglePlayAcknowledgementRecoveryBatch = {
   acknowledgementIds: string[]
   previousCursor: string | null
   previousUpperBound: string | null
+  previousRevision: string
   sweepUpperBound: string | null
   nextCursor: string | null
   completesSweep: boolean

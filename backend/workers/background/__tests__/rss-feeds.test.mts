@@ -12,6 +12,7 @@ import { rssFeedsQueue } from '@queues/rss-feeds/queues'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { processRssFeedsDispatcher } from '../../rss-feeds/processors.mts'
 import { BACKGROUND_HANDLERS } from '../processors/handlers.mts'
 import { createBackgroundWorker } from '../workers/create-worker.mts'
@@ -56,9 +57,17 @@ describe('rss-feeds background domain', () => {
   it('runs the dispatcher as one page bounded by the crawl capacity budget', async () => {
     onTestFinished(overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 2 }))
     // The shared test database may hold more due feeds than the budget, never fewer than these.
-    await Promise.all([createTestRssFeed({}), createTestRssFeed({}), createTestRssFeed({})])
+    const ownedIds = (
+      await Promise.all([createTestRssFeed({}), createTestRssFeed({}), createTestRssFeed({})])
+    )
+      .map(feed => feed.id)
+      .toSorted()
 
-    const { count } = await processRssFeedsDispatcher()
+    const { count } = await processRssFeedsDispatcher(undefined, {
+      cursor: { lane: 5, afterId: uuidBefore(ownedIds[0]!) },
+      asOf: new Date(),
+      limit: 2,
+    })
 
     expect(count).toBe(2)
     expect(RSS_FEEDS_DISPATCH_JOB.options.priority).toBe(100)

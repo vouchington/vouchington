@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { claimPostPublicationDirtyWork } from '@services/post-publication'
-import { reconcileTestPublicationUntilSnapshotsComplete } from '@voucha/test-helpers/post-publication-fixtures'
+import { reconcileTestPublicationThroughPostSweep } from '@voucha/test-helpers/post-publication-fixtures'
 import * as cachePurgeEnqueues from '@queues/cache-purge/enqueues'
 import { caches } from '@services/entity-cache/caches'
 import { invalidateUserStrict } from '@services/entity-cache/invalidate-strict'
@@ -20,7 +20,7 @@ describe('username publication', () => {
     if (!user.username) throw new Error('Expected username')
     const oldUsername = user.username
     const newUsername = safeUsername('renamed')
-    await createTestPost({ user })
+    const post = await createTestPost({ user })
     const request = createRequest()
     await request.authenticateAs(user)
     await request.patch('/api/v1/my/identity').send({ username: newUsername }).expect(200)
@@ -29,7 +29,11 @@ describe('username publication', () => {
     if (!work) throw new Error('Expected author publication work')
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected author publication lease')
-    const reconciled = await reconcileTestPublicationUntilSnapshotsComplete(claimed)
+    const { final: reconciled } = await reconcileTestPublicationThroughPostSweep(
+      claimed,
+      undefined,
+      post.id,
+    )
 
     expect(reconciled.identityKeys).toEqual(
       expect.arrayContaining([

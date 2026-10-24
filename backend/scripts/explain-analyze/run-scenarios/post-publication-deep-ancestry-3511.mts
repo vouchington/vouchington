@@ -5,12 +5,7 @@ import {
   updatePostPublicationDirtyWorkCursors,
 } from '@services/post-publication/dirty-work'
 import { listPublicationCandidatePage } from '@services/post-publication/publication-candidates'
-import {
-  contentHash,
-  postSeedTimestampMs,
-  seedUuid,
-  seedUuidAtTimestamp,
-} from '../seed-data/common.mts'
+import { contentHash, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 
@@ -21,6 +16,12 @@ export async function runDeepPublicationAncestry3511Scenario(): Promise<void> {
   const rootId = seedUuid(0, '05')
   const userId = seedUuid(0, '01')
   const hash = contentHash('deep-publication-ancestry-3511')
+  // A deleted identity must never relink to a recreated post. Give every
+  // invocation fresh, ordered UUIDv7 descendants while preserving the strict
+  // 100-ancestor boundary and the canonical child-after-parent constraints.
+  const chainStartMs = Date.now() - (CHAIN_DEPTH + 1) * 1_000
+  const commentId = (depth: number): string =>
+    seedUuidAtTimestamp(chainStartMs + depth * 1_000, 900_000 + depth)
   const firstId = commentId(1)
   const deepestId = commentId(CHAIN_DEPTH)
   await using transaction = await beginTransaction()
@@ -96,10 +97,6 @@ export async function runDeepPublicationAncestry3511Scenario(): Promise<void> {
       [firstId],
     )
   }
-}
-
-function commentId(depth: number): string {
-  return seedUuidAtTimestamp(postSeedTimestampMs(0) + 10_000 + depth * 1_000, 900_000 + depth)
 }
 
 function uuidPredecessor(uuid: string): string {
