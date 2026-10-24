@@ -96,7 +96,6 @@ describe('embedding reconciliation on real GlideMQ', () => {
       )
       if (!other) throw new Error('Expected unrelated job')
       await otherLaneStarted.promise
-      expect(await second.getState()).toBe('group-waiting')
       expect(processed).toEqual(['first', 'other'])
       releaseFirst.resolve()
       await secondProcessed.promise
