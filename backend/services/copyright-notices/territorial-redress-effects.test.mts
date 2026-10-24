@@ -5,7 +5,7 @@ import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/p
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { readTestCopyrightStatementFacts } from '@voucha/test-helpers/copyright-statement-notices'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
+import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { buildCopyrightStatementOfReasons } from './statement-of-reasons.mts'
 import {
   processCopyrightActionIntent,
@@ -79,7 +79,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       if (!withhold) throw new Error('Withhold intent missing')
       await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
       const posterId = scene.posts[0]!.poster.id
-      expect((await getCopyrightRepeatInfringerAccount(posterId)).incidents).toEqual(
+      expect(await readTestRepeatInfringerIncidents(posterId)).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ copyright_notice_id: scene.noticeId, is_operative: true }),
         ]),
@@ -99,7 +99,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       const reversed = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       const restore = reversed?.actionIntents.find(intent => intent.action === 'restore')
       if (!restore) throw new Error('Complaint restore intent missing')
-      expect((await getCopyrightRepeatInfringerAccount(posterId)).incidents).toEqual(
+      expect(await readTestRepeatInfringerIncidents(posterId)).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ copyright_notice_id: scene.noticeId, is_operative: false }),
         ]),
@@ -137,9 +137,7 @@ describe('territorial complaint effects on a confirmed restriction', () => {
       const after = await getCopyrightNoticePrivateAggregate(scene.noticeId)
       expect(after?.actionIntents).toEqual(before?.actionIntents)
       expect(after?.restrictions[0]?.lifted_at).toBeNull()
-      expect(
-        (await getCopyrightRepeatInfringerAccount(scene.posts[0]!.poster.id)).incidents,
-      ).toEqual(
+      expect(await readTestRepeatInfringerIncidents(scene.posts[0]!.poster.id)).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ copyright_notice_id: scene.noticeId, is_operative: true }),
         ]),

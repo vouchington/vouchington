@@ -82,24 +82,3 @@ export async function revokeCopyrightGuestCapability(input: {
   `)
   await transaction.commit()
 }
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function authorizeCopyrightGuestCapability(input: {
-  noticeId: string
-  token: string
-  now: Date
-}): Promise<string | null> {
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ id: string }>(sql`/* authorizeCopyrightGuestCapability */
-    SELECT id FROM copyright_notice_guest_capabilities
-    WHERE copyright_notice_id = ${input.noticeId}
-      AND token_hash = ${hashToken(copyrightGuestCapabilityPurpose, input.token)}
-      AND revoked_at IS NULL
-      AND expires_at > ${input.now}
-  `)
-  await transaction.commit()
-  return rows[0]?.id ?? null
-}

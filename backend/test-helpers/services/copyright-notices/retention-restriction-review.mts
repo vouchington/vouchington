@@ -1,9 +1,7 @@
+import { readTestRepeatInfringerIncidents } from '../../copyright-repeat-infringer.mts'
 import { randomUUID } from 'node:crypto'
 import { completeCopyrightMandatoryHumanReview } from '../../../services/copyright-notices/index.mts'
-import {
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
-} from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
 import type { PrivateUser } from '../../../services/users/types.mts'
 import { getCopyrightNoticePrivateAggregate } from './private-aggregate.mts'
 
@@ -28,7 +26,7 @@ export async function reviewRetentionRestriction(input: {
     rationale: `The restriction stands after review ${randomUUID()}.`,
     reviewedAt: new Date(),
   })
-  const incident = (await getCopyrightRepeatInfringerAccount(input.posterId)).incidents.find(
+  const incident = (await readTestRepeatInfringerIncidents(input.posterId)).find(
     entry => entry.copyright_notice_id === input.noticeId,
   )
   if (!incident) throw new Error('fixture repeat-infringer incident missing')

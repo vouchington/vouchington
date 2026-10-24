@@ -13,7 +13,7 @@ import {
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
 import { createCopyrightAppeal, createCopyrightCounterNotice } from './submissions.mts'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
+import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 
 function counterInput(targetId: string) {
   return {
@@ -47,9 +47,9 @@ async function expectChannels(
 }
 
 async function expectIncident(noticeId: string, userId: string, is_operative: boolean) {
-  const account = await getCopyrightRepeatInfringerAccount(userId)
+  const account = await readTestRepeatInfringerIncidents(userId)
   const operativeIncident = expect.objectContaining({ is_operative: true })
-  expect(account.incidents.filter(row => row.copyright_notice_id === noticeId)).toEqual(
+  expect(account.filter(row => row.copyright_notice_id === noticeId)).toEqual(
     is_operative ? [operativeIncident] : [],
   )
 }

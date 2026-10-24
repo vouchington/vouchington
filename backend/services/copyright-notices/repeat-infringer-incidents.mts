@@ -1,4 +1,4 @@
-import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
+import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
@@ -13,11 +13,6 @@ import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/co
 import { recordCopyrightRepeatInfringerTargetProvenance } from './repeat-infringer-target-provenance.mts'
 
 export type CopyrightRepeatInfringerDisposition = 'withdrawn' | 'duplicate' | 'abusive'
-
-export type CopyrightRepeatInfringerAccount = {
-  incidents: Array<{ id: string; copyright_notice_id: string; is_operative: boolean }>
-  open_review_id: string | null
-}
 
 export async function syncCopyrightRepeatInfringerIncidents(
   noticeId: string,
@@ -160,33 +155,4 @@ export async function recordCopyrightRepeatInfringerDisposition(input: {
   assert(inserted[0], 409, 'Copyright repeat-infringer incident already has a disposition')
   await syncCopyrightRepeatInfringerIncidents(incident.copyright_notice_id, transaction)
   await transaction.commit()
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getCopyrightRepeatInfringerAccount(
-  accountUserId: string,
-): Promise<CopyrightRepeatInfringerAccount> {
-  const { rows: incidents } = await read<{
-    id: string
-    copyright_notice_id: string
-    is_operative: boolean
-  }>(sql`
-    /* getCopyrightRepeatInfringerAccount:incidents */
-    SELECT id, copyright_notice_id, is_operative
-    FROM copyright_repeat_infringer_incidents
-    WHERE account_user_id = ${accountUserId}
-    ORDER BY copyright_notice_id
-  `)
-  const { rows: reviews } = await read<{ id: string }>(sql`
-    /* getCopyrightRepeatInfringerAccount:openReview */
-    SELECT id FROM copyright_repeat_infringer_reviews
-    WHERE account_user_id = ${accountUserId} AND outcome IS NULL
-  `)
-  return {
-    incidents,
-    open_review_id: reviews[0]?.id ?? null,
-  }
 }

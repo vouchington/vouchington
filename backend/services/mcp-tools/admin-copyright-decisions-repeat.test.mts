@@ -3,7 +3,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 import { listCopyrightRepeatInfringerAccountsForNotice } from '@services/copyright-notices'
-import { getCopyrightRepeatInfringerAccount } from '@services/copyright-notices/repeat-infringer-incidents'
+import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { unsuspendUser } from '@services/users/suspension'
 import { getPrivateUserByAny } from '@services/users/get'
 
@@ -45,8 +45,8 @@ describe('registered repeat-infringer decisions', () => {
     expect(result.structuredContent).toMatchObject({
       copyright_repeat_infringer_disposition: { incident_id: incidentId },
     })
-    const account = await getCopyrightRepeatInfringerAccount(poster.id)
-    expect(account.incidents).toEqual(
+    const incidents = await readTestRepeatInfringerIncidents(poster.id)
+    expect(incidents).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: incidentId, is_operative: false })]),
     )
   })

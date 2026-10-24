@@ -1,7 +1,5 @@
-import {
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
-} from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
+import { readTestRepeatInfringerIncidents } from '../../copyright-repeat-infringer.mts'
+import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
 import {
   createTestCopyrightFormIntakeReview,
   liftTestCopyrightRestriction,
@@ -67,7 +65,7 @@ async function createConfirmedRestrictionCase(
   // Imposing it also queued the poster's notice; an unsent delivery is a blocker of its own.
   await sendAllCopyrightDeliveries(noticeId)
   const readIncident = async () =>
-    (await getCopyrightRepeatInfringerAccount(poster.id)).incidents.find(
+    (await readTestRepeatInfringerIncidents(poster.id)).find(
       entry => entry.copyright_notice_id === noticeId,
     )
   const incident = await readIncident()

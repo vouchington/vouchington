@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, softDeleteUser } from '@voucha/test-helpers'
-import { createTestRepeatInfringerNotice } from '@voucha/test-helpers/copyright-repeat-infringer'
+import {
+  createTestRepeatInfringerNotice,
+  readTestRepeatInfringerIncidents,
+} from '@voucha/test-helpers/copyright-repeat-infringer'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import {
@@ -8,7 +11,6 @@ import {
   createCopyrightAppeal,
   reviewCopyrightAppeal,
 } from './index.mts'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
 
 describe('deleted-account repeat-infringer resynchronization', () => {
   it.each([
@@ -41,7 +43,7 @@ describe('deleted-account repeat-infringer resynchronization', () => {
         decisions: [{ restrictionId: restriction.id, action }],
       })
 
-      expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
+      expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
         expect.objectContaining({ copyright_notice_id: noticeId, is_operative: expectedOperative }),
       ])
     },
@@ -86,7 +88,7 @@ describe('deleted-account repeat-infringer resynchronization', () => {
       decisions: [{ restrictionId: first.id, action: 'reverse' }],
     })
 
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
       expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
   })

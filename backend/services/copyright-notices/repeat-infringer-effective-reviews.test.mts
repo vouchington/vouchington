@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import {
   createTestRepeatInfringerNotice,
+  readTestRepeatInfringerIncidents,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
 import type { PrivateUser } from '@services/users/types'
@@ -12,10 +13,7 @@ import {
   completeCopyrightMandatoryHumanReview,
   recordCopyrightRepeatInfringerReviewOutcome,
 } from './index.mts'
-import {
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
-} from './repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
 async function createActors() {
   const [poster, otherPoster, moderator] = await Promise.all([
     createTestUserDirect(),
@@ -39,9 +37,9 @@ describe('copyright effective incident authority', () => {
       connection => confirmTestRepeatInfringerRestriction(first, moderator, 0, connection),
       connection => confirmTestRepeatInfringerRestriction(second, moderator, 0, connection),
     ])
-    const account = await getCopyrightRepeatInfringerAccount(poster.id)
-    expect(account.incidents.filter(row => row.is_operative)).toHaveLength(2)
-    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([account.open_review_id])
+    const account = await readTestRepeatInfringerIncidents(poster.id)
+    expect(account.filter(row => row.is_operative)).toHaveLength(2)
+    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([expect.any(String)])
   })
   it('reverses only the deleted appealed account in a multi-owner notice', async () => {
     const { poster, otherPoster, moderator } = await createActors()
@@ -62,10 +60,10 @@ describe('copyright effective incident authority', () => {
       rationale: 'The retained evidence was reviewed.',
       decisions: [{ restrictionId: appealedRestriction.id, action: 'reverse' }],
     })
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
       expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: false }),
     ])
-    expect((await getCopyrightRepeatInfringerAccount(otherPoster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(otherPoster.id)).toEqual([
       expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
   })
@@ -73,7 +71,7 @@ describe('copyright effective incident authority', () => {
     const { poster, moderator } = await createActors()
     const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
       expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
   })
@@ -83,7 +81,7 @@ describe('copyright effective incident authority', () => {
     await confirmTestRepeatInfringerRestriction(fixture, moderator)
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse')
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
       expect.objectContaining({ is_operative: false }),
     ])
   })
@@ -92,15 +90,15 @@ describe('copyright effective incident authority', () => {
     const fixture = await createTestRepeatInfringerNotice([poster.id], moderator)
     await softDeleteUser(poster.id)
     await confirmTestRepeatInfringerRestriction(fixture, moderator)
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([])
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([])
   })
   it('excludes only the chosen incident and rejects duplicate or missing dispositions', async () => {
     const { poster, otherPoster, moderator } = await createActors()
     const fixture = await createTestRepeatInfringerNotice([poster.id, otherPoster.id], moderator)
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 0)
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
-    const before = await getCopyrightRepeatInfringerAccount(poster.id)
-    const incident = before.incidents[0]!
+    const before = await readTestRepeatInfringerIncidents(poster.id)
+    const incident = before[0]!
     const input = {
       currentUser: moderator,
       incidentId: incident.id,
@@ -109,10 +107,10 @@ describe('copyright effective incident authority', () => {
       recordedAt: new Date(),
     }
     await recordCopyrightRepeatInfringerDisposition(input)
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
       expect.objectContaining({ id: incident.id, is_operative: false }),
     ])
-    expect((await getCopyrightRepeatInfringerAccount(otherPoster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(otherPoster.id)).toEqual([
       expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
     await expect(recordCopyrightRepeatInfringerDisposition(input)).rejects.toMatchObject({
@@ -128,7 +126,7 @@ describe('copyright effective incident authority', () => {
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 0)
     await confirmTestRepeatInfringerRestriction(fixture, moderator, 1)
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'reverse', 0)
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
       expect.objectContaining({ copyright_notice_id: fixture.noticeId, is_operative: true }),
     ])
   })
@@ -144,7 +142,7 @@ describe('copyright effective incident authority', () => {
       reviewedAt: new Date(),
     })
     await reviewTestRepeatInfringerAppeal(fixture, poster, moderator, 'confirm')
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).incidents).toEqual([])
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([])
   })
   it('evaluates the threshold even when synchronization does not change an incident', async () => {
     const { poster, moderator } = await createActors()
@@ -152,20 +150,22 @@ describe('copyright effective incident authority', () => {
     const second = await createTestRepeatInfringerNotice([poster.id], moderator)
     await confirmTestRepeatInfringerRestriction(first, moderator)
     await confirmTestRepeatInfringerRestriction(second, moderator)
-    const before = await getCopyrightRepeatInfringerAccount(poster.id)
+    const before = await readTestRepeatInfringerIncidents(poster.id)
+    const [beforeReviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
     await recordCopyrightRepeatInfringerReviewOutcome({
       currentUser: moderator,
-      reviewId: before.open_review_id!,
+      reviewId: beforeReviewId!,
       outcome: 'warning',
       rationale: 'The first account review records a warning.',
       recordedAt: new Date(),
     })
     await reviewTestRepeatInfringerAppeal(second, poster, moderator, 'confirm')
-    const after = await getCopyrightRepeatInfringerAccount(poster.id)
-    expect(after.incidents).toEqual(before.incidents)
-    expect(after.open_review_id).toEqual(expect.any(String))
-    expect(after.open_review_id).not.toBe(before.open_review_id)
-    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([after.open_review_id])
+    const after = await readTestRepeatInfringerIncidents(poster.id)
+    expect(after).toEqual(before)
+    const afterReviewIds = await readTestRepeatInfringerOpenReviewIds(poster.id)
+    expect(afterReviewIds).toEqual([expect.any(String)])
+    const [afterReviewId] = afterReviewIds
+    expect(afterReviewId).not.toBe(beforeReviewId)
   })
   it('does not reopen a completed review after the account is deleted', async () => {
     const { poster, moderator } = await createActors()
@@ -178,11 +178,11 @@ describe('copyright effective incident authority', () => {
       reason: 'Please confirm the retained restriction.',
       targetIds: [restriction.targetId],
     })
-    const before = await getCopyrightRepeatInfringerAccount(poster.id)
+    const [beforeReviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
     await softDeleteUser(poster.id)
     await recordCopyrightRepeatInfringerReviewOutcome({
       currentUser: moderator,
-      reviewId: before.open_review_id!,
+      reviewId: beforeReviewId!,
       outcome: 'warning',
       rationale: 'The retained review is complete.',
       recordedAt: new Date(),
@@ -197,7 +197,7 @@ describe('copyright effective incident authority', () => {
       decisions: [{ restrictionId: restriction.id, action: 'confirm' }],
     })
 
-    expect((await getCopyrightRepeatInfringerAccount(poster.id)).open_review_id).toBeNull()
+    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([])
   })
   it('retains the open review but rejects enforcement after reversal drops below two', async () => {
     const { poster, moderator } = await createActors()
@@ -205,15 +205,15 @@ describe('copyright effective incident authority', () => {
     const second = await createTestRepeatInfringerNotice([poster.id], moderator)
     await confirmTestRepeatInfringerRestriction(first, moderator)
     await confirmTestRepeatInfringerRestriction(second, moderator)
-    const before = await getCopyrightRepeatInfringerAccount(poster.id)
+    const [beforeReviewId] = await readTestRepeatInfringerOpenReviewIds(poster.id)
     await reviewTestRepeatInfringerAppeal(first, poster, moderator, 'reverse')
-    const after = await getCopyrightRepeatInfringerAccount(poster.id)
-    expect(after.open_review_id).toBe(before.open_review_id)
-    expect(after.incidents.filter(row => row.is_operative)).toHaveLength(1)
+    const after = await readTestRepeatInfringerIncidents(poster.id)
+    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([beforeReviewId])
+    expect(after.filter(row => row.is_operative)).toHaveLength(1)
     await expect(
       recordCopyrightRepeatInfringerReviewOutcome({
         currentUser: moderator,
-        reviewId: after.open_review_id!,
+        reviewId: beforeReviewId!,
         outcome: 'restrict',
         rationale: 'The threshold must be checked again.',
         recordedAt: new Date(),

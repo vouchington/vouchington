@@ -25,7 +25,6 @@ import {
   issueCopyrightGuestCapability,
   requestCopyrightGuestInformation,
 } from './index.mts'
-import { authorizeCopyrightGuestCapability } from './guest-capabilities.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -180,12 +179,14 @@ describe('copyright guest lifecycle guards', () => {
       'Please send the registration',
     )
     await expect(
-      authorizeCopyrightGuestCapability({
+      appendCopyrightGuestFiling({
         noticeId: notice.id,
         token: 'spoofed@example.test',
         now: new Date('2026-07-02T12:00:00.000Z'),
+        kind: 'supplement',
+        statement: `spoofed-${crypto.randomUUID()}`,
       }),
-    ).resolves.toBeNull()
+    ).rejects.toMatchObject({ status: 403 })
     expect(await countCopyrightGuestCapabilities(notice.id)).toBe(1)
   })
 })

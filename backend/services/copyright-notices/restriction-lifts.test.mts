@@ -1,3 +1,4 @@
+import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { describe, expect, it } from 'vitest'
 import { decryptSecret } from '@modules/token-secrets'
 import { getImagePlacementForCopyright } from '@services/images/placements'
@@ -12,10 +13,7 @@ import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/service
 import { useCopyrightRetentionConfig } from '@voucha/test-helpers/services/copyright-notices/retention-config'
 import { sendAllCopyrightDeliveries } from '@voucha/test-helpers/services/copyright-notices/retention-deliveries'
 import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/copyright-notices/retention-evidence-bucket'
-import {
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
-} from './repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from './repeat-infringer-incidents.mts'
 import { processCopyrightActionIntent, sweepCopyrightEvidenceRetention } from './index.mts'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 
@@ -33,7 +31,7 @@ describe('administrator copyright restriction lifts', () => {
     await createTestLiftClaimantReceipt(noticeId, `lift-${crypto.randomUUID()}@example.test`)
     const before = await getCopyrightNoticePrivateAggregate(noticeId)
     const restriction = before?.restrictions[0]
-    const incident = (await getCopyrightRepeatInfringerAccount(poster.id)).incidents.find(
+    const incident = (await readTestRepeatInfringerIncidents(poster.id)).find(
       row => row.copyright_notice_id === noticeId,
     )
     const withhold = before?.actionIntents.find(
@@ -117,9 +115,9 @@ describe('administrator copyright restriction lifts', () => {
     expect(
       (await getCopyrightNoticePrivateAggregate(noticeId))?.restrictions[0]?.lifted_at,
     ).not.toBeNull()
-    expect(await getCopyrightRepeatInfringerAccount(poster.id)).toMatchObject({
-      incidents: [expect.objectContaining({ copyright_notice_id: noticeId, is_operative: false })],
-    })
+    expect(await readTestRepeatInfringerIncidents(poster.id)).toEqual([
+      expect.objectContaining({ copyright_notice_id: noticeId, is_operative: false }),
+    ])
     await sendAllCopyrightDeliveries(noticeId)
     const retentionBefore = await readCopyrightRetentionColumns(noticeId)
     await expect(
