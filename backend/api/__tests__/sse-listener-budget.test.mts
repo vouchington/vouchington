@@ -24,12 +24,13 @@ describe('SSE response listener budget', () => {
     const callback = app.callback()
     const closeObserver = vi.fn<() => void>()
     let response: Context['res'] | undefined
+    let handlerCompletion: Promise<void> | undefined
     const server = createServer((req, res) => {
       response = res
       res.once('close', closeObserver)
       res.once('close', closeObserver)
       res.once('close', closeObserver)
-      callback(req, res)
+      handlerCompletion = Promise.resolve(callback(req, res))
     })
     const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
 
@@ -44,6 +45,8 @@ describe('SSE response listener budget', () => {
       })
 
       await Promise.all([listenerState.promise, pipelineSettled.promise])
+      expect(handlerCompletion).toBeDefined()
+      await handlerCompletion
       expect(await listenerState.promise).toEqual({ count: 11, limit: 11 })
       expect(response?.getMaxListeners()).toBe(10)
       expect(response?.listenerCount('close')).toBeLessThanOrEqual(response?.getMaxListeners() ?? 0)
