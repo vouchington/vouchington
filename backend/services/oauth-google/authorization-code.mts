@@ -2,8 +2,7 @@ import createHttpError from 'http-errors'
 import { readGoogleClientId, readGoogleClientSecret } from '@voucha/config'
 import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
-import { cancelResponseBody } from '@modules/utils/http'
+import { cancelResponseBody, getExternalRequestDispatcher } from '@modules/utils/http'
 
 /* no-mistakes: integration=oauth */
 async function exchangeGoogleAuthorizationCode(

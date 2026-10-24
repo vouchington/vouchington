@@ -24,6 +24,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@jongleberry/api-server": "^3.1.0",
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",

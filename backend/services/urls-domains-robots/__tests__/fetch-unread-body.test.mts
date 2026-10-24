@@ -1,8 +1,8 @@
 import {
   cancelResponseBody as cancelResponseBodyFn,
-  readResponseBody as readResponseBodyFn,
   type fetchWithTimeoutSimple as fetchWithTimeoutSimpleFn,
 } from '@modules/utils/http'
+import { readResponseBody as readResponseBodyFn } from '@modules/utils/http-body'
 import { describe, expect, it, vi } from 'vitest'
 import { defaultRobotsDependencies, fetchRobotsTxtWithRetry } from '../fetch-retry.mts'
 

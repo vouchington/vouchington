@@ -41,6 +41,7 @@
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
     "@vouchington/aws": "^0.1.0",
+    "@vouchington/http-transport": "^0.1.0",
     "http-errors": "^2.0.1",
     "https-proxy-agent": "^9.1.0"
   },

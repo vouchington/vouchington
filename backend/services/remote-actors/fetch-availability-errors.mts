@@ -1,4 +1,4 @@
-import { isTimeoutError } from '@modules/utils/http'
+import { isTimeoutError } from '@vouchington/http-transport/fetch'
 
 export class RemoteActorFetchAvailabilityError extends Error {
   readonly status = 502

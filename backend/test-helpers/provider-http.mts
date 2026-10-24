@@ -1,6 +1,7 @@
 import undici, { fetch as undiciFetch, MockAgent } from 'undici'
 import { vi } from 'vitest'
 import type { getExternalFetch } from '@modules/utils'
+import * as transport from '@vouchington/http-transport/fetch'
 
 export { MockAgent }
 
@@ -13,7 +14,7 @@ export function createMockAgentFetchForTest(agent: MockAgent): ReturnType<typeof
     })) as unknown as Response
 }
 
-/** Restore the external SDK method after a provider that uses Undici's default export runs. */
+/** Route the app's timed fetches and Undici's default export through the supplied dispatcher. */
 export async function withMockAgentDefaultFetchForTest<Result>(
   agent: MockAgent,
   operation: () => Promise<Result>,
@@ -22,9 +23,23 @@ export async function withMockAgentDefaultFetchForTest<Result>(
   const fetch = vi
     .spyOn(undici, 'fetch')
     .mockImplementation((input, init) => originalFetch(input, { ...init, dispatcher: agent }))
+  const originalTimedFetch = transport.fetchWithTimeout
+  const originalSimpleFetch = transport.fetchWithTimeoutSimple
+  const dispatchers = {
+    getExternalRequestDispatcher: () => agent,
+    getPinnedRequestDispatcher: () => agent,
+  }
+  const timed = vi
+    .spyOn(transport, 'fetchWithTimeout')
+    .mockImplementation(options => originalTimedFetch({ ...options, dispatchers }))
+  const simple = vi
+    .spyOn(transport, 'fetchWithTimeoutSimple')
+    .mockImplementation((url, timeoutMs) => originalSimpleFetch(url, timeoutMs, agent))
   try {
     return await operation()
   } finally {
     fetch.mockRestore()
+    timed.mockRestore()
+    simple.mockRestore()
   }
 }

@@ -28,6 +28,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
+    "@vouchington/http-transport": "^0.1.0",
     "@vouchington/robots": "^0.0.2",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0"

@@ -1,7 +1,8 @@
 import { Worker } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
 import { HttpRateLimitError } from '@modules/on-error/errors'
-import { cancelResponseBody, getHeaderValue, getRetryAfterDurationMs } from '@modules/utils/http'
+import { cancelResponseBody } from '@modules/utils/http'
+import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
 
 type HeaderSource = Parameters<typeof getHeaderValue>[0]
 
@@ -21,7 +22,7 @@ export function getRetryAfterMs(error: unknown): number | null {
     return retryAfterMs
   }
   const header = getHeaderValue(headers ?? $response?.headers, 'retry-after')
-  return getRetryAfterDurationMs(Array.isArray(header) ? header[0] : header)
+  return parseRetryAfter(Array.isArray(header) ? header[0] : header)
 }
 
 /**

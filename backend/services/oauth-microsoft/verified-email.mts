@@ -2,7 +2,7 @@ import { createPublicKey, createVerify, type JsonWebKeyInput } from 'node:crypto
 import createHttpError from 'http-errors'
 import { MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID } from '@voucha/config'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import {
   parseMicrosoftIdentityTokenClaims,
   parseMicrosoftIdentityTokenParts,

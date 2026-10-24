@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getExternalFetch } from '@modules/utils/http-dispatchers'
+import { getExternalFetch } from '@modules/utils/http'
 import { recordScheduledJobConfigMissing } from '@modules/on-error'
 import Sentry from '@modules/on-error/sentry'
 import sql from 'sql-template-strings'

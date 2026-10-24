@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createMastodonAdapter } from './mastodon.mts'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock<typeof import('undici')>(import('undici'), async () => {

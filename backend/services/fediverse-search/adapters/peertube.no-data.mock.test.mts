@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPeerTubeAdapter } from './peertube.mts'
 import { decodeFediverseCursor, encodeFediverseCursor } from '../cursor.mts'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock<typeof import('undici')>(import('undici'), async () => {

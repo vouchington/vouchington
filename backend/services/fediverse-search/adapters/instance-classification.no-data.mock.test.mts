@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { classifyFediverseInstance } from './instance-classification.mts'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { FEDIVERSE_MASTODON_HOST } from '@voucha/config'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())

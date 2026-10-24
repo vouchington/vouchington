@@ -1,6 +1,6 @@
 import { isFeedContentType, parseFeedDocument } from '@vouchington/rss-parser'
 import { CRAWLER_USER_AGENT } from '@voucha/config'
-import { getExternalFetch } from '@modules/utils/http-dispatchers'
+import { getExternalFetch } from '@modules/utils/http'
 import { createWriteStream } from 'node:fs'
 import { mkdtempDisposable, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'

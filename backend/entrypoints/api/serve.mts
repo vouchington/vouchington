@@ -28,7 +28,7 @@ function exitWithFailure() {
 
 validateRuntimeImageOrigin()
 // Enables the API egress guardrail (warn-mode) for this process only — never the worker, which
-// legitimately egresses to arbitrary IPv4-only hosts. See @modules/utils/http-dispatchers.mts.
+// legitimately egresses to arbitrary IPv4-only hosts. See @modules/utils/http.mts.
 /* v8 ignore next -- production bootstrap side effect; this module runs only in the real API process (serve.test.mts reads it as source text rather than importing it). */
 enableApiEgressGuardrail()
 

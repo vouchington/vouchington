@@ -5,7 +5,7 @@ import {
   CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY,
   CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS,
 } from './verify.mts'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { turnstileConfig } from './config.mts'
 import {
   deleteDynamicConfigFieldsForTest,

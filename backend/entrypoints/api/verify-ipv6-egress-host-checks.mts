@@ -2,7 +2,7 @@ import { resolve4, resolve6 } from 'node:dns/promises'
 import { isIP } from 'node:net'
 import { networkInterfaces } from 'node:os'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
-import { getExternalFetch } from '@modules/utils/http-dispatchers'
+import { getExternalFetch } from '@modules/utils/http'
 import { getConfiguredSentryHost, IPV6_ALLOWLIST } from '@modules/utils/ipv6-allowlist'
 
 // Mirrors @modules/aws/config's default; not imported directly to keep this diagnostic entrypoint
