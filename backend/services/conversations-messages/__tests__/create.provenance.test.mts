@@ -10,7 +10,6 @@ import type { ContentProvenance } from '@voucha/types/entities/content-provenanc
 import {
   createClientGeneratedChatTurn,
   createConversation,
-  createConversationMessage,
   getClientGeneratedChatTurnReplay,
   getConversationMessagesByConversationId,
 } from '../index.mts'
@@ -60,25 +59,10 @@ describe('conversation message provenance', () => {
     ['an API key', () => ({ createdVia: 'api', oauthClientId: null }) as const],
     ['an OAuth client over MCP', () => ({ createdVia: 'mcp', oauthClientId }) as const],
     ['the platform', () => ({ createdVia: 'system', oauthClientId: null }) as const],
-  ])('records the channel of %s on a chat message', async (_label, build) => {
+  ])('records the channel of %s on both messages', async (_label, build) => {
     const provenance: ContentProvenance = build()
     const { user, conversation } = await newConversation()
-
-    const message = await createConversationMessage(conversation.id, user.id, provenance, {
-      role: 'user',
-      content: 'Hello',
-    })
-
-    await expect(readTestContentProvenance('conversation_messages', message.id)).resolves.toEqual(
-      provenance,
-    )
-  })
-
-  it('records the request channel on both messages of a client-generated turn', async () => {
-    const provenance: ContentProvenance = { createdVia: 'mcp', oauthClientId }
-    const { user, conversation } = await newConversation()
     const params = turn(user.id, conversation.id, provenance)
-
     const { userMessage, assistantMessage } = await createClientGeneratedChatTurn(params)
 
     expect(userMessage.id).toBe(params.userMessageId)
@@ -113,17 +97,13 @@ describe('conversation message provenance', () => {
   it('keeps provenance out of created, replayed and listed messages', async () => {
     const { user, conversation } = await newConversation()
     const params = turn(user.id, conversation.id, { createdVia: 'api', oauthClientId })
-    const chat = await createConversationMessage(conversation.id, user.id, params.provenance, {
-      role: 'user',
-      content: 'Hello',
-    })
     const created = await createClientGeneratedChatTurn(params)
     const replay = await createClientGeneratedChatTurn(params)
     const replayRead = await getClientGeneratedChatTurnReplay(params)
     const listed = await getConversationMessagesByConversationId(conversation.id)
 
-    expect(listed).toHaveLength(3)
-    expect(JSON.stringify({ chat, created, replay, replayRead, listed })).not.toMatch(
+    expect(listed).toHaveLength(2)
+    expect(JSON.stringify({ created, replay, replayRead, listed })).not.toMatch(
       /created_?via|oauth/i,
     )
   })
@@ -131,21 +111,11 @@ describe('conversation message provenance', () => {
   it('selects only the public columns on every message read path', async () => {
     const { user, conversation } = await newConversation()
     const params = turn(user.id, conversation.id, { createdVia: 'api', oauthClientId })
-    const chat = await createConversationMessage(conversation.id, user.id, params.provenance, {
-      role: 'user',
-      content: 'Hello',
-    })
     const created = await createClientGeneratedChatTurn(params)
     const replay = await createClientGeneratedChatTurn(params)
     const listed = await getConversationMessagesByConversationId(conversation.id)
 
-    const messages = [
-      chat,
-      created.userMessage,
-      created.assistantMessage,
-      replay.userMessage,
-      ...listed,
-    ]
+    const messages = [created.userMessage, created.assistantMessage, replay.userMessage, ...listed]
     for (const message of messages) {
       expect(Object.keys(message).toSorted()).toEqual(PUBLIC_MESSAGE_COLUMNS)
     }
@@ -155,12 +125,6 @@ describe('conversation message provenance', () => {
     const { user, conversation } = await newConversation()
     const invalid = { createdVia: 'web', oauthClientId } as unknown as ContentProvenance
 
-    await expect(
-      createConversationMessage(conversation.id, user.id, invalid, {
-        role: 'user',
-        content: 'Hello',
-      }),
-    ).rejects.toMatchObject({ code: '23514' })
     await expect(
       createClientGeneratedChatTurn(turn(user.id, conversation.id, invalid)),
     ).rejects.toMatchObject({ code: '23514' })

@@ -1,11 +1,8 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { createTestUser, createTestConversationMessage } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import {
-  createConversation,
-  createConversationMessage,
-} from '@services/conversations-messages/create'
+import { createConversation } from '@services/conversations-messages/create'
 import { getConversationById } from '@services/conversations-messages'
 import { spendCapConfig } from '@services/ai-usage'
 import type { PrivateUser } from '@services/users/types'
@@ -68,9 +65,13 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     try {
       const suffix = crypto.randomUUID().slice(0, 8)
       const conv = await createConversation(user.id, '')
-      await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
-        role: 'user',
-        content: `Hello, what is the weather? ${suffix}`,
+      await createTestConversationMessage({
+        conversationId: conv.id,
+        createdById: user.id,
+        content: {
+          role: 'user',
+          content: `Hello, what is the weather? ${suffix}`,
+        },
       })
 
       const request = createRequest()
@@ -119,9 +120,13 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
     try {
       const suffix = crypto.randomUUID().slice(0, 8)
       const conv = await createConversation(user.id, '')
-      await createConversationMessage(conv.id, user.id, WEB_PROVENANCE, {
-        role: 'user',
-        content: `Hello, what is the weather? ${suffix}`,
+      await createTestConversationMessage({
+        conversationId: conv.id,
+        createdById: user.id,
+        content: {
+          role: 'user',
+          content: `Hello, what is the weather? ${suffix}`,
+        },
       })
 
       const request = createRequest()
