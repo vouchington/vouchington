@@ -64,34 +64,36 @@ export async function queryCopyrightSweepIdPage(
   } else {
     observeSharedDbScope(operation, sharedDbCursorScope(parsed.afterId))
   }
-  appendCopyrightSweepKeyset(selectWhere, column, parsed.afterId, parsed.limit)
+  selectWhere.append(copyrightSweepKeyset(column, parsed.afterId, parsed.limit))
   const { rows } = await query(selectWhere)
   return toCopyrightSweepIdPage(rows, parsed.limit)
 }
 
-function appendCopyrightSweepKeyset(
-  query: SQLStatement,
+function copyrightSweepKeyset(
   column: CopyrightSweepIdColumn,
   afterId: string | null,
   limit: number,
-): void {
-  if (column === 'enforcementAssessment') {
-    if (afterId) query.append(sql`\n      AND assessment.id > ${afterId}`)
-    query.append(sql`\n    ORDER BY assessment.id LIMIT ${limit + 1}`)
-    return
+): SQLStatement {
+  switch (column) {
+    case 'enforcementAssessment':
+      return afterId
+        ? sql`\n      AND assessment.id > ${afterId}\n    ORDER BY assessment.id LIMIT ${limit + 1}`
+        : sql`\n    ORDER BY assessment.id LIMIT ${limit + 1}`
+    case 'formReviewIntake':
+      return afterId
+        ? sql`\n      AND review.copyright_notice_form_intake_id > ${afterId}\n    ORDER BY review.copyright_notice_form_intake_id LIMIT ${limit + 1}`
+        : sql`\n    ORDER BY review.copyright_notice_form_intake_id LIMIT ${limit + 1}`
+    case 'restorationDeadline':
+      return afterId
+        ? sql`\n      AND deadline.id > ${afterId}\n    ORDER BY deadline.id LIMIT ${limit + 1}`
+        : sql`\n    ORDER BY deadline.id LIMIT ${limit + 1}`
+    case 'rowId':
+      return afterId
+        ? sql`\n      AND id > ${afterId}\n    ORDER BY id LIMIT ${limit + 1}`
+        : sql`\n    ORDER BY id LIMIT ${limit + 1}`
+    default:
+      throw new Error(`Unknown copyright sweep id column: ${String(column)}`)
   }
-  if (column === 'formReviewIntake') {
-    if (afterId) query.append(sql`\n      AND review.copyright_notice_form_intake_id > ${afterId}`)
-    query.append(sql`\n    ORDER BY review.copyright_notice_form_intake_id LIMIT ${limit + 1}`)
-    return
-  }
-  if (column === 'restorationDeadline') {
-    if (afterId) query.append(sql`\n      AND deadline.id > ${afterId}`)
-    query.append(sql`\n    ORDER BY deadline.id LIMIT ${limit + 1}`)
-    return
-  }
-  if (afterId) query.append(sql`\n      AND id > ${afterId}`)
-  query.append(sql`\n    ORDER BY id LIMIT ${limit + 1}`)
 }
 
 export function toCopyrightSweepIdPage(

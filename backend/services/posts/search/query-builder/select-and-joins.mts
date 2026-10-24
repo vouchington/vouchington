@@ -32,12 +32,7 @@ export function appendPostSearchSelectAndJoins(
   if (rankingScoreExpression) appendSelectExpression(query, rankingScoreExpression, 'ranking_score')
   if (followingRankExpression)
     appendSelectExpression(query, followingRankExpression, 'following_rank')
-  if (sort === 'best') query.append(sql`,\n      posts.votes_score_sort AS vote_score\n    `)
-  if (sort === 'hot') {
-    query.append(sql`,\n    `)
-    query.append(buildHotScoreExpression())
-    query.append(sql` AS hot_score`)
-  }
+  query.append(sortSelectColumn(sort))
   if (useSemanticCandidates) {
     // Keep ranking/filter distance work bounded even when a full-table join looks cheaper.
     query.append(sql`
@@ -53,6 +48,21 @@ export function appendPostSearchSelectAndJoins(
   }
   appendSearchJoins(query, { hasSemanticSearch, hasTextSearch, options })
   if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
+}
+
+function sortSelectColumn(sort: string): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql`,\n      posts.votes_score_sort AS vote_score\n    `
+    case 'hot':
+      return sql`,\n    `.append(buildHotScoreExpression()).append(sql` AS hot_score`)
+    case 'new':
+    case 'following_new':
+    case 'relevance':
+      return sql``
+    default:
+      throw new Error(`Unknown post search sort: ${sort}`)
+  }
 }
 
 function appendSelectExpression(

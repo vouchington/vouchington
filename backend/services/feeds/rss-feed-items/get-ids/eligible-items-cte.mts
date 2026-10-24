@@ -64,27 +64,37 @@ function appendCommunityScopeFilter(
   feedType: RssFeedItemFeedOptions['feed_type'],
 ): void {
   if (!communityId) return
+  query.append(communityScopeClause(feedType))
+}
+
+function communityScopeClause(feedType: RssFeedItemFeedOptions['feed_type']): SQLStatement {
   const sourceFilter = buildCommunityScopeSourceFilter()
   const topicFilter = buildCommunityScopeTopicFilter()
-  if (feedType === 'follow_rss_feeds') query.append(sql` AND `).append(sourceFilter)
-  else if (feedType === 'follow_topics') query.append(sql` AND `).append(topicFilter)
-  else if (feedType === 'all')
-    query
-      .append(sql` AND `)
-      .append(sourceFilter)
-      .append(sql` AND `)
-      .append(topicFilter)
-  else if (feedType === 'any') {
-    query
-      .append(sql`
+  switch (feedType) {
+    case 'follow_rss_feeds':
+      return sql` AND `.append(sourceFilter)
+    case 'follow_topics':
+      return sql` AND `.append(topicFilter)
+    case 'all':
+      return sql` AND `
+        .append(sourceFilter)
+        .append(sql` AND `)
+        .append(topicFilter)
+    case 'any':
+      return sql`
         AND (
-          `)
-      .append(sourceFilter)
-      .append(sql`
+          `
+        .append(sourceFilter)
+        .append(sql`
           OR `)
-      .append(topicFilter).append(sql`
+        .append(topicFilter).append(sql`
         )
       `)
+    case 'follow_users':
+    case undefined:
+      return sql``
+    default:
+      throw new Error(`Unknown RSS feed item feed type: ${String(feedType)}`)
   }
 }
 

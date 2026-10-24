@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import type { CommentTreeOptions } from './types.mts'
+import type { CommentSort, CommentTreeOptions } from '@voucha/types/entities/comment'
 import { clampMaxDepth, detectCommentSort } from '@modules/search-utils'
 
 export default function buildCommentTreeQuery(
@@ -49,13 +49,7 @@ export default function buildCommentTreeQuery(
     })
   }
 
-  query.append(sql` ORDER BY `)
-
-  if (sort === 'best') {
-    query.append(sql`posts.votes_score_sort DESC, posts.id DESC`)
-  } else {
-    query.append(sql`posts.id DESC`)
-  }
+  query.append(rootCommentOrderBy(sort))
 
   query.append(sql`),
   comment_tree AS (
@@ -81,22 +75,48 @@ export default function buildCommentTreeQuery(
     comment_tree.depth
   `)
 
-  if (sort === 'best') {
-    query.append(sql`,
-    comment_tree.votes_score_sort AS vote_score
-  `)
-  }
+  query.append(voteScoreColumn(sort))
 
   query.append(sql`
   FROM comment_tree
   `)
 
-  query.append(sql` ORDER BY `)
-  if (sort === 'best') {
-    query.append(sql`comment_tree.votes_score_sort DESC, comment_tree.id DESC`)
-  } else {
-    query.append(sql`comment_tree.id DESC`)
-  }
+  query.append(commentTreeOrderBy(sort))
 
   return query
+}
+
+function rootCommentOrderBy(sort: CommentSort): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql` ORDER BY posts.votes_score_sort DESC, posts.id DESC`
+    case 'new':
+      return sql` ORDER BY posts.id DESC`
+    default:
+      throw new Error(`Unknown comment sort: ${String(sort)}`)
+  }
+}
+
+function voteScoreColumn(sort: CommentSort): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql`,
+    comment_tree.votes_score_sort AS vote_score
+  `
+    case 'new':
+      return sql``
+    default:
+      throw new Error(`Unknown comment sort: ${String(sort)}`)
+  }
+}
+
+function commentTreeOrderBy(sort: CommentSort): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql` ORDER BY comment_tree.votes_score_sort DESC, comment_tree.id DESC`
+    case 'new':
+      return sql` ORDER BY comment_tree.id DESC`
+    default:
+      throw new Error(`Unknown comment sort: ${String(sort)}`)
+  }
 }

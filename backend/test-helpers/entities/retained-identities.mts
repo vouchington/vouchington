@@ -5,17 +5,35 @@ import {
   getEntityRelationIntegrityTargetColumn,
 } from '@voucha/types/entities/entity-relations-metadata'
 
-const ROOT_TABLES = {
-  user: 'retained_user_identities',
-  membership: 'retained_membership_identities',
-  api_key: 'retained_api_key_identities',
-  topic: 'retained_topic_identities',
-  post: 'retained_post_identities',
-  rss_feed_item: 'retained_rss_feed_item_identities',
-  image: 'retained_image_identities',
-} as const
+type RetainedIdentityFamily =
+  | 'user'
+  | 'membership'
+  | 'api_key'
+  | 'topic'
+  | 'post'
+  | 'rss_feed_item'
+  | 'image'
 
-type RetainedIdentityFamily = keyof typeof ROOT_TABLES
+function retainedRootTable(family: RetainedIdentityFamily): string {
+  switch (family) {
+    case 'user':
+      return 'retained_user_identities'
+    case 'membership':
+      return 'retained_membership_identities'
+    case 'api_key':
+      return 'retained_api_key_identities'
+    case 'topic':
+      return 'retained_topic_identities'
+    case 'post':
+      return 'retained_post_identities'
+    case 'rss_feed_item':
+      return 'retained_rss_feed_item_identities'
+    case 'image':
+      return 'retained_image_identities'
+    default:
+      throw new Error(`Unknown retained identity family: ${String(family)}`)
+  }
+}
 
 function retainedRelationTable(relationTable: string): string {
   if (
@@ -100,7 +118,7 @@ export async function hasTestRetainedIdentityRoot(
   id: string,
 ): Promise<boolean> {
   const { rowCount } = await read(
-    `/* hasTestRetainedIdentityRoot */ SELECT id FROM ${ROOT_TABLES[family]} WHERE id = $1`,
+    `/* hasTestRetainedIdentityRoot */ SELECT id FROM ${retainedRootTable(family)} WHERE id = $1`,
     [id],
   )
   return (rowCount ?? 0) > 0
@@ -111,7 +129,7 @@ export async function readTestRetainedIdentityTraversalBound(
   pageSize: number,
 ): Promise<number> {
   const { rows } = await read<{ count: string }>(
-    `/* readTestRetainedIdentityTraversalBound */ SELECT COUNT(*)::text AS count FROM ${ROOT_TABLES[family]}`,
+    `/* readTestRetainedIdentityTraversalBound */ SELECT COUNT(*)::text AS count FROM ${retainedRootTable(family)}`,
   )
   return Math.ceil(Number(rows[0]!.count) / pageSize) + 2
 }
@@ -122,7 +140,7 @@ export async function insertTestRetainedIdentityRoot(
   options: QueryOptions = {},
 ): Promise<void> {
   await write(
-    `/* insertTestRetainedIdentityRoot */ INSERT INTO ${ROOT_TABLES[family]} (id) VALUES ($1)`,
+    `/* insertTestRetainedIdentityRoot */ INSERT INTO ${retainedRootTable(family)} (id) VALUES ($1)`,
     [id],
     options,
   )

@@ -12,11 +12,19 @@ import { recordTestPostModerationDisposition } from './post-moderation.mts'
 // real service layers on top in update-status.mts.
 export type TestClearanceStatus = 'pending' | 'approved' | 'rejected' | 'in_review'
 
-const TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE: Record<TestClearanceStatus, string> = {
-  approved: 'approve',
-  rejected: 'reject',
-  in_review: 'mark_in_review',
-  pending: 'reset_to_pending',
+function clearanceChangeType(status: TestClearanceStatus): string {
+  switch (status) {
+    case 'approved':
+      return 'approve'
+    case 'rejected':
+      return 'reject'
+    case 'in_review':
+      return 'mark_in_review'
+    case 'pending':
+      return 'reset_to_pending'
+    default:
+      throw new Error(`Unknown clearance status: ${String(status)}`)
+  }
 }
 
 export async function insertTestPostClearanceChange(options: {
@@ -38,7 +46,7 @@ export async function insertTestPostClearanceChange(options: {
     VALUES (
       COALESCE(${id}::uuid, uuidv7()),
       ${options.postId},
-      ${TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[options.status]},
+      ${clearanceChangeType(options.status)},
       ${changedById},
       ${JSON.stringify(options.metadata ?? {})}::jsonb
       , ${options.moderationTransparencyCategories ?? []}::moderation_transparency_categories[]
@@ -56,7 +64,7 @@ export async function updateTestPostClearanceChange(options: {
 }): Promise<void> {
   await write(sql`/* updateTestPostClearanceChange */
     UPDATE post_clearance_changes
-    SET change_type = ${TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[options.status]},
+    SET change_type = ${clearanceChangeType(options.status)},
         metadata = ${JSON.stringify(options.metadata ?? {})}::jsonb
     WHERE id = ${options.id}::uuid
   `)
@@ -67,7 +75,7 @@ export async function setTestPostClearanceStatus(
   status: TestClearanceStatus,
   updatedById?: string | null,
 ): Promise<{ id: string; community_id: string | null } | null> {
-  const changeType = TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[status]
+  const changeType = clearanceChangeType(status)
   const { rows } = await write<{ id: string; community_id: string | null }>(sql`
     /* setTestPostClearanceStatus */
     WITH inserted_change AS (

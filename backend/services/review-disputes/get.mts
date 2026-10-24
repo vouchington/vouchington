@@ -1,5 +1,5 @@
 import { read, write, type QueryExecutor, type QueryOptions } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
 import { DISPUTE_SLA_HOURS, type ReviewDisputeStatus } from './config.mts'
 import type { ReviewDisputeResponse } from './types.mts'
@@ -136,7 +136,7 @@ export async function listReviewDisputes(
     `)
     .append(DISPUTE_JOINS).append(sql`
     WHERE `)
-  appendReviewDisputeStatusPredicate(query, status)
+  query.append(reviewDisputeStatusPredicate(status))
   query.append(sql`
   `)
   if (disputantUserId) {
@@ -153,16 +153,16 @@ export async function listReviewDisputes(
   return { disputes: disputes.slice(0, limit), hasNextPage }
 }
 
-function appendReviewDisputeStatusPredicate(
-  query: ReturnType<typeof sql>,
-  status: ReviewDisputeStatus,
-): void {
-  if (status === 'pending') {
-    query.append(sql`rd.resolved_at IS NULL`)
-  } else if (status === 'dismissed') {
-    query.append(sql`rd.resolved_at IS NOT NULL AND rd.resolution_action = 'dismiss'`)
-  } else {
-    query.append(sql`rd.resolved_at IS NOT NULL AND rd.resolution_action != 'dismiss'`)
+function reviewDisputeStatusPredicate(status: ReviewDisputeStatus): SQLStatement {
+  switch (status) {
+    case 'pending':
+      return sql`rd.resolved_at IS NULL`
+    case 'dismissed':
+      return sql`rd.resolved_at IS NOT NULL AND rd.resolution_action = 'dismiss'`
+    case 'resolved':
+      return sql`rd.resolved_at IS NOT NULL AND rd.resolution_action != 'dismiss'`
+    default:
+      throw new Error(`Unknown review dispute status: ${String(status)}`)
   }
 }
 

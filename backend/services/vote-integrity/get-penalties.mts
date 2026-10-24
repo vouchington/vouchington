@@ -1,6 +1,6 @@
 import { read, write, type QueryExecutor } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { VoteWeightPenalty } from './revoke-penalty.mts'
 
@@ -78,11 +78,7 @@ async function getVoteWeightPenaltiesWithDatabaseRead(
     WHERE TRUE
   `
 
-  if (status === 'active') {
-    query.append(sql` AND revoked_at IS NULL`)
-  } else if (status === 'revoked') {
-    query.append(sql` AND revoked_at IS NOT NULL`)
-  }
+  query.append(penaltyStatusPredicate(status))
 
   if (userId) {
     query.append(sql` AND user_id = ${userId}`)
@@ -135,4 +131,17 @@ function buildVotePenaltyCursorScope(
     source_flag_id: options.sourceFlagId ?? null,
     order: 'id-desc',
   })
+}
+
+function penaltyStatusPredicate(status: 'active' | 'revoked' | undefined): SQLStatement {
+  switch (status) {
+    case undefined:
+      return sql``
+    case 'active':
+      return sql` AND revoked_at IS NULL`
+    case 'revoked':
+      return sql` AND revoked_at IS NOT NULL`
+    default:
+      throw new Error(`Unknown penalty status: ${String(status)}`)
+  }
 }

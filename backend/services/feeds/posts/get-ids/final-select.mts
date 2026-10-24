@@ -23,22 +23,40 @@ export function appendPostFeedFinalSelect(
       combined_posts.delivery_type,
       combined_posts.shared_by_id,
       combined_posts.shared_at`)
-  if (sort === 'hot') query.append(sql`,\n      combined_posts.hot_score`)
+  query.append(hotScoreColumn(sort))
   query.append(sql`
     FROM combined_posts
     WHERE 1 = 1
   `)
   appendCursorFilter(query, { cursor, sort })
-  if (sort === 'hot') {
-    query.append(sql`
+  query.append(orderAndLimit(sort, safeLimit))
+}
+
+function hotScoreColumn(sort: string): SQLStatement {
+  switch (sort) {
+    case 'hot':
+      return sql`,\n      combined_posts.hot_score`
+    case 'new':
+      return sql``
+    default:
+      throw new Error(`Unknown post feed sort: ${sort}`)
+  }
+}
+
+function orderAndLimit(sort: string, safeLimit: number): SQLStatement {
+  switch (sort) {
+    case 'hot':
+      return sql`
     ORDER BY combined_posts.hot_score DESC, combined_posts.result_id DESC
     LIMIT ${safeLimit + 1}
-  `)
-  } else {
-    query.append(sql`
+  `
+    case 'new':
+      return sql`
     ORDER BY combined_posts.sort_at DESC, combined_posts.result_id DESC
     LIMIT ${safeLimit + 1}
-  `)
+  `
+    default:
+      throw new Error(`Unknown post feed sort: ${sort}`)
   }
 }
 

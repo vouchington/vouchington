@@ -5,24 +5,32 @@ export function appendFeedCategoryFilter(
   searchQuery: SQLStatement,
   feedCategory: CommunityFeedCategory | undefined,
 ) {
-  if (feedCategory === 'posts' || feedCategory === 'news_topics') {
-    searchQuery.append(sql`
+  searchQuery.append(feedCategoryFilter(feedCategory))
+}
+
+function feedCategoryFilter(feedCategory: CommunityFeedCategory | undefined): SQLStatement {
+  switch (feedCategory) {
+    case undefined:
+      return sql``
+    case 'posts':
+    case 'news_topics':
+      return sql`
       AND EXISTS (
         SELECT 1
         FROM community_list_topics clit
         WHERE clit.community_id = c.id
           AND clit.removed_at IS NULL
-      )`)
-  } else if (feedCategory === 'news_sources') {
-    searchQuery.append(sql`
+      )`
+    case 'news_sources':
+      return sql`
       AND EXISTS (
         SELECT 1
         FROM community_list_rss_feeds clir
         WHERE clir.community_id = c.id
           AND clir.removed_at IS NULL
-      )`)
-  } else if (feedCategory === 'news') {
-    searchQuery.append(sql`
+      )`
+    case 'news':
+      return sql`
       AND (
         EXISTS (
           SELECT 1
@@ -36,6 +44,8 @@ export function appendFeedCategoryFilter(
           WHERE clir.community_id = c.id
             AND clir.removed_at IS NULL
         )
-      )`)
+      )`
+    default:
+      throw new Error(`Unknown community feed category: ${String(feedCategory)}`)
   }
 }

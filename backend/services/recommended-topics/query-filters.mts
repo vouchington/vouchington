@@ -61,25 +61,43 @@ export function appendRecommendationSelectAndOrder(
       total_score AS score,
       reasons AS reason`)
 
-  if (sort === 'best') {
-    query.append(sql`,
-      name`)
-  }
+  query.append(recommendationNameColumn(sort))
 
   query.append(sql`
     FROM filtered_recommendations`)
 
-  if (sort === 'best') {
-    query.append(sql`
-    ORDER BY name ASC, topic_id ASC`)
-  } else {
-    query.append(sql`
-    ORDER BY total_score DESC, topic_id ASC`)
-  }
+  query.append(recommendationOrderBy(sort))
 
   query.append(sql`
     LIMIT ${limit}
   `)
+}
+
+function recommendationNameColumn(sort: 'score' | 'best' | undefined): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql`,
+      name`
+    case 'score':
+    case undefined:
+      return sql``
+    default:
+      throw new Error(`Unknown recommendation sort: ${String(sort)}`)
+  }
+}
+
+function recommendationOrderBy(sort: 'score' | 'best' | undefined): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql`
+    ORDER BY name ASC, topic_id ASC`
+    case 'score':
+    case undefined:
+      return sql`
+    ORDER BY total_score DESC, topic_id ASC`
+    default:
+      throw new Error(`Unknown recommendation sort: ${String(sort)}`)
+  }
 }
 
 function appendRecommendationPagination(
