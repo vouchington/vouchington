@@ -1,6 +1,11 @@
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import { beginTransaction, write } from '@data-stores/psql'
 import { sessionExpirySecondsFor } from '@ts-shared/session-jwt'
+import {
+  getRequestUserAgentStringId,
+  hasRequestContext,
+  setRequestUserAgentStringId,
+} from '@modules/utils/request-context'
 import sql from 'sql-template-strings'
 import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import type { DeviceClass, DeviceContext } from './types.mts'
@@ -9,29 +14,47 @@ import type { UserSessionRow } from './user-session-types.mts'
 
 export async function upsertAuthenticatedSession(
   currentUserId: string,
-  options: {
-    sid: string
-    deviceId: string
-    expiresAt: Date
-    deviceName?: string | null
-    ipAddress?: string | null
-    userAgent?: string | null
-    refreshMetadata?: boolean
-    authOrigin?: 'web' | 'native'
-  },
+  options: AuthenticatedSessionOptions,
   queryOptions?: QueryOptions,
 ): Promise<UserSessionRow | null> {
-  const run = async (query: QueryExecutor): Promise<UserSessionRow | null> => {
-    await query(
-      sql`/* upsertAuthenticatedSession */
+  if (queryOptions?.query)
+    return writeAuthenticatedSession(queryOptions.query, currentUserId, options)
+  await using transaction = await beginTransaction()
+  const session = await writeAuthenticatedSession(transaction, currentUserId, options)
+  await transaction.commit()
+  return session
+}
+
+type AuthenticatedSessionOptions = {
+  sid: string
+  deviceId: string
+  expiresAt: Date
+  deviceName?: string | null
+  ipAddress?: string | null
+  userAgent?: string | null
+  refreshMetadata?: boolean
+  authOrigin?: 'web' | 'native'
+}
+
+async function writeAuthenticatedSession(
+  query: QueryExecutor,
+  currentUserId: string,
+  options: AuthenticatedSessionOptions,
+  resolvedUserAgentId?: string | null,
+): Promise<UserSessionRow | null> {
+  await query(
+    sql`/* upsertAuthenticatedSession */
         SELECT pg_advisory_xact_lock(hashtextextended(${currentUserId}, 0))`,
-    )
-    const deviceName = normalizeDeviceName(options.deviceName, options.userAgent)
-    const userAgent = normalizeText(options.userAgent, 1024)
-    const ipAddress = normalizeIpAddress(options.ipAddress)
-    const refreshMetadata = options.refreshMetadata !== false
-    const userAgentId = await upsertUserAgentString(userAgent, { query })
-    const { rows } = await query(sql`/* upsertAuthenticatedSession */
+  )
+  const deviceName = normalizeDeviceName(options.deviceName, options.userAgent)
+  const userAgent = normalizeText(options.userAgent, 1024)
+  const ipAddress = normalizeIpAddress(options.ipAddress)
+  const refreshMetadata = options.refreshMetadata !== false
+  const userAgentId =
+    resolvedUserAgentId === undefined
+      ? await upsertUserAgentString(userAgent, { query })
+      : resolvedUserAgentId
+  const { rows } = await query(sql`/* upsertAuthenticatedSession */
       INSERT INTO user_sessions (
         id, user_id, device_id, authentication_origin, device_name, user_agent_string_id, ip_address, expires_at, last_seen_at
       )
@@ -59,14 +82,7 @@ export async function upsertAuthenticatedSession(
           WHERE id = user_sessions.user_agent_string_id) AS user_agent,
         ip_address, created_at, last_seen_at, expires_at, revoked_at
     `)
-    return (rows[0] as UserSessionRow | undefined) ?? null
-  }
-
-  if (queryOptions?.query) return run(queryOptions.query)
-  await using transaction = await beginTransaction()
-  const session = await run(transaction)
-  await transaction.commit()
-  return session
+  return (rows[0] as UserSessionRow | undefined) ?? null
 }
 
 export async function registerAuthenticatedSession({
@@ -90,7 +106,7 @@ export async function registerAuthenticatedSession({
 }): Promise<void> {
   if (uid === null) return
 
-  await upsertAuthenticatedSession(uid, {
+  const options: AuthenticatedSessionOptions = {
     sid,
     deviceId: did,
     expiresAt: expiresAt ?? new Date(Date.now() + sessionExpirySecondsFor(deviceClass) * 1000),
@@ -98,7 +114,23 @@ export async function registerAuthenticatedSession({
     userAgent: deviceContext?.user_agent,
     refreshMetadata,
     authOrigin,
-  })
+  }
+  if (!hasRequestContext()) {
+    await upsertAuthenticatedSession(uid, options)
+    return
+  }
+
+  const normalizedUserAgent = normalizeText(options.userAgent, 1024)
+  let userAgentId: string | null | undefined = getRequestUserAgentStringId(normalizedUserAgent)
+  if (userAgentId === undefined) {
+    const resolvedUserAgentId = await upsertUserAgentString(normalizedUserAgent)
+    userAgentId = resolvedUserAgentId
+    if (resolvedUserAgentId !== null)
+      setRequestUserAgentStringId(normalizedUserAgent, resolvedUserAgentId)
+  }
+  await using transaction = await beginTransaction()
+  await writeAuthenticatedSession(transaction, uid, options, userAgentId)
+  await transaction.commit()
 }
 
 export async function listActiveUserSessions(

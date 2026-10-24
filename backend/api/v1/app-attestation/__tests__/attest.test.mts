@@ -3,6 +3,11 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
+  enableQueryCapture,
+  stopTestQueryCapture,
+  countCapturedQueriesByAnnotation,
+} from '@voucha/test-helpers/query-capture'
+import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
   closeScopedDynamicConfigContext,
@@ -69,6 +74,7 @@ describe('POST /api/v1/app-attestation/attest', () => {
   })
 
   afterEach(() => {
+    stopTestQueryCapture()
     vi.unstubAllEnvs()
     deleteDynamicConfigFieldsForTest(
       appAttestationConfig,
@@ -101,7 +107,9 @@ describe('POST /api/v1/app-attestation/attest', () => {
     })
     req.set('Cookie', `dt=${deviceToken.token}; st=${sessionToken.token}`)
 
+    enableQueryCapture()
     const res = await attemptFixtureAttest(req)
+    const queries = stopTestQueryCapture()
 
     if (res.status === 409) {
       // This fixture's keyId is cryptographically fixed to one real device key and
@@ -113,6 +121,7 @@ describe('POST /api/v1/app-attestation/attest', () => {
     }
 
     expect(res.status).toBe(200)
+    expect(countCapturedQueriesByAnnotation(queries, 'upsertUserAgentString')).toBe(1)
     expect(res.body.environment).toBe('development')
 
     const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined

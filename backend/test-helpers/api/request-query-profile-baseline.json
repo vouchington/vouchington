@@ -986,7 +986,7 @@
     "maxCount": null,
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
     "permanent": true,
-    "code": "backend/services/jwt-session/user-sessions.mts:25",
+    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
     "routes": [
       "GET /api/v1/auth/sessions",
       "POST /api/v1/app-attestation/attest",
