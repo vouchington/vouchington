@@ -1,7 +1,6 @@
 import { Buffer } from 'node:buffer'
 import {
   DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
-  encodeFeatureFlagCookie as encodeSharedFeatureFlagCookie,
   extractBooleanFeatureFlags,
   parseFeatureFlagCookieMaxLength,
   parseFeatureFlagCookie as parseSharedFeatureFlagCookie,
@@ -50,12 +49,4 @@ export function parseFeatureFlagCookie(cookieValue: string): FeatureFlags {
     featureFlagCookieCodec,
     getFeatureFlagCookieOptions(),
   )
-}
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function encodeFeatureFlagCookie(overrides: FeatureFlags): string {
-  return encodeSharedFeatureFlagCookie(overrides, featureFlagCookieCodec)
 }
