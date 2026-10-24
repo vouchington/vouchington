@@ -60,6 +60,7 @@
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/http-transport": "^0.1.0",
     "@vouchington/localization": "^0.2.1",
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.17",
