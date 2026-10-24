@@ -6,7 +6,7 @@ import {
   softDeleteTopic,
 } from '@voucha/test-helpers'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { getOrCreateHousehold } from '../households.mts'
+import { createHousehold } from '../households.mts'
 import {
   createHouseholdSpendingCategory,
   deleteHouseholdSpendingCategoryById,
@@ -61,7 +61,7 @@ describe('spending category visibility', () => {
   it('lets household members view shared entries without managing them', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
-    const household = await getOrCreateHousehold(owner)
+    const household = await createHousehold(owner)
     await insertTestHouseholdMembership({
       householdId: household.id,
       individualId: member.individual_id!,
@@ -101,7 +101,7 @@ describe('spending category visibility', () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     await updateUserFields(member.id, { spending_categories_visibility: 'users' })
-    const household = await getOrCreateHousehold(owner)
+    const household = await createHousehold(owner)
     await insertTestHouseholdMembership({
       householdId: household.id,
       individualId: member.individual_id!,
@@ -132,8 +132,8 @@ describe('spending category visibility', () => {
     const target = await createTestUser()
     await updateUserFields(target.id, { spending_categories_visibility: 'everyone' })
 
-    const targetHousehold = await getOrCreateHousehold(target)
-    const viewerHousehold = await getOrCreateHousehold(viewer)
+    const targetHousehold = await createHousehold(target)
+    const viewerHousehold = await createHousehold(viewer)
     await insertTestHouseholdMembership({
       householdId: viewerHousehold.id,
       individualId: target.individual_id!,

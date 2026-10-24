@@ -10,26 +10,6 @@ import type {
   UtmSourceStats,
 } from './types.mts'
 
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
- */
-export async function getLandingPageAnalytics(
-  currentUserId: string,
-  landingPageId: string,
-): Promise<Omit<LandingPageAnalytics, 'conversion_funnel'>> {
-  assert(isUUID(landingPageId), 422, 'Invalid landing page ID')
-
-  const { rows: ownerRows } = await read(sql`/* getLandingPageAnalytics:ownership */
-    SELECT id FROM user_landing_pages
-    WHERE id = ${landingPageId} AND user_id = ${currentUserId}
-    LIMIT 1
-  `)
-  assert(ownerRows.length > 0, 404, 'Landing page not found')
-
-  return getLandingPageAnalyticsByPageId(landingPageId)
-}
-
 export async function getLandingPageAnalyticsByPageId(
   landingPageId: string,
 ): Promise<Omit<LandingPageAnalytics, 'conversion_funnel'>> {
@@ -136,7 +116,7 @@ export async function getLandingPageAnalyticsByPageId(
   const itemIds = itemClickRows.map(r => r.item_id)
   let itemClicks: LandingPageItemClickStats[] = []
   if (itemIds.length > 0) {
-    const { rows: itemRows } = await read(sql`/* getLandingPageAnalytics:itemTypes */
+    const { rows: itemRows } = await read(sql`/* getLandingPageAnalyticsByPageId:itemTypes */
       SELECT id, item_type
       FROM user_landing_page_items
       WHERE id = ANY(${itemIds}::uuid[])

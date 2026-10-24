@@ -10,29 +10,6 @@ import {
   membershipUpdatedAtSql,
 } from './household-membership-page-row.mts'
 
-export async function getOrCreateHousehold(currentUser: PrivateUser | null) {
-  assert(currentUser, 401, 'User not logged in')
-  const { rows: households } = await read<HouseholdRow>(sql`/* getOrCreateHousehold */
-    SELECT
-      id,
-      owner_user_id,
-      updated_at
-    FROM households
-    WHERE owner_user_id = ${currentUser.id}
-    ORDER BY updated_at DESC, id DESC
-    LIMIT 1
-  `)
-  if (households.length > 0) {
-    return households[0]
-  }
-  const {
-    rows: [household],
-  } = await write<HouseholdRow>(sql`/* getOrCreateHousehold */
-    INSERT INTO households (owner_user_id) VALUES (${currentUser.id})
-    RETURNING id, owner_user_id, updated_at
-  `)
-  return household
-}
 export async function createHousehold(currentUser: PrivateUser | null) {
   assert(currentUser, 401, 'User not logged in')
   const { rows } = await write<HouseholdRow>(sql`/* createHousehold */

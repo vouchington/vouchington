@@ -4,7 +4,7 @@ import {
   createTestLandingPage,
   createTestLandingPageProfileLinkItem,
 } from '@voucha/test-helpers'
-import { getLandingPageAnalytics } from './get-analytics.mts'
+import { getLandingPageAnalyticsByPageId } from './get-analytics.mts'
 import { recordLandingPageVisit } from './record-visit.mts'
 import { recordLandingPageItemClick } from './record-click.mts'
 import { flush } from '@data-stores/analytics/backend-local'
@@ -48,9 +48,9 @@ describe('get-analytics', () => {
     }
   })
 
-  describe('getLandingPageAnalytics', () => {
+  describe('getLandingPageAnalyticsByPageId', () => {
     it('returns aggregated analytics', async () => {
-      const analytics = await getLandingPageAnalytics(userId, landingPageId)
+      const analytics = await getLandingPageAnalyticsByPageId(landingPageId)
       expect(analytics.total_visits).toBeGreaterThanOrEqual(2)
       expect(analytics.total_clicks).toBeGreaterThanOrEqual(1)
       expect(analytics.ctr).toBeGreaterThan(0)
@@ -61,15 +61,8 @@ describe('get-analytics', () => {
       expect(Array.isArray(analytics.utm_sources)).toBe(true)
     })
 
-    it('throws 404 for wrong user', async () => {
-      const otherUser = await createTestUserDirect()
-      await expect(getLandingPageAnalytics(otherUser!.id, landingPageId)).rejects.toMatchObject({
-        status: 404,
-      })
-    })
-
     it('counts unique visitors by distinct session IDs', async () => {
-      const analyticsBefore = await getLandingPageAnalytics(userId, landingPageId)
+      const analyticsBefore = await getLandingPageAnalyticsByPageId(landingPageId)
 
       const sharedSession = v7()
       await recordLandingPageVisit({ landingPageId, sessionId: sharedSession })
@@ -77,7 +70,7 @@ describe('get-analytics', () => {
       await recordLandingPageVisit({ landingPageId, sessionId: v7() })
       await flush()
 
-      const analyticsAfter = await getLandingPageAnalytics(userId, landingPageId)
+      const analyticsAfter = await getLandingPageAnalyticsByPageId(landingPageId)
 
       const addedTotalVisits = analyticsAfter.total_visits - analyticsBefore.total_visits
       const addedUniqueVisitors = analyticsAfter.unique_visitors - analyticsBefore.unique_visitors
@@ -93,7 +86,7 @@ describe('get-analytics', () => {
       await recordLandingPageVisit({ landingPageId, sessionId: v7() })
       await flush()
 
-      const analytics = await getLandingPageAnalytics(userId, landingPageId)
+      const analytics = await getLandingPageAnalyticsByPageId(landingPageId)
       expect(analytics.utm_sources).toBeDefined()
       expect(Array.isArray(analytics.utm_sources)).toBe(true)
       expect(analytics.utm_sources.length).toBeGreaterThanOrEqual(1)
@@ -105,7 +98,7 @@ describe('get-analytics', () => {
     })
 
     it('includes unique_visitors in daily_stats', async () => {
-      const analytics = await getLandingPageAnalytics(userId, landingPageId)
+      const analytics = await getLandingPageAnalyticsByPageId(landingPageId)
       for (const day of analytics.daily_stats) {
         expect(typeof day.unique_visitors).toBe('number')
         expect(day.unique_visitors).toBeLessThanOrEqual(day.visits)
