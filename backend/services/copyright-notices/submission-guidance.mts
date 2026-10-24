@@ -45,7 +45,7 @@ type SubmissionRow = {
   restricted_target_count: string
 }
 
-/** @public Agent boundary for the redacted model input; only live filings are returned. */
+/** Agent boundary for the redacted model input; only live filings are returned. */
 export async function getCopyrightSubmissionGuidanceSource(
   submissionId: string,
 ): Promise<GuidanceSource | null> {
@@ -134,7 +134,7 @@ function isPresent(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-/** @public Agent boundary for one immutable encrypted advisory guidance result. */
+/** Agent boundary for one immutable encrypted advisory guidance result. */
 export async function appendCopyrightSubmissionGuidance(input: {
   submissionId: string
   inputSha256: Buffer

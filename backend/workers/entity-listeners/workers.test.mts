@@ -1,13 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
+import { createTestTopic } from '@voucha/test-helpers'
 import {
   ENTITY_LISTENERS_JOBS,
   ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_POST_CREATED_JOB,
   ENTITY_LISTENERS_TOPIC_CREATED_JOB,
+  ENTITY_LISTENERS_TOPIC_DELETED_JOB,
   ENTITY_LISTENERS_TOPIC_UPDATED_JOB,
 } from '@queues/background/enqueues/entity-listeners-jobs'
 import { JobPayloadError, parseEntityJob } from '@queues/entity-listeners/payload/job-payload'
+import { TOP_HASHTAGS_VIEW } from '@queues/psql/config'
+import { psql } from '@queues/psql/queues'
+import { caches } from '@services/entity-cache/caches'
+import { getTopicByAny } from '@services/topics/get'
 import { entityListenersHandlers } from './workers.mts'
 
 async function run(job: { name: string }, data: unknown) {
@@ -44,6 +50,51 @@ describe('entity listener handlers', () => {
     await expect(run(ENTITY_LISTENERS_TOPIC_UPDATED_JOB, created)).rejects.toBeInstanceOf(
       JobPayloadError,
     )
+  })
+
+  it('replays a deleted topic by evicting its owned cache and requesting one hashtag refresh', async () => {
+    const topic = await createTestTopic()
+    const current = await getTopicByAny(topic.id)
+    if (!current) throw new Error('Test topic was not persisted')
+
+    const originalAdd = psql.add
+    const refreshAttempts: Array<{ name: string; data: unknown; opts: unknown }> = []
+    const observedRefresh = Promise.withResolvers<void>()
+    const add = vi.spyOn(psql, 'add').mockImplementation((name, data, opts) => {
+      if (
+        name !== 'refreshMaterializedView' ||
+        typeof data !== 'object' ||
+        data === null ||
+        !('viewName' in data) ||
+        data.viewName !== TOP_HASHTAGS_VIEW
+      ) {
+        return originalAdd.call(psql, name, data, opts)
+      }
+      refreshAttempts.push({ name, data, opts })
+      observedRefresh.resolve()
+      return Promise.resolve(null)
+    })
+
+    try {
+      await caches.topics.set(topic.id, current)
+      expect(await caches.topics.get(topic.id)).toMatchObject({ id: topic.id })
+      await run(ENTITY_LISTENERS_TOPIC_DELETED_JOB, {
+        id: topic.id,
+        updates: { name: topic.name, slug: topic.slug },
+      })
+      await observedRefresh.promise
+      expect(await caches.topics.get(topic.id)).toBeNull()
+      expect(refreshAttempts).toEqual([
+        {
+          name: 'refreshMaterializedView',
+          data: { viewName: TOP_HASHTAGS_VIEW },
+          opts: expect.objectContaining({ priority: 10 }),
+        },
+      ])
+    } finally {
+      add.mockRestore()
+      await caches.topics.delete(topic.id)
+    }
   })
 
   it('saves the fixed window of a reconciliation sweep page on its job', async () => {

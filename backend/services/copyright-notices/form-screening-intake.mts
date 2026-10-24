@@ -17,7 +17,7 @@ export type CopyrightFormIntakeForScreening = {
   accuracyAuthorityUnderPenaltyOfPerjury: boolean
 }
 
-/** @public Cross-workspace read boundary used by the copyright form-screening agent. */
+/** Cross-workspace read boundary used by the copyright form-screening agent. */
 export async function getCopyrightFormIntakeForScreening(
   submissionId: string,
 ): Promise<CopyrightFormIntakeForScreening | null> {

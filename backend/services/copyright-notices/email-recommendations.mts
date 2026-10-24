@@ -12,7 +12,7 @@ type CopyrightEmailRecommendationInput = {
   structuredOutput: Record<string, unknown>
 }
 
-/** @public Cross-workspace persistence boundary used by the copyright email agent. */
+/** Cross-workspace persistence boundary used by the copyright email agent. */
 export async function appendCopyrightEmailIntakeRecommendation(
   input: CopyrightEmailRecommendationInput,
 ): Promise<boolean> {

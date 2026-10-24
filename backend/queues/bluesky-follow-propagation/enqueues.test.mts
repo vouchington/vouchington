@@ -11,7 +11,7 @@ import {
   enqueueBackfillBlueskyFollowPropagationContinuation,
   enqueueDisconnectRequested,
   enqueueBulkDisconnectRequested,
-  enqueueReconcileBlueskyFollow,
+  enqueueBulkReconcileBlueskyFollow,
   type DisconnectRequestedData,
 } from './enqueues.mts'
 import { blueskyFollowPropagation } from './queues.mts'
@@ -26,7 +26,7 @@ describe('bluesky follow propagation enqueue helpers', () => {
     const followerUserId = `user-${randomUUID()}`
     const followeeUserId = `user-${randomUUID()}`
 
-    await enqueueReconcileBlueskyFollow(followerUserId, followeeUserId)
+    await enqueueBulkReconcileBlueskyFollow([{ followerUserId, followeeUserId }])
 
     const waiting = await readAllQueueJobs(blueskyFollowPropagation)
     const jobs = waiting.filter(
@@ -48,33 +48,6 @@ describe('bluesky follow propagation enqueue helpers', () => {
         mode: 'debounce',
       },
     })
-  })
-
-  it('debounce-replaces a repeated enqueue for the same pair, leaving one job', async () => {
-    const followerUserId = `user-${randomUUID()}`
-    const followeeUserId = `user-${randomUUID()}`
-
-    const first = await enqueueReconcileBlueskyFollow(followerUserId, followeeUserId)
-    const second = await enqueueReconcileBlueskyFollow(followerUserId, followeeUserId)
-
-    const expectedDedupId = `reconcile_${followerUserId}__${followeeUserId}`
-    expect((first as { opts?: { deduplication?: { id?: string } } })?.opts?.deduplication?.id).toBe(
-      expectedDedupId,
-    )
-    // A debounce add replaces the tracked job while it is still parked (delayed, or prioritized
-    // until the scheduler promotes it) and is skipped only once that job is waiting or active.
-    // Reconcile jobs carry the default priority, so the first job is replaced by the second.
-    const idOf = (job: unknown) => (job as { id?: string } | null)?.id
-    expect(second).not.toBeNull()
-    expect(idOf(second)).not.toBe(idOf(first))
-
-    const queued = await readAllQueueJobs(blueskyFollowPropagation)
-    const jobs = queued.filter(
-      j =>
-        (j.data as { followerUserId?: string }).followerUserId === followerUserId &&
-        (j.data as { followeeUserId?: string }).followeeUserId === followeeUserId,
-    )
-    expect(jobs.map(job => job.id)).toEqual([idOf(second)])
   })
 
   it('enqueues the singleton backfill job with throttle deduplication', async () => {

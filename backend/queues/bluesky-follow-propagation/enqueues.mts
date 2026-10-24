@@ -41,10 +41,6 @@ function reconcileFollowJobOptions(
   }
 }
 
-const enqueueReconcileFollowJob = createBackgroundEnqueue(
-  BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
-)
-
 // Used by the backfill processor to bulk-enqueue one reconcileFollow job per candidate pair
 // (@services/bluesky-follows/backfill.mts). Each pair still gets its own debounce dedup id so a
 // backfill run never collapses distinct pairs into a single job.
@@ -72,20 +68,6 @@ const enqueueBackfillBlueskyFollowPropagationJob = createBackgroundEnqueue(
 const enqueueBackfillBlueskyDisconnectRequestsJob = createBackgroundEnqueue(
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
 )
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/README.md`.
- */
-export function enqueueReconcileBlueskyFollow(
-  followerUserId: string,
-  followeeUserId: string,
-): EnqueueReturnType {
-  return enqueueReconcileFollowJob(
-    { followerUserId, followeeUserId },
-    reconcileFollowJobOptions(followerUserId, followeeUserId),
-  )
-}
 
 export function enqueueDisconnectRequested(data: DisconnectRequestedData): EnqueueReturnType {
   return enqueueDisconnectRequestedJob(data, disconnectRequestedJobOptions(data))
