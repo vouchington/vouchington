@@ -9,7 +9,8 @@ import {
   issueTestOAuthTokens,
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
-  beginOAuthAuthorizationRequest,
+  beginValidatedOAuthAuthorizationRequest,
+  validateOAuthAuthorizationRequest,
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
   exchangeOAuthRefreshToken,
@@ -163,18 +164,15 @@ describe('OAuth authority after participant deletion', () => {
       decideOAuthAuthorizationRequest(user.id, pending.requestId, 'approve', pending.bindingHash),
     ).rejects.toMatchObject({ code: 'access_denied' })
     await expect(
-      beginOAuthAuthorizationRequest({
+      validateOAuthAuthorizationRequest({
         clientId: pending.client.client_id,
         codeChallenge: createHash('sha256').update(pending.verifier).digest('base64url'),
         codeChallengeMethod: 'S256',
-        deviceId: pending.requestId,
         redirectUri: pending.redirectUri,
         resource: getOAuthResourceUrl('user'),
         responseType: 'code',
         scope: 'mcp.user:read',
-        sessionId: pending.requestId,
         state: pending.requestId,
-        userId: user.id,
       }),
     ).rejects.toMatchObject({ code: 'unauthorized_client' })
   })
@@ -187,20 +185,24 @@ describe('OAuth authority after participant deletion', () => {
     await expect(
       decideOAuthAuthorizationRequest(user.id, pending.requestId, 'approve', pending.bindingHash),
     ).rejects.toMatchObject({ code: 'access_denied' })
+    const parameters = {
+      clientId: pending.client.client_id,
+      codeChallenge: pending.verifier,
+      codeChallengeMethod: 'S256',
+      deviceId: pending.requestId,
+      redirectUri: pending.redirectUri,
+      resource: getOAuthResourceUrl('user'),
+      responseType: 'code',
+      scope: 'mcp.user:read',
+      sessionId: pending.requestId,
+      state: pending.requestId,
+      userId: user.id,
+    }
+    const validated = await validateOAuthAuthorizationRequest(parameters)
     await expect(
-      beginOAuthAuthorizationRequest({
-        clientId: pending.client.client_id,
-        codeChallenge: pending.verifier,
-        codeChallengeMethod: 'S256',
-        deviceId: pending.requestId,
-        redirectUri: pending.redirectUri,
-        resource: getOAuthResourceUrl('user'),
-        responseType: 'code',
-        scope: 'mcp.user:read',
-        sessionId: pending.requestId,
-        state: pending.requestId,
-        userId: user.id,
-      }),
-    ).rejects.toMatchObject({ code: 'access_denied' })
+      beginValidatedOAuthAuthorizationRequest(parameters, validated),
+    ).rejects.toMatchObject({
+      code: 'access_denied',
+    })
   })
 })

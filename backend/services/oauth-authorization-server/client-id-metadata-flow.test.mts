@@ -9,7 +9,6 @@ import {
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
 import {
-  beginOAuthAuthorizationRequest,
   beginValidatedOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
@@ -93,22 +92,23 @@ describe('Client ID Metadata Document OAuth flow', () => {
     const verifier = randomBytes(32).toString('base64url')
     const deviceId = uuidv7()
     const sessionId = uuidv7()
-    const pending = await beginOAuthAuthorizationRequest(
-      {
-        clientId,
-        codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
-        codeChallengeMethod: 'S256',
-        deviceId,
-        redirectUri,
-        resource: getOAuthResourceUrl('user'),
-        responseType: 'code',
-        scope: 'cards:read',
-        sessionId,
-        state: randomBytes(12).toString('base64url'),
-        userId: user.id,
-      },
-      { safeFetch: async () => responseFor(clientId) },
-    )
+    const parameters = {
+      clientId,
+      codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
+      codeChallengeMethod: 'S256',
+      deviceId,
+      redirectUri,
+      resource: getOAuthResourceUrl('user'),
+      responseType: 'code',
+      scope: 'cards:read',
+      sessionId,
+      state: randomBytes(12).toString('base64url'),
+      userId: user.id,
+    }
+    const validated = await validateOAuthAuthorizationRequest(parameters, {
+      safeFetch: async () => responseFor(clientId),
+    })
+    const pending = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
     const bindingHash = createOAuthBrowserBindingHash(deviceId, sessionId)
     await expect(
       getOAuthAuthorizationRequestForUser(user.id, pending.request_id, bindingHash),
@@ -145,29 +145,28 @@ describe('Client ID Metadata Document OAuth flow', () => {
     const clientId = randomMetadataUrl()
     const deviceId = uuidv7()
     const sessionId = uuidv7()
-    const pending = await beginOAuthAuthorizationRequest(
-      {
-        clientId,
-        codeChallenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
-        codeChallengeMethod: 'S256',
-        deviceId,
-        redirectUri: 'https://app.example:443/oauth/callback',
-        resource: getOAuthResourceUrl('user'),
-        responseType: 'code',
-        scope: 'mcp.user:read mcp.user:write',
-        sessionId,
-        state: randomBytes(12).toString('base64url'),
-        userId: user.id,
-      },
-      {
-        safeFetch: async () =>
-          responseFor(
-            clientId,
-            { 'cache-control': 'max-age=0' },
-            { scope: 'mcp.user:read mcp.user:write' },
-          ),
-      },
-    )
+    const parameters = {
+      clientId,
+      codeChallenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
+      codeChallengeMethod: 'S256',
+      deviceId,
+      redirectUri: 'https://app.example:443/oauth/callback',
+      resource: getOAuthResourceUrl('user'),
+      responseType: 'code',
+      scope: 'mcp.user:read mcp.user:write',
+      sessionId,
+      state: randomBytes(12).toString('base64url'),
+      userId: user.id,
+    }
+    const validated = await validateOAuthAuthorizationRequest(parameters, {
+      safeFetch: async () =>
+        responseFor(
+          clientId,
+          { 'cache-control': 'max-age=0' },
+          { scope: 'mcp.user:read mcp.user:write' },
+        ),
+    })
+    const pending = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
     await resolveClientIdMetadataDocument(clientId, {
       safeFetch: async () => responseFor(clientId, {}, { scope: 'mcp.user:read' }),
     })

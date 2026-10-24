@@ -2,11 +2,7 @@ import { createPublicKey, createVerify } from 'node:crypto'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
 import { readGoogleClientId } from '@voucha/config'
-import {
-  upsertOAuthAccount,
-  getOAuthAccountByProviderUserId,
-  type OAuthAccount,
-} from '@services/oauth-accounts'
+import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
 import { decodeJwtPart } from '@services/oauth-accounts/jwt'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
@@ -134,11 +130,3 @@ export async function upsertGoogleAccount(credential: string): Promise<OAuthAcco
 }
 
 export { upsertGoogleAuthorizationCodeAccount } from './authorization-code.mts'
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function getGoogleAccountByGoogleUserId(googleUserId: string): Promise<OAuthAccount | null> {
-  return getOAuthAccountByProviderUserId('google', googleUserId)
-}

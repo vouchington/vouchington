@@ -12,7 +12,8 @@ import {
   TEST_OAUTH_SCOPE,
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
-  beginOAuthAuthorizationRequest,
+  beginValidatedOAuthAuthorizationRequest,
+  validateOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
@@ -88,7 +89,7 @@ async function approveCodeForExistingClient(userId: string, clientId: string, re
   const verifier = randomBytes(32).toString('base64url')
   const deviceId = uuidv7()
   const sessionId = uuidv7()
-  const request = await beginOAuthAuthorizationRequest({
+  const parameters = {
     clientId,
     codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
     codeChallengeMethod: 'S256',
@@ -100,7 +101,9 @@ async function approveCodeForExistingClient(userId: string, clientId: string, re
     sessionId,
     state: randomBytes(16).toString('base64url'),
     userId,
-  })
+  }
+  const validated = await validateOAuthAuthorizationRequest(parameters)
+  const request = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
   const approved = await decideOAuthAuthorizationRequest(
     userId,
     request.request_id,

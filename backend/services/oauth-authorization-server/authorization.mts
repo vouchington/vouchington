@@ -35,19 +35,6 @@ type AuthorizationRequestRow = {
   redirect_uris: string[]
 }
 
-/** @public #1360: external production use is unconfirmed; may be removed after intended-use review. */
-export async function beginOAuthAuthorizationRequest(
-  input: {
-    deviceId: string
-    sessionId: string
-    userId: string
-  } & AuthorizationParameters,
-  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
-): Promise<{ request_id: string }> {
-  const validated = await validateOAuthAuthorizationRequest(input, clientIdMetadataDependencies)
-  return beginValidatedOAuthAuthorizationRequest(input, validated)
-}
-
 export async function beginValidatedOAuthAuthorizationRequest(
   input: { deviceId: string; sessionId: string; userId: string },
   validated: ValidatedOAuthAuthorizationRequest,
