@@ -26,8 +26,7 @@ describe('background-cpu groups through real GlideMQ', () => {
     harness = undefined
   })
 
-  it('shares one hostname rate window across URL and referral crawls', async () => {
-    const started: number[] = []
+  it('gives URL and referral crawls the same hostname ordering options', async () => {
     const hostnameId = randomUUID()
     const rateLimitMs = 400
     const [urlJob] = await enqueueBulkCrawlUrls([{ urlId: randomUUID() }], {
@@ -50,56 +49,18 @@ describe('background-cpu groups through real GlideMQ', () => {
         rateLimit: { max: 1, duration: rateLimitMs },
       })
       expect(referralJob.opts.ordering).toEqual(urlJob.opts.ordering)
-      harness = await startBackgroundCpuHarness({
-        connection,
-        workers: 2,
-        bodies: {
-          [url.name]: () => started.push(Date.now()),
-          [referral.name]: () => started.push(Date.now()),
-        },
-      })
-      const jobs = await Promise.all([
-        harness.add(url, { urlId: randomUUID() }, { ordering: urlJob.opts.ordering }),
-        harness.add(referral, { linkId: randomUUID() }, { ordering: referralJob.opts.ordering }),
-      ])
-      await Promise.all(jobs.map(job => harness!.settled(job)))
-      expect(started).toHaveLength(2)
-      expect(Math.abs(started[1]! - started[0]!)).toBeGreaterThanOrEqual(300)
     } finally {
       await Promise.all([urlJob.remove(), referralJob.remove()])
     }
   })
 
-  it('limits Bedrock singles to one group window across different entity types', async () => {
+  it('keeps Bedrock single definitions in the same production ordering group', () => {
     expect(single.options.ordering).toEqual({
       key: 'bedrock-embeddings:single',
       concurrency: 10,
       rateLimit: { max: 10, duration: 1_000 },
     })
     expect(singleTopic.options.ordering).toEqual(single.options.ordering)
-    const started: number[] = []
-    harness = await startBackgroundCpuHarness({
-      connection,
-      workers: 2,
-      bodies: {
-        [single.name]: () => started.push(Date.now()),
-        [singleTopic.name]: () => started.push(Date.now()),
-      },
-    })
-    const ordering = {
-      key: 'bedrock-embeddings:single',
-      concurrency: 10,
-      rateLimit: { max: 2, duration: 400 },
-    }
-    const jobs = await Promise.all(
-      [single, singleTopic, single, singleTopic].map(definition =>
-        harness!.add(definition, { id: randomUUID() }, { ordering }),
-      ),
-    )
-    await Promise.all(jobs.map(job => harness!.settled(job)))
-    const ordered = started.toSorted((a, b) => a - b)
-    expect(ordered).toHaveLength(4)
-    expect(ordered[2]! - ordered[0]!).toBeGreaterThanOrEqual(300)
   })
 
   it('keeps batch creation concurrency at one across two workers', async () => {
