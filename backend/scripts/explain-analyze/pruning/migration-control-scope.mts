@@ -74,11 +74,10 @@ export async function withOwnedMigrationControl(
   }
   try {
     directory = await mkdtemp(join(tmpdir(), 'voucha-native-migration-'))
-    assert.equal(await pruningDatabaseExists(run, sourceUrl, name), false)
-    reserved = true
-    recordReserved(name)
     const owned = await createOwnedPruningDatabase(run, sourceUrl, name, database => {
       assert.equal(database.name, name)
+      reserved = true
+      recordReserved(name)
     })
     const identity = await run('psql', [
       '-X',
