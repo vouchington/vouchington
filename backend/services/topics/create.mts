@@ -1,3 +1,4 @@
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { enqueueOnTopicCreated } from '@queues/entity-listeners/enqueues'
 import { topicTypes } from '@voucha/types/entities/topic'
 import type { CreateTopicUpdates, Topic } from './types.mts'
@@ -39,11 +40,17 @@ export async function readCreatedTopic(topicId: string, options?: QueryOptions):
   return mapTopicWithRedirect(rows[0]).topic
 }
 
-export function finalizeCreatedTopic(topic: Topic, updates: CreateTopicUpdates): void {
-  void addEntityBloomKeys('topics', [topic.id, topic.slug, ...topic.aliases].map(normalizeKey))
-  void enqueueOnTopicCreated(topic.id, updates)
+export async function finalizeCreatedTopic(
+  topic: Topic,
+  updates: CreateTopicUpdates,
+): Promise<void> {
+  const effects = [
+    addEntityBloomKeys('topics', [topic.id, topic.slug, ...topic.aliases].map(normalizeKey)),
+    awaitReportedEnqueueAdmission(() => enqueueOnTopicCreated(topic.id, updates)),
+  ]
   if (updates.source_topic_alias_id)
     void invalidatePostsForTopicAliases([updates.source_topic_alias_id])
+  await Promise.all(effects)
 }
 
 // on create, we create the minimum topic and expect all updates to happen after
@@ -75,7 +82,7 @@ export const createTopic = async (
   await using query = await beginTransaction()
   const createdTopic = await createTopicInDatabase(creator, provenance, updates, { query })
   await query.commit()
-  finalizeCreatedTopic(createdTopic, updates)
+  await finalizeCreatedTopic(createdTopic, updates)
   return createdTopic
 }
 

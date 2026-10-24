@@ -30,6 +30,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",

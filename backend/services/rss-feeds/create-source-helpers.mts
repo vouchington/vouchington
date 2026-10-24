@@ -142,7 +142,11 @@ export async function createRssFeedSource(
   await topicAliases.finalizeClaimedTopicAliases(result.topicId, [result.claimedAlias])
   const topic = result.topic ?? (await getTopicByAny(result.topicId))
   if (topic) {
-    finalizeCreatedTopic(topic, { name: args.topicName, slug: args.slug, topic_type: 'rss_feed' })
+    await finalizeCreatedTopic(topic, {
+      name: args.topicName,
+      slug: args.slug,
+      topic_type: 'rss_feed',
+    })
   }
   void enqueueBulkFetchRssFeeds([result.rssFeedId], { ttl: 0, deduplicationScope: 'request' })
   void enqueueEvaluateRssFeedDiscoverability(result.rssFeedId)

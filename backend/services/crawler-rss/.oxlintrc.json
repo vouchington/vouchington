@@ -73,6 +73,13 @@
             "sourceSpecifierPatterns": ["@queues/**/enqueues", "@queues/**/enqueues/**"],
             "calleeNamePatterns": ["/^enqueue[A-Z].*/"]
           }
+        ],
+        "awaitingConsumers": [
+          {
+            "sourceSpecifierPatterns": ["@queues/background/enqueues"],
+            "calleeNamePatterns": ["awaitReportedEnqueueAdmission"],
+            "callbackArgumentIndexes": [0]
+          }
         ]
       }
     ]
