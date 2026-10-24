@@ -1,11 +1,12 @@
+import { defineScheduledJobManifest as defineSharedManifest } from '@vouchington/worker-runtime/schedule-manifest'
 import type { ScheduledJobDefinition, ScheduledJobManifest } from './types.mts'
-import { validateScheduledJobManifests } from './validation.mts'
+import { createOperatorSurfaceValidator } from './validation.mts'
 
 export function defineScheduledJobManifest(
   queueName: string,
   jobs: readonly ScheduledJobDefinition[],
 ): ScheduledJobManifest {
-  const manifest = { queueName, jobs }
-  validateScheduledJobManifests([manifest])
-  return manifest
+  return defineSharedManifest(queueName, jobs, {
+    validateSurface: createOperatorSurfaceValidator(),
+  })
 }

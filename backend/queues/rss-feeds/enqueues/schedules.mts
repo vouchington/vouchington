@@ -1,7 +1,5 @@
-import {
-  defineScheduledJobManifest,
-  toSchedulerTemplateOptions,
-} from '@modules/scheduled-job-manifest'
+import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
+import { toSchedulerTemplateOptions } from '@vouchington/worker-runtime/schedule-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { RSS_FEEDS_DISPATCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
 import { RSS_FEEDS_ORDERING } from '../config.mts'

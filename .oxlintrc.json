@@ -221,7 +221,7 @@
     // CI uses --deny-warnings, so each rule must move directly from "off" to "error".
     // Do not delete staged entries: removal silently re-enables the plugin-default severity.
     "promise/no-multiple-resolved": "error", // #9482 remediation landed in #9506
-    "promise/catch-or-return": ["error", { "allowFinally": true }], // #9483: 3 findings / 3 files (2 fixed, 1 suppressed in serve-runtime.mts)
+    "promise/catch-or-return": ["error", { "allowFinally": true }], // #9483: 3 findings / 3 files (2 fixed, 1 moved into @vouchington/worker-runtime)
     "promise/always-return": ["error", { "ignoreLastCallback": true }], // #9484: 27 remediated findings / 13 files — oxlint exempts a callback only when its .then() result is unused; stored/returned observation promises still need an explicit return
     "promise/no-return-in-finally": "error",
     // Kept at "error" repo-wide: only 1 pre-existing file (dev/verify-workflow-secrets-concurrency.
@@ -229,9 +229,7 @@
     // promise/no-return-wrap` comment at each site, instead of a blanket "off", so new violations
     // elsewhere still fail CI.
     "promise/no-return-wrap": "error",
-    // Kept at "error" repo-wide: only 1 pre-existing file (backend/worker-runtime/serve-runtime.mts)
-    // is exempted, via an inline `oxlint-disable-next-line` comment at that call site, instead of a
-    // blanket "off".
+    // Kept at "error" repo-wide, instead of a blanket "off", so new violations fail CI.
     "promise/prefer-catch": "error",
     "promise/spec-only": "error",
     // Plugin-default "error"; only 5 pre-existing files, all reviewed fire-and-forget/event-handler

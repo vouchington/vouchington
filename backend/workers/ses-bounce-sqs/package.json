@@ -17,15 +17,15 @@
   },
   "scripts": {},
   "dependencies": {
-    "@backend/worker-runtime": "workspace:^",
+    "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0",
     "http-assert": "^1.5.0"
   },
   "devDependencies": {
     "@aws-sdk/client-sqs": "^3.1154.0",
-    "@modules/aws": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

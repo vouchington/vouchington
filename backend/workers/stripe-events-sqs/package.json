@@ -17,13 +17,13 @@
   },
   "scripts": {},
   "dependencies": {
-    "@backend/worker-runtime": "workspace:^",
+    "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/memberships": "workspace:^",
-    "@services/stripe": "workspace:^"
+    "@services/stripe": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1154.0",
-    "@modules/aws": "workspace:^"
+    "@aws-sdk/client-sqs": "^3.1154.0"
   }
 }

@@ -1,6 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
-import { formatErrorTree } from './format-error-tree.mts'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { sentryCaptureExceptionMock as captureException } from '../test-helpers/vitest.setup.sentry-mock.mts'
 import { CrawlerTimeoutError } from '@modules/on-error/errors'
 
@@ -19,277 +18,88 @@ class FakeNamedEmitter extends EventEmitter {
   }
 }
 
-describe('worker observability', () => {
-  let consoleSpy: Mock
+type ReportedError = Error & {
+  tags?: Record<string, unknown>
+  extra?: Record<string, unknown>
+}
+
+describe('worker observability wiring', () => {
+  let consoleError: Mock
+  let consoleLog: Mock
 
   beforeEach(() => {
     captureException.mockClear()
-    consoleSpy = vi.spyOn(console, 'error').mockReturnValue(undefined) as Mock
+    consoleError = vi.spyOn(console, 'error').mockReturnValue(undefined) as Mock
+    consoleLog = vi.spyOn(console, 'log').mockReturnValue(undefined) as Mock
   })
 
   afterEach(() => {
-    consoleSpy.mockRestore()
+    consoleError.mockRestore()
+    consoleLog.mockRestore()
   })
 
-  afterAll(() => vi.unstubAllEnvs())
-
-  it('console.error is used for failed jobs when logger is disabled', () => {
+  it('reports a failed job with the app-redacted job data and keeps safe values', () => {
     const worker = new FakeNamedEmitter('emails')
-    addWorkerEventListeners(worker as any)
+    addWorkerEventListeners(worker as never)
 
     const error = new Error('boom')
-    const failedJob = {
-      name: 'send',
-      id: 'job-42',
-      data: { userId: 'u123', payload: 'test' },
-      attemptsMade: 2,
-      opts: { attempts: 3 },
-      processedOn: 200,
-      finishedOn: 260,
-    }
-    worker.emit('failed', failedJob, error)
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'job failed: %s %o (%dms) %s',
-      'send',
-      { queue: 'emails', job_id: 'job-42', job_data: { payload: 'test', userId: 'u123' } },
-      60,
-      formatErrorTree(error),
-    )
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    const capturedErr = captureException.mock.calls[0][0] as Error & {
-      tags?: Record<string, unknown>
-      extra?: Record<string, unknown>
-    }
-    expect(capturedErr.tags).toMatchObject({
-      queue: 'emails',
-      job_id: 'job-42',
-      job_name: 'send',
-    })
-    expect(capturedErr.extra).toMatchObject({
-      attempts: 3,
-      job_name: 'send',
-      job_data: { payload: 'test', userId: 'u123' },
-    })
-    expect(capturedErr.extra).not.toHaveProperty('attempts_made')
-    expect(capturedErr.extra).not.toHaveProperty('previous_state')
-  })
-
-  it('redacts PII/secret-shaped job data keys but keeps other values in CloudWatch logs and Sentry extra', () => {
-    const worker = new FakeNamedEmitter('emails')
-    addWorkerEventListeners(worker as any)
-
-    const error = new Error('boom')
-    const failedJob = {
-      name: 'send_email_address_login_token',
-      id: 'job-99',
-      data: {
-        emailAddress: 'tests+failedjob@voucha.ai',
-        token: 'login-token',
-        userId: '11111111-1111-4111-8111-111111111111',
-        attemptsRemaining: 2,
+    worker.emit(
+      'failed',
+      {
+        name: 'send',
+        id: 'job-99',
+        data: {
+          emailAddress: 'tests+failedjob@voucha.ai',
+          code: 'a3f9c2e1',
+          userId: '11111111-1111-4111-8111-111111111111',
+        },
+        opts: { attempts: 3 },
+        processedOn: 200,
+        finishedOn: 260,
       },
-      attemptsMade: 1,
-      opts: { attempts: 3 },
-      processedOn: 200,
-      finishedOn: 260,
-    }
-    worker.emit('failed', failedJob, error)
+      error,
+    )
 
-    const expectedJobData = {
-      attemptsRemaining: 2,
+    const reported = captureException.mock.calls[0][0] as ReportedError
+    expect(reported.tags).toMatchObject({ queue: 'emails', job_name: 'send', job_id: 'job-99' })
+    expect(reported.extra?.job_data).toEqual({
+      code: '[Filtered]',
       emailAddress: '[Filtered]',
-      token: '[Filtered]',
       userId: '11111111-1111-4111-8111-111111111111',
-    }
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'job failed: %s %o (%dms) %s',
-      'send_email_address_login_token',
-      { queue: 'emails', job_id: 'job-99', job_data: expectedJobData },
-      60,
-      formatErrorTree(error),
+    })
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('tests+failedjob@voucha.ai')
+  })
+
+  it('does not log an expected crawler failure', () => {
+    const worker = new FakeNamedEmitter('crawl_embeds')
+    addWorkerEventListeners(worker as never)
+
+    worker.emit(
+      'failed',
+      { name: 'crawl', id: 'job-1', data: {}, processedOn: 200, finishedOn: 250 },
+      new CrawlerTimeoutError('https://example.com', 10_000, 10_000),
     )
-    const extra = (captureException.mock.calls[0][0] as Error & { extra?: Record<string, unknown> })
-      .extra
-    expect(extra?.job_data).toEqual(expectedJobData)
-    expect(JSON.stringify(extra)).not.toContain('tests+failedjob@voucha.ai')
-    expect(JSON.stringify(extra)).not.toContain('login-token')
-    expect(JSON.stringify(extra)).toContain('11111111-1111-4111-8111-111111111111')
+
+    expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('omits job_data for empty or non-object payloads and logs unknown job ids', () => {
-    const worker = new FakeNamedEmitter('emails')
-    addWorkerEventListeners(worker as any)
-    const emitFailed = (data: unknown, id?: string) => {
-      const error = new Error('boom')
-      worker.emit('failed', { name: 'send', id, data, processedOn: 200, finishedOn: 250 }, error)
-      return error
-    }
-    const capturedExtra = () => {
-      const lastCall = captureException.mock.calls.at(-1)
-      if (lastCall === undefined) throw new Error('expected captureException call')
-      return (lastCall[0] as Error & { extra?: Record<string, unknown> }).extra
-    }
+  it('logs completed jobs under test so the image smoke test can see them', () => {
+    const worker = new FakeNamedEmitter('heartbeat')
+    addWorkerEventListeners(worker as never)
 
-    const error = emitFailed({})
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'job failed: %s %o (%dms) %s',
-      'send',
-      { queue: 'emails', job_id: 'unknown' },
-      50,
-      formatErrorTree(error),
-    )
-    expect(capturedExtra()).not.toHaveProperty('job_data')
+    worker.emit('completed', { name: 'heartbeat', id: 'job-1', processedOn: 200, finishedOn: 215 })
 
-    emitFailed(['not-an-object'], 'job-array')
-    expect(capturedExtra()).not.toHaveProperty('job_data')
-
-    const manyKeys = Object.fromEntries(Array.from({ length: 33 }, (_, i) => [`k${i}`, i]))
-    emitFailed(manyKeys, 'job-keys')
-    const expectedKeys = Object.keys(manyKeys).toSorted().slice(0, 32)
-    expect(capturedExtra()?.job_data).toEqual(
-      Object.fromEntries(expectedKeys.map(key => [key, manyKeys[key]])),
-    )
+    expect(consoleLog).toHaveBeenCalledWith('job completed: %s (%dms)', 'heartbeat', 15)
   })
 
-  it('does not throw while reporting failed jobs without options', () => {
-    const worker = new FakeNamedEmitter('emails')
-    addWorkerEventListeners(worker as any)
+  it('reports SQS consumer failures tagged with the queue and message id', () => {
+    const consumer = new FakeNamedEmitter('ses-bounce-sqs')
+    addSqsConsumerEventListeners(consumer as never)
 
-    const error = new Error('boom')
-    const failedJob = {
-      name: 'send',
-      id: 'job-42',
-      data: { userId: 'u123' },
-      processedOn: 200,
-      finishedOn: 260,
-    }
+    const error = new Error('handler failed')
+    consumer.emit('message-failed', { messageId: 'message-1' }, error)
 
-    expect(() => worker.emit('failed', failedJob, error)).not.toThrow()
-
-    const capturedErr = captureException.mock.calls[0][0] as Error & {
-      extra?: Record<string, unknown>
-    }
-    expect(capturedErr.extra).not.toHaveProperty('attempts')
-  })
-
-  it('logs every aggregate error while reporting the original error to Sentry', () => {
-    const worker = new FakeNamedEmitter('emails')
-    addWorkerEventListeners(worker as any)
-    const error = new AggregateError([new Error('first inner'), new Error('second inner')], 'outer')
-
-    worker.emit('failed', { name: 'send', data: {}, processedOn: 200, finishedOn: 250 }, error)
-
-    const loggedError = consoleSpy.mock.calls[0][4]
-    expect(loggedError).toBeTypeOf('string')
-    expect(loggedError).toContain('errors[0]: Error: first inner')
-    expect(loggedError).toContain('errors[1]: Error: second inner')
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    expect(captureException.mock.calls[0][0]).toBe(error)
-  })
-
-  it('expected crawler failures skip Sentry reporting', () => {
-    const worker = new FakeNamedEmitter('crawl_urls')
-    addWorkerEventListeners(worker as any)
-
-    const error = new CrawlerTimeoutError('https://example.com', 10_000, 10_000)
-    const failedJob = {
-      name: 'crawl_url',
-      id: 'j1',
-      data: {},
-      attemptsMade: 1,
-      opts: { attempts: 3 },
-      processedOn: 100,
-      finishedOn: 110,
-    }
-    worker.emit('failed', failedJob, error)
-
-    expect(consoleSpy).not.toHaveBeenCalled()
-    expect(captureException).not.toHaveBeenCalled()
-  })
-})
-
-describe('SQS consumer observability', () => {
-  beforeEach(() => {
-    captureException.mockClear()
-  })
-
-  it('tracks closing/closed lifecycle events without reporting an error', () => {
-    const consumer = new FakeNamedEmitter('bedrock-batch-sqs')
-    addSqsConsumerEventListeners(consumer as any)
-
-    expect(() => {
-      consumer.emit('closing')
-      consumer.emit('closed')
-    }).not.toThrow()
-    expect(captureException).not.toHaveBeenCalled()
-  })
-
-  it('tags poll-error with the queue name and reports it', () => {
-    const consumer = new FakeNamedEmitter('bedrock-batch-sqs')
-    addSqsConsumerEventListeners(consumer as any)
-
-    const error = new Error('poll boom')
-    consumer.emit('poll-error', error)
-
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    const capturedErr = captureException.mock.calls[0][0] as Error & {
-      tags?: Record<string, unknown>
-    }
-    expect(capturedErr.tags).toMatchObject({ queue: 'bedrock-batch-sqs' })
-    expect(capturedErr.tags).not.toHaveProperty('message_id')
-  })
-
-  it('measures elapsed time between message-received and message-deleted without erroring', () => {
-    const consumer = new FakeNamedEmitter('bedrock-batch-sqs')
-    addSqsConsumerEventListeners(consumer as any)
-    const message = { messageId: 'm1', body: '{}', receiptHandle: 'rh1' }
-
-    expect(() => {
-      consumer.emit('message-received', message)
-      consumer.emit('message-deleted', message)
-    }).not.toThrow()
-    expect(captureException).not.toHaveBeenCalled()
-  })
-
-  it('does not throw for a deleted message with no matching received start time', () => {
-    const consumer = new FakeNamedEmitter('bedrock-batch-sqs')
-    addSqsConsumerEventListeners(consumer as any)
-    const message = { messageId: 'unseen', body: '{}', receiptHandle: 'rh1' }
-
-    expect(() => consumer.emit('message-deleted', message)).not.toThrow()
-    expect(captureException).not.toHaveBeenCalled()
-  })
-
-  it('tags message-failed with the queue and message id and reports it', () => {
-    const consumer = new FakeNamedEmitter('bedrock-batch-sqs')
-    addSqsConsumerEventListeners(consumer as any)
-    const message = { messageId: 'm2', body: 'bad', receiptHandle: 'rh2' }
-    const error = new Error('handler boom')
-
-    consumer.emit('message-received', message)
-    consumer.emit('message-failed', message, error)
-
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    const capturedErr = captureException.mock.calls[0][0] as Error & {
-      tags?: Record<string, unknown>
-    }
-    expect(capturedErr.tags).toMatchObject({ queue: 'bedrock-batch-sqs', message_id: 'm2' })
-  })
-
-  it('tags message-delete-failed with the queue and message id and reports it', () => {
-    const consumer = new FakeNamedEmitter('bedrock-batch-sqs')
-    addSqsConsumerEventListeners(consumer as any)
-    const message = { messageId: 'm3', body: '{}', receiptHandle: 'rh3' }
-    const error = new Error('delete boom')
-
-    consumer.emit('message-received', message)
-    consumer.emit('message-delete-failed', message, error)
-
-    expect(captureException).toHaveBeenCalledWith(error, expect.anything())
-    const capturedErr = captureException.mock.calls[0][0] as Error & {
-      tags?: Record<string, unknown>
-    }
-    expect(capturedErr.tags).toMatchObject({ queue: 'bedrock-batch-sqs', message_id: 'm3' })
+    const reported = captureException.mock.calls[0][0] as ReportedError
+    expect(reported.tags).toMatchObject({ queue: 'ses-bounce-sqs', message_id: 'message-1' })
   })
 })

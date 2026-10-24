@@ -21,7 +21,8 @@
     "@modules/on-error": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@voucha/types": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0"
   },
   "devDependencies": {}
 }

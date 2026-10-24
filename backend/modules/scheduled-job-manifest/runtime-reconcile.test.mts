@@ -1,52 +1,10 @@
-import { randomUUID } from 'node:crypto'
-import { Queue } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import type { ScheduledJobDefinition } from './types.mts'
-import {
-  defineScheduledJobManifest,
-  removeScheduledJobScheduler,
-  upsertScheduledJobManifest,
-} from './index.mts'
+import { defineScheduledJobManifest, upsertScheduledJobManifest } from './index.mts'
 
 type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('upsertScheduledJobManifest leftover scheduler reconcile', () => {
-  it('removes leftover schedulers after a successful upsert', async () => {
-    const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>()
-    upsertJobScheduler.mockResolvedValue(undefined)
-    const getRepeatableJobs = vi.fn<ScheduledJobQueue['getRepeatableJobs']>()
-    getRepeatableJobs.mockResolvedValue([
-      { name: 'example-scheduler' },
-      { name: 'snapshot-pg-stat-statements' },
-    ])
-    const removeJobScheduler = vi.fn<ScheduledJobQueue['removeJobScheduler']>()
-    removeJobScheduler.mockResolvedValue(undefined)
-
-    await upsertScheduledJobManifest(
-      makeQueue(upsertJobScheduler, { getRepeatableJobs, removeJobScheduler }),
-      defineScheduledJobManifest('example', [job()]),
-    )
-
-    expect(removeJobScheduler).toHaveBeenCalledTimes(1)
-    expect(removeJobScheduler).toHaveBeenCalledWith('snapshot-pg-stat-statements')
-  })
-
-  it('does not remove scheduler ids that are still in the filtered manifest', async () => {
-    const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>()
-    upsertJobScheduler.mockResolvedValue(undefined)
-    const getRepeatableJobs = vi.fn<ScheduledJobQueue['getRepeatableJobs']>()
-    getRepeatableJobs.mockResolvedValue([{ name: 'example-scheduler' }])
-    const removeJobScheduler = vi.fn<ScheduledJobQueue['removeJobScheduler']>()
-    removeJobScheduler.mockResolvedValue(undefined)
-
-    await upsertScheduledJobManifest(
-      makeQueue(upsertJobScheduler, { getRepeatableJobs, removeJobScheduler }),
-      defineScheduledJobManifest('example', [job()]),
-    )
-
-    expect(removeJobScheduler).not.toHaveBeenCalled()
-  })
-
   it('removes production-only leftovers on staging when NODE_ENV is production', async () => {
     const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>()
     upsertJobScheduler.mockResolvedValue(undefined)
@@ -101,72 +59,6 @@ describe('upsertScheduledJobManifest leftover scheduler reconcile', () => {
 
     expect(upsertJobScheduler).toHaveBeenCalledTimes(2)
     expect(removeJobScheduler).not.toHaveBeenCalled()
-  })
-
-  it('removes leftovers on the vitest Queue used by upsertSchedules', async () => {
-    const queue = new Queue(`leftover-reconcile-${randomUUID()}`, {})
-    await queue.upsertJobScheduler(
-      'snapshot-pg-stat-statements',
-      { every: 60_000 },
-      { name: 'snapshotPgStatStatements' },
-    )
-
-    await upsertScheduledJobManifest(queue, defineScheduledJobManifest(queue.name, [job()]))
-
-    const names = (await queue.getRepeatableJobs()).map(entry => entry.name)
-    expect(names).toContain('example-scheduler')
-    expect(names).not.toContain('snapshot-pg-stat-statements')
-  })
-
-  it('removes every leftover scheduler when the tombstone manifest has no remaining jobs', async () => {
-    const queue = new Queue(`leftover-empty-${randomUUID()}`, {})
-    await queue.upsertJobScheduler(
-      'snapshot-pg-stat-statements',
-      { every: 60_000 },
-      { name: 'snapshotPgStatStatements' },
-    )
-
-    await upsertScheduledJobManifest(queue, defineScheduledJobManifest(queue.name, []))
-
-    expect((await queue.getRepeatableJobs()).map(entry => entry.name)).toEqual([])
-  })
-
-  it('does not remove leftovers when an upsert fails', async () => {
-    const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>()
-    upsertJobScheduler.mockRejectedValue(new Error('upsert failed'))
-    const getRepeatableJobs = vi.fn<ScheduledJobQueue['getRepeatableJobs']>()
-    getRepeatableJobs.mockResolvedValue([{ name: 'snapshot-pg-stat-statements' }])
-    const removeJobScheduler = vi.fn<ScheduledJobQueue['removeJobScheduler']>()
-    removeJobScheduler.mockResolvedValue(undefined)
-
-    await expect(
-      upsertScheduledJobManifest(
-        makeQueue(upsertJobScheduler, { getRepeatableJobs, removeJobScheduler }),
-        defineScheduledJobManifest('example', [job()]),
-      ),
-    ).rejects.toThrow('upsert failed')
-    expect(getRepeatableJobs).not.toHaveBeenCalled()
-    expect(removeJobScheduler).not.toHaveBeenCalled()
-  })
-})
-
-describe('removeScheduledJobScheduler', () => {
-  it('removes only the requested scheduler and is idempotent', async () => {
-    const queue = new Queue(`targeted-tombstone-${randomUUID()}`, {})
-    await queue.upsertJobScheduler('retired-dispatch', { every: 60_000 }, { name: 'dispatch' })
-    await queue.upsertJobScheduler('unrelated-scheduler', { every: 60_000 }, { name: 'unrelated' })
-
-    const first = await removeScheduledJobScheduler(queue, 'retired-dispatch')
-    const second = await removeScheduledJobScheduler(queue, 'retired-dispatch')
-
-    expect(first.removed).toBe(true)
-    expect(first.before).toContain('retired-dispatch')
-    expect(first.after).toEqual(['unrelated-scheduler'])
-    expect(second).toEqual({
-      before: ['unrelated-scheduler'],
-      after: ['unrelated-scheduler'],
-      removed: false,
-    })
   })
 })
 

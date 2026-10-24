@@ -1,7 +1,5 @@
-import {
-  defineScheduledJobManifest,
-  toSchedulerTemplateOptions,
-} from '@modules/scheduled-job-manifest'
+import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
+import { toSchedulerTemplateOptions } from '@vouchington/worker-runtime/schedule-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { KAGI_SMALLWEB_SYNC_JOB } from '@queues/background/enqueues/kagi-smallweb-jobs'
 import { KAGI_SMALLWEB_CRON, KAGI_SMALLWEB_ORDERING } from '../config.mts'

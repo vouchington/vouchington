@@ -1,4 +1,4 @@
-import type { WorkerDefinition } from '@backend/worker-runtime'
+import type { WorkerDefinition } from '@vouchington/worker-runtime'
 
 export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {

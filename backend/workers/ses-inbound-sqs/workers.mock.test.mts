@@ -12,16 +12,20 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
 
 import { loadSesInboundSqs } from './workers.mts'
 
+let firstReceive = Promise.withResolvers<void>()
+
 describe('loadSesInboundSqs success path', () => {
   beforeEach(() => {
     mocks.mockSend.mockReset()
-    // Mirrors sqs-consumer.no-data.mock.test.mts: no message batch is queued, so the
+    firstReceive = Promise.withResolvers<void>()
+    // No message batch is queued, so the
     // constructor's first (and only) long poll must hang until close() aborts it -- resolving
     // immediately here would tight-loop the consumer before the test can assert and close().
     mocks.mockSend.mockImplementation(
       (command: unknown, options?: { abortSignal?: AbortSignal }) => {
         if (command instanceof ReceiveMessageCommand) {
           return new Promise((_resolve, reject) => {
+            firstReceive.resolve()
             options?.abortSignal?.addEventListener('abort', () => reject(new Error('AbortError')), {
               once: true,
             })
@@ -46,6 +50,8 @@ describe('loadSesInboundSqs success path', () => {
 
     expect(consumer).not.toBeNull()
     expect(consumer!.name).toBe('ses-inbound-sqs')
+    // The port loads the SQS command classes lazily, so close only after the long poll started.
+    await firstReceive.promise
     await consumer!.close()
 
     expect(mocks.mockSend).toHaveBeenCalledOnce()

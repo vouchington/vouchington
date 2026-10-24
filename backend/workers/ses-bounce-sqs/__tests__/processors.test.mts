@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SqsMessage } from '@backend/worker-runtime'
+import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import { isEmailSuppressed } from '@services/ses-bounce-events'
 import { countSesBounceEventsBySesMessageId } from '@voucha/test-helpers/entities/ses-bounce-events'
 import { processSesBounceSqsMessage } from '../processors.mts'

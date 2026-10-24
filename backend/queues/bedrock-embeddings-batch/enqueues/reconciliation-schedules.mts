@@ -1,4 +1,4 @@
-import { toSchedulerTemplateOptions } from '@modules/scheduled-job-manifest'
+import { toSchedulerTemplateOptions } from '@vouchington/worker-runtime/schedule-manifest'
 import type { ScheduledJobDefinition } from '../../../modules/scheduled-job-manifest/types.mts'
 import {
   enqueuePostEmbeddingTriggerRecovery,

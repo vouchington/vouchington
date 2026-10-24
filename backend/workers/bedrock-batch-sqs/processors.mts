@@ -1,4 +1,4 @@
-import type { SqsMessage } from '@backend/worker-runtime'
+import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import { enqueueBulkProcessEmbeddingBatchPolling } from '@queues/bedrock-embeddings-batch/enqueues'
 import { getBatchIdByJobArn } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 

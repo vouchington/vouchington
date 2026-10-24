@@ -1,4 +1,4 @@
-import type { SqsConsumerDefinition } from '@backend/worker-runtime'
+import type { SqsConsumerDefinition } from '@vouchington/worker-runtime/sqs'
 import { SQS_CONSUMER_DEFINITIONS as IO_SQS_CONSUMER_DEFINITIONS } from '@entrypoints/worker-io/sqs-consumer-definitions'
 
 // worker-queue-policy.json's "merged" profile deploys only worker-cpu, so this must carry every

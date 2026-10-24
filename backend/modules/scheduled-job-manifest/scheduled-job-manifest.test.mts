@@ -16,6 +16,9 @@ describe('scheduled job manifests', () => {
   it('rejects duplicate queue and scheduler identities', () => {
     const manifest = defineScheduledJobManifest('example', [job()])
     expect(() => validateScheduledJobManifests([manifest, manifest])).toThrow(
+      'Duplicate manifest for queue: example',
+    )
+    expect(() => defineScheduledJobManifest('example', [job(), job()])).toThrow(
       'Duplicate scheduled job: example/example-scheduler',
     )
   })

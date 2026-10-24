@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { read } from '@data-stores/psql'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { backgroundCpu } from '../queues/background-cpu/queues.mts'
-import { onEnqueueAdmission } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import { onEnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import {
   createProviderReplay,
   parseRecordedResponse,

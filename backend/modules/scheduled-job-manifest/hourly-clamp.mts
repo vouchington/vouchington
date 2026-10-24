@@ -1,4 +1,4 @@
-import type { ScheduledJobRepeat } from './types.mts'
+import type { ScheduledJobRepeat } from '@vouchington/worker-runtime/schedule-manifest'
 
 /**
  * Aurora Serverless v2 needs a contiguous idle window to auto-pause, and every wake costs a resume.

@@ -1,4 +1,4 @@
-import type { SqsMessage } from '@backend/worker-runtime'
+import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import { ingestStripeEvent } from '@services/stripe/events'
 
 type StripeEvent = Parameters<typeof ingestStripeEvent>[0]
