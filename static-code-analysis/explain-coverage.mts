@@ -13,7 +13,7 @@ import {
 
 export { isRead } from './explain-coverage-sql.mts'
 
-type SqlFact = Awaited<ReturnType<typeof extractExecutedPostgresSql>>[number]
+type SqlFact = Extract<Awaited<ReturnType<typeof extractExecutedPostgresSql>>, unknown[]>[number]
 
 export interface UncoveredRead {
   name: string
@@ -169,7 +169,7 @@ export async function reportCoverage(
         importSpecifier: '@data-stores/psql',
         executorNames: ['query', 'read', 'write', ...cursorNames],
         executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
-        executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction'],
+        executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction', 'PoolClient'],
       },
       { sources, importSpecifier: '@data-stores/psql/cursors', executorNames: cursorNames },
       {

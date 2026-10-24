@@ -51,6 +51,7 @@ export async function selectTerritorialStaffRecipients(
       AND intent.delivery_kind = (CASE recipient.role
         WHEN 'claimant' THEN ${copyrightDecisionDeliveryKinds[1]}
         ELSE ${copyrightDecisionDeliveryKinds[0]} END)::copyright_notice_delivery_kinds
+      -- no-mistakes-disable-next-line postgres-generated-column-predicates: No SQL UUIDv7 timestamp-to-bound helper exists; the territorial decision time is the delivery cutoff.
       AND (intent.created_at >= decided.decided_at OR intent.sent_at >= decided.decided_at)
     GROUP BY recipient.notice_id, recipient.role, recipient.user_id
     ORDER BY recipient.notice_id, recipient.role, recipient.user_id

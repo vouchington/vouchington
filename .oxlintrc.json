@@ -1026,6 +1026,7 @@
           "web/**/*.spec.tsx",
           "web/**/*.stories.ts",
           "web/**/*.stories.tsx",
+          "web/storybook/mocks/**",
           "web/public/service-worker.js"
         ]
       }

@@ -17,7 +17,9 @@ export function importCommunityListPostsSourceSql(
   delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string },
 ): SQLStatement {
   const statement = sql`/* importCommunityListPostsSource */
-    SELECT ${targetListId}::uuid, candidate_post.id
+    SELECT ${targetListId}::uuid, picked.id
+    FROM (
+    SELECT candidate_post.id
     FROM community_list_posts item
     JOIN posts candidate_post
       ON candidate_post.id = item.post_id
@@ -47,12 +49,16 @@ export function importCommunityListPostsSourceSql(
   }
   statement.append(sql`
     ORDER BY item.id DESC
-    LIMIT ${limit}`)
+    LIMIT ${limit}
+    ) picked
+    ORDER BY picked.id ASC NULLS LAST`)
   return statement
 }
 
 export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeedItemsSource */
-  SELECT $1::uuid, rfi.id
+  SELECT $1::uuid, picked.id
+  FROM (
+  SELECT rfi.id
   FROM (
     SELECT rss_feed_id
     FROM community_list_rss_feeds
@@ -73,7 +79,9 @@ export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeed
   ) source ON true
   JOIN rss_feed_items rfi ON rfi.id = source.rss_feed_item_id AND rfi.deleted_at IS NULL
   ORDER BY source.published_at DESC, rfi.id DESC
-  LIMIT $4`
+  LIMIT $4
+  ) picked
+  ORDER BY picked.id ASC NULLS LAST`
 
 /**
  * Copies a community's posts and feed items into a list the caller already loaded through
