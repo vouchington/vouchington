@@ -2,13 +2,10 @@ import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-disp
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue's cap was its worker concurrency of 5. Fetches share one domain-wide group of 5;
-// the dispatcher keeps its own singleton lane (outside the group) so passes never race. Fetches
-// reach independent feed hosts, so a rate-limit signal delays only its own job. A fetch's per-call priority is its crawl tier (1, 3, 7, 12, 20); the job's own
-// priority is the default when a caller names no tier.
+// Feed fetches share the domain lane; the dispatcher has a separate singleton lane.
 export const RSS_FEEDS_DOMAIN = defineBackgroundDomain({
   domain: 'rss-feeds',
-  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 5,
 })
 

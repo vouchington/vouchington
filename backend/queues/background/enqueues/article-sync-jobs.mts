@@ -9,11 +9,9 @@ import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
  */
 export const ARTICLE_SYNC_LOCK_DURATION_MS = 120_000
 
-// The old queue ran one sync at a time across every worker (concurrency 1, scale ignored), so the
-// domain keeps one domain-wide group of one. The job has no ordering key of its own.
+// Article sync remains serial across every worker process.
 export const ARTICLE_SYNC_DOMAIN = defineBackgroundDomain({
   domain: 'article-sync',
-  group: { kind: 'domain', concurrency: 1 },
   workerConcurrency: 1,
 })
 

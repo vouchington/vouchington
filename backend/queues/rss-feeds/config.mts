@@ -12,5 +12,5 @@ export const TIER_PRIORITY: Record<number, number> = {
 // Namespaced so no other domain shares the lane: one dispatcher at a time, outside the domain group
 // of five fetches.
 export const RSS_FEEDS_ORDERING = {
-  dispatcher: { key: entityOrderingKey('rss-feeds', 'dispatcher'), concurrency: 1 },
+  dispatcher: { key: entityOrderingKey('rss-feeds', 'dispatcher') },
 } as const

@@ -10,27 +10,17 @@ import {
 
 const crawl = defineBackgroundCpuDomain({ domain: 'crawl', workerConcurrency: 2 })
 const content = defineBackgroundCpuDomain({ domain: 'content-analysis', workerConcurrency: 1 })
-const crawlJob = defineBackgroundCpuJob(crawl, { name: 'work', priority: 10 })
+const crawlJob = defineBackgroundCpuJob(crawl, {
+  name: 'work',
+  priority: 10,
+  ordering: { key: 'crawl:task' },
+})
 
 describe('background CPU registry contracts', () => {
-  it('rejects invalid concurrency and group capacity before a worker starts', () => {
+  it('rejects invalid per-process worker concurrency', () => {
     expect(() => defineBackgroundCpuDomain({ domain: 'crawl', workerConcurrency: 0 })).toThrow(
       'workerConcurrency must be a positive integer',
     )
-    expect(() =>
-      defineBackgroundCpuDomain({
-        domain: 'crawl',
-        workerConcurrency: 1,
-        group: { kind: 'domain', concurrency: 0 },
-      }),
-    ).toThrow('group concurrency must be a positive integer')
-    expect(() =>
-      defineBackgroundCpuDomain({
-        domain: 'crawl',
-        workerConcurrency: 1,
-        group: { kind: 'lanes', cap: 0 },
-      }),
-    ).toThrow('lane cap must be a positive integer')
   })
 
   it('rejects ambiguous job names, priorities, and retry or lock settings', () => {
@@ -47,19 +37,22 @@ describe('background CPU registry contracts', () => {
     }
   })
 
-  it('assigns a single ordering group to all jobs in a capped domain', () => {
-    const capped = defineBackgroundCpuDomain({
-      domain: 'bedrock-embeddings',
-      workerConcurrency: 1,
-      group: { kind: 'domain', concurrency: 1, rateLimit: { max: 2, duration: 1_000 } },
-    })
-    const job = defineBackgroundCpuJob(capped, { name: 'post', priority: 10 })
-    expect(job.name).toBe('bedrock-embeddings.post')
-    expect(job.options.ordering).toEqual({
-      key: 'bedrock-embeddings',
-      concurrency: 1,
-      rateLimit: { max: 2, duration: 1_000 },
-    })
+  it('assigns domain ordering unless a job selects a lane', () => {
+    const domain = defineBackgroundCpuDomain({ domain: 'bedrock-embeddings', workerConcurrency: 1 })
+    expect(
+      defineBackgroundCpuJob(domain, {
+        name: 'post',
+        priority: 10,
+        ordering: { key: 'bedrock-embeddings:single' },
+      }).options.ordering,
+    ).toEqual({ key: 'bedrock-embeddings:single', concurrency: 2 })
+    expect(
+      defineBackgroundCpuJob(domain, {
+        name: 'dispatch',
+        priority: 100,
+        ordering: { key: 'bedrock-embeddings:dispatcher' },
+      }).options.ordering,
+    ).toEqual({ key: 'bedrock-embeddings:dispatcher', concurrency: 1 })
   })
 
   it('rejects duplicate and dangling registrations', () => {

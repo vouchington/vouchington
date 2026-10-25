@@ -8,12 +8,10 @@ import type {
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue's cap was its worker concurrency of 10. Election jobs also carried one ordering key
-// per lane they recompute, but each allowed 100 in flight, so the lanes were fairness and never
-// exclusivity. One domain-wide group of 10 keeps the cap and replaces the lane keys.
+// Domain ordering bounds election recalculation work across every worker process.
 export const VOTE_AGGREGATION_DOMAIN = defineBackgroundDomain({
   domain: 'vote-aggregation',
-  group: { kind: 'domain', concurrency: 10, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 10,
 })
 

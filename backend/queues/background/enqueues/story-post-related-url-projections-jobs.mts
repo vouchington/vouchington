@@ -1,11 +1,9 @@
 import { PRIORITY_DISPATCH } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue's single reconcile job carried one ordering key with concurrency 1, so one group
-// for the whole domain keeps the reconciler a singleton across every worker.
+// Projection reconciliation stays serial across every worker process.
 export const STORY_POST_RELATED_URL_PROJECTIONS_DOMAIN = defineBackgroundDomain({
   domain: 'story-post-related-url-projections',
-  group: { kind: 'domain', concurrency: 1 },
   workerConcurrency: 2,
 })
 

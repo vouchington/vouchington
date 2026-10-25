@@ -1,14 +1,10 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The two old queues each ran a worker of 5, so the domain shares one group of 10. A cap is kept
-// (rather than none) because a row fetches an arbitrary third-party feed host: without one a large
-// import would hold every slot of the shared worker pool. Rows reach independent hosts, so a pause
-// or rate-limit signal delays only its own job. A dispatcher belongs to the same group: it is
-// cheap, and an import never has more than one on the queue at a time.
+// Domain ordering bounds third-party fetches; independent hosts defer only the signalling job.
 export const IMPORTS_DOMAIN = defineBackgroundDomain({
   domain: 'imports',
-  group: { kind: 'domain', concurrency: 10, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 10,
 })
 

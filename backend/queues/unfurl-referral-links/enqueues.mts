@@ -48,7 +48,7 @@ const enqueueRemoveUnfurledChildrenForUserJob = createEnqueueFunction<
 function unfurlReferralLinkJobOptions(data: UnfurlReferralLinkEntry) {
   return {
     priority: PRIORITY_DEFAULT,
-    ordering: { key: 'crawl:unfurl', concurrency: 5 },
+    ordering: { key: 'crawl:unfurl' },
     deduplication: {
       id: `${UNFURL_JOB_NAME}__${data.parentLinkId}`,
       mode: 'debounce' as const,
@@ -85,7 +85,7 @@ export function enqueueUnfurlReferralLinksDispatcher(
 export function enqueueRemoveUnfurledChildrenForUser(userId: string): EnqueueReturnType {
   return enqueueRemoveUnfurledChildrenForUserJob({ userId }, {
     priority: PRIORITY_DEFAULT,
-    ordering: { key: `crawl:remove_unfurled_children__${userId}`, concurrency: 1 },
+    ordering: { key: `crawl:remove_unfurled_children__${userId}` },
     deduplication: {
       id: `${REMOVE_CHILDREN_JOB_NAME}__${userId}`,
       mode: 'debounce' as const,

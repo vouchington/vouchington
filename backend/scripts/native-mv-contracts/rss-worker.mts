@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { Job } from 'glide-mq'
 import { background } from '@queues/background/queues'
+import { RSS_FEEDS_ORDERING } from '@queues/rss-feeds/config'
 import {
   RSS_FEEDS_DISPATCH_JOB,
   RSS_FEEDS_FETCH_JOB,
@@ -48,9 +49,11 @@ export async function checkRssWorkerContracts(): Promise<void> {
     assert.equal(olderTier, 5)
     assert.ok(newerTier !== undefined && newerTier < 5)
     await updateRssFeedTiming(older.id, new Date(Date.now() - 10 * 60_000))
-    job = await background.add(RSS_FEEDS_DISPATCH_JOB.name, {
-      cursor: { lane: newerTier, afterId: uuidBefore(older.id) },
-    })
+    job = await background.add(
+      RSS_FEEDS_DISPATCH_JOB.name,
+      { cursor: { lane: newerTier, afterId: uuidBefore(older.id) } },
+      { ...RSS_FEEDS_DISPATCH_JOB.options, ordering: RSS_FEEDS_ORDERING.dispatcher },
+    )
     assert.ok(job, 'RSS dispatcher job admission')
     await dispatcher.handle(job as Job<never>)
     const [due, backfill] = await Promise.all([

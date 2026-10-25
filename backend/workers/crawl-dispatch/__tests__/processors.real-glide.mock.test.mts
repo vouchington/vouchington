@@ -14,6 +14,7 @@ import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatch
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
 import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { backgroundCpu as crawlDispatchQueue } from '@queues/background-cpu/queues'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { processCrawlDispatchJob } from '../processors.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 
@@ -46,15 +47,20 @@ describe('hostname paged dispatcher through the shared CPU queue', () => {
       hostnames_page_size: 1,
       'background-cpu_max_depth': 1_000_000,
     })
-    const first = await crawlDispatchQueue.add('crawl.crawl_hostnames_dispatcher', {
-      cursor: {
-        sweepStartedAt: '2099-01-15T00:00:00.000Z',
-        rangeLimit: 10,
-        afterBucketDays: bucket.bucketDays - 1,
-        bucketDays: bucket.bucketDays,
-        afterId: uuidBefore(hostnameIds[0]!),
+    const hostnameDispatcher = requireBackgroundCpuJob('crawl.crawl_hostnames_dispatcher')
+    const first = await crawlDispatchQueue.add(
+      hostnameDispatcher.name,
+      {
+        cursor: {
+          sweepStartedAt: '2099-01-15T00:00:00.000Z',
+          rangeLimit: 10,
+          afterBucketDays: bucket.bucketDays - 1,
+          bucketDays: bucket.bucketDays,
+          afterId: uuidBefore(hostnameIds[0]!),
+        },
       },
-    })
+      hostnameDispatcher.options,
+    )
     if (!first) throw new Error('Expected hostname dispatcher admission')
     let continuation: Awaited<ReturnType<typeof crawlDispatchQueue.getJob>> | undefined
     try {
@@ -116,7 +122,12 @@ describe('hostname paged dispatcher through the shared CPU queue', () => {
     })
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { weekly_refresh_batch_size: 5000 })
     expect(await searchHostnameIdsNeedingCrawlerRefresh(500, {}, hostnameId)).toContain(hostnameId)
-    const queued = await crawlDispatchQueue.add('crawl.refresh_hostname_crawler_dispatcher', {})
+    const refreshDispatcher = requireBackgroundCpuJob('crawl.refresh_hostname_crawler_dispatcher')
+    const queued = await crawlDispatchQueue.add(
+      refreshDispatcher.name,
+      {},
+      refreshDispatcher.options,
+    )
     if (!queued) throw new Error('Expected refresh dispatcher admission')
     onTestFinished(() => queued.remove())
     const result = await processCrawlDispatchJob(queued, {

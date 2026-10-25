@@ -1,10 +1,9 @@
 import { defineBackgroundDomain } from './define-job.mts'
 
 // Reserve independent delivery and cleanup capacity so inbound traffic cannot occupy outbound
-// or retention slots. The lane cap retains the domain’s worker baseline.
+// or retention slots. The worker baseline sizes only one process.
 export const ACTIVITYPUB_DOMAIN = defineBackgroundDomain({
   domain: 'activitypub',
-  group: { kind: 'lanes', cap: 10 },
   workerConcurrency: 10,
 })
 

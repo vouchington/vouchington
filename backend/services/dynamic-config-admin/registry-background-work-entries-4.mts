@@ -1,4 +1,7 @@
 import { backgroundQueueConfig, backgroundQueueMaxValues } from '@queues/background/config'
+import { BACKGROUND_ORDERING_CAPS } from '@queues/background/enqueues/ordering-caps'
+import { BACKGROUNDCPU_ORDERING_CAPS } from '@queues/background-cpu/enqueues/ordering-caps'
+import { orderingConfigFields } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 import {
   backgroundCpuQueueConfig,
   backgroundCpuQueueMaxValues,
@@ -29,6 +32,7 @@ export const backgroundWorkEntries4 = [
     label: 'Background CPU queue',
     maxValues: backgroundCpuQueueMaxValues,
     descriptions: {
+      ...orderingConfigFields(BACKGROUNDCPU_ORDERING_CAPS).descriptions,
       pause_recheck_ms: 'Milliseconds a paused CPU job waits before re-checking its domain.',
       pause_cache_ms: 'Milliseconds a CPU worker trusts a domain pause state.',
       domain_stats_scan_cap: 'Jobs scanned per state for one CPU domain-stats request.',
@@ -41,6 +45,7 @@ export const backgroundWorkEntries4 = [
     label: 'Background queue',
     maxValues: backgroundQueueMaxValues,
     descriptions: {
+      ...orderingConfigFields(BACKGROUND_ORDERING_CAPS).descriptions,
       pause_recheck_ms:
         'Milliseconds a job of a paused domain waits before it re-checks its domain.',
       pause_cache_ms:

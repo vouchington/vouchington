@@ -4,7 +4,8 @@ import {
   SITEMAPS_POST_DAY_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
 import type { SitemapPostType } from '@services/sitemaps/types'
-import { getSitemapsOrderingKeyForDay, SITEMAPS_ORDERING } from '../config.mts'
+import { SITEMAPS_ORDERING } from '@queues/background/enqueues/sitemaps-ordering'
+import { getSitemapsOrderingKeyForDay } from '../config.mts'
 import type { PostDayJobData } from '../types.mts'
 
 const enqueueUpdatePostDaySitemapJob = createBackgroundEnqueue(SITEMAPS_POST_DAY_JOB)

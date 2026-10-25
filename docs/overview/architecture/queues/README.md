@@ -43,6 +43,15 @@ flowchart LR
   Domain processors load at dispatch so unrelated domains can start without initializing every
   processor dependency. Global upload maintenance retains startup initialization, and eager
   registry validation rejects unroutable jobs before the worker starts.
+- An ordering lane's concurrency is a global cap across every worker process. The shared worker's
+  `workerConcurrency` sizes slots in one process; adding processes does not multiply the lane cap.
+  DynamicConfig sets lane caps at producer admission and scheduler registration. Dispatchers use
+  separate lanes where GlideMQ's ordered group FIFO would otherwise place them ahead of ready tasks
+  regardless of queue priority.
+  GlideMQ retains each scheduler's template options. After changing a lane cap, let DynamicConfig
+  reach queue producers, then restart the schedule-owning worker processes so they re-register all
+  affected shared-queue templates. Later scheduled ticks use those persisted templates; an old
+  template could otherwise reset the lane to its previous cap when that tick inserts a job.
 - Unfurl jobs run with the shared CPU worker selection and can use Lightpanda. Deployments that
   select the CPU worker need the browser capability and capacity for unfurl work as well as crawls.
 
@@ -99,8 +108,9 @@ work ahead of housekeeping.
   exhausted enrichment job leaves nullable metadata unclassified; the topic and its hostname
   remain usable. This is accepted loss for advisory metadata, unlike an RSS import row, whose
   pending state has a recovery dispatcher.
-- **Dispatchers rank below tasks.** Recovery and dispatch jobs use the lowest tier so ordinary work
-  runs first when both are ready.
+- **Dispatchers rank below tasks across independent lanes.** Recovery and dispatch jobs use the
+  lowest tier. Within an existing shared domain lane, GlideMQ's group FIFO decides the order before
+  queue priority; those domains retain their established ordering.
 - **Email cannot be exactly-once.** PostgreSQL and the mail provider do not share a transaction, so
   each processor picks one contract: retryable (may duplicate) or at-most-once (a delivery marker is
   committed before the send, and may lose the email). Jobs marked sensitive are removed on either

@@ -16,6 +16,7 @@ const enqueue = createEnqueueFunction<
   queue: entitiesListeners,
   queueName: BACKGROUND_QUEUE_NAME,
   jobName: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
+  defaults: ENTITY_LISTENERS_POST_UPDATED_JOB.options,
 })
 
 describe('owned entity listener completion', () => {

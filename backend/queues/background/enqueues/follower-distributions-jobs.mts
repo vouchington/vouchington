@@ -1,11 +1,10 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue had no ordering keys; its cap was the worker concurrency of 5. One domain-wide group
-// of 5 keeps that cap on the shared worker.
+// The domain lane bounds distribution work across every worker process.
 export const FOLLOWER_DISTRIBUTIONS_DOMAIN = defineBackgroundDomain({
   domain: 'follower-distributions',
-  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 5,
 })
 

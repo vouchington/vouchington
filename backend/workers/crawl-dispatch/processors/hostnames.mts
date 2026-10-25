@@ -1,5 +1,6 @@
 import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { backgroundCpu } from '@queues/background-cpu/queues'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { getWeeklyHostnameRefreshLimits, getCrawlCleanupLimits } from '@services/crawls/work-limits'
 import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 import { deleteOldInvalidCrawls, getCrawlCleanupCutoff } from '@services/crawls/cleanup'
@@ -143,7 +144,7 @@ export async function processCrawlHostnamesJob(
           queue: backgroundCpu,
           queueName: 'background-cpu',
           jobName: 'crawl.crawl_hostnames_dispatcher',
-          defaults: { priority: 100 },
+          defaults: requireBackgroundCpuJob('crawl.crawl_hostnames_dispatcher').options,
         }),
       })
     case 'crawl.crawl_urls_per_hostname_dispatcher': {

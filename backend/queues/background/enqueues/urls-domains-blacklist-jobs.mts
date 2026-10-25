@@ -1,14 +1,10 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue's cap was its worker concurrency of 5. Source syncs share one domain-wide group of
-// 5; the dispatcher and the cache-invalidation drain keep their own singleton lanes (outside the
-// group), so the domain runs at most 7 jobs. Syncs reach independent source hosts, so a rate-limit
-// signal delays only its own job. The dispatcher lists the code-defined blocklist sources (a fixed,
-// small set), so it stays one job.
+// Source syncs share the domain lane; dispatcher and invalidation each have a singleton lane.
 export const URLS_DOMAINS_BLACKLIST_DOMAIN = defineBackgroundDomain({
   domain: 'urls-domains-blacklist',
-  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 5,
 })
 

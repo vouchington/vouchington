@@ -55,7 +55,7 @@ describe('background queue domain routes', () => {
         await background.add(
           SES_INBOUND_PROCESS_JOB.name,
           { sesMessageId, objectKey: `copyright-incoming/${sesMessageId}` },
-          { jobId, delay: 3_600_000, attempts: 1 },
+          { ...SES_INBOUND_PROCESS_JOB.options, jobId, delay: 3_600_000, attempts: 1 },
         )
       }
       const request = createRequest()

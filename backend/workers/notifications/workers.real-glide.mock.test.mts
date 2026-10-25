@@ -54,6 +54,7 @@ describe('notification worker paged dispatch', () => {
       NOTIFICATIONS_RECONCILE_POST_JOB.name,
       { postId },
       {
+        ...NOTIFICATIONS_RECONCILE_POST_JOB.options,
         jobId: `test-notification-page-${randomUUID()}`,
       },
     )

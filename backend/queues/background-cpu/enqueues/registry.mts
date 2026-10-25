@@ -10,15 +10,12 @@ import type {
   BackgroundCpuJobSpec,
 } from '../types.mts'
 import { defineBackgroundCpuDomain, defineBackgroundCpuJob } from './define-job.mts'
+import { contentAnalysisOrderingKey, crawlOrderingKey } from './job-lanes.mts'
 import { assertRegistryInvariants } from './registry-invariants.mts'
 
 const crawl = defineBackgroundCpuDomain({ domain: 'crawl', workerConcurrency: 23 })
 const bedrock = defineBackgroundCpuDomain({ domain: 'bedrock-embeddings', workerConcurrency: 11 })
-const spendCap = defineBackgroundCpuDomain({
-  domain: 'ai-spend-cap',
-  workerConcurrency: 1,
-  group: { kind: 'domain', concurrency: 1 },
-})
+const spendCap = defineBackgroundCpuDomain({ domain: 'ai-spend-cap', workerConcurrency: 1 })
 const contentAnalysis = defineBackgroundCpuDomain({
   domain: 'content-analysis',
   workerConcurrency: 10,
@@ -56,9 +53,17 @@ const dispatch = (name: string, options: JobOverrides = {}): BackgroundCpuJobSpe
   ...RETRY_5S,
   ...options,
 })
-const crawlJob = (spec: BackgroundCpuJobSpec) => defineBackgroundCpuJob(crawl, spec)
+const crawlJob = (spec: BackgroundCpuJobSpec) =>
+  defineBackgroundCpuJob(crawl, {
+    ...spec,
+    ordering: { key: crawlOrderingKey(spec.name, spec.priority === PRIORITY_DISPATCH) },
+  })
 const bedrockJob = (spec: BackgroundCpuJobSpec) => defineBackgroundCpuJob(bedrock, spec)
-const contentJob = (spec: BackgroundCpuJobSpec) => defineBackgroundCpuJob(contentAnalysis, spec)
+const contentJob = (spec: BackgroundCpuJobSpec) =>
+  defineBackgroundCpuJob(contentAnalysis, {
+    ...spec,
+    ordering: { key: contentAnalysisOrderingKey(spec.priority === PRIORITY_DISPATCH) },
+  })
 
 /** One queue-wide name per current producer and scheduled tick; names include their domain. */
 export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
@@ -83,7 +88,6 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
         ...RETRY_1S,
         ordering: {
           key: 'bedrock-embeddings:single',
-          concurrency: 10,
           rateLimit: { max: 10, duration: 1_000 },
         },
       }),
@@ -93,7 +97,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     bedrockJob(
       task(`create_${name}`, {
         lockDuration: 300_000,
-        ordering: { key: 'bedrock-embeddings:creation', concurrency: 1 },
+        ordering: { key: 'bedrock-embeddings:creation' },
       }),
     ),
   ),
@@ -102,7 +106,6 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
       lockDuration: 300_000,
       ordering: {
         key: 'bedrock-embeddings:polling',
-        concurrency: 10,
         rateLimit: { max: 10, duration: 1_000 },
       },
     }),
@@ -116,7 +119,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     bedrockJob(
       dispatch(name, {
         lockDuration: 300_000,
-        ordering: { key: 'bedrock-embeddings:dispatcher', concurrency: 1 },
+        ordering: { key: 'bedrock-embeddings:dispatcher' },
       }),
     ),
   ),
@@ -124,7 +127,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     bedrockJob(
       dispatch(name, {
         lockDuration: 300_000,
-        ordering: { key: 'bedrock-embeddings:reconciliation', concurrency: 1 },
+        ordering: { key: 'bedrock-embeddings:reconciliation' },
       }),
     ),
   ),

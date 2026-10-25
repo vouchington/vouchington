@@ -3,31 +3,12 @@ import type { BackgroundDomain } from './config.mts'
 
 type GroupRateLimit = { readonly max: number; readonly duration: number }
 
-/**
- * How a domain limits itself. A job has one ordering key, so a domain is either capped as a whole
- * (`domain`: every job shares the key named after the domain) or runs in a fixed set of singleton
- * lanes (`lanes`: every job supplies
- * its own namespaced lane key and `cap` is the sum of the lane concurrencies), never per-entity
- * keys beside a domain-wide cap. A domain that needs those keeps its own queue.
- */
-export type BackgroundGroup =
-  | {
-      readonly kind: 'domain'
-      readonly concurrency: number
-      readonly rateLimit?: GroupRateLimit
-      /**
-       * Where a provider rate-limit signal or a pause defers. `group` (the default) parks the whole
-       * group, for a domain whose jobs share one external limit. `job` delays only the signalling
-       * job, for a domain whose jobs reach many independent hosts or none at all.
-       */
-      readonly deferral?: 'group' | 'job'
-    }
-  | { readonly kind: 'lanes'; readonly cap: number }
-
 export type BackgroundDomainDefinition = {
   readonly domain: BackgroundDomain
-  /** Omitted when the shared worker's concurrency is the only cap a domain needs. */
-  readonly group?: BackgroundGroup
+  /** Optional shared rate window for jobs using the domain ordering key. */
+  readonly rateLimit?: GroupRateLimit
+  /** Group deferral is the default for jobs using the domain key. */
+  readonly deferral?: 'group' | 'job'
   /** The baseline worker concurrency this domain had as its own queue; the shared worker sums them. */
   readonly workerConcurrency: number
 }
@@ -36,7 +17,7 @@ export type BackgroundJobSpec = {
   /** Local name, unique inside the domain; the queue-wide name is `<domain>.<name>`. */
   readonly name: string
   readonly priority: number
-  /** Fixed lane for a domain that partitions its concurrency by job family. */
+  /** Fixed lane for a domain that partitions work by job family. */
   readonly ordering?: JobOptions['ordering']
   readonly attempts?: number
   readonly backoff?: NonNullable<JobOptions['backoff']>
@@ -53,7 +34,7 @@ export type BackgroundJobSpec = {
 export type BackgroundJobDefinition<TData = unknown, TSensitive extends boolean = boolean> = {
   readonly name: string
   readonly domain: BackgroundDomain
-  /** Defaults for every enqueue of this job; per-call options override them. */
+  /** Defaults for every enqueue; the queue resolves ordering concurrency at admission. */
   readonly options: Readonly<JobOptions>
   readonly sensitive?: TSensitive
   readonly data?: TData

@@ -7,6 +7,10 @@ import {
 } from '../test-helpers/owned-vote-route-job-completion.mts'
 import { observeOwnedVoteRouteAdmissions } from '../test-helpers/owned-vote-route-admissions.mts'
 import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
+import {
+  VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
+  VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
+} from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { createTestUserDirect } from '../test-helpers/entities/users-direct.mts'
 import { insertTestTopic } from '../test-helpers/entities/topics.mts'
 import { getEnqueuedJobId, readEnqueuedJob } from '../test-helpers/queue-jobs.mts'
@@ -33,6 +37,7 @@ describe('owned vote-route admission settlement', () => {
       const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
       const data = { userId: user.id }
       const opts = {
+        ...VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.options,
         delay: 300_000,
         deduplication: { id: randomUUID(), mode: 'simple' as const },
       }
@@ -42,9 +47,9 @@ describe('owned vote-route admission settlement', () => {
         const result = await retry.retryTransientEnqueue<unknown>(() => {
           if (closing) throw new Error('Owned dedup control is closing')
           return mode === 'single'
-            ? queue.add('vote-aggregation.processRecalculateUserVoteWeight', data, opts)
+            ? queue.add(VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name, data, opts)
             : queue.addBulk([
-                { name: 'vote-aggregation.processRecalculateUserVoteWeight', data, opts },
+                { name: VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name, data, opts },
               ])
         })
         for (const job of Array.isArray(result) ? result : [result])
@@ -203,7 +208,14 @@ describe('owned vote-route admission settlement', () => {
     const completed = (job: { data: { electionId?: string } }) => {
       if (job.data.electionId !== topicId) return
       followUp = retry.retryTransientEnqueue(() =>
-        queue.add('unexpected-owned-review-job', { topicId }, { attempts: 1 }),
+        queue.add(
+          'vote-aggregation.unexpected-owned-review-job',
+          { topicId },
+          {
+            attempts: 1,
+            ordering: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.options.ordering,
+          },
+        ),
       )
       void followUp.catch(() => {})
     }
@@ -214,15 +226,17 @@ describe('owned vote-route admission settlement', () => {
     })
     const admission = retry.retryTransientEnqueue(() =>
       queue.add(
-        'vote-aggregation.processUpdateElectionVoteStats',
+        VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
         { electionId: topicId, orderingKey: 'topic' },
-        { attempts: 1 },
+        { ...VOTE_AGGREGATION_UPDATE_ELECTION_JOB.options, attempts: 1 },
       ),
     )
     const settlement = finish()
     void settlement.catch(() => {})
     await admission
-    await expect(settlement).rejects.toThrow('Unknown background job: unexpected-owned-review-job')
+    await expect(settlement).rejects.toThrow(
+      'Unknown background job: vote-aggregation.unexpected-owned-review-job',
+    )
     expect(followUp).toBeDefined()
   })
 })

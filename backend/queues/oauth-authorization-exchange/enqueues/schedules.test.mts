@@ -14,7 +14,7 @@ describe('OAuth authorization exchange schedules', () => {
         name: 'oauth-authorization-exchange.dispatchOAuthAuthorizationExchanges',
         opts: {
           priority: 100,
-          ordering: { key: 'oauth-authorization-exchange:dispatcher', concurrency: 1 },
+          ordering: { key: 'oauth-authorization-exchange:dispatcher' },
         },
       },
     })

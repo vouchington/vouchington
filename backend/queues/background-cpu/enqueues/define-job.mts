@@ -1,9 +1,9 @@
-import type { JobOptions } from 'glide-mq'
 import type {
   BackgroundCpuDomainDefinition,
   BackgroundCpuJobDefinition,
   BackgroundCpuJobSpec,
 } from '../types.mts'
+import { getBackgroundCpuOrderingConcurrency } from '../config.mts'
 
 const LOCAL_NAME = /^[a-z][A-Za-z0-9_-]*$/
 
@@ -11,12 +11,6 @@ export function defineBackgroundCpuDomain(
   definition: BackgroundCpuDomainDefinition,
 ): BackgroundCpuDomainDefinition {
   assertPositiveInteger(`${definition.domain} workerConcurrency`, definition.workerConcurrency)
-  if (definition.group?.kind === 'domain') {
-    assertPositiveInteger(`${definition.domain} group concurrency`, definition.group.concurrency)
-  }
-  if (definition.group?.kind === 'lanes') {
-    assertPositiveInteger(`${definition.domain} lane cap`, definition.group.cap)
-  }
   return definition
 }
 
@@ -38,21 +32,17 @@ export function defineBackgroundCpuJob<TData = unknown>(
     if (value !== undefined) assertPositiveInteger(`${spec.name} ${label}`, value)
   }
   const { name, ...jobOptions } = spec
+  const ordering = spec.ordering ?? {
+    key: domain.domain,
+    ...(domain.rateLimit ? { rateLimit: domain.rateLimit } : {}),
+  }
   return {
     name: `${domain.domain}.${name}`,
     domain: domain.domain,
-    options: { ...jobOptions, ...(domainOrdering(domain) ?? {}) },
-  }
-}
-
-/** The shared key and limits of a domain-wide group, or nothing for any other kind. */
-function domainOrdering(
-  domain: BackgroundCpuDomainDefinition,
-): Pick<JobOptions, 'ordering'> | null {
-  if (domain.group?.kind !== 'domain') return null
-  const { concurrency, rateLimit } = domain.group
-  return {
-    ordering: { key: domain.domain, concurrency, ...(rateLimit ? { rateLimit } : {}) },
+    options: {
+      ...jobOptions,
+      ordering: { ...ordering, concurrency: getBackgroundCpuOrderingConcurrency(ordering.key) },
+    },
   }
 }
 

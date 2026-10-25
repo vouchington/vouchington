@@ -4,6 +4,8 @@ import { enqueueBulkCrawlUrls } from './enqueues.mts'
 import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 
 describe('enqueueBulkCrawlUrls', () => {
+  const hostnameId = '018f7757-2e3e-7cc0-930c-25b612ca562a'
+
   beforeEach(async () => {
     await crawlUrls.obliterate({ force: true })
   })
@@ -12,7 +14,7 @@ describe('enqueueBulkCrawlUrls', () => {
     await enqueueBulkCrawlUrls(
       [{ urlId: 'url-1', options: { importRowId: 'row-1', importDiscoveryGeneration: 'gen-1' } }],
       {
-        hostnameId: 'hostname-1',
+        hostnameId,
         rateLimitMs: 1234,
       },
     )
@@ -23,7 +25,11 @@ describe('enqueueBulkCrawlUrls', () => {
     expect(job!.opts).toMatchObject({
       priority: 10,
       deduplication: { id: 'crawl.crawl_url__url-1__row-1__gen-1', mode: 'simple' },
-      ordering: { key: 'crawl:hostname-1', concurrency: 1, rateLimit: { max: 1, duration: 1234 } },
+      ordering: {
+        key: `crawl:${hostnameId}`,
+        concurrency: 1,
+        rateLimit: { max: 1, duration: 1234 },
+      },
     })
     expect(job!.data).toMatchObject({
       import_row_id: 'row-1',

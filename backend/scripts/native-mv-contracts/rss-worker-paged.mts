@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { Job } from 'glide-mq'
 import { background } from '@queues/background/queues'
+import { getBackgroundOrderingConcurrency } from '@queues/background/config'
 import {
   RSS_FEEDS_DISPATCH_JOB,
   RSS_FEEDS_FETCH_JOB,
@@ -45,9 +46,11 @@ export async function checkRssWorkerPagedContracts(): Promise<void> {
     )
     assert.ok(dispatcher, 'RSS dispatcher handler must be registered')
 
-    firstJob = await background.add(RSS_FEEDS_DISPATCH_JOB.name, {
-      cursor: { lane: 5, afterId: uuidBefore(feedIds[0]!) },
-    })
+    firstJob = await background.add(
+      RSS_FEEDS_DISPATCH_JOB.name,
+      { cursor: { lane: 5, afterId: uuidBefore(feedIds[0]!) } },
+      { ...RSS_FEEDS_DISPATCH_JOB.options, ordering: RSS_FEEDS_ORDERING.dispatcher },
+    )
     assert.ok(firstJob, 'RSS dispatcher job admission')
     await dispatcher.handle(firstJob as Job<never>)
     const firstPageRows = await background.searchJobs({
@@ -67,7 +70,10 @@ export async function checkRssWorkerPagedContracts(): Promise<void> {
     assert.equal(data.cursor?.afterId, feedIds[0])
     assert.equal(typeof data.asOf, 'string')
     assert.equal(data.remainingBudget, 1)
-    assert.deepEqual(continuation.opts.ordering, RSS_FEEDS_ORDERING.dispatcher)
+    assert.deepEqual(continuation.opts.ordering, {
+      ...RSS_FEEDS_ORDERING.dispatcher,
+      concurrency: getBackgroundOrderingConcurrency(RSS_FEEDS_ORDERING.dispatcher.key),
+    })
 
     await dispatcher.handle(continuation as Job<never>)
     const secondPageRows = await background.searchJobs({

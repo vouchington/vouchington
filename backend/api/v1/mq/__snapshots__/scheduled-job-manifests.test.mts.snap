@@ -649,7 +649,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "oauth-authorization-exchange:dispatcher",
         },
         "priority": 100,
@@ -1055,7 +1054,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "paged-dispatch-rss",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "rss-feeds:dispatcher",
         },
         "priority": 100,
@@ -1092,7 +1090,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "urls-domains-blacklist:cache-invalidation",
         },
         "priority": 100,
@@ -1129,7 +1126,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "urls-domains-blacklist:dispatcher",
         },
         "priority": 100,
@@ -1169,7 +1165,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "sitemaps:dispatcher",
         },
         "priority": 100,
@@ -1209,7 +1204,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "sitemaps:dispatcher",
         },
         "priority": 100,
@@ -1249,7 +1243,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "sitemaps:dispatcher",
         },
         "priority": 100,
@@ -1289,7 +1282,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "paged-dispatch-kagi",
         },
         "ordering": {
-          "concurrency": 1,
           "key": "kagi-smallweb:dispatcher",
         },
         "priority": 100,
@@ -1477,6 +1469,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
+        },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
@@ -1513,6 +1509,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -1551,6 +1551,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
+        },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
@@ -1583,6 +1587,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -1617,6 +1625,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
+        },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
@@ -1649,6 +1661,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -1683,6 +1699,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
+        },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
@@ -1715,6 +1735,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 4,
+          "key": "crawl:dispatch",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -1750,6 +1774,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "lockDuration": 120000,
+        "ordering": {
+          "concurrency": 4,
+          "key": "content-analysis:dispatch",
+        },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,

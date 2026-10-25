@@ -6,12 +6,11 @@ import type {
 } from '@email-templates/core'
 import { defineBackgroundDomain } from './define-job.mts'
 
-// The old `emails` queue ran its dispatchers and their fan-out under one worker of 5. One
-// domain-wide group of 5 keeps that cap on the shared worker, so a digest run cannot send faster
-// than it did. Event-triggered sends stay in the separate `emails` queue and never wait behind it.
+// Digest dispatch and send jobs share a globally bounded lane. Event-triggered sends use the
+// separate `emails` queue and never wait behind a digest backlog.
 export const EMAIL_DIGESTS_DOMAIN = defineBackgroundDomain({
   domain: 'email-digests',
-  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 5,
 })
 
