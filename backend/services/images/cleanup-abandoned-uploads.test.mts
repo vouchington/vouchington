@@ -1,10 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { S3Buckets } from '@modules/aws'
-import {
-  onEnqueueAdmission,
-  type EnqueueAdmission,
-} from '@data-stores/valkey-glide-mq/glide-mq-admission'
+import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import {
   backdateImageUploadStagedAt,

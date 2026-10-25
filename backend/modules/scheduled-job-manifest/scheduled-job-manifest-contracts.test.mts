@@ -1,18 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
-import {
-  defineScheduledJobManifest,
-  projectScheduledJobs,
-  upsertScheduledJobManifest,
-} from './index.mts'
+import { describe, expect, it } from 'vitest'
+import { defineScheduledJobManifest, projectScheduledJobs } from './index.mts'
 import type { ScheduledJobDefinition } from './types.mts'
-
-function makeQueue(upsertJobScheduler: ScheduledJobQueue['upsertJobScheduler']): ScheduledJobQueue {
-  return {
-    upsertJobScheduler,
-    getRepeatableJobs: async () => [],
-    removeJobScheduler: async () => undefined,
-  }
-}
 
 function scheduledJob(id: string): ScheduledJobDefinition {
   return {
@@ -30,8 +18,6 @@ function scheduledJob(id: string): ScheduledJobDefinition {
     ],
   }
 }
-
-type ScheduledJobQueue = Parameters<typeof upsertScheduledJobManifest>[0]
 
 describe('scheduled job manifest catalog contracts', () => {
   it('rejects an incomplete or duplicate projection order', () => {
@@ -54,65 +40,6 @@ describe('scheduled job manifest catalog contracts', () => {
     ])
 
     expect(projectScheduledJobs([manifest]).map(job => job.id)).toEqual(['production'])
-  })
-
-  it('omits template data when its runtime resolver returns undefined', async () => {
-    const upsertJobScheduler = vi
-      .fn<ScheduledJobQueue['upsertJobScheduler']>()
-      .mockResolvedValue(undefined)
-    const definition = scheduledJob('undefined-data')
-    const manifest = defineScheduledJobManifest('example', [
-      {
-        ...definition,
-        template: { ...definition.template, data: undefined, dataFactory: () => undefined },
-      },
-    ])
-
-    await upsertScheduledJobManifest(makeQueue(upsertJobScheduler), manifest)
-
-    expect(upsertJobScheduler.mock.calls[0]?.[2]).not.toHaveProperty('data')
-  })
-
-  it('does not execute function-valued data unless it is an explicit dataFactory', async () => {
-    const upsertJobScheduler = vi
-      .fn<ScheduledJobQueue['upsertJobScheduler']>()
-      .mockResolvedValue(undefined)
-    const functionData = vi.fn<() => void>()
-    const definition = scheduledJob('function-data')
-    const manifest = defineScheduledJobManifest('example', [
-      {
-        ...definition,
-        template: {
-          name: definition.template.name,
-          opts: definition.template.opts,
-          data: functionData,
-        },
-      },
-    ])
-
-    await upsertScheduledJobManifest(makeQueue(upsertJobScheduler), manifest)
-
-    expect(functionData).not.toHaveBeenCalled()
-    expect(upsertJobScheduler.mock.calls[0]?.[2].data).toBe(functionData)
-  })
-
-  it('tracks every parallel registration when one throws synchronously', async () => {
-    const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>(schedulerId => {
-      if (schedulerId === 'first-scheduler') throw new Error('synchronous registration failure')
-      return Promise.resolve()
-    })
-    const manifest = defineScheduledJobManifest('example', [
-      scheduledJob('first'),
-      scheduledJob('second'),
-    ])
-
-    await expect(
-      upsertScheduledJobManifest(makeQueue(upsertJobScheduler), manifest),
-    ).rejects.toThrow('synchronous registration failure')
-    expect(upsertJobScheduler.mock.calls.map(([schedulerId]) => schedulerId)).toEqual([
-      'first-scheduler',
-      'second-scheduler',
-    ])
   })
 
   it('rejects duplicate operator ids across otherwise distinct jobs', () => {

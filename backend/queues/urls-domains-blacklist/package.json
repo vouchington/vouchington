@@ -20,6 +20,7 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@voucha/types": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0"
   }
 }

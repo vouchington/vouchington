@@ -3,7 +3,7 @@ import { activitypub } from '../queues/activitypub/queues.mts'
 import { getActivityPubInboxDeliveryIdentityForTest } from './entities/activitypub-inbox.mts'
 import { deleteActivityPubInboxDeliveriesForTest } from './entities/activitypub-inbox-storage.mts'
 import { removeActivityPubInboxJobsForDeliveryId } from './activitypub-inbox-test-jobs.mts'
-import { onEnqueueAdmission } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import { onEnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
 
 /** Observe exact request-owned factory admissions, rather than a global queue difference. */

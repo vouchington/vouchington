@@ -1,5 +1,10 @@
-import { createSqsConsumer, type SqsConsumer } from '@backend/worker-runtime'
+import { SQSClient } from '@modules/aws'
 import { recordSqsConsumerConfigMissing } from '@modules/on-error'
+import {
+  createSqsClientPort,
+  createSqsConsumer,
+  type SqsConsumer,
+} from '@vouchington/worker-runtime/sqs'
 import { processBedrockBatchSqsMessage } from './processors.mts'
 
 const QUEUE_NAME = 'bedrock-batch-sqs'
@@ -19,7 +24,7 @@ export async function loadBedrockBatchSqs(): Promise<SqsConsumer | null> {
 
   return createSqsConsumer({
     name: QUEUE_NAME,
-    queueUrl,
     handleMessage: processBedrockBatchSqsMessage,
+    port: createSqsClientPort(SQSClient, queueUrl),
   })
 }

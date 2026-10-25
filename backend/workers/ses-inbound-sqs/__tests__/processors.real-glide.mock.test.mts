@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSqsConsumer, type SqsConsumerPort, type SqsMessage } from '@backend/worker-runtime'
+import {
+  createSqsConsumer,
+  type SqsConsumerPort,
+  type SqsMessage,
+} from '@vouchington/worker-runtime/sqs'
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { background } from '@queues/background/queues'
 import {
@@ -32,7 +36,7 @@ function objectCreatedRecord(objectKey: string, bucketName: string = BUCKET) {
   }
 }
 
-// Mirrors backend/worker-runtime/sqs-consumer.test.mts's createOneShotPort: the first receive()
+// A one-shot port: the first receive()
 // resolves immediately with firstBatch, every later call hangs until the abort signal fires (like
 // AWS SDK's abortSignal option), then rejects like a real AbortError -- letting close() settle
 // cleanly instead of tight-looping.
@@ -91,7 +95,6 @@ describe('processSesInboundSqsMessage', () => {
 
     const consumer = createSqsConsumer({
       name: 'test',
-      queueUrl: 'unused',
       handleMessage: processSesInboundSqsMessage,
       port,
     })
@@ -151,7 +154,6 @@ describe('processSesInboundSqsMessage', () => {
     try {
       const consumer = createSqsConsumer({
         name: 'test',
-        queueUrl: 'unused',
         handleMessage: processSesInboundSqsMessage,
         port,
       })
@@ -184,7 +186,6 @@ describe('processSesInboundSqsMessage', () => {
 
     const consumer = createSqsConsumer({
       name: 'test',
-      queueUrl: 'unused',
       handleMessage: processSesInboundSqsMessage,
       port,
     })
@@ -268,7 +269,6 @@ describe('processSesInboundSqsMessage', () => {
 
     const consumer = createSqsConsumer({
       name: 'test',
-      queueUrl: 'unused',
       handleMessage: processSesInboundSqsMessage,
       port,
     })

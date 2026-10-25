@@ -1,10 +1,7 @@
 import { strictEqual } from 'node:assert'
 import { onTestFinished, vi } from 'vitest'
 import * as ses from '../modules/aws/ses.mts'
-import {
-  onEnqueueAdmission,
-  type EnqueueAdmission,
-} from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import { BACKGROUND_QUEUE_NAME } from '../queues/background/config.mts'
 import {
   EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB,

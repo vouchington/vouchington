@@ -125,31 +125,6 @@ describe('retryOnInflightSaturation', () => {
     expect(captureMessage).toHaveBeenCalledTimes(2)
   })
 
-  it('VALKEY_INFLIGHT_RETRY_ATTEMPTS env var overrides attempt count', async () => {
-    process.env.VALKEY_INFLIGHT_RETRY_ATTEMPTS = '2'
-    try {
-      const { retryOnInflightSaturation } = await import('../glide-mq-retry.mts')
-      const fn = vi.fn<() => Promise<string>>(() =>
-        Promise.reject(new Error('Reached maximum inflight requests')),
-      )
-
-      // Attach .catch immediately so intermediate rejections are never unhandled.
-      const thrownPromise = retryOnInflightSaturation(fn, {
-        command: 'xadd',
-        client: 'worker-queue-command',
-      }).catch((err: unknown) => err)
-      await vi.runAllTimersAsync()
-      const thrown = await thrownPromise
-
-      expect(thrown).toBeInstanceOf(Error)
-      expect(fn).toHaveBeenCalledTimes(2)
-      const decoratedErr = thrown as Error & { extra?: Record<string, unknown> }
-      expect(decoratedErr.extra).toMatchObject({ attempts: 2 })
-    } finally {
-      delete process.env.VALKEY_INFLIGHT_RETRY_ATTEMPTS
-    }
-  })
-
   it('recordValkeySaturation emits console.warn in development mode', async () => {
     const originalEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'development'

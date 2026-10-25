@@ -23,5 +23,7 @@
     }
   },
   "scripts": {},
-  "dependencies": {}
+  "dependencies": {
+    "@vouchington/worker-runtime": "^0.2.0"
+  }
 }

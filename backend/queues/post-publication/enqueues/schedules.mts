@@ -1,8 +1,6 @@
 import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
-import {
-  defineScheduledJobManifest,
-  toSchedulerTemplateOptions,
-} from '@modules/scheduled-job-manifest'
+import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
+import { toSchedulerTemplateOptions } from '@vouchington/worker-runtime/schedule-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { POST_PUBLICATION_RECONCILE_JOB } from '@queues/background/enqueues/post-publication-jobs'
 import { enqueueReconcilePostPublication } from '../enqueues.mts'

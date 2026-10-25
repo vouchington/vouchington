@@ -14,6 +14,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@vouchington/utils": "^0.7.5"
+    "@vouchington/utils": "^0.8.0"
   }
 }

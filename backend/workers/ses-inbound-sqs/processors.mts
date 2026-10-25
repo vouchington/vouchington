@@ -1,5 +1,5 @@
 import assert from 'http-assert'
-import type { SqsMessage } from '@backend/worker-runtime'
+import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import { enqueueBulkSesInboundProcess } from '@queues/ses-inbound/enqueues'
 import {
   createSesInboundProcessJobId,

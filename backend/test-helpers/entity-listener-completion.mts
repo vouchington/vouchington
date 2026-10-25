@@ -1,8 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import {
-  onEnqueueAdmission,
-  type EnqueueAdmission,
-} from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import { getPostByAny } from '../services/posts/get.mts'
 import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 import onError from '@modules/on-error'

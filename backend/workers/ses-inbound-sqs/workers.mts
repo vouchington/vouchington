@@ -1,5 +1,10 @@
-import { createSqsConsumer, type SqsConsumer } from '@backend/worker-runtime'
+import { SQSClient } from '@modules/aws'
 import { recordSqsConsumerConfigMissing } from '@modules/on-error'
+import {
+  createSqsClientPort,
+  createSqsConsumer,
+  type SqsConsumer,
+} from '@vouchington/worker-runtime/sqs'
 import { processSesInboundSqsMessage } from './processors.mts'
 
 const QUEUE_NAME = 'ses-inbound-sqs'
@@ -12,7 +17,7 @@ export async function loadSesInboundSqs(): Promise<SqsConsumer | null> {
   }
   return createSqsConsumer({
     name: QUEUE_NAME,
-    queueUrl,
     handleMessage: processSesInboundSqsMessage,
+    port: createSqsClientPort(SQSClient, queueUrl),
   })
 }

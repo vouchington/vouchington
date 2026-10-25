@@ -39,6 +39,7 @@
     "@queues/crawl-referral-links": "workspace:^",
     "@queues/heartbeat": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0",
     "@workers/ai-agents": "workspace:^",
     "@workers/background-cpu": "workspace:^",
     "@workers/crawl-browser": "workspace:^",

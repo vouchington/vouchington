@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SqsMessage } from '@backend/worker-runtime'
+import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import { getStripeEventByStripeEventId, type ingestStripeEvent } from '@services/stripe/events'
 import { memberships } from '@queues/memberships/queues'
 import { processStripeEventsSqsMessage } from '../processors.mts'

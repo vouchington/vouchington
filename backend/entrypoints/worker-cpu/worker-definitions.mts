@@ -1,4 +1,4 @@
-import type { WorkerDefinition } from '@backend/worker-runtime'
+import type { WorkerDefinition } from '@vouchington/worker-runtime'
 import { WORKER_DEFINITIONS as IO_WORKER_DEFINITIONS } from '@entrypoints/worker-io/worker-definitions'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 
