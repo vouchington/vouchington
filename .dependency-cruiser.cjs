@@ -13,11 +13,18 @@ module.exports = {
       name: 'not-to-unresolvable',
       comment: 'imports must resolve to source files or installed packages.',
       severity: 'error',
-      from: { pathNot: '^(vitest\\.config|test-helpers/vitest-config/)' },
+      from: { pathNot: '^(vitest\\.config|test-helpers/vitest-config/|cloudflare-worker/)' },
       to: {
         couldNotResolve: true,
         pathNot: '^(@typescript-eslint/parser|coverage-check)$',
       },
+    },
+    {
+      name: 'cloudflare-worker-imports-must-resolve',
+      comment: 'Cloudflare Workers built-ins are allowed only from Cloudflare Worker sources.',
+      severity: 'error',
+      from: { path: '^cloudflare-worker/' },
+      to: { couldNotResolve: true, pathNot: '^cloudflare:workers$' },
     },
     {
       name: 'no-circular',

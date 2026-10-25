@@ -7,6 +7,8 @@ export const TOOLING_DEPENDENCY_CRUISER_ROOTS = [
   'dev/agent-policy.mts',
   'dev/pr-description',
   'static-code-analysis',
+  'email-templates',
+  'cloudflare-worker',
 ] as const
 
 type CliOptions = {
