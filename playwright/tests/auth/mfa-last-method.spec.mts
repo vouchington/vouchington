@@ -15,6 +15,7 @@ test.describe('Last MFA method confirmation', () => {
     await remove.scrollIntoViewIfNeeded()
     await waitForBelowFoldHydration(page)
     await remove.click()
+    await item.getByTestId('totp-remove-confirm-button').click()
     const dialog = page.getByTestId('mfa-reauth-dialog')
     await expect(dialog).toBeVisible()
     await expect(page.getByTestId('mfa-reauth-dialog-title')).toBeVisible()
