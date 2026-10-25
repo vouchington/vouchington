@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createTestUser } from '../../../backend/test-helpers/index.mts'
 import {
@@ -33,7 +33,7 @@ function waitForVerificationChange(page: Page, method: 'PUT' | 'DELETE') {
 }
 
 test.describe('Admin OAuth Clients', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('verifies an owned app and removes the verification', async ({ page }) => {
     const { app } = await registerOwnedApp()

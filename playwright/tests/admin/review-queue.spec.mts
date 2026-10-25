@@ -7,7 +7,7 @@ import {
 } from '../../../backend/test-helpers/index.mts'
 import { allowTestPostImageDelivery } from '../../../backend/test-helpers/entities/post-images.mts'
 import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 let rejectedTitle = ''
 let inReviewTitle = ''
@@ -50,7 +50,7 @@ test.beforeAll(async () => {
 })
 
 test.describe('Admin review queue', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin can view queued posts', async ({ page }) => {
     await navigateTo(page, '/posts/review-queue')

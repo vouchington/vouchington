@@ -25,7 +25,8 @@ import { insertEmailAddressLoginToken } from '../../backend/test-helpers/entitie
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE, AUTH_STATE } from '../helpers/auth-state.mts'
+import { loginAsAdmin } from '../helpers/auth.mts'
 
 test('authenticate as test user via real /login flow', async ({ page }) => {
   // ── Step 1: Verify the real /login UI works ──────────────────────────────
@@ -89,4 +90,13 @@ test('authenticate as test user via real /login flow', async ({ page }) => {
   // ── Step 3: Persist the authenticated session ────────────────────────────
   mkdirSync(dirname(AUTH_STATE), { recursive: true })
   await page.context().storageState({ path: AUTH_STATE })
+})
+
+test('authenticate as administrator after TOTP verification', async ({ page }) => {
+  await loginAsAdmin(page)
+  const cookies = await page.context().cookies()
+  expect(cookies.find(cookie => cookie.name === 'dt')).toBeDefined()
+  expect(cookies.find(cookie => cookie.name === 'st')).toBeDefined()
+  mkdirSync(dirname(ADMIN_AUTH_STATE), { recursive: true })
+  await page.context().storageState({ path: ADMIN_AUTH_STATE })
 })

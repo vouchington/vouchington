@@ -15,10 +15,33 @@ import { refreshSessionState } from './flows.mts'
 import { markJwtStale } from './invalidation.mts'
 import { resolveRequestSessionClaims } from './request-claims.mts'
 import { isSessionRevoked } from './revocation.mts'
+import {
+  createAuthenticatedTestSession,
+  createVerifiedMfaTestSession,
+} from '../../test-helpers/authenticated-session.mts'
 
 const userAgent = 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36'
 
 describe('original MFA assurance continuity', () => {
+  it('admits an administrator only after the fixture verifies a distinct enrolled TOTP factor', async () => {
+    const user = await createTestUserDirect({ withEmail: true })
+    await insertTestTotpAuthenticator(user.id, 'role-enrollment')
+    await addTestUserRole(user.id, 'administrator')
+    const enrolledUser = await getTestPrivateUserById(user.id)
+    const raw = await createAuthenticatedTestSession(enrolledUser!)
+    expect(raw.sessionToken.payload.mfa_at).toBeUndefined()
+    expect(raw.sessionToken.payload.rol).not.toContain('administrator')
+
+    const [first, second] = await Promise.all([
+      createVerifiedMfaTestSession(user.id),
+      createVerifiedMfaTestSession(user.id),
+    ])
+    for (const tokens of [first, second]) {
+      expect(tokens.sessionToken.payload.mfa_at).toEqual(expect.any(Number))
+      expect(tokens.sessionToken.payload.rol).toContain('administrator')
+      expect(tokens.deviceToken.payload.mfa_at).toBe(tokens.sessionToken.payload.mfa_at)
+    }
+  })
   it('preserves the exact timestamp through encrypted replay, cold enrichment and web rotation', async () => {
     const user = await createTestUserDirect()
     await insertTestTotpAuthenticator(user.id, 'original-proof')

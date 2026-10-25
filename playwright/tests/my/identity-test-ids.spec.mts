@@ -106,6 +106,18 @@ test.describe('My Identity page test ids', () => {
         body: JSON.stringify({ email_address: 'tests+pw-reauth@voucha.ai' }),
       }),
     )
+    await page.route('**/api/v1/auth/re-auth/methods', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          has_totp: true,
+          has_email: true,
+          has_passkey: true,
+          providers: ['apple', 'google', 'facebook', 'x', 'github', 'linkedin', 'microsoft'],
+        }),
+      }),
+    )
     await navigateTo(page, '/my/identity')
 
     const item = page.getByTestId(`totp-authenticator-item-${totp.id}`)
@@ -113,6 +125,14 @@ test.describe('My Identity page test ids', () => {
     await item.getByTestId('totp-remove-confirm-button').click()
 
     await expect(page.getByTestId('method-selector-authenticator-app')).toBeVisible()
+    await expect(page.getByTestId('method-selector-apple')).toBeVisible()
+    await expect(page.getByTestId('method-selector-google')).toBeVisible()
+    await expect(page.getByTestId('method-selector-facebook')).toBeVisible()
+    await expect(page.getByTestId('method-selector-x')).toBeVisible()
+    await expect(page.getByTestId('method-selector-github')).toBeVisible()
+    await expect(page.getByTestId('method-selector-linkedin')).toBeVisible()
+    await expect(page.getByTestId('method-selector-microsoft')).toBeVisible()
+    await expect(page.getByTestId('method-selector-passkey')).toBeVisible()
     await expect(page.getByTestId('verification-panes-totp-verify')).toBeVisible()
     await page.getByTestId('method-selector-email-verification').click()
     await page.getByTestId('verification-panes-email-send-code').click()

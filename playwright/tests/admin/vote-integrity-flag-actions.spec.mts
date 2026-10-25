@@ -1,5 +1,5 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { DESKTOP_VIEWPORT, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import {
   createTestUser,
@@ -8,7 +8,7 @@ import {
   insertTestVoteIntegrityFlag,
 } from '../../../backend/test-helpers/index.mts'
 
-// Seeded test admin ID — the shared AUTH_STATE user; used as post author to avoid
+// Seeded test admin ID — the shared ADMIN_AUTH_STATE user; used as post author to avoid
 // creating an extra user for test fixtures that only need a valid createdById.
 const TEST_ADMIN_ID = '019f0000-0000-7000-8000-000000000000'
 
@@ -46,7 +46,7 @@ test.beforeAll(async () => {
 })
 
 test.describe('Vote-integrity flag actions', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin resolves a pending flag after selecting a resolution', async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT)

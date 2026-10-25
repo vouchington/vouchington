@@ -10,6 +10,7 @@ export const TEST_USER_USERNAME = 'tests'
 
 type LoginAsUserDependencies = {
   createDeviceAndSessionTokens: typeof createDeviceAndSessionTokens
+  createVerifiedMfaTestSession: typeof import('../../backend/test-helpers/authenticated-session.mts').createVerifiedMfaTestSession
   mintUUIDv7: typeof mintUUIDv7
   retryOnConnectionLost: typeof retryOnConnectionLost
 }
@@ -21,8 +22,26 @@ export async function loginAsTestUser(
   await loginAsUser(page, TEST_USER_ID, dependencies)
 }
 
+/** Complete a TOTP challenge for the seeded administrator before injecting its cookies. */
+export async function loginAsAdmin(
+  page: Page,
+  dependencies?: Partial<LoginAsUserDependencies>,
+): Promise<void> {
+  const createVerifiedMfaTestSession =
+    dependencies?.createVerifiedMfaTestSession ??
+    (await import('../../backend/test-helpers/authenticated-session.mts'))
+      .createVerifiedMfaTestSession
+  const userAgent = await page.evaluate(() => navigator.userAgent)
+  const tokens = await createVerifiedMfaTestSession(TEST_USER_ID, { user_agent: userAgent })
+  await setSessionCookies(
+    page,
+    tokens,
+    dependencies?.retryOnConnectionLost ?? retryOnConnectionLost,
+  )
+}
+
 // Creates device + session JWTs directly and injects them as cookies, bypassing
-// the email login API and MFA check. This prevents concurrent loginAsTestUser
+// the email login API. This prevents concurrent loginAsTestUser
 // calls from clearing passkeys inserted by a concurrent passkeys test.
 //
 // Navigates once to '/' only to establish the cookie origin, then injects cookies
@@ -41,25 +60,30 @@ export async function loginAsUser(
   const { deviceToken, sessionToken } = await createTokens({
     did,
     uid: userId,
-    // This helper intentionally creates an already authenticated fixture, including its proof.
-    mfaVerifiedAt: Math.floor(Date.now() / 1000),
     deviceContext: { user_agent: userAgent },
   })
+  await setSessionCookies(page, { deviceToken, sessionToken }, retry)
+}
 
+async function setSessionCookies(
+  page: Page,
+  tokens: Awaited<ReturnType<typeof createDeviceAndSessionTokens>>,
+  retry: typeof retryOnConnectionLost,
+): Promise<void> {
   await retry(async () => {
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 15_000 })
     const origin = new URL(page.url()).origin
     await page.context().addCookies([
       {
         name: 'dt',
-        value: deviceToken.token,
+        value: tokens.deviceToken.token,
         url: origin,
         httpOnly: true,
         sameSite: 'Lax',
       },
       {
         name: 'st',
-        value: sessionToken.token,
+        value: tokens.sessionToken.token,
         url: origin,
         httpOnly: true,
         sameSite: 'Lax',

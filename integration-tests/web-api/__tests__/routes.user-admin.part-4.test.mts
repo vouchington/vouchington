@@ -30,6 +30,7 @@ import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
   createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../routes.mts'
 
@@ -102,7 +103,7 @@ describe('routes — user and admin', () => {
     const admin = await createTestUser({ administrator: true })
 
     await createWebApiTestCookieHeader(user.id)
-    adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
 
     const topic = await createTestTopic({ user: admin })
     topicId = topic.id

@@ -1,6 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { createTestUser } from '../../../backend/test-helpers/index.mts'
 
 let testUserId = ''
@@ -15,7 +15,7 @@ test.beforeAll(async () => {
 })
 
 test.describe('Membership Refund Panel — Admin', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin can see the refund panel', async ({ page }) => {
     await navigateTo(page, `/user/${testUserId}/admin`)

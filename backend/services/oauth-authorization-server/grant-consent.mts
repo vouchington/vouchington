@@ -10,7 +10,7 @@ export async function recordOAuthGrantConsent(
   const result = await query<{ id: string }>(
     `/* upsertGrant */ INSERT INTO oauth_grants (user_id, client_id, resource, scopes, mfa_verified_at)
      VALUES ($1, $2, $3, $4::api_scopes[], to_timestamp($5::double precision))
-     ON CONFLICT (user_id, client_id, resource) WHERE revoked_at IS NULL
+     ON CONFLICT (user_id, client_id, resource) WHERE revoked_at IS NULL AND session_id IS NULL
      DO UPDATE SET scopes = EXCLUDED.scopes,
                    mfa_verified_at = EXCLUDED.mfa_verified_at,
                    consented_at = CURRENT_TIMESTAMP

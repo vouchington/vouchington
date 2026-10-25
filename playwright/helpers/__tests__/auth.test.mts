@@ -7,6 +7,7 @@ const TEST_UID = '019f0000-0000-7000-8000-000000000011'
 const TEST_SID = '019f0000-0000-7000-8000-000000000012'
 
 const mockCreateDeviceAndSessionTokens = vi.fn<() => unknown>()
+const mockCreateVerifiedMfaTestSession = vi.fn<() => unknown>()
 const mockRetryOnConnectionLost = vi.fn<(...args: Array<never>) => unknown>(
   (fn: () => Promise<unknown>) => fn(),
 )
@@ -45,6 +46,7 @@ function createMockPage() {
 describe('loginAsUser helpers', () => {
   afterEach(() => {
     mockCreateDeviceAndSessionTokens.mockReset()
+    mockCreateVerifiedMfaTestSession.mockReset()
     mockRetryOnConnectionLost.mockClear()
     mockAddCookies.mockReset()
   })
@@ -65,7 +67,6 @@ describe('loginAsUser helpers', () => {
       did: TEST_DID,
       uid: TEST_UID,
       deviceContext: { user_agent: 'Synthetic browser' },
-      mfaVerifiedAt: expect.any(Number),
     })
     expect(mockRetryOnConnectionLost).toHaveBeenCalledTimes(1)
     expect(page.goto).toHaveBeenNthCalledWith(1, '/', {
@@ -96,15 +97,19 @@ describe('loginAsUser helpers', () => {
     expect(page.waitForURL).not.toHaveBeenCalled()
   })
 
-  it('loginAsTestUser calls loginAsUser with TEST_USER_ID', async () => {
+  it('keeps the shared test user low assurance and requires a verified factor for admin cookies', async () => {
     mockCreateDeviceAndSessionTokens.mockResolvedValue(
       createMockTokenResult('device-token-2', 'session-token-2'),
+    )
+    mockCreateVerifiedMfaTestSession.mockResolvedValue(
+      createMockTokenResult('admin-device-token', 'admin-session-token'),
     )
 
     const page = createMockPage()
 
     const dependencies = {
       createDeviceAndSessionTokens: mockCreateDeviceAndSessionTokens as never,
+      createVerifiedMfaTestSession: mockCreateVerifiedMfaTestSession as never,
       mintUUIDv7: () => TEST_DID,
       retryOnConnectionLost: mockRetryOnConnectionLost as never,
     }
@@ -114,7 +119,15 @@ describe('loginAsUser helpers', () => {
       did: TEST_DID,
       uid: TEST_USER_ID,
       deviceContext: { user_agent: 'Synthetic browser' },
-      mfaVerifiedAt: expect.any(Number),
     })
+    await loginAsAdmin(page as never, dependencies)
+    expect(mockCreateDeviceAndSessionTokens).toHaveBeenCalledTimes(1)
+    expect(mockCreateVerifiedMfaTestSession).toHaveBeenCalledWith(TEST_USER_ID, {
+      user_agent: 'Synthetic browser',
+    })
+    expect(mockAddCookies).toHaveBeenLastCalledWith([
+      expect.objectContaining({ name: 'dt', value: 'admin-device-token' }),
+      expect.objectContaining({ name: 'st', value: 'admin-session-token' }),
+    ])
   })
 })

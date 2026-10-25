@@ -15,3 +15,5 @@ const __dirname = import.meta.dirname
  * directly for specs that create fresh users at runtime.
  */
 export const AUTH_STATE = join(__dirname, '../.auth/test-user.json')
+/** Seeded administrator after a completed TOTP challenge; use only for administrator coverage. */
+export const ADMIN_AUTH_STATE = join(__dirname, '../.auth/admin-user.json')

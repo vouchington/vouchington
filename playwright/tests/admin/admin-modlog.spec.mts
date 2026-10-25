@@ -1,9 +1,9 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createTestUser, insertTestModeratorAction } from '../../../backend/test-helpers/index.mts'
 
-test.use({ storageState: AUTH_STATE })
+test.use({ storageState: ADMIN_AUTH_STATE })
 
 test.describe('admin modlog', () => {
   let actorId = ''

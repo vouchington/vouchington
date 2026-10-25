@@ -1,7 +1,7 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import {
   createTestUser,
   insertTestCommunity,
@@ -9,7 +9,7 @@ import {
 } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Moderation Analytics — site (SA)', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin can view the site moderation analytics dashboard', async ({ page }) => {
     await navigateTo(page, '/admin/moderation-analytics')

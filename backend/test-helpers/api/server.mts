@@ -9,7 +9,10 @@ import '../../api/index.mts'
 import http from 'node:http'
 import { Buffer } from 'node:buffer'
 import type { PrivateUser } from '../../services/users/types.mts'
-import { createAuthenticatedTestSession } from '../authenticated-session.mts'
+import {
+  createAuthenticatedTestSession,
+  createVerifiedMfaTestSession,
+} from '../authenticated-session.mts'
 import type { FeatureFlags } from '../../services/feature-flags/index.mts'
 import {
   listenOnLoopbackEphemeralPort,
@@ -20,7 +23,6 @@ import { profileRequestQueries } from './request-query-profile.mts'
 import { withOwnedApiServer } from '../api-query-options-server.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
-
 type ApiTestServerAddress = { host: LoopbackHost; port: number }
 
 type ApiTestServerState = {
@@ -38,7 +40,6 @@ type ApiTestServerGlobal = typeof globalThis & {
   [API_TEST_SERVER_MATCHER_KEY]?: typeof fn
 }
 
-// Route tests use cookie auth directly; dedicated suites cover the origin guard.
 const { host: serverHost, port: serverPort } = await sharedApiTestServerAddress()
 export const apiTestServerPort = serverPort
 const testRequestIpState = globalThis as typeof globalThis & {
@@ -48,13 +49,11 @@ const testRequestIpState = globalThis as typeof globalThis & {
 // Extend the supertest agent with authentication helper
 export interface AuthenticatedAgent extends supertest.Agent {
   authenticateAs: (user: PrivateUser) => Promise<void>
+  authenticateAsMfa: (user: PrivateUser) => Promise<void>
   setFeatureFlags: (overrides: FeatureFlags) => void
-  /** The raw cookie string set by authenticateAs; useful for combining with additional cookies */
   authCookie: string
   featureFlagCookie: string
-  /** The `did` minted by the most recent `authenticateAs` call. */
   did: string
-  /** The `sid` minted by the most recent `authenticateAs` call. */
   sid: string
   setClientInfo: (headers: Partial<Record<string, string>>) => void
 }
@@ -63,8 +62,6 @@ export const createRequest = (
   address: ApiTestServerAddress = { host: serverHost, port: serverPort },
 ): AuthenticatedAgent => {
   const requestUrlHost = address.host === '::1' ? '[::1]' : address.host
-  // Use the bound loopback URL directly so supertest never falls back to its
-  // hardcoded 127.0.0.1 URL (in supertest/lib/test.js Test.serverAddress()).
   const agent = supertest.agent(`http://${requestUrlHost}:${address.port}`) as AuthenticatedAgent
   agent.authCookie = ''
   agent.featureFlagCookie = ''
@@ -81,9 +78,6 @@ export const createRequest = (
     for (const [name, value] of Object.entries(headers)) this.set(name, value)
   }
 
-  // Set the CF Worker secret header so requests pass origin validation.
-  // In production, the Cloudflare Worker adds this header; in tests we bypass
-  // the worker and hit the backend directly, so we must add it ourselves.
   if (process.env.CF_WORKER_SECRET) {
     agent.set('x-cf-worker-secret', process.env.CF_WORKER_SECRET)
   }
@@ -96,18 +90,26 @@ export const createRequest = (
     }
   }
 
-  // Authenticated fixtures model a completed flow with its original factor proof.
-  agent.authenticateAs = async function (user: PrivateUser) {
-    const { deviceToken, sessionToken } = await createAuthenticatedTestSession(user)
+  function setAuthTokens(
+    request: AuthenticatedAgent,
+    tokens: Awaited<ReturnType<typeof createAuthenticatedTestSession>>,
+  ) {
+    const { deviceToken, sessionToken } = tokens
     const did = deviceToken.payload.did
     const cookies = [`dt=${deviceToken.token}`, `st=${sessionToken.token}`]
+    request.did = did
+    request.sid = sessionToken.payload.sid
+    request.authCookie = cookies.join('; ')
+    request.jar.setCookies(cookies, address.host, '/')
+    syncCookieHeader(request)
+  }
 
-    this.did = did
-    this.sid = sessionToken.payload.sid
-    // Set cookies for all subsequent requests
-    this.authCookie = cookies.join('; ')
-    this.jar.setCookies(cookies, address.host, '/')
-    syncCookieHeader(this)
+  agent.authenticateAs = async function (user: PrivateUser) {
+    setAuthTokens(this, await createAuthenticatedTestSession(user))
+  }
+
+  agent.authenticateAsMfa = async function (user: PrivateUser) {
+    setAuthTokens(this, await createVerifiedMfaTestSession(user.id))
   }
 
   agent.setFeatureFlags = function (overrides: FeatureFlags) {

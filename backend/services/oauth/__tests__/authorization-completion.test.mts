@@ -87,7 +87,6 @@ describe('OAuth authorization completion', () => {
       },
       cleanup,
     )
-
     await expect(
       completeOAuthAuthorization({
         flowId,
@@ -97,7 +96,6 @@ describe('OAuth authorization completion', () => {
         sessionId,
       }),
     ).rejects.toMatchObject({ status: 401 })
-
     const durableResult = await completeOAuthAuthorizationTransaction({
       flowId,
       completionToken,
@@ -109,7 +107,6 @@ describe('OAuth authorization completion', () => {
     if (durableResult.kind !== 'authenticated') throw new Error('Expected authentication')
     cleanup.userIds.push(durableResult.userId)
     expect(await getActiveTestUserSessions(durableResult.userId)).toEqual([])
-
     const first = await completeOAuthAuthorization({
       flowId,
       completionToken,

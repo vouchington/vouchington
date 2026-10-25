@@ -6,7 +6,7 @@ import {
   protectPlaywrightHookTimeouts,
 } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { linkTopicHostname } from '../../helpers/link-topic-hostname.mts'
 import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
@@ -16,7 +16,7 @@ const SEEDED_TOPIC_ID = '019c64e6-f8a0-7000-a000-000000000001'
 const SEEDED_TOPIC_TYPE = 'card'
 
 test.describe('Admin Manage Source', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
   test.describe.configure({ mode: 'serial' })
 
   let topicId: string
