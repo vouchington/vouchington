@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 
-import {
-  createNativeRequest as createRequest,
-  nextTestRequestIp,
-} from '@voucha/test-helpers/api/server'
+import { nextTestRequestIp } from '@voucha/test-helpers/api/server'
+import { createNativeRequest as createRequest } from '@voucha/test-helpers/native-api-request'
 
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'

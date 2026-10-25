@@ -47,7 +47,7 @@ const testRequestIpState = globalThis as typeof globalThis & {
 }
 
 // Extend the supertest agent with authentication helper
-interface AuthenticatedAgent extends supertest.Agent {
+export interface AuthenticatedAgent extends supertest.Agent {
   authenticateAs: (user: PrivateUser) => Promise<void>
   setFeatureFlags: (overrides: FeatureFlags) => void
   /** The raw cookie string set by authenticateAs; useful for combining with additional cookies */
@@ -188,14 +188,4 @@ export async function withApiRequestQueryOptions<Result>(
     options,
   )
   return withOwnedApiServer(listener, fn, address => run(createRequest(address)))
-}
-
-export function createNativeRequest(): AuthenticatedAgent {
-  const agent = createRequest()
-  agent.setClientInfo({
-    'x-voucha-client': 'dotnet',
-    'x-voucha-platform': 'windows',
-    'x-voucha-app-version': 'test',
-  })
-  return agent
 }
