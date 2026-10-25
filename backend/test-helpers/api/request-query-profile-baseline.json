@@ -999,6 +999,22 @@
     "routes": ["PATCH /api/v1/topic-recommendations/:id"]
   },
   {
+    "annotation": "updateSessionRevocationRegistry",
+    "maxCount": 2,
+    "reason": "A rejected DELETE may carry two different signed session principals: the cookie pair and a body-selected pair. The failure path durably revokes each SID once before returning the validation error.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
+    "routes": ["DELETE /api/v1/session"]
+  },
+  {
+    "annotation": "updateSessionRevocationRegistry:sessionFence",
+    "maxCount": 2,
+    "reason": "Each of the two independently presented signed SIDs needs its own advisory fence before durable revocation in a rejected DELETE request.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
+    "routes": ["DELETE /api/v1/session"]
+  },
+  {
     "annotation": "upsertAuthenticatedSession",
     "maxCount": 2,
     "reason": "A single refresh registration takes the user advisory lock and then writes the durable session row; both statements use this annotation in one transaction.",

@@ -44,4 +44,20 @@ describe('dashboard auth', () => {
 
     await expect(isAdminDashboardRequest(req({ cookie }))).resolves.toBe(false)
   })
+
+  it('rejects an MFA-assured administrator session from a different browser agent', async () => {
+    const { userId } = await createTestSessionCookies()
+    await addTestUserRole(userId, 'administrator')
+    const assured = await createVerifiedMfaTestSession(userId, {
+      user_agent: 'Original browser agent',
+    })
+    const cookie = `dt=${assured.deviceToken.token}; st=${assured.sessionToken.token}`
+
+    await expect(
+      isAdminDashboardRequest(req({ cookie, 'user-agent': 'Original browser agent' })),
+    ).resolves.toBe(true)
+    await expect(
+      isAdminDashboardRequest(req({ cookie, 'user-agent': 'Different browser agent' })),
+    ).resolves.toBe(false)
+  })
 })

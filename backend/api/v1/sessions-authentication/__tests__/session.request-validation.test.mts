@@ -67,6 +67,30 @@ describe('/api/v1/session - request contract validation', () => {
   })
 
   describe('DELETE /api/v1/session', () => {
+    it('revokes both cookie and body credentials when a selected body is rejected', async () => {
+      const { id: userId } = await createTestUserDirect()
+      const cookiePair = await createDeviceAndSessionTokens({ uid: userId, did: v7(), sid: v7() })
+      const bodyPair = await createDeviceAndSessionTokens({ uid: userId, did: v7(), sid: v7() })
+      const response = await createRequest()
+        .delete('/api/v1/session')
+        .set('Cookie', [
+          `dt=${cookiePair.deviceToken.token}`,
+          `st=${cookiePair.sessionToken.token}`,
+        ])
+        .send({ dt: bodyPair.deviceToken.token, st: bodyPair.sessionToken.token, foo: 'bar' })
+        .expect(422)
+
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('dt=;'), expect.stringContaining('st=;')]),
+      )
+      await expect(isSessionRevoked(cookiePair.sessionToken.payload.sid, { userId })).resolves.toBe(
+        true,
+      )
+      await expect(isSessionRevoked(bodyPair.sessionToken.payload.sid, { userId })).resolves.toBe(
+        true,
+      )
+    })
+
     it.each([
       { field: 'device token' as const, body: { dt: 123 } },
       { field: 'session token' as const, body: { st: 123 } },
