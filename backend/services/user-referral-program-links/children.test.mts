@@ -5,12 +5,12 @@ import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@v
 import { createUserReferralLink } from './create.mts'
 import { createChildReferralLinks } from './create-child.mts'
 import {
-  getActiveChildUrlIdsForParent,
   reconcileChildrenForParent,
   softDeleteChildrenForUser,
   softDeleteChildrenOfParent,
 } from './children.mts'
 import { getUserReferralLink } from './get.mts'
+import { getActiveChildUrlIdsForTest } from '@voucha/test-helpers/entities/referral-links'
 
 describe('children', () => {
   let user: PrivateUser
@@ -53,10 +53,10 @@ describe('children', () => {
     return { parent, children }
   }
 
-  it('getActiveChildUrlIdsForParent returns url_ids of active children only', async () => {
+  it('createChildReferralLinks persists both child URL associations', async () => {
     const { parent, children } = await createParentWithChildren(2)
 
-    const urlIds = await getActiveChildUrlIdsForParent(parent.id)
+    const urlIds = await getActiveChildUrlIdsForTest(parent.id)
 
     assert.equal(urlIds.length, 2)
     assert.ok(urlIds.includes(children[0]!.url_id))

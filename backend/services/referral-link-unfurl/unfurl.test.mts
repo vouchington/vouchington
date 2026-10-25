@@ -10,7 +10,7 @@ import { createUserReferralLink } from '@services/user-referral-program-links/cr
 import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
 import { deleteUserReferralLink } from '@services/user-referral-program-links/delete'
-import { getActiveChildUrlIdsForParent } from '@services/user-referral-program-links/children'
+import { getActiveChildUrlIdsForTest } from '@voucha/test-helpers/entities/referral-links'
 import { addUrl } from '@services/urls/upsert'
 import type { PrivateUser } from '@services/users/types'
 import type { BrowserCrawlResult } from '@services/browser-crawl'
@@ -100,7 +100,7 @@ describe('runReferralLinkUnfurl', () => {
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_completed_at).toBeTruthy()
     expect(updated?.unfurl_failed_at).toBeNull()
-    const childIds = await getActiveChildUrlIdsForParent(parent.id)
+    const childIds = await getActiveChildUrlIdsForTest(parent.id)
     expect(childIds).toHaveLength(cards.length)
   })
   it('no-ops for a missing parent link id, never crawling', async () => {
@@ -241,7 +241,7 @@ describe('runReferralLinkUnfurl', () => {
       getAmexCardSlugCatalog: stubCatalog([cardKeep, cardDrop]).getAmexCardSlugCatalog,
     })
 
-    const idsAfterRun1 = await getActiveChildUrlIdsForParent(parent.id)
+    const idsAfterRun1 = await getActiveChildUrlIdsForTest(parent.id)
     expect(idsAfterRun1).toHaveLength(2)
     expect(idsAfterRun1).toEqual(expect.arrayContaining([keepUrlRecord!.id, dropUrlRecord!.id]))
 
@@ -250,7 +250,7 @@ describe('runReferralLinkUnfurl', () => {
       getAmexCardSlugCatalog: stubCatalog([cardKeep]).getAmexCardSlugCatalog,
     })
 
-    const idsAfterRun2 = await getActiveChildUrlIdsForParent(parent.id)
+    const idsAfterRun2 = await getActiveChildUrlIdsForTest(parent.id)
     expect(idsAfterRun2).toEqual([keepUrlRecord!.id])
 
     const updated = await getUserReferralLink(parent.id)
@@ -287,7 +287,7 @@ describe('runReferralLinkUnfurl', () => {
     expect(updatedParent?.unfurl_failed_at).toBeNull()
 
     const okUrlRecord = await addUrl(owner.id, okUrl)
-    const childIds = await getActiveChildUrlIdsForParent(parent.id)
+    const childIds = await getActiveChildUrlIdsForTest(parent.id)
     expect(childIds).toEqual([okUrlRecord!.id])
 
     const manualLinkAfter = await getUserReferralLink(manualLink.id)
