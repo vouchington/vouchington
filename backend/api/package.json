@@ -246,7 +246,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/localization": "^0.2.1",
-    "@vouchington/oauth-server": "^0.2.0",
+    "@vouchington/oauth-server": "^0.3.0",
     "@vouchington/pagination": "^0.0.3",
     "@vouchington/rate-limit": "^0.3.0",
     "@vouchington/session-jwt": "^0.0.2",
