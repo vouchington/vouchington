@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { reportClientError } from '../report-error'
 
 vi.mock<typeof import('@sentry/nextjs')>(import('@sentry/nextjs'), () => ({
-  captureException: vi.fn<(error: unknown) => void>(),
+  captureException: vi.fn<(error: unknown) => string>(),
 }))
 
 describe('reportClientError', () => {
