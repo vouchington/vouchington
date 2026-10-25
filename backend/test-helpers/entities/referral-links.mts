@@ -1,7 +1,3 @@
-/**
- * User referral program links entity test helpers
- */
-
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
@@ -189,4 +185,14 @@ export async function isUrlRssFeedUrl(urlId: string): Promise<boolean> {
       AND rf.deleted_at IS NULL`,
   )
   return rows.length > 0
+}
+
+export async function getActiveChildUrlIdsForTest(parentLinkId: string): Promise<string[]> {
+  const { rows } = await read<{ url_id: string }>(sql`/* getActiveChildUrlIdsForTest */
+    SELECT url_id
+    FROM user_referral_program_links
+    WHERE parent_link_id = ${parentLinkId}
+      AND deleted_at IS NULL
+  `)
+  return rows.map(row => row.url_id)
 }

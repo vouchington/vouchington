@@ -1,4 +1,4 @@
-import { read, write, type QueryOptions } from '@data-stores/psql'
+import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { validateUUID } from '@modules/utils'
 
@@ -64,27 +64,4 @@ export async function reconcileChildrenForParent(
     `,
     options,
   )
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getActiveChildUrlIdsForParent(
-  parentLinkId: string,
-  options?: QueryOptions,
-): Promise<string[]> {
-  validateUUID(parentLinkId)
-
-  const { rows } = await read(
-    sql`/* getActiveChildUrlIdsForParent */
-      SELECT url_id
-      FROM user_referral_program_links
-      WHERE parent_link_id = ${parentLinkId}
-        AND deleted_at IS NULL
-    `,
-    options,
-  )
-
-  return rows.map(row => row.url_id as string)
 }
