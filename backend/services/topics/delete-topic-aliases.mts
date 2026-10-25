@@ -1,3 +1,4 @@
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
@@ -115,14 +116,17 @@ export async function unlinkTopicAlias(
   const result = await runInTransaction(options, run)
 
   if (result && !options.skipSideEffects && result.previousTopicId) {
+    const previousTopicId = result.previousTopicId
     await Promise.all([
-      invalidate.topicsWithMetrics(result.previousTopicId, result.alias.alias),
+      invalidate.topicsWithMetrics(previousTopicId, result.alias.alias),
       invalidatePostsForTopicAliases([result.alias.id]),
     ])
     if (normalizeHashtag(result.alias.alias)) {
-      void enqueueTopicAliasRemovalUpdate(result.previousTopicId, result.alias.id)
+      await awaitReportedEnqueueAdmission(() =>
+        enqueueTopicAliasRemovalUpdate(previousTopicId, result.alias.id),
+      )
     } else {
-      void enqueueBulkTopicAliasesUpdate([result.previousTopicId])
+      await awaitReportedEnqueueAdmission(() => enqueueBulkTopicAliasesUpdate([previousTopicId]))
     }
   }
   return result?.alias ?? null
