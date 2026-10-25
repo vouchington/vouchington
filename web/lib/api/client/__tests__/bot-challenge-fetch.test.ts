@@ -5,7 +5,7 @@ import {
   BOT_CHALLENGE_REQUIRED,
   VOUCHA_BOT_CHALLENGE_TOKEN_HEADER,
 } from '@ts-shared/utils/bot-challenge'
-import { createBotChallengeFetch } from '../bot-challenge-fetch'
+import { createAuthRecoveryFetch } from '../auth-recovery-fetch'
 
 type Solver = (actionTag: string, signal?: AbortSignal) => Promise<string>
 
@@ -17,10 +17,10 @@ function challengeResponse(action: string = BOT_CHALLENGE_ACTION_TAG): Response 
 }
 
 function clientWith(solve: Solver): ClientRequest {
-  return new ClientRequest({ fetch: createBotChallengeFetch(solve) })
+  return new ClientRequest({ fetch: createAuthRecoveryFetch(solve) })
 }
 
-describe('createBotChallengeFetch', () => {
+describe('createAuthRecoveryFetch challenge handling', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
@@ -43,9 +43,9 @@ describe('createBotChallengeFetch', () => {
     const second = fetchMock.mock.calls[1]?.[1] as RequestInit
     expect(second.body).toBe(first.body)
     expect(second.signal).toBe(first.signal)
-    expect(second.headers).toMatchObject({
-      [VOUCHA_BOT_CHALLENGE_TOKEN_HEADER]: 'single-use-proof',
-    })
+    expect(new Headers(second.headers).get(VOUCHA_BOT_CHALLENGE_TOKEN_HEADER)).toBe(
+      'single-use-proof',
+    )
   })
 
   it('never replays a mutation more than once when the challenge response repeats', async () => {
