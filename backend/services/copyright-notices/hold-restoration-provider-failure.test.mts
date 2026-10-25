@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {
@@ -7,7 +8,6 @@ import {
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
   searchRecoverableCopyrightActionIntentIds,
 } from './index.mts'
@@ -82,7 +82,7 @@ describe('automatic hold restoration preserves provider failures', () => {
           rationale: 'Sibling target proceeding dismissed.',
         })
       } else {
-        const submission = await appendCopyrightNoticeSubmission({
+        const submission = await appendTestCopyrightNoticeSubmission({
           noticeId: scene.notice.id,
           kind: 'court_or_ccb_hold',
           receivedAt: scene.sibling.now,

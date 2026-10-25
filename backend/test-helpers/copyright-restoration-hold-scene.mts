@@ -1,9 +1,7 @@
+import { appendTestCopyrightNoticeSubmission } from './copyright-notice-submissions.mts'
 import type { prepublishImagePlacementDenial } from '../services/media-delivery-safety/index.mts'
 import type { CopyrightActionDeliveryDependencies } from '../services/copyright-notices/action-delivery-dependencies.mts'
-import {
-  appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
-} from '../services/copyright-notices/index.mts'
+import { appendCopyrightLegalHoldAssessment } from '../services/copyright-notices/index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
 import {
   createCopyrightRestorationHoldFixture,
@@ -66,7 +64,7 @@ export async function recordOrdinaryCopyrightHold(
   targetIds: string[] = [scene.target.id],
 ) {
   const receivedAt = new Date('2026-07-03T12:00:00.000Z')
-  const submission = await appendCopyrightNoticeSubmission({
+  const submission = await appendTestCopyrightNoticeSubmission({
     noticeId: scene.notice.id,
     kind: 'court_or_ccb_hold',
     receivedAt,

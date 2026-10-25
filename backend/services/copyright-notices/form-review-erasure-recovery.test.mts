@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -19,7 +20,7 @@ import {
 } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import { appendCopyrightFormScreening } from './form-screenings.mts'
+
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -57,7 +58,7 @@ async function createAutomatedCopyrightForm() {
       ],
     },
   })
-  const screeningId = await appendCopyrightFormScreening({
+  const screeningId = await appendTestCopyrightFormScreening({
     intakeId: notice.intake.id,
     inputSha256: Buffer.alloc(32),
     recommendation: 'not_obviously_invalid',

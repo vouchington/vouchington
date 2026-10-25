@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -13,10 +14,7 @@ import {
   createCopyrightCounterNotice,
   createCopyrightFormIntake,
 } from './index.mts'
-import {
-  appendCopyrightFormScreening,
-  applyNonSpamSignedInCopyrightFormScreening,
-} from './form-screenings.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -81,8 +79,8 @@ describe('copyright form intakes', () => {
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     }
-    const screeningId = await appendCopyrightFormScreening(screening)
-    const repeatedScreeningId = await appendCopyrightFormScreening(screening)
+    const screeningId = await appendTestCopyrightFormScreening(screening)
+    const repeatedScreeningId = await appendTestCopyrightFormScreening(screening)
     expect(repeatedScreeningId).not.toBe(screeningId)
   })
 

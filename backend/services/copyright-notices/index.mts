@@ -23,8 +23,6 @@ export {
   listAcceptedCopyrightNotices,
   copyrightAcceptedNoticeCursorScope,
 } from './read-models.mts'
-/** @public Retained provisionally under issue #1360; intended production use is unconfirmed and this export may be removed after intended-use review. */
-export { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 export { completeCopyrightMandatoryHumanReview } from './human-review.mts'
 export { reviewCopyrightStaydownMatch } from './staydown-review.mts'
 export {

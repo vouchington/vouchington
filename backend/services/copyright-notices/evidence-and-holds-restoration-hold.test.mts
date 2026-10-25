@@ -1,10 +1,10 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
@@ -22,7 +22,7 @@ describe('copyright notice restoration holds', () => {
         ...createTestCopyrightDeliveryDependencies(publish),
       }),
     ).resolves.toBe('applied')
-    const holdSubmission = await appendCopyrightNoticeSubmission({
+    const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date('2026-07-03T12:00:00.000Z'),
@@ -89,7 +89,7 @@ describe('copyright notice restoration holds', () => {
     expect(publish).toHaveBeenLastCalledWith(expect.objectContaining({ state: 'allow' }))
 
     const beforeLateReceipt = await getCopyrightNoticePrivateAggregate(notice.id)
-    const lateSubmission = await appendCopyrightNoticeSubmission({
+    const lateSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date(restorationAt.getTime() + 300_000),
@@ -122,7 +122,7 @@ describe('copyright notice restoration holds', () => {
 
   it('rolls back a rejected late-hold target without staging a denial or action intent', async () => {
     const { moderator, notice } = await createCopyrightRestorationHoldFixture()
-    const submission = await appendCopyrightNoticeSubmission({
+    const submission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date('2026-07-03T12:00:00.000Z'),

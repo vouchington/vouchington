@@ -1,9 +1,10 @@
+import { appendTestCopyrightFormScreening } from './copyright-form-screenings.mts'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { createCopyrightFormIntake } from '../services/copyright-notices/form-intakes.mts'
-import { appendCopyrightFormScreening } from '../services/copyright-notices/form-screenings.mts'
+
 import { copyrightSubmissionPurpose } from '../services/copyright-notices/submissions.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
 import { testCopyrightFormGuidance } from './services/copyright-notices/form-guidance.mts'
@@ -67,7 +68,7 @@ export async function createTestCopyrightMcpQueueCase() {
         : item,
     ),
   }
-  await appendCopyrightFormScreening({
+  await appendTestCopyrightFormScreening({
     intakeId: intake.id,
     inputSha256: Buffer.alloc(32, 19),
     recommendation: 'not_obviously_invalid',

@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '../../copyright-form-screenings.mts'
 import {
   createTestUser,
   insertTestImage,
@@ -5,7 +6,7 @@ import {
   insertTestPostImage,
 } from '../../index.mts'
 import { createCopyrightFormIntake } from '../../../services/copyright-notices/form-intakes.mts'
-import { appendCopyrightFormScreening } from '../../../services/copyright-notices/form-screenings.mts'
+
 import {
   type CopyrightStaffQueueCursor,
   listCopyrightStaffQueue,
@@ -39,7 +40,7 @@ export async function createClearScreenedForm(
   options: { now?: Date } = {},
 ) {
   const notice = await createSignedInCopyrightForm(targetCount, people, options)
-  const screeningId = await appendCopyrightFormScreening({
+  const screeningId = await appendTestCopyrightFormScreening({
     intakeId: notice.intake.id,
     inputSha256: Buffer.alloc(32, targetCount),
     recommendation: 'not_obviously_invalid',

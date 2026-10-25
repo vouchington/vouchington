@@ -30,16 +30,6 @@ export async function lockCopyrightFormReview(intakeId: string, query: Transacti
   `)
 }
 
-/** Start a genuinely new screen; this commits loss of automatic authority before any work. */
-export async function startCopyrightFormScreening(
-  intakeId: string,
-): Promise<CopyrightFormScreeningAttempt> {
-  await using transaction = await beginTransaction()
-  const attempt = await startCopyrightFormScreeningInTransaction(intakeId, transaction)
-  await transaction.commit()
-  return attempt
-}
-
 export async function startCopyrightFormScreeningInTransaction(
   intakeId: string,
   transaction: Transaction,

@@ -1,7 +1,8 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import { encodeUuidCursorBefore } from '../../test-helpers/modules/pagination/uuid-cursors.mts'
-import { appendCopyrightLegalHoldAssessment, appendCopyrightNoticeSubmission } from './index.mts'
+import { appendCopyrightLegalHoldAssessment } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import {
   createCompliantCounterNoticeDeadline,
@@ -98,7 +99,7 @@ describe('statutory copyright restoration schedule', () => {
 
   it('fails closed when a due restoration is blocked by a qualifying legal hold', async () => {
     const { deadline, moderator, notice, target } = await createCounterNoticedRestriction()
-    const holdSubmission = await appendCopyrightNoticeSubmission({
+    const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date('2026-07-02T13:00:00.000Z'),

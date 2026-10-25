@@ -1,9 +1,9 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import {
   appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
   createCopyrightCounterNotice,
   processCopyrightActionIntent,
 } from './index.mts'
@@ -57,7 +57,7 @@ async function openRestorationWindow() {
 }
 
 async function recordCourtFiling(noticeId: string) {
-  return appendCopyrightNoticeSubmission({
+  return appendTestCopyrightNoticeSubmission({
     noticeId,
     kind: 'court_or_ccb_hold',
     receivedAt: new Date('2026-07-02T13:00:00.000Z'),

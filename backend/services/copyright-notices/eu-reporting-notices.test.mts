@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestCopyrightImageFixture,
@@ -22,7 +23,6 @@ import {
   recordEuCopyrightRedressDecision,
   recordUkCopyrightReview,
   submitEuCopyrightRedress,
-  appendCopyrightNoticeSubmission,
 } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
@@ -164,7 +164,7 @@ describe('DSA copyright notice aggregates', () => {
     const ownedIds = [restricted.noticeId]
     expect(ownedIds).not.toContain(foreign.noticeId)
     const before = await readDsaCopyrightNoticeFigures(start, end, ownedIds)
-    const hold = await appendCopyrightNoticeSubmission({
+    const hold = await appendTestCopyrightNoticeSubmission({
       noticeId: restricted.noticeId,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date(),

@@ -1,3 +1,7 @@
+import {
+  appendTestCopyrightFormScreening,
+  startTestCopyrightFormScreening,
+} from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { eraseTestCopyrightFormRequester } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
@@ -6,11 +10,8 @@ import {
   isTestCopyrightStaffCaseQueued,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
-import { appendCopyrightFormScreening } from './form-screenings.mts'
-import {
-  startCopyrightFormScreening,
-  failCopyrightFormScreening,
-} from './form-screening-executions.mts'
+
+import { failCopyrightFormScreening } from './form-screening-executions.mts'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -40,7 +41,7 @@ describe('human form review with changing screening authority', () => {
 
   it('replays durable human approval after failed screening becomes clear and rejects an opposite decision', async () => {
     const [{ notice }, user] = await Promise.all([createClearScreenedForm(), createTestUser()])
-    await failCopyrightFormScreening(await startCopyrightFormScreening(notice.intake.id))
+    await failCopyrightFormScreening(await startTestCopyrightFormScreening(notice.intake.id))
     const input = {
       intakeId: notice.intake.id,
       currentUser: { ...user, roles: ['moderator'] },
@@ -49,7 +50,7 @@ describe('human form review with changing screening authority', () => {
     }
     await reviewCopyrightFormIntake(input)
     const before = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 77),
       recommendation: 'not_obviously_invalid',

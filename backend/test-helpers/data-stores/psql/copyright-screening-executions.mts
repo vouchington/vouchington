@@ -1,9 +1,9 @@
+import { startTestCopyrightFormScreening } from '../../copyright-form-screenings.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
 import {
   lockCopyrightFormReview,
-  startCopyrightFormScreening,
   startCopyrightFormScreeningInTransaction,
 } from '../../../services/copyright-notices/form-screening-executions.mts'
 import {
@@ -70,7 +70,7 @@ export async function admitTestCopyrightBeforeScreening<T>(
   const admissionPid = await getTestPostgresAdvisoryLockHolderProcessId({
     key: `copyright-form-review:${intakeId}`,
   })
-  const screening = startCopyrightFormScreening(intakeId)
+  const screening = startTestCopyrightFormScreening(intakeId)
   await waitForTestPostgresLockWaiter(admissionPid, 'lockCopyrightFormReview')
   await transaction.commit()
   const result = await admission

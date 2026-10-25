@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   getImagePlacementForCopyright,
@@ -24,7 +25,7 @@ import {
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { lockImageDeliveryLegalAuthority } from '../media-delivery-safety/delivery-authority.mts'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { appendCopyrightNoticeSubmission, processCopyrightActionIntent } from './index.mts'
+import { processCopyrightActionIntent } from './index.mts'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -121,7 +122,7 @@ describe('copyright action persisted delivery authority', () => {
         revision: tuple.revision,
         imageId: tuple.imageId,
       })
-      await appendCopyrightNoticeSubmission({
+      await appendTestCopyrightNoticeSubmission({
         noticeId: scene.notice.id,
         kind: 'court_or_ccb_hold',
         receivedAt: scene.restorationAt,

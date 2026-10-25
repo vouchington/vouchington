@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import {
   createTestCopyrightDeliveryDependencies,
@@ -15,7 +16,6 @@ import {
   supersedeTestCopyrightRestorationPlacementRevision,
 } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import {
-  appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
   recoverBlockedCopyrightHoldRestorations,
   searchBlockedCopyrightHoldRestorationNoticeIds,
@@ -173,7 +173,7 @@ describe('historical blocked copyright restoration recovery', () => {
     const original = aggregate?.actionIntents.find(intent => intent.id === scene.restore.id)
     if (blocker !== 'unresolved') await recordHistoricalResolution(scene)
     if (blocker === 'unassessed')
-      await appendCopyrightNoticeSubmission({
+      await appendTestCopyrightNoticeSubmission({
         noticeId: scene.notice.id,
         kind: 'court_or_ccb_hold',
         receivedAt: scene.restorationAt,

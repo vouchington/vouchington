@@ -1,6 +1,6 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import { listNotifications } from '@services/notifications'
-import { appendCopyrightNoticeSubmission } from './submission-appending.mts'
 import { createCopyrightCounterNotice, reviewCopyrightCounterNotice } from './index.mts'
 import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
 import { copyrightNotificationCopy } from './statement-of-reasons-wording.mts'
@@ -257,7 +257,7 @@ describe('copyright submission guidance disclosure', () => {
     expect(counterStatement?.text).toContain(assisted)
 
     const holdCase = await createTestSubmissionGuidanceCounterCase()
-    const hold = await appendCopyrightNoticeSubmission({
+    const hold = await appendTestCopyrightNoticeSubmission({
       noticeId: holdCase.noticeId,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date(),

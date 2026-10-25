@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { describe, expect, it } from 'vitest'
 import {
@@ -15,10 +16,7 @@ import {
   reviewCopyrightAppeal,
 } from './index.mts'
 import { admitCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
-import {
-  appendCopyrightFormScreening,
-  applyNonSpamSignedInCopyrightFormScreening,
-} from './form-screenings.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
@@ -65,7 +63,7 @@ describe('email appeal review', () => {
         ],
       },
     })
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: intake.intake.id,
       inputSha256: Buffer.alloc(32, 12),
       recommendation: 'not_obviously_invalid',

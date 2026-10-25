@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import {
   createTestCopyrightDeliveryDependencies,
@@ -6,7 +7,6 @@ import {
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
@@ -156,7 +156,7 @@ describe('ordinary copyright hold restoration', () => {
       const applied = await getCopyrightNoticePrivateAggregate(scene.notice.id)
       expect(applied?.restrictions[0]?.lifted_at).not.toBeNull()
       expect(applied?.deadlines[0]?.resolved_at).not.toBeNull()
-      const filing = await appendCopyrightNoticeSubmission({
+      const filing = await appendTestCopyrightNoticeSubmission({
         noticeId: scene.notice.id,
         kind: 'court_or_ccb_hold',
         receivedAt: scene.restorationAt,

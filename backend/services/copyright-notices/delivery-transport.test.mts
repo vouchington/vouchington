@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -7,10 +8,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { createCopyrightFormIntake, prepareCopyrightEmailDelivery } from './index.mts'
-import {
-  appendCopyrightFormScreening,
-  applyNonSpamSignedInCopyrightFormScreening,
-} from './form-screenings.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -48,7 +46,7 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
       ],
     },
   })
-  await appendCopyrightFormScreening({
+  await appendTestCopyrightFormScreening({
     intakeId: intake.intake.id,
     inputSha256: Buffer.alloc(32, 4),
     recommendation: 'not_obviously_invalid',
