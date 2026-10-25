@@ -6,6 +6,7 @@ import type {
 } from '../shared/index.mts'
 import { upsertElectionVotesShared } from '../shared/vote-upsert.mts'
 import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { softDeleteUserFollowRelations, upsertUserMuteRelations } from '@services/entity-relations'
 import { enqueueUndoFollowSideEffects } from '@services/entity-relations/enqueue-undo-follow-side-effects'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -47,7 +48,7 @@ export async function upsertUserVouchElectionVotes(
   const insertedVotes = insertedVotesInTransaction
   const deletedFollowRelations = deletedFollowRelationsInTransaction
 
-  enqueueUndoFollowSideEffects(
+  const undoAdmission = enqueueUndoFollowSideEffects(
     getEntityRelationMetadataOrThrow({
       subjectType: 'user',
       predicate: 'follow',
@@ -55,8 +56,9 @@ export async function upsertUserVouchElectionVotes(
     }),
     deletedFollowRelations,
   )
-  if (votes.length > 0) {
-    void enqueueBulkUpdateUserVouchElectionVoteStats([...new Set(votes.map(vote => vote.entityId))])
-  }
+  const statsAdmission = awaitReportedEnqueueAdmission(() =>
+    enqueueBulkUpdateUserVouchElectionVoteStats([...new Set(votes.map(vote => vote.entityId))]),
+  )
+  await Promise.all([undoAdmission, statsAdmission])
   return insertedVotes
 }

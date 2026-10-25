@@ -1,4 +1,5 @@
 import { enqueueBulkDistributeActivity } from '@queues/activitypub/enqueues/delivery'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { enqueueBulkReconcileBlueskyFollow } from '@queues/bluesky-follow-propagation/enqueues'
 import type { EntityRelationMetadata } from './metadata.mts'
 
@@ -19,14 +20,14 @@ export type DeletedFollowPair = {
 export function enqueueUndoFollowSideEffects(
   relation: EntityRelationMetadata,
   deletedPairs: DeletedFollowPair[],
-): void {
+): Promise<void> {
   if (
     relation.subject_type !== 'user' ||
     relation.predicate !== 'follow' ||
     relation.object_type !== 'user' ||
     deletedPairs.length === 0
   ) {
-    return
+    return Promise.resolve()
   }
 
   const activityPubPairs = deletedPairs.flatMap(pair =>
@@ -42,15 +43,21 @@ export function enqueueUndoFollowSideEffects(
         ]
       : [],
   )
+  let activityPubAdmission: Promise<void> | undefined
   if (activityPubPairs.length > 0) {
     // Legacy Follow rows may not have the original delivered activity id. Sending an Undo with a
     // fabricated reference cannot retract that Follow, so only known identity generations are
     // eligible for ActivityPub distribution.
-    void enqueueBulkDistributeActivity(activityPubPairs)
+    activityPubAdmission = awaitReportedEnqueueAdmission(() =>
+      enqueueBulkDistributeActivity(activityPubPairs),
+    )
   }
   // Bluesky reconciliation derives desired state from the relation table, so every locally
   // deleted Follow remains eligible even when its historic ActivityPub identity is unknown.
-  void enqueueBulkReconcileBlueskyFollow(
-    deletedPairs.map(pair => ({ followerUserId: pair.subjectId, followeeUserId: pair.objectId })),
+  const blueskyAdmission = awaitReportedEnqueueAdmission(() =>
+    enqueueBulkReconcileBlueskyFollow(
+      deletedPairs.map(pair => ({ followerUserId: pair.subjectId, followeeUserId: pair.objectId })),
+    ),
   )
+  return Promise.all([activityPubAdmission, blueskyAdmission]).then(() => undefined)
 }

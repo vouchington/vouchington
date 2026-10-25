@@ -63,7 +63,7 @@ export const softDeleteEntityRelation = async (
       if (relation.predicate === 'follow' && relation.object_type === 'rss_feed') {
         void enqueueBulkEvaluateRssFeedDiscoverability(objects.map(object => object.id))
       }
-      enqueueUndoFollowSideEffects(relation, getDeletedFollowPairs(deletedRelations))
+      void enqueueUndoFollowSideEffects(relation, getDeletedFollowPairs(deletedRelations))
       await enqueueRssFeedDiscoverabilityForDeletedPublisherTypeRelations(relation, [subject])
       enqueueNotificationReconcileAfterDelete(relation, subject)
     }
@@ -144,7 +144,7 @@ export const softDeleteEntityRelationsForSubjects = async (
       }
       const deletedSubjectIds = new Set(deletedRelations.map(row => row.subject_id))
       const deletedSubjects = subjects.filter(subject => deletedSubjectIds.has(subject.id))
-      enqueueUndoFollowSideEffects(relation, getDeletedFollowPairs(deletedRelations))
+      void enqueueUndoFollowSideEffects(relation, getDeletedFollowPairs(deletedRelations))
       await enqueueRssFeedDiscoverabilityForDeletedPublisherTypeRelations(relation, subjects)
       deletedSubjects.forEach(subject => enqueueNotificationReconcileAfterDelete(relation, subject))
     }
