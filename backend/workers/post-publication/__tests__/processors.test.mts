@@ -27,7 +27,7 @@ describe('publication processor captured limits', () => {
       await processReconcilePostPublication({}, dependencies)
       expect(dependencies.reconcilePostPublicationDirtyWork.mock.calls).toEqual([
         [work, 1, undefined, 2],
-        [work, 1, [post.id], 2],
+        [work, 1, { postIds: [post.id], hasMore: false }, 2],
       ])
     } finally {
       restore()
