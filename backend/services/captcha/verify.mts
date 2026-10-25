@@ -78,6 +78,7 @@ export async function verifyCaptchaToken(
   token: string | undefined,
   ip: string | undefined,
   actionTag: string,
+  options: { createMissingTokenError?: () => Error } = {},
 ): Promise<void> {
   // Route and integration tests exercise content-creation endpoints without a live
   // Cloudflare siteverify dependency by setting this flag (see the captcha test-skip
@@ -93,6 +94,7 @@ export async function verifyCaptchaToken(
   }
 
   if (!token) {
+    if (options.createMissingTokenError) throw options.createMissingTokenError()
     throw createHttpError(422, 'CAPTCHA token is required')
   }
 

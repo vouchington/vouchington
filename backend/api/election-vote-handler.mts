@@ -3,6 +3,7 @@ import type { ElectionVoteMutationResult } from '@services/elections-votes/share
 import { applyVoteMutation } from '@services/elections-votes/vote-handler'
 import type { CreateVoteHandlerOptions } from '@services/elections-votes/vote-handler-options'
 import { parseJsonBody, validateRequestContract } from './response-helpers.mts'
+import { enforceLowScoreBotChallenge } from './bot-challenge.mts'
 
 export type { CreateVoteHandlerOptions } from '@services/elections-votes/vote-handler-options'
 
@@ -25,29 +26,40 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
   return async function handleVote(ctx: Context): Promise<void> {
     const currentUser = await ctx.getCurrentUser()
     ctx.assert(currentUser, 401, 'Unauthorized')
-    await applyVoteMutation(options, {
-      currentUser,
-      entityId: ctx.params.id!,
-      isClear,
-      accessContext: ctx,
-      applyRouteRateLimit: () => ctx.applyRouteRateLimit(options.routeKey),
-      readBody: () => parseJsonBody(ctx, '10kb'),
-      validateRequest: body => {
-        if (!options.requestContractOperation) return
-        validateRequestContract(ctx, options.requestContractOperation, {
-          ...(isClear ? {} : { body }),
-          path: ctx.params,
-        })
-      },
-      getSessionData: () => ctx.getSessionTokenData(),
-      ip: ctx.ip,
-      setRetryAfter: seconds => {
-        ctx.set('Retry-After', String(seconds))
-      },
-      get userAgent() {
-        return (ctx.req.headers['user-agent'] as string | undefined) ?? null
-      },
-    })
+    await ctx.applyRouteRateLimit(options.routeKey)
+    await challengeThenApplyVoteMutation(ctx, options, currentUser, isClear)
     ctx.setStatus(204)
   }
+}
+
+async function challengeThenApplyVoteMutation<VoteResult extends ElectionVoteMutationResult>(
+  ctx: Context,
+  options: CreateVoteHandlerOptions<VoteResult>,
+  currentUser: NonNullable<Awaited<ReturnType<Context['getCurrentUser']>>>,
+  isClear: boolean,
+): Promise<void> {
+  await enforceLowScoreBotChallenge(ctx)
+  await applyVoteMutation(options, {
+    currentUser,
+    entityId: ctx.params.id!,
+    isClear,
+    accessContext: ctx,
+    applyRouteRateLimit: () => Promise.resolve(),
+    readBody: () => parseJsonBody(ctx, '10kb'),
+    validateRequest: body => {
+      if (!options.requestContractOperation) return
+      validateRequestContract(ctx, options.requestContractOperation, {
+        ...(isClear ? {} : { body }),
+        path: ctx.params,
+      })
+    },
+    getSessionData: () => ctx.getSessionTokenData(),
+    ip: ctx.ip,
+    setRetryAfter: seconds => {
+      ctx.set('Retry-After', String(seconds))
+    },
+    get userAgent() {
+      return (ctx.req.headers['user-agent'] as string | undefined) ?? null
+    },
+  })
 }

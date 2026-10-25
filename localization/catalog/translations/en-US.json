@@ -1,5 +1,7 @@
 [
 {"id":"copy.apiKeyLabelExample.mcp","value":"e.g. Claude Code"},
+{"id":"copy.botChallenge.completeToContinue","value":"Complete the security verification to continue."},
+{"id":"copy.botChallenge.securityVerification","value":"Security verification"},
 {"id":"copy.common.cancel","value":"Cancel"},
 {"id":"copy.common.currency","value":"Currency"},
 {"id":"copy.common.loading","value":"Loading…"},

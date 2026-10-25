@@ -23,6 +23,7 @@
   "dependencies": {
     "@ts-shared/request-client-info": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/session-jwt": "^0.0.2",
     "@vouchington/utils": "^0.8.0",

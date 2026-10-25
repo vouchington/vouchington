@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { toTurnstileAction } from './turnstile-action.mts'
+import { BOT_CHALLENGE_ACTION, BOT_CHALLENGE_ACTION_TAG } from './bot-challenge.mts'
 
 const applicationTags = [
   'auth.email-address-tokens',
@@ -17,6 +18,7 @@ const applicationTags = [
   'copyright-eu-notices.create',
   'copyright-eu-redress.create',
   'copyright-uk-notices.create',
+  BOT_CHALLENGE_ACTION_TAG,
 ]
 
 describe('browser challenge action mapping', () => {
@@ -25,6 +27,7 @@ describe('browser challenge action mapping', () => {
     expect(actions.every(action => /^[A-Za-z0-9_-]{1,32}$/.test(action))).toBe(true)
     expect(new Set(actions).size).toBe(applicationTags.length)
     expect(toTurnstileAction('posts.create')).toBe('posts-create')
+    expect(BOT_CHALLENGE_ACTION).toBe(toTurnstileAction(BOT_CHALLENGE_ACTION_TAG))
   })
   it.each(['', 'x'.repeat(33), 'invalid/tag'])('rejects unsupported action tags (%s)', tag => {
     expect(() => toTurnstileAction(tag)).toThrow('Invalid Turnstile action')

@@ -7,6 +7,7 @@ vi.mock(
       clientApi: {
         get: vi.fn<VitestLooseMock>(),
         delete: vi.fn<VitestLooseMock>(),
+        post: vi.fn<VitestLooseMock>(),
         put: vi.fn<VitestLooseMock>(),
       },
     }) as unknown as typeof import('../instance'),
@@ -26,6 +27,7 @@ import {
 
 const mockGet = vi.mocked(clientApi.get)
 const mockDelete = vi.mocked(clientApi.delete)
+const mockPost = vi.mocked(clientApi.post)
 const mockPut = vi.mocked(clientApi.put)
 
 describe('users client api helpers', () => {
@@ -126,21 +128,12 @@ describe('users client api helpers', () => {
     } satisfies Partial<ApiError>)
   })
 
-  it('preserves JSON error data when creating a data request fails', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValue(
-          Response.json({ error: 'A data export is already in progress' }, { status: 409 }),
-        ),
-    )
+  it('creates a data request through the mutation client', async () => {
+    const response = { id: 'request-1', status: 'pending' as const }
+    mockPost.mockResolvedValueOnce(response)
 
-    await expect(createUserDataRequest('user-1')).rejects.toMatchObject({
-      name: 'ApiError',
-      status: 409,
-      data: { error: 'A data export is already in progress' },
-    } satisfies Partial<ApiError>)
+    await expect(createUserDataRequest('user-1')).resolves.toBe(response)
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/users/user-1/data-request')
   })
 
   it('throws an ApiError when loading a data request returns malformed success JSON', async () => {
@@ -158,24 +151,6 @@ describe('users client api helpers', () => {
       name: 'ApiError',
       status: 200,
       message: 'Invalid export status response',
-    } satisfies Partial<ApiError>)
-  })
-
-  it('throws an ApiError when creating a data request returns malformed success JSON', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<VitestLooseMock>().mockResolvedValue(
-        new Response('not json', {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      ),
-    )
-
-    await expect(createUserDataRequest('user-1')).rejects.toMatchObject({
-      name: 'ApiError',
-      status: 200,
-      message: 'Invalid export request response',
     } satisfies Partial<ApiError>)
   })
 })

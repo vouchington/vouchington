@@ -15,7 +15,8 @@ const viewRateLimiter = new RateLimiter({
 
 app.route('/api/v1/rss-feeds/:rssFeedId/views').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/rss-feeds/:rssFeedId/views')
-  assertNotSuspended(await ctx.getCurrentUser())
+  const currentUser = await ctx.getCurrentUser()
+  assertNotSuspended(currentUser)
 
   const { rssFeedId } = ctx.params
   ctx.assert(rssFeedId && isUUID(rssFeedId), 400, 'Invalid rssFeedId')

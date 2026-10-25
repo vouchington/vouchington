@@ -30,6 +30,7 @@ describe('origin request security policy', () => {
       'x-voucha-staging-canary-secret',
       'x-voucha-staging-canary-fault',
       'x-voucha-internal-canary-fault',
+      'x-voucha-bot-score',
       'x-middleware-subrequest',
       'x-middleware-subrequest-id',
       'x-nextjs-data',
@@ -60,5 +61,51 @@ describe('origin request security policy', () => {
     )
 
     expect(originRequest.headers.get('x-voucha-gpc')).toBe(signal ?? null)
+  })
+
+  it.each([1, 29, 30, 99])('forwards trusted Cloudflare bot score %s to the backend', score => {
+    const request = new Request('https://voucha.ai/api/v1/posts', {
+      headers: { 'x-voucha-bot-score': 'attacker' },
+    })
+    Object.defineProperty(request, 'cf', { value: { botManagement: { score } } })
+
+    expect(build(request).headers.get('x-voucha-bot-score')).toBe(String(score))
+  })
+
+  it.each([undefined, 0, 100, 1.5])(
+    'omits unavailable or invalid Cloudflare bot score %s',
+    score => {
+      const request = new Request('https://voucha.ai/api/v1/posts', {
+        headers: { 'x-voucha-bot-score': 'attacker' },
+      })
+      if (score !== undefined) {
+        Object.defineProperty(request, 'cf', { value: { botManagement: { score } } })
+      }
+
+      expect(build(request).headers.get('x-voucha-bot-score')).toBeNull()
+    },
+  )
+
+  it('never forwards bot score metadata to the web origin', () => {
+    const request = new Request('https://voucha.ai/settings', {
+      headers: { 'x-voucha-bot-score': 'attacker' },
+    })
+    Object.defineProperty(request, 'cf', { value: { botManagement: { score: 7 } } })
+
+    const originRequest = buildWorkerOriginRequest({
+      canonicalSitemapUrl: null,
+      cspNonce: 'nonce',
+      edgeSession: { kind: 'anon-passthrough' },
+      env: { CF_WORKER_SECRET: 'worker-secret' } as Env,
+      origin: 'https://web.example.com',
+      request,
+      requestId: 'request-id',
+      stripAllCookies: false,
+      stripCookieNames: new Set(),
+      target: 'web',
+      webCsp: "default-src 'self'",
+    })
+
+    expect(originRequest.headers.get('x-voucha-bot-score')).toBeNull()
   })
 })

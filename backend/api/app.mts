@@ -15,6 +15,7 @@ import applyRequestVerificationContext from './context/request-verification.mts'
 import { VOUCHA_API_SECURITY_HEADERS } from './security-header-helpers.mts'
 import { installRequestContractEnforcement } from './request-contract-enforcement-helpers.mts'
 import { buildApiErrorEnvelope, normalizeErrorForLogging } from '@vouchington/utils/api-errors'
+import { isBotChallengeRequiredError } from './bot-challenge.mts'
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
 
@@ -107,7 +108,9 @@ app.errorHandler((ctx, error: unknown) => {
     requestId,
   })
   ctx.setStatus(status)
-  if (
+  if (isBotChallengeRequiredError(error)) {
+    ctx.json({ ...body, action: error.action })
+  } else if (
     status === 422 &&
     body.code === 'community_list_feed_limit_reached' &&
     error instanceof Error &&

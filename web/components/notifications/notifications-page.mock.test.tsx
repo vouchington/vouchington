@@ -173,7 +173,34 @@ describe('notifications-page', () => {
       await waitFor(() => expect(mockDeleteMyNotification).toHaveBeenCalledWith('n1'))
     })
 
-    it('reports a failed best-effort read receipt without interrupting notification opening', async () => {
+    it('opens a notification while the read receipt is pending', async () => {
+      let resolveReceipt: (() => void) | undefined
+      mockMarkMyNotificationReadKeepalive.mockImplementation(
+        () =>
+          new Promise<void>(resolve => {
+            resolveReceipt = resolve
+          }),
+      )
+      render(
+        <NotificationsPage
+          initialNotifications={initialNotifications}
+          initialSubscriptions={[]}
+        />,
+      )
+
+      const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
+        id: string
+      }) => void
+      onOpen(initialNotifications.notifications.n1)
+      expect(mockMarkMyNotificationReadKeepalive).toHaveBeenCalledWith('n1')
+      expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
+
+      await act(async () => {
+        resolveReceipt!()
+      })
+    })
+
+    it('opens a notification and reports a failed read receipt', async () => {
       const receiptError = new Error('read receipt failed')
       mockMarkMyNotificationReadKeepalive.mockRejectedValue(receiptError)
       render(
@@ -186,7 +213,8 @@ describe('notifications-page', () => {
       const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
         id: string
       }) => void
-      expect(() => onOpen(initialNotifications.notifications.n1)).not.toThrow()
+      onOpen(initialNotifications.notifications.n1)
+
       expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
 
       await waitFor(() => {

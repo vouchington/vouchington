@@ -8,6 +8,12 @@
 import { buildQueryString } from '@ts-shared/utils/query-string'
 import { ApiError } from '../error'
 import { parseErrorResponseBody } from '../error-helpers'
+import {
+  BOT_CHALLENGE_ACTION_TAG,
+  BOT_CHALLENGE_REQUIRED,
+  VOUCHA_BOT_CHALLENGE_TOKEN_HEADER,
+} from '@ts-shared/utils/bot-challenge'
+import { requestBotChallengeToken } from './bot-challenge'
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -15,8 +21,15 @@ interface RequestOptions {
   headers?: Record<string, string>
   signal?: AbortSignal
 }
+type BotChallengeSolver = (action: string, signal?: AbortSignal) => Promise<string>
 
 export class ClientRequest {
+  private readonly solveBotChallenge: BotChallengeSolver
+
+  constructor(solveBotChallenge: BotChallengeSolver = requestBotChallengeToken) {
+    this.solveBotChallenge = solveBotChallenge
+  }
+
   /**
    * Make an API request
    * Browser requests use relative URLs and credentials are automatically included
@@ -55,29 +68,28 @@ export class ClientRequest {
     }
 
     try {
-      const response = await fetch(url, fetchOptions)
+      let response = await fetch(url, fetchOptions)
+      if (!response.ok) {
+        const errorData = await parseErrorResponseBody(response)
+        if (response.status === 403 && isBotChallenge(errorData)) {
+          signal?.throwIfAborted()
+          const token = await this.solveBotChallenge(errorData.action, signal)
+          signal?.throwIfAborted()
+          response = await fetch(url, {
+            ...fetchOptions,
+            headers: {
+              ...(fetchOptions.headers as Record<string, string>),
+              [VOUCHA_BOT_CHALLENGE_TOKEN_HEADER]: token,
+            },
+          })
+        } else {
+          throwApiError(response, errorData)
+        }
+      }
 
       if (!response.ok) {
         const errorData = await parseErrorResponseBody(response)
-
-        const isAdmissionInProgress =
-          response.status === 409 && isErrorCode(errorData, 'CONTRIBUTION_ADMISSION_IN_PROGRESS')
-        if (response.status === 429 || isAdmissionInProgress) {
-          const retryAfter = response.headers.get('Retry-After')
-          const parsed = retryAfter ? parseInt(retryAfter, 10) : NaN
-          const retrySeconds = !isNaN(parsed) && parsed > 0 ? parsed : undefined
-          const rateLimitData =
-            typeof errorData === 'object' && errorData !== null && !Array.isArray(errorData)
-              ? { ...errorData, retry_after: retrySeconds }
-              : { retry_after: retrySeconds }
-          throw new ApiError(
-            `API request failed: ${response.statusText}`,
-            response.status,
-            rateLimitData,
-          )
-        }
-
-        throw new ApiError(`API request failed: ${response.statusText}`, response.status, errorData)
+        throwApiError(response, errorData)
       }
 
       // Handle empty successful responses, including 200 endpoints that
@@ -145,6 +157,35 @@ export class ClientRequest {
       ...options,
     })
   }
+}
+
+function throwApiError(response: Response, errorData: unknown): never {
+  const isAdmissionInProgress =
+    response.status === 409 && isErrorCode(errorData, 'CONTRIBUTION_ADMISSION_IN_PROGRESS')
+  if (response.status === 429 || isAdmissionInProgress) {
+    const retryAfter = response.headers.get('Retry-After')
+    const parsed = retryAfter ? parseInt(retryAfter, 10) : NaN
+    const retrySeconds = !isNaN(parsed) && parsed > 0 ? parsed : undefined
+    const rateLimitData =
+      typeof errorData === 'object' && errorData !== null && !Array.isArray(errorData)
+        ? { ...errorData, retry_after: retrySeconds }
+        : { retry_after: retrySeconds }
+    throw new ApiError(`API request failed: ${response.statusText}`, response.status, rateLimitData)
+  }
+
+  throw new ApiError(`API request failed: ${response.statusText}`, response.status, errorData)
+}
+
+function isBotChallenge(
+  errorData: unknown,
+): errorData is { action: typeof BOT_CHALLENGE_ACTION_TAG; code: typeof BOT_CHALLENGE_REQUIRED } {
+  return (
+    typeof errorData === 'object' &&
+    errorData !== null &&
+    !Array.isArray(errorData) &&
+    (errorData as { code?: unknown }).code === BOT_CHALLENGE_REQUIRED &&
+    (errorData as { action?: unknown }).action === BOT_CHALLENGE_ACTION_TAG
+  )
 }
 
 function isErrorCode(errorData: unknown, code: string): boolean {

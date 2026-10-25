@@ -43,7 +43,7 @@ export function NotificationsPage({
 
   // Zero-arg `new Date()` stays inside the state updaters. Render reads `read_at`, so a clock
   // read in the handler body is an impure render.
-  async function handleMarkRead(notification: NotificationListNotification) {
+  function handleMarkRead(notification: NotificationListNotification) {
     const readAt = readAtById[notification.id] ?? notification.read_at
     setReadAtById(prev => ({
       ...prev,

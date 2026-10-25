@@ -86,6 +86,12 @@ export type AppAttestAssertionHeaders = {
   'x-app-attest-challenge-id': string
 }
 
+type AppAttestAssertionInput = {
+  actionTag: string
+  challengeId?: string
+  signCount?: number
+}
+
 function cborTextString(value: string): Buffer {
   const bytes = Buffer.from(value, 'utf8')
   if (bytes.length > 23) throw new Error('cborTextString: fixture strings must be <= 23 bytes')
@@ -131,10 +137,23 @@ export async function createAppAttestAssertionHeaders(params: {
   bundleId?: string
   environment?: AppAttestEnvironment
 }): Promise<AppAttestAssertionHeaders> {
+  const [headers] = await createAppAttestAssertionHeaderSequence({
+    ...params,
+    assertions: [params],
+  })
+  return headers!
+}
+
+/** Build multiple assertions from one registered key to exercise its monotonic sign counter. */
+export async function createAppAttestAssertionHeaderSequence(params: {
+  did: string
+  assertions: readonly AppAttestAssertionInput[]
+  teamId?: string
+  bundleId?: string
+  environment?: AppAttestEnvironment
+}): Promise<AppAttestAssertionHeaders[]> {
   const teamId = params.teamId ?? TEST_APP_ATTEST_TEAM_ID
   const bundleId = params.bundleId ?? TEST_APP_ATTEST_BUNDLE_ID
-  const challengeId = params.challengeId ?? `test-app-attest-${randomUUID()}`
-  const signCount = params.signCount ?? 1
   const environment = params.environment ?? 'production'
 
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
@@ -149,25 +168,31 @@ export async function createAppAttestAssertionHeaders(params: {
     bundleId,
     environment,
   })
-  await storeAppAttestChallenge('assertion', challengeId, 'unused-by-verifyAssertion')
+  return Promise.all(
+    params.assertions.map(async (input, index) => {
+      const challengeId = input.challengeId ?? `test-app-attest-${randomUUID()}`
+      const signCount = input.signCount ?? index + 1
+      await storeAppAttestChallenge('assertion', challengeId, 'unused-by-verifyAssertion')
 
-  const payload = `${challengeId}:${params.actionTag}`
-  const authenticatorData = buildAuthenticatorData(teamId, bundleId, signCount)
-  const clientDataHash = createHash('sha256').update(payload).digest()
-  const nonce = createHash('sha256')
-    .update(Buffer.concat([authenticatorData, clientDataHash]))
-    .digest()
+      const payload = `${challengeId}:${input.actionTag}`
+      const authenticatorData = buildAuthenticatorData(teamId, bundleId, signCount)
+      const clientDataHash = createHash('sha256').update(payload).digest()
+      const nonce = createHash('sha256')
+        .update(Buffer.concat([authenticatorData, clientDataHash]))
+        .digest()
 
-  const signer = createSign('SHA256')
-  signer.update(nonce)
-  signer.end()
-  const signature = signer.sign(privateKey)
+      const signer = createSign('SHA256')
+      signer.update(nonce)
+      signer.end()
+      const signature = signer.sign(privateKey)
 
-  const assertion = encodeAssertionCbor(signature, authenticatorData)
-
-  return {
-    'x-app-attest-key-id': keyId,
-    'x-app-attest-assertion': assertion.toString('base64'),
-    'x-app-attest-challenge-id': challengeId,
-  }
+      return {
+        'x-app-attest-key-id': keyId,
+        'x-app-attest-assertion': encodeAssertionCbor(signature, authenticatorData).toString(
+          'base64',
+        ),
+        'x-app-attest-challenge-id': challengeId,
+      }
+    }),
+  )
 }

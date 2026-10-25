@@ -7,11 +7,7 @@ import { recordProxyReferralAttribution, refreshProxySession } from '@/lib/api/s
 import { tagPostDetailCacheFill } from '@/lib/api/server/post-detail-cache-tags'
 import { LANDING_PAGE_HANDLE_RE } from '@/lib/utils/path'
 import { hasGlobalPrivacyControlHeader } from '@/lib/privacy/global-privacy-control'
-
-function getLandingPageUsername(pathname: string): string | null {
-  const match = pathname.match(LANDING_PAGE_HANDLE_RE)
-  return match?.[1] ?? null
-}
+import { VOUCHA_BOT_SCORE_HEADER } from '@ts-shared/utils/bot-challenge'
 
 function getForwardedIpHeaders(request: NextRequest): Record<string, string> {
   const headers: Record<string, string> = {}
@@ -37,7 +33,7 @@ async function proxy(request: NextRequest) {
   }
 
   // Check for referrer param early so we can create a session for anonymous visitors
-  const routeLandingUsername = getLandingPageUsername(request.nextUrl.pathname)
+  const routeLandingUsername = request.nextUrl.pathname.match(LANDING_PAGE_HANDLE_RE)?.[1] ?? null
   const routeLandingSlug = routeLandingUsername
     ? (request.nextUrl.pathname.split('/').filter(Boolean)[1] ?? null)
     : null
@@ -142,6 +138,7 @@ async function proxy(request: NextRequest) {
   requestHeaders.delete('x-user-id')
   requestHeaders.delete('x-device-token')
   requestHeaders.delete('x-session-token')
+  requestHeaders.delete(VOUCHA_BOT_SCORE_HEADER)
   requestHeaders.delete('cookie')
   requestHeaders.set('x-pathname', request.nextUrl.pathname)
   requestHeaders.set('x-search', request.nextUrl.searchParams.toString())
