@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { getPublisherTypeTopicId } from '../../topics/publisher-type-topics.mts'
+import { getPublisherTypeTopics } from '../../topics/publisher-type-topics.mts'
 import { createEntityRelationElectionTarget } from './target.mts'
 import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from './vote-stats-batch.mts'
 
@@ -176,7 +176,9 @@ describe('entity relation vote stats batch locking', () => {
       hostname: `batch-publisher-lock-${randomUUID()}.example.test`,
       topic_type: 'rss_feed',
     })
-    const publisherTypeId = await getPublisherTypeTopicId('blog')
+    const publisherTypeId = (await getPublisherTypeTopics()).find(
+      topic => topic.slug === 'blog',
+    )?.id
     if (!publisherTypeId) throw new Error('Expected blog publisher type')
     const feed = await insertTestRssFeedDirect({ topicId: sourceTopic.id })
     const relation = getEntityRelationMetadataOrThrow({

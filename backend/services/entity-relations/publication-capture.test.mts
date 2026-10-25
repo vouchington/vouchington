@@ -20,7 +20,7 @@ import { recordTestPostTopicRelationPublicationChanges } from '@voucha/test-help
 import '@voucha/test-helpers/entity-url-guard-registrations'
 import { upsertEntityRelation } from './upsert.mts'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { getPublisherTypeTopicId } from '../topics/publisher-type-topics.mts'
+import { getPublisherTypeTopics } from '../topics/publisher-type-topics.mts'
 
 describe('post topic relation publication capture', () => {
   it('captures create, deletion, and resurrection in the relation transaction', async () => {
@@ -157,7 +157,9 @@ describe('post topic relation publication capture', () => {
       hostname: `publisher-publication-${randomUUID().slice(0, 8)}.example.com`,
       topic_type: 'rss_feed',
     })
-    const publisherTypeId = await getPublisherTypeTopicId('blog')
+    const publisherTypeId = (await getPublisherTypeTopics()).find(
+      topic => topic.slug === 'blog',
+    )?.id
     if (!publisherTypeId) throw new Error('Expected blog publisher type')
     const feed = await createTestRssFeed({ topicId: sourceTopic.id })
     const relation = getEntityRelationMetadataOrThrow({

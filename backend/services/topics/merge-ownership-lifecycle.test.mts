@@ -15,7 +15,7 @@ import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication
 import { disableAndHideSource } from '../rss-feeds/disable-and-hide-source.mts'
 import { getTopicByAny } from './get.mts'
 import { mergeTopicAliases } from './merge-aliases.mts'
-import { getPublisherTypeTopicId } from './publisher-type-topics.mts'
+import { getPublisherTypeTopics } from './publisher-type-topics.mts'
 
 async function createRssFeedTopic(admin: Awaited<ReturnType<typeof createTestUser>>) {
   const row = await createTestTopic({ user: admin, topic_type: 'rss_feed' })
@@ -29,7 +29,9 @@ describe('topic merge ownership and lifecycle ordering', () => {
     const admin = await createTestUser({ administrator: true })
     const source = await createRssFeedTopic(admin)
     const destination = await createRssFeedTopic(admin)
-    const publisherTypeId = await getPublisherTypeTopicId('blog')
+    const publisherTypeId = (await getPublisherTypeTopics()).find(
+      topic => topic.slug === 'blog',
+    )?.id
     if (!publisherTypeId) throw new Error('Publisher-type fixture not seeded')
     const publisherType = getEntityRelationMetadataOrThrow({
       subjectType: 'topic',

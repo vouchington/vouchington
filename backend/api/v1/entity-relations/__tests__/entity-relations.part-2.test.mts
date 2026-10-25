@@ -14,7 +14,7 @@ import { upsertEntityRelation } from '@services/entity-relations'
 import { getEntityRelations } from '@services/entity-relations/query'
 
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import { getPublisherTypeTopicId } from '@services/topics/publisher-type-topics'
+import { getPublisherTypeTopics } from '@services/topics/publisher-type-topics'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -199,7 +199,9 @@ describe('entity-relations', () => {
     })
 
     it('rejects a publisher_type relation when the subject is not a source topic (422)', async () => {
-      const publisherTypeTopicId = await getPublisherTypeTopicId('blog')
+      const publisherTypeTopicId = (await getPublisherTypeTopics()).find(
+        topic => topic.slug === 'blog',
+      )?.id
       if (!publisherTypeTopicId) throw new Error('Expected blog publisher type topic to be seeded')
 
       const request = createRequest()

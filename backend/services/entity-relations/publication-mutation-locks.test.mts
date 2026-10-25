@@ -25,7 +25,7 @@ import {
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { PUBLISHER_TYPE_SLUGS } from '@ts-shared/utils/publisher-types'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { getPublisherTypeTopicId } from '../topics/publisher-type-topics.mts'
+import { getPublisherTypeTopics } from '../topics/publisher-type-topics.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { upsertEntityRelation } from './upsert.mts'
 
@@ -80,7 +80,9 @@ describe('entity relation publication mutation locks', () => {
       hostname: `publisher-relation-lock-${randomUUID()}.example.test`,
       topic_type: 'rss_feed',
     })
-    const publisherTypeId = await getPublisherTypeTopicId('blog')
+    const publisherTypeId = (await getPublisherTypeTopics()).find(
+      topic => topic.slug === 'blog',
+    )?.id
     if (!publisherTypeId) throw new Error('Expected blog publisher type')
     const feed = await insertTestRssFeedDirect({ topicId: subject.id })
     const relation = getEntityRelationMetadataOrThrow({
