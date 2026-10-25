@@ -4,6 +4,7 @@ import { applyCrawlerRules } from '@services/crawlers/apply-rules'
 import { isUrlCrawlable } from '@services/urls-domains-robots'
 import { getUrlById } from '@services/urls/get'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
+import { isOutsideHostnameNetworkBackoff } from '@services/urls-hostnames/network-backoff'
 import net from 'node:net'
 import { isPrivateIp } from 'ssrf-guard'
 import onError from '@modules/on-error'
@@ -45,6 +46,7 @@ export async function loadCrawlPreflight(
   if (hostname.is_blocked || !hostname.is_crawlable || isLocalHostname(hostname.hostname)) {
     return null
   }
+  if (!(await isOutsideHostnameNetworkBackoff(hostname))) return null
 
   const rateLimitRemainingMs = await getDomainRateLimitRemainingMs(hostname.id)
   if (rateLimitRemainingMs !== null) {

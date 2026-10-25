@@ -5,23 +5,16 @@ import {
   persistRssFeedCrawlAndMetadata,
   getLatestRssFeedCrawlForFeedWithOptions,
 } from './crawls.mts'
-import { isRssParseFeedError } from './is-permanent-fetch-error.mts'
 import CrawlerRss from '@services/crawler-rss'
 import { handleRssFeedRedirect } from './fetch-redirect.mts'
 import { getRssFeedByIdToFetch, type RssFeedToFetch } from './get-to-fetch.mts'
 import * as fetchFailures from './fetch-failures.mts'
-import onError from '@modules/on-error'
-import {
-  CrawlerNetworkError,
-  isCrawlerNetworkDnsError,
-  isCrawlerNetworkTlsHostnameError,
-} from '@modules/on-error/errors'
 import { checkRssFeedCrawlable } from './fetch-robots-check.mts'
 import {
-  recordHostnameConfigurationFailure,
-  recordHostnameDnsFailure,
-  resetHostnameDnsFailures,
-} from '@services/urls-hostnames/dns-failures'
+  isRssFetchHostnameInNetworkBackoff,
+  recordRssFetchHostnameFailure,
+  recordRssFetchHostnameSuccess,
+} from './fetch-hostname-health.mts'
 import { getFetchHostnameId } from './fetch-hostname.mts'
 import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
 import { isHttpError } from 'http-errors'
@@ -54,6 +47,11 @@ export async function fetchRssFeed(
   }
   const fetchHostnameId = await getFetchHostnameId(rssFeed.url_hostname_id, rssFeed.url, feedUrl)
   await rssRateLimit.assertRssFetchHostnameNotRateLimited(fetchHostnameId, feedUrl)
+  if (await isRssFetchHostnameInNetworkBackoff(fetchHostnameId)) {
+    // Skipped, not failed: the feed waits for its next due fetch instead of counting a failure.
+    await updateRssFeedById(rssFeedId, { last_fetched_at: true })
+    return []
+  }
   try {
     await assertUrlAllowedByWebRisk(feedUrl)
   } catch (err) {
@@ -74,18 +72,10 @@ export async function fetchRssFeed(
   let data: Awaited<ReturnType<typeof fetchCrawlerRss>>
   try {
     data = await fetchCrawlerRss(feedUrl, options)
-    await resetHostnameDnsFailures(fetchHostnameId).catch(onError)
+    await recordRssFetchHostnameSuccess(fetchHostnameId)
   } catch (err) {
     await rssRateLimit.lockRssFetchHostnameOnRateLimit(err, fetchHostnameId, feedUrl)
-    if (err instanceof CrawlerNetworkError && isCrawlerNetworkDnsError(err)) {
-      await recordHostnameDnsFailure(fetchHostnameId, dependencies.resolveDnsCanary).catch(onError)
-    }
-    if (err instanceof CrawlerNetworkError && isCrawlerNetworkTlsHostnameError(err)) {
-      await recordHostnameConfigurationFailure(fetchHostnameId).catch(onError)
-    }
-    if (isRssParseFeedError(err)) {
-      await resetHostnameDnsFailures(fetchHostnameId).catch(onError)
-    }
+    await recordRssFetchHostnameFailure(err, fetchHostnameId, dependencies.resolveDnsCanary)
     await fetchFailures.maybeSoftDeletePermanentFetchErrorForFetch({
       error: err,
       feedUrl,

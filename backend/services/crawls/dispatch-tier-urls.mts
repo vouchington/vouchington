@@ -55,6 +55,7 @@ async function dispatchTierCrawlUrls(
     JOIN url_hostnames h ON h.id = u.hostname_id
     WHERE h.is_crawlable
       AND NOT h.is_blocked
+      AND (h.network_backoff_until IS NULL OR h.network_backoff_until <= CURRENT_TIMESTAMP)
       `)
   if (tier === 2) {
     const positive = positiveVoteConditions(getEntityRelationUrlTablesWithElections()).join(' OR ')

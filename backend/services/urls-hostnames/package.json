@@ -28,6 +28,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/analytics": "workspace:^",
     "@services/batch-lookup": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@ts-shared/utils": "workspace:^",
@@ -37,6 +38,7 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "@data-stores/analytics": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }

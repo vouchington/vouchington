@@ -61,3 +61,35 @@ export function trackDomainRateLimitDeferred(
     remaining_ms: remainingMs,
   })
 }
+
+/** retry_after_ms carries the backoff duration; the step is derivable from it. */
+export function trackNetworkBackoffOpened(
+  crawlerType: string,
+  domain: string,
+  backoffMs: number,
+): void {
+  emit('crawler_requests', {
+    ...makeBase('network_backoff_opened'),
+    crawler_type: crawlerType,
+    domain,
+    success: false,
+    duration_ms: 0,
+    retry_after_ms: backoffMs,
+  })
+}
+
+/** retry_after_ms carries the duration of the backoff that just closed. */
+export function trackNetworkBackoffClosed(
+  crawlerType: string,
+  domain: string,
+  backoffMs: number,
+): void {
+  emit('crawler_requests', {
+    ...makeBase('network_backoff_closed'),
+    crawler_type: crawlerType,
+    domain,
+    success: true,
+    duration_ms: 0,
+    retry_after_ms: backoffMs,
+  })
+}

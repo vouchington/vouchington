@@ -4,7 +4,7 @@ import { pipeline } from 'node:stream/promises'
 import { createCrawlChunks } from '@services/crawl-chunks'
 import { addUrl } from '@services/urls'
 import onError from '@modules/on-error'
-import { resetHostnameDnsFailures } from '@services/urls-hostnames/dns-failures'
+import { resetHostnameFailures } from '@services/urls-hostnames/network-backoff'
 import { updateCrawl } from '../update.mts'
 import { uploadCrawlHtmlFileToS3 } from '../s3.mts'
 import {
@@ -103,7 +103,7 @@ export async function persistCrawlContent(params: {
     await setHtmlCanonicalUrl(url.id, url.url, htmlResult.content?.canonicalUrl)
   }
 
-  resetHostnameDnsFailures(hostname.id).catch(onError)
+  await resetHostnameFailures(hostname.id, { crawlerType: 'html', includeDns: true }).catch(onError)
   return updated
 }
 

@@ -63,6 +63,15 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   last_dns_failure_at TIMESTAMPTZ,
   dns_disabled_at TIMESTAMPTZ,
 
+  -- Self-recovering backoff for hostnames that reject every connection (non-DNS network
+  -- errors). Unlike the DNS latch it never touches is_crawlable: it expires, one probe crawl
+  -- runs, and any HTTP response closes it.
+  consecutive_network_failures SMALLINT NOT NULL DEFAULT 0,
+  network_backoff_step SMALLINT NOT NULL DEFAULT 0,
+  CHECK (network_backoff_step >= 0),
+  network_backoff_until TIMESTAMPTZ,
+  network_backoff_probe_claimed_at TIMESTAMPTZ,
+
   topic_id UUID,  -- FK to topics added in 0060
 
   should_skip_web_risk BOOLEAN NOT NULL DEFAULT FALSE,
@@ -266,6 +275,10 @@ COMMENT ON COLUMN url_hostnames.reversed_hostname IS 'Hostname labels reversed (
 COMMENT ON COLUMN url_hostnames.consecutive_dns_failures IS 'Number of consecutive DNS lookup failures for this hostname. Resets to 0 on any successful crawl. Resets to 1 (not incremented) when last_dns_failure_at is older than 7 days.';
 COMMENT ON COLUMN url_hostnames.last_dns_failure_at IS 'When the most recent DNS lookup failure occurred for this hostname.';
 COMMENT ON COLUMN url_hostnames.dns_disabled_at IS 'When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.';
+COMMENT ON COLUMN url_hostnames.consecutive_network_failures IS 'Consecutive non-DNS network failures (connection refused/reset, TLS, socket closed) with no HTTP response in between. Resets to 0 when the hostname answers or the backoff opens.';
+COMMENT ON COLUMN url_hostnames.network_backoff_step IS 'Current network backoff step; 0 when closed. Each failed probe raises it (capped), doubling the backoff duration. Resets to 0 when the hostname answers.';
+COMMENT ON COLUMN url_hostnames.network_backoff_until IS 'Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.';
+COMMENT ON COLUMN url_hostnames.network_backoff_probe_claimed_at IS 'When the in-flight probe was claimed after the backoff expired. A failure while set reopens the backoff at the next step; NULL when no probe is in flight.';
 COMMENT ON COLUMN url_hostnames.should_skip_web_risk IS 'Whether Google Web Risk checks are skipped for this hostname and subdomains.';
 COMMENT ON COLUMN url_hostnames.should_ignore_robots_txt IS 'Whether robots.txt allow/disallow rules are ignored for RSS feed fetches on this hostname. NULL = inherit from global DynamicConfig. TRUE = always ignore. FALSE = always enforce.';
 COMMENT ON COLUMN url_hostnames.unreliable_status_codes IS 'RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.';

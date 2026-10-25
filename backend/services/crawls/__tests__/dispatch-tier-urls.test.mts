@@ -9,9 +9,11 @@ import {
   createTestUser,
   createTestUserProfileLink,
   deleteTestRobotsTxtCache,
+  expireTestHostnameNetworkBackoff,
   insertTestRssFeedDirect,
   insertTestUrlDirect,
   insertTestUserReferralProgramLink,
+  openTestHostnameNetworkBackoff,
   setTestRobotsTxtCache,
 } from '@voucha/test-helpers'
 import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
@@ -230,5 +232,21 @@ describe('dispatch-tier-urls', () => {
       await expectExactCrawlJob(url.id, url.hostname.id)
     }
     await expectNoCrawlJob(tier1Url.id)
+  })
+
+  it('skips hostnames in an open network backoff until it expires', async () => {
+    const window = ownedUrlWindow(1)
+    const hostname = `tier-backoff-${randomUUID()}.example.com`
+    const url = await createTestUrl(hostname, '/profile', window.ids[0]!)
+    await createTestUserProfileLink(user.id, url.id)
+    await seedCrawlDelay(hostname)
+    await openTestHostnameNetworkBackoff(url.hostname.id)
+
+    await dispatchTier1CrawlUrls(window.cursor)
+    await expectNoCrawlJob(url.id)
+
+    await expireTestHostnameNetworkBackoff(url.hostname.id)
+    await dispatchTier1CrawlUrls(window.cursor)
+    await expectExactCrawlJob(url.id, url.hostname.id)
   })
 })

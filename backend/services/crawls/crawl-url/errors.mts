@@ -12,6 +12,12 @@ import {
 import onError from '@modules/on-error'
 import { trackDomainRateLimitLocked } from '@services/analytics'
 import { recordHostnameDnsFailure } from '@services/urls-hostnames/dns-failures'
+import {
+  isHostnameAnsweredError,
+  isHostnameUnreachableError,
+  recordHostnameNetworkFailure,
+  resetHostnameFailures,
+} from '@services/urls-hostnames/network-backoff'
 import { updateCrawl } from '../update.mts'
 import { getCrawlById } from '../get.mts'
 import { safeHostname } from '../crawl-url-utils.mts'
@@ -29,6 +35,7 @@ export async function recordCrawlError(params: {
   const { crawlId, crawlStatusRecorded, dependencies = {}, error, hostname, urlId } = params
   await lockRateLimitedHostname(error, hostname)
   trackDnsFailure(error, hostname.id, dependencies.resolveDnsCanary)
+  await trackNetworkReachability(error, hostname)
 
   if (!crawlStatusRecorded) {
     const crawl = await getCrawlById(crawlId, urlId)
@@ -70,6 +77,23 @@ function trackDnsFailure(
     // rather than propagating a promise the (synchronous, fire-and-forget) caller would await.
     // oxlint-disable-next-line promise/no-promise-in-callback
     recordHostnameDnsFailure(hostnameId, resolveCanary).catch(onError)
+  }
+}
+
+// Awaited so the backoff state is settled before the job retries; failures stay best-effort.
+async function trackNetworkReachability(error: unknown, hostname: CrawlHostnameRecord) {
+  try {
+    if (isHostnameAnsweredError(error)) {
+      await resetHostnameFailures(hostname.id, { crawlerType: 'html', includeDns: false })
+      return
+    }
+    if (!isHostnameUnreachableError(error)) return
+    // A failure on a redirect target says nothing about the source hostname.
+    const errorHostname = safeHostname(error.url)
+    if (errorHostname && errorHostname !== hostname.hostname) return
+    await recordHostnameNetworkFailure(hostname.id, 'html')
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 

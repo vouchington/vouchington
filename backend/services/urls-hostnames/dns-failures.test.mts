@@ -1,11 +1,7 @@
 import { it, expect, vi, beforeEach, describe } from 'vitest'
 import { upsertUrlHostnames } from './upsert.mts'
 import { getTestHostnameDnsStats, setTestHostnameStaleDnsFailures } from '@voucha/test-helpers'
-import {
-  recordHostnameConfigurationFailure,
-  recordHostnameDnsFailure,
-  resetHostnameDnsFailures,
-} from './dns-failures.mts'
+import { recordHostnameConfigurationFailure, recordHostnameDnsFailure } from './dns-failures.mts'
 
 describe('dns-failures', () => {
   const mockCanary = vi.fn<VitestLooseMock>()
@@ -130,26 +126,5 @@ describe('dns-failures', () => {
     expect(row!.consecutive_dns_failures).toBe(3)
     expect(row!.is_crawlable).toBe(false)
     expect(row!.dns_disabled_at).toBeInstanceOf(Date)
-  })
-
-  it('resetHostnameDnsFailures resets counter to 0', async () => {
-    const id = await makeHostname()
-
-    await recordHostnameDnsFailure(id, mockCanary)
-    await recordHostnameDnsFailure(id, mockCanary)
-
-    await resetHostnameDnsFailures(id)
-
-    const row = await getTestHostnameDnsStats(id)
-    expect(row!.consecutive_dns_failures).toBe(0)
-  })
-
-  it('resetHostnameDnsFailures is a no-op when counter is already 0', async () => {
-    const id = await makeHostname()
-
-    await expect(resetHostnameDnsFailures(id)).resolves.toBeUndefined()
-
-    const row = await getTestHostnameDnsStats(id)
-    expect(row!.consecutive_dns_failures).toBe(0)
   })
 })

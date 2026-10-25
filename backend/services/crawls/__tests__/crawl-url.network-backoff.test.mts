@@ -1,0 +1,134 @@
+import { describe, it, expect } from 'vitest'
+import { addUrl } from '@services/urls/upsert'
+import { createCrawler } from '@services/crawlers'
+import { NETWORK_BACKOFF_FAILURE_THRESHOLD } from '@services/urls-hostnames/network-backoff'
+import { useCrawlUrlRedirectHarness } from '@voucha/test-helpers/services/crawls/crawl-url-redirect-harness'
+import {
+  expireTestHostnameNetworkBackoff,
+  getTestHostnameNetworkBackoff,
+} from '@voucha/test-helpers'
+import { CrawlerNetworkError, CrawlerRateLimitError } from '@modules/on-error/errors'
+import { dispatchCrawlUrlsPerHostname } from '../dispatch-per-hostname.mts'
+import { getDomainRateLimitRemainingMs } from '../domain-rate-limit.mts'
+
+describe('crawl-url network backoff', () => {
+  const { fetchCrawlerHtml, crawlUrlForTest, createMockCrawlerResult, user } =
+    useCrawlUrlRedirectHarness()
+
+  async function createHostname(prefix: string) {
+    const hostname = `${prefix}-${crypto.randomUUID()}.example.com`
+    const first = await addUrl(user().id, `https://${hostname}/0`)
+    await createCrawler(user(), { hostname_id: first!.hostname.id, crawler_type: 'fetch' })
+    return {
+      hostname,
+      hostnameId: first!.hostname.id,
+      addPage: async (page: number) => (await addUrl(user().id, `https://${hostname}/${page}`))!,
+    }
+  }
+
+  function refused(hostname: string, page: number, code = 'ECONNRESET') {
+    const cause = Object.assign(new Error(`socket ${code}`), { code })
+    return new CrawlerNetworkError(`https://${hostname}/${page}`, 5, cause)
+  }
+
+  async function tripBackoff(host: Awaited<ReturnType<typeof createHostname>>) {
+    for (let page = 1; page <= NETWORK_BACKOFF_FAILURE_THRESHOLD; page++) {
+      const url = await host.addPage(page)
+      fetchCrawlerHtml.mockRejectedValueOnce(refused(host.hostname, page))
+      await expect(crawlUrlForTest(url.id)).rejects.toThrow(CrawlerNetworkError)
+    }
+  }
+
+  it('trips after repeated connection failures and then skips the hostname', async () => {
+    const host = await createHostname('net-backoff-trip')
+    await tripBackoff(host)
+
+    const state = (await getTestHostnameNetworkBackoff(host.hostnameId))!
+    expect(state.network_backoff_step).toBe(1)
+    expect(state.is_crawlable).toBe(true)
+
+    fetchCrawlerHtml.mockClear()
+    const next = await host.addPage(100)
+    await expect(crawlUrlForTest(next.id)).resolves.toBeNull()
+    expect(fetchCrawlerHtml).not.toHaveBeenCalled()
+    await expect(dispatchCrawlUrlsPerHostname(host.hostnameId)).resolves.toEqual({
+      count: 0,
+      hasMore: false,
+    })
+  }, 30_000)
+
+  it('runs exactly one probe after expiry and closes the backoff on success', async () => {
+    const host = await createHostname('net-backoff-probe')
+    await tripBackoff(host)
+    await expireTestHostnameNetworkBackoff(host.hostnameId)
+    const [probeUrl, waitingUrl] = [await host.addPage(100), await host.addPage(101)]
+
+    fetchCrawlerHtml.mockClear()
+    let finishProbe!: () => void
+    const probeStarted = new Promise<void>(resolveStarted => {
+      fetchCrawlerHtml.mockImplementationOnce(
+        () =>
+          new Promise(resolveFetch => {
+            finishProbe = () => resolveFetch(createMockCrawlerResult(200, null, null))
+            resolveStarted()
+          }),
+      )
+    })
+    const probe = crawlUrlForTest(probeUrl.id)
+    await probeStarted
+
+    await expect(crawlUrlForTest(waitingUrl.id)).resolves.toBeNull()
+    expect(fetchCrawlerHtml).toHaveBeenCalledTimes(1)
+
+    finishProbe()
+    await expect(probe).resolves.not.toBeNull()
+    expect(await getTestHostnameNetworkBackoff(host.hostnameId)).toMatchObject({
+      network_backoff_step: 0,
+      network_backoff_until: null,
+      consecutive_network_failures: 0,
+    })
+  }, 30_000)
+
+  it('reopens the backoff for longer when the probe fails', async () => {
+    const host = await createHostname('net-backoff-reopen')
+    await tripBackoff(host)
+    const firstUntil = (await getTestHostnameNetworkBackoff(host.hostnameId))!
+      .network_backoff_until!
+    await expireTestHostnameNetworkBackoff(host.hostnameId)
+
+    const probeUrl = await host.addPage(100)
+    fetchCrawlerHtml.mockRejectedValueOnce(refused(host.hostname, 100))
+    await expect(crawlUrlForTest(probeUrl.id)).rejects.toThrow(CrawlerNetworkError)
+
+    const state = (await getTestHostnameNetworkBackoff(host.hostnameId))!
+    expect(state.network_backoff_step).toBe(2)
+    expect(state.network_backoff_until!.getTime()).toBeGreaterThan(firstUntil.getTime())
+  }, 30_000)
+
+  it('keeps DNS failures on the DNS path and 429s on the rate-limit lock', async () => {
+    const host = await createHostname('net-backoff-paths')
+    const failing = await host.addPage(1)
+    fetchCrawlerHtml.mockRejectedValueOnce(refused(host.hostname, 1))
+    await expect(crawlUrlForTest(failing.id)).rejects.toThrow(CrawlerNetworkError)
+    expect(
+      (await getTestHostnameNetworkBackoff(host.hostnameId))!.consecutive_network_failures,
+    ).toBe(1)
+
+    const dns = await host.addPage(2)
+    fetchCrawlerHtml.mockRejectedValueOnce(refused(host.hostname, 2, 'ENOTFOUND'))
+    await expect(crawlUrlForTest(dns.id)).rejects.toThrow(CrawlerNetworkError)
+    expect(
+      (await getTestHostnameNetworkBackoff(host.hostnameId))!.consecutive_network_failures,
+    ).toBe(1)
+
+    const limited = await host.addPage(3)
+    fetchCrawlerHtml.mockRejectedValueOnce(
+      new CrawlerRateLimitError(`https://${host.hostname}/3`, 429, 5, 30_000),
+    )
+    await expect(crawlUrlForTest(limited.id)).rejects.toThrow(CrawlerRateLimitError)
+    expect(await getDomainRateLimitRemainingMs(host.hostnameId)).toBeGreaterThan(0)
+    expect(
+      (await getTestHostnameNetworkBackoff(host.hostnameId))!.consecutive_network_failures,
+    ).toBe(0)
+  }, 30_000)
+})

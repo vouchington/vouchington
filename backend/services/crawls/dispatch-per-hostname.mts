@@ -26,7 +26,12 @@ export const dispatchCrawlUrlsPerHostname = async (
   await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
   const hostname = await getUrlHostnameCrawlerDetailsById(hostnameId, { readOnly: false })
-  if (!hostname || !hostname.is_crawlable || hostname.is_blocked)
+  if (
+    !hostname ||
+    !hostname.is_crawlable ||
+    hostname.is_blocked ||
+    (hostname.network_backoff_until && hostname.network_backoff_until.getTime() > Date.now())
+  )
     return { count: 0, hasMore: false }
   const attemptThresholdHours = hostname.attempt_threshold_hours ?? 1
   const attemptCutoffId = getMinUUIDv7ForDate(
@@ -55,6 +60,7 @@ export const dispatchCrawlUrlsPerHostname = async (
       AND (${cursor?.afterId ?? null}::uuid IS NULL OR u.id > ${cursor?.afterId ?? null}::uuid)
       AND h.is_crawlable
       AND NOT h.is_blocked
+      AND (h.network_backoff_until IS NULL OR h.network_backoff_until <= CURRENT_TIMESTAMP)
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
         WHERE c.url_id = u.id
