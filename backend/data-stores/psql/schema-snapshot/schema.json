@@ -123726,6 +123726,17 @@
           "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
+        "network_backoff_ends_at": {
+          "collation": null,
+          "comment": "Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "timestamp with time zone"
+        },
         "network_backoff_probe_claimed_at": {
           "collation": null,
           "comment": "When the in-flight probe was claimed after the backoff expired. A failure while set reopens the backoff at the next step; NULL when no probe is in flight.",
@@ -123747,17 +123758,6 @@
           "nullable": false,
           "ordinalPosition": 20,
           "type": "smallint"
-        },
-        "network_backoff_until": {
-          "collation": null,
-          "comment": "Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 21,
-          "type": "timestamp with time zone"
         },
         "publicly_introduced_at": {
           "collation": null,

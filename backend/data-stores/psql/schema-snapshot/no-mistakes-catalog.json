@@ -129909,6 +129909,16 @@
           "nullable": true,
           "ordinalPosition": 17
         },
+        "network_backoff_ends_at": {
+          "comment": "Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21
+        },
         "network_backoff_probe_claimed_at": {
           "comment": "When the in-flight probe was claimed after the backoff expired. A failure while set reopens the backoff at the next step; NULL when no probe is in flight.",
           "dataType": "timestamp with time zone",
@@ -129928,16 +129938,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 20
-        },
-        "network_backoff_until": {
-          "comment": "Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 21
         },
         "publicly_introduced_at": {
           "comment": "First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.",
