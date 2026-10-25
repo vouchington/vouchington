@@ -129,7 +129,7 @@ focused contract suites with:
 pnpm exec vitest run --project backend-modules backend/modules/request-client-info/index.test.mts backend/modules/request-client-info/listener.test.mts
 pnpm exec vitest run --project ts-shared ts-shared/request-client-info/index.test.mts
 pnpm exec vitest run --project cloudflare-worker cloudflare-worker/src/client-info.test.mts cloudflare-worker/src/origin-request.client-info.test.mts
-pnpm exec vitest run --project web web/lib/api/server/client-info.test.ts web/lib/api/server/request.mock.test.ts web/lib/api/server/images-proxy.test.ts
+pnpm exec vitest run --project web web/lib/api/server/client-info.test.ts web/lib/api/server/request-headers.mock.test.ts web/lib/api/server/images-proxy.test.ts
 ```
 
 Run focused native checks from the [client repository](https://github.com/vouchington/vouchington-clients).

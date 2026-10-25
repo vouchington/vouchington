@@ -9,7 +9,7 @@ import type {
   CommunityPostsResponseBody,
   CommunityPinnedPostsResponseBody,
 } from '@/types/api-responses'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { MAX_PINS } from '@/lib/communities/pinned-posts'
 import { toast } from 'sonner'
 import { useTranslations } from '@/lib/i18n/use-translations'

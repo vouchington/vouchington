@@ -6,7 +6,7 @@ import {
   fetchModerationTransparency,
 } from '@/lib/api/client/moderation-transparency'
 import type { ModerationTransparency } from '@/types/moderation-analytics'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 export function useModerationTransparencyPagination(
   transparency: ModerationTransparency | null | undefined,

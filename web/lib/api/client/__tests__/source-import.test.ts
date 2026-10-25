@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTranslator } from '@ts-shared/ui-messages'
 import type { CreateSourceResponseBody } from '@/types/api-responses'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { ApiError } from '../../error'
+import { ApiError } from '@vouchington/api-client'
 import { getSourceImportErrorMessages, waitForSourceImport } from '../source-import'
 
 const submission: CreateSourceResponseBody = {

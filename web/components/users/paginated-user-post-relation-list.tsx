@@ -1,7 +1,7 @@
 'use client'
 
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
-import { getPaginatedQueryKey } from '@/hooks/paginated-query-key'
+import { getPaginatedQueryKey } from '@vouchington/api-client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { useQueryScopedRemovals } from '@/hooks/use-query-scoped-removals'
 import type { PostsListResponseBody } from '@/types/api-responses'

@@ -2,7 +2,7 @@
 
 import type { CreateSourceResponseBody } from '@/types/api-responses'
 import type { MessageKey, Translator } from '@ts-shared/ui-messages'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 import type { ImportResult, RssFeedImportErrorCode } from './import-export'
 import { streamImportProgress } from './import-stream'
 

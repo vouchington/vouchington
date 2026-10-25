@@ -31,7 +31,7 @@ vi.mock(
     }) as unknown as typeof import('@/components/my/mfa-reauth-dialog'),
 )
 
-vi.mock(import('@/lib/api/error'), () => ({
+vi.mock(import('@vouchington/api-client'), () => ({
   ApiError,
 }))
 
@@ -94,7 +94,7 @@ describe('TotpManager reauthentication', () => {
   })
 
   it('retries an MFA_REAUTH_REQUIRED deletion with the pending ID and verified token', async () => {
-    const { ApiError } = await import('@/lib/api/error')
+    const { ApiError } = await import('@vouchington/api-client')
     mockDelete
       .mockRejectedValueOnce(
         new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
@@ -131,7 +131,7 @@ describe('TotpManager reauthentication', () => {
     // that handleRemove's catch block had just set for the second reauth attempt.
     // If that regresses, the third click below silently no-ops instead of calling
     // deleteTotpAuthenticator a third time.
-    const { ApiError } = await import('@/lib/api/error')
+    const { ApiError } = await import('@vouchington/api-client')
     const reauthRequired = () =>
       new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
         'reauth required',

@@ -2,7 +2,7 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import CommunityPage from './page'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockGetCommunity, mockGetCommunityPosts, mockCommunityFeed } = vi.hoisted(() => ({
   mockGetCommunity: vi.fn<VitestLooseMock>(),

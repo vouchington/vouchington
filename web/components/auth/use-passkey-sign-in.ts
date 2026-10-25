@@ -5,7 +5,7 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
 } from '@simplewebauthn/browser'
 import { getDiscoverablePasskeyOptions, verifyDiscoverablePasskey } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 
 interface UsePasskeySignInParams {

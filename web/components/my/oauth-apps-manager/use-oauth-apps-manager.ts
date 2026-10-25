@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import {
   createOAuthApp,
   getOAuthApps,

@@ -1,5 +1,4 @@
-import { ApiError } from './error'
-import { getApiErrorMessage } from './error-helpers'
+import { ApiError, getApiErrorMessage } from '@vouchington/api-client'
 
 export function getListSearchErrorMessage(error: unknown): string | null {
   if (!(error instanceof ApiError) || (error.status !== 400 && error.status !== 422)) return null

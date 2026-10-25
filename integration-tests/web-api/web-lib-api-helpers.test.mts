@@ -7,7 +7,7 @@ import {
   buildWebApiTestProxyHeaders,
   listenOnFetchSafeLoopback,
 } from './routes.mts'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-error'
 import { returnNullForMissingEntity } from '@/lib/api/return-null-for-missing-entity'
 import { buildWorkerSecretHeader } from '@/lib/api/worker-secret'

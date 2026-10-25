@@ -1,7 +1,7 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { decodeSessionJwt } from '@ts-shared/session-jwt'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { getAuthMe } from '@/lib/api/server'
 import type { User } from '@/types/user'
 

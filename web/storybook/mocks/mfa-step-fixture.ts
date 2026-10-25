@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 
 let mfaStepFixture = false
 const previousPost = ClientRequest.prototype.post

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 import {
   clearNotificationSettingsFixture,
   setNotificationSettingsFixture,

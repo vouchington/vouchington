@@ -9,7 +9,7 @@ import {
   renamePasskey,
   verifyPasskeyRegistration,
 } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { ListResponse } from '@/types/api-responses'
 import type { MfaStatus, Passkey } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'

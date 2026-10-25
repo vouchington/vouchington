@@ -1,6 +1,6 @@
 'use client'
 
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 import { completeImageUpload, getImageUploadState, getImageUploadUrl } from './image-upload-api'
 import {
   InternalImageBlockedError,

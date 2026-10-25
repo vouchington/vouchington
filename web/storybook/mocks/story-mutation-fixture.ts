@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { resetModNoteSequence } from './story-mutation-bodies'
 import { resetParticipantSequence } from './story-mutation-participant'

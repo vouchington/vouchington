@@ -22,7 +22,7 @@ vi.mock<typeof import('react')>(import('react'), async importOriginal => {
   }
 })
 
-import { ApiError } from '../../error'
+import { ApiError } from '@vouchington/api-client'
 import { getUserRssFeedItemsCollection } from '../rss-feed-items'
 
 describe('rss-feed-items server api helpers', () => {

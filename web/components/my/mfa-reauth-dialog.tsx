@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { requestReAuthEmail, verifyReAuthEmail, verifyReAuthTotp } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { MfaStatus } from '@/types/user'
 import { MethodSelector, type ReauthMethod } from './mfa-reauth-dialog/method-selector'
 import { EmailVerificationPane, TotpVerificationPane } from './mfa-reauth-dialog/verification-panes'

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getCommunityAiAgents } from './communities'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 import {
   getCommunityBans,
   getCommunityModeratorStats,

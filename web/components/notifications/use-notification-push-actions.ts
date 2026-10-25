@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { deleteMyWebPushSubscription, getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { NotificationPushSubscription } from './notification-push-subscription'
 import {
   getCurrentSubscription,

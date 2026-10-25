@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const mocks = vi.hoisted(() => ({
   getPenalties: vi.fn<VitestLooseMock>(),

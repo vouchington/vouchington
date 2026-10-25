@@ -6,7 +6,7 @@ import {
   type CreateOrConflictDataRequestResponse,
   type DataRequest,
 } from '@/lib/api/client/users'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 import { loadDataRequest } from './data-request-utils'
 import { useDataRequestStream } from './use-data-request-stream'

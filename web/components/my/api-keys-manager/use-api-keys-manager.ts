@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { createApiKey, getApiKeys, revokeApiKey, rotateApiKey } from '@/lib/api/client/api-keys'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { ApiKey } from '@/types/api-keys'
 import type { ScopeCatalogResponse } from '@/types/scopes'
 import { useApiKeyScopeSelection } from './use-api-key-scope-selection'

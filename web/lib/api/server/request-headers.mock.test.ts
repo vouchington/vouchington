@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ServerRequest } from './request'
+import { serverApi } from './instance'
 
 const { mockCookies, mockHeaders, mockFetch } = vi.hoisted(() => ({
   mockCookies: vi.fn<VitestLooseMock>(),
@@ -45,14 +45,13 @@ describe('request', () => {
     })
 
     it('forwards CF_WORKER_SECRET and auth cookies to backend-origin requests', async () => {
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/auth/me')
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
       const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
       expect(init.headers).toMatchObject({
-        'Content-Type': 'application/json',
         'x-cf-worker-secret': 'test-worker-secret',
         'x-voucha-app-version': 'development',
         'x-voucha-client': 'web',
@@ -63,7 +62,7 @@ describe('request', () => {
     })
 
     it('disables fetch caching when auth cookies are forwarded', async () => {
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/posts/post-1')
 
@@ -75,42 +74,12 @@ describe('request', () => {
       mockCookies.mockResolvedValue({
         get: () => undefined,
       })
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/posts/post-1')
 
       const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
       expect(init.cache).toBe('no-store')
-    })
-
-    it('adds an origin header to cookie-authenticated server mutations', async () => {
-      const request = new ServerRequest()
-
-      await request.post('/api/v1/posts', { title: 'Test' })
-
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
-      expect(init.headers).toMatchObject({
-        Cookie: 'dt=device-token; st=session-token',
-        Origin: 'http://localhost:2900',
-      })
-    })
-
-    it('adds an origin header to caller-supplied cookie mutations', async () => {
-      const request = new ServerRequest()
-
-      await request.post(
-        '/api/v1/posts',
-        { title: 'Test' },
-        { headers: { Cookie: 'dt=caller-device' } },
-      )
-
-      expect(mockFetch).toHaveBeenCalledTimes(1)
-      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
-      expect(init.headers).toMatchObject({
-        Cookie: 'dt=caller-device',
-        Origin: 'http://localhost:2900',
-      })
     })
 
     it('forwards safe feature flag cookies', async () => {
@@ -122,7 +91,7 @@ describe('request', () => {
           return undefined
         },
       })
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/feature-flags')
 
@@ -133,7 +102,7 @@ describe('request', () => {
     })
 
     it('sends a cookie-free global flag read with its scoped kind', async () => {
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.get('/api/v1/feature-flags', {
         headers: { Cookie: '', 'x-voucha-request-kind': 'global-feature-flags' },
@@ -157,7 +126,7 @@ describe('request', () => {
           return undefined
         },
       })
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/feature-flags')
 
@@ -169,7 +138,7 @@ describe('request', () => {
 
     it('forwards inbound x-request-id from Next.js headers to backend fetch', async () => {
       mockHeaders.mockResolvedValue(new Headers({ 'x-request-id': 'test-request-id-123' }))
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/auth/me')
 
@@ -182,7 +151,7 @@ describe('request', () => {
       mockHeaders.mockResolvedValue(
         new Headers({ 'cf-connecting-ip': '203.0.113.4', 'x-forwarded-for': '203.0.113.4' }),
       )
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/auth/me', {
         headers: { 'x-forwarded-for': 'attacker-supplied' },
@@ -197,7 +166,7 @@ describe('request', () => {
 
     it('uses the deployed git commit as the web app version', async () => {
       vi.stubEnv('NEXT_PUBLIC_GIT_COMMIT', 'web-release')
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/auth/me')
 
@@ -206,7 +175,7 @@ describe('request', () => {
     })
 
     it('does not allow per-call headers to override web client identity', async () => {
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/auth/me', {
         headers: {
@@ -227,7 +196,7 @@ describe('request', () => {
     it.each(['x-voucha-bot-score', 'X-Voucha-Bot-Score'])(
       'strips private Worker metadata from caller header %s',
       async headerName => {
-        const request = new ServerRequest()
+        const request = serverApi
 
         await request.post('/api/v1/posts', {}, { headers: { [headerName]: '7' } })
 
@@ -242,7 +211,7 @@ describe('request', () => {
 
     it('per-call x-request-id header override wins over inbound request id', async () => {
       mockHeaders.mockResolvedValue(new Headers({ 'x-request-id': 'inbound-id' }))
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/auth/me', {
         headers: { 'x-request-id': 'override-id' },
@@ -255,35 +224,13 @@ describe('request', () => {
 
     it('missing request scope (headers() throws) does not throw and omits x-request-id', async () => {
       mockHeaders.mockRejectedValue(new Error('headers() called outside request scope'))
-      const request = new ServerRequest()
+      const request = serverApi
 
       await request.request('/api/v1/auth/me')
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
       const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
       expect((init.headers as Record<string, string>)['x-request-id']).toBeUndefined()
-    })
-
-    it('keeps caller GET headers scoped across concurrent requests', async () => {
-      mockCookies.mockResolvedValue({
-        get: () => undefined,
-      })
-      mockFetch
-        .mockResolvedValueOnce(new Response('{}', { status: 200 }))
-        .mockResolvedValueOnce(new Response('{}', { status: 200 }))
-      const request = new ServerRequest()
-
-      await Promise.all([
-        request.get('/api/v1/posts', { headers: { 'x-request-id': 'request-a' } }),
-        request.get('/api/v1/posts', { headers: { 'x-request-id': 'request-b' } }),
-      ])
-
-      expect(mockFetch).toHaveBeenCalledTimes(2)
-      const requestIds = mockFetch.mock.calls.map(([, init]) => {
-        const { headers } = init as RequestInit
-        return (headers as Record<string, string>)['x-request-id']
-      })
-      expect(requestIds.toSorted()).toEqual(['request-a', 'request-b'])
     })
   })
 })

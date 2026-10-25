@@ -10,7 +10,7 @@ import {
   markAllMyNotificationsRead,
   markMyNotificationRead,
 } from '@/lib/api/client/my'
-import { hasErrorCode } from '@/lib/api/error-helpers'
+import { hasErrorCode } from '@vouchington/api-client'
 import { resolveNotificationTarget } from './utils'
 
 const EMPTY_SUMMARY: NotificationsUnreadSummaryResponseBody = {

@@ -2,9 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ApiError } from '@/lib/api/error'
-import { getApiErrorMessage } from '@/lib/api/error-helpers'
-import { getPaginatedQueryKey } from '@/hooks/paginated-query-key'
+import { ApiError, getApiErrorMessage, getPaginatedQueryKey } from '@vouchington/api-client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { useQueryScopedRemovals } from '@/hooks/use-query-scoped-removals'
 import { mergePageResultsById } from '@ts-shared/utils/collections'

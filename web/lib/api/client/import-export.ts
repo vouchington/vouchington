@@ -5,8 +5,7 @@ import type { RssFeedImportSummary, RssFeedImportSubmission } from '@/types/rss-
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import { clientFetch } from './raw-fetch'
-import { ApiError } from '../error'
-import { parseErrorResponseBody } from '../error-helpers'
+import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
 
 /** The server bounds the request body (`import_max_body_bytes`), so the client sends it as is. */
 export type RssFeedImportBody = {

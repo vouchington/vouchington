@@ -2,7 +2,7 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TopicReviewsPage } from './topic-reviews-page'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockGetPosts, mockGetCurrentUser, mockHeaders } = vi.hoisted(() => ({
   mockGetPosts: vi.fn<VitestLooseMock>(),

@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 import type { NotificationsUnreadSummaryResponseBody } from '@/types/api-responses'
 import { inboxUnreadFixture } from '@/storybook/mocks/inbox-unread-fixture'
 

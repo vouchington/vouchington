@@ -7,7 +7,7 @@ import {
   setDefaultMyLandingPage,
   updateMyLandingPage,
 } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { LandingPage, LandingPageWithItems } from '@/types/landing-pages'
 import { showLandingPageError, withLoading } from './controller-helpers'
 

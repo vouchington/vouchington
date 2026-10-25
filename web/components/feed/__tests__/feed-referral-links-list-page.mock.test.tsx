@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FeedReferralLinksListPage } from '../feed-referral-links-list-page'
 import { feedRouteConfigs } from '@/lib/feed-route-configs'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { ReferralLinkFeedResponse } from '@/types/api-responses'
 
 const { mockGetReferralLinksFeed } = vi.hoisted(() => ({

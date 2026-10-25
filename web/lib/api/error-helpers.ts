@@ -1,14 +1,9 @@
-import * as Sentry from '@sentry/nextjs'
+import { createErrorCodeChecker, parseErrorDigest as parseDigest } from '@vouchington/api-client'
 import type { MessageKey } from '@ts-shared/ui-messages'
-import { ApiError } from './error'
 
-export interface ParsedErrorDigest {
-  status: number
-  title: MessageKey
-  description: MessageKey
-}
+type ErrorCopy = { title: MessageKey; description: MessageKey }
 
-const STATUS_COPY: Record<number, { title: MessageKey; description: MessageKey }> = {
+const STATUS_COPY: Record<number, ErrorCopy> = {
   400: {
     title: 'extracted.api.errorHelpers.badRequest_917ef22f',
     description: 'extracted.api.errorHelpers.theRequestWasInvalidPleaseTry_ac456788',
@@ -35,121 +30,19 @@ const STATUS_COPY: Record<number, { title: MessageKey; description: MessageKey }
   },
 }
 
-/**
- * Parses an error digest produced by `ApiError` to extract the HTTP status code
- * and user-facing copy. Returns `null` for unrecognized digests (e.g.
- * `NEXT_HTTP_ERROR_FALLBACK;404`, `undefined`, or plain `Error` messages).
- *
- * Only matches the `EXPECTED_CLIENT_ERROR;{status}` format written by `ApiError`
- * for non-401/403/404 4xx responses. Use this in `error.tsx` / `global-error.tsx`
- * to display status-specific messaging without access to the original error object.
- */
-export function parseErrorDigest(digest: string | undefined): ParsedErrorDigest | null {
-  const match = digest?.match(/^EXPECTED_CLIENT_ERROR;(\d+)$/)
-  if (!match) return null
-  const status = Number(match[1])
-  const copy = STATUS_COPY[status] ?? {
-    title: 'extracted.api.errorHelpers.somethingWentWrong_ab827e3f',
-    description: 'extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda',
-  }
-  return { status, ...copy }
+const FALLBACK_COPY: ErrorCopy = {
+  title: 'extracted.api.errorHelpers.somethingWentWrong_ab827e3f',
+  description: 'extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda',
 }
 
-/**
- * Returns the user-safe error message from an ApiError, or a fallback for other error types.
- *
- * ApiError.message contains backend `message` payloads. This also handles
- * `error` payloads and plain-text bodies returned by parseErrorResponseBody().
- */
-export function getApiErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    if (typeof error.data === 'string' && error.data.length > 0) return error.data
-    if (error.data != null && typeof error.data === 'object') {
-      if (
-        'error' in error.data &&
-        typeof error.data.error === 'string' &&
-        error.data.error.length > 0
-      ) {
-        return error.data.error
-      }
-      if (
-        'message' in error.data &&
-        typeof error.data.message === 'string' &&
-        error.data.message.length > 0
-      ) {
-        return error.data.message
-      }
-    }
-    return error.message
-  }
-  return fallback
+/** Status-specific copy for `error.tsx` / `global-error.tsx` from an `ApiError` digest. */
+export function parseErrorDigest(digest: string | undefined) {
+  return parseDigest(digest, STATUS_COPY, FALLBACK_COPY)
 }
 
-/**
- * Checks whether an error is an ApiError with a specific error code.
- *
- * Use this instead of matching on error.message strings, which may change.
- */
-export function hasErrorCode(error: unknown, code: string): boolean {
-  return error instanceof ApiError && error.code === code
-}
+const isCatalogedError = createErrorCodeChecker({ tagLimit: 'TAG_LIMIT_REACHED' })
 
-/**
- * Checks whether an error is a standing tag-add cap rejection (#8246), as opposed to a
- * transient failure `onError`'s generic fallback message should handle.
- */
+/** Whether an error is a standing tag-add cap rejection, not a transient failure. */
 export function isTagLimitError(error: unknown): boolean {
-  return hasErrorCode(error, 'TAG_LIMIT_REACHED')
-}
-
-/**
- * Reads a non-OK fetch response body and returns the parsed JSON object when possible,
- * the raw text otherwise, or `null` if the body cannot be read at all.
- *
- * Shared by both `ClientRequest` and `ServerRequest` so the two sides parse error
- * payloads identically.
- */
-export async function parseErrorResponseBody(response: Response): Promise<unknown> {
-  const text = await readBoundedErrorText(response)
-  if (text === null) return null
-
-  try {
-    return JSON.parse(text)
-  } catch {
-    return text
-  }
-}
-
-const MAX_ERROR_RESPONSE_BYTES = 64 * 1024
-
-async function readBoundedErrorText(response: Response): Promise<string | null> {
-  const contentLength = Number(response.headers.get('content-length'))
-  if (Number.isFinite(contentLength) && contentLength > MAX_ERROR_RESPONSE_BYTES) {
-    await response.body?.cancel().catch(Sentry.captureException)
-    return null
-  }
-  if (!response.body) return ''
-
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let bytes = 0
-  let text = ''
-  try {
-    while (true) {
-      // oxlint-disable-next-line no-await-in-loop -- one bounded response reader preserves backpressure.
-      const result = await reader.read()
-      if (result.done) return text + decoder.decode()
-      bytes += result.value.byteLength
-      if (bytes > MAX_ERROR_RESPONSE_BYTES) {
-        // oxlint-disable-next-line no-await-in-loop -- finish cancelling before releasing the oversized response.
-        await reader.cancel().catch(Sentry.captureException)
-        return null
-      }
-      text += decoder.decode(result.value, { stream: true })
-    }
-  } catch {
-    return null
-  } finally {
-    reader.releaseLock()
-  }
+  return isCatalogedError(error, 'tagLimit')
 }

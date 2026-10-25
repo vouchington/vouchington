@@ -67,6 +67,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^5.0.5
         version: 5.0.5(@vitest/browser@5.0.5)(vitest@5.0.5)
+      '@vouchington/api-client':
+        specifier: ^0.2.0
+        version: 0.2.0(react@19.3.1)
       '@vouchington/localization':
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
@@ -14971,6 +14974,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../backend/types
+      '@vouchington/api-client':
+        specifier: ^0.2.0
+        version: 0.2.0(react@19.3.1)
       '@vouchington/html-sanitizer':
         specifier: ^0.1.0
         version: 0.1.0
@@ -19978,6 +19984,15 @@ packages:
 
   '@vitest/utils@5.0.5':
     resolution: {integrity: sha512-/rBu7gzLDQI/SC79Tn98b5DwOgaHU/Gt4I9OVeP3YofzNaYtbImRCOJQmT1S6vOJg9gEIlWC+r3QxKkjuSa1nQ==}
+
+  '@vouchington/api-client@0.2.0':
+    resolution: {integrity: sha512-x7amVI/Flcn8jdjA/lby82XxZ95W3yns2ZGNxp1SHPSkmlME95jI9TxB89NGXNMYoKRKyVu0awC3zx/iI+SdAQ==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      react: ^19.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@vouchington/auth@0.1.0':
     resolution: {integrity: sha512-bGishocndH3KzU542izdJaHazK8VqXcpLaIwTescrS6vcbehTEPl5k+QadNtFFBzJA+lRd8ZS6L7dIrORKJZew==}
@@ -28994,6 +29009,10 @@ snapshots:
       '@vitest/pretty-format': 5.0.5
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
+
+  '@vouchington/api-client@0.2.0(react@19.3.1)':
+    optionalDependencies:
+      react: 19.3.1
 
   '@vouchington/auth@0.1.0':
     dependencies:

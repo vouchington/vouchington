@@ -109,7 +109,7 @@ interface Penalty extends IntegrityPenaltyRecord {
 
 type MockIntegrityPenaltiesState = IntegrityPenaltiesState<Penalty> & {
   clearError: Mock<() => void>
-  loadMore: Mock<() => Promise<void>>
+  loadMore: Mock<() => Promise<boolean>>
 }
 
 const penalty: Penalty = {
@@ -133,7 +133,7 @@ function makeState(
   overrides: Partial<Omit<MockIntegrityPenaltiesState, 'clearError' | 'loadMore'>> = {},
 ): MockIntegrityPenaltiesState {
   const clearError = vi.fn<() => void>()
-  const loadMore = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+  const loadMore = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
   const state = {
     pages: [initialData],
     penalties: [penalty],
@@ -142,6 +142,9 @@ function makeState(
     fetchError: null,
     clearError,
     loadMore,
+    replaceFirstPage: vi.fn<VitestLooseMock>(),
+    refreshLoadedPages: vi.fn<VitestLooseMock>(),
+    resetToFirstPage: vi.fn<VitestLooseMock>(),
     loadingMore: false,
     actionErrors: {},
     actionLoading: {},

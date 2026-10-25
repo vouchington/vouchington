@@ -128,7 +128,7 @@ describe('edit.keyboard', () => {
       const input = screen.getByLabelText('Priority') as HTMLInputElement
       fireEvent.change(input, { target: { value: '5' } })
 
-      void expectInputEnterSubmits({ input, onSubmit: mockFetch })
+      void expectInputEnterSubmits({ input, onSubmit: mockFetch, awaitSubmit: true })
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(

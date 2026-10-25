@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { updateMyIdentity } from '@/lib/api/client/my'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import {
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,

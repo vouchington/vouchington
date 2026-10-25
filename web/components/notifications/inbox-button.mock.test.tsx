@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { toast } from 'sonner'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { InboxButton } from './inbox-button'
 
 const mockPush = vi.fn<VitestLooseMock>()

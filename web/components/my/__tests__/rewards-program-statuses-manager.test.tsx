@@ -11,7 +11,7 @@ import {
 } from '@/test-helpers/components/my/rewards-program-statuses-manager.mock-support'
 // Imported after the mock helper so its vi.mock factories run first.
 import { RewardsProgramStatusesManager } from '../rewards-program-statuses-manager'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 describe('RewardsProgramStatusesManager Integration Flow', () => {
   beforeEach(() => {

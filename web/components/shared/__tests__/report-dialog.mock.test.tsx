@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockSubmitReport, mockToastError } = vi.hoisted(() => ({
   mockSubmitReport: vi.fn<VitestLooseMock>(),

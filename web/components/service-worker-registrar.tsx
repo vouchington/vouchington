@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { bootstrapAuthenticatedPushBinding } from '@/lib/push-bootstrap'
 import { clearPushBinding } from '@/lib/push-service-worker'
 import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'

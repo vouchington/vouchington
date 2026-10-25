@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 import { updatedLandingPage } from '@/storybook/mocks/my-account-landing'
 import {
   accountImageState,

@@ -1,4 +1,4 @@
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 
 export function getImageUploadRetryAfterMs(err: unknown): number | null {
   if (!(err instanceof ApiError) || err.status !== 429) return null

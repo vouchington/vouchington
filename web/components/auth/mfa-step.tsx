@@ -6,7 +6,7 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
 } from '@simplewebauthn/browser'
 import { getMfaPasskeyOptions, verifyMfaPasskey, verifyMfaTotp } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess as notifySuccess } from '@/lib/on-error'
 import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@/components/ui/input-otp'

@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 
 let pinnedPostsFixture = false
 const clientRequestPut = ClientRequest.prototype.put

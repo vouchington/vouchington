@@ -14,7 +14,7 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import { ApiError } from '../../error'
+import { ApiError } from '@vouchington/api-client'
 import {
   createUserDataRequest,
   deleteUser,

@@ -1,7 +1,6 @@
 'use client'
 
-import { ApiError } from '../error'
-import { parseErrorResponseBody } from '../error-helpers'
+import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
 import type { RssFeedImportStatus } from './import-export'
 
 export interface ImportProgress {

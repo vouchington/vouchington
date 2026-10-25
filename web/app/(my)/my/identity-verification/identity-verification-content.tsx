@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useLoadingIds } from '@/hooks/use-loading-ids'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import {
   startMyIdentityVerificationCheckout,
   getMyIdentityVerificationSessionUrl,

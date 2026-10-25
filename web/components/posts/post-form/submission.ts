@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { createCommunityPost, createPost, setPostImages, updatePost } from '@/lib/api/client/posts'
 import { createEntityRelation } from '@/lib/api/client/entity-relations'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { PostMutationResponseBody } from '@/types/api-responses'
 import type { Post, PostBroadcast, PostPrivacy, PostType } from '@/types/posts'
 import type { StructuredDataState, DataPointVertical } from '../data-point-fields'

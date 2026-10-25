@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 import type { EmailPreferences } from '@/lib/api/client/email-preferences'
 import type {
   CommunitiesSearchResponseBody,

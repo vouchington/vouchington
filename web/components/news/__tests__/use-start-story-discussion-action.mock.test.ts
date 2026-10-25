@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { toast } from 'sonner'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const mockPush = vi.fn<VitestLooseMock>()
 const mockRefresh = vi.fn<VitestLooseMock>()

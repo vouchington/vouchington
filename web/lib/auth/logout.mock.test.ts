@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { postLogout } from '@/lib/api/client'
 import { admissionIdempotency } from '@/lib/api/client/admission-idempotency'
-import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
+import { MemoryLockManager } from '@/test-helpers/memory-lock-manager'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
 import { clearPushBinding } from '@/lib/push-service-worker'
 import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'

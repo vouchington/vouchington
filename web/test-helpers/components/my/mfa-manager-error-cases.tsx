@@ -17,7 +17,7 @@ vi.mock(
     }) as unknown as typeof import('@/components/my/mfa-reauth-dialog'),
 )
 
-vi.mock(import('@/lib/api/error'), () => {
+vi.mock(import('@vouchington/api-client'), () => {
   class ApiError extends Error {
     status: number
     code?: string
@@ -109,7 +109,7 @@ export async function expectToastAbsent(
 }
 
 export async function mfaReauthRequiredError() {
-  const { ApiError } = await import('@/lib/api/error')
+  const { ApiError } = await import('@vouchington/api-client')
   return new (ApiError as unknown as new (message: string, status: number, code: string) => Error)(
     'reauth required',
     409,

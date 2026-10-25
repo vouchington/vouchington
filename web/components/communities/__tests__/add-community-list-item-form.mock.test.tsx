@@ -54,7 +54,7 @@ vi.mock(import('../community-list-autocomplete'), () => ({
 }))
 
 import { addCommunityListItemByType } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const mockAddCommunityListItemByType = vi.mocked(addCommunityListItemByType)
 

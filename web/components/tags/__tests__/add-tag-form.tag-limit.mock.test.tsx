@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { createEntityRelation } from '@/lib/api/client/entity-relations'
 import onError from '@/lib/on-error'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { createEagerDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { AddTagForm } from '../add-tag-form'
 

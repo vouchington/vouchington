@@ -2,7 +2,7 @@ import {
   appendPaginatedPage,
   PaginatedRequestLifecycle,
   type PaginatedData,
-} from '@/hooks/use-paginated-list-utils'
+} from '@vouchington/api-client/paginated-list'
 import {
   lifecycleNotApplicable,
   nullableStringValue,

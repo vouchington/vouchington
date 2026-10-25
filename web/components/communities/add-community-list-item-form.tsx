@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addCommunityListItemByType } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 import { CommunityListAutocomplete } from './community-list-autocomplete'
 import { communityListItemTypeCatalog } from '@voucha/types/entities/community-list-item-type'

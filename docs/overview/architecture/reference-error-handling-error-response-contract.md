@@ -66,7 +66,7 @@ Cloudflare Worker edge
   → JSON response { message, code }
 
 Web ApiError
-  → web/lib/api/error.ts
+  → @vouchington/api-client (ApiError)
   → error.message = backend's user-safe message
   → error.code = backend's code
   → error.requestId = x-request-id for debugging
@@ -124,4 +124,4 @@ These errors are suppressed at two levels:
 
 The client, server and edge options modules (`web/sentry-client-options.ts`, `web/sentry-server-options.ts` and `web/sentry-edge-options.ts`) register `scrubSentryError` as `beforeSend` and `scrubSentrySpan` as `beforeSendSpan`. The error scrubber applies `filterSentryEvent` from `web/lib/on-error/` (the same module that ships the [client-side `onError` handler](reference-error-handling-client-side-onerror-web-lib-on-error.md#client-side-onerror-weblibon-error)) so the suppression rules stay in one place.
 
-Detection uses duck-typing via `isExpectedApiError()` in `web/lib/api/error.ts`, checking `name === 'ApiError'` and `status` is in range 400–499.
+Detection uses duck-typing via `isExpectedApiError()` from `@vouchington/api-client`, checking `name === 'ApiError'` and `status` is in range 400–499.

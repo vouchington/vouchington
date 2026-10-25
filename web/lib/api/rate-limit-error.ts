@@ -1,4 +1,4 @@
-import { ApiError } from './error'
+import { ApiError } from '@vouchington/api-client'
 
 export function isRateLimitError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === 429

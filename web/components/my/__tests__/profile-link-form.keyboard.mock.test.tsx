@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { ProfileLinkForm } from '../profile-link-form'
 
 const mockToastError = vi.hoisted(() => vi.fn<VitestLooseMock>())

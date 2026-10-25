@@ -130,11 +130,12 @@ vi.mock(import('@/components/page-with-aside'), () => ({
 }))
 
 vi.mock(
-  import('@/lib/api/error'),
-  () =>
+  import('@vouchington/api-client'),
+  async importOriginal =>
     ({
+      ...(await importOriginal()),
       ApiError: MockApiError,
-    }) as unknown as typeof import('@/lib/api/error'),
+    }) as unknown as typeof import('@vouchington/api-client'),
 )
 
 const emptyCommunities = {

@@ -6,7 +6,7 @@ import {
   InternalImageProcessingTimeoutError,
 } from './image-upload-errors'
 import { getImageUploadRetryAfterMs } from './image-upload-retry-after'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 
 export const POLL_INTERVAL_MS = 2000
 export const POLL_TIMEOUT_MS = 60_000

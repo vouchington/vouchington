@@ -6,7 +6,7 @@ import {
 
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { TopicPostsPage } from './topic-posts-page'
 
 describe('TopicPostsPage', () => {

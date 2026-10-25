@@ -8,7 +8,7 @@ import { OAuthLoginButton } from '@/components/auth/oauth-login-button'
 import { ProviderIcon } from '@/components/auth/oauth-provider-icons'
 import { connectOAuthAccount, disconnectOAuthAccount } from '@/lib/api/client'
 import { tokenToBody } from '@/lib/auth/oauth-token-body'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 import type { OAuthAccountInfo, OAuthProvider } from '@/types/user'
 

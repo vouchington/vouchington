@@ -6,7 +6,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 import { IdentityVerificationContent } from '../identity-verification-content'
 
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 import { startMyIdentityVerificationCheckout } from '@/lib/api/client/identity-verification'
 
