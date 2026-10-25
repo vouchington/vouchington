@@ -10,7 +10,7 @@ import {
   type ArticleSyncJobStatus,
   type ArticleSyncResult,
 } from '@/lib/api/client/admin'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 type SyncStatus =

@@ -2,7 +2,6 @@
  * Server-side API helpers
  */
 
-export { ServerRequest } from './request'
 export { serverApi } from './instance'
 export * from './admin'
 export * from './urls'

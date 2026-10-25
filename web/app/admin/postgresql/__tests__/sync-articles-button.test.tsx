@@ -11,7 +11,7 @@ import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { SyncArticlesButton } from '../sync-articles-button'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 describe('SyncArticlesButton', () => {
   beforeEach(() => {

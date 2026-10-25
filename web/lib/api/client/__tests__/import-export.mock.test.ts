@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { exportRssFeeds, importTopics } from '../import-export'
-import { ApiError } from '../../error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockPost } = vi.hoisted(() => ({ mockPost: vi.fn<VitestLooseMock>() }))
 vi.mock(

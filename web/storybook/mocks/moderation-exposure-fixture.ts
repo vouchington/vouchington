@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 import type { ExposureResponse } from '@/lib/api/client/moderation-exposure'
 import '@/storybook/mocks/client-api-instance'
 

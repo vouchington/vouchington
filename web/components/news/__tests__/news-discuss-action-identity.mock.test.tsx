@@ -11,7 +11,7 @@ vi.mock(
 )
 
 import { NewsDiscussMenu } from '../news-discuss-menu'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { toast } from 'sonner'
 
 const mockPush = vi.fn<VitestLooseMock>()

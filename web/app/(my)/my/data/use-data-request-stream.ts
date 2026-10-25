@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useEffectEvent } from 'react'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { DataRequest } from '@/lib/api/client/users'
 import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-download-link-retry'
 import { loadDataRequest, type StreamPayload } from './data-request-utils'

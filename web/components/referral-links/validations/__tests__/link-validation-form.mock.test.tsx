@@ -5,7 +5,7 @@ import {
   getReferralLinkValidation,
   linkValidationToReferralProgram,
 } from '@/lib/api/client/referral-link-validations'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 
 vi.mock(import('next/navigation'), () => ({

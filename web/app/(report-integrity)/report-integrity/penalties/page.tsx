@@ -9,7 +9,7 @@ import type {
   ReportIntegrityPenaltiesResponse,
 } from '@/types/report-integrity'
 import { ReportIntegrityPenaltiesClient } from './report-integrity-penalties-client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('Report Integrity Penalties | Admin')

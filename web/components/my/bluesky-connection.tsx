@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { beginBlueskyAccountLink, disconnectBlueskyAccount } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { useFeatureFlags } from '@/lib/feature-flags/use-feature-flags'
 import type { BlueskyAccountInfo } from '@/types/user'
 

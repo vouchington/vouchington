@@ -18,7 +18,7 @@ import {
   POLL_INTERVAL_MS,
   pollImageUntilUploaded,
 } from '../images'
-import { ApiError } from '../../error'
+import { ApiError } from '@vouchington/api-client'
 import {
   flushMicrotasks,
   makeState,

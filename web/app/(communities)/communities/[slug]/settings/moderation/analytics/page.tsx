@@ -9,7 +9,7 @@ import { ModerationTransparencyPanel } from '@/components/moderation/moderation-
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { isModerationStaff } from '@/lib/auth/account-type'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { ModerationAnalyticsRange } from '@/types/moderation-analytics'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getSupplementaryTransparency } from './supplementary-transparency'

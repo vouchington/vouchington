@@ -9,7 +9,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { SpendingCategoriesManager } from '../spending-categories-manager'
 
 describe('SpendingCategoriesManager Integration Flow', () => {

@@ -4,7 +4,6 @@
  * Client-side API helpers
  */
 
-export { ClientRequest } from './request'
 export { clientApi } from './instance'
 export * from './admin'
 export * from './financial-profile'

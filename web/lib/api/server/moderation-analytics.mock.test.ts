@@ -8,7 +8,7 @@ import {
   getModerationTransparency,
   getModerationTransparencyOrNull,
 } from './moderation-analytics'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 import type { ModerationTransparency } from '@/types/moderation-analytics'
 
 const { mockGet } = vi.hoisted(() => ({

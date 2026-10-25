@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { ModerationTransparencyPanel } from '@/components/moderation/moderation-transparency-panel'
 import type { ModerationTransparency } from '@/types/moderation-analytics'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const { fetchModerationTransparencyMock } = vi.hoisted(() => ({
   fetchModerationTransparencyMock: vi.fn<() => Promise<ModerationTransparency>>(),

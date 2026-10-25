@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { UsernameRequiredDialog } from './username-required-dialog'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { updateMyIdentity } from '@/lib/api/client/my'
 import { toast } from 'sonner'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'

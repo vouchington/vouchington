@@ -5,7 +5,7 @@ import {
   updateTopicRecommendation,
   type TopicRecommendationMutationInput,
 } from '@/lib/api/client/topic-recommendations'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 
 interface SubmitCallbacks {

@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { LandingPageCandidates, LandingPageItem } from '@/types/landing-pages'
 
 type TopicGroupEntries = Extract<LandingPageItem, { type: 'topic_group' }>['entries']

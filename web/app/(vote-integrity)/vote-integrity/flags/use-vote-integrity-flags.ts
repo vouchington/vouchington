@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { getPaginatedQueryKey } from '@/hooks/paginated-query-key'
+import { getPaginatedQueryKey, getApiErrorMessage } from '@vouchington/api-client'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { useQueryScopedRemovals } from '@/hooks/use-query-scoped-removals'
 import {
@@ -10,7 +10,6 @@ import {
   getVoteIntegrityFlagClient,
   resolveVoteIntegrityFlag,
 } from '@/lib/api/client/vote-integrity'
-import { getApiErrorMessage } from '@/lib/api/error-helpers'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { isAmbiguousIntegrityMutationFailure } from '@/components/admin/use-integrity-penalties'
 import { useIntegrityFlagMutationCoordinator } from '@/components/admin/use-integrity-flag-mutation-coordinator'

@@ -36,7 +36,7 @@ vi.mock(import('@/lib/on-error'), () => ({
   },
 }))
 
-vi.mock(import('@/lib/api/error'), () => {
+vi.mock(import('@vouchington/api-client'), () => {
   class ApiError extends Error {
     status: number
     constructor(message: string, status: number) {

@@ -52,6 +52,7 @@ ignoredOptionalDependencies:
   - sharp
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
+  - '@vouchington/api-client'
   - '@vouchington/dynamic-config'
   - '@jongleberry/api-server'
   - '@jongleberry/vurst-ai'

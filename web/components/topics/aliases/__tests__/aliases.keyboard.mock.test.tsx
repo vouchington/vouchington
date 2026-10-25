@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { expectTextareaCmdEnterSubmits } from '@/test-helpers/form-keyboard'
 import { AliasesClient } from '../aliases-client'
 import { createTopicAliases, deleteTopicAlias, fetchTopicAliases } from '@/lib/api/client/topics'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { toast } from 'sonner'
 import type { Topic } from '@/types/topics'
 

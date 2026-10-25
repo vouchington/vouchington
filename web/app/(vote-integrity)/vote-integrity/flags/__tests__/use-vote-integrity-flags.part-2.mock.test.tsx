@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { VoteIntegrityPenaltiesResponse, VoteIntegrityPenalty } from '@/types/vote-integrity'
 
 vi.mock(

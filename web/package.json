@@ -65,6 +65,7 @@
     "@ts-shared/user-profile-collections": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/api-client": "^0.2.0",
     "@vouchington/html-sanitizer": "^0.1.0",
     "@vouchington/localization": "^0.2.1",
     "@vouchington/script-loader": "^0.1.0",

@@ -1,7 +1,7 @@
 'use client'
 
 import { clientApi } from './instance'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 
 export interface UploadUrlResponse {
   image_id: string

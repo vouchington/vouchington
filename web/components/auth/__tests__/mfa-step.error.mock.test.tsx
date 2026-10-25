@@ -39,7 +39,7 @@ vi.mock(import('@/lib/on-error'), () => ({
 
 import MfaStep from '../mfa-step'
 import { getMfaPasskeyOptions, verifyMfaPasskey, verifyMfaTotp } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { startAuthentication } from '@simplewebauthn/browser'
 
 const mockGetOptions = vi.mocked(getMfaPasskeyOptions)

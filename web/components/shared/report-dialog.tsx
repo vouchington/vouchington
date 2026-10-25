@@ -14,7 +14,7 @@ import {
   type ReportableEntityType,
   type ReportReason,
 } from '@/lib/api/client/reports'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { ReportDialogForm } from './report-dialog-form'
 import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { getReportStorageKey, getReportSubmittedKey, REPORT_SUBMITTED_EVENT } from './report-state'

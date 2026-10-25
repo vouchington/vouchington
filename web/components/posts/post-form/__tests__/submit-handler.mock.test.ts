@@ -38,7 +38,7 @@ vi.mock(import('@/lib/on-error'), () => ({
   },
 }))
 
-vi.mock(import('@/lib/api/error'), () => {
+vi.mock(import('@vouchington/api-client'), async importOriginal => {
   class ApiError extends Error {
     status: number
     code?: string
@@ -49,7 +49,7 @@ vi.mock(import('@/lib/api/error'), () => {
       this.code = code
     }
   }
-  return { ApiError }
+  return { ...(await importOriginal()), ApiError }
 })
 
 const mockedSubmitPost = vi.mocked(submitPost)
@@ -83,7 +83,7 @@ describe('usePostFormSubmit', () => {
   })
 
   it('opens the username dialog when submit fails with IDENTITY_REQUIRED', async () => {
-    const { ApiError } = await import('@/lib/api/error')
+    const { ApiError } = await import('@vouchington/api-client')
     const router = { push: vi.fn<VitestLooseMock>() }
     mockedSubmitPost.mockRejectedValueOnce(
       new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
@@ -193,7 +193,7 @@ describe('usePostFormSubmit', () => {
   })
 
   it('closing the username dialog resets isSubmitting', async () => {
-    const { ApiError } = await import('@/lib/api/error')
+    const { ApiError } = await import('@vouchington/api-client')
     const router = { push: vi.fn<VitestLooseMock>() }
     mockedSubmitPost.mockRejectedValueOnce(
       new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(

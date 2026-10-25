@@ -138,6 +138,7 @@
     "@vitest/browser": "^5.0.5",
     "@vitest/browser-playwright": "^5.0.5",
     "@vitest/coverage-v8": "^5.0.5",
+    "@vouchington/api-client": "^0.2.0",
     "@vouchington/localization": "^0.2.1",
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.18",

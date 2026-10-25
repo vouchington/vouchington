@@ -1,6 +1,6 @@
 import type * as Sentry from '@sentry/nextjs'
 import { describe, expect, it } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { scrubSentryError, scrubSentrySpan } from '../scrub-sentry-event'
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>

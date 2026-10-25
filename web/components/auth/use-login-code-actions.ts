@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { loginWithEmailAddress, sendEmailLoginToken } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { toast } from 'sonner'
 
 interface UseLoginCodeActionsParams {

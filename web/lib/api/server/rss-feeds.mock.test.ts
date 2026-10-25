@@ -6,7 +6,7 @@ import {
   getServerRssFeedCrawls,
   getServerRssFeedCrawl,
 } from './rss-feeds'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),

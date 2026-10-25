@@ -6,7 +6,7 @@ import {
   expectTextareaCmdEnterSubmits,
 } from '@/test-helpers/form-keyboard'
 import { CreateCommunityForm } from '../create-community-form'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const mockRouterPush = vi.fn<VitestLooseMock>()
 

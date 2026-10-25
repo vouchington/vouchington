@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMyWebPushSubscription, deleteMyWebPushSubscription } from '@/lib/api/client/my'
-import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
+import { MemoryLockManager } from '@/test-helpers/memory-lock-manager'
 import { bindPushBinding, clearPushBinding } from '@/lib/push-service-worker'
 import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { bootstrapPushBinding, registerAndSavePush } from './push-registration'

@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TopicNewsPage } from './topic-news-page'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockGetRssFeedItems } = vi.hoisted(() => ({
   mockGetRssFeedItems: vi.fn<VitestLooseMock>(),

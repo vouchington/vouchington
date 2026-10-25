@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { acknowledgeOAuthAuthorization, completeOAuthAuthorization } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { waitForOAuthBrokerReceipt } from './oauth-broker-receipt'
 

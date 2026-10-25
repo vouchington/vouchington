@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { NewsCommunityDiscussionAction } from '../news-community-discussion-action'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError from '@/lib/on-error'
 import {
   createLinkedCommunityDiscussion,

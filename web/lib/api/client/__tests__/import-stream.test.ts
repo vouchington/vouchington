@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '../../error'
+import { ApiError } from '@vouchington/api-client'
 import { streamImportProgress, type ImportProgress } from '../import-stream'
 
 function importResponse(overrides?: Partial<ImportProgress>): Response {

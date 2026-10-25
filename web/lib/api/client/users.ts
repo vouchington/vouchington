@@ -3,8 +3,7 @@
 import { clientApi } from './instance'
 import { clientFetch } from './raw-fetch'
 import { assertPathIdentifier } from './path-identifiers'
-import { ApiError } from '../error'
-import { parseErrorResponseBody } from '../error-helpers'
+import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
 import type {
   UserResponseBody,
   UsersListResponseBody,

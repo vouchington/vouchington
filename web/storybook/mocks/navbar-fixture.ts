@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { newsItems } from '@/storybook/entities/fixtures/feeds'
 import { hostnamesResponse } from '@/storybook/entities/fixtures/hostnames'

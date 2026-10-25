@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 import { communityPendingPostsHref } from '@/lib/links/entity-href'
 import { getCanonicalPostPath } from '@/lib/post-helpers'

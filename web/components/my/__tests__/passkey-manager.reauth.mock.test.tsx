@@ -27,7 +27,7 @@ vi.mock(
     }) as unknown as typeof import('@/components/my/mfa-reauth-dialog'),
 )
 
-vi.mock(import('@/lib/api/error'), () => ({
+vi.mock(import('@vouchington/api-client'), () => ({
   ApiError,
 }))
 
@@ -110,7 +110,7 @@ describe('PasskeyManager reauthentication', () => {
   })
 
   it('retries an MFA_REAUTH_REQUIRED deletion with the pending ID and verified token', async () => {
-    const { ApiError } = await import('@/lib/api/error')
+    const { ApiError } = await import('@vouchington/api-client')
     mockDelete
       .mockRejectedValueOnce(
         new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
@@ -142,7 +142,7 @@ describe('PasskeyManager reauthentication', () => {
   })
 
   it('reopens reauthentication when the token-bearing retry also requires MFA', async () => {
-    const { ApiError } = await import('@/lib/api/error')
+    const { ApiError } = await import('@vouchington/api-client')
     const reauthRequired = () =>
       new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
         'reauth required',

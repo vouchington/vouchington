@@ -1,5 +1,5 @@
 import { getCommunityModerationTransparency } from '@/lib/api/server'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import type { ModerationAnalyticsRange, ModerationTransparency } from '@/types/moderation-analytics'
 
 type SupplementaryTransparency =

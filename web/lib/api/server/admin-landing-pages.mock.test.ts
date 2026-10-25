@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAdminLandingPageAnalytics, getAdminLandingPagesForUser } from './admin-landing-pages'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),

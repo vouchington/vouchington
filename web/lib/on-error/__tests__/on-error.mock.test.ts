@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 import { toast } from 'sonner'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError from '../on-error'
 
 type SonnerModule = typeof import('sonner')

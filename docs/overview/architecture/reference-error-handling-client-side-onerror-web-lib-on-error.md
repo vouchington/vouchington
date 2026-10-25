@@ -7,7 +7,7 @@
 Mirrors `backend/modules/on-error/` so the contract reads the same on both sides of the stack. Every client-side mutation or interaction that can fail funnels through this module — callers never call `toast.error` / `toast.success` / `Sentry.captureException` directly.
 
 ```typescript
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 
 async function handleSubmit(e: React.FormEvent) {

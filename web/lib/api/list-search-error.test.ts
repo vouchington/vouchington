@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ApiError } from './error'
+import { ApiError } from '@vouchington/api-client'
 import { getListSearchErrorMessage } from './list-search-error'
 
 describe('getListSearchErrorMessage', () => {

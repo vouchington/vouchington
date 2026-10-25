@@ -1,6 +1,6 @@
 import { act, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { clearPushBinding } from '@/lib/push-service-worker'
 import { bootstrapAuthenticatedPushBinding } from '@/lib/push-bootstrap'
 import { ServiceWorkerRegistrar } from '@/components/service-worker-registrar'

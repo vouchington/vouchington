@@ -2,7 +2,7 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { createElement, type ElementType, type ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { createItemListSchema } from '@/lib/seo/structured-data'
 import NewsPage from './page'
 

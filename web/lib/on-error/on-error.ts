@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/nextjs'
 import { toast } from 'sonner'
-import { ApiError, isExpectedApiError } from '@/lib/api/error'
-import { getApiErrorMessage } from '@/lib/api/error-helpers'
+import { ApiError, isExpectedApiError, getApiErrorMessage } from '@vouchington/api-client'
 import { getRateLimitMessage, isRateLimitError } from '@/lib/api/rate-limit-error'
 
 export interface OnErrorOptions {

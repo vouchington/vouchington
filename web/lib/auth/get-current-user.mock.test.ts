@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cookies } from 'next/headers'
 import { decodeSessionJwt } from '@ts-shared/session-jwt'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { getAuthMe } from '@/lib/api/server'
 import { getCurrentUser } from './get-current-user'
 

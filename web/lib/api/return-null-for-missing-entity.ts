@@ -1,4 +1,4 @@
-import { ApiError } from './error'
+import { ApiError } from '@vouchington/api-client'
 
 interface ReturnNullForMissingEntityOptions {
   nullStatusCodes?: number[]

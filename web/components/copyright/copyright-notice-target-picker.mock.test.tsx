@@ -1,6 +1,6 @@
 import { configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import {
   resolveCopyrightNoticeTargets,
   type CopyrightNoticeResolvedTarget,

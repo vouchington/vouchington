@@ -8,7 +8,7 @@ import {
   getTopicSpendingCategoryAttributes,
   getTopicTypeAttributesServer,
 } from './topics'
-import { ApiError } from '../error'
+import { ApiError } from '@vouchington/api-client'
 
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),

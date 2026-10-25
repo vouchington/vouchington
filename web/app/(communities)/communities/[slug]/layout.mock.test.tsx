@@ -1,7 +1,7 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { notFound } from 'next/navigation'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import CommunityLayout from './layout'
 
 const {

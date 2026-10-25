@@ -12,7 +12,7 @@ import { isRateLimitError, getRateLimitMessage } from '@/lib/api/rate-limit-erro
 
 import { buildWorkerSecretHeader } from '@/lib/api/worker-secret'
 
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 describe('client-utilities', () => {
   describe('path-identifiers (pure)', () => {

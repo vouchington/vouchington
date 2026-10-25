@@ -1,5 +1,5 @@
 import { getUserDataRequest, type DataRequest } from '@/lib/api/client/users'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 
 export interface StreamPayload {
   status: string

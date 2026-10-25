@@ -1,5 +1,5 @@
 import { ImageBlockedError, ImageProcessingTimeoutError } from '@/lib/api/client/images'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { toast } from 'sonner'
 
 export function countRejected<T extends new (...args: never[]) => Error>(

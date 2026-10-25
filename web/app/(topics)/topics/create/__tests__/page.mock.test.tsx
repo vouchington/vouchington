@@ -6,7 +6,7 @@ import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigatio
 import CreateTopicPage from '../create-topic-client'
 import { createTopic } from '@/lib/api/client/topics'
 import { checkAvailability } from '@/lib/api/client/availability'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { NON_SOURCE_TOPIC_TYPE_OPTIONS } from '@/types/topics'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 

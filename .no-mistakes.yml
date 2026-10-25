@@ -1962,12 +1962,6 @@ rules:
       - 'web/components/notifications/push-registration.mock.test.ts'
       - 'web/components/notifications/use-notification-push-actions.mock.test.ts'
       - 'web/lib/api/client/__tests__/import-stream.test.ts'
-      - 'web/lib/api/client/admission-idempotency-owner-renewal.test.ts'
-      - 'web/lib/api/client/admission-idempotency-stale-settlement.test.ts'
-      - 'web/lib/api/client/admission-idempotency-storage.test.ts'
-      - 'web/lib/api/client/admission-idempotency.lifecycle.test.ts'
-      - 'web/lib/api/client/admission-idempotency.logout-retention.test.ts'
-      - 'web/lib/api/client/admission-idempotency.test.ts'
       - 'web/lib/auth/logout.mock.test.ts'
       - 'web/lib/auth/oauth-broker.mock.test.ts'
       - 'web/lib/push-bootstrap.mock.test.ts'
@@ -2634,6 +2628,8 @@ rules:
     scope: repository
     options:
       permanentPackages:
+        - name: '@vouchington/api-client'
+          reason: First-party browser and server API client primitives published by the repo author.
         - name: '@vouchington/dynamic-config'
           reason: First-party dynamic-config primitives published by the repo author.
         - name: '@jongleberry/api-server'

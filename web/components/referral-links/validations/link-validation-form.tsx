@@ -9,7 +9,7 @@ import {
   getReferralLinkValidation,
   linkValidationToReferralProgram,
 } from '@/lib/api/client/referral-link-validations'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
 

@@ -1,4 +1,4 @@
-import { ClientRequest } from '@/lib/api/client/request'
+import { ClientRequest } from '@vouchington/api-client'
 
 const imageUploadUrl = 'http://127.0.0.1/storybook-image-upload'
 let imageUploads = false

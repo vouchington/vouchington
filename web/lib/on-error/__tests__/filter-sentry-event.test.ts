@@ -1,6 +1,6 @@
 import type { ErrorEvent, EventHint } from '@sentry/nextjs'
 import { describe, expect, it } from 'vitest'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { filterSentryEvent } from '../filter-sentry-event'
 
 function makeEvent(): ErrorEvent {

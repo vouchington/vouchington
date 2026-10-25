@@ -13,7 +13,7 @@ vi.mock(import('@/lib/api/client'), () => ({
   acknowledgeOAuthAuthorization: mockAcknowledgeOAuthAuthorization,
   completeOAuthAuthorization: mockCompleteOAuthAuthorization,
 }))
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import OAuthBrokerCallbackPage from './page'
 
 const mockNav = createNavMock()

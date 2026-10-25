@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
-import { ApiError } from '@/lib/api/error'
+import { ApiError } from '@vouchington/api-client'
 import { getOAuthGrants, revokeOAuthGrant } from '@/lib/api/client/oauth-grants'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import onError, { onSuccess } from '@/lib/on-error'
