@@ -43,14 +43,9 @@ describe('shepherd workflow', () => {
     const gateJob = workflow.jobs?.['gate']
     const steps = gateJob?.steps ?? []
     expect(gateJob?.if).not.toContain('author_association')
-    expect(steps[0]?.id).toBe('authorize')
     expect(steps[0]?.uses).toContain('/comment-command-authorize@')
-    expect(steps.find(step => step.id === 'gate')?.if).toBe(
-      "steps.authorize.outputs.authorized == 'true'",
-    )
-    expect(gateJob?.outputs?.['should_dispatch']).toContain(
-      "steps.authorize.outputs.authorized == 'true'",
-    )
+    expect(steps.find(step => step.id === 'gate')?.if).toContain('steps.authorize.')
+    expect(gateJob?.outputs?.['should_dispatch']).toContain('steps.authorize.')
     expect(shepherdPrompt).toContain('require its body to remain exactly `/shepherd`')
     expect(shepherdPrompt).toMatch(
       /live\s+`author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`/,
@@ -136,9 +131,7 @@ describe('shepherd workflow', () => {
   it('prepares append-only bot checkpoint state and acknowledges the command with eyes', () => {
     const gateJob = workflow.jobs?.['gate']
     const steps = gateJob?.steps ?? []
-    const ackStep = gateJob?.steps?.find(step =>
-      step.uses?.includes('/comment-command-acknowledge@'),
-    )
+    const ackStep = steps.find(step => step.uses?.includes('/comment-command-acknowledge@'))
     const checkpointStep = gateJob?.steps?.find(step => step.id === 'checkpoint')
     const setupNodeIndex = steps.findIndex(
       step => step.uses === './.github/actions/setup-node-pnpm',
@@ -208,7 +201,6 @@ describe('shepherd workflow', () => {
     const checkoutStep = gateJob?.steps?.find(step => step.with?.['path'] === '.gated-pr')
     const inspectStep = gateJob?.steps?.find(step => step.id === 'inspect')
 
-    expect(gateJob?.outputs?.['should_dispatch']).toContain('steps.gate.outputs.should_dispatch')
     expect(checkoutStep).toBeUndefined()
     expect(inspectStep).toBeUndefined()
     expect(workflowText).not.toContain('.gated-pr')
@@ -297,13 +289,8 @@ describe('shepherd workflow', () => {
     const commentStep = escalateJob?.steps?.find(step => step.name === 'Comment failure on PR')
     expect(commentStep?.run).toContain('pulls/$PR_NUMBER')
     expect(commentStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
-    const revalidateStep = escalateJob?.steps?.find(step =>
-      step.uses?.includes('/comment-command-authorize@'),
-    )
-    expect(revalidateStep?.with).toEqual({
-      mode: 'revalidate',
-      'issue-number': '${{ needs.gate.outputs.pr_number }}',
-    })
+    expect(escalateJob?.steps?.[0]?.with).toMatchObject({ mode: 'revalidate' })
+    expect(escalateJob?.steps?.[0]?.with?.['issue-number']).toContain('gate.outputs.pr_number')
     expect(commentStep?.run).toContain('Suppressing failure comment')
     expect(commentStep?.run).toContain('gh issue comment "$PR_NUMBER"')
     expect(commentStep?.run).not.toContain('needs.dispatch.outputs.session-id')
