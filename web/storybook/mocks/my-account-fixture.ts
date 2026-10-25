@@ -10,7 +10,7 @@ import {
 const defaultReAuthMethods: ReAuthMethods = {
   has_email: true,
   has_totp: true,
-  has_passkey: false,
+  has_passkey: true,
   providers: [],
 }
 let reAuthMethods = defaultReAuthMethods
