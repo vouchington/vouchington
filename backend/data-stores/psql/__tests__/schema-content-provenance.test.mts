@@ -13,7 +13,7 @@ import {
 } from '../../../test-helpers/data-stores/psql/content-provenance.mts'
 import { createContentProvenanceConversationMessageFixture } from '../../../test-helpers/data-stores/psql/content-provenance-conversation-message.mts'
 import { createTestUser } from '../../../test-helpers/entities/users.mts'
-import { beginTransaction, onGracefulShutdown } from '../index.mts'
+import { onGracefulShutdown } from '../index.mts'
 
 const CONTENT_TABLES = [
   'communities',
@@ -36,6 +36,8 @@ describe('content provenance schema', () => {
 
   it('records validated, immutable provenance on every user-content table', async () => {
     const catalog = await readContentProvenanceCatalog(CONTENT_TABLES)
+
+    await expect(readViewsReferencingContentProvenance()).resolves.toEqual([])
 
     expect(catalog.map(row => row.table_name)).toEqual(CONTENT_TABLES)
     for (const row of catalog) {
@@ -159,18 +161,6 @@ describe('content provenance schema', () => {
     await expect(
       message.updateProvenance({ createdVia: 'system', oauthClientId: null }),
     ).resolves.toMatchObject({ rowCount: 1 })
-  })
-
-  it('keeps provenance out of every view until a reviewed label exposes it', async () => {
-    await expect(readViewsReferencingContentProvenance()).resolves.toEqual([])
-
-    await using transaction = await beginTransaction()
-    const probeView = `content_provenance_probe_${randomUUID().replaceAll('-', '')}`
-    await transaction(`/* createContentProvenanceProbeView */
-      CREATE VIEW ${probeView} AS SELECT id, created_via FROM user_lists`)
-    await expect(readViewsReferencingContentProvenance({ query: transaction })).resolves.toEqual([
-      probeView,
-    ])
   })
 
   it('keeps an OAuth client that created content', async () => {

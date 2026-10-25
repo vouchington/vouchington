@@ -44,15 +44,12 @@ ignores:
   - 'backend/scripts/explain-analyze/seed-data/post-diagnostics.test.mts'
   - 'backend/test-helpers/entities/contribution-admission-claims.mts'
   # #2143
-  - 'backend/data-stores/psql/__tests__/schema-content-provenance.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-uuidv7-range-pruning.test.mts'
   - 'backend/data-stores/psql/explain-analyze.test.mts'
   - 'backend/data-stores/psql/migrate.test.mts'
   - 'backend/data-stores/psql/migration-runner/config-driven-statements.test.mts'
   - 'backend/data-stores/psql/migration-runner/migrations.test.mts'
   - 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts'
-  - 'backend/data-stores/psql/migrate.hardening.test.mts'
-  - 'backend/test-helpers/data-stores/psql/forced-views.mts'
   - 'backend/test-helpers/data-stores/psql/shared-mutation-trigger.mts'
   - 'backend/test-helpers/entities/moderation-transparency-date-reservation.mts'
 rule:
