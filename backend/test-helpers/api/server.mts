@@ -2,9 +2,6 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { createRequestQueryOptionsListener } from '../../api/request-query-options.mts'
 import supertest from 'supertest'
 import fn, { createApiRequestGuardedListener } from '../../api/app.mts'
-// Register this package's v1 routes on the shared app singleton. Route
-// packages outside @voucha/api (rss, md, entrypoint infra) register their own
-// routes from their own test files to avoid dependency cycles.
 import '../../api/index.mts'
 import http from 'node:http'
 import { Buffer } from 'node:buffer'
@@ -49,6 +46,7 @@ const testRequestIpState = globalThis as typeof globalThis & {
 // Extend the supertest agent with authentication helper
 export interface AuthenticatedAgent extends supertest.Agent {
   authenticateAs: (user: PrivateUser) => Promise<void>
+  authenticateAsRaw: (user: PrivateUser) => Promise<void>
   authenticateAsMfa: (user: PrivateUser) => Promise<void>
   setFeatureFlags: (overrides: FeatureFlags) => void
   authCookie: string
@@ -105,6 +103,11 @@ export const createRequest = (
   }
 
   agent.authenticateAs = async function (user: PrivateUser) {
+    if (user.roles.includes('administrator')) return this.authenticateAsMfa(user)
+    return this.authenticateAsRaw(user)
+  }
+
+  agent.authenticateAsRaw = async function (user: PrivateUser) {
     setAuthTokens(this, await createAuthenticatedTestSession(user))
   }
 
@@ -136,11 +139,6 @@ export function formatTestRequestIp(processId: number, counter: number): string 
 
 function sharedApiTestServerAddress(): Promise<ApiTestServerAddress> {
   const state = globalThis as ApiTestServerGlobal
-  // `vi.resetModules()` re-evaluates this module and `@voucha/api/app`, producing a
-  // new `app` singleton (with its own routes, e.g. test-local routes registered by
-  // callers like error-handler.routes.test.mts). Repoint the dispatch target on every
-  // evaluation so the one persistent per-fork server never keeps forwarding to a
-  // stale pre-reset app.
   state[API_TEST_SERVER_LISTENER_KEY] = createApiRequestGuardedListener(fn.callback())
   state[API_TEST_SERVER_MATCHER_KEY] = fn
   state[API_TEST_SERVER_STATE_KEY] ??= createSharedApiTestServer(state)

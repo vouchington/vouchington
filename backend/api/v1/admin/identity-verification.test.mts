@@ -15,7 +15,7 @@ describe('POST /api/v1/admin/users/:userId/identity-verification-attempts', () =
   let member: PrivateUser
 
   beforeAll(async () => {
-    admin = await createTestUserDirect({ administrator: true })
+    admin = await createTestUserDirect({ administrator: true, withEmail: true })
     member = await createTestUserDirect()
     const attempt = await reserveIdentityVerificationAttempt(member.id)
     const checkoutSessionId = `cs_${v7()}`

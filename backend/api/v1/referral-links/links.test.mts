@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { WEB_PROVENANCE, createTestUserDirect } from '@voucha/test-helpers'
-import { addUserRole } from '@services/users/roles-permissions'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 import { createChildReferralLinks } from '@services/user-referral-program-links'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
@@ -37,8 +36,7 @@ describe('links', () => {
   beforeAll(async () => {
     regularUser = await createTestUserDirect()
     otherUser = await createTestUserDirect()
-    adminUser = await createTestUserDirect()
-    await addUserRole(adminUser!.id, 'administrator')
+    adminUser = await createTestUserDirect({ administrator: true, withEmail: true })
 
     const fixture = await createReferralProgramFixture({ createdById: regularUser!.id })
     referralProgramId = fixture.referralProgramId

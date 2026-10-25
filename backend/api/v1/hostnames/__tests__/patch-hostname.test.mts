@@ -5,7 +5,6 @@ import {
   getUrlHostnameUnreliableStatusCodesForTest,
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
-import { addUserRole } from '@services/users/roles-permissions'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 import { getUrlHostnameById } from '@services/urls-hostnames/get'
 
@@ -16,8 +15,7 @@ describe('PATCH /api/v1/hostnames/:id', () => {
 
   beforeAll(async () => {
     regularUser = await createTestUserDirect()
-    adminUser = await createTestUserDirect()
-    await addUserRole(adminUser!.id, 'administrator')
+    adminUser = await createTestUserDirect({ administrator: true, withEmail: true })
     hostnameId = await insertTestUrlHostname({
       hostname: `patch-test-${Date.now()}.example.com`,
       is_blocked: false,
@@ -78,8 +76,7 @@ describe('PATCH /api/v1/hostnames/:id', () => {
   })
 
   it('introduces a private email hostname on an administrator metadata update', async () => {
-    const administrator = await createTestUserDirect()
-    await addUserRole(administrator.id, 'administrator')
+    const administrator = await createTestUserDirect({ administrator: true, withEmail: true })
     const domain = `staff-update-${crypto.randomUUID()}.example.com`
     const id = await resolveEmailDomainHostnameId(`owner@${domain}`)
     if (!id) throw new Error('Expected private hostname')
