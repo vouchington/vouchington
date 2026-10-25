@@ -7,6 +7,7 @@ import assert from 'http-assert'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { invalidate } from '@services/entity-cache'
 import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { setTopicHostnameLink } from './hostname-link.mts'
 import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
 import { lockTopicHostnameMutations } from '@services/urls-hostnames/ownership-lock'
@@ -29,15 +30,17 @@ import {
   assertImageDeliveryTransaction,
   type ImageSurfaceReference,
 } from '@services/media-delivery-safety'
+
+type UpdateTopicOptions = QueryOptions & { allowTypeChange?: boolean } & (
+    | { skipSideEffects: true }
+    | { skipSideEffects?: false; query?: never; client?: never }
+  )
+
 export const updateTopic = async (
   updater: PrivateUser,
   topic: Topic,
   changes: Partial<CreateTopicUpdates>,
-  {
-    skipSideEffects = false,
-    allowTypeChange = false,
-    ...queryOptions
-  }: { skipSideEffects?: boolean; allowTypeChange?: boolean } & QueryOptions = {},
+  { skipSideEffects = false, allowTypeChange = false, ...queryOptions }: UpdateTopicOptions = {},
 ) => {
   assert(currentUserCanUpdateTopic(updater), 403, 'Forbidden')
   let claimedAliases: Awaited<ReturnType<typeof createTopicAliases>> = []
@@ -156,6 +159,6 @@ export const updateTopic = async (
   if (topic.hostname_id || topic2?.hostname_id) {
     await invalidate.url_hostnames(topic.hostname_id, topic2?.hostname_id)
   }
-  void enqueueOnTopicUpdated(topic.id, updater.id)
+  await awaitReportedEnqueueAdmission(() => enqueueOnTopicUpdated(topic.id, updater.id))
   return topic2
 }
