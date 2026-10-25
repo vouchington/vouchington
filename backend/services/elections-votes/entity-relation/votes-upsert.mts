@@ -1,6 +1,9 @@
 import {
   assertWhitelistedSqlIdentifier,
-  beginTransaction,
+  registerPostCommitAction,
+  runWithTransaction,
+  type OwnedTransaction,
+  type QueryExecutor,
   withTransactionOptions,
   type QueryOptions,
   type TransactionQuery,
@@ -19,6 +22,7 @@ import {
 } from '@voucha/types/entities/entity-relations-metadata'
 import sql from 'sql-template-strings'
 import { createEntityRelationElectionTarget } from './target.mts'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 
 const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
 const relationTables = new Set(electionRelations.map(metadata => metadata.table_name))
@@ -31,12 +35,17 @@ const NULL_VOTE_CONTEXT: VoteEventContext = {
   userAgent: null,
 }
 
+type EntityRelationVoteOptions = Omit<QueryOptions, 'client' | 'query'> & { client?: never } & (
+    | { query?: OwnedTransaction; enqueueVoteStats?: boolean }
+    | { query?: QueryExecutor; enqueueVoteStats: false }
+  )
+
 export async function upsertEntityRelationElectionVotes(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
   context: VoteEventContext = NULL_VOTE_CONTEXT,
   relationMetadata?: EntityRelationMetadata | readonly EntityRelationMetadata[],
-  options: QueryOptions & { enqueueVoteStats?: boolean } = {},
+  options: EntityRelationVoteOptions = {},
 ): Promise<ElectionVoteMutationResult[]> {
   if (votes.length === 0) return []
   const normalizedUserId = userId.toLowerCase()
@@ -142,26 +151,29 @@ export async function upsertEntityRelationElectionVotes(
       SELECT pg_advisory_xact_lock(hashtextextended(ordered.lock_key, 0))
       FROM (SELECT unnest(${locks.map(lock => lock.key)}::text[]) AS lock_key ORDER BY lock_key) ordered
     `)
-    return transaction(query)
-  }
-  const { rows } =
-    queryOptions.query || queryOptions.client
-      ? await withTransactionOptions(queryOptions, run)
-      : await upsertEntityRelationElectionVotesInOwnedTransaction(run)
-  const upsertedVotes = rows as Array<ElectionVoteMutationResult & { entity_relation: string }>
-  const singleRelation =
-    relationMetadata && isSingleElectionRelation(relationMetadata) ? relationMetadata : undefined
-  const voteStatsTargets = singleRelation
-    ? values.map(vote =>
-        createEntityRelationElectionTarget(vote.entityId, singleRelation.table_name),
+    const { rows } = await transaction(query)
+    const upsertedVotes = rows as Array<ElectionVoteMutationResult & { entity_relation: string }>
+    const singleRelation =
+      relationMetadata && isSingleElectionRelation(relationMetadata) ? relationMetadata : undefined
+    const voteStatsTargets = singleRelation
+      ? values.map(vote =>
+          createEntityRelationElectionTarget(vote.entityId, singleRelation.table_name),
+        )
+      : upsertedVotes.map(vote =>
+          createEntityRelationElectionTarget(vote.entity_id, vote.entity_relation),
+        )
+    if (voteStatsTargets.length > 0 && enqueueVoteStats) {
+      registerPostCommitAction(transaction, () =>
+        awaitReportedEnqueueAdmission(() =>
+          enqueueBulkUpdateEntityRelationElectionVoteStats(voteStatsTargets),
+        ),
       )
-    : upsertedVotes.map(vote =>
-        createEntityRelationElectionTarget(vote.entity_id, vote.entity_relation),
-      )
-  if (voteStatsTargets.length > 0 && enqueueVoteStats) {
-    void enqueueBulkUpdateEntityRelationElectionVoteStats(voteStatsTargets)
+    }
+    return upsertedVotes.map(({ entity_relation: _relationTable, ...vote }) => vote)
   }
-  return upsertedVotes.map(({ entity_relation: _relationTable, ...vote }) => vote)
+  return queryOptions.query
+    ? withTransactionOptions(queryOptions, run)
+    : runWithTransaction(undefined, run)
 }
 
 function isSingleElectionRelation(
@@ -181,13 +193,4 @@ function electionVoteTargetRelations(
     }
   }
   return relations
-}
-
-async function upsertEntityRelationElectionVotesInOwnedTransaction<T>(
-  run: (query: TransactionQuery) => Promise<T>,
-): Promise<T> {
-  await using transaction = await beginTransaction()
-  const result = await run(transaction)
-  await transaction.commit()
-  return result
 }

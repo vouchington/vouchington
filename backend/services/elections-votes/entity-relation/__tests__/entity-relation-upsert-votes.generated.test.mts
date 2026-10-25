@@ -5,13 +5,14 @@ import {
   createTestPost,
   createTestTopic,
   createTestUser,
-  flushPendingTasks,
   getEntityRelationVoteStorageRows,
   hardDeleteEntityRelationTest,
-  readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { insertTestEntityRelationVote } from '../../../../test-helpers/entities/entity-relation-votes.mts'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
+import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
+import { removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
 import { getEntityRelationElectionVote } from '../votes-get.mts'
 import { upsertEntityRelationElectionVotes } from '../votes-upsert.mts'
 
@@ -67,23 +68,46 @@ describe('upsert.generated (votes)', () => {
     })
     const relationId = relation!.id!
 
-    await expect(
-      upsertEntityRelationElectionVotes(
-        user.id,
-        [{ entityId: relationId, score: 1 }],
-        undefined,
-        metadata,
-      ),
-    ).resolves.toEqual([])
-    await flushPendingTasks()
-
-    const jobs = await readAllQueueJobs(voteAggregation)
-    expect(
-      jobs.some(job => {
-        const data = job.data as { electionId?: string; relationTable?: string }
-        return data.electionId === relationId && data.relationTable === metadata.table_name
-      }),
-    ).toBe(true)
+    const jobName = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
+    const admission = holdQueueBulkAdmission(
+      voteAggregation,
+      jobName,
+      data =>
+        typeof data === 'object' &&
+        data !== null &&
+        'electionId' in data &&
+        data.electionId === relationId,
+    )
+    let entered = false
+    void admission.entered.then(() => {
+      entered = true
+    })
+    const operation = upsertEntityRelationElectionVotes(
+      user.id,
+      [{ entityId: relationId, score: 1 }],
+      undefined,
+      metadata,
+    )
+    try {
+      await admission.entered
+      admission.release()
+      await expect(operation).resolves.toEqual([])
+      const jobs = await admission.admitted
+      expect(jobs).toHaveLength(1)
+      expect(await voteAggregation.getJob(jobs[0]!.id)).toMatchObject({
+        name: jobName,
+        data: {
+          electionId: relationId,
+          relationTable: metadata.table_name,
+          orderingKey: 'entity_relation',
+        },
+      })
+    } finally {
+      admission.release()
+      await operation.catch(() => undefined)
+      if (entered) await removeEnqueuedJobs([admission.admitted.catch(() => [])], jobName)
+      admission.restore()
+    }
   })
 
   it('upsertEntityRelation votes when options.vote is explicitly true', async () => {
