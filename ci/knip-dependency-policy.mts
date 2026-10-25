@@ -81,6 +81,16 @@ export const allowedWorkspaceIgnoreDependencies = new Map<
     ],
   ],
   [
+    'ci',
+    [
+      {
+        dependency: 'coverage-check',
+        evidenceFiles: ['.github/workflows/tests-backend-unit.yml'],
+        evidencePattern: /\.\/ci\/node_modules\/\.bin\/coverage-check\b/,
+      },
+    ],
+  ],
+  [
     'cloudflare-worker',
     [
       {

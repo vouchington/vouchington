@@ -1,7 +1,7 @@
 // Runtime code cannot become dependent on test infrastructure. Runner configuration
 // consumers have an exact destination exception, never a whole-source exemption.
 const helperPath = '(?:^|/)test-helpers(?:/|$)|^@voucha/test-helpers(?:/|$)'
-const configConsumers = '^ci/check-(?:coverage-scope|storybook-browser-optimize-deps)\\.mts$'
+const configConsumers = '^ci/(?:write-coverage-scope|check-storybook-browser-optimize-deps)\\.mts$'
 const testPaths = [
   '(?:^|/)(?:test-helpers|__tests__|__fixtures__|storybook|\\.storybook)(?:/|$)',
   '\\.(?:test|spec|stories)\\.[cm]?[jt]sx?$',

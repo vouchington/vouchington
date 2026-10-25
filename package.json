@@ -92,7 +92,7 @@
     "knip:production-exports": "knip --production --include-entry-exports --exports --workspace '@voucha/backend' --workspace '@voucha/api' --workspace '@entrypoints/*' --workspace '@services/*' --workspace '@modules/*' --workspace '@data-stores/*' --workspace '@queues/*' --workspace '@workers/*' --workspace '@agents/*' --treat-config-hints-as-errors",
     "syncpack:lint": "syncpack lint && syncpack format --check",
     "syncpack:fix": "syncpack fix && syncpack format",
-    "repo-file-policy": "node static-code-analysis/run-node-checks.mts --checks repo-file-policy",
+    "repo-file-policy": "node static-code-analysis/run-node-checks.mts --checks repo-file-policy && vouchington trivy-policy --cleanup-url-prefix https://github.com/vouchington/vouchington/issues/ && vouchington docker-image-mirror",
     "config-inventory-policy": "node static-code-analysis/run-node-checks.mts --checks config-inventory-policy",
     "dependency-license-policy": "node static-code-analysis/run-node-checks.mts --checks dependency-license-policy",
     "no-mistakes": "no-mistakes --timeout 180 --lock-timeout 55 check",

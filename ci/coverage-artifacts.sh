@@ -60,7 +60,9 @@ case "$command" in
       echo "::error::No LCOV artifacts found for the ${coverage_area} area coverage gate." >&2
       exit 1
     fi
-    node ci/check-coverage-scope.mts
+    coverage_scope_file="$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/coverage-scope.XXXXXX")"
+    node ci/write-coverage-scope.mts "$coverage_scope_file"
+    pnpm exec vouchington coverage-scope-check --rules .coverage-rules.yml --scope-file "$coverage_scope_file"
     merge_coverage_artifacts
     collect_whitespace_ignore_args
     area_rules_file="$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/coverage-rules-${coverage_area}.XXXXXX")"
