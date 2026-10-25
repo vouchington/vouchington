@@ -5,6 +5,7 @@ import { getModerationSystemUserId } from '@services/users/system-users'
 import { createPostRevision } from '@services/post-revisions'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import { retirePostImagePlacements } from './image-placements.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
@@ -55,7 +56,8 @@ export async function removeCommentAsAgent(commentId: string): Promise<AgentRemo
     })
     await query.commit()
 
-    if (result === 'removed') void enqueueOnPostDeleted(commentId)
+    if (result === 'removed')
+      await awaitReportedEnqueueAdmission(() => enqueueOnPostDeleted(commentId))
     return result
   } catch (err) {
     await repairFailedImageDeliveryMutation({ postIds: [commentId] }).catch(onError)

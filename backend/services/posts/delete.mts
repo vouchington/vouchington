@@ -3,6 +3,7 @@ import type { Post } from './types.mts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { beginTransaction } from '@data-stores/psql'
 import { enqueueOnPostDeleted } from '@queues/entity-listeners/enqueues'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import {
   currentUserCanDeletePost,
   loadWritablePost,
@@ -102,7 +103,7 @@ export const deletePost = async (
     throw err
   }
 
-  void enqueueOnPostDeleted(post.id)
+  const admission = awaitReportedEnqueueAdmission(() => enqueueOnPostDeleted(post.id))
   const isModerationDelete = deleter.id !== post.created_by_id
   await Promise.all([
     dismissPendingReportsForDeletedEntity(
@@ -120,4 +121,5 @@ export const deletePost = async (
   if (post.post_type === 'review') {
     await dismissPendingDisputesForDeletedReview(post.id)
   }
+  await admission
 }
