@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { WebIntegrationClient } from '../helpers/client.mts'
 import { PLAYWRIGHT_CHROME_UA, SEEDED_IDS } from '../helpers/constants.mts'
-import { authenticateTestUserWithDirectSessionTokens } from '../helpers/routing-assertions.mts'
+import {
+  authenticateAdminWithVerifiedMfa,
+  authenticateTestUserWithDirectSessionTokens,
+} from '../helpers/routing-assertions.mts'
 
 const workerOrigin = process.env.WEB_INTEGRATION_WORKER_ORIGIN
 const traceOrigin = process.env.WEB_INTEGRATION_TRACE_ORIGIN
@@ -87,7 +90,7 @@ describe('typed source management contracts', () => {
   })
 
   it('renders source settings for an RSS feed', async () => {
-    await authenticateTestUserWithDirectSessionTokens(client)
+    await authenticateAdminWithVerifiedMfa(client)
     const source = await createTestTopic({ topic_type: 'rss_feed' })
     const options = { userAgent: PLAYWRIGHT_CHROME_UA }
     const accepted = await client.loadPage(

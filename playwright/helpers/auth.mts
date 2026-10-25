@@ -19,7 +19,7 @@ export async function loginAsTestUser(
   page: Page,
   dependencies?: Partial<LoginAsUserDependencies>,
 ): Promise<void> {
-  await loginAsUser(page, TEST_USER_ID, dependencies)
+  await loginAsMfaUser(page, TEST_USER_ID, dependencies)
 }
 
 /** Complete a TOTP challenge for the seeded administrator before injecting its cookies. */

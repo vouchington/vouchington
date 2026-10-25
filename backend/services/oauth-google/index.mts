@@ -3,11 +3,7 @@ import {
   googleProfileFromClaims,
 } from '@vouchington/utils/oidc-id-token'
 import { readGoogleClientId } from '@voucha/config'
-import {
-  prepareOAuthAccountPersistence,
-  verifyOidcIdToken,
-  type OAuthAccount,
-} from '@services/oauth-accounts'
+import { prepareOAuthAccountPersistence, verifyOidcIdToken } from '@services/oauth-accounts'
 import type {
   OAuthAccountUpsertOptions,
   PreparedOAuthAccount,
@@ -20,10 +16,6 @@ const googleIdTokenVerifier = createOidcIdTokenVerifier({
   audiences: () => [readGoogleClientId()].filter(Boolean),
   fetch: (input, init) => getExternalFetch()(input, init),
 })
-
-export async function upsertGoogleAccount(credential: string): Promise<OAuthAccount> {
-  return (await prepareGoogleAccount(credential)).persist()
-}
 
 export async function prepareGoogleAccount(
   credential: string,

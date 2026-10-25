@@ -1,9 +1,20 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { createTestPost } from '../../../backend/test-helpers/entities/create-test-entities.mts'
+import {
+  createTestPost,
+  createTestTopic,
+} from '../../../backend/test-helpers/entities/create-test-entities.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
-import { loginAsMfaUser, withCleanUser } from '../../helpers/auth.mts'
+import { withCleanUser } from '../../helpers/auth.mts'
+import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
+import { createTestRssFeedItemWithUrl } from '../../../backend/test-helpers/entities/test-entities.mts'
+import {
+  insertTestStory,
+  setTestItemStoryId,
+} from '../../../backend/test-helpers/entities/stories.mts'
+import { insertTestPostStory } from '../../../backend/test-helpers/entities/post-stories.mts'
+import { canViewPost } from '../../../backend/services/posts/check-privacy-access.mts'
 
 test.describe('Typed comment permalink routes', () => {
   test.use({ storageState: AUTH_STATE })
@@ -111,8 +122,16 @@ test.describe('Typed comment permalink routes', () => {
     const suffix = randomSuffix()
     const title = `Permalink story ${suffix}`
     const body = `Owned comment story ${suffix}`
-    const user = await withCleanUser(page, { administrator: true })
-    await loginAsMfaUser(page, user.id)
+    const user = await withCleanUser(page)
+    const topic = await createTestTopic({
+      user,
+      name: `Permalink story source ${suffix}`,
+      slug: `permalink-source-${suffix}`,
+    })
+    const feed = await insertTestRssFeed(topic.id, suffix)
+    const story = await insertTestStory({ title })
+    const item = await createTestRssFeedItemWithUrl(feed.id)
+    await setTestItemStoryId(item.id, story.id)
     const slug = `permalink-story-${suffix}`
     const id = await insertTestPost({
       title,
@@ -121,6 +140,8 @@ test.describe('Typed comment permalink routes', () => {
       markdown: '',
       createdById: user.id,
     })
+    await insertTestPostStory(id, story.id, user.id)
+    expect(await canViewPost(user, { id })).toBe(true)
     const root = { id, slug }
     const comment = await createTestPost({
       post_type: 'comment',

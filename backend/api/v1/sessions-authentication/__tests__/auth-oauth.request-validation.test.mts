@@ -10,6 +10,7 @@ import type { PrivateUser } from '@services/users/types'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { useRouteRateLimitConfigSnapshot } from '@voucha/test-helpers/api/route-rate-limit-config-snapshot'
+import { createTestAccountChangeProof } from '@voucha/test-helpers/account-change'
 import '../index.mts'
 
 // Covers the path-contract validation on DELETE /api/v1/auth/oauth/:provider/connect (issue #1515).
@@ -42,7 +43,11 @@ describe('DELETE /api/v1/auth/oauth/:provider/connect - request contract validat
     expect(response.body.message).toBe('Invalid OAuth provider: not-a-provider')
 
     // The connected google account survives the rejected call and is still disconnectable.
-    await request.delete('/api/v1/auth/oauth/google/connect').expect(204)
+    const reAuthToken = await createTestAccountChangeProof(user.id, request)
+    await request
+      .delete('/api/v1/auth/oauth/google/connect')
+      .send({ re_auth_token: reAuthToken })
+      .expect(204)
   })
 })
 

@@ -5,7 +5,6 @@ import {
   prepareOAuthAccountPersistence,
   getOAuthAccountByProviderUserId,
   verifyOidcIdToken,
-  type OAuthAccount,
 } from '@services/oauth-accounts'
 import type {
   OAuthAccountUpsertOptions,
@@ -23,18 +22,6 @@ const appleIdTokenVerifier = createOidcIdTokenVerifier({
       signal: createProviderOperationSignal(),
     }),
 })
-
-export async function upsertAppleAccount(
-  identityToken: string,
-  userData?: { name?: string },
-  nonce?: string,
-  options: OAuthAccountUpsertOptions & {
-    requireVerifiedEmail?: boolean
-    signal?: AbortSignal
-  } = {},
-): Promise<OAuthAccount> {
-  return (await prepareAppleAccount(identityToken, userData, nonce, options)).persist(options)
-}
 
 export function verifyAppleIdentityToken(identityToken: string, signal?: AbortSignal) {
   return verifyOidcIdToken(appleIdTokenVerifier, identityToken, 'Apple', { signal })

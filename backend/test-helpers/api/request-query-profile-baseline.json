@@ -351,6 +351,14 @@
   },
   {
     "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "A durable completed broker result first resolves its user after commit, then credential admission rereads the account under the login lock before minting. The locked read must reject deletion or first-factor removal committed between those steps.",
+    "permanent": true,
+    "code": "backend/services/oauth/oauth-flow-result.mts:43",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
     "maxCount": null,
     "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
     "permanent": true,
@@ -644,6 +652,14 @@
     "code": "backend/services/jwt-session/dbsc-state.mts:75"
   },
   {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"],
+    "maxCount": 2,
+    "reason": "Completed broker replay checks the original issued SID for preserved assurance, then canonical mint reacquires its reentrant SID fence before checking the stored device credential and issuing the response.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/assurance.mts:41"
+  },
+  {
     "annotation": "lockSessionDeviceAuthority:userFence",
     "routes": ["GET /api/v1/auth/bluesky/callback"],
     "maxCount": 2,
@@ -674,6 +690,14 @@
     "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
     "permanent": true,
     "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"],
+    "maxCount": 2,
+    "reason": "Completed broker replay checks original SID assurance before mint; mint reacquires the account fence to reject a revoked or changed durable device credential.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/assurance.mts:41"
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
@@ -806,6 +830,14 @@
     "reason": "Credential mint locks and writes the durable authority; HTTPS browser registration advertising subsequently rechecks the committed fresh credential before issuing its single-use registration nonce.",
     "permanent": true,
     "code": "backend/services/jwt-session/dbsc-registration.mts:12"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"],
+    "maxCount": 2,
+    "reason": "Completed broker replay first reads original SID assurance, then mint checks stored authority again before exact credential replay. Both reads are bounded to the same SID under reentrant transaction fences.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/assurance.mts:42"
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",

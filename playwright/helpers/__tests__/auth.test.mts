@@ -97,10 +97,7 @@ describe('loginAsUser helpers', () => {
     expect(page.waitForURL).not.toHaveBeenCalled()
   })
 
-  it('keeps the shared test user low assurance and requires a verified factor for admin cookies', async () => {
-    mockCreateDeviceAndSessionTokens.mockResolvedValue(
-      createMockTokenResult('device-token-2', 'session-token-2'),
-    )
+  it('requires verified factor cookies for the seeded administrator in both helpers', async () => {
     mockCreateVerifiedMfaTestSession.mockResolvedValue(
       createMockTokenResult('admin-device-token', 'admin-session-token'),
     )
@@ -115,13 +112,12 @@ describe('loginAsUser helpers', () => {
     }
 
     await loginAsTestUser(page as never, dependencies)
-    expect(mockCreateDeviceAndSessionTokens).toHaveBeenLastCalledWith({
-      did: TEST_DID,
-      uid: TEST_USER_ID,
-      deviceContext: { user_agent: 'Synthetic browser' },
+    expect(mockCreateVerifiedMfaTestSession).toHaveBeenCalledWith(TEST_USER_ID, {
+      user_agent: 'Synthetic browser',
     })
     await loginAsAdmin(page as never, dependencies)
-    expect(mockCreateDeviceAndSessionTokens).toHaveBeenCalledTimes(1)
+    expect(mockCreateDeviceAndSessionTokens).not.toHaveBeenCalled()
+    expect(mockCreateVerifiedMfaTestSession).toHaveBeenCalledTimes(2)
     expect(mockCreateVerifiedMfaTestSession).toHaveBeenCalledWith(TEST_USER_ID, {
       user_agent: 'Synthetic browser',
     })

@@ -5,6 +5,7 @@ import { createTestUser, insertTestTotpAuthenticator } from '@voucha/test-helper
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 import { registerAuthCredentialRenameTests } from '../../../test-helpers/auth-credential-rename-tests.mts'
+import { createTestAccountChangeProof } from '@voucha/test-helpers/account-change'
 
 describe('TOTP API Routes', () => {
   let user: PrivateUser
@@ -36,7 +37,11 @@ describe('TOTP API Routes', () => {
       const req = createRequest()
       await req.authenticateAs(user)
 
-      const res = await req.post('/api/v1/auth/totp').send({ name: 'My App' }).expect(200)
+      const reAuthToken = await createTestAccountChangeProof(user.id, req)
+      const res = await req
+        .post('/api/v1/auth/totp')
+        .send({ name: 'My App', re_auth_token: reAuthToken })
+        .expect(200)
 
       expect(res.body.secret).toBeTruthy()
       expect(res.body.uri).toMatch(/^otpauth:\/\/totp\//)
@@ -48,7 +53,11 @@ describe('TOTP API Routes', () => {
       const req = createRequest()
       await req.authenticateAs(user)
 
-      const res = await req.post('/api/v1/auth/totp').send({}).expect(200)
+      const reAuthToken = await createTestAccountChangeProof(user.id, req)
+      const res = await req
+        .post('/api/v1/auth/totp')
+        .send({ re_auth_token: reAuthToken })
+        .expect(200)
 
       expect(res.body.authenticator.name).toBe('My Authenticator')
     })
@@ -105,14 +114,20 @@ describe('TOTP API Routes', () => {
       await req.authenticateAs(user)
 
       // Create an authenticator first
+      const setupProof = await createTestAccountChangeProof(user.id, req)
       const setupRes = await req
         .post('/api/v1/auth/totp')
-        .send({ name: 'Wrong Code Test' })
+        .send({ name: 'Wrong Code Test', re_auth_token: setupProof })
         .expect(200)
 
+      const verificationProof = await createTestAccountChangeProof(user.id, req)
       await req
         .post('/api/v1/auth/totp/setup/verification')
-        .send({ authenticator_id: setupRes.body.authenticator.id, code: '000000' })
+        .send({
+          authenticator_id: setupRes.body.authenticator.id,
+          code: '000000',
+          re_auth_token: verificationProof,
+        })
         .expect(401)
     })
 
@@ -120,9 +135,10 @@ describe('TOTP API Routes', () => {
       const req = createRequest()
       await req.authenticateAs(user)
 
+      const setupProof = await createTestAccountChangeProof(user.id, req)
       const setupRes = await req
         .post('/api/v1/auth/totp')
-        .send({ name: 'Verify Test App' })
+        .send({ name: 'Verify Test App', re_auth_token: setupProof })
         .expect(200)
 
       const totp = new OTPAuth.TOTP({
@@ -133,9 +149,14 @@ describe('TOTP API Routes', () => {
       })
       const code = totp.generate()
 
+      const verificationProof = await createTestAccountChangeProof(user.id, req)
       const verifyRes = await req
         .post('/api/v1/auth/totp/setup/verification')
-        .send({ authenticator_id: setupRes.body.authenticator.id, code })
+        .send({
+          authenticator_id: setupRes.body.authenticator.id,
+          code,
+          re_auth_token: verificationProof,
+        })
         .expect(200)
 
       expect(verifyRes.body.authenticator.id).toBe(setupRes.body.authenticator.id)
@@ -190,11 +211,12 @@ describe('TOTP API Routes', () => {
       const req = createRequest()
       await req.authenticateAs(user)
 
-      // Need a second TOTP so that MFA_REAUTH_REQUIRED is not triggered
+      // Keep an enrolled factor while checking the missing target.
       const suffix = `backup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       await insertTestTotpAuthenticator(user.id, suffix)
 
-      await req.delete(`/api/v1/auth/totp/${v7()}`).expect(404)
+      const reAuthToken = await createTestAccountChangeProof(user.id, req)
+      await req.delete(`/api/v1/auth/totp/${v7()}`).send({ re_auth_token: reAuthToken }).expect(404)
     })
 
     it('deletes the authenticator when user has another MFA method', async () => {
@@ -206,7 +228,11 @@ describe('TOTP API Routes', () => {
       await insertTestTotpAuthenticator(user.id, suffix1)
       const toDelete = await insertTestTotpAuthenticator(user.id, suffix2)
 
-      await req.delete(`/api/v1/auth/totp/${toDelete.id}`).expect(204)
+      const reAuthToken = await createTestAccountChangeProof(user.id, req)
+      await req
+        .delete(`/api/v1/auth/totp/${toDelete.id}`)
+        .send({ re_auth_token: reAuthToken })
+        .expect(204)
 
       const listRes = await req.get('/api/v1/auth/totp').expect(200)
       const found = listRes.body.results.find((a: { id: string }) => a.id === toDelete.id)
@@ -226,7 +252,7 @@ describe('TOTP API Routes', () => {
         .delete(`/api/v1/auth/totp/${onlyAuth.id}`)
         .set('Content-Type', 'application/json')
         .send({})
-        .expect(422)
+        .expect(403)
 
       expect(res.body.code).toBe('MFA_REAUTH_REQUIRED')
     }, 20_000)

@@ -48,10 +48,3 @@ export async function upsertFacebookAuthorizationCodeAccount(
     { ...options, label: 'Facebook', fetch: getExternalFetch() },
   )
 }
-
-export async function upsertFacebookAccount(
-  accessToken: string,
-  options: FacebookOptions = {},
-): Promise<OAuthAccount> {
-  return (await prepareFacebookAccount(accessToken, options)).persist()
-}

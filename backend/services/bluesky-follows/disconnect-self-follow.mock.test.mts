@@ -35,7 +35,10 @@ vi.mock<typeof import('@modules/bluesky-oauth')>(
 createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 
 import { BlueskySessionStore } from '../bluesky-accounts/session-store.mts'
-import { disconnectBlueskyAccountAndCleanupFollows as disconnectBlueskyAccountAndEnqueue } from './disconnect.mts'
+import {
+  disconnectAcceptedBlueskyAccountAndCleanupFollows,
+  disconnectBlueskyAccountAndCleanupFollows as disconnectBlueskyAccountAndEnqueue,
+} from './disconnect.mts'
 import { getBlueskyFollowReceipt, saveBlueskyFollowReceipt } from './receipts.mts'
 
 async function disconnectBlueskyAccountAndCleanupFollows(userId: string): Promise<void> {
@@ -78,15 +81,16 @@ describe('Bluesky self-follow disconnect cleanup', () => {
     const fixture = await createSelfFollowFixture()
     revokeBlueskySessionMock.mockRejectedValueOnce(new Error('provider revoke failed'))
 
-    await expect(disconnectBlueskyAccountAndCleanupFollows(fixture.userId)).rejects.toThrow(
-      /provider revoke failed/,
-    )
+    await expect(disconnectBlueskyAccountAndCleanupFollows(fixture.userId)).resolves.toBeUndefined()
 
     expect(deleteFollowMock).toHaveBeenCalledOnce()
     expect(await getFixtureReceipt(fixture)).toBeNull()
     expect(await getTestBlueskyLinkedAccountRow(fixture.did)).not.toBeNull()
 
-    await disconnectBlueskyAccountAndCleanupFollows(fixture.userId)
+    await disconnectAcceptedBlueskyAccountAndCleanupFollows(fixture.userId, {
+      blueskyDid: fixture.did,
+      linkAuthorizationId: fixture.authorizationId,
+    })
 
     expect(deleteFollowMock).toHaveBeenCalledOnce()
     expect(await getTestBlueskyLinkedAccountRow(fixture.did)).toBeNull()
@@ -97,14 +101,15 @@ describe('Bluesky self-follow disconnect cleanup', () => {
     deleteFollowMock.mockRejectedValueOnce(new Error('remote delete failed'))
     revokeBlueskySessionMock.mockRejectedValueOnce(new Error('provider revoke failed'))
 
-    await expect(disconnectBlueskyAccountAndCleanupFollows(fixture.userId)).rejects.toThrow(
-      /provider revoke failed/,
-    )
+    await expect(disconnectBlueskyAccountAndCleanupFollows(fixture.userId)).resolves.toBeUndefined()
 
     expect(await getTestBlueskyLinkedAccountRow(fixture.did)).not.toBeNull()
     expect(await getFixtureReceipt(fixture)).toMatchObject({ record_uri: fixture.recordUri })
 
-    await disconnectBlueskyAccountAndCleanupFollows(fixture.userId)
+    await disconnectAcceptedBlueskyAccountAndCleanupFollows(fixture.userId, {
+      blueskyDid: fixture.did,
+      linkAuthorizationId: fixture.authorizationId,
+    })
 
     expect(deleteFollowMock).toHaveBeenNthCalledWith(1, fixture.recordUri)
     expect(deleteFollowMock).toHaveBeenNthCalledWith(2, fixture.recordUri)
