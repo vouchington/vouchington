@@ -43,7 +43,7 @@ export type CopyrightStaffEmailIntake = {
     id: string
     targets: Array<{ id: string; placement_key: string }>
   } | null
-  /** `download_url` is null while SES's malware verdict quarantines the original message. */
+  /** `download_url` is available only after a passing SES virus verdict. */
   raw_email: { mime_type: string; byte_size: number; sha256: string; download_url: string | null }
   ses_verdicts: CopyrightEmailSesVerdicts
   parsed_email: { sender_email: string; subject: string; body_text: string } | null
@@ -130,7 +130,7 @@ export async function getCopyrightStaffEmailIntake(
       byte_size: row.raw_byte_size,
       sha256: row.raw_sha256.toString('hex'),
       download_url:
-        row.virus_verdict === 'fail' ? null : `/api/v1/copyright-email-intakes/${row.id}/raw`,
+        row.virus_verdict === 'pass' ? `/api/v1/copyright-email-intakes/${row.id}/raw` : null,
     },
     ses_verdicts: {
       spf: row.spf_verdict,

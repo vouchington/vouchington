@@ -58,11 +58,11 @@ describe('staff email intake SES verdicts', () => {
   })
 
   it.each(['gray', 'processing_failed', 'unknown'] as const)(
-    'keeps the download link when the SES malware verdict is %s',
+    'withholds the download link when the SES malware verdict is %s',
     async virus => {
       const view = await createStaffIntake({ ...PASSING_COPYRIGHT_EMAIL_SES_VERDICTS, virus })
 
-      expect(view?.raw_email.download_url).toEqual(expect.any(String))
+      expect(view?.raw_email.download_url).toBeNull()
       expect(view?.ses_verdicts.virus).toBe(virus)
     },
   )

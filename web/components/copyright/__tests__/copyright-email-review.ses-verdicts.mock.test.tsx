@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CopyrightEmailSesVerdicts } from '@/lib/api/client/copyright-email-intakes'
 import {
@@ -54,7 +54,9 @@ async function reviewIntake(
   })
   render(<CopyrightEmailReview data={makeQueuePage()} />)
   fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
-  await waitFor(() => expect(verdictsRegion()).toBeVisible())
+  expect(
+    await screen.findByRole('region', { name: 'Email authentication and scan results' }),
+  ).toBeVisible()
 }
 
 describe('CopyrightEmailReview SES verdicts', () => {
@@ -72,6 +74,14 @@ describe('CopyrightEmailReview SES verdicts', () => {
     expect(riskNote()).not.toBeInTheDocument()
     expect(malwareUnconfirmed()).not.toBeInTheDocument()
     expect(originalDownload()).toBeInTheDocument()
+  })
+
+  it('does not claim malware when a passing original has no download URL', async () => {
+    await reviewIntake(passing, null)
+
+    expect(quarantined()).toHaveTextContent('The original email is not available for download.')
+    expect(quarantined()).not.toHaveTextContent('SES reported malware')
+    expect(originalDownload()).not.toBeInTheDocument()
   })
 
   it('shows authentication failures as risk notes without blocking any review action', async () => {
@@ -101,14 +111,11 @@ describe('CopyrightEmailReview SES verdicts', () => {
     ['gray', 'Inconclusive'],
     ['processing_failed', 'Check failed'],
     ['unknown', 'Not reported'],
-  ] as const)(
-    'warns but keeps the download when the malware scan is %s',
-    async (virus, verdictLabel) => {
-      await reviewIntake({ ...passing, virus })
+  ] as const)('withholds the download when the malware scan is %s', async (virus, verdictLabel) => {
+    await reviewIntake({ ...passing, virus })
 
-      expect(malwareUnconfirmed()).toHaveTextContent(`malware scan: ${verdictLabel}`)
-      expect(originalDownload()).toBeInTheDocument()
-      expect(quarantined()).not.toBeInTheDocument()
-    },
-  )
+    expect(quarantined()).toHaveTextContent(`malware scan: ${verdictLabel}`)
+    expect(originalDownload()).not.toBeInTheDocument()
+    expect(quarantined()).not.toHaveTextContent('SES reported malware')
+  })
 })

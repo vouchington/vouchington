@@ -31,12 +31,12 @@ export async function loadCopyrightEmailRawEvidence(
   const record = await getRawEvidenceRecord(intakeId)
   // An erased intake no longer owns an object, so there is nothing to fetch.
   if (!record?.raw_storage_key) return null
-  // The stored object is the sender's unmodified message. Refuse before any read once SES has
-  // flagged it, so malware never leaves the private evidence bucket; other verdicts still allow it.
-  if (record.virus_verdict === 'fail') {
+  // The stored object is the sender's unmodified message. Refuse every non-pass verdict before
+  // reading it, so detected malware and uncleared originals never leave the private evidence bucket.
+  if (record.virus_verdict !== 'pass') {
     throw createCodedError(
       409,
-      'The original email is quarantined: SES reported malware in it. Review the parsed text only.',
+      'The original email is quarantined because SES did not report a passing virus scan. Review the parsed text only.',
       COPYRIGHT_EMAIL_QUARANTINED,
     )
   }

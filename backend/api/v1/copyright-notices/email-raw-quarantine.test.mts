@@ -40,28 +40,34 @@ describe('copyright email original download', () => {
     vi.unstubAllEnvs()
   })
 
-  it('refuses to download an original SES reported as malware and says why', async () => {
-    const intakeId = await createIntakeId(copyrightEmailSesVerdictsWithVirus('fail'))
-    vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-    const send = vi.spyOn(S3Client.prototype, 'send')
-    const moderator = await createModeratorRequest()
+  it.each(['fail', 'gray', 'processing_failed', 'unknown'] as const)(
+    'refuses an original without a passing SES virus verdict (%s)',
+    async virus => {
+      const intakeId = await createIntakeId(copyrightEmailSesVerdictsWithVirus(virus))
+      vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
+      const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
+        Body: Readable.from([bytes]),
+        ContentLength: bytes.byteLength,
+      } as never)
+      const moderator = await createModeratorRequest()
 
-    const refused = await moderator
-      .get(`/api/v1/copyright-email-intakes/${intakeId}/raw`)
-      .expect(409)
-    expect(refused.body).toMatchObject({
-      code: 'COPYRIGHT_EMAIL_QUARANTINED',
-      message: expect.stringContaining('malware'),
-    })
-    expect(refused.headers['cache-control']).toBe('private, no-store')
-    expect(send).not.toHaveBeenCalled()
+      const refused = await moderator
+        .get(`/api/v1/copyright-email-intakes/${intakeId}/raw`)
+        .expect(409)
+      expect(refused.body).toMatchObject({
+        code: 'COPYRIGHT_EMAIL_QUARANTINED',
+        message: expect.any(String),
+      })
+      expect(refused.headers['cache-control']).toBe('private, no-store')
+      expect(send).not.toHaveBeenCalled()
 
-    const detail = await moderator.get(`/api/v1/copyright-email-intakes/${intakeId}`).expect(200)
-    expect(detail.body.copyright_email_intake).toMatchObject({
-      ses_verdicts: { virus: 'fail' },
-      raw_email: { download_url: null },
-    })
-  })
+      const detail = await moderator.get(`/api/v1/copyright-email-intakes/${intakeId}`).expect(200)
+      expect(detail.body.copyright_email_intake).toMatchObject({
+        ses_verdicts: { virus },
+        raw_email: { download_url: null },
+      })
+    },
+  )
 
   it('still downloads an original SES passed', async () => {
     const intakeId = await createIntakeId(PASSING_COPYRIGHT_EMAIL_SES_VERDICTS)
