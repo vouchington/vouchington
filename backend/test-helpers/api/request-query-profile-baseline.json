@@ -335,6 +335,14 @@
   },
   {
     "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "Native email login first resolves or creates the account, then rereads its private projection under the credential-admission user lock before minting authority. The locked reread must see a concurrent first-factor removal or deletion.",
+    "permanent": true,
+    "code": "backend/services/users/authentication-flows.mts:81",
+    "routes": ["POST /api/v1/auth/native/email-address/login"]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
     "maxCount": null,
     "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
     "permanent": true,
@@ -1176,6 +1184,14 @@
     "permanent": true,
     "code": "backend/services/user-financial-profiles/upsert.mts:17",
     "routes": ["PUT /api/v1/my/financial-profile"]
+  },
+  {
+    "annotation": "upsertUserAgentString",
+    "maxCount": 3,
+    "reason": "A cold native login resolves a new immutable user-agent row with a read, an idempotent insert, and a separate reread that can see a concurrent insert winner. This is one logical upsert with three bounded statements.",
+    "permanent": true,
+    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
+    "routes": ["POST /api/v1/auth/native/email-address/login"]
   },
   {
     "annotation": "verifyEmailVerificationToken",
