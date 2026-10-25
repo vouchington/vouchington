@@ -53,4 +53,39 @@ describe('browser session renewal coordination', () => {
       )
     },
   )
+
+  it('returns anonymous without deleting a valid anonymous session', async () => {
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
+          callback(),
+      },
+    })
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(JSON.stringify({ session: { uid: null } })))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(renewBrowserSession()).resolves.toBe(false)
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      '/api/v1/session',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
+  })
+
+  it('rejects a malformed successful refresh and clears its cookie state', async () => {
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
+          callback(),
+      },
+    })
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ session: {} })))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(renewBrowserSession()).rejects.toMatchObject({ status: 502 })
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/session', '/api/v1/session'])
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'DELETE' })
+  })
 })

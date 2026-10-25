@@ -81,7 +81,9 @@ export async function issuePreparedOAuthFlowResult(options: {
     sid: options.authenticatedSessionId,
     uid: options.user.id,
     eventType: options.refreshAuthenticatedSession ? 'refreshed_authenticated' : 'created',
-    credentialReplay: options.refreshAuthenticatedSession === true,
+    // A completed authorization can be observed concurrently before its first caller mints.
+    // Both callers must converge on the exact durable SID and stored device credential.
+    credentialReplay: options.authenticatedSessionId !== undefined,
     roles: options.claims?.roles,
     membershipPlan: options.claims?.membershipPlan,
     membershipExpiresAt: options.claims?.membershipExpiresAt,

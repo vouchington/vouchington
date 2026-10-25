@@ -27,6 +27,7 @@ describe('GET /api/v1/auth/sessions pagination', () => {
       sessionId: v7(),
       deviceId: v7(),
       deviceName: 'Older session',
+      lastSeenAt: new Date(Date.now() - 60_000),
     })
 
     const response = await createRequest()

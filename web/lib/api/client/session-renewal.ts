@@ -53,9 +53,11 @@ async function renewWithBrowserLock(): Promise<boolean> {
           await parseErrorResponseBody(response),
         )
       const body = (await response.json()) as { session?: { uid?: unknown } }
-      if (typeof body.session?.uid !== 'string')
-        throw new ApiError('Sign in to continue', 401, { code: 'SESSION_RELOGIN_REQUIRED' })
-      return true
+      if (body.session?.uid === null) return false
+      if (typeof body.session?.uid === 'string') return true
+      throw new ApiError('Invalid session refresh response', 502, {
+        code: 'SESSION_RELOGIN_REQUIRED',
+      })
     },
   )
 }

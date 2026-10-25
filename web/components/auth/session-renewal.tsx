@@ -16,8 +16,8 @@ export function SessionRenewal({
     let active = true
     async function renew() {
       try {
-        await renewSession()
-        if (active) window.location.replace(next)
+        const authenticated = await renewSession()
+        if (active) window.location.replace(authenticated ? next : buildLoginHref({ next }))
       } catch {
         if (active) window.location.replace(buildLoginHref({ next }))
       }

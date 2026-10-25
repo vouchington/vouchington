@@ -12,6 +12,7 @@ export async function insertTestUserSession(options: {
   userAgent?: string
   ipAddress?: string | null
   expiresAt?: Date
+  lastSeenAt?: Date
   revokedAt?: Date | null
   authOrigin?: 'web' | 'native'
 }): Promise<{
@@ -39,10 +40,10 @@ export async function insertTestUserSession(options: {
   const userAgentId = await upsertUserAgentString(userAgent, { query: transaction })
   const { rows } = await transaction(sql`/* insertTestUserSession */
     INSERT INTO user_sessions (
-      id, user_id, device_id, authentication_origin, device_name, user_agent_string_id, ip_address, expires_at, revoked_at
+      id, user_id, device_id, authentication_origin, device_name, user_agent_string_id, ip_address, last_seen_at, expires_at, revoked_at
     )
     SELECT ${sessionId}, ${options.userId}, ${deviceId}, ${options.authOrigin ?? 'web'}, ${deviceName}, ${userAgentId},
-      ${ipAddress}, ${expiresAt}, ${revokedAt}
+      ${ipAddress}, ${options.lastSeenAt ?? new Date()}, ${expiresAt}, ${revokedAt}
     RETURNING id, user_id, device_id, authentication_origin, device_name,
       (SELECT user_agent FROM user_agent_strings WHERE id = user_sessions.user_agent_string_id) AS user_agent,
       ip_address, created_at,
@@ -152,7 +153,10 @@ export async function deleteTestUserSession(sessionId: string): Promise<void> {
 
 export async function expireTestUserSession(sessionId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`UPDATE user_sessions SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second'
+    allowUnannotatedQuery(sql`UPDATE user_sessions
+      SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second',
+          device_token_issued_at = CASE WHEN device_token_issued_at IS NULL THEN NULL
+            ELSE LEAST(device_token_issued_at, CURRENT_TIMESTAMP - INTERVAL '2 seconds') END
       WHERE id = ${sessionId}`),
   )
 }
