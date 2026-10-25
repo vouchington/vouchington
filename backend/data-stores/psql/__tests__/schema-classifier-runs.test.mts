@@ -40,7 +40,7 @@ describe('classifier run schema', () => {
     ).toEqual([])
   })
 
-  it('fences one receipt per content and configuration identity, and stamps the community', async () => {
+  it('fences one receipt per content and prompt identity, and stamps the community', async () => {
     const { classifierId } = await createClassifierFixture()
     const fixture = await createFixture({ classifierId, community: true })
 
@@ -48,15 +48,20 @@ describe('classifier run schema', () => {
     await expect(fixture.insertRun()).rejects.toMatchObject({ code: '23505' })
     await expect(
       fixture.insertRun({ configurationJson: JSON.stringify({ other: 1 }) }),
-    ).resolves.toEqual(expect.any(String))
+    ).rejects.toMatchObject({ code: '23505' })
     await expect(fixture.insertRun({ inputSha256: Buffer.alloc(32, 7) })).resolves.toEqual(
       expect.any(String),
     )
-    await expect(fixture.insertRun({ configurationJson: 'not-json' })).rejects.toMatchObject({
+    await expect(
+      fixture.insertRun({ configurationJson: 'not-json', inputSha256: Buffer.alloc(32, 8) }),
+    ).rejects.toMatchObject({
       code: '22P02',
     })
     await expect(
-      fixture.insertRun({ configurationSha256: Buffer.alloc(32, 2) }),
+      fixture.insertRun({
+        configurationSha256: Buffer.alloc(32, 2),
+        inputSha256: Buffer.alloc(32, 9),
+      }),
     ).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.insertRun({ postId: null })).rejects.toMatchObject({ code: '23514' })
   })

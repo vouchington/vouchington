@@ -15,6 +15,7 @@ import {
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
 import { describe, expect, it } from 'vitest'
+import { listPendingClassifierRunRequests } from './run-discovery.mts'
 import { completeClassifierRun } from './run-completion.mts'
 import { persistClassifierRunOutcomes } from './run-outcomes.mts'
 import { supersedeStaleClassifierRun } from './run-supersession.mts'
@@ -59,16 +60,25 @@ describe('classifier run supersession (real PG)', () => {
     )
   })
 
-  it('supersedes a run for changed configuration with a new receipt identity', async () => {
+  it('settles a changed promptless configuration without replaying the immutable receipt', async () => {
     const setup = await createSyntheticFixture()
+    await requestSyntheticRun(setup)
     const run = await reserveSyntheticRun(setup)
     setup.state.version = 2
 
     const replacement = await supersedeStaleClassifierRun(setup.adapter, target(run))
 
-    expect(replacement).not.toBeNull()
-    expect(replacement!.configurationSha256.equals(run.configurationSha256)).toBe(false)
-    expect(await getClassifierRunFacts(setup.post.id, setup.slug)).toHaveLength(2)
+    expect(replacement).toBeNull()
+    const [facts] = await getClassifierRunFacts(setup.post.id, setup.slug)
+    expect(facts).toMatchObject({ id: run.runId, provider_attempts_started: 0 })
+    expect(facts!.configuration_sha256.equals(run.configurationSha256)).toBe(true)
+    expect(facts!.superseded_at).not.toBeNull()
+    const [request] = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
+    expect(request!.run_identity_id).toBe(run.runId)
+    expect(request!.run_settled_at).not.toBeNull()
+    expect(request!.no_work_at).toBeNull()
+    expect((await listPendingClassifierRunRequests(setup.adapter, null, 10)).items).toEqual([])
+    expect((await claimSyntheticRun(setup, run)).kind).toBe('stale')
   })
 
   it('returns the request to the sweep when the subject is no longer eligible', async () => {

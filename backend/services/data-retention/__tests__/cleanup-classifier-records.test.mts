@@ -6,6 +6,7 @@ import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/c
 import { supersedeActivePromptVersion } from '@voucha/test-helpers/data-stores/psql/classifier-threshold-management'
 import { createSyntheticFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-classifier'
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { insertTestAiUsageRecord } from '@voucha/test-helpers/entities/ai-usage'
 import {
   countClassifierRows,
   seedClassifierRunPayloadsAt,
@@ -29,6 +30,30 @@ describe('classifier retention cleanup', () => {
       currentInputSha256: setup.post.inputSha256,
       at,
       terminalCount: 3,
+    })
+    const usageId = await insertTestAiUsageRecord({
+      classifierRunId: terminalIds[0],
+      costMicrounits: 319,
+    })
+    const responseId = `classifier-retirement-${randomBytes(16).toString('hex')}`
+    await write(sql`/* seedClassifierRetirementProviderResponse */
+      INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
+      VALUES (${responseId}, ${usageId})`)
+    const ledgerRow = async () => {
+      const { rows } = await write<{ classifier_run_identity_id: string | null }>(sql`
+        /* checkClassifierRetirementPricedLedger */
+        SELECT record.*, key.response_id
+        FROM ai_usage_records record
+        JOIN ai_usage_provider_response_keys key ON key.ai_usage_record_id = record.id
+        WHERE record.id = ${usageId} AND key.response_id = ${responseId}`)
+      return rows[0]
+    }
+    const originalUsage = await ledgerRow()
+    expect(originalUsage).toMatchObject({
+      classifier_run_identity_id: terminalIds[0],
+      cost_microunits: '319',
+      currency_code: 'usd',
+      response_id: responseId,
     })
     const options = {
       retentionDays: 90,
@@ -54,6 +79,7 @@ describe('classifier retention cleanup', () => {
     expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(0)
     expect(await countClassifierRows('classifier_runs', [pendingId])).toBe(1)
     expect(await countClassifierRows('classifier_run_identities', terminalIds)).toBe(0)
+    expect(await ledgerRow()).toEqual({ ...originalUsage, classifier_run_identity_id: null })
     expect(await countClassifierRows('classifier_run_identities', [pendingId])).toBe(1)
     expect(await countClassifierRows('classifier_run_requests', [requestId])).toBe(1)
     const request = (await getClassifierRunRequestFacts(setup.post.id, setup.slug))[0]!

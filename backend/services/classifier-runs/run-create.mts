@@ -51,6 +51,10 @@ export async function insertClassifierRun<C>(
     : await query<{ id: string; decision_batch_id: string | null }>(sql`
         /* reserveClassifierRun.existingPayload */
         UPDATE classifier_runs SET superseded_at = NULL WHERE id = ${identityId}
+          AND configuration_sha256 = ${resolved.configurationSha256}
+          AND configuration_json = ${resolved.configurationJson}::jsonb
+          AND shared_actor_user_id = ${resolved.actorId}
+          AND prompt_version_id IS NOT DISTINCT FROM ${remote?.promptVersionId ?? null}::uuid
           AND (id >= ${activeCutoffId} OR
             (completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL))
         RETURNING id, decision_batch_id`)
