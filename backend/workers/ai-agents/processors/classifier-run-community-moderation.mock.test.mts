@@ -126,33 +126,34 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     expect(new Set(digests).size).toBe(2)
   })
 
-  it('re-keys the run when a rule is edited, so the new wording is asked once', async () => {
+  it('settles an edited rule without dispatching the same content identity again', async () => {
     const fixture = await createCommunityModerationFixture()
     const first = await reserveCommunityModerationFixtureRun(fixture)
     await processRun(first)
     await editTestCommunityRule(fixture.prompts[0]!.id, 'No spam of any kind, ever')
 
-    const second = await reserveCommunityModerationFixtureRun(fixture)
-    await processRun(second)
-    await processRun(second)
+    await requestCommunityModerationFixtureRun(fixture)
+    expect(await handler.reserve(fixture.subject)).toEqual({ kind: 'no-work' })
 
-    expect(second.runId).not.toBe(first.runId)
-    expect(second.configurationSha256.equals(first.configurationSha256)).toBe(false)
-    expect(provider).toHaveBeenCalledTimes(2)
+    expect(provider).toHaveBeenCalledOnce()
+    expect(await runFacts(fixture.postId)).toMatchObject([{ id: first.runId }])
+    expect(await getClassifierRunRequestFacts(fixture.postId)).toMatchObject([
+      { run_identity_id: first.runId, run_settled_at: expect.any(Date) },
+    ])
   })
 
-  it('sends no candidate for a deactivated prompt and re-keys the run', async () => {
+  it('does not dispatch a second run after a prompt is deactivated at the same content identity', async () => {
     const fixture = await createCommunityModerationFixture({ ruleTexts: ['One', 'Two', 'Three'] })
-    await processRun(await reserveCommunityModerationFixtureRun(fixture))
-    const deactivated = fixture.prompts[1]!
-    await deactivateTestCommunityPrompt(deactivated.id)
+    const first = await reserveCommunityModerationFixtureRun(fixture)
+    await processRun(first)
+    await deactivateTestCommunityPrompt(fixture.prompts[1]!.id)
 
-    await processRun(await reserveCommunityModerationFixtureRun(fixture))
+    await requestCommunityModerationFixtureRun(fixture)
+    expect(await handler.reserve(fixture.subject)).toEqual({ kind: 'no-work' })
 
-    expect(asked).toHaveLength(2)
-    expect(asked[1]!.toSorted()).toEqual(
-      idsOf(fixture.prompts.filter(prompt => prompt.id !== deactivated.id)),
-    )
+    expect(asked).toHaveLength(1)
+    expect(asked[0]!.toSorted()).toEqual(idsOf(fixture.prompts))
+    expect(await runFacts(fixture.postId)).toMatchObject([{ id: first.runId }])
   })
 
   it('reserves no work and never reaches the provider when every prompt is inactive', async () => {

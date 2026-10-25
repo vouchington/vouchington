@@ -12,6 +12,7 @@ import {
   ONE_BILLED_CALL,
   reportedContentVersion,
   reserveSeededRun,
+  reserveSeededRunOutcome,
 } from '@voucha/test-helpers/classifier-call-efficiency-run'
 import { describeClassifierCallEfficiency } from '@voucha/test-helpers/classifier-call-efficiency-tests'
 import {
@@ -43,7 +44,7 @@ describe('C8 community moderation content and rule versions (real PG, determinis
     vi.mocked(fetchStructuredDecisionProvider).mockReset()
   })
 
-  it('counts a rule edit as one re-classification while each receipt bills one call', async () => {
+  it('does not bill a rule edit again at the same content identity', async () => {
     const provider = installEfficiencyProvider()
     const window = efficiencyWindow()
     const fixture = await createCommunityModerationFixture()
@@ -52,25 +53,21 @@ describe('C8 community moderation content and rule versions (real PG, determinis
       trackRunId(first.runId)
       expect(await deliverRun(SLUG, first)).toBe('completed')
       await editTestCommunityRule(fixture.prompts[0]!.id, 'No spam of any kind, ever')
-      const second = await reserveSeededRun(SLUG, fixture)
-      trackRunId(second.runId)
-      expect(await deliverRun(SLUG, second)).toBe('completed')
-      expect(await deliverRun(SLUG, second)).toBe('replay')
+      const second = await reserveSeededRunOutcome(SLUG, fixture)
 
-      expect(second.runId).not.toBe(first.runId)
-      expect(provider.requests).toHaveLength(2)
+      expect(second).toEqual({ kind: 'no-work' })
+      expect(provider.requests).toHaveLength(1)
       expect(await listAiUsageRecordsForClassifierRun(first.runId)).toHaveLength(1)
-      expect(await listAiUsageRecordsForClassifierRun(second.runId)).toHaveLength(1)
       const { version, runs } = await reportedContentVersion(window, SLUG, fixture)
-      expect(runs).toHaveLength(2)
+      expect(runs).toHaveLength(1)
       expect(version).toMatchObject({
-        runs: 2,
-        billedRuns: 2,
-        reclassifications: 1,
-        providerCalls: 2,
+        runs: 1,
+        billedRuns: 1,
+        reclassifications: 0,
+        providerCalls: 1,
         maxProviderCallsPerRun: 1,
         runsOverOneCall: 0,
-        costMicrounits: '4000',
+        costMicrounits: '2000',
       })
     })
   })
