@@ -20,6 +20,7 @@ const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = {
   'double precision': 'pg_catalog.float8',
   float: 'pg_catalog.float8',
   integer: 'pg_catalog.int4',
+  money: 'pg_catalog.money',
   numeric: 'pg_catalog.numeric',
   decimal: 'pg_catalog.numeric',
   real: 'pg_catalog.float4',
@@ -27,11 +28,15 @@ const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = {
 }
 
 function sqlTypeName(type: PostgresSqlType): string {
-  if (type.name)
-    return type.name.parts
+  if (type.name) {
+    const name = type.name.parts
       .map(part => part.value)
       .join('.')
       .toLowerCase()
+    return type.name.parts.length === 1 && !type.name.parts[0]?.quoted
+      ? (BUILTIN_TYPE_NAMES[name] ?? name)
+      : name
+  }
   const builtin = type.builtin?.replace(/\(.*$/, '').toLowerCase() ?? ''
   return BUILTIN_TYPE_NAMES[builtin] ?? builtin
 }
