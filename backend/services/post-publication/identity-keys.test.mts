@@ -171,11 +171,10 @@ describe('post publication retained identity keys', () => {
     if (!claimed) throw new Error('Expected current identity work lease')
     const selected = await reconcileTestPublicationThroughPostSweep(claimed, undefined, post.id)
     expect(selected.posts.map(candidate => candidate.id)).toEqual([post.id])
-    const canonical = await reconcilePostPublicationDirtyWork(
-      claimed,
-      undefined,
-      selected.posts.map(candidate => candidate.id),
-    )
+    const canonical = await reconcilePostPublicationDirtyWork(claimed, undefined, {
+      postIds: selected.posts.map(candidate => candidate.id),
+      hasMore: selected.final.hasMorePosts,
+    })
 
     expect((await getTestPublicationProjectionIdentity(canonical.posts[0]!)).identityKeys).toEqual(
       expect.arrayContaining([expect.objectContaining({ kind: 'author', value: user.id })]),

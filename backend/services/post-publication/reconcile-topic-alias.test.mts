@@ -198,11 +198,10 @@ describe('topic alias publication reconciliation', () => {
       authoredToken: '#replacement',
     })
 
-    const reread = await reconcilePostPublicationDirtyWork(
-      claimed,
-      1,
-      selected.posts.map(post => post.id),
-    )
+    const reread = await reconcilePostPublicationDirtyWork(claimed, 1, {
+      postIds: selected.posts.map(post => post.id),
+      hasMore: selected.hasMorePosts,
+    })
     const withoutOld = await reconcilePostPublicationDirtyWork(
       testPublicationWorkAtPost(claimed, selectedPost.id),
       1,
@@ -247,7 +246,10 @@ describe('topic alias publication reconciliation', () => {
     const selectedPostId = selected.posts[0]!.id
     await hardDeleteTestPost(selectedPostId)
 
-    const reread = await reconcilePostPublicationDirtyWork(claimed, 1, [selectedPostId])
+    const reread = await reconcilePostPublicationDirtyWork(claimed, 1, {
+      postIds: [selectedPostId],
+      hasMore: selected.hasMorePosts,
+    })
     const remainingId = posts.map(post => post.id).find(postId => postId !== selectedPostId)!
     const nextPage = await reconcilePostPublicationDirtyWork(
       testPublicationWorkAtPost(claimed, remainingId),

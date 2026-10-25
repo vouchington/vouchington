@@ -112,7 +112,12 @@ export async function processReconcilePostPublication(
         const selectedPostIds = selected.posts.map(post => post.id)
         if (await reconcileReviewSuccessionBeforePostPublication(selectedPostIds, deps)) return
         await deps.withPostPublicationReconciliationLocks(selectedPostIds, async () => {
-          const result = await reconcile(work, limit, selectedPostIds, snapshotLimit)
+          const result = await reconcile(
+            work,
+            limit,
+            { postIds: selectedPostIds, hasMore: selected.hasMorePosts },
+            snapshotLimit,
+          )
           // The first pass owns the scanned cursor, even for an empty eligible page.
           result.hasMorePosts = selected.hasMorePosts
           result.cursorPostId = selected.cursorPostId

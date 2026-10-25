@@ -40,8 +40,8 @@ export type GenerationPageResult = {
 export async function generateSitemapPage<T extends SourceEntry>(
   maxRows: number,
   dependencies: GenerationPageDependencies<T>,
-  now = new Date(),
 ): Promise<GenerationPageResult> {
+  const now = new Date()
   let progress = await dependencies.getProgress()
   const publishedManifest = await dependencies.getManifest()
   const ageMs = progress ? now.getTime() - Date.parse(progress.started_at) : 0
@@ -149,8 +149,10 @@ export async function generateSitemapPage<T extends SourceEntry>(
     publishedManifest.active_page_count === progress.page_count &&
     publishedManifest.content_hash === progress.content_hash
   ) {
-    await dependencies.retireGeneration(progress.generation_id, progress.page_count)
-    await dependencies.afterPublication?.()
+    await Promise.all([
+      dependencies.retireGeneration(progress.generation_id, progress.page_count),
+      dependencies.afterPublication?.(),
+    ])
     await dependencies.deleteProgress()
     return { manifest: publishedManifest, hasMore: false }
   }

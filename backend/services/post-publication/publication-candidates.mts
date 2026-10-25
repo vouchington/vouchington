@@ -18,10 +18,12 @@ export type ReconciliationPost = {
   identity_snapshot_id?: string
 }
 
+export type SelectedPublicationPage = { postIds: readonly string[]; hasMore: boolean }
+
 export async function listPublicationCandidatePage(
   work: ClaimedPostPublicationDirtyWork,
   limit: number,
-  selectedPostIds?: readonly string[],
+  selectedPage?: SelectedPublicationPage,
 ): Promise<{
   posts: ReconciliationPost[]
   cursorPostId: string | null
@@ -29,7 +31,7 @@ export async function listPublicationCandidatePage(
   pendingPostId: string | null
   pendingAncestorId: string | null
 }> {
-  if (!selectedPostIds) {
+  if (!selectedPage) {
     const raw = await readRawPublicationCandidatePage(work, limit)
     return {
       posts: await listPublicationCandidates(work, limit, raw.postIds),
@@ -39,11 +41,11 @@ export async function listPublicationCandidatePage(
       pendingAncestorId: raw.pendingAncestorId,
     }
   }
-  const posts = await listPublicationCandidates(work, limit, selectedPostIds)
+  const posts = await listPublicationCandidates(work, limit, selectedPage.postIds)
   return {
     posts,
-    cursorPostId: selectedPostIds?.at(-1) ?? posts.at(-1)?.id ?? work.cursor_post_id,
-    hasMore: (selectedPostIds ?? posts).length === limit,
+    cursorPostId: selectedPage.postIds.at(-1) ?? posts.at(-1)?.id ?? work.cursor_post_id,
+    hasMore: selectedPage.hasMore,
     pendingPostId: null,
     pendingAncestorId: null,
   }

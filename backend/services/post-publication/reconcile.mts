@@ -3,7 +3,11 @@ import { write } from '@data-stores/psql'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
 import { listPostPublicationIdentityKeys } from './identity-keys.mts'
-import { listPublicationCandidatePage, type ReconciliationPost } from './publication-candidates.mts'
+import {
+  listPublicationCandidatePage,
+  type ReconciliationPost,
+  type SelectedPublicationPage,
+} from './publication-candidates.mts'
 import { retainRssFeedNotificationImpacts } from './retain-rss-feed-notification-impacts.mts'
 import { retainOrphanPublicationIdentities } from './orphan-identities.mts'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
@@ -22,7 +26,7 @@ export type PublicationSitemapTarget = {
 export async function reconcilePostPublicationDirtyWork(
   work: ClaimedPostPublicationDirtyWork,
   limit = getPostPublicationWorkLimit('reconciliation_page_size'),
-  selectedPostIds?: readonly string[],
+  selectedPage?: SelectedPublicationPage,
   snapshotLimit = getPostPublicationWorkLimit('identity_snapshot_page_size'),
 ): Promise<{
   processed: number
@@ -47,7 +51,7 @@ export async function reconcilePostPublicationDirtyWork(
     throw new TypeError('Publication page limit must be positive')
 
   const [postPage, orphanReceiptPage] = await Promise.all([
-    listPublicationCandidatePage(work, limit, selectedPostIds),
+    listPublicationCandidatePage(work, limit, selectedPage),
     listOrphanReceiptPostIds(work, limit),
   ])
   const { posts } = postPage

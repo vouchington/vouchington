@@ -7,7 +7,6 @@ import type { ModerationReportReason } from '@ts-shared/utils/moderation-reports
 import { openOrGetOpenCase } from './_moderation-case-support.mts'
 import { getTestReportJudgementContext } from './_moderation-report-judgement-context.mts'
 import { ENTITY_TYPE_TO_REPORT_FK } from './moderation-report-status.mts'
-// Re-export status helpers so existing test-helper import paths remain stable.
 export {
   ENTITY_TYPE_TO_REPORT_FK,
   insertTestSystemModerationReport,
@@ -147,6 +146,7 @@ export async function insertTestModerationReportsForTarget(options: {
 }
 
 export async function insertTestReportJudgement(options: {
+  createdAt?: Date
   entityType: 'post' | 'comment' | 'user' | 'rss_feed_item' | 'url_hostname'
   entityId: string
   triggeringReportId?: string | null
@@ -175,12 +175,12 @@ export async function insertTestReportJudgement(options: {
   }
 
   const context = await getTestReportJudgementContext(fkColumn, options.entityId)
-
-  const query = sql`/* insertTestReportJudgement */ INSERT INTO moderation_report_judgements (`
+  const query = sql`/* insertTestReportJudgement */ INSERT INTO moderation_report_judgements (id, `
   query.append(fkColumn)
   query.append(
     sql`, case_id, triggering_report_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank)
     VALUES (
+      ${uuidv7(options.createdAt ? { msecs: options.createdAt.getTime() } : undefined)}::uuid,
       ${options.entityId}::uuid,
       ${caseId},
       ${triggeringReportId},

@@ -22,14 +22,14 @@ export async function getUndispatchedJudgements(): Promise<
   }>
 > {
   const WORK_PAGE_SIZE = getModerationReportsWorkLimit('dispatch_batch_size')
-  const now = Date.now()
-  const newerThanSeconds = getModerationReportsWorkLimit('dispatch_newer_than_seconds')
-  const olderThanSeconds = Math.max(
-    getModerationReportsWorkLimit('dispatch_older_than_seconds'),
-    newerThanSeconds + 1,
+  const nowMs = Date.now()
+  const olderThanSeconds = getModerationReportsWorkLimit('dispatch_minimum_age_seconds')
+  const newerThanSeconds = Math.max(
+    getModerationReportsWorkLimit('dispatch_maximum_age_seconds'),
+    olderThanSeconds + 1,
   )
-  const olderThanId = getMinUUIDv7ForDate(new Date(now - olderThanSeconds * 1000))
-  const newerThanId = getMaxUUIDv7ForDate(new Date(now - newerThanSeconds * 1000))
+  const olderThanId = getMinUUIDv7ForDate(new Date(nowMs - olderThanSeconds * 1000))
+  const newerThanId = getMaxUUIDv7ForDate(new Date(nowMs - newerThanSeconds * 1000))
   const { rows } = await read<{
     judgement_id: string
     entity_type: string

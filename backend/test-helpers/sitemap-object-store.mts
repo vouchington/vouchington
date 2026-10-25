@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
+  NoSuchKey,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
@@ -19,16 +20,14 @@ export function spyOnSitemapObjectStore<Metadata>(
     if (command instanceof HeadObjectCommand) {
       const manifest = metadata.get(command.input.Key!)
       if (!manifest)
-        throw Object.assign(new Error('missing object'), {
-          name: 'NotFound',
-          $metadata: { httpStatusCode: 404 },
-        })
+        throw new NoSuchKey({ message: 'missing object', $metadata: { httpStatusCode: 404 } })
       return { Metadata: { 'sitemap-manifest': JSON.stringify(manifest) } } as never
     }
     if (command instanceof ListObjectsV2Command) return { Contents: [] } as never
     if (command instanceof GetObjectCommand) {
       const body = objects.get(command.input.Key!)
-      if (!body) throw Object.assign(new Error('missing object'), { name: 'NoSuchKey' })
+      if (!body)
+        throw new NoSuchKey({ message: 'missing object', $metadata: { httpStatusCode: 404 } })
       return { Body: { transformToString: async () => body.toString() } } as never
     }
     if (command instanceof PutObjectCommand) {

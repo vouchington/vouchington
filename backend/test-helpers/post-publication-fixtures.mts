@@ -54,11 +54,11 @@ export function testPublicationWorkAtPost(
 export async function reconcileTestPublicationUntilSnapshotsComplete(
   work: ClaimedPostPublicationDirtyWork,
   limit?: number,
-  selectedPostIds?: readonly string[],
+  selectedPage?: Parameters<typeof reconcilePostPublicationDirtyWork>[2],
 ) {
   for (let attempt = 0; attempt < 100; attempt += 1) {
     // Retries consume durable sequential snapshot cursors.
-    const result = await reconcilePostPublicationDirtyWork(work, limit, selectedPostIds)
+    const result = await reconcilePostPublicationDirtyWork(work, limit, selectedPage)
     if (!result.hasIncompleteSnapshots) return result
   }
   throw new Error('Test publication snapshot did not converge')
