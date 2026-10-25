@@ -49,6 +49,10 @@ const pr9389Files = [
 ] as const
 
 describe('detect-changes path filters', () => {
+  it('routes Trivy ignore-only changes to tooling', () => {
+    expect(loadDetectChangesFilters().tooling).toContain('.trivyignore.yaml')
+  })
+
   it('routes catalog generator sources and their existing owners without all scripts', () => {
     const backend = loadDetectChangesFilters()['backend']
     for (const stem of ['generate-mcp-catalog', 'mcp-catalog-generation', 'mcp-result-fixtures']) {

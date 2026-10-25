@@ -159,6 +159,8 @@
     "ci": {
       "entry": ["**/*.mts"],
       "project": ["**/*.mts"],
+      // The backend unit workflow executes ./ci/node_modules/.bin/coverage-check directly.
+      "ignoreDependencies": ["coverage-check"],
     },
     "backend/data-stores/*": {
       "entry": ["**/*.mts"],

@@ -165,7 +165,7 @@ describe('production test-helper dependency boundary', () => {
       'web/app/page.ts': "export { value } from '@/test-helpers/value'",
       'lambdas/handler.mts': "export { value } from '../backend/test-helpers/value.mts'",
       'ci/check-runtime.mts': "export { value } from './test-helpers/value.mts'",
-      'ci/check-coverage-scope.mts':
+      'ci/write-coverage-scope.mts':
         "export { value } from '../test-helpers/vitest-config/value.mts'",
       'ci/check-storybook-browser-optimize-deps.mts':
         "export { value } from './test-helpers/value.mts'",

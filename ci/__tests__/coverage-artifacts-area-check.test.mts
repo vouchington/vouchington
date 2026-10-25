@@ -9,12 +9,15 @@ import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
 
-// The fake coverage-check logs its arguments and snapshots the generated --rules file; the fake git
-// reports web/trailing.ts as a whitespace-only change.
-async function makeFakeBinDir(options: { checkExitCode?: number; auditGitExitCode?: number } = {}) {
+// Fake commands capture the scope and area-check arguments; git reports a whitespace-only change.
+async function makeFakeBinDir(
+  options: { checkExitCode?: number; scopeCheckExitCode?: number } = {},
+) {
   const dir = await mkdtemp(join(tmpdir(), 'voucha-ci-bin-'))
   const argsPath = join(dir, 'coverage-check-args.txt')
   const rulesPath = join(dir, 'area-rules.yml')
+  const scopeArgsPath = join(dir, 'scope-check-args.txt')
+  const scopePath = join(dir, 'scope.json')
 
   await writeFile(
     join(dir, 'coverage-check'),
@@ -31,20 +34,29 @@ fi
 `,
   )
   await writeFile(
+    join(dir, 'pnpm'),
+    `#!/usr/bin/env bash
+printf '%s\\n' "$@" > "$SCOPE_ARGS_PATH"
+if [ "\${1:-}" != exec ] || [ "\${2:-}" != vouchington ] || [ "\${3:-}" != coverage-scope-check ]; then exit 2; fi
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--scope-file" ]; then cp "$2" "$SCOPE_PATH"; fi
+  shift
+done
+exit ${options.scopeCheckExitCode ?? 0}
+`,
+  )
+  await writeFile(
     join(dir, 'git'),
     `#!/usr/bin/env bash
-if [ "$1" = "ls-files" ]; then
-  printf 'backend/services/coverage-fixture.mts\\0'
-  exit ${options.auditGitExitCode ?? 0}
-fi
 if [ "$1" = "diff" ] && [ "$3" = "--ignore-space-at-eol" ]; then exit 0; fi
 if [ "$1" = "diff" ]; then printf '%s\\n' 'web/trailing.ts'; exit 0; fi
 exit 1
 `,
   )
   await chmod(join(dir, 'coverage-check'), 0o755)
+  await chmod(join(dir, 'pnpm'), 0o755)
   await chmod(join(dir, 'git'), 0o755)
-  return { argsPath, binDir: dir, rulesPath }
+  return { argsPath, binDir: dir, rulesPath, scopeArgsPath, scopePath }
 }
 
 async function makeArtifactsDir(withLcov: boolean) {
@@ -60,7 +72,7 @@ async function makeArtifactsDir(withLcov: boolean) {
 }
 
 async function runAreaCheck(
-  options: { checkExitCode?: number; withLcov?: boolean; auditGitExitCode?: number } = {},
+  options: { checkExitCode?: number; withLcov?: boolean; scopeCheckExitCode?: number } = {},
 ) {
   const fake = await makeFakeBinDir(options)
   const mergedDir = await mkdtemp(join(tmpdir(), 'voucha-coverage-artifacts-merged-'))
@@ -76,6 +88,8 @@ async function runAreaCheck(
       COVERAGE_HEAD: 'head-ref',
       PATH: `${fake.binDir}:${process.env.PATH ?? ''}`,
       RULES_PATH: fake.rulesPath,
+      SCOPE_ARGS_PATH: fake.scopeArgsPath,
+      SCOPE_PATH: fake.scopePath,
     },
   })
   return { ...fake, mergedDir, run }
@@ -83,8 +97,18 @@ async function runAreaCheck(
 
 describe('coverage-artifacts.sh area-check', () => {
   it('merges the area LCOV and checks it against only the area-owned rules', async () => {
-    const { argsPath, mergedDir, rulesPath, run } = await runAreaCheck()
+    const { argsPath, mergedDir, rulesPath, scopeArgsPath, scopePath, run } = await runAreaCheck()
     await run
+
+    expect(await readFile(scopeArgsPath, 'utf8')).toContain(
+      'exec\nvouchington\ncoverage-scope-check\n--rules\n.coverage-rules.yml\n--scope-file\n',
+    )
+    const scope = JSON.parse(await readFile(scopePath, 'utf8')) as {
+      include: string[]
+      exclude: string[]
+    }
+    expect(Array.isArray(scope.include)).toBe(true)
+    expect(Array.isArray(scope.exclude)).toBe(true)
 
     const args = await readFile(argsPath, 'utf8')
     expect(args).toContain(`merge\n--artifacts\n`)
@@ -113,9 +137,10 @@ describe('coverage-artifacts.sh area-check', () => {
     await expect(readFile(argsPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
-  it('stops before merging artifacts when the scope audit cannot list tracked paths', async () => {
-    const { argsPath, run } = await runAreaCheck({ auditGitExitCode: 7 })
+  it('stops before merging artifacts when the scope command reports a violation', async () => {
+    const { argsPath, scopeArgsPath, run } = await runAreaCheck({ scopeCheckExitCode: 1 })
     await expect(run).rejects.toMatchObject({ code: 1 })
+    expect(await readFile(scopeArgsPath, 'utf8')).toContain('coverage-scope-check')
     await expect(readFile(argsPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
