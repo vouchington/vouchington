@@ -11,6 +11,13 @@ describe('fix-dependabot workflow', () => {
     expect(promptText).not.toContain('codex-completion.json')
   })
 
+  it('records blocked outcomes in one sticky PR comment instead of only the session summary', () => {
+    expect(promptText).toContain('`<!-- auto-harness-dependabot-status -->`')
+    expect(promptText).toContain('gh api --method PATCH repos/{owner}/{repo}/issues/comments/<id>')
+    expect(promptText).toContain('its head is no longer `{{COMMIT_SHA}}`')
+    expect(promptText).not.toContain('without mutating the PR')
+  })
+
   it('keeps trusted triage and prompt rendering setup outside the direct Harness dispatch', () => {
     const dispatchJob = parsed.jobs?.['dispatch']
     const triageJob = parsed.jobs?.['triage-and-rerun']

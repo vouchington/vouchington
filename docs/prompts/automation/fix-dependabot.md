@@ -18,11 +18,21 @@ counterfixtures. Repository-owned or deterministic failures require a root-cause
 
 Before choosing a fix, search open issues and pull requests for the dependency and the failing check,
 rule, or test, and search the [docs](../../README.md) for a recorded decision about it. PR #{{PR_NUMBER}} itself never counts. When another open issue or pull request already owns this
-failure, or a recorded decision defers it, report that the PR is blocked by it, link it, and leave
-the PR unchanged. Do not carry out the owning issue's plan on this branch. When a decision rules out
+failure, or a recorded decision defers it, name and link it in the blocked-status comment below and
+otherwise leave the PR unchanged. Do not carry out the owning issue's plan on this branch. When a decision rules out
 only some fixes, drop those and keep looking for a root-cause fix that complies.
 
-For a dependency-owned failure, retain only the required dependency, lockfile, test, guard, and documentation changes. A rebase alone is not a dependency fix. If no code change is justified, report that clearly without mutating the PR.
+For a dependency-owned failure, retain only the required dependency, lockfile, test, guard, and documentation changes. A rebase alone is not a dependency fix. If no code change is justified, post the blocked-status comment below and make no other change to the PR.
+
+The session summary is not visible on GitHub, so record every blocked or no-change outcome on the PR
+in exactly one blocked-status comment whose first line is `<!-- auto-harness-dependabot-status -->`.
+Immediately before writing it, re-fetch PR #{{PR_NUMBER}} and its comments. Write nothing when the PR
+closed, its head is no longer `{{COMMIT_SHA}}`, the failure matched a catalogued transient, or you
+pushed a fix. When a comment containing the marker was authored by the authenticated `gh` user,
+replace its body with `gh api --method PATCH repos/{owner}/{repo}/issues/comments/<id>`; otherwise post
+one with `gh pr comment`. The body states the head SHA and failing run it covers, the failing job and
+error, the blocking issue, pull request, upstream defect, or decision with links, and what would
+unblock the PR, such as a release that contains an upstream fix.
 
 When a fix is required, implement and validate it on the existing Dependabot branch. Immediately
 before pushing, re-fetch PR #{{PR_NUMBER}}, require the same open repository/ref and the exact expected
