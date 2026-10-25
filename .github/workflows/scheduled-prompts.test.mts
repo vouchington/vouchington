@@ -145,7 +145,7 @@ describe('scheduled-prompts workflow', () => {
 
   it('passes the rendered scheduled prompt to dispatch', () => {
     const selectJob = workflow.jobs?.['select-prompt']
-    const setupStep = selectJob?.steps?.find(step => step.uses?.endsWith('/setup-node-pnpm'))
+    const setupStep = selectJob?.steps?.find(step => step.uses?.includes('/setup-node-pnpm@'))
     const dispatchJob = workflow.jobs?.['dispatch']
     const prompt = dispatchJob?.with?.['prompt'] as string
 

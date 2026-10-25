@@ -121,8 +121,8 @@ describe('shepherd workflow', () => {
     const steps = gateJob?.steps ?? []
     const ackStep = steps.find(step => step.uses?.includes('/comment-command-acknowledge@'))
     const checkpointStep = gateJob?.steps?.find(step => step.id === 'checkpoint')
-    const setupNodeIndex = steps.findIndex(
-      step => step.uses === './.github/actions/setup-node-pnpm',
+    const setupNodeIndex = steps.findIndex(step =>
+      step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
     )
     const checkpointIndex = steps.findIndex(step => step.id === 'checkpoint')
 
@@ -247,8 +247,8 @@ describe('shepherd workflow', () => {
     const checkpointJob = workflow.jobs?.['checkpoint-dispatch']
     const steps = checkpointJob?.steps ?? []
     const checkoutIndex = steps.findIndex(step => step.uses?.startsWith('actions/checkout@'))
-    const setupNodeIndex = steps.findIndex(
-      step => step.uses === './.github/actions/setup-node-pnpm',
+    const setupNodeIndex = steps.findIndex(step =>
+      step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
     )
     const checkpointCliIndex = steps.findIndex(step =>
       step.run?.includes('ci/shepherd-checkpoint-cli.mts'),

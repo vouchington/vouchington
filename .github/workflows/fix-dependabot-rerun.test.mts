@@ -17,7 +17,7 @@ const eventInputs = {
 describe('fix-dependabot rerun routes', () => {
   it('keeps the preliminary source guard ahead of transient classification', () => {
     const triageJob = parsed.jobs?.['triage-and-rerun']
-    const setup = triageJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))
+    const setup = triageJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
     const sourceState = triageJob?.steps?.find(s => s.id === 'source-state')
     const decide = triageJob?.steps?.find(s => s.id === 'decide')
     const stepIds = triageJob?.steps?.map(s => s.id).filter(Boolean)

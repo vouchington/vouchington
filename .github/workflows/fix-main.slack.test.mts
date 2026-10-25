@@ -4,7 +4,7 @@ import { fixMainPrompt, parsedMain } from '../test-helpers/fix-main.fixtures.mts
 describe('fix-main workflow', () => {
   it('renders failure and related-work evidence into the disabled prompt', () => {
     const renderJob = parsedMain.jobs?.['render-prompt']
-    const setupStep = renderJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))
+    const setupStep = renderJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
     const renderStep = renderJob?.steps?.find(s => s.id === 'render')
 
     expect(setupStep).toBeDefined()

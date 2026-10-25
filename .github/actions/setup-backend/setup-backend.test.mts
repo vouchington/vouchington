@@ -16,8 +16,11 @@ describe('setup-backend composite action', () => {
   })
 
   it('installs the workspace through setup-node-pnpm, then builds email templates', () => {
-    expect(action.runs?.steps).toEqual([
-      { uses: './.github/actions/setup-node-pnpm' },
+    const [setup, ...rest] = action.runs?.steps ?? []
+    expect(setup?.uses).toMatch(
+      /^vouchington\/vouchington-tooling\/\.github\/actions\/setup-node-pnpm@[0-9a-f]{40}$/,
+    )
+    expect(rest).toEqual([
       {
         name: 'Build email-templates',
         shell: 'bash',

@@ -103,7 +103,7 @@ describe('plan workflow', () => {
   it('renders the plan automation template', () => {
     const renderJob = workflow.jobs?.['render-prompt']
     const setupStep = renderJob?.steps?.find(step =>
-      step.uses?.endsWith('/.github/actions/setup-node-pnpm'),
+      step.uses?.includes('/.github/actions/setup-node-pnpm@'),
     )
     const renderStep = renderJob?.steps?.find(step => step.id === 'render')
 
