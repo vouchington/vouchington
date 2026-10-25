@@ -4,8 +4,8 @@ import {
   createStructuredDecisionClient,
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionFetch,
-  type StructuredDecisionRequest,
 } from './structured-decisions.mts'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 
 const request: StructuredDecisionRequest = {
   state: 'A bakery review.',

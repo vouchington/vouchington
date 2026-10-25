@@ -1,9 +1,6 @@
 import { getOpenAITransport } from '@services/ai-usage'
-import type {
-  ModelCallResult,
-  ModelSelection,
-  OpenAITransport,
-} from '@modules/model-providers/types'
+import type { ModelSelection, OpenAITransport } from '@modules/model-providers/types'
+import type { ModelCallResult } from '@vouchington/ai/providers'
 import {
   callRecordingModelUsage,
   type CallRecordingModelUsageParams,

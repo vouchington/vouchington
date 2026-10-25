@@ -3,11 +3,7 @@ import {
   claimAndRecordBackgroundResponseUsage,
   type OwnedBackgroundResponseLease,
 } from '@services/openai-background-responses'
-import type {
-  LedgerModelProvider,
-  ModelUsage,
-  ProviderTransport,
-} from '@modules/model-providers/types'
+import type { ModelUsage } from '@vouchington/ai/providers'
 
 export interface BackgroundResponseRegistration {
   responseId: string
@@ -22,8 +18,9 @@ export interface ClassifierUsageAttribution {
 
 interface ClaimRegisteredResponseUsageParams {
   responseId?: string
-  provider: LedgerModelProvider
-  transport: ProviderTransport
+  /** `anthropic`, `openai` or `typesafe`; the `ai_model_providers` finite set guards the column. */
+  provider: string
+  transport: string
   usage: ModelUsage
   model: string
   serviceTier: string

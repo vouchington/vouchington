@@ -2,13 +2,12 @@ import onError from '@modules/on-error'
 import { latchAccountingUncertainty } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import {
-  retrieveOpenAIResponse,
-  cancelOpenAIResponse,
-  validateCompletedResponse,
-  isOpenAINotFoundError,
   OpenAIResponseNotCompletedError,
-} from '@modules/openai-utils/create-response'
-import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
+  isOpenAINotFoundError,
+  validateCompletedResponse,
+} from '@vouchington/ai/openai'
+import { retrieveOpenAIResponse, cancelOpenAIResponse } from '@modules/openai-utils/create-response'
+import { openAIUsageToModelUsage } from '@vouchington/ai/providers'
 import { claimExpiredBackgroundResponse, deleteBackgroundResponseRegistration } from './claim.mts'
 import { claimAndRecordBackgroundResponseUsage } from './claim-and-record.mts'
 import type { ExpiredBackgroundResponse } from './expired.mts'

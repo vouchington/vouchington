@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  streamOpenAIResponseEvents,
-  OpenAIResponseNotCompletedError,
-  type ResponseStreamEvent,
-} from './create-response.mts'
+import { streamOpenAIResponseEvents, type ResponseStreamEvent } from './create-response.mts'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import {
   makeResponseStream,
   makeSdkResponse,

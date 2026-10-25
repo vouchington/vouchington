@@ -1,5 +1,5 @@
 import { sanitizeClassifierExternalContent } from '@agents/classifiers/safe-content'
-import type { ToolDefinition } from '@modules/model-providers/tool-turn-types'
+import type { ToolDefinition } from '@vouchington/ai/providers'
 import { getTopicIds } from '@services/topics/search/get-ids'
 
 export const SEARCH_TOPICS_TOOL = 'lookup_candidate_topics'

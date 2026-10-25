@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { POST_CLASSIFIER_REMOTE_QUESTIONS } from '@voucha/types/entities/post-classifier'
 import { loadBenchmarkConfig } from './benchmark-config.mts'
 import { runBenchmark } from './benchmark-runner.mts'
+import type { StructuredDecisionClient } from './types.mts'
 import type {
-  StructuredDecisionClient,
   StructuredDecisionRequest,
   StructuredDecisionResult,
-} from './types.mts'
+} from '@vouchington/ai/structured-decisions'
 
 const config = loadBenchmarkConfig({
   OPENROUTER_API_KEY: 'test-key',

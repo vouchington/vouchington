@@ -28,7 +28,8 @@
     "@modules/structured-decisions": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/classifier-runs": "workspace:^",
-    "@services/classifiers": "workspace:^"
+    "@services/classifiers": "workspace:^",
+    "@vouchington/ai": "^0.3.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

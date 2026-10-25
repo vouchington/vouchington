@@ -22,12 +22,12 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "openai": "^7.38.0",
+    "@vouchington/ai": "^0.3.0",
+    "openai": "^7.43.0",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.11.2"
   },

@@ -7,7 +7,7 @@ import {
   findAiUsageRecordForPost,
 } from '@voucha/test-helpers'
 import { runReportJudgementAgent } from './run.mts'
-import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import type { Response } from 'openai/resources/responses/responses'
 import { TEST_OPENAI_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
 import type { AgentModelCaller } from '@agents/_shared'

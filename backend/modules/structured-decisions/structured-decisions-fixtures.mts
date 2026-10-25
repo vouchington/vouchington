@@ -1,5 +1,5 @@
 import { Response } from 'undici'
-import type { StructuredDecisionRequest } from './structured-decisions.mts'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 
 export const bakeryStructuredDecisionRequest: StructuredDecisionRequest = {
   state: 'A post about a local bakery.',

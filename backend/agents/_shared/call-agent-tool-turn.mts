@@ -1,5 +1,5 @@
 import { generateToolTurn } from '@modules/model-providers/tool-turn'
-import type { ToolTurnRequest, ToolTurnResult } from '@modules/model-providers/tool-turn-types'
+import type { ToolTurnRequest, ToolTurnResult } from '@vouchington/ai/providers'
 import { getOpenAITransport } from '@services/ai-usage'
 import type { AgentModelCall } from './call-agent-model.mts'
 import {

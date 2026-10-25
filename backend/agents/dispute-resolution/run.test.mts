@@ -20,7 +20,7 @@ import {
   TEST_OPENAI_SELECTION,
 } from '@voucha/test-helpers/agents/model-call-result'
 import type { AgentModelCaller } from '@agents/_shared'
-import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import type { PrivateUser } from '@services/users/types'
 import type { Response } from 'openai/resources/responses/responses'
 

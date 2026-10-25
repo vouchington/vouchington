@@ -1,5 +1,5 @@
 import type { ResponseStreamEvent } from 'openai/resources/responses/responses'
-import { OpenAIResponseStreamIterationError } from './response-errors.mts'
+import { OpenAIResponseStreamIterationError } from '@vouchington/ai/openai'
 
 /**
  * Yields every SSE event unchanged. A cancellation passes through as-is; any other failure while

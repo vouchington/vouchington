@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto'
 import { unrecoverable } from '@vouchington/queue-errors'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import { ModelProviderError } from '@modules/model-providers/errors'
-import type { ModelCallResult } from '@modules/model-providers/types'
+import { type ModelCallResult, ModelProviderError } from '@vouchington/ai/providers'
 import {
   completeAgentCallReceipt,
   getAgentCallReceipt,

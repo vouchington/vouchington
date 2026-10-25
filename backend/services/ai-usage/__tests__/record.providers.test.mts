@@ -6,7 +6,7 @@ import {
   createTestUser,
   findAiUsageRecordForPost,
 } from '@voucha/test-helpers'
-import type { ModelUsage } from '@modules/model-providers/types'
+import type { ModelUsage } from '@vouchington/ai/providers'
 import type { PrivateUser } from '@services/users/types'
 import { recordAiUsage } from '../record.mts'
 

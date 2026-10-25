@@ -2,13 +2,13 @@ import type {
   ResponseCreateParamsStreaming,
   ResponseInput,
 } from 'openai/resources/responses/responses'
+import type { CompletedOpenAIResponse } from '@vouchington/ai/openai'
 import {
   streamOpenAIResponseEvents,
   getOpenAIResponseAttemptHooks,
-  shouldLatchUnknownBilledOpenAIAttempt,
-  type OpenAIResponse,
   type ResponseStreamLike,
 } from '@modules/openai-utils/create-response'
+import { shouldLatchUnknownBilledAttempt } from '@modules/openai-utils/latch-policy'
 import { withOpenAIFlexFallback } from '@modules/openai-utils/flex-fallback'
 import { createOpenAICompatibleResponseWithRetries } from '@modules/openai-utils/response-retry'
 import client from './client.mts'
@@ -42,7 +42,7 @@ export async function createOpenRouterResponse(
   params: CreateOpenRouterResponseParams,
   options?: RawCreateOptions,
   deps: CreateOpenRouterResponseDeps = {},
-): Promise<OpenAIResponse> {
+): Promise<CompletedOpenAIResponse> {
   const createResponse = deps.createResponse ?? createClientResponse
   return withOpenAIFlexFallback(params, 'openrouter', async (attemptParams, priorAttempts) => {
     const { stream, requestStartedAt } = await createOpenAICompatibleResponseWithRetries(
@@ -54,7 +54,7 @@ export async function createOpenRouterResponse(
     try {
       return await drainOpenRouterResponse(stream)
     } catch (err) {
-      if (shouldLatchUnknownBilledOpenAIAttempt(err)) {
+      if (shouldLatchUnknownBilledAttempt(err)) {
         await getOpenAIResponseAttemptHooks()?.onUnknownBilledAttempt({
           requestStartedAt,
           error: err,
@@ -72,7 +72,9 @@ async function createClientResponse(
   return (await client.responses.create(params, options)) as ResponseStreamLike
 }
 
-async function drainOpenRouterResponse(stream: ResponseStreamLike): Promise<OpenAIResponse> {
+async function drainOpenRouterResponse(
+  stream: ResponseStreamLike,
+): Promise<CompletedOpenAIResponse> {
   const events = streamOpenAIResponseEvents(stream)
   let result = await events.next()
   while (!result.done) {
@@ -81,9 +83,3 @@ async function drainOpenRouterResponse(stream: ResponseStreamLike): Promise<Open
   }
   return result.value
 }
-
-export function toOpenRouterModel(model: string): string {
-  return model.includes('/') ? model : `openai/${model}`
-}
-
-export type { OpenAIResponse }

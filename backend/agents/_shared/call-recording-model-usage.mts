@@ -3,17 +3,16 @@ import {
   latchAccountingUncertainty,
   SpendCapBreachError,
 } from '@services/ai-usage'
-import { ModelProviderError } from '@modules/model-providers/errors'
-import type {
-  BilledModelResponse,
-  ModelCallResult,
-  ModelSelection,
-  OpenAITransport,
-} from '@modules/model-providers/types'
+import {
+  type BilledModelResponse,
+  type ModelCallResult,
+  ModelProviderError,
+} from '@vouchington/ai/providers'
+import type { ModelSelection, OpenAITransport } from '@modules/model-providers/types'
 import { recordModelProviderAlarm } from '@modules/on-error'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import {
-  OpenAIResponseNotCompletedError,
   runWithBackgroundResponseHooks,
   runWithOpenAIResponseAttemptHooks,
 } from './create-response.mts'

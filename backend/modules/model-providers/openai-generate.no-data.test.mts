@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { callOpenAIJson } from './openai-generate.mts'
+import { generateJson } from './generate.mts'
 
 const missingKeyRequest = {
   instructions: 'Return JSON.',
@@ -18,7 +18,9 @@ describe('default OpenAI JSON transport', () => {
       vi.stubEnv('OPENROUTER_API_KEY', '')
       try {
         await expect(
-          callOpenAIJson('gpt-6-luna', transport, missingKeyRequest),
+          generateJson({ provider: 'openai', model: 'gpt-6-luna' }, missingKeyRequest, {
+            openaiTransport: transport,
+          }),
         ).rejects.toMatchObject({
           name: 'ModelProviderError',
           code: 'client-unavailable',

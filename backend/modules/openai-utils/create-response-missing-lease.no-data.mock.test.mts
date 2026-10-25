@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createOpenAIResponse, OpenAIResponseNotCompletedError } from './create-response.mts'
+import { createOpenAIResponse } from './create-response.mts'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import { runWithBackgroundResponseHooks } from './background-response-context.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {

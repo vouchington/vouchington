@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  OpenAIResponseStreamIterationError,
-  runWithOpenAIResponseAttemptHooks,
-} from '@modules/openai-utils/create-response'
+import { runWithOpenAIResponseAttemptHooks } from '@modules/openai-utils/create-response'
+import { OpenAIResponseStreamIterationError, toOpenRouterModel } from '@vouchington/ai/openai'
 import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
-import { createOpenRouterResponse, toOpenRouterModel } from './create-response.mts'
+import { createOpenRouterResponse } from './create-response.mts'
 
 // The recorded responses are served through the real OpenAI SDK's `fetch` option (OpenRouter's
 // OpenResponses endpoint is driven by that SDK), so the SDK parses actual status lines, headers

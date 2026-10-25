@@ -2,9 +2,11 @@ import { vi, type Mock } from 'vitest'
 import type {
   createStructuredDecisionClient,
   StructuredDecisionClient,
+} from '@modules/structured-decisions'
+import type {
   StructuredDecisionRequest,
   StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 
 /** Probability to answer for a Noul question, keyed by question id (== candidate topic id). */
 export type FakeStructuredDecisionProbabilities = Readonly<Record<string, number>>

@@ -1,10 +1,7 @@
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
-import {
-  formatClassifierUsageReport,
-  parseClassifierUsageTime,
-  readClassifierUsageReport,
-} from '@services/classifier-runs'
+import { formatClassifierUsageReport, readClassifierUsageReport } from '@services/classifier-runs'
 import onError from '@modules/on-error'
+import { parseUtcIsoTime } from '@vouchington/ai/usage'
 import { parseArgs } from 'node:util'
 
 const USAGE = `Usage: node backend/scripts/classifier-call-efficiency.mts --from <UTC time> [--to <UTC time>] [--json]
@@ -16,7 +13,7 @@ a window that still holds unfinished runs reports an inconclusive verdict until 
 --json prints the whole report, one row per run included.`
 
 function parseTime(name: string, value: string): Date {
-  const time = parseClassifierUsageTime(value)
+  const time = parseUtcIsoTime(value)
   if (time === null) {
     throw new Error(`--${name} must be a UTC ISO time like 2026-10-01T00:00:00Z, got "${value}"`)
   }

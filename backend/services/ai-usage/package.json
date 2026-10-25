@@ -31,6 +31,7 @@
     "@ts-shared/utils": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/types": "workspace:^",
+    "@vouchington/ai": "^0.3.0",
     "@vouchington/postgres": "^0.0.18",
     "@vouchington/utils": "^0.10.0",
     "p-map": "^7.1.0",

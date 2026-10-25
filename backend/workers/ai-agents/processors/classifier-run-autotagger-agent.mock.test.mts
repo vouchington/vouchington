@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { ModelProviderError } from '@vouchington/ai/providers'
 import { generateToolTurn } from '@modules/model-providers/tool-turn'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 import { CLASSIFIER_RUN_ATTEMPTS } from '@queues/ai-agents/config'

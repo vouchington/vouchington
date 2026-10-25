@@ -32,10 +32,11 @@
     "@services/ai-usage": "workspace:^",
     "@services/openai-background-responses": "workspace:^",
     "@ts-shared/utils": "workspace:^",
+    "@vouchington/ai": "^0.3.0",
     "@vouchington/queue-errors": "^0.2.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^",
-    "openai": "^7.38.0"
+    "openai": "^7.43.0"
   }
 }

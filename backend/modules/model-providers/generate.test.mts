@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ModelProviderError } from './errors.mts'
+import { type GenerateJsonRequest, ModelProviderError } from '@vouchington/ai/providers'
 import { assertSupportedRequest, generateJson } from './generate.mts'
-import type { AnthropicDeps } from './anthropic-generate.mts'
-import type { OpenAIDeps } from './openai-generate.mts'
-import type { GenerateJsonRequest } from './types.mts'
+import type { AnthropicDeps, OpenAIDeps } from './clients.mts'
 
 type Answer = { verdict: string }
 type CreateOpenAI = NonNullable<OpenAIDeps['createOpenAIResponse']>

@@ -1,7 +1,7 @@
 import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { ModelProviderError } from '@vouchington/ai/providers'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { agentCallOperationKey, runWithJobTokenAccumulator } from '@agents/_shared'

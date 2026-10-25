@@ -13,7 +13,7 @@ import { getModerationAppealById } from '@services/moderation-appeals/get'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent } from './run.mts'
 import { appealResolutionRunInputForTest } from '@voucha/test-helpers/appeal-resolution-run'
-import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import type { Response } from 'openai/resources/responses/responses'
 import {
   makeAgentModelCaller,

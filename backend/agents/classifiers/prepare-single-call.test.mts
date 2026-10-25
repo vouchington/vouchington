@@ -3,7 +3,7 @@ import {
   StructuredDecisionError,
   type StructuredDecisionRequest,
   type StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 import { prepareSingleCallClassifierDecision } from './prepare-single-call.mts'
 import { classifierChoiceKey, classifierPrompt } from './safe-content.mts'
 import {
