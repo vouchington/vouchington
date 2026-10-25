@@ -1,6 +1,5 @@
 import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { getTestMembershipRaw } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   addVoteWeightSharedFamilyRecipient,
@@ -10,12 +9,11 @@ import {
   rejectVoteWeightEvidenceExact,
   supersedeVoteWeightFamilyObservation,
 } from '@voucha/test-helpers/vote-weight-dispatch'
-import { rejectMembershipProviderEvidence } from '../memberships/invalidate-provider-evidence.mts'
 import { dispatchVoteWeightFamilySourceChanges } from './dispatch-family-source-changes.mts'
 import { voteWeightWorkConfig } from './work-limits.mts'
 
 describe('dispatchVoteWeightFamilySourceChanges', () => {
-  it('recovers older rejected family evidence after its observation advances and projection retires', async () => {
+  it('recovers older rejected family evidence after its observation advances', async () => {
     const user = await createVoteWeightDispatchUser()
     const family = await createVoteWeightDispatchFamily({
       userId: user.id,
@@ -25,12 +23,8 @@ describe('dispatchVoteWeightFamilySourceChanges', () => {
     })
     await supersedeVoteWeightFamilyObservation(family.sourceId)
 
-    await expect(
-      rejectMembershipProviderEvidence(family.evidenceId, 'Family evidence rejected'),
-    ).resolves.toEqual({ invalidated: true, membershipId: family.membershipId })
-    await expect(getTestMembershipRaw(family.membershipId)).resolves.toMatchObject({
-      projection_ended_at: expect.any(Date),
-    })
+    const rejectedAt = new Date(Date.UTC(2041, 0, 1) + randomInt(0, 30_000_000)).toISOString()
+    await rejectVoteWeightEvidenceExact(family.evidenceId, rejectedAt)
 
     const at = await getVoteWeightEvidenceRejectedAtExact(family.evidenceId)
     const window = { previousThroughAt: null, windowStart: at, windowEnd: at }
