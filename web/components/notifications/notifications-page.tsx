@@ -10,7 +10,7 @@ import type {
 import {
   deleteMyNotification,
   markAllMyNotificationsRead,
-  markMyNotificationRead,
+  markMyNotificationReadKeepalive,
 } from '@/lib/api/client/my'
 import { navigateToTarget, resolveNotificationTarget } from './utils'
 import type { NotificationListNotification } from './notification-list-notification'
@@ -43,19 +43,15 @@ export function NotificationsPage({
 
   // Zero-arg `new Date()` stays inside the state updaters. Render reads `read_at`, so a clock
   // read in the handler body is an impure render.
-  async function handleMarkRead(notification: NotificationListNotification) {
-    try {
-      await markMyNotificationRead(notification.id)
-      const readAt = readAtById[notification.id] ?? notification.read_at
-      setReadAtById(prev => ({
-        ...prev,
-        [notification.id]: readAt ?? new Date().toISOString(),
-      }))
-      const target = resolveNotificationTarget(notification, notifications.communities)
-      if (target) navigateToTarget(target)
-    } catch (err) {
-      Sentry.captureException(err)
-    }
+  function handleMarkRead(notification: NotificationListNotification) {
+    const readAt = readAtById[notification.id] ?? notification.read_at
+    setReadAtById(prev => ({
+      ...prev,
+      [notification.id]: readAt ?? new Date().toISOString(),
+    }))
+    markMyNotificationReadKeepalive(notification.id).catch(Sentry.captureException)
+    const target = resolveNotificationTarget(notification, notifications.communities)
+    if (target) navigateToTarget(target)
   }
 
   async function handleDelete(notificationId: string) {

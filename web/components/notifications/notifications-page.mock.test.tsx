@@ -9,13 +9,13 @@ const mockReceiveLoadMore = vi.fn<VitestLooseMock>()
 
 const {
   mockMarkAllMyNotificationsRead,
-  mockMarkMyNotificationRead,
+  mockMarkMyNotificationReadKeepalive,
   mockDeleteMyNotification,
   mockCreateMyWebPushSubscription,
   mockDeleteMyWebPushSubscription,
 } = vi.hoisted(() => ({
   mockMarkAllMyNotificationsRead: vi.fn<VitestLooseMock>(),
-  mockMarkMyNotificationRead: vi.fn<VitestLooseMock>(),
+  mockMarkMyNotificationReadKeepalive: vi.fn<VitestLooseMock>(),
   mockDeleteMyNotification: vi.fn<VitestLooseMock>(),
   mockCreateMyWebPushSubscription: vi.fn<VitestLooseMock>(),
   mockDeleteMyWebPushSubscription: vi.fn<VitestLooseMock>(),
@@ -58,7 +58,7 @@ vi.mock(import('@/lib/api/client'), () => ({
 
 vi.mock(import('@/lib/api/client/my'), () => ({
   markAllMyNotificationsRead: mockMarkAllMyNotificationsRead,
-  markMyNotificationRead: mockMarkMyNotificationRead,
+  markMyNotificationReadKeepalive: mockMarkMyNotificationReadKeepalive,
   deleteMyNotification: mockDeleteMyNotification,
   createMyWebPushSubscription: mockCreateMyWebPushSubscription,
   deleteMyWebPushSubscription: mockDeleteMyWebPushSubscription,
@@ -98,8 +98,8 @@ describe('notifications-page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockMarkAllMyNotificationsRead.mockReset()
-    mockMarkMyNotificationRead.mockReset()
-    mockMarkMyNotificationRead.mockResolvedValue(undefined)
+    mockMarkMyNotificationReadKeepalive.mockReset()
+    mockMarkMyNotificationReadKeepalive.mockResolvedValue(undefined)
     mockDeleteMyNotification.mockReset()
     mockCreateMyWebPushSubscription.mockReset()
     mockDeleteMyWebPushSubscription.mockReset()
@@ -173,9 +173,9 @@ describe('notifications-page', () => {
       await waitFor(() => expect(mockDeleteMyNotification).toHaveBeenCalledWith('n1'))
     })
 
-    it('waits for the read receipt before opening a notification', async () => {
+    it('opens a notification while the read receipt is pending', async () => {
       let resolveReceipt: (() => void) | undefined
-      mockMarkMyNotificationRead.mockImplementation(
+      mockMarkMyNotificationReadKeepalive.mockImplementation(
         () =>
           new Promise<void>(resolve => {
             resolveReceipt = resolve
@@ -190,22 +190,19 @@ describe('notifications-page', () => {
 
       const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
         id: string
-      }) => Promise<void>
-      const opening = onOpen(initialNotifications.notifications.n1)
-      expect(mockNavigateToTarget).not.toHaveBeenCalled()
+      }) => void
+      onOpen(initialNotifications.notifications.n1)
+      expect(mockMarkMyNotificationReadKeepalive).toHaveBeenCalledWith('n1')
+      expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
 
       await act(async () => {
         resolveReceipt!()
-        await opening
       })
-
-      expect(mockMarkMyNotificationRead).toHaveBeenCalledWith('n1')
-      expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
     })
 
-    it('reports a failed read receipt without navigating away', async () => {
+    it('opens a notification and reports a failed read receipt', async () => {
       const receiptError = new Error('read receipt failed')
-      mockMarkMyNotificationRead.mockRejectedValue(receiptError)
+      mockMarkMyNotificationReadKeepalive.mockRejectedValue(receiptError)
       render(
         <NotificationsPage
           initialNotifications={initialNotifications}
@@ -215,10 +212,10 @@ describe('notifications-page', () => {
 
       const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
         id: string
-      }) => Promise<void>
-      await onOpen(initialNotifications.notifications.n1)
+      }) => void
+      onOpen(initialNotifications.notifications.n1)
 
-      expect(mockNavigateToTarget).not.toHaveBeenCalled()
+      expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
 
       await waitFor(() => {
         expect(mockCaptureException).toHaveBeenCalledWith(receiptError)

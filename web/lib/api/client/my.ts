@@ -27,6 +27,7 @@ export {
   getMyUnreadNotificationsSummaryClient,
   markAllMyNotificationsRead,
   markMyNotificationRead,
+  markMyNotificationReadKeepalive,
 } from './my-notifications'
 export function updateMyProfile(body: unknown): Promise<ProfileResponseBody> {
   return clientApi.patch<ProfileResponseBody>('/api/v1/my/profile', body)
