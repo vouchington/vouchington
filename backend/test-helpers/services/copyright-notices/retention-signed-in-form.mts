@@ -1,9 +1,7 @@
+import { appendTestCopyrightFormScreening } from '../../copyright-form-screenings.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { createCopyrightFormIntake } from '../../../services/copyright-notices/index.mts'
-import {
-  appendCopyrightFormScreening,
-  applyNonSpamSignedInCopyrightFormScreening,
-} from '../../../services/copyright-notices/form-screenings.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from '../../../services/copyright-notices/form-screenings.mts'
 import {
   createTestUser,
   insertTestImage,
@@ -49,7 +47,7 @@ export async function createRetentionSignedInForm(posterId: string) {
       ],
     },
   })
-  await appendCopyrightFormScreening({
+  await appendTestCopyrightFormScreening({
     intakeId: intake.id,
     inputSha256: randomBytes(32),
     recommendation: 'not_obviously_invalid',

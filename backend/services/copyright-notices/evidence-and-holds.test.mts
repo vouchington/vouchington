@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -7,11 +8,7 @@ import {
   insertTestPostImage,
 } from '@voucha/test-helpers'
 import { insertCopyrightEvidenceArtifact } from '@voucha/test-helpers/data-stores/psql/copyright-evidence-artifacts'
-import {
-  appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
-  resolveCopyrightLegalHold,
-} from './index.mts'
+import { appendCopyrightLegalHoldAssessment, resolveCopyrightLegalHold } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
@@ -118,7 +115,7 @@ describe('copyright notice evidence and holds', () => {
       targetIds: [heldTarget.id, otherTarget.id],
     })
     const restorationNow = new Date(deadline.earliest_restoration_at.getTime() + 86_400_000)
-    const holdSubmission = await appendCopyrightNoticeSubmission({
+    const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date('2026-07-01T12:00:00.000Z'),

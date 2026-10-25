@@ -1,12 +1,9 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it, vi } from 'vitest'
 import type { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
 import { getImagePlacementForCopyright } from '@services/images/placements'
-import {
-  appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
-  processCopyrightActionIntent,
-} from './index.mts'
+import { appendCopyrightLegalHoldAssessment, processCopyrightActionIntent } from './index.mts'
 import type { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { openHeldCounterNoticeRestore } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -88,7 +85,7 @@ async function appendLateHold(
   restored: Awaited<ReturnType<typeof restorePlacementForLateHold>>,
   publishPlacement: typeof prepublishImagePlacementDenial,
 ) {
-  const submission = await appendCopyrightNoticeSubmission({
+  const submission = await appendTestCopyrightNoticeSubmission({
     noticeId: restored.noticeId,
     kind: 'court_or_ccb_hold',
     receivedAt: new Date(restored.restorationAt.getTime() - 1),

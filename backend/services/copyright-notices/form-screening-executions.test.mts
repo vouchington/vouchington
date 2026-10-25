@@ -1,3 +1,7 @@
+import {
+  appendTestCopyrightFormScreening,
+  startTestCopyrightFormScreening,
+} from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -19,12 +23,8 @@ import {
 import { enforceCopyrightAssessment } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import {
-  appendCopyrightFormScreening,
-  applyNonSpamSignedInCopyrightFormScreening,
-} from './form-screenings.mts'
-import {
-  startCopyrightFormScreening,
   claimCopyrightFormScreening,
   completeCopyrightFormScreening,
   failCopyrightFormScreening,
@@ -75,7 +75,7 @@ describe('current copyright form screening execution', () => {
   })
   it('keeps a newer invalid screen visible after an earlier clear screen', async () => {
     const [{ notice }, user] = await Promise.all([createClearScreenedForm(), createTestUser()])
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 99),
       recommendation: 'invalid_or_spam',
@@ -101,7 +101,7 @@ describe('current copyright form screening execution', () => {
       substantiallyCompliant: true,
       copyrightFormScreeningId: screeningId,
     })
-    const attempt = await startCopyrightFormScreening(notice.intake.id)
+    const attempt = await startTestCopyrightFormScreening(notice.intake.id)
     const [targetId] = await readCopyrightNoticeTargetIds(notice.intake.copyright_notice_id)
     for (const state of ['pending', 'failed']) {
       if (state === 'failed') await failCopyrightFormScreening(attempt)
@@ -136,8 +136,8 @@ describe('current copyright form screening execution', () => {
 
   it('fences duplicate completion and stale success/failure without caching identical input', async () => {
     const { notice, screeningId } = await createClearScreenedForm()
-    const old = await startCopyrightFormScreening(notice.intake.id)
-    const current = await startCopyrightFormScreening(notice.intake.id)
+    const old = await startTestCopyrightFormScreening(notice.intake.id)
+    const current = await startTestCopyrightFormScreening(notice.intake.id)
     const input = {
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 1),
@@ -161,7 +161,7 @@ describe('current copyright form screening execution', () => {
 
   it('claims one live attempt and rotates failed retry tokens', async () => {
     const { notice } = await createClearScreenedForm()
-    const started = await startCopyrightFormScreening(notice.intake.id)
+    const started = await startTestCopyrightFormScreening(notice.intake.id)
     const claimed = await claimCopyrightFormScreening(notice.intake.id)
     expect(claimed?.leaseToken).not.toBe(started.leaseToken)
     await expect(claimCopyrightFormScreening(notice.intake.id)).resolves.toBeNull()
@@ -175,7 +175,7 @@ describe('current copyright form screening execution', () => {
 
   it('rotates an expired claim and fences its late output', async () => {
     const { notice } = await createClearScreenedForm()
-    await startCopyrightFormScreening(notice.intake.id)
+    await startTestCopyrightFormScreening(notice.intake.id)
     const old = (await claimCopyrightFormScreening(notice.intake.id))!
     const cutoff = await getTestExpiredCopyrightScreeningClaimTime(notice.intake.id)
     const retry = await claimCopyrightFormScreening(notice.intake.id, cutoff)
@@ -241,13 +241,13 @@ describe('current copyright form screening execution', () => {
       imposedById: null,
     }
     await acceptCopyrightNoticeAndImposeRestriction({ ...input, targetId: first! })
-    const attempt = await startCopyrightFormScreening(notice.intake.id)
+    const attempt = await startTestCopyrightFormScreening(notice.intake.id)
     await expect(
       acceptCopyrightNoticeAndImposeRestriction({ ...input, targetId: second! }),
     ).rejects.toThrow('Copyright screening authority is not current')
     await failCopyrightFormScreening(attempt)
     await expect(countCopyrightActiveRestrictionsForNotice(input.noticeId)).resolves.toBe(1)
-    await completeCopyrightFormScreening(await startCopyrightFormScreening(notice.intake.id), {
+    await completeCopyrightFormScreening(await startTestCopyrightFormScreening(notice.intake.id), {
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 2),
       recommendation: 'not_obviously_invalid',
@@ -273,7 +273,7 @@ describe('current copyright form screening execution', () => {
       substantiallyCompliant: true,
       copyrightFormScreeningId: screeningId,
     })
-    await failCopyrightFormScreening(await startCopyrightFormScreening(notice.intake.id))
+    await failCopyrightFormScreening(await startTestCopyrightFormScreening(notice.intake.id))
     await reviewCopyrightFormIntake({
       intakeId: notice.intake.id,
       currentUser: { ...user, roles: ['moderator'] },

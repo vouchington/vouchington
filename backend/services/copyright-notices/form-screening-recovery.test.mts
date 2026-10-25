@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -19,10 +20,7 @@ import {
 } from './index.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
-import {
-  appendCopyrightFormScreening,
-  applyNonSpamSignedInCopyrightFormScreening,
-} from './form-screenings.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
@@ -85,7 +83,7 @@ describe('copyright form-screening recovery', () => {
   it('does not recover an earlier clear screen after a newer invalid result', async () => {
     const { notice } = await createClearScreenedForm()
     await expectFormEffect(notice.intake.copyright_notice_submission_id)
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 99),
       recommendation: 'invalid_or_spam',
@@ -122,7 +120,7 @@ describe('copyright form-screening recovery', () => {
     })
     const partial = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     await liftTestCopyrightRestriction(partial!.restrictions[0]!.id)
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 98),
       recommendation: 'not_obviously_invalid',

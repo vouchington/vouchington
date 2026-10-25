@@ -4,22 +4,7 @@ import { appendCopyrightSubmissionAssessmentInTransaction } from './compliance.m
 import { checkAutomaticWithholdingEligibility } from './automatic-withholding-gates.mts'
 import { refuseAutomaticWithholding } from './automatic-withholding-refusals.mts'
 import { getAutomaticWithholdingWindow } from './automatic-withholding-since.mts'
-import {
-  type CopyrightFormScreeningResultInput,
-  startCopyrightFormScreening,
-  completeCopyrightFormScreening,
-} from './form-screening-executions.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
-
-/** @public Cross-workspace persistence boundary used by the copyright form-screening agent. */
-export async function appendCopyrightFormScreening(
-  input: CopyrightFormScreeningResultInput,
-): Promise<string> {
-  const attempt = await startCopyrightFormScreening(input.intakeId)
-  const result = await completeCopyrightFormScreening(attempt, input)
-  if (!result) throw new Error('Copyright screening attempt was superseded')
-  return result
-}
 /**
  * Workflow-owned automation gate. Agents only return a recommendation and advisory guidance; they
  * cannot call this, and it never reads the guidance. While

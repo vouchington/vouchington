@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { readTestCopyrightStatementIntents } from '@voucha/test-helpers/copyright-statement-notices'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import { describe, expect, it } from 'vitest'
@@ -5,7 +6,6 @@ import type { prepublishImagePlacementDenial } from '@services/media-delivery-sa
 import { getImagePlacementForCopyright } from '@services/images/placements'
 import {
   appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
   processCopyrightActionIntent,
   resolveCopyrightLegalHold,
 } from './index.mts'
@@ -102,7 +102,7 @@ async function createQualifyingHold(input: {
   publish: typeof prepublishImagePlacementDenial
 }) {
   const receivedAt = new Date('2026-07-03T12:00:00.000Z')
-  const submission = await appendCopyrightNoticeSubmission({
+  const submission = await appendTestCopyrightNoticeSubmission({
     noticeId: input.noticeId,
     kind: 'court_or_ccb_hold',
     receivedAt,

@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -8,7 +9,6 @@ import {
 import { expireTestCopyrightDeliveryIntentClaim } from '@voucha/test-helpers/data-stores/psql/copyright-delivery-claims'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  appendCopyrightNoticeSubmission,
   deliverCopyrightInAppNotification,
   prepareCopyrightEmailDelivery,
   markCopyrightDeliveryIntentBouncedBySesMessageId,
@@ -249,7 +249,7 @@ describe('copyright delivery and correspondence persistence', () => {
 
   it('requires a reviewer for email and guest-form compliance assessments', async () => {
     const { notice } = await createFixture()
-    const submission = await appendCopyrightNoticeSubmission({
+    const submission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'notice',
       receivedAt: new Date('2026-07-01T12:00:00.000Z'),

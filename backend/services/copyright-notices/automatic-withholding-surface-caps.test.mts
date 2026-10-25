@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, createTestUserDirect } from '@voucha/test-helpers'
 import { readTestAutomaticWithholdingOutcome } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding-reads'
@@ -6,10 +7,7 @@ import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyrig
 import { isTestCopyrightStaffCaseQueued } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { createCopyrightFormIntake } from './form-intakes.mts'
-import {
-  applyNonSpamSignedInCopyrightFormScreening,
-  appendCopyrightFormScreening,
-} from './form-screenings.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 
 async function createScreenedFormWithTargets(
   claimantTargets: Awaited<ReturnType<typeof createTestCopyrightImageFixture>>['selector'][],
@@ -31,7 +29,7 @@ async function createScreenedFormWithTargets(
       claimantTargets,
     },
   })
-  await appendCopyrightFormScreening({
+  await appendTestCopyrightFormScreening({
     intakeId: intake.intake.id,
     inputSha256: Buffer.alloc(32, 24),
     recommendation: 'not_obviously_invalid',

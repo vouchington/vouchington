@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
@@ -9,7 +10,7 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
-import { appendCopyrightNoticeSubmission } from '@services/copyright-notices'
+
 import { acceptCopyrightNoticeAndImposeRestriction } from '@services/copyright-notices/restrictions'
 import { appendCopyrightSubmissionAssessment } from '@services/copyright-notices/compliance'
 import { createCopyrightDeliveryIntent } from '@services/copyright-notices/delivery-intents'
@@ -72,7 +73,7 @@ describe('copyright staff and participant routes', () => {
 
   it('records and resolves a qualifying CCB legal hold from staff HTTP', async () => {
     const fixture = await createAcceptedNoticeFixture()
-    const holdSubmission = await appendCopyrightNoticeSubmission({
+    const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: fixture.noticeId,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date('2026-07-01T13:00:00.000Z'),

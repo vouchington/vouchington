@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -12,7 +13,6 @@ import { suspendUser, unsuspendUser } from '@services/users/suspension'
 import { createCopyrightRestorationHoldFixture } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import {
   appendCopyrightLegalHoldAssessment,
-  appendCopyrightNoticeSubmission,
   listCopyrightRepeatInfringerAccountsForNotice,
   recordCopyrightRepeatInfringerReinstatement,
   recordCopyrightRepeatInfringerReviewOutcome,
@@ -234,7 +234,7 @@ describe('copyright repeat-infringer review outcomes', () => {
 
   it('refuses deletion for an unresolved qualifying hold and allows it after resolution', async () => {
     const { aggregate, claimant, moderator, notice } = await createCopyrightRestorationHoldFixture()
-    const holdSubmission = await appendCopyrightNoticeSubmission({
+    const holdSubmission = await appendTestCopyrightNoticeSubmission({
       noticeId: notice.id,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date('2026-07-02T13:00:00.000Z'),

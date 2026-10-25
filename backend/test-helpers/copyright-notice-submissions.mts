@@ -1,14 +1,12 @@
 import { beginTransaction } from '@data-stores/psql'
-import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type {
   CopyrightNoticeSubmissionRecord,
   CopyrightSubmissionKind,
   CopyrightSubmissionSourceKind,
-} from './types.mts'
+} from '../services/copyright-notices/types.mts'
 
-/** @public Retained provisionally under issue #1360; intended production use is unconfirmed and this export may be removed after intended-use review. */
-export async function appendCopyrightNoticeSubmission(input: {
+export async function appendTestCopyrightNoticeSubmission(input: {
   noticeId: string
   kind: CopyrightSubmissionKind
   receivedAt: Date
@@ -30,7 +28,7 @@ export async function appendCopyrightNoticeSubmission(input: {
       RETURNING id, copyright_notice_id, kind, received_at, source_kind, submitted_by_id, body_ciphertext
     `)
   const submission = rows[0]
-  assert(submission, 500, 'Failed to append copyright notice submission')
+  if (!submission) throw new Error('Failed to append copyright notice submission')
   await transaction.commit()
   return submission
 }

@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import {
   writeLateCopyrightEmailAfterRetentionMarker,
@@ -17,7 +18,7 @@ import { createCopyrightEmailIntake } from './email-intakes.mts'
 import { appendCopyrightEmailIntakeRecommendation } from './email-recommendations.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { rejectCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
-import { appendCopyrightNoticeSubmission } from './submission-appending.mts'
+
 import { appendCopyrightSubmissionGuidance } from './submission-guidance.mts'
 import { appendCopyrightLegalHoldAssessment } from './holds.mts'
 import { sweepCopyrightEvidenceRetention } from './index.mts'
@@ -150,7 +151,7 @@ describe('copyright retention and late agent writes', () => {
 
   it('fences submission guidance waiting behind the notice erasure lock', async () => {
     const entry = await createRetentionMinimalCase()
-    const submission = await appendCopyrightNoticeSubmission({
+    const submission = await appendTestCopyrightNoticeSubmission({
       noticeId: entry.noticeId,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date(),
@@ -181,7 +182,7 @@ describe('copyright retention and late agent writes', () => {
     await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const entry = await createRetentionMinimalCase({ artifacts: 1 })
     const watched = await watch(entry.noticeId, entry.evidenceKeys[0]!)
-    const submission = await appendCopyrightNoticeSubmission({
+    const submission = await appendTestCopyrightNoticeSubmission({
       noticeId: entry.noticeId,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date(),

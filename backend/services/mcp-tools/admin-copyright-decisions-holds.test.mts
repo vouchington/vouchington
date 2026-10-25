@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
@@ -6,7 +7,6 @@ import {
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { appendCopyrightNoticeSubmission } from '@services/copyright-notices'
 
 import { callMcpTool } from './call-tool.mts'
 import { LEGAL_MCP_SERVER_CONFIG } from './config.mts'
@@ -29,7 +29,7 @@ describe('registered copyright legal-hold decisions', () => {
     const restricted = await createTestCopyrightRestrictionForImage(
       await createTestCopyrightImageFixture('post-image'),
     )
-    const submission = await appendCopyrightNoticeSubmission({
+    const submission = await appendTestCopyrightNoticeSubmission({
       noticeId: restricted.noticeId,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date(),

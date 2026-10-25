@@ -1,3 +1,4 @@
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -7,10 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { countCopyrightActiveRestrictionsForNotice } from '@voucha/test-helpers/data-stores/psql/copyright-notice-reads'
 import { createCopyrightFormIntake, reviewCopyrightFormIntake } from './index.mts'
-import {
-  appendCopyrightFormScreening,
-  applyNonSpamSignedInCopyrightFormScreening,
-} from './form-screenings.mts'
+import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -65,7 +63,7 @@ describe('copyright form moderator fallback', () => {
         },
       })
     const flaggedNotice = await createNotice('Original photograph')
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: flaggedNotice.intake.id,
       inputSha256: Buffer.alloc(32, 9),
       recommendation: 'invalid_or_spam',
@@ -152,7 +150,7 @@ describe('copyright form moderator fallback', () => {
         ],
       },
     })
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 10),
       recommendation: 'not_obviously_invalid',
@@ -217,7 +215,7 @@ describe('copyright form moderator fallback', () => {
         ],
       },
     })
-    await appendCopyrightFormScreening({
+    await appendTestCopyrightFormScreening({
       intakeId: notice.intake.id,
       inputSha256: Buffer.alloc(32, 11),
       recommendation: 'not_obviously_invalid',

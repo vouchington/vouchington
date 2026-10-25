@@ -1,3 +1,4 @@
+import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUserDirect, insertTestCommunityMember } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
@@ -9,7 +10,7 @@ import {
 import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { getImagePlacementForCopyright } from '@services/images/placements'
-import { appendCopyrightNoticeSubmission, processCopyrightActionIntent } from './index.mts'
+import { processCopyrightActionIntent } from './index.mts'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 
 async function liftAndGetRestore(noticeId: string, restrictionId: string) {
@@ -98,7 +99,7 @@ describe('administrator lift restoration outcomes', () => {
     if (!withhold) throw new Error('Withhold intent missing')
     await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
     const restoreId = await liftAndGetRestore(noticeId, restrictions[0]!.id)
-    await appendCopyrightNoticeSubmission({
+    await appendTestCopyrightNoticeSubmission({
       noticeId,
       kind: 'court_or_ccb_hold',
       receivedAt: new Date(),
