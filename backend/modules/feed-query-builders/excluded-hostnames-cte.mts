@@ -31,27 +31,3 @@ export function buildExcludedHostnameIdsCTE(userId: string): SQLStatement {
         OR uh.reversed_hostname LIKE eh.reversed_hostname || '.%'
     )`
 }
-
-/**
- * Builds two CTEs for hostname exclusion based on a community's muted hostnames.
- *
- * - `community_excluded_hostnames`: collects reversed_hostname values from the community's mute relations
- * - `excluded_hostname_ids`: expands to all hostname IDs that match (including subdomains)
- *   for that community. Site-wide blocks are checked by hostname ID at each candidate.
- */
-/** @public SQL builder fragment for community feed query composition */
-export function buildCommunityExcludedHostnameIdsCTE(communityId: string): SQLStatement {
-  return sql`/* buildCommunityExcludedHostnameIdsCTE:fragment */
-    community_excluded_hostnames AS (
-      SELECT uh.reversed_hostname
-      FROM relation__community__mute__url_hostname rel
-      JOIN url_hostnames uh ON uh.id = rel.object_id
-      WHERE rel.subject_id = ${communityId} AND rel.deleted_at IS NULL
-    ),
-    excluded_hostname_ids AS (
-      SELECT DISTINCT uh.id AS hostname_id
-      FROM community_excluded_hostnames eh
-      JOIN url_hostnames uh ON uh.reversed_hostname = eh.reversed_hostname
-        OR uh.reversed_hostname LIKE eh.reversed_hostname || '.%'
-    )`
-}
