@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { isClassifierBatchWithinRetention } from '@services/classifiers/retention-window'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import {
+  classifierRetentionCutoff,
+  isClassifierBatchWithinRetention,
+} from '@services/classifiers/retention-window'
 import { runCapturedCandidateKind } from './remote-plan.mts'
 import {
   readClassifierRunCandidateTopicIds,
@@ -37,11 +41,11 @@ export async function claimClassifierRun<C, L, E>(
   const { row, resolved } = locked
   if (row.completed_at) return { kind: 'completed' }
   if (row.terminal_failed_at) return { kind: 'terminal' }
-  // A delayed queued claim must not revive a superseded run after its result range retired.
+  // A delayed queued claim must not revive a superseded run after its payload or result range retired.
   if (
     row.superseded_at &&
-    row.decision_batch_id &&
-    !isClassifierBatchWithinRetention(row.decision_batch_id)
+    (row.id < timestampToUuidv7LowerBound(classifierRetentionCutoff().getTime()) ||
+      (row.decision_batch_id && !isClassifierBatchWithinRetention(row.decision_batch_id)))
   ) {
     return { kind: 'stale' }
   }

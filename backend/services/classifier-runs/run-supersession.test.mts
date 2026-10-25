@@ -2,6 +2,8 @@ import {
   getClassifierRunFacts,
   getClassifierRunRequestFacts,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { supersedeClassifierRunForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-agent-fixture'
+import { seedClassifierRunPayloadsAt } from '@voucha/test-helpers/classifier-retention'
 import {
   createSyntheticFixture,
   reviseSyntheticPost,
@@ -17,6 +19,7 @@ import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-c
 import { describe, expect, it } from 'vitest'
 import { listPendingClassifierRunRequests } from './run-discovery.mts'
 import { completeClassifierRun } from './run-completion.mts'
+import { claimClassifierRun } from './run-claim.mts'
 import { persistClassifierRunOutcomes } from './run-outcomes.mts'
 import { supersedeStaleClassifierRun } from './run-supersession.mts'
 
@@ -30,6 +33,33 @@ function target(run: Awaited<ReturnType<typeof reserveSyntheticRun>>) {
 }
 
 describe('classifier run supersession (real PG)', () => {
+  it('refuses to reclaim a superseded promptless receipt after its 90-day payload window', async () => {
+    const setup = await createSyntheticFixture()
+    const { pendingId } = await seedClassifierRunPayloadsAt({
+      slug: setup.slug,
+      postId: setup.post.id,
+      actorId: setup.actorId,
+      currentInputSha256: setup.post.inputSha256,
+      at: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000),
+      terminalCount: 0,
+    })
+    await supersedeClassifierRunForTest(pendingId)
+    const [before] = await getClassifierRunFacts(setup.post.id, setup.slug)
+
+    const result = await claimClassifierRun(setup.adapter, {
+      runId: pendingId,
+      subject: setup.subject,
+      inputSha256: setup.post.inputSha256,
+      configurationSha256: before!.configuration_sha256,
+      leaseSeconds: 60,
+    })
+
+    expect(result).toEqual({ kind: 'stale' })
+    const [after] = await getClassifierRunFacts(setup.post.id, setup.slug)
+    expect(after).toMatchObject({ id: pendingId, lease_token: null })
+    expect(after!.superseded_at).not.toBeNull()
+  })
+
   it('leaves a run that still matches current content and configuration alone', async () => {
     const setup = await createSyntheticFixture()
     const run = await reserveSyntheticRun(setup)
