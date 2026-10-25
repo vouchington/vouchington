@@ -61,7 +61,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/memberships": "^0.2.0",
-    "@vouchington/utils": "^0.8.0",
+    "@vouchington/utils": "^0.9.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.11.2"

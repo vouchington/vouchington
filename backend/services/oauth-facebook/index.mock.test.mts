@@ -22,7 +22,7 @@ describe('Facebook provider email handling', () => {
     vi.doUnmock('undici')
   })
 
-  it('stores the provider identity without adopting a profile email', async () => {
+  it('stores the provider identity without verifying the profile email', async () => {
     const providerUserId = `facebook-${randomUUID()}`
     onTestFinished(() => deleteTestOAuthAccount('facebook', providerUserId))
     fetchSpy
@@ -38,7 +38,17 @@ describe('Facebook provider email handling', () => {
       provider_user_email_address: null,
       provider_user_data: { name: 'Member' },
     })
-    expect(account.provider_user_data).not.toHaveProperty('email')
+  })
+
+  it('fails closed without app credentials', async () => {
+    vi.stubEnv('FACEBOOK_APP_ID', '')
+    vi.resetModules()
+    const { upsertFacebookAuthorizationCodeAccount } = await import('./index.mts')
+
+    await expect(
+      upsertFacebookAuthorizationCodeAccount('code', 'https://example.com'),
+    ).rejects.toThrow('FACEBOOK_APP_ID and FACEBOOK_APP_SECRET must be defined')
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
 

@@ -1,4 +1,5 @@
 import createHttpError from 'http-errors'
+import { OidcVerificationError } from '@vouchington/utils/oidc-id-token'
 import {
   OAuthProviderError,
   type AuthorizationCodeInput,
@@ -39,6 +40,9 @@ export async function redeemProviderAccount(
     .catch((err: unknown) => {
       if (err instanceof OAuthProviderError) {
         throw createHttpError(502, err.message, { cause: err })
+      }
+      if (err instanceof OidcVerificationError) {
+        throw createHttpError(err.code === 'jwks_fetch' ? 502 : 401, err.message, { cause: err })
       }
       return rethrowProviderTransportError(options.label, err)
     })
