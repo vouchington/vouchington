@@ -1,10 +1,8 @@
 import { expect, it, describe, beforeAll } from 'vitest'
-import {
-  getLatestIntegrationStatusChange,
-  setIntegrationStatusAsAdmin,
-} from './integration-status.mts'
+import { setIntegrationStatusAsAdmin } from './integration-status.mts'
 import { beginTransaction, createTestTopic, createTestUser } from '@voucha/test-helpers'
 import {
+  getTestFediverseInstanceIntegrationChange,
   getTestFediverseInstanceIntegrationStatus,
   insertTestFediverseInstanceExtension,
   insertTestFediverseInstanceIntegrationChange,
@@ -44,7 +42,7 @@ describe('integration-status', () => {
     const status = await getTestFediverseInstanceIntegrationStatus(topicId)
     expect(status).toBe('approved')
 
-    const latest = await getLatestIntegrationStatusChange(topicId)
+    const latest = await getTestFediverseInstanceIntegrationChange(topicId)
     expect(latest?.integration_status).toBe('approved')
     expect(latest?.changed_by_id).toBe(admin.id)
     expect(latest?.reason).toBe('looks legit')
@@ -100,13 +98,6 @@ describe('integration-status', () => {
 
     const status = await getTestFediverseInstanceIntegrationStatus(topicId)
     expect(status).toBe('approved')
-  })
-
-  it('getLatestIntegrationStatusChange returns null when no change has ever been recorded', async () => {
-    const topicId = await createTestInstanceTopic('no-change')
-
-    const latest = await getLatestIntegrationStatusChange(topicId)
-    expect(latest).toBeNull()
   })
 
   it('trigger reads the highest-id row rather than trusting the just-inserted row (out-of-order commit defense)', async () => {
