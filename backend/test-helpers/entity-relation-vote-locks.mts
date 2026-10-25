@@ -1,4 +1,4 @@
-import { read, beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function holdTestEntityRelationVoteLock(
@@ -29,17 +29,4 @@ export async function holdTestEntityRelationVoteLock(
       await completion
     },
   }
-}
-
-export async function testCategorizerVoteLockHasWaiter(): Promise<boolean> {
-  const { rows } = await read<{ waiting: boolean }>(sql`/* testCategorizerVoteLockHasWaiter */
-    SELECT EXISTS (
-      SELECT 1
-      FROM pg_stat_activity
-      WHERE pid <> pg_backend_pid()
-        AND query LIKE '%clearCategoriesForUnlinkedTopicAlias lock%'
-        AND wait_event = 'advisory'
-    ) AS waiting
-  `)
-  return rows[0]?.waiting ?? false
 }
