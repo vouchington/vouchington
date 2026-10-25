@@ -24,10 +24,14 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
    `delay`, `deduplication`, `parent`, or `jobId`, and backlog guards count `delayed` jobs too.
    Each continuation step needs a new job or deduplication ID. Scheduled jobs need no overlap
    handling of their own; follow the [queue checklist](../../../docs/checklists/backend-queues.md#queue-boundaries).
-6. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
+6. Give every shared-queue job a domain-prefixed `ordering` key. Its `concurrency` is a global
+   cap across workers, read from DynamicConfig; it is not a split of `workerConcurrency`. Put
+   floodable families in their own lane and dispatchers in a lane separate from tasks, because
+   groups release jobs FIFO, not by priority.
+7. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
    queues, workers, services, or data stores.
-7. Update the domain README and queue inventory with the implementation.
-8. For effectful worker/RPC or financial (Stripe) operations, fill in the
+8. Update the domain README and queue inventory with the implementation.
+9. For effectful worker/RPC or financial (Stripe) operations, fill in the
    [durable transition matrix](../../../docs/checklists/backend-queues.md#durable-transition-matrix).
 
 For sweeps and cleanup jobs, apply [bounded-iteration](../bounded-iteration/SKILL.md).
