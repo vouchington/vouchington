@@ -297,10 +297,8 @@ runs:
 
         echo "Enqueueing heartbeat job..."
         # Distroless: /nodejs/bin is not on PATH; use absolute path for node.
-        # pnpm deploy links only the entrypoint's direct deps at the root, so resolve
-        # the heartbeat enqueue module through its consumer chain instead of bare.
-        docker exec "$WORKER_CONTAINER" /nodejs/bin/node -e \
-          "const { createRequire } = require('node:module'); const { pathToFileURL } = require('node:url'); let entry = '/app/backend/package.json'; for (const spec of ['@backend/worker-runtime', '@workers/heartbeat/workers', '@queues/heartbeat/enqueues']) entry = createRequire(entry).resolve(spec); import(pathToFileURL(entry).href).then(m => m.enqueueHeartbeat()).then(() => process.exit(0))"
+        docker exec -i "$WORKER_CONTAINER" /nodejs/bin/node --input-type=module < \
+          backend/test-helpers/deployed-worker-heartbeat.mts
 
         JOB_DONE=false
         for _ in $(seq 1 30); do
@@ -381,10 +379,8 @@ runs:
 
         echo "Enqueueing heartbeat job..."
         # Distroless: /nodejs/bin is not on PATH; use absolute path for node.
-        # pnpm deploy links only the entrypoint's direct deps at the root, so resolve
-        # the heartbeat enqueue module through its consumer chain instead of bare.
-        docker exec "$WORKER_CONTAINER" /nodejs/bin/node -e \
-          "const { createRequire } = require('node:module'); const { pathToFileURL } = require('node:url'); let entry = '/app/backend/package.json'; for (const spec of ['@backend/worker-runtime', '@workers/heartbeat/workers', '@queues/heartbeat/enqueues']) entry = createRequire(entry).resolve(spec); import(pathToFileURL(entry).href).then(m => m.enqueueHeartbeat()).then(() => process.exit(0))"
+        docker exec -i "$WORKER_CONTAINER" /nodejs/bin/node --input-type=module < \
+          backend/test-helpers/deployed-worker-heartbeat.mts
 
         JOB_DONE=false
         for _ in $(seq 1 30); do

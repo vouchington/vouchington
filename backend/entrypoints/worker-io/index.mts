@@ -4,7 +4,7 @@ import '@backend/service-registrations'
 
 const runtime = await initializeWorkerRuntime()
 
-export const startWorkerRuntime = runtime.startWorkerRuntime
+const startWorkerRuntime = runtime.startWorkerRuntime
 
 if (!process.env.NODE_PREWARM) await startWorkerRuntime()
 
