@@ -2,7 +2,7 @@
 
 import { beginOAuthAuthorization, type OAuthBrokerPurpose } from '@/lib/api/client'
 import type { BrokerOAuthProvider } from './oauth-broker-provider'
-import { OAuthCancelledError } from './oauth-error'
+import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 
 export type { BrokerOAuthProvider } from './oauth-broker-provider'
 

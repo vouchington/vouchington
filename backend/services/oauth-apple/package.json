@@ -26,12 +26,12 @@
     "@modules/api-egress-proxy": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@voucha/config": "workspace:^",
-    "http-assert": "^1.5.0",
-    "http-errors": "^2.0.1",
-    "undici": "^8.12.3"
+    "@vouchington/utils": "^0.8.0",
+    "http-errors": "^2.0.1"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.12.3"
   }
 }

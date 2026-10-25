@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { OAuthCancelledError } from '@/lib/auth/oauth-error'
+import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 import type { AuthState } from './oauth-types'
 import { useLoadScript } from '@vouchington/script-loader'
 

@@ -2706,6 +2706,8 @@ rules:
           reason: First-party media validation, streaming, and S3 utilities published by the repo author.
         - name: '@vouchington/memberships'
           reason: First-party membership catalog, SKU grouping, and status utilities published by the repo author.
+        - name: '@vouchington/oauth-client'
+          reason: First-party OAuth client primitives (AT Protocol) published by the repo author.
         - name: '@vouchington/oauth-server'
           reason: First-party OAuth authorization-server primitives published by the repo author.
         - name: '@vouchington/pagination'

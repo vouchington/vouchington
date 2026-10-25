@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { OAuthCancelledError } from '@/lib/auth/oauth-error'
+import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 import type { OAuthProvider } from '@/types/user'
 import { ProviderIcon } from './oauth-provider-icons'

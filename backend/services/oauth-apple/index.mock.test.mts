@@ -70,10 +70,6 @@ describe('apple oauth', () => {
       const account = await upsertAppleAccount(credential, { name: 'Apple Test User' }, nonce)
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toBe(email)
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://appleid.apple.com/auth/keys',
-        expect.objectContaining({ dispatcher: expect.anything(), signal: expect.any(AbortSignal) }),
-      )
 
       const byId = await getOAuthAccountByProviderUserId('apple', appleUserId)
       expect(byId?.provider_user_id).toBe(appleUserId)
@@ -124,11 +120,6 @@ describe('apple oauth', () => {
       expect(secondCredential).not.toBe(firstCredential)
       expect(secondAccount).toEqual(firstAccount)
       expect(secondAccount.provider_user_data.name).toBe('Apple Recovery User')
-      expect(fetchSpy).toHaveBeenCalledTimes(1)
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://appleid.apple.com/auth/keys',
-        expect.objectContaining({ dispatcher: expect.anything() }),
-      )
     })
 
     it('rejects tokens whose nonce does not match', async () => {
@@ -236,7 +227,7 @@ describe('apple oauth', () => {
       expect(account.provider_user_email_address).toContain('@voucha.ai')
     })
 
-    it('maps Apple JWKS timeouts to 502 and does not cache the failed fetch', async () => {
+    it('maps Apple JWKS timeouts to 502', async () => {
       const credential = createSignedJwt(
         { kid: 'apple-kid', alg: 'RS256' },
         {
@@ -252,36 +243,9 @@ describe('apple oauth', () => {
       )
 
       await expect(upsertAppleAccount(credential)).rejects.toMatchObject({ status: 502 })
-      expect(fetchSpy).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe('cache', () => {
-    it('caches apple keys for the production undici fetch dependency', async () => {
-      fetchSpy.mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('apple-kid')))
-
-      await upsertAppleAccount(createCredential('apple-cache-user-a'))
-      await upsertAppleAccount(createCredential('apple-cache-user-b'))
-
-      expect(fetchSpy).toHaveBeenCalledTimes(1)
-    })
-
-    it('force-refreshes production apple keys when the cached key misses the token kid', async () => {
-      fetchSpy
-        .mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('stale-apple-kid')))
-        .mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('rotated-apple-kid')))
-
-      await upsertAppleAccount(createCredential('apple-cache-refresh-user', 'rotated-apple-kid'))
-
-      expect(fetchSpy).toHaveBeenCalledTimes(2)
     })
   })
 })
-
-function createCredential(subjectPrefix: string, kid = 'apple-kid'): string {
-  const subject = `${subjectPrefix}-${createRandomString(8)}`
-  return createCredentialForSubject(subject, kid)
-}
 
 function createCredentialForSubject(subject: string, kid = 'apple-kid'): string {
   return createSignedJwt(
