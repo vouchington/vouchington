@@ -22,5 +22,8 @@
     "@queues/crawl-embeds": "workspace:^",
     "@services/crawl-embeds": "workspace:^",
     "glide-mq": "^0.19.0"
+  },
+  "devDependencies": {
+    "@data-stores/valkey-core": "workspace:^"
   }
 }

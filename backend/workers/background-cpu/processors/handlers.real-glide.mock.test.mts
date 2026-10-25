@@ -2,11 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Queue, QueueEvents } from 'glide-mq'
-import {
-  closeAndUnregisterGlideMQInstance,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import {
   BACKGROUND_CPU_QUEUE_NAME,
   backgroundCpuQueueConfig,

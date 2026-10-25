@@ -2,11 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { Queue, Worker, UnrecoverableError, type Job } from 'glide-mq'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import {
-  workerQueueCommandClient,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import { agentCallOperationKey } from '@agents/_shared'
 import { spendCapConfig, spendCapDelayedRegistryKey } from '@services/ai-usage'
 import {

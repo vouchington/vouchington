@@ -1,12 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  closeAndUnregisterGlideMQInstance,
-  createQueue,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { closeAndUnregisterGlideMQInstance, createQueue } from '@data-stores/valkey-glide-mq'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { backgroundCpu } from '@queues/background-cpu/queues'
 import { enqueueBulkCrawlUrls } from './enqueues.mts'

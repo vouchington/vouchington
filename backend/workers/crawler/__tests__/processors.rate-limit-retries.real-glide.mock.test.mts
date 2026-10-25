@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import { BACKGROUND_CPU_QUEUE_NAME as CRAWL_URLS_QUEUE_NAME } from '@queues/background-cpu/config'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'

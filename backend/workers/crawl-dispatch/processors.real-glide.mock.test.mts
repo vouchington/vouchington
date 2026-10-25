@@ -1,12 +1,11 @@
 import { backgroundCpu } from '@queues/background-cpu/queues'
 import { Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
   createWorker,
   processRetainedSweep,
   workerQueueCommandClient,
-  workerQueueConnection,
-  workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,

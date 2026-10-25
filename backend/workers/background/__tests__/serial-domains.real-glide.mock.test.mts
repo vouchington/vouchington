@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
   POST_PUBLICATION_RECONCILE_JOB,
   POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,

@@ -67,6 +67,7 @@
     "valkyries": "^0.11.2"
   },
   "devDependencies": {
+    "@data-stores/valkey-core": "workspace:^",
     "@queues/background": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@types/http-errors": "^2.0.5",

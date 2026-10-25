@@ -21,6 +21,7 @@
     "@queues/background-cpu": "workspace:^"
   },
   "devDependencies": {
+    "@data-stores/valkey-core": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

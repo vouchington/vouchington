@@ -17,7 +17,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
@@ -28,6 +27,7 @@
     "glide-mq": "^0.19.0"
   },
   "devDependencies": {
+    "@data-stores/valkey-core": "workspace:^",
     "@modules/aws": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

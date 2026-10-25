@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Queue } from 'glide-mq'
-import {
-  workerQueueConnection,
-  workerQueuePrefix,
-  createBulkEnqueueFunction,
-  createEnqueueFunction,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { startRealGlideJobLifecycle } from '@voucha/test-helpers/real-glide-job-lifecycle'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())

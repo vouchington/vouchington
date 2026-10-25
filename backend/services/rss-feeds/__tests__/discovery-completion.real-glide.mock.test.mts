@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '../../../data-stores/valkey-glide-mq/index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB } from '@queues/background/enqueues/imports-jobs'
 import { background } from '@queues/background/queues'
 import {

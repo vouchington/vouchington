@@ -1,7 +1,7 @@
 import { once } from 'node:events'
 import { QueueEvents, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { backgroundQueueConfig } from '@queues/background/config'
 import { IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB } from '@queues/background/enqueues/imports-jobs'
 import {

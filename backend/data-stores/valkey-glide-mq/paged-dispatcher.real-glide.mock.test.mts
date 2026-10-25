@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { Queue, Worker, type Job } from 'glide-mq'
-import { createBulkEnqueueFunction, workerQueueConnection, workerQueuePrefix } from './index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { createBulkEnqueueFunction } from './index.mts'
 import {
   processPagedDispatcher,
   pagedDispatchBackoffStrategies,

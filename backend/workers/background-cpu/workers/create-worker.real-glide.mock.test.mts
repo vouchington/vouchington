@@ -1,11 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, UnrecoverableError } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  closeAndUnregisterGlideMQInstance,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'

@@ -2,7 +2,7 @@ import { fork, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { Queue } from 'glide-mq'
 import { onTestFinished } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '../data-stores/valkey-glide-mq/index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { observeElectionQueueTerminals } from './election-vote-stats-events.mts'
 
 type Receipt = { type: 'completed' | 'failed'; id: string; pid: number }

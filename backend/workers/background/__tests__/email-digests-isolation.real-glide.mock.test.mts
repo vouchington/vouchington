@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  ENQUEUE_BASE_DEFAULTS,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import { EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB } from '@queues/background/enqueues/email-digests-jobs'
 import {
   startBackgroundHarness,

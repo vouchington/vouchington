@@ -2,11 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { QueueEvents, Worker, type Job } from 'glide-mq'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import {
-  closeAndUnregisterGlideMQInstance,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '../../../data-stores/valkey-glide-mq/index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { closeAndUnregisterGlideMQInstance } from '../../../data-stores/valkey-glide-mq/index.mts'
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import { IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB } from '@queues/background/enqueues/imports-jobs'
 import { background } from '@queues/background/queues'

@@ -3,7 +3,7 @@ import { once } from 'node:events'
 import { createServer, connect, type Server, type Socket } from 'node:net'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import { createTestPostgresConnectionWaitPool } from '@voucha/test-helpers/postgres-connection-wait'
 

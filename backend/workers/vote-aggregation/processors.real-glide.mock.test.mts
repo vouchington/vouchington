@@ -2,11 +2,8 @@ import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatch
 import { randomUUID } from 'node:crypto'
 import { Queue, type Job, type JobOptions } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  closeAndUnregisterGlideMQInstance,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import {
   createTestPost,
   createTestTopic,

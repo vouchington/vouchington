@@ -5,7 +5,7 @@ import {
 } from './election-vote-stats-events.mts'
 import { createTestQueueTerminalSource } from './election-terminal-source.mts'
 import { TestQueue } from 'glide-mq/testing'
-import { workerQueueConnection, workerQueuePrefix } from '../data-stores/valkey-glide-mq/index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { entitiesListeners } from '../queues/entity-listeners/queues.mts'
 import { BACKGROUND_QUEUE_NAME } from '../queues/background/config.mts'
 import { ENTITY_LISTENERS_DOMAIN } from '../queues/background/enqueues/entity-listeners-jobs.mts'

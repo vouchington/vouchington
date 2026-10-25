@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { KAGI_SMALLWEB_PROCESS_FEED_JOB } from '@queues/background/enqueues/kagi-smallweb-jobs'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
 import { URLS_DOMAINS_BLACKLIST_SOURCE_SYNC_JOB } from '@queues/background/enqueues/urls-domains-blacklist-jobs'

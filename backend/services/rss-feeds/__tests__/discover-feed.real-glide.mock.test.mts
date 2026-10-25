@@ -2,10 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { Queue, QueueEvents, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '../../../data-stores/valkey-glide-mq/index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { BACKGROUND_CPU_QUEUE_NAME as CRAWL_URLS_QUEUE_NAME } from '@queues/background-cpu/config'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {

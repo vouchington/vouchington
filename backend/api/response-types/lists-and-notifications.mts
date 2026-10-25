@@ -64,9 +64,6 @@ export type WebPushSubscriptionResponseBody = {
   web_push_subscription: WebPushSubscriptionRecord
 }
 
-// Re-export RSS feed items response body from services layer
-export type { RssFeedItemsFeedResponseBody } from '@services/rss-feed-items/types'
-
 export type ReferralClickLogResponseBody = {
   results: Array<{ __entity_type: 'referral_click_log'; id: string }>
   clicks: Record<string, import('@voucha/types/entities/referral-click-log').ReferralClickLogEntry>

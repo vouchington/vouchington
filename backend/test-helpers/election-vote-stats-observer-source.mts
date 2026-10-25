@@ -1,6 +1,6 @@
 import { TestQueue } from 'glide-mq/testing'
 import type { Queue } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from '../data-stores/valkey-glide-mq/index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createTestQueueTerminalSource } from './election-terminal-source.mts'
 import {
   observeElectionQueueTerminals,

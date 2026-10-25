@@ -2,7 +2,7 @@ import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound
 import { randomUUID } from 'node:crypto'
 import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair, verifySignature } from '@modules/http-signatures'
 import {
