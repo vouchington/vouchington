@@ -60108,7 +60108,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression because no retention currently removes them.",
+      "comment": "Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until the owning membership is removed; no time-based retention applies.",
       "foreignKeys": {
         "membership_renewal_price_incr_membership_provider_observat_fkey": {
           "columns": ["membership_provider_observation_id"],
