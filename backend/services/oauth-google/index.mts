@@ -8,7 +8,10 @@ import {
   verifyOidcIdToken,
   type OAuthAccount,
 } from '@services/oauth-accounts'
-import type { OAuthAccountUpsertOptions, PreparedOAuthAccount } from '@services/oauth-accounts/reauthentication'
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import { getExternalFetch } from '@modules/utils/http'
 
 const googleIdTokenVerifier = createOidcIdTokenVerifier({
@@ -29,9 +32,16 @@ export async function prepareGoogleAccount(
   const claims = await verifyOidcIdToken(googleIdTokenVerifier, credential, 'Google')
   const profile = googleProfileFromClaims(claims)
   return prepareOAuthAccountPersistence(
-    'google', profile.providerUserId, profile.verifiedEmail, profile.data, undefined, options,
+    'google',
+    profile.providerUserId,
+    profile.verifiedEmail,
+    profile.data,
+    undefined,
+    options,
   )
 }
 
-export { verifyGoogleCredential } from './identity-token.mts'
+export function verifyGoogleCredential(credential: string) {
+  return verifyOidcIdToken(googleIdTokenVerifier, credential, 'Google')
+}
 export { upsertGoogleAuthorizationCodeAccount } from './authorization-code.mts'

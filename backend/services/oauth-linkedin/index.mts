@@ -5,7 +5,10 @@ import {
   prepareRedeemedProviderAccount,
   type OAuthAccount,
 } from '@services/oauth-accounts'
-import type { OAuthAccountUpsertOptions, PreparedOAuthAccount } from '@services/oauth-accounts/reauthentication'
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import { getExternalFetch } from '@modules/utils/http'
 
 export async function prepareLinkedInAccount(

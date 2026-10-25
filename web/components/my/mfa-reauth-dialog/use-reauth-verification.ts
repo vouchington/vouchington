@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import onError from '@/lib/on-error'
-import { OAuthCancelledError } from '@/lib/auth/oauth-error'
+import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 export function useReAuthVerification({

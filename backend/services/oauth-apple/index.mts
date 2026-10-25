@@ -7,7 +7,10 @@ import {
   verifyOidcIdToken,
   type OAuthAccount,
 } from '@services/oauth-accounts'
-import type { OAuthAccountUpsertOptions, PreparedOAuthAccount } from '@services/oauth-accounts/reauthentication'
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import { createProviderOperationSignal, getProviderFetch } from '@modules/api-egress-proxy'
 
 const appleIdTokenVerifier = createOidcIdTokenVerifier({
@@ -25,18 +28,26 @@ export async function upsertAppleAccount(
   identityToken: string,
   userData?: { name?: string },
   nonce?: string,
-  options: OAuthAccountUpsertOptions & { requireVerifiedEmail?: boolean; signal?: AbortSignal } = {},
+  options: OAuthAccountUpsertOptions & {
+    requireVerifiedEmail?: boolean
+    signal?: AbortSignal
+  } = {},
 ): Promise<OAuthAccount> {
   return (await prepareAppleAccount(identityToken, userData, nonce, options)).persist(options)
 }
 
-export { verifyAppleIdentityToken } from './identity-token.mts'
+export function verifyAppleIdentityToken(identityToken: string, signal?: AbortSignal) {
+  return verifyOidcIdToken(appleIdTokenVerifier, identityToken, 'Apple', { signal })
+}
 
 export async function prepareAppleAccount(
   identityToken: string,
   userData?: { name?: string },
   nonce?: string,
-  options: OAuthAccountUpsertOptions & { requireVerifiedEmail?: boolean; signal?: AbortSignal } = {},
+  options: OAuthAccountUpsertOptions & {
+    requireVerifiedEmail?: boolean
+    signal?: AbortSignal
+  } = {},
 ): Promise<PreparedOAuthAccount> {
   const claims = await verifyOidcIdToken(appleIdTokenVerifier, identityToken, 'Apple', {
     signal: options.signal,
@@ -49,16 +60,28 @@ export async function prepareAppleAccount(
       throw createHttpError(422, 'Apple identity token must include a verified email')
     }
     const prepared = prepareOAuthAccountPersistence(
-      'apple', profile.providerUserId, null, profile.data, undefined, options,
+      'apple',
+      profile.providerUserId,
+      null,
+      profile.data,
+      undefined,
+      options,
     )
     return existingAccount
-      ? { persist: persistence =>
-          persistence?.reAuth || options.reAuth
-            ? prepared.persist(persistence)
-            : Promise.resolve(existingAccount) }
+      ? {
+          persist: persistence =>
+            persistence?.reAuth || options.reAuth
+              ? prepared.persist(persistence)
+              : Promise.resolve(existingAccount),
+        }
       : prepared
   }
   return prepareOAuthAccountPersistence(
-    'apple', profile.providerUserId, profile.verifiedEmail, profile.data, undefined, options,
+    'apple',
+    profile.providerUserId,
+    profile.verifiedEmail,
+    profile.data,
+    undefined,
+    options,
   )
 }

@@ -2,7 +2,7 @@
 
 import { beginBrokerProviderReAuth, retrieveBrokerProviderReAuthProof } from '@/lib/api/client'
 import { waitForOAuthBrokerPopup, type BrokerOAuthProvider } from './oauth-broker'
-import { OAuthCancelledError } from './oauth-error'
+import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 
 export async function startBrokerProviderReAuth(provider: BrokerOAuthProvider): Promise<string> {
   const popup = window.open('', `voucha-reauth-${crypto.randomUUID()}`, 'width=600,height=700')

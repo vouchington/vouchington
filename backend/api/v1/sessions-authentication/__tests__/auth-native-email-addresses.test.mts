@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
-import { createTestUser, overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getTestPrivateUserById,
+  insertTestTotpAuthenticator,
+  overrideDynamicConfigFieldsForTest,
+} from '@voucha/test-helpers'
 import { getTestUserSessionById } from '@voucha/test-helpers/entities/user-sessions'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
 import {
@@ -64,15 +69,21 @@ describe('native email OTP session provenance', () => {
 
   it('carries native provenance from the pending MFA attempt into its completed session', async () => {
     const user = await createTestUser()
+    const factor = await insertTestTotpAuthenticator(user.id, 'native-provenance')
     const attemptId = await createLoginAttempt({
       userId: user.id,
+      firstFactor: { type: 'email', emailAddress: user.email_address! },
       deviceId: v7(),
       sessionId: v7(),
       authOrigin: 'native',
     })
     const attempt = await getAndDeleteLoginAttempt(attemptId)
     expect(attempt?.authOrigin).toBe('native')
-    const result = await completeMfaLoginWithContext(attempt!, user)
+    const result = await completeMfaLoginWithContext(
+      attempt!,
+      (userId, query) => getTestPrivateUserById(userId, { query }),
+      { type: 'totp', authenticatorId: factor.id, verifiedAt: Math.floor(Date.now() / 1000) },
+    )
     await expect(getTestUserSessionById(result.sessionToken.payload.sid)).resolves.toMatchObject({
       authentication_origin: 'native',
     })

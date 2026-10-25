@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
-import type { AuthState } from './oauth-types'
 import { useLoadScript } from '@vouchington/script-loader'
 
 export interface GoogleOAuthConfig {

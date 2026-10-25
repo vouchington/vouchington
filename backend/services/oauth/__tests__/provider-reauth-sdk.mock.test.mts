@@ -118,6 +118,37 @@ describe('provider assertion reauthentication', () => {
       },
     )
 
+    it('rejects a signed assertion with another audience alongside this application', async () => {
+      const identity = await createTestProviderReAuthIdentity(provider)
+      const started = await beginSdkProviderReAuth(identity.userId, identity)
+      const context = await readProviderReAuthChallenge({ ...identity, flowId: started.flow_id })
+      const nonce =
+        provider === 'apple'
+          ? createHash('sha256').update(started.nonce).digest('hex')
+          : started.nonce
+      const credential = createSignedJwt(
+        { kid: 'reauth-key', alg: 'RS256' },
+        {
+          iss: provider === 'apple' ? 'https://appleid.apple.com' : 'https://accounts.google.com',
+          aud: [clientId, 'other-application'],
+          sub: context.providerUserId,
+          nonce,
+          iat: Math.floor(Date.now() / 1000) - 1,
+          exp: Math.floor(Date.now() / 1000) + 300,
+        },
+      )
+      await expect(
+        completeSdkProviderReAuth(identity.userId, {
+          ...identity,
+          flowId: started.flow_id,
+          credential,
+        }),
+      ).rejects.toMatchObject({ status: 401 })
+      await expect(
+        readProviderReAuthChallenge({ ...identity, flowId: started.flow_id }),
+      ).resolves.toEqual(context)
+    })
+
     it.each(['nonce', 'subject'] as const)(
       'rejects a signed assertion with a wrong %s',
       async mismatch => {

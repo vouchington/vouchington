@@ -13,6 +13,7 @@ import {
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers'
 import { createNativeBlueskyLinkCompletion } from '@voucha/test-helpers/bluesky-native-completion-fixtures'
+import { createTestAccountChangeActor } from '@voucha/test-helpers/account-change'
 import { withEntityListenerAdmissionRead } from '@voucha/test-helpers/entity-listener-admission-read'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import type { NodeOAuthClient } from '@modules/bluesky-oauth'
@@ -104,6 +105,7 @@ describe('Bluesky user updates settle after their durable mutation', () => {
 
   it('waits for native completion admission after attachment commits', async () => {
     const user = await createTestUserDirect()
+    const actor = await createTestAccountChangeActor(user.id)
     const flowId = randomUUID()
     const did = fakeDid()
     const account = await insertTestBlueskyLinkedAccount({
@@ -112,6 +114,7 @@ describe('Bluesky user updates settle after their durable mutation', () => {
       linkingUserId: user.id,
       authorizationId: flowId,
       nativeFlowId: flowId,
+      initiatingSessionId: actor.session.sid,
     })
     const token = await createNativeBlueskyLinkCompletion({
       flowId,
@@ -125,6 +128,7 @@ describe('Bluesky user updates settle after their durable mutation', () => {
       () =>
         finalizeNativeBlueskyAccountLink(
           user.id,
+          actor.session,
           flowId,
           token,
           getTestBlueskyCompletionProofVerifier(flowId),

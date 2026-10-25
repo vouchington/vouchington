@@ -5,7 +5,10 @@ import {
   prepareRedeemedProviderAccount,
   type OAuthAccount,
 } from '@services/oauth-accounts'
-import type { OAuthAccountUpsertOptions, PreparedOAuthAccount } from '@services/oauth-accounts/reauthentication'
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import { getProviderFetch } from '@modules/api-egress-proxy'
 
 export async function prepareGithubAccount(

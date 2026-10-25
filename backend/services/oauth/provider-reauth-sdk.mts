@@ -7,6 +7,7 @@ import { verifyGoogleCredential } from '@services/oauth-google'
 import createHttpError from 'http-errors'
 import { v7 as uuidv7 } from 'uuid'
 import { getConfiguredOAuthProviders } from '@services/oauth-accounts/configuration'
+import { APPLE_CLIENT_ID, APPLE_NATIVE_CLIENT_IDS, readGoogleClientId } from '@voucha/config'
 import {
   consumeProviderReAuthChallenge,
   createProviderReAuthChallenge,
@@ -57,6 +58,17 @@ export async function completeSdkProviderReAuth(
     options.provider === 'apple'
       ? await verifyAppleIdentityToken(options.credential)
       : await verifyGoogleCredential(options.credential)
+  const acceptedAudiences =
+    provider === 'apple'
+      ? [APPLE_CLIENT_ID, ...APPLE_NATIVE_CLIENT_IDS].filter(Boolean)
+      : [readGoogleClientId()].filter(Boolean)
+  if (
+    typeof claims.aud !== 'string' ||
+    !acceptedAudiences.includes(claims.aud) ||
+    claims.exp <= Math.floor(Date.now() / 1000)
+  ) {
+    throw createHttpError(401, 'Provider assertion is not fresh for this application')
+  }
   assertProviderReAuthNonce(context, claims.nonce)
   if (typeof claims.sub !== 'string' || claims.sub !== context.providerUserId) {
     throw createHttpError(403, 'Provider account does not match the linked account')

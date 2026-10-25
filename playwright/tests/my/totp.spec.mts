@@ -60,6 +60,26 @@ test.describe('TOTP authenticator management', () => {
     await expect(page.getByTestId(`totp-authenticator-item-${id}`)).toBeVisible()
   })
 
+  test('cancels authenticator setup before and after creating a secret', async ({ page }) => {
+    await page.getByTestId('totp-add-authenticator-button').click()
+    await page.getByTestId('setup-flow-name-cancel').click()
+    await expect(page.getByTestId('totp-add-authenticator-button')).toBeVisible()
+
+    await page.getByTestId('totp-add-authenticator-button').click()
+    const setupResponse = page.waitForResponse(
+      response =>
+        new URL(response.url()).pathname === '/api/v1/auth/totp' &&
+        response.request().method() === 'POST',
+    )
+    await page.getByTestId('totp-start-setup-button').click()
+    await confirmAccountChange(page, userId)
+    await setupResponse
+    await expect(page.getByTestId('totp-setup-qr-prompt')).toBeVisible()
+    await expect(page.getByTestId('setup-flow-verify-and-save')).toBeDisabled()
+    await page.getByTestId('setup-flow-verify-cancel').click()
+    await expect(page.getByTestId('totp-add-authenticator-button')).toBeVisible()
+  })
+
   test('renames a TOTP authenticator', async ({ page }) => {
     const authenticator = await insertTestTotpAuthenticator(userId, randomSuffix())
     const newName = `Renamed App ${randomSuffix()}`
@@ -69,8 +89,25 @@ test.describe('TOTP authenticator management', () => {
     const input = item.getByTestId('totp-rename-input')
     await input.clear()
     await input.pressSequentially(newName)
-    await input.press('Enter')
+    await item.getByTestId('totp-rename-save').click()
     await expect(item.getByTestId('totp-authenticator-name')).toHaveText(newName)
+  })
+
+  test('cancels renaming and removal without changing the authenticator', async ({ page }) => {
+    const authenticator = await insertTestTotpAuthenticator(userId, randomSuffix())
+    await navigateTo(page, '/my/identity')
+    const item = page.getByTestId(`totp-authenticator-item-${authenticator.id}`)
+    const originalName = await item.getByTestId('totp-authenticator-name').textContent()
+
+    await item.getByTestId('totp-rename-button').click()
+    await item.getByTestId('totp-rename-input').fill(`Cancelled ${randomSuffix()}`)
+    await item.getByTestId('totp-rename-cancel').click()
+    await expect(item.getByTestId('totp-authenticator-name')).toHaveText(originalName!)
+
+    await item.getByTestId('totp-remove-button').click()
+    await item.getByTestId('totp-remove-cancel').click()
+    await expect(item.getByTestId('totp-remove-confirm-button')).toBeHidden()
+    await expect(item.getByTestId('totp-authenticator-name')).toHaveText(originalName!)
   })
 
   test('keeps a factor when fresh confirmation is cancelled', async ({ page }) => {

@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { OAuthCancelledError } from '@/lib/auth/oauth-error'
+import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<typeof import('@/lib/on-error').default>(),
