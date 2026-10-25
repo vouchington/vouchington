@@ -6,7 +6,6 @@ import {
   getCachedVerifiedDeviceToken,
   getOptionalRequestClientInfo,
   getOptionalRequestOrigin,
-  getRequestClientInfo,
   runWithCredentialRequestContext,
   runWithSessionRequestContext,
 } from './index.mts'
@@ -25,21 +24,21 @@ describe('request client information context', () => {
       },
       async () => {
         await Promise.resolve()
-        expect(getRequestClientInfo().deviceId).toBe('device')
-        expect(Object.isFrozen(getRequestClientInfo())).toBe(true)
+        const clientInfo = getOptionalRequestClientInfo()
+        expect(clientInfo?.deviceId).toBe('device')
+        expect(Object.isFrozen(clientInfo)).toBe(true)
       },
     )
   })
 
   it('isolates concurrent requests and supports optional access outside requests', async () => {
     expect(getOptionalRequestClientInfo()).toBeUndefined()
-    expect(() => getRequestClientInfo()).toThrow('outside')
     const read = (deviceId: string) =>
       runWithSessionRequestContext(
         { client: 'web', platform: 'web', appVersion: 'test', deviceId, ipAddress: '::1' },
         async () => {
           await Promise.resolve()
-          return getRequestClientInfo().deviceId
+          return getOptionalRequestClientInfo()?.deviceId
         },
       )
     await expect(Promise.all([read('one'), read('two')])).resolves.toEqual(['one', 'two'])
@@ -65,7 +64,6 @@ describe('request client information context', () => {
     runWithSessionRequestContext(null, () => {
       expect(getOptionalRequestOrigin()).toMatchObject({ credential: 'session', client: null })
       expect(getOptionalRequestClientInfo()).toBeUndefined()
-      expect(() => getRequestClientInfo()).toThrow('outside')
     })
   })
 

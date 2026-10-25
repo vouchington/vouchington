@@ -125,16 +125,6 @@ describe('glide-mq-factory shared client injection', () => {
     expect(queueOpts?.client).toBe(workerQueueCommandClient)
   })
 
-  it('passes shared client to createFlowProducer', async () => {
-    const [{ createFlowProducer }, { workerQueueCommandClient }] = await Promise.all([
-      import('../glide-mq-factory.mts'),
-      import('../glide-mq-shared-client.mts'),
-    ])
-    createFlowProducer()
-    const fpOpts = mockFlowProducer.mock.calls.at(-1)?.[0] as Record<string, unknown> | undefined
-    expect(fpOpts?.client).toBe(workerQueueCommandClient)
-  })
-
   it('shutdown callback closes the real client when it was realized', async () => {
     const { closeSharedCommandClientFromRegistry } = await importGlideMqRegistry()
     const { workerQueueCommandClient } = await import('../glide-mq-shared-client.mts')

@@ -62,24 +62,11 @@ export function createLocalizationResolver(getDatabase: () => LocalizationDataba
     return { status: 200, etag: payload.etag, ttlSeconds: payload.ttlSeconds, body: payload.body }
   }
 
-  function resolveEmailLocalizationBatch(
-    locales: readonly string[],
-    selectors: readonly string[],
-  ): LocalizationBatch {
-    return resolveLocalizationBatch(getDatabase(), {
-      consumer: 'email',
-      locales,
-      selectors,
-    })
-  }
-
   return {
     localizationBatchPayload,
     localizationGetResult,
-    resolveEmailLocalizationBatch,
   }
 }
-
 const localizationResolver = createLocalizationResolver(getLocalizationDatabase)
 export const localizationGetResult = localizationResolver.localizationGetResult
 
@@ -90,9 +77,3 @@ export function isLocalizationClientError(error: unknown): error is Error {
     (error instanceof Error && 'code' in error && error.code === 'LOCALIZATION_BOUNDS')
   )
 }
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export const resolveEmailLocalizationBatch = localizationResolver.resolveEmailLocalizationBatch
