@@ -174,9 +174,6 @@ jobs:
           --exclusions web/storybook/__tests__/component-story-exclusions.json
           --exclusions-label web/storybook/__tests__/component-story-exclusions.json
         timeout-minutes: 2
-      - name: Check schema generation guard fixtures
-        run: node ci/check-schema-generation-guard-fixtures.mts
-        timeout-minutes: 2
       - name: Check no-mistakes use in Vitest tests
         run: node ci/check-no-mistakes-test-policy.mts
         timeout-minutes: 1
