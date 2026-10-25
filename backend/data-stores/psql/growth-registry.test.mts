@@ -66,10 +66,9 @@ describe('schema growth classification', () => {
     expect(NON_DEFAULT_ID_EXCEPTIONS.get('user_sessions')).toMatchObject({ policy: 'uuidv7' })
   })
 
-  it('records parent-owned membership work without a time-based retention window', () => {
+  it('classifies membership work by its actual retention path', () => {
     for (const table of [
       'membership_google_play_acknowledgment_work_items',
-      'membership_renewal_price_increase_notification_work_items',
       'membership_verification_processing_work_items',
     ]) {
       expect(EXPLICIT_BOUNDED_TABLES.has(table)).toBe(false)
@@ -77,6 +76,14 @@ describe('schema growth classification', () => {
         'owning parent is removed; no time-based retention',
       )
     }
+    expect(
+      EXPLICIT_BOUNDED_TABLES.get('membership_renewal_price_increase_notification_work_items'),
+    ).toContain('bounded operational cleanup')
+    expect(
+      UNBOUNDED_UNPARTITIONED_TABLES.has(
+        'membership_renewal_price_increase_notification_work_items',
+      ),
+    ).toBe(false)
   })
 })
 

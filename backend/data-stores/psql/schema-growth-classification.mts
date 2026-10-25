@@ -46,7 +46,6 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
 ] as const
 const UNBOUNDED_MEMBERSHIP_WORK_ITEMS = [
   'membership_google_play_acknowledgment_work_items',
-  'membership_renewal_price_increase_notification_work_items',
   'membership_verification_processing_work_items',
 ] as const
 const INDEFINITE_EDGE_TABLES = [

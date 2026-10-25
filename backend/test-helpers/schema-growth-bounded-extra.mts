@@ -45,14 +45,6 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One immutable result per execution; cascades with bounded reservation retention.',
   ],
   [
-    'membership_google_play_acknowledgment_work_items',
-    'One provider acknowledgement task per retained purchase obligation; terminal parent deletion after 90 days cascades its work.',
-  ],
-  [
-    'membership_verification_processing_work_items',
-    'One adapter processing task per retained verification; parent retention cascades its work.',
-  ],
-  [
     'retained_identity_cleanup_cursors',
     'One bounded cleanup cursor for each of seven concrete retained root identity families.',
   ],
