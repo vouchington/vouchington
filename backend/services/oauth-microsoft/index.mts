@@ -12,8 +12,7 @@ import {
   prepareRedeemedProviderAccount,
   type OAuthAccount,
 } from '@services/oauth-accounts'
-import { fetch } from 'undici'
-import { getExternalFetch, getExternalRequestDispatcher } from '@modules/utils/http'
+import { getExternalFetch } from '@modules/utils/http'
 
 type MicrosoftTokenResponse = {
   id_token?: string
@@ -45,21 +44,23 @@ async function exchangeMicrosoftAuthorizationCode(
     throw new Error('MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET must be defined')
   }
   const tenantId = MICROSOFT_TENANT_ID || 'common'
-  const response = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
-    dispatcher: getExternalRequestDispatcher(),
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri,
-      client_id: MICROSOFT_CLIENT_ID,
-      client_secret: MICROSOFT_CLIENT_SECRET,
-      code_verifier: codeVerifier,
-      scope: microsoftAuthorizationScopes,
-    }).toString(),
-    signal,
-  })
+  const response = await getExternalFetch()(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+        client_id: MICROSOFT_CLIENT_ID,
+        client_secret: MICROSOFT_CLIENT_SECRET,
+        code_verifier: codeVerifier,
+        scope: microsoftAuthorizationScopes,
+      }).toString(),
+      signal,
+    },
+  )
   if (!response.ok) {
     throw createHttpError(502, `Microsoft token exchange failed: ${response.status}`)
   }
@@ -71,8 +72,7 @@ async function fetchMicrosoftUser(
   accessToken: string,
   signal?: AbortSignal,
 ): Promise<MicrosoftUserData> {
-  const response = await fetch('https://graph.microsoft.com/v1.0/me', {
-    dispatcher: getExternalRequestDispatcher(),
+  const response = await getExternalFetch()('https://graph.microsoft.com/v1.0/me', {
     headers: { Authorization: `Bearer ${accessToken}` },
     signal,
   })

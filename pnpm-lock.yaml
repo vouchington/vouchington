@@ -9032,7 +9032,13 @@ importers:
       '@vouchington/utils':
         specifier: ^0.10.2
         version: 0.10.2
+      http-errors:
+        specifier: ^2.0.1
+        version: 2.0.1
     devDependencies:
+      '@types/http-errors':
+        specifier: ^2.0.5
+        version: 2.0.5
       undici:
         specifier: ^8.12.3
         version: 8.12.3

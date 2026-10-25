@@ -64,6 +64,7 @@ async function prepareConfirmation(mode: 'correct' | RejectedAssertion) {
       aud: clientId,
       iss: `https://login.microsoftonline.com/${tenantId}/v2.0`,
       oid: subject,
+      sub: subject,
       tid: tenantId,
       ...(mode !== 'missing' && { nonce: mode === 'wrong' ? 'old-cached-nonce' : nonce }),
       email: 'tests+changed-provider-data@voucha.ai',

@@ -37,9 +37,9 @@ describe('dashboard auth', () => {
   it('requires completed MFA before a current administrator can access queue stats', async () => {
     const { dtCookie, stCookie, userId } = await createTestSessionCookies()
     await addTestUserRole(userId, 'administrator')
-    await expect(isAdminDashboardRequest(req({ cookie: `${dtCookie}; ${stCookie}` }))).resolves.toBe(
-      false,
-    )
+    await expect(
+      isAdminDashboardRequest(req({ cookie: `${dtCookie}; ${stCookie}` })),
+    ).resolves.toBe(false)
 
     const assured = await createVerifiedMfaTestSession(userId)
     const cookie = `dt=${assured.deviceToken.token}; st=${assured.sessionToken.token}`
