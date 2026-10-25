@@ -12,13 +12,10 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import type { EntityRelationEntityType, EntityRelationPredicateType } from './config.mts'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { getEntityRelations } from './query.mts'
+import { entityRelationViewerFor } from '../users/entity-relation-viewer.mts'
 import '@voucha/test-helpers/entity-url-guard-registrations'
 import { upsertEntityRelation } from './upsert.mts'
-import {
-  ANONYMOUS_ENTITY_RELATION_VIEWER,
-  SYSTEM_ENTITY_RELATION_VIEWER,
-  type EntityRelationViewer,
-} from './viewer.mts'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER, type EntityRelationViewer } from './viewer.mts'
 
 const unique = () => crypto.randomUUID().slice(0, 8)
 
@@ -122,7 +119,9 @@ describe('entity relation object projection', () => {
     expect(await objectDataKeys(tuple, community.id, hostnameId)).toEqual(['hostname', 'id'])
   })
 
-  it('lets system readers see hidden posts and anonymous authors', async () => {
+  it('lets administrators see hidden posts and anonymous authors', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const administratorViewer = entityRelationViewerFor(administrator)
     const privatePostId = await insertPost(creator.id, {
       privacy: 'private',
       broadcast: 'followers',
@@ -133,13 +132,10 @@ describe('entity relation object projection', () => {
     await relate(creator, tuple, topicId, anonymousPostId)
 
     expect(await readRelation(tuple, topicId, privatePostId)).toBeUndefined()
-    expect(
-      await readRelation(tuple, topicId, privatePostId, SYSTEM_ENTITY_RELATION_VIEWER),
-    ).toBeDefined()
+    expect(await readRelation(tuple, topicId, privatePostId, administratorViewer)).toBeDefined()
     expect((await readRelation(tuple, topicId, anonymousPostId))!.created_by_id).toBeNull()
     expect(
-      (await readRelation(tuple, topicId, anonymousPostId, SYSTEM_ENTITY_RELATION_VIEWER))!
-        .created_by_id,
+      (await readRelation(tuple, topicId, anonymousPostId, administratorViewer))!.created_by_id,
     ).toBe(creator.id)
   })
 })

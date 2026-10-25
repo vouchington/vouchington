@@ -9,13 +9,13 @@ import { getEntityRelations } from '@services/entity-relations'
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
 import { createTestPost, createTestUserDirect } from '@voucha/test-helpers'
 import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
 async function hasFollowRelation(remoteActor: RemoteActorRow, userId: string): Promise<boolean> {
   const relations = await getEntityRelations('remote_actor', remoteActor.id, 'follow', 'user', {
-    viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+    viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
   })
   return relations.some(relation => relation.object_id === userId)
 }

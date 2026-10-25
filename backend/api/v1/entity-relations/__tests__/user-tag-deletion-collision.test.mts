@@ -6,6 +6,7 @@ import {
   createTestUserWithAge,
   insertTestPost,
   setTestEntityRelationIdAndScore,
+  getEntityRelation,
 } from '@voucha/test-helpers'
 import { getUserTagTopics } from '@services/topics/user-tag-topics'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -15,7 +16,7 @@ import { createEntityRelationElectionTarget } from '@services/elections-votes/en
 import { getEntityRelationElectionByTargetCachedBatch } from '@services/entity-fetch/get'
 import { getEntityRelations } from '@services/entity-relations/query'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 // A user/category/topic relation and a post/category/topic relation that share one UUID, both
 // starting at votes_score_up = 1. `voteIn` picks which of them the deleted voter has voted on.
@@ -66,20 +67,20 @@ async function createSameIdUserAndPostRelations(voteIn: Array<'user' | 'post'>) 
 
 describe('user deletion entity-relation vote repair', () => {
   it('keeps same-id relations in different tables isolated', async () => {
-    const { voter, target, postId, id } = await createSameIdUserAndPostRelations(['user', 'post'])
+    const { voter, target, postId, id, tag, postMetadata } = await createSameIdUserAndPostRelations(
+      ['user', 'post'],
+    )
 
     await deleteUserAndDrainForTest(voter, voter)
 
     await expect(
       getEntityRelations('user', target.id, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       }),
     ).resolves.toEqual([expect.objectContaining({ id, votes_score_net: 0 })])
-    await expect(
-      getEntityRelations('post', postId, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
-      }),
-    ).resolves.toEqual([expect.objectContaining({ id, votes_score_net: 0 })])
+    await expect(getEntityRelation(postMetadata.table_name, postId, tag.id)).resolves.toEqual([
+      expect.objectContaining({ id, votes_score_net: 0, deleted_at: null }),
+    ])
   })
 
   it('invalidates the cached election only in the repaired relation table', async () => {
@@ -102,7 +103,7 @@ describe('user deletion entity-relation vote repair', () => {
     expect(postElection?.votes_score_net).toBe(1)
     await expect(
       getEntityRelations('user', target.id, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       }),
     ).resolves.toEqual([expect.objectContaining({ id, votes_score_net: 0 })])
   })

@@ -3,7 +3,7 @@ import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { getEntityRelationsBatch } from './query.mts'
 import { upsertEntityRelation } from './upsert.mts'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from './viewer.mts'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from './viewer.mts'
 
 describe('getEntityRelationsBatch', () => {
   it('applies the page limit separately to each subject and preserves empty subjects', async () => {
@@ -24,7 +24,7 @@ describe('getEntityRelationsBatch', () => {
       [firstIdentifier, second!.id, empty!.id, firstIdentifier],
       'category',
       'topic',
-      { viewer: SYSTEM_ENTITY_RELATION_VIEWER, limit: 1, sort: 'newest' },
+      { viewer: ANONYMOUS_ENTITY_RELATION_VIEWER, limit: 1, sort: 'newest' },
     )
     expect(groups.size).toBe(3)
     expect(groups.get(firstIdentifier)).toHaveLength(1)

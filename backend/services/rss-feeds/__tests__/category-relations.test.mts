@@ -4,7 +4,7 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertRssFeedCategories } from '../categories.mts'
 import { createFeedCategoryRelations } from '../category-relations.mts'
 import { getEntityRelations } from '@services/entity-relations/query'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('createFeedCategoryRelations', () => {
   let rssFeedId: string
@@ -43,7 +43,7 @@ describe('createFeedCategoryRelations', () => {
     await createFeedCategoryRelations(rssFeedId)
 
     const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
     })
     const match = relations.find(r => r.object_id === categoryTopicId)
     expect(match).toBeDefined()
@@ -57,7 +57,7 @@ describe('createFeedCategoryRelations', () => {
     await createFeedCategoryRelations(rssFeedId)
 
     const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
     })
     const matches = relations.filter(r => r.object_id === categoryTopicId)
     expect(matches).toHaveLength(1)
@@ -70,7 +70,7 @@ describe('createFeedCategoryRelations', () => {
     await expect(createFeedCategoryRelations(rssFeedId)).resolves.not.toThrow()
 
     const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
     })
     expect(relations).toHaveLength(0)
   })
@@ -80,7 +80,7 @@ describe('createFeedCategoryRelations', () => {
     await expect(createFeedCategoryRelations(rssFeedId)).resolves.not.toThrow()
 
     const relations = await getEntityRelations('topic', showTopicId, 'category', 'topic', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
     })
     expect(relations).toHaveLength(0)
   })

@@ -3,7 +3,7 @@ import { createTestPost, createTestTopic, createTestUser } from '@voucha/test-he
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { getEntityRelations } from './query.mts'
 import { upsertEntityRelation } from './upsert.mts'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from './viewer.mts'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from './viewer.mts'
 
 describe('getEntityRelations primary reads', () => {
   it('hydrates a just-written relation and object data from the primary pool', async () => {
@@ -18,7 +18,7 @@ describe('getEntityRelations primary reads', () => {
     const [created] = await upsertEntityRelation(user, metadata, post, [topic], { vote: false })
 
     const relations = await getEntityRelations('post', post.id, 'category', 'topic', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       readOnly: false,
     })
 

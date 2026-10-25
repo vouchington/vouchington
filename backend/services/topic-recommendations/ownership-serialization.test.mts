@@ -92,7 +92,7 @@ describe('hostname ownership serialization against approval', () => {
         approved.topic.id,
         'landing_page',
         'url',
-        { viewer: { kind: 'system' } },
+        { viewer: { kind: 'anonymous' } },
       )
       expect(relations.map(row => row.object_id)).toContain(urlId)
     },
@@ -127,7 +127,7 @@ describe('hostname ownership serialization against approval', () => {
       expect(
         (
           await getEntityRelations('topic', approved.topic.id, 'landing_page', 'url', {
-            viewer: { kind: 'system' },
+            viewer: { kind: 'anonymous' },
           })
         ).map(row => row.object_id),
       ).toContain(urlId)
@@ -157,7 +157,7 @@ describe('hostname ownership serialization against approval', () => {
     expect(
       (
         await getEntityRelations('topic', approved.topic.id, 'landing_page', 'url', {
-          viewer: { kind: 'system' },
+          viewer: { kind: 'anonymous' },
         })
       ).map(row => row.object_id),
     ).toContain(urlId)
@@ -201,7 +201,7 @@ describe('hostname ownership serialization against approval', () => {
       }
       expect(await pending).toBeNull()
       const relations = await getEntityRelations('topic', subject.id, 'landing_page', 'url', {
-        viewer: { kind: 'system' },
+        viewer: { kind: 'anonymous' },
       })
       expect(relations.some(row => row.object_id === urlId)).toBe(operation !== 'delete')
     },

@@ -1,3 +1,4 @@
+import { readSubjectTopicRelationFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
 import { notifications } from '@queues/notifications/queues'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
 import { upsertEntityRelation } from '@services/entity-relations'
@@ -11,7 +12,6 @@ import {
   type PostClassifierExecutionFixture,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import {
-  categoryRelationsForTest,
   localOutcomeFor,
   remoteDecisionFor,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
@@ -48,7 +48,9 @@ const topicIds = (setup: PostClassifierExecutionFixture) => {
 }
 
 const relationTopicIds = async (postId: string) =>
-  (await categoryRelationsForTest(postId)).map(relation => relation.object_id).toSorted()
+  (await readSubjectTopicRelationFacts({ postId, rssFeedItemId: null }))
+    .map(relation => relation.topicId)
+    .toSorted()
 
 function hasPostNotification(
   jobs: Awaited<ReturnType<typeof notifications.getJobs>>,
@@ -101,7 +103,9 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
       effects: { addedTopicIds: [] },
     })
 
-    expect(await categoryRelationsForTest(setup.post.id)).toEqual([])
+    expect(
+      await readSubjectTopicRelationFacts({ postId: setup.post.id, rssFeedItemId: null }),
+    ).toEqual([])
     expect(await facts(setup)).toMatchObject({ completed_at: expect.any(Date) })
   })
 
@@ -118,7 +122,9 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
 
     await expect(completeClassifierRun(failing, setup.lease)).rejects.toThrow('rollback effects')
 
-    expect(await categoryRelationsForTest(setup.post.id)).toEqual([])
+    expect(
+      await readSubjectTopicRelationFacts({ postId: setup.post.id, rssFeedItemId: null }),
+    ).toEqual([])
     expect(await facts(setup)).toMatchObject({ completed_at: null })
     expect(hasPostNotification(await readAllQueueJobs(notifications), setup.post.id)).toBe(false)
     expect(await completeClassifierRun(setup.adapter, setup.lease)).toMatchObject({
@@ -150,12 +156,18 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
     await completeClassifierRun(second.adapter, second.lease)
     expect(await completeClassifierRun(first.adapter, first.lease)).toEqual({ kind: 'replay' })
 
-    const firstRelations = await categoryRelationsForTest(first.post.id)
-    const secondRelations = await categoryRelationsForTest(second.post.id)
+    const firstRelations = await readSubjectTopicRelationFacts({
+      postId: first.post.id,
+      rssFeedItemId: null,
+    })
+    const secondRelations = await readSubjectTopicRelationFacts({
+      postId: second.post.id,
+      rssFeedItemId: null,
+    })
     expect(firstRelations).toHaveLength(1)
     expect(secondRelations).toHaveLength(1)
-    expect(firstRelations[0]?.created_by_id).toBe(human.id)
-    expect(secondRelations[0]?.created_by_id).toBe(first.lease.resolved.actorId)
+    expect(firstRelations[0]?.createdById).toBe(human.id)
+    expect(secondRelations[0]?.createdById).toBe(first.lease.resolved.actorId)
     const relationId = firstRelations[0]?.id
     if (!relationId) throw new Error('Expected tagged relation ID')
     await expect(getEntityRelationElectionVote(human.id, relationId)).resolves.toMatchObject({
@@ -193,7 +205,9 @@ describe('post classifier effects on the shared lifecycle (real PG)', () => {
 
     expect(await completeClassifierRun(setup.adapter, setup.lease)).toEqual({ kind: 'stale' })
 
-    expect(await categoryRelationsForTest(setup.post.id)).toEqual([])
+    expect(
+      await readSubjectTopicRelationFacts({ postId: setup.post.id, rssFeedItemId: null }),
+    ).toEqual([])
     expect(await facts(setup)).toMatchObject({ completed_at: null })
   })
 })

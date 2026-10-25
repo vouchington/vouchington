@@ -14,26 +14,8 @@ import {
   listRssFeedItemsFromFeedExist,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { importCommunityList, importCommunityListPostsSourceSql } from '../import.mts'
+import { importCommunityList } from '../import.mts'
 import { getManageableList, type ManageableList } from '../manage.mts'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
-
-describe('importCommunityListPostsSourceSql', () => {
-  it('separates the TRUE fallback from delegated post-type predicates', () => {
-    const statement = importCommunityListPostsSourceSql(
-      '00000000-0000-7000-8000-000000000101',
-      '00000000-0000-7000-8000-000000000102',
-      SYSTEM_ENTITY_RELATION_VIEWER,
-      500,
-      {
-        grantedScopes: [],
-        credentialOwnerId: '00000000-0000-7000-8000-000000000103',
-      },
-    )
-
-    expect(statement.text).toMatch(/TRUE\s+AND access_post\.post_type/)
-  })
-})
 
 describe('importCommunityList', () => {
   let user: PrivateUser

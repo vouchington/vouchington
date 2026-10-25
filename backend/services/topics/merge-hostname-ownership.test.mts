@@ -118,7 +118,7 @@ describe('topic merge hostname ownership', () => {
         destination.id,
         'landing_page',
         'url',
-        { viewer: { kind: 'system' } },
+        { viewer: { kind: 'anonymous' } },
       )
       expect(destinationRelations).toEqual([
         expect.objectContaining({

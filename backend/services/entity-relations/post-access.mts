@@ -37,15 +37,13 @@ export type PostMutationAuthority =
 /**
  * A subject post is readable when the viewer passes direct eligibility or authored the post and
  * its root, so authors can relate content to their own posts while a community reviews them.
- * Returns null when the viewer bypasses post access.
  */
 export function buildSubjectPostAccessFilter(
   candidateAlias: string,
   rootAlias: string,
   viewer: EntityRelationViewer,
-): SQLStatement | null {
+): SQLStatement {
   const eligibility = postEligibilityFor(viewer)
-  if (!eligibility) return null
   const direct = buildDirectPostEligibilityFilter(candidateAlias, rootAlias, eligibility)
   if (eligibility.currentUserId === null) return direct
   return sql`(`
@@ -59,15 +57,14 @@ export function buildSubjectPostAccessFilter(
     .append(sql`))`)
 }
 
-/** Object post access for the viewer, or null when the viewer bypasses post access. */
+/** Object post access for the viewer. */
 export function buildObjectPostAccessFilter(
   candidateAlias: string,
   rootAlias: string,
   viewer: EntityRelationViewer,
   scope: EntityRelationObjectPostScope,
-): SQLStatement | null {
+): SQLStatement {
   const eligibility = postEligibilityFor(viewer)
-  if (!eligibility) return null
   if (scope === 'named') {
     return buildDirectPostEligibilityFilter(candidateAlias, rootAlias, eligibility)
   }

@@ -25,7 +25,7 @@ import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/d
 import { getEntityRelations } from '@services/entity-relations/query'
 import { updateEntityRelationElectionVoteStatsFromPrimary } from '@services/elections-votes/entity-relation/vote-stats'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('user tag authorization and voting', () => {
   it('returns the curated catalog in its fixed order', async () => {
@@ -260,7 +260,7 @@ describe('user tag authorization and voting', () => {
     )
     await expect(
       getEntityRelations('user', target.id, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       }),
     ).resolves.toEqual([
       expect.objectContaining({ id: relation!.id, votes_count_up: 1, votes_score_net: 1 }),
@@ -271,7 +271,7 @@ describe('user tag authorization and voting', () => {
     await expect(getEntityRelationElectionVote(voter.id, relation!.id!)).resolves.toBeNull()
     await expect(
       getEntityRelations('user', target.id, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       }),
     ).resolves.toEqual([
       expect.objectContaining({ id: relation!.id, votes_count_up: 0, votes_score_net: 0 }),
