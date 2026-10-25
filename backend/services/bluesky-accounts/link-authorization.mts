@@ -3,7 +3,7 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
-import { REAUTH_TTL_SECONDS } from '@services/mfa/re-auth'
+import { BLUESKY_OAUTH_STATE_TTL_MS } from './lifecycle-constants.mts'
 
 export type BlueskyLinkAuthorization = {
   id: string
@@ -26,7 +26,7 @@ export async function createBlueskyLinkAuthorization(input: {
   query: TransactionQuery
 }): Promise<string> {
   const authorizationId = v7()
-  const expiresAt = new Date(Date.now() + REAUTH_TTL_SECONDS * 1000)
+  const expiresAt = new Date(Date.now() + BLUESKY_OAUTH_STATE_TTL_MS)
   return runWithTransaction(input.query, async query => {
     await query(sql`/* createBlueskyLinkAuthorization:lockActiveUser */
       SELECT fn_lock_active_user_for_mutation(${input.userId})`)
