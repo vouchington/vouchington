@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
-import { findSchemaViolation } from '@voucha/mcp/schema-validator'
+import { findSchemaViolation } from '@vouchington/mcp-server/schema'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestDirectConversation,

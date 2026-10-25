@@ -95,7 +95,7 @@ export type ToolMeta = {
   // body unchanged derives it from the generated response contract
   // (backend/mcp/route-response-schema.mts). A tool that reshapes the body, or has no REST twin,
   // owns it, built from the named components that contract carries. A lookup tool that reports a
-  // miss as a normal result must admit that result too (backend/mcp/output-schema-shapes.mts).
+  // miss as a normal result must admit that result too (outcomeSchema in @vouchington/mcp-server/schema).
   outputSchema?: ToolOutputSchema
 }
 

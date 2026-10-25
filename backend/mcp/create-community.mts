@@ -9,7 +9,7 @@ import { assertWithinContributionActionLimit } from '@services/contribution-gati
 import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 import { getLoadedMembershipPlan } from '@services/users'
 

@@ -19,7 +19,7 @@ import {
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
-import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 import { POST_SORTS, postSearchFilterSchemaProperties } from './search-post-input.mts'
 

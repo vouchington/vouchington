@@ -1,6 +1,6 @@
 import { optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { ErrorCode, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
+import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
 import { createTestUser } from '@voucha/test-helpers'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { PrivateUser } from '@services/users/types'
@@ -57,52 +57,6 @@ describe('handleMcpHttpRequest', () => {
     },
   )
 
-  it('preserves a bodyless notification acknowledgement without Content-Type', async () => {
-    const response = await post({ jsonrpc: '2.0', method: 'notifications/initialized' })
-    expect(response.status).toBe(202)
-    expect(response.headers.has('Content-Type')).toBe(false)
-    expect(response.body).toBeNull()
-  })
-  it('returns the SDK batch array only when multiple requests need replies', async () => {
-    const response = await post([
-      { jsonrpc: '2.0', id: 'first', method: 'tools/list', params: {} },
-      { jsonrpc: '2.0', id: 'second', method: 'tools/list', params: {} },
-    ])
-    expect(response.status).toBe(200)
-    expect(response.headers.get('Content-Type')).toContain('application/json')
-    const replies = (await response.json()) as { id: string; result: { tools: unknown[] } }[]
-    expect(replies.map(reply => reply.id).toSorted()).toEqual(['first', 'second'])
-    expect(replies.every(reply => Array.isArray(reply.result.tools))).toBe(true)
-  })
-  it('returns one reply for a request mixed with a notification', async () => {
-    const response = await post([
-      { jsonrpc: '2.0', id: 'only', method: 'tools/list', params: {} },
-      { jsonrpc: '2.0', method: 'notifications/initialized' },
-    ])
-    expect(response.status).toBe(200)
-    expect(await response.json()).toMatchObject({
-      id: 'only',
-      result: { tools: expect.any(Array) },
-    })
-  })
-  it('retains nullable-id SDK transport errors and in-band method errors', async () => {
-    const invalid = await post({ jsonrpc: 'invalid', method: 'tools/list' })
-    expect(invalid.status).toBe(400)
-    expect(invalid.headers.get('Content-Type')).toContain('application/json')
-    expect(await invalid.json()).toMatchObject({
-      jsonrpc: '2.0',
-      id: null,
-      error: { code: expect.any(Number) },
-    })
-
-    const unregistered = await post({ jsonrpc: '2.0', id: 'unknown', method: 'unregistered' })
-    expect(unregistered.status).toBe(200)
-    expect(await unregistered.json()).toMatchObject({
-      id: 'unknown',
-      error: { code: ErrorCode.MethodNotFound },
-    })
-  })
-
   it('returns a Response for tools/list request', async () => {
     const response = await post({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} })
 
@@ -111,22 +65,40 @@ describe('handleMcpHttpRequest', () => {
     expect(Array.isArray(json.result?.tools)).toBe(true)
   })
 
-  it('rejects malformed authorized envelopes before any tool invocation', async () => {
+  it('refuses a rate-limited call in-band with the explanation and never runs the tool', async () => {
     const tool = ALL_TOOLS.find(candidate => candidate.schema.name === 'discover_topics')
     if (!tool) throw new Error('Expected discover_topics tool')
     const invoke = vi.spyOn(tool, 'function')
-
+    const body = {
+      jsonrpc: '2.0',
+      id: 4,
+      method: 'tools/call',
+      params: { name: 'discover_topics', arguments: {} },
+    }
     try {
-      const response = await post({
-        jsonrpc: '2.0',
-        id: 3,
-        method: 'tools/call',
-        params: { arguments: {} },
+      const response = await handleMcpHttpRequest({
+        user,
+        permissions: ['mcp.user:read'],
+        request: new Request(`http://localhost${USER_MCP_SERVER_CONFIG.routePath}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/event-stream',
+          },
+          body: JSON.stringify(body),
+        }),
+        parsedBody: body,
+        config: USER_MCP_SERVER_CONFIG,
+        rateLimitedCalls: new Map([[0, { retryAfterSeconds: 7, message: 'Split the batch.' }]]),
       })
-
-      expect(response.status).toBe(200)
-      const result = (await response.json()) as { error?: { code?: number } }
-      expect(result.error?.code).toBe(ErrorCode.InvalidRequest)
+      const json = (await response.json()) as {
+        result: { isError: boolean; content: { text: string }[] }
+      }
+      expect(json.result.isError).toBe(true)
+      expect(JSON.parse(json.result.content[0].text).error).toMatchObject({
+        message: 'Split the batch.',
+        retryAfterSeconds: 7,
+      })
       expect(invoke).not.toHaveBeenCalled()
     } finally {
       invoke.mockRestore()

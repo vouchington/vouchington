@@ -5,7 +5,7 @@ import type { BasicUser } from '@services/users/types'
 import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { getListWriteContext, LIST_ID_PARAMETER } from './list-tool-support.mts'
-import { oneOfSchema, successSchema } from './output-schema-shapes.mts'
+import { oneOfSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { entityIdOrMissing } from './resolve-entity-reference.mts'
 import {
   ADD_LIST_ITEM_LIMIT,

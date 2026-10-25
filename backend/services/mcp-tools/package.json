@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@modules/on-error": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/token-secrets": "workspace:^",
@@ -36,6 +36,7 @@
     "@services/users": "workspace:^",
     "@voucha/mcp": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/mcp-server": "^0.2.0",
     "http-errors": "^2.0.1",
     "uuid": "^14.0.3"
   },

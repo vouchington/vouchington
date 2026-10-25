@@ -7,7 +7,7 @@ import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { postReferenceSchema, topicReferenceSchema } from './entity-reference-schema.mts'
 import { canonicalEntityId, MISSING_REFERENCE_ID } from './resolve-entity-reference.mts'
 import { DISPUTE_SCHEMA, toMcpDispute, type McpDispute } from './mcp-case-output.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
 type Args = {

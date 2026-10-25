@@ -2,7 +2,7 @@ import { createTestUser } from '@voucha/test-helpers'
 import { financialMcpResultCases } from '@voucha/test-helpers/native-mcp-result-cases'
 import { upsertUserFinancialProfile } from '@services/user-financial-profiles'
 import { describe, expect, it } from 'vitest'
-import { buildToolResult } from '../services/mcp-tools/build-tool-result.mts'
+import { buildToolResult } from '@vouchington/mcp-server/results'
 import getMyFinancialProfileTool from './get-my-financial-profile.mts'
 
 describe('get_my_financial_profile result contract', () => {

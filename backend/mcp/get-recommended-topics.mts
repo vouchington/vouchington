@@ -6,7 +6,7 @@ import { VALID_TOPIC_TYPES } from '@modules/pagination/filters'
 import { pageInfoSchema } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type SearchPageInfo } from './paged-search.mts'
 import { requirePrivateToolUser } from './private-user.mts'
-import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 
 const MAX_LIMIT = 25
 const DEFAULT_LIMIT = 10

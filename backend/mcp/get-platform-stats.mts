@@ -1,7 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPlatformStatsCached } from '@services/entity-fetch/search-caches'
 import type { BasicUser } from '@services/users/types'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { pickProperties } from './read-tool-output-schema.mts'
 
 type ToolResult = {

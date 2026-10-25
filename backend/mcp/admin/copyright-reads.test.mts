@@ -25,7 +25,7 @@ import { copyrightStaffQueueCursorScope } from '@services/copyright-notices/read
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
 import { appendCopyrightEmailIntakeRecommendation } from '@services/copyright-notices/email-recommendations'
 import { reviewCopyrightFormIntake } from '@services/copyright-notices/form-reviews'
-import { findSchemaViolation } from '../schema-validator.mts'
+import { findSchemaViolation } from '@vouchington/mcp-server/schema'
 import { ALL_TOOLS } from '../registry/index.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 

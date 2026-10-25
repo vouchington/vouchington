@@ -2,7 +2,7 @@ import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
 import { createMergedTool } from './create-merged-tool.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
-import { findSchemaViolation } from './schema-validator.mts'
+import { findSchemaViolation } from '@vouchington/mcp-server/schema'
 import {
   resolveReferenceFields,
   canonicalEntityIds,

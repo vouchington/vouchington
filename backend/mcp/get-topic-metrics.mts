@@ -3,7 +3,7 @@ import type { BasicUser } from '@services/users/types'
 import { getTopicMetricsByAny } from '@services/topics/metrics'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { resolveTopic } from './resolve-topic.mts'
-import { outcomeSchema } from './output-schema-shapes.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import {
   CONTENT_COUNT_PROPERTIES,
   FOLLOWERS_SCHEMA,

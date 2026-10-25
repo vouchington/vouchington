@@ -7,7 +7,7 @@ import {
 } from '@services/communities'
 import { attachCommunityProvenance } from '@services/content-provenance'
 import createHttpError from 'http-errors'
-import { nullable } from './output-schema-shapes.mts'
+import { nullable } from '@vouchington/mcp-server/schema'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
 /** The page sizes of the community read tools: the signed-out REST cap, not the service's 100. */

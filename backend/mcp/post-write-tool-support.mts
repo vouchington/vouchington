@@ -1,8 +1,7 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
 import { postReferenceSchema } from './entity-reference-schema.mts'
-import { inlineSchemaReferences } from './route-response-schema.mts'
+import { inlineSchemaReferences, successSchema } from '@vouchington/mcp-server/schema'
 import { mcpPostSchema } from './mcp-post-output.mts'
-import { successSchema } from './output-schema-shapes.mts'
 
 export const POST_WRITE_SCOPES = ['posts:read', 'posts:write'] as const
 export const POST_WRITE_RESULT_SCHEMA = successSchema({ post: mcpPostSchema() })

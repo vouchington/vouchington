@@ -1,7 +1,7 @@
 import { leaveCommunity, loadCommunityWithViewer } from '@services/communities'
 import { communityReferenceSchema } from './entity-reference-schema.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
 type Args = { community_id: string }

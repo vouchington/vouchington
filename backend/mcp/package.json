@@ -102,8 +102,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
-    "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1",
+    "@vouchington/mcp-server": "^0.2.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "valkyries": "^0.11.2"

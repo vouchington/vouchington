@@ -7,7 +7,7 @@ import {
   unreadCountSchema,
   type McpNotificationBody,
 } from './mcp-notification-output.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requirePrivateToolUser } from './private-user.mts'
 
 type ToolResult = { success: true; unread_count: number } & McpNotificationBody

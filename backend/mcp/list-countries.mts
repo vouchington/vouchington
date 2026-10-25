@@ -1,7 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getCountries, type Country } from '@services/countries'
 import type { BasicUser } from '@services/users/types'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 
 type ToolResult = { success: true; results: Country[] }

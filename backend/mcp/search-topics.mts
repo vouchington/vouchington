@@ -14,7 +14,7 @@ import {
   type PagedSearchArgs,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 
 type ToolArgs = PagedSearchArgs & {

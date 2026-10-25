@@ -11,7 +11,7 @@ import {
   moneySchema,
 } from '@ts-shared/data-points/json-schemas'
 import type { CurrencyCode, Money, MoneyRange } from '@ts-shared/money'
-import { successSchema, objectSchema } from './output-schema-shapes.mts'
+import { successSchema, objectSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema } from './route-response-schema.mts'
 
 // The REST twin returns the whole stored profile, including its owner and update time. The tool

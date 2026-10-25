@@ -7,12 +7,13 @@ import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { PrivateUser } from '@services/users/types'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import { McpToolOutputMismatchError } from './build-tool-result.mts'
-import { callMcpTool, MCP_TOOL_RESULT_TOO_LARGE_TEXT } from './call-tool.mts'
 import {
+  McpToolOutputMismatchError,
   MAX_MCP_TOOL_RESULT_BYTES,
   MAX_MCP_TOOL_RESULT_VISITS,
-} from './serialize-mcp-tool-result.mts'
+} from '@vouchington/mcp-server/results'
+import { ManageEntityInputError } from '@vouchington/mcp-server/tools'
+import { callMcpTool, MCP_TOOL_RESULT_TOO_LARGE_TEXT } from './call-tool.mts'
 import { optionArgs } from '../../test-helpers/mcp-tool-contract.mts'
 import { USER_MCP_SERVER_CONFIG } from './config.mts'
 
@@ -114,6 +115,21 @@ describe('callMcpTool result errors', () => {
       expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
     },
   )
+
+  it('returns the package input error as a non-retryable 422 domain error', async () => {
+    stubToolFunction(() => Promise.reject(new ManageEntityInputError('id is required for update')))
+    const result = await call()
+    expect(result.isError).toBe(true)
+    expect(JSON.parse((result.content[0] as { text: string }).text)).toEqual({
+      error: {
+        status: 422,
+        code: 'INVALID_INPUT',
+        message: 'id is required for update',
+        retryable: false,
+      },
+    })
+    expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
+  })
 
   it('preserves the staff email graph conflict code across the MCP error envelope', async () => {
     const currentUser = { ...(await createTestUser()), membership_plan: null }

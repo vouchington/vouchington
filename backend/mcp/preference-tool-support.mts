@@ -1,5 +1,5 @@
 import type { EmailPreferences, UpdateUserOptions } from '@services/users'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema, componentSchema } from './route-response-schema.mts'
 
 const FREQUENCY = { type: 'string', enum: ['none', 'daily', 'weekly'] }

@@ -5,8 +5,11 @@ import type {
   ToolOutputSchema,
 } from '@services/openai-agents/tool-types'
 import { getToolRequiredScopes } from './select.mts'
-import { validateOptionOutputPointers } from '../option-output-pointers.mts'
-import { closeDeclaredInputObjects, factorToolSchema } from '../tool-schema-contract.mts'
+import {
+  validateOptionOutputPointers,
+  closeDeclaredInputObjects,
+  factorToolSchema,
+} from '@vouchington/mcp-server/schema'
 
 export type McpToolAnnotations = {
   readOnlyHint: boolean
@@ -20,7 +23,7 @@ export type McpToolShape = {
   name: string
   title?: string
   description?: string
-  inputSchema: Record<string, unknown>
+  inputSchema: { type: 'object'; [keyword: string]: unknown }
   outputSchema?: ToolOutputSchema
   annotations?: McpToolAnnotations
   _meta?: {
@@ -39,9 +42,12 @@ export function toolToMcpTool(
   audience: NonNullable<ToolMeta['audience']> = 'user',
 ): McpToolShape {
   const mcpScopes = getToolRequiredScopes(tool, audience)
-  const inputSchema = factorToolSchema(
-    closeDeclaredInputObjects(tool.schema.parameters ?? { type: 'object', properties: {} }),
-  )
+  const inputSchema = {
+    ...factorToolSchema(
+      closeDeclaredInputObjects(tool.schema.parameters ?? { type: 'object', properties: {} }),
+    ),
+    type: 'object' as const,
+  }
   const outputSchema = tool.meta?.outputSchema
     ? (factorToolSchema(tool.meta.outputSchema) as ToolOutputSchema)
     : undefined

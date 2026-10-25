@@ -7,7 +7,7 @@ import { admitDelegatedCreate } from '@services/contribution-gating/admit-delega
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { APPEAL_SCHEMA, toMcpAppeal, type McpAppeal } from './mcp-case-output.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requirePrivateToolUser } from './private-user.mts'
 
 type Args = {

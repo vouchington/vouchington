@@ -4,7 +4,7 @@ import { markRead, markUnread } from '@services/read-states'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 
 function source(read: boolean): MergedToolSource<{ rss_feed_item_id: string }, { success: true }> {
   return {

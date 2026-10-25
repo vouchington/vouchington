@@ -10,7 +10,7 @@ import {
 import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { componentSchema } from './route-response-schema.mts'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { adminOutputSchema, wrapAdminOutput } from './untrusted-output.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import { communityReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'

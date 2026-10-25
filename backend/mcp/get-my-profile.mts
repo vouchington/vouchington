@@ -14,7 +14,8 @@ import {
   type IndividualRewardsProgramStatusPage,
 } from '@services/individuals-households'
 import { requirePrivateToolUser } from './private-user.mts'
-import { routePropertySchema, routeResponseSchema } from './route-response-schema.mts'
+import { routeResponseSchema } from './route-response-schema.mts'
+import { routePropertySchema } from '@vouchington/mcp-server/schema'
 
 const API = {
   cards: { method: 'GET', path: '/api/v1/my/cards' },

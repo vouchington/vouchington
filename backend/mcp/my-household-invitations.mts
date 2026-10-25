@@ -7,7 +7,7 @@ import {
   listMyHouseholdInvitationsCommand,
   revokeHouseholdInvitationCommand,
 } from '@services/individuals-households/household-invitations/commands'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import {
   pageProperties,
   page,

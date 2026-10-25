@@ -3,7 +3,7 @@ import type { BasicUser } from '@services/users/types'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { BOOKMARK_TOOL_ENTITY_TYPES, BOOKMARK_TOOL_PREDICATES } from './bookmark-tool-support.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 import {
   setBookmarkTargets,

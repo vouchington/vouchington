@@ -3,7 +3,7 @@ import { removePostHashtag } from '@services/posts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
-import { objectSchema } from './output-schema-shapes.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
 import { postReferenceSchema } from './entity-reference-schema.mts'
 
 type RemoveEntityRelationArgs = { action: 'remove_tag'; post_id: string; tag: string }

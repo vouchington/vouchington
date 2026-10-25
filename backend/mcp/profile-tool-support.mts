@@ -1,4 +1,4 @@
-import { nullable, objectSchema, successSchema } from './output-schema-shapes.mts'
+import { nullable, objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema, componentSchema } from './route-response-schema.mts'
 
 export type ProfileLinkToolFields = {

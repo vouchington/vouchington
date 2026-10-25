@@ -1,6 +1,7 @@
 import { getUserFinancialProfile } from '@services/user-financial-profiles'
 import { requirePrivateToolUser } from './private-user.mts'
-import { componentSchema, successResultSchema } from './route-response-schema.mts'
+import { componentSchema } from './route-response-schema.mts'
+import { successResultSchema } from '@vouchington/mcp-server/schema'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 const API = { method: 'GET', path: '/api/v1/my/financial-profile' } as const

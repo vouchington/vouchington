@@ -1,5 +1,4 @@
-import { findSchemaViolation } from '@voucha/mcp/schema-validator'
-import { closeDeclaredInputObjects } from '@voucha/mcp/tool-schema-contract'
+import { findSchemaViolation, closeDeclaredInputObjects } from '@vouchington/mcp-server/schema'
 
 const NO_PARAMETERS = {
   type: 'object',

@@ -22,7 +22,7 @@ import {
   createSdkCatalogAssertions,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { buildToolResult, McpToolOutputMismatchError } from './build-tool-result.mts'
+import { buildToolResult, McpToolOutputMismatchError } from '@vouchington/mcp-server/results'
 import { buildMcpCatalog } from './catalog/build-mcp-catalog.mts'
 import { findCatalogContractViolations } from './catalog/check-catalog-contracts.mts'
 import { runCatalogGeneration } from '../../scripts/mcp-catalog-generation.mts'
@@ -33,7 +33,7 @@ import { listMcpToolsForUser } from './list-tools.mts'
 // Deliberately reuse the definition name with different shapes. References resolve inside
 // each schema, not a shared namespace between the input, output or other catalog tools.
 const inputSchema = {
-  type: 'object',
+  type: 'object' as const,
   properties: { arguments: { $ref: '#/$defs/item' } },
   required: ['arguments'],
   additionalProperties: false,

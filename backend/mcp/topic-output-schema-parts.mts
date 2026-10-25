@@ -1,5 +1,5 @@
 import { componentSchema } from './route-response-schema.mts'
-import { nullable, objectSchema, type JsonSchema } from './output-schema-shapes.mts'
+import { nullable, objectSchema, type JsonSchema } from '@vouchington/mcp-server/schema'
 
 const count: JsonSchema = { type: 'integer', minimum: 0 }
 

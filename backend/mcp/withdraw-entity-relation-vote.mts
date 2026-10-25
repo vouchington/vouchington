@@ -6,7 +6,7 @@ import {
 import { ToolRateLimitError } from '@services/openai-agents/tool-rate-limit-error'
 import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
 type ToolArgs = { id: string }

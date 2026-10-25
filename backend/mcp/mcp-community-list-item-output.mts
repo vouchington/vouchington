@@ -3,7 +3,7 @@ import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { getUrlsByIdBatch } from '@services/urls'
 import { getUrlHostnamesByAnyBatch } from '@services/urls-hostnames'
 import { iso, sanitizedTitle } from './mcp-read-output.mts'
-import { nullable } from './output-schema-shapes.mts'
+import { nullable } from '@vouchington/mcp-server/schema'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
 /** The kinds of thing a community list holds, in the order the counts report them. */

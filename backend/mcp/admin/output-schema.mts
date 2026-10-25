@@ -1,5 +1,5 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
-import { inlineSchemaReferences } from '../route-response-schema.mts'
+import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 
 /** Mirrors checked-in staff projections, including routes with an inline response body. */

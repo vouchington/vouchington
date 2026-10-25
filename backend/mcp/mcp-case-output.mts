@@ -8,7 +8,7 @@ import {
 import type { ReviewDisputeResponse } from '@services/review-disputes'
 import type { ModerationAppealResponse } from '@services/moderation-appeals/types'
 import { externalText, iso } from './mcp-read-output.mts'
-import { nullable, objectSchema, type JsonSchema } from './output-schema-shapes.mts'
+import { nullable, objectSchema, type JsonSchema } from '@vouchington/mcp-server/schema'
 
 /**
  * What an MCP client sees of a dispute or an appeal it filed: the member view of the REST routes,

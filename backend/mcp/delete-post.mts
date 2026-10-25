@@ -2,7 +2,7 @@ import { deletePost } from '@services/posts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { requireActiveToolUser } from './private-user.mts'
 import { loadWritablePost, POST_ID_SCHEMA, POST_WRITE_SCOPES } from './post-write-tool-support.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import type { PrivateUser } from '@services/users/types'
 
 const tool: Tool<{ id: string }, { success: true }> = {

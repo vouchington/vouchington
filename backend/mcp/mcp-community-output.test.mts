@@ -8,7 +8,7 @@ import getCommunityPostsTool from './get-community-posts.mts'
 import getCommunityTool from './get-community.mts'
 import { COMMUNITY_PAGE_LIMIT, mcpCommunityEntryProperties } from './mcp-community-output.mts'
 import { mcpPostSchema } from './mcp-post-output.mts'
-import { inlineSchemaReferences } from './route-response-schema.mts'
+import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchCommunitiesTool from './search-communities.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 

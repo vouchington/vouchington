@@ -14,8 +14,8 @@ import type {
   ToolApiEndpoint,
   ToolInvocationContext,
 } from '@services/openai-agents/tool-types'
-import { selectApiByArgument } from './select-api-by-argument.mts'
-import { objectSchema, oneOfSchema } from './output-schema-shapes.mts'
+import { selectApiByArgument } from '@vouchington/mcp-server/tools'
+import { objectSchema, oneOfSchema } from '@vouchington/mcp-server/schema'
 
 const text = { type: 'string' }
 

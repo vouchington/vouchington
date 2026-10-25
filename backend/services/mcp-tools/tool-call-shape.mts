@@ -5,7 +5,7 @@ function requestId(message: unknown): string | number | null {
   return typeof id === 'string' || (typeof id === 'number' && Number.isInteger(id)) ? id : null
 }
 
-export function mcpToolCallIsDispatched(message: unknown): boolean {
+export function mcpToolCallIsDispatched(message: unknown): message is { id: string | number } {
   return CallToolRequestSchema.safeParse(message).success && requestId(message) !== null
 }
 

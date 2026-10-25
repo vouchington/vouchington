@@ -1,4 +1,4 @@
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 
 export type ReferralLinkIdArgs = { link_id: string }

@@ -4,7 +4,7 @@ import {
   runWithCredentialRequestContext,
   type CredentialRequestOrigin,
 } from '../modules/request-client-info/index.mts'
-import { findSchemaViolation } from '../mcp/schema-validator.mts'
+import { findSchemaViolation } from '@vouchington/mcp-server/schema'
 import {
   ADMIN_MCP_SERVER_CONFIG,
   USER_MCP_SERVER_CONFIG,

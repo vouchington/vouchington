@@ -4,7 +4,7 @@ import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.
 import { describe, expect, it } from 'vitest'
 import getUserTool from './get-user.mts'
 import { mcpUserSchema, USER_PAGE_LIMIT } from './mcp-user-output.mts'
-import { inlineSchemaReferences } from './route-response-schema.mts'
+import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchUsersTool from './search-users.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 

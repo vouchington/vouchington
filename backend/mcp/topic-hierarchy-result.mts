@@ -2,7 +2,7 @@ import { getPaginationLimitsForContract } from '@services/pagination'
 import { getTopicParents } from '@services/topics/hierarchy'
 import { getTopicChildrenPage, topicChildrenPaginationParser } from '@services/topics/children-page'
 import type { Topic } from '@services/topics/types'
-import { objectSchema } from './output-schema-shapes.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema, componentSchema } from './route-response-schema.mts'
 
 const HIERARCHY_DIRECTIONS = ['parents', 'children', 'both'] as const
