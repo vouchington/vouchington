@@ -16,7 +16,7 @@ import {
   getStripeMembershipSourceIdentity,
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
-import { getStripeEventByStripeEventId } from './events.mts'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import { insertStripeEvent } from './insert-event.mts'
 vi.mock<typeof import('@modules/stripe/subscriptions')>(
   import('@modules/stripe/subscriptions'),
@@ -240,7 +240,7 @@ describe('Stripe membership sync provider facts', () => {
 
     await syncMembershipFromStripeSubscription(pastDueEvent.id, subscriptionId, applicationContext)
     const [event, pastDueMembership] = await Promise.all([
-      getStripeEventByStripeEventId(pastDueEvent.id),
+      getTestStripeEventByStripeEventId(pastDueEvent.id),
       getMembershipByStripeSubscriptionId(
         getStripeMembershipSourceIdentity({
           stripeSubscriptionId: subscriptionId,

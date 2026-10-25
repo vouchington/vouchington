@@ -17,7 +17,7 @@ import {
   completeIneligiblePurchaseReversal,
   markIneligiblePurchaseReversalCompleted,
 } from '@services/memberships/ineligible-stripe-purchase-reversal-execution'
-import { getStripeEventByStripeEventId } from '@services/stripe/events'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import { insertStripeEvent } from '@services/stripe/insert-event'
 import { createStripeEvent, toJobData } from '@voucha/test-helpers/membership-stripe-fixtures'
 import { processStripeEvent } from '../stripe-event.mts'
@@ -147,7 +147,7 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     await expect(
       getTestIneligiblePurchaseReversal(subscriptionId, 'production'),
     ).resolves.toMatchObject({ completed_at: expect.any(Date) })
-    await expect(getStripeEventByStripeEventId(event.id)).resolves.toMatchObject({
+    await expect(getTestStripeEventByStripeEventId(event.id)).resolves.toMatchObject({
       status: 'processed',
     })
 
@@ -161,7 +161,7 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     await processStripeEvent(toJobData(unrelated))
 
     expect(mockCreateStripeRefund).toHaveBeenCalledOnce()
-    await expect(getStripeEventByStripeEventId(unrelatedEvent.id)).resolves.toMatchObject({
+    await expect(getTestStripeEventByStripeEventId(unrelatedEvent.id)).resolves.toMatchObject({
       status: 'processed',
     })
   })
@@ -275,10 +275,10 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     expect(mockCreateStripeRefund).toHaveBeenCalledWith(
       expect.objectContaining({ amountMinorUnits, paymentIntentId: 'pi_dispute_recovery' }),
     )
-    await expect(getStripeEventByStripeEventId(event.id)).resolves.toMatchObject({
+    await expect(getTestStripeEventByStripeEventId(event.id)).resolves.toMatchObject({
       status: 'processed',
     })
-    await expect(getStripeEventByStripeEventId(reorderedLostEvent.id)).resolves.toMatchObject({
+    await expect(getTestStripeEventByStripeEventId(reorderedLostEvent.id)).resolves.toMatchObject({
       status: 'processed',
     })
   })

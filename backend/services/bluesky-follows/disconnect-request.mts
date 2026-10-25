@@ -35,29 +35,6 @@ export async function requestBlueskyDisconnect(userId: string): Promise<BlueskyD
   return request
 }
 
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function hasPendingBlueskyDisconnect(
-  request: BlueskyDisconnectRequest,
-): Promise<boolean> {
-  const { rows } = await read<{ present: boolean }>(sql`/* hasPendingBlueskyDisconnect */
-    SELECT EXISTS (
-      SELECT 1
-      FROM bluesky_linked_accounts account
-      JOIN bluesky_link_authorizations link_auth
-        ON link_auth.id = account.link_authorization_id
-       AND link_auth.user_id = account.user_id
-       AND link_auth.status = 'attached'
-      WHERE account.user_id = ${request.userId}
-        AND account.bluesky_did = ${request.blueskyDid}
-        AND account.link_authorization_id = ${request.linkAuthorizationId}
-        AND account.disconnect_requested_at IS NOT NULL
-    ) AS present`)
-  return rows[0]?.present ?? false
-}
-
 export type BlueskyDisconnectRequestPage = {
   requests: BlueskyDisconnectRequest[]
   hasMore: boolean

@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { hasTestPendingBlueskyDisconnect } from '@voucha/test-helpers/bluesky-disconnect-readers'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
 import {
@@ -16,7 +17,6 @@ import {
   disconnectBlueskyAccountAndCleanupFollows,
 } from './disconnect.mts'
 import {
-  hasPendingBlueskyDisconnect,
   requestBlueskyDisconnect,
   listPendingBlueskyDisconnectPage,
   type BlueskyDisconnectRequest,
@@ -54,7 +54,7 @@ describe('durable Bluesky disconnect', () => {
     }
     expect(cleanup).not.toHaveBeenCalled()
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
-    expect(await hasPendingBlueskyDisconnect(expected)).toBe(true)
+    expect(await hasTestPendingBlueskyDisconnect(expected)).toBe(true)
     const jobId = `disconnect_${user.id}_${linked.link_authorization_id}`
     const job = await blueskyFollowPropagation.getJob(jobId)
     expect(job?.name).toBe('bluesky-follow-propagation.disconnectRequested')
@@ -110,7 +110,7 @@ describe('durable Bluesky disconnect', () => {
     expect(enqueue).toHaveBeenCalledWith(expected)
     expect(cleanup).toHaveBeenCalledExactlyOnceWith(user.id, expected)
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
-    expect(await hasPendingBlueskyDisconnect(expected)).toBe(true)
+    expect(await hasTestPendingBlueskyDisconnect(expected)).toBe(true)
     expect(await listPendingFrom(uuidBefore(linked.link_authorization_id))).toContainEqual(expected)
   })
 

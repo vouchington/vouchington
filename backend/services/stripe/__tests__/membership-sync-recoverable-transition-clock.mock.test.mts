@@ -8,7 +8,7 @@ import {
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
 import { grantMembership } from '@services/memberships'
-import { getStripeEventByStripeEventId } from '../events.mts'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import { insertStripeEvent } from '../insert-event.mts'
 
 vi.mock<typeof import('@modules/stripe/customers')>(
@@ -82,7 +82,7 @@ describe('recoverable Stripe membership transition clocks', () => {
       )
 
       const [event, rawDirect, activatedGrant] = await Promise.all([
-        getStripeEventByStripeEventId(eventId),
+        getTestStripeEventByStripeEventId(eventId),
         getTestMembershipRaw(direct.id),
         getTestMembershipGrant(grant.grantId),
       ])

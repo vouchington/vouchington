@@ -22,7 +22,7 @@ createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
 import { BlueskySessionStore } from '../bluesky-accounts/session-store.mts'
 import { disconnectBlueskyAccountAndCleanupFollows as disconnectBlueskyAccountAndEnqueue } from './disconnect.mts'
-import { hasPendingBlueskyDisconnect } from './disconnect-request.mts'
+import { hasTestPendingBlueskyDisconnect } from '@voucha/test-helpers/bluesky-disconnect-readers'
 import { getBlueskyFollowReceipt, saveBlueskyFollowReceipt } from './receipts.mts'
 
 async function disconnectBlueskyAccountAndCleanupFollows(userId: string): Promise<void> {
@@ -67,7 +67,7 @@ describe('synchronous Bluesky disconnect failure recovery', () => {
 
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
     expect(await getTestBlueskyLinkedAccountRow(linked.bluesky_did)).not.toBeNull()
-    expect(await hasPendingBlueskyDisconnect(generation)).toBe(true)
+    expect(await hasTestPendingBlueskyDisconnect(generation)).toBe(true)
     expect(
       await getBlueskyFollowReceipt(
         follower.id,
@@ -80,6 +80,6 @@ describe('synchronous Bluesky disconnect failure recovery', () => {
     await disconnectBlueskyAccountAndCleanupFollows(user.id)
 
     expect(await getTestBlueskyLinkedAccountRow(linked.bluesky_did)).toBeNull()
-    expect(await hasPendingBlueskyDisconnect(generation)).toBe(false)
+    expect(await hasTestPendingBlueskyDisconnect(generation)).toBe(false)
   })
 })
