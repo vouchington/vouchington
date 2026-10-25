@@ -1186,14 +1186,6 @@
     "routes": ["PUT /api/v1/my/financial-profile"]
   },
   {
-    "annotation": "upsertUserAgentString",
-    "maxCount": 3,
-    "reason": "A cold native login resolves a new immutable user-agent row with a read, an idempotent insert, and a separate reread that can see a concurrent insert winner. This is one logical upsert with three bounded statements.",
-    "permanent": true,
-    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
-    "routes": ["POST /api/v1/auth/native/email-address/login"]
-  },
-  {
     "annotation": "verifyEmailVerificationToken",
     "maxCount": null,
     "reason": "After the active-user lock, consume the valid token before a fresh-snapshot address-ownership check and verified-address insert, preserving code-error precedence",
