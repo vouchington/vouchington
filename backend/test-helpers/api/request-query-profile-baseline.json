@@ -316,6 +316,14 @@
   },
   {
     "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "First verified native attestation reads the current actor before accepting hardware proof, then rereads under the session authority lock before replacing its SID so deletion or factor changes committed during proof verification cannot authorize the upgrade.",
+    "permanent": true,
+    "code": "backend/api/v1/app-attestation/app-attestation.mts:50",
+    "routes": ["POST /api/v1/app-attestation/attest"]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
     "maxCount": null,
     "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
     "permanent": true,

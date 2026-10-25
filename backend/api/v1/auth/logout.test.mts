@@ -216,7 +216,7 @@ describe('POST /api/v1/auth/logout', () => {
 
     await expect(
       withRejectedPostgresQueryForTest(
-        statement => statement.includes('/* revokeSession */'),
+        statement => statement.includes('/* updateSessionRevocationRegistry */'),
         'registry write unavailable',
         query =>
           runLogoutPushCleanupAndRevoke(

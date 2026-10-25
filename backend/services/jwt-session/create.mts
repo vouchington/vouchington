@@ -192,7 +192,6 @@ export async function createSessionToken({
     },
     { query },
   )
-
   return { token, payload }
 }
 
