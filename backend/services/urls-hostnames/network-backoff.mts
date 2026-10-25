@@ -5,6 +5,7 @@ import {
   CrawlerRateLimitError,
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
+  CrawlerTimeoutError,
   HttpNoBodyError,
   isCrawlerNetworkDnsError,
   isCrawlerNetworkTlsHostnameError,
@@ -40,7 +41,8 @@ export function isHostnameUnreachableError(error: unknown): error is CrawlerNetw
 /** The hostname answered with an HTTP response, even if the crawl failed. */
 export function isHostnameAnsweredError(error: unknown): boolean {
   return (
-    (error instanceof CrawlerNetworkError && error.responseStatus !== null) ||
+    ((error instanceof CrawlerNetworkError || error instanceof CrawlerTimeoutError) &&
+      error.responseStatus !== null) ||
     error instanceof CrawlerRateLimitError ||
     error instanceof CrawlerServerError ||
     error instanceof CrawlerHttpClientError ||
@@ -113,6 +115,16 @@ export async function claimHostnameNetworkProbe(hostnameId: string): Promise<boo
   return rows.length > 0
 }
 
+/** Whether the backoff is open now; a read-only check for callers that have not claimed a probe. */
+export function isHostnameNetworkBackoffOpen(hostname: {
+  network_backoff_ends_at: Date | null
+}): boolean {
+  return (
+    hostname.network_backoff_ends_at !== null &&
+    hostname.network_backoff_ends_at.getTime() > Date.now()
+  )
+}
+
 /**
  * Whether a crawl or fetch of the hostname may proceed. While the backoff is open it is skipped
  * (never deferred); once it expires only the caller that claims the probe proceeds.
@@ -122,9 +134,7 @@ export async function isOutsideHostnameNetworkBackoff(hostname: {
   network_backoff_step: number
   network_backoff_ends_at: Date | null
 }): Promise<boolean> {
-  if (hostname.network_backoff_ends_at && hostname.network_backoff_ends_at.getTime() > Date.now()) {
-    return false
-  }
+  if (isHostnameNetworkBackoffOpen(hostname)) return false
   if (hostname.network_backoff_step === 0) return true
   return claimHostnameNetworkProbe(hostname.id)
 }

@@ -8,7 +8,10 @@ import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { NETWORK_BACKOFF_FAILURE_THRESHOLD } from '@services/urls-hostnames/network-backoff'
 import { CrawlerNetworkError } from '@modules/on-error/errors'
 import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
-import { getTestHostnameNetworkBackoff } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
+import {
+  expireTestHostnameNetworkBackoff,
+  getTestHostnameNetworkBackoff,
+} from '@voucha/test-helpers/entities/url-hostname-network-backoff'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
 const mockCheckRssFeedCrawlable = vi.fn<typeof checkRssFeedCrawlable>()
@@ -67,5 +70,22 @@ describe('fetch.network-backoff', () => {
     mockCrawlerRss.mockClear()
     await expect(fetchRssFeedForTest(feedId)).resolves.toEqual([])
     expect(mockCrawlerRss).not.toHaveBeenCalled()
+  })
+
+  it('leaves the probe unclaimed when robots.txt disallows the feed', async () => {
+    const { feedId, hostname, hostnameId } = await makeFeed()
+    mockCrawlerRss.mockRejectedValue(makeResetError(hostname))
+    for (let attempt = 0; attempt < NETWORK_BACKOFF_FAILURE_THRESHOLD; attempt++) {
+      await expect(fetchRssFeedForTest(feedId)).rejects.toBeInstanceOf(CrawlerNetworkError)
+    }
+    await expireTestHostnameNetworkBackoff(hostnameId)
+
+    mockCrawlerRss.mockClear()
+    mockCheckRssFeedCrawlable.mockResolvedValueOnce(false)
+    await expect(fetchRssFeedForTest(feedId)).resolves.toEqual([])
+    expect(mockCrawlerRss).not.toHaveBeenCalled()
+    expect(
+      (await getTestHostnameNetworkBackoff(hostnameId))!.network_backoff_probe_claimed_at,
+    ).toBeNull()
   })
 })

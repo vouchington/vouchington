@@ -149,7 +149,7 @@ export default async function CrawlerHtml(
       // the request budget for a fast failure and the response budget once elapsed time has moved
       // past it (i.e. headers must have already arrived).
       const timedOutPhaseMs = duration < requestTimeoutMs ? requestTimeoutMs : responseTimeoutMs
-      throw new CrawlerTimeoutError(url, timedOutPhaseMs, duration, err)
+      throw new CrawlerTimeoutError(url, timedOutPhaseMs, duration, err, progress.responseStatus)
     }
 
     if (err instanceof HttpRateLimitError) {

@@ -11,6 +11,7 @@ import {
 } from '@services/urls-hostnames/dns-failures'
 import {
   isHostnameAnsweredError,
+  isHostnameNetworkBackoffOpen,
   isHostnameUnreachableError,
   isOutsideHostnameNetworkBackoff,
   recordHostnameNetworkFailure,
@@ -19,11 +20,16 @@ import {
 import { isRssParseFeedError } from './is-permanent-fetch-error.mts'
 import { lockRssFetchHostnameOnRateLimit } from './domain-rate-limit.mts'
 
-/** Whether the fetch hostname is in a network backoff, claiming the probe when it has expired. */
-export async function isRssFetchHostnameInNetworkBackoff(fetchHostnameId: string) {
+/**
+ * Loads the fetch hostname's network backoff. `isOpen` is a read-only skip check; `claimProbe`
+ * claims an expired backoff's single probe and runs only once the feed would actually be fetched.
+ */
+export async function loadRssFetchHostnameNetworkBackoff(fetchHostnameId: string) {
   const hostname = await getUrlHostnameCrawlerDetailsById(fetchHostnameId)
-  if (!hostname) return false
-  return !(await isOutsideHostnameNetworkBackoff(hostname))
+  return {
+    isOpen: hostname ? isHostnameNetworkBackoffOpen(hostname) : false,
+    claimProbe: async () => !hostname || (await isOutsideHostnameNetworkBackoff(hostname)),
+  }
 }
 
 /** A fetched feed proves the hostname resolves and answers. */

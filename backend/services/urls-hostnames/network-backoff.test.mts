@@ -8,7 +8,11 @@ import {
   expireTestHostnameNetworkBackoff,
   getTestHostnameNetworkBackoff,
 } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
-import { CrawlerNetworkError, CrawlerServerError } from '@modules/on-error/errors'
+import {
+  CrawlerNetworkError,
+  CrawlerServerError,
+  CrawlerTimeoutError,
+} from '@modules/on-error/errors'
 import { upsertUrlHostnames } from './upsert.mts'
 import { recordHostnameDnsFailure } from './dns-failures.mts'
 import {
@@ -182,5 +186,8 @@ describe('network-backoff', () => {
     const truncated = new CrawlerNetworkError(url, 1, new Error('terminated'), 200)
     expect(isHostnameUnreachableError(truncated)).toBe(false)
     expect(isHostnameAnsweredError(truncated)).toBe(true)
+    expect(isHostnameAnsweredError(new CrawlerTimeoutError(url, 5, 5, undefined, 200))).toBe(true)
+    expect(isHostnameAnsweredError(new CrawlerTimeoutError(url, 5, 5))).toBe(false)
+    expect(isHostnameUnreachableError(new CrawlerTimeoutError(url, 5, 5))).toBe(false)
   })
 })

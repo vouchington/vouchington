@@ -11,7 +11,7 @@ import { getRssFeedByIdToFetch, type RssFeedToFetch } from './get-to-fetch.mts'
 import * as fetchFailures from './fetch-failures.mts'
 import { checkRssFeedCrawlable } from './fetch-robots-check.mts'
 import {
-  isRssFetchHostnameInNetworkBackoff,
+  loadRssFetchHostnameNetworkBackoff,
   recordRssFetchHostnameFailure,
   recordRssFetchHostnameSuccess,
 } from './fetch-hostname-health.mts'
@@ -47,8 +47,9 @@ export async function fetchRssFeed(
   }
   const fetchHostnameId = await getFetchHostnameId(rssFeed.url_hostname_id, rssFeed.url, feedUrl)
   await rssRateLimit.assertRssFetchHostnameNotRateLimited(fetchHostnameId, feedUrl)
-  if (await isRssFetchHostnameInNetworkBackoff(fetchHostnameId)) {
-    // Skipped, not failed: the feed waits for its next due fetch instead of counting a failure.
+  const networkBackoff = await loadRssFetchHostnameNetworkBackoff(fetchHostnameId)
+  // Skipped, not failed: the feed waits for its next due fetch instead of counting a failure.
+  if (networkBackoff.isOpen) {
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
     return []
   }
@@ -59,7 +60,7 @@ export async function fetchRssFeed(
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
     return []
   }
-  if (!(await crawlableCheck(feedUrl, rssFeed))) {
+  if (!(await crawlableCheck(feedUrl, rssFeed)) || !(await networkBackoff.claimProbe())) {
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
     return []
   }

@@ -89,6 +89,28 @@ describe('crawl-url network backoff', () => {
     })
   }, 30_000)
 
+  it('leaves the probe unclaimed when robots.txt disallows the first URL', async () => {
+    const host = await createHostname('net-backoff-robots')
+    await tripBackoff(host)
+    await expireTestHostnameNetworkBackoff(host.hostnameId)
+
+    fetchCrawlerHtml.mockClear()
+    const disallowed = await host.addPage(100)
+    const skipped = crawlUrlForTest(disallowed.id, 0, new Set(), {
+      dependencies: { isUrlCrawlable: () => Promise.resolve(false) },
+    })
+    await expect(skipped).resolves.toBeNull()
+    expect(fetchCrawlerHtml).not.toHaveBeenCalled()
+    expect(
+      (await getTestHostnameNetworkBackoff(host.hostnameId))!.network_backoff_probe_claimed_at,
+    ).toBeNull()
+
+    const probeUrl = await host.addPage(101)
+    fetchCrawlerHtml.mockResolvedValueOnce(createMockCrawlerResult(200, null, null))
+    await expect(crawlUrlForTest(probeUrl.id)).resolves.not.toBeNull()
+    expect(fetchCrawlerHtml).toHaveBeenCalledTimes(1)
+  }, 30_000)
+
   it('closes the backoff when the probe answers with a redirect', async () => {
     const host = await createHostname('net-backoff-redirect')
     await tripBackoff(host)

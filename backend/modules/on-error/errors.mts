@@ -3,14 +3,23 @@ export class CrawlerTimeoutError extends Error {
   status: number
   url: string
   duration: number
+  /** The HTTP status when the body timed out after headers arrived; null if none arrived. */
+  responseStatus: number | null
 
-  constructor(url: string, timeoutMs: number, duration: number, cause?: Error) {
+  constructor(
+    url: string,
+    timeoutMs: number,
+    duration: number,
+    cause?: Error,
+    responseStatus: number | null = null,
+  ) {
     super(`Request to ${url} timed out after ${timeoutMs}ms`, { cause })
     this.name = 'CrawlerTimeoutError'
     this.code = 'CrawlerTimeoutError'
     this.status = 504
     this.url = url
     this.duration = duration
+    this.responseStatus = responseStatus
   }
 }
 

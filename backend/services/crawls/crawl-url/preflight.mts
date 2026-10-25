@@ -4,7 +4,10 @@ import { applyCrawlerRules } from '@services/crawlers/apply-rules'
 import { isUrlCrawlable } from '@services/urls-domains-robots'
 import { getUrlById } from '@services/urls/get'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
-import { isOutsideHostnameNetworkBackoff } from '@services/urls-hostnames/network-backoff'
+import {
+  isHostnameNetworkBackoffOpen,
+  isOutsideHostnameNetworkBackoff,
+} from '@services/urls-hostnames/network-backoff'
 import net from 'node:net'
 import { isPrivateIp } from 'ssrf-guard'
 import onError from '@modules/on-error'
@@ -46,7 +49,7 @@ export async function loadCrawlPreflight(
   if (hostname.is_blocked || !hostname.is_crawlable || isLocalHostname(hostname.hostname)) {
     return null
   }
-  if (!(await isOutsideHostnameNetworkBackoff(hostname))) return null
+  if (isHostnameNetworkBackoffOpen(hostname)) return null
 
   const rateLimitRemainingMs = await getDomainRateLimitRemainingMs(hostname.id)
   if (rateLimitRemainingMs !== null) {
@@ -72,6 +75,8 @@ export async function loadCrawlPreflight(
 
   const crawler = await getCrawlerForHostnameId(url.hostname.id)
   if (!crawler) return null
+  // Claim an expired backoff's single probe only once this URL would actually be fetched.
+  if (!(await isOutsideHostnameNetworkBackoff(hostname))) return null
 
   const previousCrawl = await getLatestHtmlSnapshotCrawl(url.id)
   const previousHtmlSha256 = previousCrawl?.html_sha256 || null
