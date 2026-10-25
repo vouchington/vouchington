@@ -13,7 +13,7 @@ module.exports = [
     severity: 'error',
     comment: 'Runtime modules and CI checks must own their implementation outside test helpers.',
     from: {
-      path: '^(?:backend/(?:api|services|workers|data-stores|modules)/|web/|lambdas/|ci/check-[^/]+\\.mts$)',
+      path: '^(?:backend/(?:api|services|workers|data-stores|modules|agents|mcp|queues|entrypoints|config|service-registrations|worker-runtime|rss|md|types)/|web/|lambdas/|ci/check-[^/]+\\.mts$)',
       pathNot: [...testPaths, configConsumers],
     },
     to: { path: helperPath },
