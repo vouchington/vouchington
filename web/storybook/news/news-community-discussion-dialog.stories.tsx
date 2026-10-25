@@ -12,7 +12,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 function OpenDialog() {
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('communities.create-post')
   return (
     <StoryFrame>
       <NewsCommunityDiscussionDialog
