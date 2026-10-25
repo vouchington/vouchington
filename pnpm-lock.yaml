@@ -4606,12 +4606,6 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../../queues/background
-      '@queues/moderation-signals':
-        specifier: workspace:^
-        version: link:../../queues/moderation-signals
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../copyright-notices
@@ -13050,9 +13044,6 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../services/bedrock-embeddings
-      '@services/communities':
-        specifier: workspace:^
-        version: link:../../services/communities
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
@@ -13093,9 +13084,6 @@ importers:
       '@services/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../services/bedrock-embeddings-batch
-      '@services/communities':
-        specifier: workspace:^
-        version: link:../../services/communities
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts

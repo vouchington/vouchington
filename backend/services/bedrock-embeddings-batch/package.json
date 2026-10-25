@@ -45,8 +45,6 @@
   },
   "devDependencies": {
     "@queues/ai-agents": "workspace:^",
-    "@queues/background": "workspace:^",
-    "@queues/moderation-signals": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/urls": "workspace:^",
     "@types/pg-copy-streams": "^1.2.5",

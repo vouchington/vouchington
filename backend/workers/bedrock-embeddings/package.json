@@ -19,7 +19,6 @@
   "dependencies": {
     "@queues/ai-agents": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
-    "@services/communities": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/stories": "workspace:^",
