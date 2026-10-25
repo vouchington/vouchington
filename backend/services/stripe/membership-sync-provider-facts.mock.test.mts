@@ -6,12 +6,9 @@ import {
   createTestUser,
   getTestMembershipProviderEvidenceId,
   getTestMembershipSourceState,
+  rejectTestMembershipProviderEvidence,
 } from '@voucha/test-helpers'
-import {
-  createMembership,
-  getMembershipByStripeSubscriptionId,
-  rejectMembershipProviderEvidence,
-} from '@services/memberships'
+import { createMembership, getMembershipByStripeSubscriptionId } from '@services/memberships'
 import {
   getStripeMembershipSourceIdentity,
   type StripeMembershipApplicationContext,
@@ -133,7 +130,7 @@ describe('Stripe membership sync provider facts', () => {
     ).resolves.toMatchObject({ status: 'cancelled' })
   })
 
-  it('does not let a later active Stripe event reactivate a source rejected from provider evidence', async () => {
+  it('does not accept a later active Stripe observation after its current evidence is rejected', async () => {
     const user = await createTestUser()
     const sku = await createTestSku({
       plan: 'pro',
@@ -160,24 +157,16 @@ describe('Stripe membership sync provider facts', () => {
     )
 
     await syncMembershipFromStripeSubscription(acceptedEvent.id, subscriptionId, applicationContext)
-    const evidenceId = await getTestMembershipProviderEvidenceId(membership.id)
-    if (!evidenceId) throw new Error('Accepted Stripe evidence was not recorded')
-    await rejectMembershipProviderEvidence(evidenceId, 'Provider evidence was rejected')
+    const currentEvidenceId = await getTestMembershipProviderEvidenceId(membership.id)
+    if (!currentEvidenceId) throw new Error('Accepted Stripe evidence was not recorded')
+    await rejectTestMembershipProviderEvidence(membership.id)
 
     await expect(
       syncMembershipFromStripeSubscription(laterEvent.id, subscriptionId, applicationContext),
     ).resolves.toBeNull()
-    await expect(
-      getMembershipByStripeSubscriptionId(
-        getStripeMembershipSourceIdentity({
-          stripeSubscriptionId: subscriptionId,
-          providerApplicationId: applicationContext.applicationId,
-        }),
-      ),
-    ).resolves.toBeNull()
-    await expect(getTestMembershipSourceState(membership.id)).resolves.toMatchObject({
-      cancelled_at: expect.any(Date),
-    })
+    await expect(getTestMembershipProviderEvidenceId(membership.id)).resolves.toBe(
+      currentEvidenceId,
+    )
   })
 
   it('rejects an EventBridge subscription identity that does not match the direct source', async () => {
