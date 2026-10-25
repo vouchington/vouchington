@@ -61,8 +61,10 @@ describe('plan completion advisory workflow', () => {
       'pull-requests': 'read',
     })
     expect(
-      audit?.steps?.some(step =>
-        step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
+      audit?.steps?.some(
+        step =>
+          typeof step.uses === 'string' &&
+          step.uses.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
       ),
     ).toBe(true)
     expect(audit?.steps?.some(step => step.run === 'node ci/plan-completion.mts')).toBe(true)
@@ -74,8 +76,10 @@ describe('plan completion advisory workflow', () => {
     const checkoutIndex = steps.findIndex(
       step => typeof step.uses === 'string' && step.uses.startsWith('actions/checkout@'),
     )
-    const setupNodeIndex = steps.findIndex(step =>
-      step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
+    const setupNodeIndex = steps.findIndex(
+      step =>
+        typeof step.uses === 'string' &&
+        step.uses.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
     )
     const auditScriptIndex = steps.findIndex(step => step.run === 'node ci/plan-completion.mts')
 
