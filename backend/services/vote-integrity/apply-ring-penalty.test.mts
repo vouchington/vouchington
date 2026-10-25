@@ -1,6 +1,7 @@
 import { createSameIdElectionRelations } from '@voucha/test-helpers/entities/entity-relation-election-collisions'
 import { insertTestEntityRelationVote } from '@voucha/test-helpers/entities/entity-relation-votes'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { randomBytes } from 'node:crypto'
 import {
@@ -10,6 +11,8 @@ import {
   insertTestPost,
   getTestPenaltiesByFlagId,
 } from '@voucha/test-helpers'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createVoteIntegrityFlag } from './create-flag.mts'
 import { getVoteIntegrityFlagByIdFromPrimary } from './get-flags.mts'
 import { applyVoteRingPenalty } from './apply-ring-penalty.mts'
@@ -125,6 +128,95 @@ describe('apply-ring-penalty', () => {
       const request = applyVoteRingPenalty(uuidv7(), adminUser.id)
       await expect(request).rejects.toThrow(Error)
       await expect(request).rejects.toMatchObject({ status: 404 })
+    })
+
+    it('waits for post-commit bulk admission after committing ring penalties', async () => {
+      const postId = await makePost(randomSlug())
+      const upvoter = await createTestUserDirect({ username: randomUsername() })
+      await insertTestPostVote(postId, upvoter!.id, '9.9.9.9', 1)
+      const flag = await createVoteIntegrityFlag('post', postId, 'ip_correlation', {})
+      expect(flag).not.toBeNull()
+
+      const jobId = `voteWeight__${upvoter!.id}__force`
+      const admission = holdQueueBulkAdmission(
+        voteAggregation,
+        'vote-aggregation.processRecalculateUserVoteWeight',
+        data =>
+          typeof data === 'object' &&
+          data !== null &&
+          'userId' in data &&
+          data.userId === upvoter!.id &&
+          'forceRecalculate' in data &&
+          data.forceRecalculate === true,
+      )
+      let operation: ReturnType<typeof applyVoteRingPenalty> | undefined
+      let admittedJobs: Awaited<typeof admission.admitted> = []
+      const admittedJobsPromise = admission.admitted.then(jobs => {
+        admittedJobs = jobs
+        return jobs
+      })
+      void admittedJobsPromise.catch(() => undefined)
+      let admissionStarted = false
+
+      try {
+        let completed = false
+        operation = applyVoteRingPenalty(flag!.id, adminUser.id).then(result => {
+          completed = true
+          return result
+        })
+        await admission.entered
+        admissionStarted = true
+
+        expect(await getTestPenaltiesByFlagId(flag!.id)).toHaveLength(1)
+        expect(await getVoteIntegrityFlagByIdFromPrimary(flag!.id)).toMatchObject({
+          resolution: 'penalized',
+        })
+        expect(completed).toBe(false)
+        admission.release()
+        const [result, jobs] = await Promise.all([operation, admittedJobsPromise])
+        expect(result).toMatchObject({ penalized_user_count: 1 })
+        expect(jobs).toHaveLength(1)
+        expect(await voteAggregation.getJob(jobId)).toMatchObject({
+          data: { userId: upvoter!.id, forceRecalculate: true },
+        })
+      } finally {
+        admission.release()
+        await operation?.catch(() => undefined)
+        if (admissionStarted) await admittedJobsPromise.catch(() => undefined)
+        await Promise.all(admittedJobs.map(job => job.remove()))
+        admission.restore()
+      }
+    })
+
+    it('reports a failed queue admission once without undoing the ring penalty', async () => {
+      const postId = await makePost(randomSlug())
+      const upvoter = await createTestUserDirect({ username: randomUsername() })
+      await insertTestPostVote(postId, upvoter!.id, '9.9.9.9', 1)
+      const flag = await createVoteIntegrityFlag('post', postId, 'ip_correlation', {})
+      expect(flag).not.toBeNull()
+
+      const jobId = `voteWeight__${upvoter!.id}__force`
+      const failure = new Error('Owned vote-weight bulk admission failure')
+      const reportOffset = sentryCaptureExceptionMock.mock.calls.length
+      const originalAddBulk = voteAggregation.addBulk
+      const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(jobs => {
+        if (jobs.some(job => job.opts?.jobId === jobId)) return Promise.reject(failure)
+        return originalAddBulk.call(voteAggregation, jobs)
+      })
+
+      try {
+        await expect(applyVoteRingPenalty(flag!.id, adminUser.id)).resolves.toMatchObject({
+          penalized_user_count: 1,
+        })
+        expect(await getTestPenaltiesByFlagId(flag!.id)).toHaveLength(1)
+        expect(
+          sentryCaptureExceptionMock.mock.calls
+            .slice(reportOffset)
+            .filter(([error]) => error === failure),
+        ).toHaveLength(1)
+      } finally {
+        addBulk.mockRestore()
+      }
     })
 
     it('rejects a repeated request even after a penalty was revoked', async () => {
