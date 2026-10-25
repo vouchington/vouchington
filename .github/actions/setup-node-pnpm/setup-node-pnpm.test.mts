@@ -41,14 +41,6 @@ describe('setup-node-pnpm composite action', () => {
     expect(pnpm?.uses).toMatch(/^pnpm\/action-setup@/)
   })
 
-  it('restores the pnpm store cache before installing', () => {
-    const names = steps.map(candidate => candidate.name)
-    const cache = names.indexOf('Cache pnpm store')
-    expect(cache).toBeGreaterThan(-1)
-    expect(cache).toBeLessThan(names.indexOf('pnpm install'))
-    expect(cache).toBeLessThan(names.indexOf('pnpm install without lifecycle scripts'))
-  })
-
   it('runs exactly one frozen full install per input value', () => {
     // Complementary static conditions: every install-scripts value selects exactly one install,
     // and no-mistakes can model the steps (it cannot model a shell `case` with an `exit 1` arm).

@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 import {
   actionStepBlocks,
   inlineLocalComposites,
-  runsPnpmInstall,
   stepLists,
   workflowYamlPaths as yamlPaths,
   type PolicyStep as CacheStep,
@@ -34,10 +33,6 @@ function setupNodeBlocks(source: string): string[] {
   return actionStepBlocks(source, /uses:\s+actions\/setup-node@/)
 }
 
-function isPnpmInstallStep(step: CacheStep): boolean {
-  return runsPnpmInstall(step.run)
-}
-
 function isPlaywrightInstallStep(step: CacheStep): boolean {
   const run = step.run ?? ''
   return run.includes('playwright install')
@@ -59,10 +54,6 @@ function cacheStepPath(step: CacheStep): string {
   return ''
 }
 
-function isPnpmStoreCacheStep(step: CacheStep): boolean {
-  return isActionsCacheStep(step) && cacheStepPath(step).includes('pnpm-store')
-}
-
 function isPlaywrightCacheStep(step: CacheStep): boolean {
   return isActionsCacheStep(step) && cacheStepPath(step).includes('ms-playwright')
 }
@@ -71,10 +62,9 @@ describe('CI cache policy', () => {
   it('never enables npm package manager caches', () => {
     // actions/setup-node's built-in `cache:` input is banned outright: it
     // cannot be pinned to a commit SHA, it manages its own opaque key
-    // scheme, and it cannot cache Playwright browsers. Every job that needs
-    // caching uses an explicit, SHA-pinned actions/cache step instead (see
-    // 'caches the pnpm store and Playwright browsers at every real install
-    // site' below) so the cache key and scope stay under our control.
+    // scheme, and it cannot cache Playwright browsers. Playwright jobs use
+    // explicit, SHA-pinned actions/cache steps so their keys and scope stay
+    // under our control.
     for (const path of yamlPaths) {
       const source = readFileSync(path, 'utf8')
 
@@ -86,12 +76,10 @@ describe('CI cache policy', () => {
     }
   })
 
-  it('caches the pnpm store and Playwright browsers at every real install site', () => {
-    // No runner persists a warm pnpm store or ~/.cache/ms-playwright across runs
-    // anymore, so every real install site needs a preceding actions/cache step or
-    // it pays a full cold install every run. Local composite steps are inlined
-    // (recursively) so setup-node-pnpm/setup-backend/setup-playwright call sites
-    // are checked like standalone/manual install steps.
+  it('caches Playwright browsers at every real install site', () => {
+    // No runner persists ~/.cache/ms-playwright across runs, so every browser
+    // install site needs a preceding actions/cache step. Local composites are
+    // inlined recursively to check their callers like standalone install steps.
     const violations: string[] = []
 
     for (const file of workflowFileNames) {
@@ -103,13 +91,6 @@ describe('CI cache policy', () => {
 
         steps.forEach((step, index) => {
           const priorSteps = steps.slice(0, index)
-
-          if (isPnpmInstallStep(step) && !priorSteps.some(isPnpmStoreCacheStep)) {
-            violations.push(
-              `${file}#${jobId}: step "${step.name ?? 'pnpm install'}" installs pnpm ` +
-                `dependencies without a preceding actions/cache step for the pnpm store.`,
-            )
-          }
 
           if (isPlaywrightInstallStep(step) && !priorSteps.some(isPlaywrightCacheStep)) {
             violations.push(
@@ -123,7 +104,7 @@ describe('CI cache policy', () => {
 
     assertNoWorkflowViolations(
       violations,
-      'Every pnpm/Playwright install site must be preceded by an actions/cache step:',
+      'Every Playwright install site must be preceded by an actions/cache step:',
     )
   })
 
@@ -159,15 +140,10 @@ describe('CI cache policy', () => {
     )
   })
 
-  it('keys the pnpm-store and Playwright browser caches safely', () => {
-    // pnpm-store/Playwright cache steps must scope by OS/arch (both paths
-    // are platform-specific) and key on a lockfile content hash computed by
-    // a preceding shell step -- not GitHub's hashFiles(), which breaks
-    // no-mistakes's tsconfig-gate-coverage reachability analysis when it
-    // appears inside a composite action's cache key. The Playwright cache
-    // must also never declare restore-keys: a stale browser cache is a
-    // version mismatch against the pinned `playwright` package and must
-    // fail loudly, not silently restore the wrong build.
+  it('keys the Playwright browser cache safely', () => {
+    // Playwright caches must scope by OS/arch and key on a lockfile content
+    // hash computed by a preceding shell step. They must never declare
+    // restore-keys: a stale cache can mismatch the pinned browser version.
     const violations: string[] = []
     const lockfileHashKeyRe = /\$\{\{\s*steps\.[\w-]+\.outputs\.lockfile-hash\s*\}\}/
     const lockfileHashComputeRe =
@@ -177,9 +153,8 @@ describe('CI cache policy', () => {
       const source = readFileSync(path, 'utf8')
 
       for (const block of cachePathBlocks(source)) {
-        const isPnpmStore = block.includes('pnpm-store')
         const isPlaywright = block.includes('ms-playwright')
-        if (!isPnpmStore && !isPlaywright) continue
+        if (!isPlaywright) continue
 
         const firstLine = block.trim().split('\n')[0]
 

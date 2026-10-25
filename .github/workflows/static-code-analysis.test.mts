@@ -105,8 +105,7 @@ describe('static-code-analysis workflow', () => {
     expect(workflow).not.toContain('./ci/install-selene.sh')
     expect(workflow).not.toContain('./ci/install-shellcheck.sh')
     expect(workflow).not.toContain('./ci/install-ripgrep.sh')
-    // mise-action caches through actions/cache by default; the repository cache policy
-    // permits only the pnpm store and Playwright browsers.
+    // mise-action caches through actions/cache by default; disable that implicit cache.
     expect(workflow.slice(miseStep, repoChecksStep)).toContain('cache: false')
   })
 

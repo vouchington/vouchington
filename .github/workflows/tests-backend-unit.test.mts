@@ -262,8 +262,7 @@ describe('backend uncredentialed Docker test workflow', () => {
   })
 
   it('does not restore or save a remote Vite transform cache', () => {
-    // The repository cache policy permits only the pnpm store and Playwright browsers; a
-    // remote Vite cache round-trip once consumed a job's entire timeout budget.
+    // A remote Vite cache round-trip once consumed a job's entire timeout budget.
     expect(workflow).not.toMatch(/actions\/cache\/(?:restore|save)|\.cache\/vite\/vitest/u)
   })
 
