@@ -1,6 +1,5 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import { parseErrorResponseBody } from '@vouchington/api-client'
 import {
   BOT_CHALLENGE_ACTION_TAG,
@@ -8,6 +7,7 @@ import {
   VOUCHA_BOT_CHALLENGE_TOKEN_HEADER,
 } from '@ts-shared/utils/bot-challenge'
 import { requestBotChallengeToken } from './bot-challenge'
+import { reportClientError } from './report-error'
 
 type BotChallengeSolver = (action: string, signal?: AbortSignal) => Promise<string>
 
@@ -22,7 +22,7 @@ export function createBotChallengeFetch(
     const response = await fetch(input, init)
     if (response.status !== 403) return response
     const errorData = await parseErrorResponseBody(response.clone(), {
-      onError: error => Sentry.captureException(error),
+      onError: reportClientError,
     })
     if (!isBotChallenge(errorData)) return response
 
