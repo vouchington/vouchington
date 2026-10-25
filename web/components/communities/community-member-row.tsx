@@ -33,10 +33,10 @@ export function CommunityMemberRow(props: CommunityMemberRowProps) {
 
   return (
     <div
-      className='flex items-center justify-between rounded-md border bg-card p-4'
+      className='flex flex-wrap items-center justify-between gap-3 rounded-md border bg-card p-4'
       data-community-member-id={props.member.user_id}
     >
-      <div className='flex items-center gap-3'>
+      <div className='flex min-w-0 max-w-full items-center gap-3'>
         <UserAvatar
           profileImagePlacement={user?.profile_image_placement}
           username={
@@ -44,23 +44,23 @@ export function CommunityMemberRow(props: CommunityMemberRowProps) {
           }
           size='sm'
         />
-        <div>
+        <div className='min-w-0'>
           {user?.username ? (
             <Link
               href={userHref({ id: props.member.user_id, username: user?.username })}
               prefetch={false}
-              className='font-medium hover:underline'
+              className='block truncate font-medium hover:underline'
             >
               @{user.username}
             </Link>
           ) : (
-            <span className='font-medium text-muted-foreground'>
+            <span className='block truncate font-medium text-muted-foreground'>
               {t('extracted.communities.communityMemberRow.unknownUser_0bca6947')}
             </span>
           )}
         </div>
       </div>
-      <div className='flex items-center gap-2'>
+      <div className='ml-auto flex max-w-full flex-wrap items-center justify-end gap-2'>
         {canManageNotes && (
           <UserModNotesControl
             targetUserId={props.member.user_id}

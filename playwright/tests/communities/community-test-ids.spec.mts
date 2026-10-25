@@ -139,7 +139,16 @@ test.describe('Community interactive controls', () => {
     await expect(page.getByTestId('community-member-row-make-moderator')).toBeVisible()
     await expect(page.getByTestId('community-member-row-remove-moderator')).toBeVisible()
     await expect(page.getByTestId('community-member-row-remove').first()).toBeVisible()
-    await page.getByTestId('community-transfer-ownership-dialog-transfer-ownership').click()
+    const transferOwnership = page.getByTestId(
+      'community-transfer-ownership-dialog-transfer-ownership',
+    )
+    const moderatorRow = page.locator('[data-community-member-id]').filter({
+      has: transferOwnership,
+    })
+    await expect
+      .poll(() => moderatorRow.evaluate(row => row.scrollWidth <= row.clientWidth))
+      .toBe(true)
+    await transferOwnership.click()
     await expect(
       page.getByTestId('community-transfer-ownership-dialog-confirm-transfer'),
     ).toBeVisible()
