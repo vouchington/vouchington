@@ -8,7 +8,7 @@ import {
   formatClosedBaselineIssues,
   parseRepeatBaseline,
   temporaryBaselineEntries,
-} from '../request-query-profile-baseline.mts'
+} from 'vouchington-tooling/request-query-profile'
 
 const run = promisify(execFile)
 
@@ -84,7 +84,9 @@ for (const issue of issues) {
   const state = await readIssueState(repo, issue)
   if (state !== undefined) states.set(issue, state)
 }
-const closed = formatClosedBaselineIssues(baseline, states)
+const closed = formatClosedBaselineIssues(baseline, states, {
+  issueGroup: 'Query round-trip reductions',
+})
 for (const line of closed) process.stderr.write(`${line}\n`)
 process.stdout.write(
   `${issues.length} baseline issues checked, ${closed.length} entries not open\n`,

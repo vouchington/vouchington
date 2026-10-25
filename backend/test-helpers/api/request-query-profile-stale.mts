@@ -6,12 +6,12 @@ import { readFileSync } from 'node:fs'
 import { shutdownDataStoresForOneOffCommand } from '@data-stores/graceful-shutdown'
 import { onGracefulShutdown as closeValkey } from '@data-stores/valkey'
 import app from './request-query-profile-registered-routes.mts'
-import { parseRepeatBaseline } from '../request-query-profile-baseline.mts'
-import { resolveRequestProfileRoute } from '../request-query-profile-route.mts'
 import {
   buildStaleReport,
   MIN_STALE_EVIDENCE_LOGS,
-} from '../request-query-profile-stale-report.mts'
+  parseRepeatBaseline,
+} from 'vouchington-tooling/request-query-profile'
+import { resolveRequestProfileRoute } from '../request-query-profile-route.mts'
 
 try {
   await closeValkey.waitForInitialization()
