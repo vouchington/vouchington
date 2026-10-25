@@ -1,21 +1,4 @@
-import { read, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
-
-export const deleteOldCrawlChunks = async (
-  urlId: string,
-  currentCrawlId: string,
-): Promise<void> => {
-  await write(
-    `/* deleteOldCrawlChunks */
-    DELETE FROM crawl_chunks
-    USING crawls c
-    WHERE c.url_id = $1
-      AND c.id != $2
-      AND crawl_chunks.crawl_id = c.id
-  `,
-    [urlId, currentCrawlId],
-  )
-}
+import { write } from '@data-stores/psql'
 
 export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promise<void> => {
   if (crawlIds.length === 0) return
@@ -64,39 +47,4 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
   `,
     [crawlIds],
   )
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export const finalizeChunksIfComplete = async (
-  urlId: string,
-  crawlId: string,
-): Promise<boolean> => {
-  const { rows } = await read(sql`/* finalizeChunksIfComplete */
-    SELECT 1
-    FROM crawl_chunks
-    WHERE crawl_id = ${crawlId}
-      AND bedrock_nova_multimodal_v1_embedding_created_at IS NULL
-    LIMIT 1
-  `)
-
-  if (rows.length > 0) {
-    return false
-  }
-
-  // Older crawls lose their chunks below, so their pending marker has no work left either.
-  await write(sql`/* finalizeChunksIfComplete */
-    UPDATE crawls
-    SET has_pending_embeddings = false,
-        embeddings_generated_at = CASE WHEN id = ${crawlId} THEN NOW() ELSE embeddings_generated_at END
-    WHERE url_id = ${urlId}
-      AND (
-        (id = ${crawlId} AND embeddings_generated_at IS NULL)
-        OR (id < ${crawlId} AND has_pending_embeddings)
-      )
-  `)
-  await deleteOldCrawlChunks(urlId, crawlId)
-  return true
 }

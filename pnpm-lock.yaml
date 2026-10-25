@@ -5448,9 +5448,6 @@ importers:
       pgvector:
         specifier: ^0.3.0
         version: 0.3.0
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
 
   backend/services/crawl-embeds:
     dependencies:

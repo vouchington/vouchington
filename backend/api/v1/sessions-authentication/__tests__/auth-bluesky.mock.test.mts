@@ -6,6 +6,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
   createTestUser,
+  getTestBlueskyLinkAuthorizationRow,
   getTestBlueskyLinkedAccountRow,
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
@@ -33,8 +34,6 @@ createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 const { BlueskySessionStore } = await import('@services/bluesky-accounts')
 const { connectBlueskyAccountToUser } = await import('@services/bluesky-accounts')
 const { getBlueskyLinkedAccountForUser } = await import('@services/bluesky-accounts')
-const { getBlueskyLinkAuthorization } =
-  await import('@services/bluesky-accounts/link-authorization')
 
 function fakeDid(): string {
   return `did:plc:${createRandomString(24)}`
@@ -92,7 +91,7 @@ describe('POST /api/v1/auth/bluesky/link', () => {
     expect(calledHandle).toBe(handle)
     const { authorizationId } = JSON.parse(rawState as string) as { authorizationId: string }
     expect(uuidVersion(authorizationId)).toBe(7)
-    expect(await getBlueskyLinkAuthorization(authorizationId)).toMatchObject({
+    expect(await getTestBlueskyLinkAuthorizationRow(authorizationId)).toMatchObject({
       id: authorizationId,
       user_id: user.id,
       handle,
@@ -123,14 +122,16 @@ describe('POST /api/v1/auth/bluesky/link', () => {
       handle,
       JSON.stringify({ authorizationId: response.body.flow_id }),
     )
-    expect(await getBlueskyLinkAuthorization(response.body.flow_id as string)).toMatchObject({
-      id: response.body.flow_id,
-      user_id: user.id,
-      handle,
-      callback_mode: 'native',
-      completion_proof_challenge: completionProofChallenge,
-      status: 'pending',
-    })
+    expect(await getTestBlueskyLinkAuthorizationRow(response.body.flow_id as string)).toMatchObject(
+      {
+        id: response.body.flow_id,
+        user_id: user.id,
+        handle,
+        callback_mode: 'native',
+        completion_proof_challenge: completionProofChallenge,
+        status: 'pending',
+      },
+    )
   })
 
   it('rejects an unsupported callback mode', async () => {
@@ -206,8 +207,6 @@ describe('DELETE /api/v1/auth/bluesky/link', () => {
   })
 })
 
-// GET /api/v1/my/identity persists the link across reloads; processUserUpdated
-// invalidates its cache after connect and accepted-generation disconnect.
 describe('bluesky_account on GET /api/v1/my/identity', () => {
   beforeEach(() => {
     revokeBlueskySessionMock.mockReset()

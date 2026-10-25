@@ -1,10 +1,9 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { deleteOldCrawlChunks, finalizeChunksIfComplete } from '@services/crawl-chunks/cleanup'
+import { finalizeChunksIfCompleteForMany } from '@services/crawl-chunks/cleanup'
 import {
   createTestUser,
   insertTestCrawlChunk,
   countCrawlChunks,
-  getCrawlChunks,
   getCrawlEmbeddingsGeneratedAt,
   updateCrawlEmbeddingsGeneratedAt,
 } from '@voucha/test-helpers'
@@ -25,52 +24,7 @@ describe('cleanup.generated', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  it('deleteOldCrawlChunks deletes chunks from old crawls', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const url = await addUrl(user.id, `https://example.com/delete-old-chunks-${random}`)
-    const crawler = await createCrawler(user, {
-      hostname_id: url!.hostname.id,
-      crawler_type: 'fetch',
-    })
-    // Create old crawl with chunks
-    const oldCrawl = await createCrawl(url!.id, crawler.id)
-    await insertTestCrawlChunk({
-      urlId: url!.id,
-      crawlId: oldCrawl.id,
-      orderIndex: 0,
-      markdown: 'Old chunk',
-      contentSha256: sha256('Old chunk'),
-    })
-
-    // Create new crawl with chunks
-    const newCrawl = await createCrawl(url!.id, crawler.id)
-
-    await insertTestCrawlChunk({
-      urlId: url!.id,
-      crawlId: newCrawl.id,
-      orderIndex: 0,
-      markdown: 'New chunk',
-      contentSha256: sha256('New chunk'),
-    })
-
-    // Verify both chunks exist
-    const beforeDeleteCount = await countCrawlChunks({ urlId: url!.id })
-    expect(beforeDeleteCount).toBe(2)
-
-    // Delete old chunks
-    await deleteOldCrawlChunks(url!.id, newCrawl.id)
-
-    // Verify only new chunk remains
-    const afterDeleteChunks = (await getCrawlChunks(url!.id, newCrawl.id)) as Array<{
-      crawl_id: string
-      markdown: string
-    }>
-    expect(afterDeleteChunks).toHaveLength(1)
-    expect(afterDeleteChunks[0].crawl_id).toBe(newCrawl.id)
-    expect(afterDeleteChunks[0].markdown).toBe('New chunk')
-  })
-
-  it('deleteOldCrawlChunks does nothing when only current crawl exists', async () => {
+  it('finalizing the only crawl retains its current chunk', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(user.id, `https://example.com/delete-no-old-${random}`)
     const crawler = await createCrawler(user, {
@@ -84,17 +38,19 @@ describe('cleanup.generated', () => {
       orderIndex: 0,
       markdown: 'Current chunk',
       contentSha256: sha256('Current chunk'),
+      embedding: makeRandomEmbedding(),
+      tokens: 100,
     })
 
-    // Delete old chunks (should not affect current chunk)
-    await deleteOldCrawlChunks(url!.id, crawl.id)
+    await finalizeChunksIfCompleteForMany([crawl.id])
 
     // Verify chunk still exists
     const afterDeleteCount = await countCrawlChunks({ urlId: url!.id, crawlId: crawl.id })
     expect(afterDeleteCount).toBe(1)
+    expect(await getCrawlEmbeddingsGeneratedAt(url!.id, crawl.id)).not.toBeNull()
   })
 
-  it('finalizeChunksIfComplete returns false when embeddings are pending', async () => {
+  it('does not finalize when embeddings are pending', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(user.id, `https://example.com/finalize-pending-${random}`)
     const crawler = await createCrawler(user, {
@@ -111,15 +67,14 @@ describe('cleanup.generated', () => {
       contentSha256: sha256('Chunk without embedding'),
     })
 
-    const result = await finalizeChunksIfComplete(url!.id, crawl.id)
-    expect(result).toBe(false)
+    await finalizeChunksIfCompleteForMany([crawl.id])
 
     // Verify embeddings_generated_at is still NULL
     const embeddingsGeneratedAt = await getCrawlEmbeddingsGeneratedAt(url!.id, crawl.id)
     expect(embeddingsGeneratedAt).toBeNull()
   })
 
-  it('finalizeChunksIfComplete returns true and finalizes when all embeddings are complete', async () => {
+  it('finalizes when all embeddings are complete', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(user.id, `https://example.com/finalize-complete-${random}`)
     const crawler = await createCrawler(user, {
@@ -151,8 +106,7 @@ describe('cleanup.generated', () => {
       tokens: 100,
     })
 
-    const result = await finalizeChunksIfComplete(url!.id, newCrawl.id)
-    expect(result).toBe(true)
+    await finalizeChunksIfCompleteForMany([newCrawl.id])
 
     // Verify embeddings_generated_at is set
     const embeddingsGeneratedAt = await getCrawlEmbeddingsGeneratedAt(url!.id, newCrawl.id)
@@ -167,7 +121,7 @@ describe('cleanup.generated', () => {
     expect(newChunksCount).toBe(1)
   })
 
-  it('finalizeChunksIfComplete does not update embeddings_generated_at if already set', async () => {
+  it('preserves an existing embeddings_generated_at timestamp', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const url = await addUrl(user.id, `https://example.com/finalize-already-set-${random}`)
     const crawler = await createCrawler(user, {
@@ -190,8 +144,7 @@ describe('cleanup.generated', () => {
       tokens: 100,
     })
 
-    const result = await finalizeChunksIfComplete(url!.id, crawl.id)
-    expect(result).toBe(true)
+    await finalizeChunksIfCompleteForMany([crawl.id])
 
     // Verify embeddings_generated_at is still the old date
     const embeddingsGeneratedAt = await getCrawlEmbeddingsGeneratedAt(url!.id, crawl.id)
