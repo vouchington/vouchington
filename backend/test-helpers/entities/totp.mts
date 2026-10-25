@@ -7,6 +7,10 @@ import { encryptSecret } from '@modules/token-secrets'
 
 export const TEST_TOTP_SECRET = 'JBSWY3DPEHPK3PXP' // well-known test secret // gitleaks:allow
 
+export function generateTestTotpSecret(): string {
+  return new OTPAuth.Secret({ size: 20 }).base32
+}
+
 // An explicit `id` lets tests engineer tie-key (equal-timestamp) fixtures: `created_at` on
 // user_totp_authenticators is GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, so it can
 // only be controlled by crafting the UUIDv7 id itself (matching `msecs`, differing tail).

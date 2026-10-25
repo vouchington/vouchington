@@ -1,5 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
+import { confirmAccountChange } from '../../helpers/account-confirmation.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { addVerifiedEmailForUser } from '../../../backend/test-helpers/entities/email-addresses.mts'
 import {
@@ -14,6 +15,7 @@ import { mintTestNativeSessionMcpGrant } from '@voucha/test-helpers/services/oau
 test.describe('My Identity page test ids', () => {
   test('email manager controls', async ({ page }) => {
     const user = await withCleanUser(page)
+    await insertTestTotpAuthenticator(user.id, randomSuffix())
     await addVerifiedEmailForUser(user.id, `tests+pw-secondary-${randomSuffix()}@voucha.ai`)
     await navigateTo(page, '/my/identity')
 
@@ -34,6 +36,7 @@ test.describe('My Identity page test ids', () => {
         response.request().method() === 'POST',
     )
     await page.getByTestId('add-email-form-send-verification-code').click()
+    await confirmAccountChange(page, user.id)
     expect((await verificationRequested).ok()).toBe(true)
     await expect(page.getByTestId('verify-email-form-verify')).toBeVisible()
     await expect(page.getByTestId('verify-email-form-cancel')).toBeVisible()

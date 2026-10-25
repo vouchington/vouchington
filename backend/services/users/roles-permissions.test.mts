@@ -36,6 +36,7 @@ describe('roles-permissions', () => {
 
     it('returns after its committed grant and both owned admissions settle', async () => {
       const grantedUser = await createTestUser()
+      await insertTestTotpAuthenticator(grantedUser.id, 'committed-grant')
       const staleKey = getJwtStaleKey(grantedUser.id)
       const queueGate = holdQueueAdmission(
         voteAggregation,
@@ -110,6 +111,7 @@ describe('roles-permissions', () => {
 
     it('keeps a committed role grant when vote-weight admission fails', async () => {
       const grantedUser = await createTestUser()
+      await insertTestTotpAuthenticator(grantedUser.id, 'post-commit-grant')
       const admissionError = new Error('Injected vote-weight queue admission failure')
       const originalAdd = voteAggregation.add
       const reportsBefore = sentryCaptureExceptionMock.mock.calls.length

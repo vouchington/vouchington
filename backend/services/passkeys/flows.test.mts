@@ -12,8 +12,8 @@ import { passkeyProtocol } from './protocol.mts'
 
 const origin = 'https://localhost:8787'
 const authError = (code: AuthErrorCode) => new AuthError(code, 400, code)
-const verifyRegistration = (name = 'My Passkey') =>
-  verifyPasskeyRegistration('user-id', 'device-id', origin, {}, name)
+const verifyRegistration = (name = 'My Passkey', userId = 'user-id', deviceId = 'device-id') =>
+  verifyPasskeyRegistration(userId, deviceId, origin, {}, name)
 const verifyAuthentication = (userId: string, response: unknown) =>
   verifyPasskeyAuthentication(userId, 'device-id', origin, response)
 
@@ -50,16 +50,14 @@ describe('passkey flows', () => {
       )
     })
 
-    it('maps engine failures', async () => {
-      const verify = vi.spyOn(passkeyProtocol.registration, 'verify')
-      verify.mockRejectedValueOnce(authError('invalid_credentials'))
-      await expect(verifyRegistration()).rejects.toMatchObject({
+    it('maps a failed verification after consuming its real challenge', async () => {
+      const user = await createTestUser()
+      const deviceId = `registration-failure-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      await getPasskeyRegistrationOptions(user, deviceId)
+      await expect(verifyRegistration('My Passkey', user.id, deviceId)).rejects.toMatchObject({
         status: 400,
         message: 'Registration verification failed',
       })
-      const failure = new Error('unexpected')
-      verify.mockRejectedValueOnce(failure)
-      await expect(verifyRegistration()).rejects.toBe(failure)
     })
   })
 

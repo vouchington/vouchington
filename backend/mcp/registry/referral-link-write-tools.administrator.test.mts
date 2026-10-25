@@ -4,7 +4,7 @@ import {
   expectMcpToolFunctionThrows,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, insertTestTotpAuthenticator } from '@voucha/test-helpers'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { getUserReferralLink, type UserReferralLink } from '@services/user-referral-program-links'
 import { addUserRole } from '@services/users/roles-permissions'
@@ -16,6 +16,7 @@ type LinkResult = { referral_link: UserReferralLink }
 describe('referral link administrator policy — real DB', () => {
   it('keeps an official account from creating or editing while allowing activation and deletion', async () => {
     const admin = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    await insertTestTotpAuthenticator(admin.id, 'official-referral-link')
     await addUserRole(admin.id, 'administrator')
     const owner = { ...(await createTestUser()), membership_plan: 'plus' as const }
     const fixture = await createReferralProgramFixture({ createdById: owner.id })

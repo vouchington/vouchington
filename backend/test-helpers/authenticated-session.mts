@@ -13,8 +13,11 @@ import {
 } from '../services/mfa/index.mts'
 import { verifyTotpCode } from '../services/totp/index.mts'
 import { getPrivateUserByAny } from '../services/users/get.mts'
-import { generateTestTotpCode, insertTestTotpAuthenticator } from './entities/totp.mts'
-import * as OTPAuth from 'otpauth'
+import {
+  generateTestTotpCode,
+  generateTestTotpSecret,
+  insertTestTotpAuthenticator,
+} from './entities/totp.mts'
 
 /** Ordinary authenticated fixtures have no MFA assurance. */
 export async function createAuthenticatedTestSession(user: PrivateUser) {
@@ -35,7 +38,7 @@ export async function createVerifiedMfaTestSession(userId: string, deviceContext
 
   // A unique secret prevents parallel fixtures for one seeded user from consuming each other's
   // TOTP time step. Keep the enrolled factor: completion checks that it is still owned.
-  const secret = new OTPAuth.Secret({ size: 20 }).base32
+  const secret = generateTestTotpSecret()
   await insertTestTotpAuthenticator(userId, `mfa-session-${v7()}`, undefined, secret)
   const attemptId = await createLoginAttempt({
     userId,
