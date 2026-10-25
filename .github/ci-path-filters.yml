@@ -209,6 +209,7 @@ workflow-action-changes:
   - '.nvmrc'
   - '.github/workflows/**'
   - '.github/actions/**'
+  - 'backend/test-helpers/deployed-worker-heartbeat.mts'
   - 'ci/with-node-test-options'
   - 'ci/artifact-upload-outcome.mts'
   - 'ci/coverage-artifacts.sh'

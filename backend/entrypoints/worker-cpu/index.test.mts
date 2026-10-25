@@ -43,7 +43,7 @@ describe('worker-cpu runtime bootstrap', () => {
 })
 
 describe('worker-cpu entrypoint wrapper', () => {
-  it('initializes in prewarm mode and exposes the start control', async () => {
+  it('initializes in prewarm mode and exposes worker collections', async () => {
     const originalNodePrewarm = process.env.NODE_PREWARM
     const originalQueues = process.env.QUEUES
 
@@ -57,7 +57,6 @@ describe('worker-cpu entrypoint wrapper', () => {
 
       expect(Array.isArray(entrypoint.default)).toBe(true)
       expect(Array.isArray(entrypoint.sqsConsumers)).toBe(true)
-      expect(typeof entrypoint.startWorkerRuntime).toBe('function')
       await Promise.all(entrypoint.default.map(worker => worker.close()))
       await Promise.all(entrypoint.sqsConsumers.map(consumer => consumer.close()))
     } finally {

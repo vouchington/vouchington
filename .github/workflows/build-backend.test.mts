@@ -166,8 +166,9 @@ describe('backend image workflow', () => {
 
     for (const name of ['Run worker-cpu smoke test', 'Run worker-io smoke test']) {
       const step = steps.find(s => s.name === name)
-      expect(step?.run).toContain("'@queues/heartbeat/enqueues'")
-      expect(step?.run).toContain('m.enqueueHeartbeat()')
+      expect(step?.run).toContain('backend/test-helpers/deployed-worker-heartbeat.mts')
+      expect(step?.run).toContain('docker exec -i')
+      expect(step?.run).toContain('--input-type=module')
       expect(step?.run).toContain('job completed: heartbeat')
     }
   })
