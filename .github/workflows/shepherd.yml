@@ -42,14 +42,12 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-        if: steps.authorize.outputs.authorized == 'true'
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-        if: steps.authorize.outputs.authorized == 'true'
 
       - name: Resolve PR and validate command
         timeout-minutes: 2
