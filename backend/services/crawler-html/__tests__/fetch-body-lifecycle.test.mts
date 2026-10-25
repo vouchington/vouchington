@@ -2,7 +2,10 @@ import * as http from '@modules/utils/http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fetchCrawlerHtml } from '../index.mts'
 
-const fetched = (response: Response, responseSignal: AbortSignal = new AbortController().signal) => ({
+const fetched = (
+  response: Response,
+  responseSignal: AbortSignal = new AbortController().signal,
+) => ({
   response,
   responseSignal,
 })
@@ -90,7 +93,9 @@ describe('HTML crawler response body lifecycle', () => {
   it.each([429, 503])('cancels an ignored %i body before rejecting', async status => {
     const cancel = vi.fn<() => void>()
     const body = new ReadableStream<Uint8Array>({ cancel })
-    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValueOnce(fetched(new Response(body, { status })))
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValueOnce(
+      fetched(new Response(body, { status })),
+    )
 
     await expect(fetchCrawlerHtml({ url: 'https://example.com/' }, {})).rejects.toMatchObject({
       status,
