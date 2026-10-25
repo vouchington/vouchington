@@ -1,4 +1,4 @@
-import { orderingMaxValue } from '../shared-ordering.mts'
+import { orderingMaxValue } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 
 export const BACKGROUNDCPU_ORDERING_CAPS = {
   'crawl:task': 64,

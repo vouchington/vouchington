@@ -1,11 +1,38 @@
 import { describe, expect, it } from 'vitest'
 import type { DynamicConfigLike } from '@vouchington/dynamic-config'
-import { BACKGROUND_ORDERING_CAPS } from '../../queues/background/ordering-caps.mts'
-import { BACKGROUNDCPU_ORDERING_CAPS } from '../../queues/background-cpu/ordering-caps.mts'
-import { orderingConfigFields } from '../../queues/shared-ordering.mts'
+import {
+  BACKGROUND_ORDERING_CAPS,
+  getBackgroundOrderingLimits,
+} from '@queues/background/enqueues/ordering-caps'
+import {
+  BACKGROUNDCPU_ORDERING_CAPS,
+  getBackgroundCpuOrderingLimits,
+} from '@queues/background-cpu/enqueues/ordering-caps'
+import { orderingConfigFields } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 
 describe('shared queue DynamicConfig admin fields', () => {
+  it('bounds singleton lanes and keeps lane defaults', () => {
+    const fields = new Map<string, string | number | boolean>([['bluesky_follow_propagation', 2]])
+    const limits = getBackgroundOrderingLimits('bluesky-follow-propagation')
+    expect(
+      getBoundedPositiveIntegerField({ fields }, 'bluesky_follow_propagation', {
+        defaultValue: limits.defaultValue,
+        maxValue: limits.maxValue,
+      }),
+    ).toBe(1)
+    expect(getBackgroundCpuOrderingLimits('ai-spend-cap').maxValue).toBe(1)
+    expect(getBackgroundCpuOrderingLimits('bedrock-embeddings:creation')).toMatchObject({
+      defaultValue: 1,
+      maxValue: 1,
+    })
+    expect(getBackgroundCpuOrderingLimits('crawl:boilerplate').defaultValue).toBe(4)
+    expect(
+      getBackgroundCpuOrderingLimits('crawl:018f7757-2e3e-7cc0-930c-25b612ca562a'),
+    ).toMatchObject({ configKey: 'crawl:hostname', defaultValue: 1, maxValue: 1 })
+  })
+
   it.each([
     ['background', BACKGROUND_ORDERING_CAPS],
     ['background-cpu', BACKGROUNDCPU_ORDERING_CAPS],

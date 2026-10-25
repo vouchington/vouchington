@@ -1,4 +1,4 @@
-import { orderingMaxValue } from '../shared-ordering.mts'
+import { orderingMaxValue } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 
 export const BACKGROUND_ORDERING_CAPS = {
   'ses-inbound': 1,

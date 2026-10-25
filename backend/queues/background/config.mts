@@ -1,5 +1,8 @@
-import { BACKGROUND_ORDERING_CAPS, getBackgroundOrderingLimits } from './ordering-caps.mts'
-import { orderingConfigField, orderingConfigFields } from '../shared-ordering.mts'
+import { BACKGROUND_ORDERING_CAPS, getBackgroundOrderingLimits } from './enqueues/ordering-caps.mts'
+import {
+  orderingConfigField,
+  orderingConfigFields,
+} from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 

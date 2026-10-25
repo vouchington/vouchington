@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SITEMAPS_ORDERING } from './config.mts'
+import { SITEMAPS_ORDERING } from '@queues/background/enqueues/sitemaps-ordering'
 
 describe('sitemaps lanes', () => {
   it('keeps each file-writing lane distinct and domain-prefixed', () => {

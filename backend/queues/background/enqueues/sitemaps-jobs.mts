@@ -1,5 +1,5 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
-import { SITEMAPS_ORDERING } from '../../sitemaps/config.mts'
+import { SITEMAPS_ORDERING } from './sitemaps-ordering.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
 // Each lane serializes writes to one set of sitemap files. Post-day enqueues choose today's or

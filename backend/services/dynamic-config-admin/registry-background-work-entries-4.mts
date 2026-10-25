@@ -1,7 +1,7 @@
 import { backgroundQueueConfig, backgroundQueueMaxValues } from '@queues/background/config'
-import { BACKGROUND_ORDERING_CAPS } from '@queues/background/ordering-caps'
-import { BACKGROUNDCPU_ORDERING_CAPS } from '@queues/background-cpu/ordering-caps'
-import { orderingConfigFields } from '../../queues/shared-ordering.mts'
+import { BACKGROUND_ORDERING_CAPS } from '@queues/background/enqueues/ordering-caps'
+import { BACKGROUNDCPU_ORDERING_CAPS } from '@queues/background-cpu/enqueues/ordering-caps'
+import { orderingConfigFields } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 import {
   backgroundCpuQueueConfig,
   backgroundCpuQueueMaxValues,

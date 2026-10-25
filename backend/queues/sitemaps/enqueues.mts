@@ -11,14 +11,11 @@ import {
   SITEMAPS_WEEKLY_BACKFILL_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
 import type { BackgroundJobDefinition } from '@queues/background/types'
+import { SITEMAPS_ORDERING } from '@queues/background/enqueues/sitemaps-ordering'
 import type { SitemapPostType } from '@services/sitemaps/types'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  getSitemapsOrderingKeyForDay,
-  SITEMAPS_DEDUPLICATION_TTL_MS,
-  SITEMAPS_ORDERING,
-} from './config.mts'
+import { getSitemapsOrderingKeyForDay, SITEMAPS_DEDUPLICATION_TTL_MS } from './config.mts'
 import type { PostDayJobData, SitemapFamilyJobData } from './types.mts'
 
 type SitemapDispatcherOptions = {

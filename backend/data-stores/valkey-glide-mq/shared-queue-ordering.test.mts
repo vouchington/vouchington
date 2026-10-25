@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
-import { applySharedQueueOrdering } from './shared-queue-ordering.mts'
-import { getBackgroundOrderingLimits } from '../../queues/background/ordering-caps.mts'
-import { getBackgroundCpuOrderingLimits } from '../../queues/background-cpu/ordering-caps.mts'
+import { applySharedQueueOrdering, assertSharedJobOrdering } from './shared-queue-ordering.mts'
 
 describe('shared queue ordering admission', () => {
   it('reads the bounded cap again for each admission and preserves rate windows', () => {
@@ -53,29 +51,22 @@ describe('shared queue ordering admission', () => {
     ).toThrow('domain-prefixed')
   })
 
-  it('keeps a required singleton lane at one when its configured value exceeds its bound', () => {
-    const fields = new Map<string, string | number | boolean>([['bluesky_follow_propagation', 2]])
-    const limits = getBackgroundOrderingLimits('bluesky-follow-propagation')
-    const getConcurrency = () =>
-      getBoundedPositiveIntegerField({ fields }, 'bluesky_follow_propagation', {
-        defaultValue: limits.defaultValue,
-        maxValue: limits.maxValue,
-      })
-    expect(
-      applySharedQueueOrdering(
-        'bluesky-follow-propagation.reconcile',
-        { ordering: { key: 'bluesky-follow-propagation' } },
-        getConcurrency,
-      ).ordering?.concurrency,
-    ).toBe(1)
-    expect(getBackgroundCpuOrderingLimits('ai-spend-cap').maxValue).toBe(1)
-    expect(getBackgroundCpuOrderingLimits('bedrock-embeddings:creation')).toMatchObject({
-      defaultValue: 1,
-      maxValue: 1,
+  it('requires a registered domain-prefixed lane in the job registry', () => {
+    const job = (ordering?: { key: string }) => ({
+      name: 'crawl.boilerplate_removal',
+      domain: 'crawl',
+      options: { ordering },
     })
-    expect(getBackgroundCpuOrderingLimits('crawl:boilerplate').defaultValue).toBe(4)
-    expect(
-      getBackgroundCpuOrderingLimits('crawl:018f7757-2e3e-7cc0-930c-25b612ca562a'),
-    ).toMatchObject({ configKey: 'crawl:hostname', defaultValue: 1, maxValue: 1 })
+    const configured = (key: string) => key === 'crawl:boilerplate'
+    expect(() =>
+      assertSharedJobOrdering(job({ key: 'crawl:boilerplate' }), configured),
+    ).not.toThrow()
+    expect(() => assertSharedJobOrdering(job(), configured)).toThrow('domain-prefixed')
+    expect(() => assertSharedJobOrdering(job({ key: 'other:boilerplate' }), configured)).toThrow(
+      'domain-prefixed',
+    )
+    expect(() => assertSharedJobOrdering(job({ key: 'crawl:unregistered' }), configured)).toThrow(
+      'configured ordering cap',
+    )
   })
 })

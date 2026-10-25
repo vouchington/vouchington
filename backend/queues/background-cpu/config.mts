@@ -1,5 +1,11 @@
-import { BACKGROUNDCPU_ORDERING_CAPS, getBackgroundCpuOrderingLimits } from './ordering-caps.mts'
-import { orderingConfigField, orderingConfigFields } from '../shared-ordering.mts'
+import {
+  BACKGROUNDCPU_ORDERING_CAPS,
+  getBackgroundCpuOrderingLimits,
+} from './enqueues/ordering-caps.mts'
+import {
+  orderingConfigField,
+  orderingConfigFields,
+} from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 

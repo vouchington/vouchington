@@ -6,7 +6,8 @@ import {
   SITEMAPS_NIGHTLY_BACKFILL_JOB,
   SITEMAPS_WEEKLY_BACKFILL_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
-import { BACKFILL_SCHEDULES, SITEMAPS_ORDERING } from '../config.mts'
+import { SITEMAPS_ORDERING } from '@queues/background/enqueues/sitemaps-ordering'
+import { BACKFILL_SCHEDULES } from '../config.mts'
 import {
   enqueueMonthlyBackfillArchiveDispatcher,
   enqueueNightlyBackfillWeekDispatcher,

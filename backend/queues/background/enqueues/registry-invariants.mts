@@ -1,6 +1,6 @@
 import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../types.mts'
 import { isBackgroundOrderingKey } from '../config.mts'
-import { assertSharedJobOrdering } from '../../shared-ordering.mts'
+import { assertSharedJobOrdering } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 
 /** Throws when the registered jobs and domains would break the shared queue's contract. */
 export function assertRegistryInvariants(

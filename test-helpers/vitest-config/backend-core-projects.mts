@@ -19,7 +19,6 @@ export const backendNoDataUnitTestFiles = [
   'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
   'backend/data-stores/graceful-shutdown/index.test.mts',
   'backend/data-stores/valkey-glide-mq/shared-queue-ordering.test.mts',
-  'backend/queues/shared-ordering.test.mts',
   'backend/queues/background-cpu/enqueues/job-lanes.test.mts',
   'backend/services/dynamic-config-admin/registry-shared-ordering.test.mts',
   'backend/services/oauth/__tests__/authorization-account-microsoft.test.mts',
