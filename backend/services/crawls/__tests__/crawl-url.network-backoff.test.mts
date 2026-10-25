@@ -145,6 +145,19 @@ describe('crawl-url network backoff', () => {
     expect(state.network_backoff_ends_at!.getTime()).toBeGreaterThan(firstEndsAt.getTime())
   }, 30_000)
 
+  it('counts a refused redirect target once, not once per redirect hop', async () => {
+    const host = await createHostname('net-backoff-hops')
+    const source = await host.addPage(1)
+    fetchCrawlerHtml
+      .mockResolvedValueOnce(createMockCrawlerResult(301, null, `https://${host.hostname}/2`))
+      .mockRejectedValueOnce(refused(host.hostname, 2))
+    await expect(crawlUrlForTest(source.id)).rejects.toThrow(CrawlerNetworkError)
+
+    expect(
+      (await getTestHostnameNetworkBackoff(host.hostnameId))!.consecutive_network_failures,
+    ).toBe(1)
+  }, 30_000)
+
   it('keeps DNS failures on the DNS path and 429s on the rate-limit lock', async () => {
     const host = await createHostname('net-backoff-paths')
     const failing = await host.addPage(1)

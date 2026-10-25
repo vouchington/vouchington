@@ -134,6 +134,7 @@ export const crawlUrl = async (
       dependencies,
       error: err,
       hostname,
+      requestUrl: url.url,
       urlId: url.id,
     })
     throw err

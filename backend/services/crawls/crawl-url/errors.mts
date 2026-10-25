@@ -30,12 +30,22 @@ export async function recordCrawlError(params: {
   dependencies?: Partial<CrawlUrlDependencies>
   error: unknown
   hostname: CrawlHostnameRecord
+  /** The URL this crawl requested; a failure raised by a redirect hop carries another URL. */
+  requestUrl: string
   urlId: string
 }) {
-  const { crawlId, crawlStatusRecorded, dependencies = {}, error, hostname, urlId } = params
+  const {
+    crawlId,
+    crawlStatusRecorded,
+    dependencies = {},
+    error,
+    hostname,
+    requestUrl,
+    urlId,
+  } = params
   await lockRateLimitedHostname(error, hostname)
   trackDnsFailure(error, hostname.id, dependencies.resolveDnsCanary)
-  await trackNetworkReachability(error, hostname)
+  await trackNetworkReachability(error, hostname, requestUrl)
 
   if (!crawlStatusRecorded) {
     const crawl = await getCrawlById(crawlId, urlId)
@@ -81,16 +91,20 @@ function trackDnsFailure(
 }
 
 // Awaited so the backoff state is settled before the job retries; failures stay best-effort.
-async function trackNetworkReachability(error: unknown, hostname: CrawlHostnameRecord) {
+async function trackNetworkReachability(
+  error: unknown,
+  hostname: CrawlHostnameRecord,
+  requestUrl: string,
+) {
   try {
     if (isHostnameAnsweredError(error)) {
       await resetHostnameFailures(hostname.id, { crawlerType: 'html', includeDns: false })
       return
     }
     if (!isHostnameUnreachableError(error)) return
-    // A failure on a redirect target says nothing about the source hostname.
-    const errorHostname = safeHostname(error.url)
-    if (errorHostname && errorHostname !== hostname.hostname) return
+    // Only the hop that made the failed request counts it: every enclosing redirect hop rethrows
+    // the same error, and those hops received responses.
+    if (error.url !== requestUrl) return
     await recordHostnameNetworkFailure(hostname.id, 'html')
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
