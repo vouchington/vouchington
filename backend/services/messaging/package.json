@@ -24,6 +24,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/request-client-info": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/pagination": "workspace:^",
