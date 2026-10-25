@@ -4,7 +4,7 @@ import { once } from 'node:events'
 import { readPool, writePool } from '@data-stores/psql'
 import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
 import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 type PoolLease = { pool: pg.Pool; client: pg.PoolClient; active: boolean; handedOff: boolean }
 const leaseContext = new AsyncLocalStorage<PoolLease>()

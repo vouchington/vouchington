@@ -2,7 +2,7 @@ import type pg from 'pg'
 import { writePool } from '@data-stores/psql'
 import { appendCopyrightEmailIntakeRecommendation } from '../services/copyright-notices/email-recommendations.mts'
 import { admitCopyrightEmailCorrespondence } from '../services/copyright-notices/email-correspondence-admission.mts'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 /** Hold the recommender's actual notice lock until admission requests its own notice lock. */
 export async function admitCopyrightEmailWithConcurrentRecommendation(

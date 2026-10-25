@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { read, readPool, writePool } from '@data-stores/psql'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 const observedRouting = new AsyncLocalStorage<symbol>()
 type ObservedPool = typeof writePool

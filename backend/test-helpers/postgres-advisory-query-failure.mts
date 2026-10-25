@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { once } from 'node:events'
 import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 const failureContext = new AsyncLocalStorage<{ active: boolean }>()
 
