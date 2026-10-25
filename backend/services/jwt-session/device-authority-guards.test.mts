@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import {
+  clearTestDeviceAuthority,
+  setTestDeviceBinding,
+  shiftTestDeviceAuthorityIssuedAt,
+} from '@voucha/test-helpers/entities/device-authority'
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createDeviceAndSessionTokens } from './create.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
@@ -22,10 +25,7 @@ describe('durable device credential authority guards', () => {
       deviceContext: { user_agent: userAgent },
     })
     const sid = tokens.sessionToken.payload.sid
-    await write(sql`/* clearTestDeviceAuthority */
-      UPDATE user_sessions SET device_token_digest = NULL, device_token_encrypted = NULL,
-        device_token_issued_at = NULL, device_token_binding = NULL
-      WHERE id = ${sid} AND user_id = ${user.id}`)
+    await clearTestDeviceAuthority(user.id, sid)
 
     await expect(
       rotateAuthenticatedDeviceToken({
@@ -46,10 +46,10 @@ describe('durable device credential authority guards', () => {
     })
     const sid = tokens.sessionToken.payload.sid
     const row = await readSessionDeviceAuthority(sid)
-    const binding = JSON.stringify({ ...row!.device_token_binding, ua_hash: 'f'.repeat(64) })
-    await write(sql`/* changeTestDeviceBinding */
-      UPDATE user_sessions SET device_token_binding = ${binding}::jsonb
-      WHERE id = ${sid} AND user_id = ${user.id}`)
+    await setTestDeviceBinding(user.id, sid, {
+      ...row!.device_token_binding,
+      ua_hash: 'f'.repeat(64),
+    })
 
     await expect(
       rotateAuthenticatedDeviceToken({
@@ -149,10 +149,7 @@ describe('durable device credential authority guards', () => {
     })
     const sid = tokens.sessionToken.payload.sid
     const row = await readSessionDeviceAuthority(sid)
-    const binding = JSON.stringify({ ...row!.device_token_binding, ...change })
-    await write(sql`/* corruptTestDeviceBinding */
-      UPDATE user_sessions SET device_token_binding = ${binding}::jsonb
-      WHERE id = ${sid} AND user_id = ${user.id}`)
+    await setTestDeviceBinding(user.id, sid, { ...row!.device_token_binding, ...change })
 
     await expect(readSessionDeviceAuthority(sid)).rejects.toMatchObject({
       code: 'SESSION_RELOGIN_REQUIRED',
@@ -168,9 +165,7 @@ describe('durable device credential authority guards', () => {
     })
     const sid = tokens.sessionToken.payload.sid
     const row = await readSessionDeviceAuthority(sid)
-    await write(sql`/* corruptTestDeviceIssueInstant */
-      UPDATE user_sessions SET device_token_issued_at = device_token_issued_at - INTERVAL '1 second'
-      WHERE id = ${sid} AND user_id = ${user.id}`)
+    await shiftTestDeviceAuthorityIssuedAt(user.id, sid)
 
     await expect(
       mintAuthenticatedDeviceAuthority({
