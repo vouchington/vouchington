@@ -7,6 +7,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import {
@@ -119,10 +120,17 @@ describe('getModerationAppealById', () => {
       createdAt,
     })
 
-    expect((await getModerationAppealById(appeal.id, cutoff))?.is_overdue).toBe(false)
-    expect(
-      (await getModerationAppealByIdFromPrimary(appeal.id, undefined, nextMonth))?.is_overdue,
-    ).toBe(true)
+    const ordinary = await observeTestPostgresQueryPools('/* getModerationAppealById */', () =>
+      getModerationAppealById(appeal.id, cutoff),
+    )
+    expect(ordinary.pools).toEqual(['read'])
+    expect(ordinary.result?.is_overdue).toBe(false)
+
+    const primary = await observeTestPostgresQueryPools('/* getModerationAppealById */', () =>
+      getModerationAppealByIdFromPrimary(appeal.id, { readOnly: true }, nextMonth),
+    )
+    expect(primary.pools).toEqual(['write'])
+    expect(primary.result?.is_overdue).toBe(true)
 
     const atCutoff = await listModerationAppeals({ appellantUserId: owner.id, now: cutoff })
     const afterCutoff = await listModerationAppeals({ appellantUserId: owner.id, now: nextMonth })

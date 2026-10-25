@@ -12,6 +12,7 @@ import {
   softDeleteUser,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { parseCreateReviewDisputeInput } from './parse.mts'
@@ -103,10 +104,17 @@ describe('getReviewDisputeById', () => {
     const createdAt = new Date(cutoff.getTime() - DISPUTE_SLA_HOURS * 3_600_000)
     const { dispute, claimant } = await makeDisputeFixture(staff.id, crypto.randomUUID(), createdAt)
 
-    expect((await getReviewDisputeById(dispute.id, cutoff))?.is_overdue).toBe(false)
-    expect(
-      (await getReviewDisputeByIdFromPrimary(dispute.id, undefined, nextMonth))?.is_overdue,
-    ).toBe(true)
+    const ordinary = await observeTestPostgresQueryPools('/* getReviewDisputeById */', () =>
+      getReviewDisputeById(dispute.id, cutoff),
+    )
+    expect(ordinary.pools).toEqual(['read'])
+    expect(ordinary.result?.is_overdue).toBe(false)
+
+    const primary = await observeTestPostgresQueryPools('/* getReviewDisputeById */', () =>
+      getReviewDisputeByIdFromPrimary(dispute.id, { readOnly: true }, nextMonth),
+    )
+    expect(primary.pools).toEqual(['write'])
+    expect(primary.result?.is_overdue).toBe(true)
 
     const atCutoff = await listReviewDisputes({ disputantUserId: claimant.id, now: cutoff })
     const afterCutoff = await listReviewDisputes({ disputantUserId: claimant.id, now: nextMonth })

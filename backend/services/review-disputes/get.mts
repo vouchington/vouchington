@@ -88,7 +88,11 @@ export async function getReviewDisputeByIdFromPrimary(
   options?: QueryOptions,
   now: Date = new Date(),
 ): Promise<ReviewDisputeResponse | null> {
-  return queryReviewDisputeById(id, statement => write(statement, options), now)
+  return queryReviewDisputeById(
+    id,
+    statement => write(statement, { ...options, readOnly: false }),
+    now,
+  )
 }
 
 async function queryReviewDisputeById(
