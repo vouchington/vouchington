@@ -14,6 +14,7 @@ import { RssFeedItemViewTracker } from '../rss-feed-item-view-tracker'
 describe('RssFeedItemViewTracker', () => {
   beforeEach(() => {
     mockTrackRssFeedItemView.mockReset()
+    mockTrackRssFeedItemView.mockResolvedValue(undefined)
   })
 
   it('calls trackRssFeedItemView with the itemId on mount', () => {

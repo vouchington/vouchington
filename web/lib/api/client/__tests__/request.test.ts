@@ -149,7 +149,7 @@ describe('ClientRequest', () => {
       .mockResolvedValue('single-use-proof')
 
     await expect(
-      new ClientRequest(solve).post('/api/posts', { title: 'Replay safely' }),
+      new ClientRequest(solve).post('/api/posts', { title: 'Replay safely' }, { keepalive: true }),
     ).resolves.toEqual({ created: true })
 
     expect(solve).toHaveBeenCalledWith(BOT_CHALLENGE_ACTION_TAG, undefined)
@@ -158,6 +158,8 @@ describe('ClientRequest', () => {
     const second = fetchMock.mock.calls[1]?.[1] as RequestInit
     expect(second.body).toBe(first.body)
     expect(second.signal).toBe(first.signal)
+    expect(first.keepalive).toBe(true)
+    expect(second.keepalive).toBe(true)
     expect(second.headers).toMatchObject({
       [VOUCHA_BOT_CHALLENGE_TOKEN_HEADER]: 'single-use-proof',
     })
