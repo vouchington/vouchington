@@ -20,7 +20,6 @@ interface RequestOptions {
   body?: unknown
   headers?: Record<string, string>
   signal?: AbortSignal
-  keepalive?: boolean
 }
 type BotChallengeSolver = (action: string, signal?: AbortSignal) => Promise<string>
 
@@ -48,7 +47,7 @@ export class ClientRequest {
       )
     }
 
-    const { method = 'GET', body, headers = {}, signal, keepalive } = options
+    const { method = 'GET', body, headers = {}, signal } = options
 
     // Use relative URL via Next.js proxy (browser only)
     const url = endpoint
@@ -62,7 +61,6 @@ export class ClientRequest {
       // Include credentials (cookies) for same-origin requests
       credentials: 'include',
       signal,
-      keepalive,
     }
 
     if (body && method !== 'GET') {

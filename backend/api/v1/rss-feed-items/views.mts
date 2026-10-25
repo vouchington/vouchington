@@ -7,7 +7,6 @@ import { hasGlobalPrivacyControlHeaders, isUUID } from '@modules/utils'
 import onError from '@modules/on-error'
 import { decodeJwt } from 'jose'
 import { validateRequestContract } from '../../response-helpers.mts'
-import { enforceLowScoreBotChallenge } from '../../bot-challenge.mts'
 
 const viewRateLimiter = new RateLimiter({
   prefix: 'rss-feed-item-views',
@@ -18,7 +17,6 @@ app.route('/api/v1/rss-feed-items/:id/views').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/rss-feed-items/:id/views')
   const currentUser = await ctx.getCurrentUser()
   assertNotSuspended(currentUser)
-  await enforceLowScoreBotChallenge(ctx)
 
   const { id } = ctx.params
   ctx.assert(id && isUUID(id), 400, 'Invalid id')

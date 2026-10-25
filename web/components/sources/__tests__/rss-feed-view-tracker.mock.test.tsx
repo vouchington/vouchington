@@ -14,7 +14,6 @@ import { RssFeedViewTracker } from '../rss-feed-view-tracker'
 describe('RssFeedViewTracker', () => {
   beforeEach(() => {
     mockTrackRssFeedView.mockReset()
-    mockTrackRssFeedView.mockResolvedValue(undefined)
   })
 
   it('calls trackRssFeedView with the rssFeedId on mount', () => {

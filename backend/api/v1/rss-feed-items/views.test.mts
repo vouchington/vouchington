@@ -1,10 +1,12 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { withTrustedLowScoreRequest } from '@voucha/test-helpers/trusted-low-score-request'
 import { createTestUserDirect, createTestRssFeedItemWithUrl } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { searchRecentlyViewed } from '@services/recently-viewed'
 import { v7 } from 'uuid'
+import { BOT_CHALLENGE_REQUIRED } from '@modules/on-error/error-codes'
 
 describe('POST /api/v1/rss-feed-items/:id/views', () => {
   let userId: string
@@ -34,6 +36,7 @@ describe('POST /api/v1/rss-feed-items/:id/views', () => {
     const item = await createTestRssFeedItemWithUrl(feed.id)
     rssFeedItemId = item.id
   })
+  afterEach(() => vi.unstubAllEnvs())
 
   it('returns 200 ok and records the view in the user key', async () => {
     const request = createRequest()
@@ -44,6 +47,18 @@ describe('POST /api/v1/rss-feed-items/:id/views', () => {
     expect(res.body.ok).toBe(true)
     const viewed = await searchRecentlyViewed('rss_feed_item', null, userId)
     expect(viewed).toContain(rssFeedItemId)
+  })
+
+  it('skips the challenge for a low-score view but still challenges a share', async () => {
+    vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+    await withTrustedLowScoreRequest(async request => {
+      setSameOriginSessionCookies(request, deviceToken.token, sessionToken.token)
+      const view = await request.post(`/api/v1/rss-feed-items/${rssFeedItemId}/views`).expect(200)
+      expect(view.body.ok).toBe(true)
+
+      const share = await request.post(`/api/v1/rss-feed-items/${rssFeedItemId}/shares`).expect(403)
+      expect(share.body.code).toBe(BOT_CHALLENGE_REQUIRED)
+    })
   })
 
   it('returns 200 when view recording is rate limited', async () => {

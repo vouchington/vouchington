@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { withTrustedLowScoreRequest } from '@voucha/test-helpers/trusted-low-score-request'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
@@ -30,6 +31,7 @@ describe('POST /api/v1/rss-feeds/:rssFeedId/views', () => {
     const feed = await createTestRssFeed({})
     rssFeedId = feed.id
   })
+  afterEach(() => vi.unstubAllEnvs())
 
   it('returns 200 ok and records the view', async () => {
     const { sid, deviceToken, sessionToken } = await createSession()
@@ -41,6 +43,16 @@ describe('POST /api/v1/rss-feeds/:rssFeedId/views', () => {
     expect(res.body.ok).toBe(true)
     const viewed = await searchRecentlyViewed('rss_feed', sid, null)
     expect(viewed).toContain(rssFeedId)
+  })
+
+  it('does not challenge a low-score session view', async () => {
+    vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+    const { deviceToken, sessionToken } = await createSession()
+    await withTrustedLowScoreRequest(async request => {
+      setSameOriginSessionCookies(request, deviceToken.token, sessionToken.token)
+      const response = await request.post(`/api/v1/rss-feeds/${rssFeedId}/views`).expect(200)
+      expect(response.body.ok).toBe(true)
+    })
   })
 
   it('returns 200 when view recording is rate limited', async () => {

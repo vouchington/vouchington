@@ -1,11 +1,12 @@
 /* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- registrars live outside *.test.* because jest/no-export forbids exporting them from test files, and oxfmt rewrites it() to test() there */
-import { afterAll, beforeAll, expect, test } from 'vitest'
+import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { withTrustedLowScoreRequest } from '@voucha/test-helpers/trusted-low-score-request'
 import { createTestUserDirect, createTestLandingPage } from '@voucha/test-helpers'
 import { createDeviceAndSessionTokens } from '../services/jwt-session/index.mts'
 import { v7 } from 'uuid'
@@ -65,6 +66,7 @@ export function registerLandingPageAnalyticsTests(options: {
     itemId = await options.preparePage(user!.id, landingPageId)
   })
 
+  afterEach(() => vi.unstubAllEnvs())
   afterAll(async () => {
     if (testDir) await fs.promises.rm(testDir, { force: true, recursive: true })
     if (originalAnalyticsBackend === undefined) {
@@ -86,6 +88,16 @@ export function registerLandingPageAnalyticsTests(options: {
 
     const res = await request.post(routePath()).send(options.body(itemId)).expect(200)
     expect(res.body.ok).toBe(true)
+  })
+
+  test('does not challenge a low-score session analytics ping', async () => {
+    vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+    const session = await openSession()
+    await withTrustedLowScoreRequest(async request => {
+      authenticate(request, session.deviceToken, session.sessionToken)
+      const response = await request.post(routePath()).send(options.body(itemId)).expect(200)
+      expect(response.body.ok).toBe(true)
+    })
   })
 
   test('returns 200 when recording is route-rate limited', async () => {
