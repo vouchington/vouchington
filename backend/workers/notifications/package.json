@@ -40,7 +40,7 @@
     "@services/modmail": "workspace:^",
     "@types/web-push": "^3.6.4",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/worker-runtime": "^0.2.0",
+    "@vouchington/worker-runtime": "^0.2.1",
     "web-push": "^3.6.7"
   }
 }

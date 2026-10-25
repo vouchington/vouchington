@@ -21,7 +21,7 @@
     "@modules/on-error": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@services/stripe": "workspace:^",
-    "@vouchington/worker-runtime": "^0.2.0"
+    "@vouchington/worker-runtime": "^0.2.1"
   },
   "devDependencies": {
     "@aws-sdk/client-sqs": "^3.1156.0"

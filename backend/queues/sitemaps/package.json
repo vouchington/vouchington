@@ -22,7 +22,7 @@
     "@services/sitemaps": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/worker-runtime": "^0.2.0",
+    "@vouchington/worker-runtime": "^0.2.1",
     "glide-mq": "^0.19.0"
   }
 }
