@@ -1015,6 +1015,14 @@
     ]
   },
   {
+    "annotation": "upsertUserAgentString",
+    "maxCount": 3,
+    "reason": "Email login persists a cold request user agent once: read, conflict-tolerant insert, and reread to observe a concurrent winner.",
+    "permanent": true,
+    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
+    "routes": ["POST /api/v1/auth/email-address/login"]
+  },
+  {
     "annotation": "upsertPostPublicationDirtyWork",
     "maxCount": null,
     "reason": "Each scope family upserts through its own conflict column, after that family's identity lock and before its keys.",

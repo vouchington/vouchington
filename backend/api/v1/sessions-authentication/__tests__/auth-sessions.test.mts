@@ -24,7 +24,6 @@ import {
 import { upsertAuthenticatedSession } from '@services/jwt-session/user-sessions'
 
 import { v7 } from 'uuid'
-import { decodeJwt } from 'jose'
 
 describe('Auth sessions routes', () => {
   installEmailDomainDnsMock()
@@ -40,7 +39,7 @@ describe('Auth sessions routes', () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
   })
 
-  it('lists active sessions, marks the current session, and restores a missing current row', async () => {
+  it('lists active sessions but rejects a credential whose durable session row is gone', async () => {
     const emailAddress = createUniqueTestEmail('sessions')
     const loginToken = v7()
     await insertEmailAddressLoginToken(emailAddress, loginToken)
@@ -74,7 +73,6 @@ describe('Auth sessions routes', () => {
       .expect(200)
 
     expect(listResponse.body.results).toHaveLength(2)
-    expect(listResponse.body.results[0].id).toBe(currentSessionId)
     expect(listResponse.body.page_info).toEqual({
       has_next_page: false,
       end_cursor: null,
@@ -100,25 +98,14 @@ describe('Auth sessions routes', () => {
 
     await deleteTestUserSession(currentSessionId)
 
-    const repairedResponse = await createRequest()
+    await createRequest()
       .get('/api/v1/auth/sessions')
       .set('Cookie', [dtCookie!, stCookie!])
-      .expect(200)
-
-    expect(
-      repairedResponse.body.results.some(
-        (session: { id: string }) => session.id === currentSessionId,
-      ),
-    ).toBe(true)
-    await expect(getTestUserSessionById(currentSessionId)).resolves.toMatchObject({
-      id: currentSessionId,
-      user_id: userId,
-      revoked_at: null,
-    })
-    const repairedSession = await getTestUserSessionById(currentSessionId)
-    const deviceJwt = decodeJwt(decodeURIComponent(dtCookie!.slice(3).split(';', 1)[0]!))
-    expect(repairedSession!.expires_at.getTime()).toBe((deviceJwt.exp as number) * 1000)
-    await expect(getActiveTestUserSessions(userId)).resolves.toHaveLength(2)
+      .expect(401)
+    await expect(getTestUserSessionById(currentSessionId)).resolves.toBeNull()
+    await expect(getActiveTestUserSessions(userId)).resolves.toMatchObject([
+      { id: secondSession.id, revoked_at: null },
+    ])
   })
 
   it('revokes a single session row and marks its Valkey revocation key', async () => {
@@ -251,7 +238,7 @@ describe('Auth sessions routes', () => {
     await expect(isSessionRevoked(otherSession.id)).resolves.toBe(true)
   })
 
-  it('revokes authenticated sessions that are missing from the session registry', async () => {
+  it('does not authorize account-wide revocation from a missing session row', async () => {
     const emailAddress = createUniqueTestEmail('sessions-revoke-legacy')
     const loginToken = v7()
     await insertEmailAddressLoginToken(emailAddress, loginToken)
@@ -264,12 +251,18 @@ describe('Auth sessions routes', () => {
     const dtCookie = loginCookies.find(cookie => cookie.startsWith('dt='))
     const stCookie = loginCookies.find(cookie => cookie.startsWith('st='))
     const currentSessionId = loginResponse.body.session.sid as string
+    const userId = loginResponse.body.user.id as string
+    const otherSession = await insertTestUserSession({ userId })
     await deleteTestUserSession(currentSessionId)
 
     await createRequest()
       .post('/api/v1/auth/sessions/revocations')
       .set('Cookie', [dtCookie!, stCookie!])
-      .expect(204)
+      .expect(401)
+
+    await expect(getTestUserSessionById(otherSession.id)).resolves.toMatchObject({
+      revoked_at: null,
+    })
 
     const response = await createRequest()
       .get('/api/v1/auth/me')
