@@ -198,6 +198,7 @@ describe('fix-dependabot workflow', () => {
   it('comments on the PR for immediate dispatch failures', () => {
     const escalateJob = parsed.jobs?.['escalate']
     const sourceStateStep = escalateJob?.steps?.find(s => s.id === 'source-state')
+    const checkStep = escalateJob?.steps?.find(s => s.id === 'check')
     const commentStep = escalateJob?.steps?.find(s =>
       s.name?.toLowerCase().includes('comment failure'),
     )
@@ -209,22 +210,25 @@ describe('fix-dependabot workflow', () => {
     expect(escalateJob?.needs).toContain('render-prompt')
     expect(escalateJob?.needs).toContain('check-duplicates')
     expect(escalateJob?.permissions).toMatchObject({ actions: 'read', 'pull-requests': 'write' })
-    expect(escalateJob?.env?.['FAILING_RUN_URL']).toContain('github.event.workflow_run.html_url')
     expect(escalateJob?.env?.['EVENT_HEAD_SHA']).toContain('github.event.workflow_run.head_sha')
     expect(escalateJob?.env?.['HEAD_BRANCH']).toContain('github.event.workflow_run.head_branch')
     expect(escalateJob?.env?.['PR_NUMBER']).toContain('triage-and-rerun.outputs.pr_number')
     expect(escalateJob?.env?.['SESSION_ID']).toContain('dispatch.outputs.session-id')
-    expect(escalateJob?.env?.['THIS_RUN_URL']).toContain('github.run_id')
     expect(sourceStateStep?.run).not.toContain('node ci/source-run-state.mts')
     expect(sourceStateStep?.run).toContain(
       'gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID"',
     )
-    expect(commentStep?.if).toBe("steps.source-state.outputs.current == 'true'")
-    expect(commentStep?.run).toContain('gh pr comment')
-    expect(commentStep?.run).toContain('Suppressing failure comment')
-    expect(commentStep?.run).toContain('.head.sha == env.EVENT_HEAD_SHA')
-    expect(commentStep?.run).toContain('Dependabot auto-fix could not complete')
-    expect(commentStep?.run).toContain('**Failing run:** $FAILING_RUN_URL')
+    expect(checkStep?.if).toBe("steps.source-state.outputs.current == 'true'")
+    expect(checkStep?.run).toContain('Suppressing failure comment')
+    expect(checkStep?.run).toContain('.head.sha == env.EVENT_HEAD_SHA')
+    expect(commentStep?.if).toBe("steps.check.outputs.post == 'true'")
+    expect(commentStep?.uses).toContain('/comment-harness-session@')
+    expect(commentStep?.with).toMatchObject({
+      status: 'failed',
+      target: '${{ needs.triage-and-rerun.outputs.pr_number }}',
+      headline: 'Dependabot auto-fix could not complete.',
+      details: '**Failing run:** ${{ github.event.workflow_run.html_url }}',
+    })
   })
 
   it('posts the session link after a successful dispatch', () => {

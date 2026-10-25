@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeFixRequestExtraction } from '../test-helpers/fix-issue.fixtures.mts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 
@@ -73,14 +72,17 @@ describe('fix-issue workflow', () => {
     expect(gateJob?.if).toContain('github.event.issue.pull_request == null')
   })
 
-  it('gates on /fix body and OWNER/COLLABORATOR/MEMBER author_association', () => {
+  it('authorizes the commenter with the tooling action before accepting the request', () => {
     const gateJob = parsedIssue.jobs?.['gate']
+    const authorizeStep = gateJob?.steps?.find(step => step.id === 'authorize')
+    const extractStep = gateJob?.steps?.find(step => step.id === 'extract-fix')
 
     expect(gateJob?.if).toContain("contains(github.event.comment.body, '/fix')")
-    expect(gateJob?.if).toContain(`fromJSON('["OWNER","COLLABORATOR","MEMBER"]')`)
-    expect(gateJob?.if).not.toContain('CONTRIBUTOR')
-    expect(gateJob?.if).not.toContain('NONE')
-    expect(gateJob?.if).toContain('author_association')
+    expect(gateJob?.if).not.toContain('author_association')
+    expect(authorizeStep?.uses).toContain('/comment-command-authorize@')
+    expect(authorizeStep?.with).toBeUndefined()
+    expect(extractStep?.if).toBe("steps.authorize.outputs.authorized == 'true'")
+    expect(gateJob?.outputs?.['accepted']).toContain("steps.authorize.outputs.authorized == 'true'")
     expect(fixIssuePrompt).toMatch(
       /live\s+`author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`/,
     )
@@ -104,73 +106,31 @@ describe('fix-issue workflow', () => {
     expect(extractIndex).toBeGreaterThan(checkoutIndex)
   })
 
-  it('acknowledges the /fix comment with an eyes reaction and first-attempt run link', () => {
-    const gateJob = parsedIssue.jobs?.['gate']
-    const ackStep = gateJob?.steps?.find(s => s.name?.toLowerCase().includes('react'))
-
-    expect(ackStep).toBeDefined()
-    expect(gateJob?.permissions?.['issues']).toBe('write')
-    expect(ackStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
-    expect(ackStep?.env?.['ISSUE_NUMBER']).toBe('${{ github.event.issue.number }}')
-    expect(ackStep?.env?.['RUN_ATTEMPT']).toBe('${{ github.run_attempt }}')
-    expect(ackStep?.env?.['RUN_URL']).toBe(
-      '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+  it('acknowledges the /fix comment through the tooling action', () => {
+    const ackStep = parsedIssue.jobs?.['gate']?.steps?.find(step =>
+      step.uses?.includes('/comment-command-acknowledge@'),
     )
-    expect(ackStep?.run).toContain('reactions')
-    expect(ackStep?.run).toContain('eyes')
-    expect(ackStep?.run).toContain('[[ "$RUN_ATTEMPT" == "1" ]]')
-    expect(ackStep?.run).toContain('gh issue comment "$ISSUE_NUMBER"')
-    expect(ackStep?.run).toContain('[View the automation workflow run]($RUN_URL)')
-    expect(ackStep?.run).toContain('::warning::Could not add eyes reaction')
-    expect(ackStep?.run).toContain('::warning::Could not post workflow run link')
-    expect(ackStep?.run).toContain('GITHUB_STEP_SUMMARY')
-    expect(ackStep?.run).toContain('Harness dispatch')
+
+    expect(ackStep?.if).toBe("steps.extract-fix.outputs.accepted == 'true'")
+    expect(ackStep?.with).toEqual({ command: '/fix' })
+    expect(parsedIssue.jobs?.['gate']?.permissions?.['issues']).toBe('write')
   })
 
-  it('extracts the text after /fix as a gate output with CI diagnostics', () => {
+  it('parses the /fix request through the tooling action', () => {
     const gateJob = parsedIssue.jobs?.['gate']
     const extractStep = gateJob?.steps?.find(s => s.id === 'extract-fix')
 
-    expect(gateJob?.outputs?.['accepted']).toBe('${{ steps.extract-fix.outputs.accepted }}')
-    expect(gateJob?.outputs?.['fix_request']).toBe('${{ steps.extract-fix.outputs.fix_request }}')
-    expect(extractStep?.env?.['COMMENT_BODY']).toBe('${{ github.event.comment.body }}')
-    expect(extractStep?.env?.['COMMENT_ID']).toBe('${{ github.event.comment.id }}')
-    expect(extractStep?.run).toContain('/fix')
-    expect(extractStep?.run).toContain(
-      'write-github-multiline-output.sh" fix_request < "$REQUEST_FILE"',
-    )
-    expect(extractStep?.run).toContain('::error::Unable to extract exact /fix command')
-    expect(extractStep?.run).toContain('GITHUB_STEP_SUMMARY')
-    expect(extractStep?.run).toContain('comment_id=$COMMENT_ID')
-    expect(extractStep?.run).toContain('comment_length=$COMMENT_LENGTH')
-    expect(extractStep?.run).toContain('preview=$(escape_command "$PREVIEW")')
-  })
-
-  it('keeps forged output syntax inside the extracted /fix request', () => {
-    const extractStep = parsedIssue.jobs?.['gate']?.steps?.find(step => step.id === 'extract-fix')
-    if (!extractStep?.run) throw new Error('Missing /fix extraction script')
-
-    const request = [
-      'Preserve the complete request',
-      'CODEX_FIX_REQUEST',
-      'fix_request=forged',
-      'injected_output=true',
-      'discarded<<CODEX_FIX_REQUEST',
-    ].join('\n')
-    const outputs = executeFixRequestExtraction(extractStep.run, `/fix\n${request}`)
-
-    expect(outputs).toEqual({ accepted: 'true', fix_request: request })
+    expect(gateJob?.outputs?.['fix_request']).toBe('${{ steps.extract-fix.outputs.request }}')
+    expect(extractStep?.uses).toContain('/comment-command-parse@')
+    expect(extractStep?.with).toEqual({ command: '/fix' })
   })
 
   it('rejects non-standalone first lines before acknowledgement or downstream jobs', () => {
     const gateJob = parsedIssue.jobs?.['gate']
-    const extractStep = gateJob?.steps?.find(step => step.id === 'extract-fix')
-    const ackStep = gateJob?.steps?.find(step => step.name?.toLowerCase().includes('react'))
-    if (!extractStep?.run) throw new Error('Missing /fix extraction script')
+    const ackStep = gateJob?.steps?.find(step =>
+      step.uses?.includes('/comment-command-acknowledge@'),
+    )
 
-    expect(executeFixRequestExtraction(extractStep.run, 'please /fix this')).toEqual({
-      accepted: 'false',
-    })
     expect(ackStep?.if).toBe("steps.extract-fix.outputs.accepted == 'true'")
     expect(parsedIssue.jobs?.['render-prompt']?.if).toContain(
       "needs.gate.outputs.accepted == 'true'",
@@ -223,14 +183,8 @@ describe('fix-issue workflow', () => {
     expect(renderStep?.with?.['var-files']).toContain('REQUEST_BODY=request-body.txt')
     expect(renderStep?.with?.['var-files']).toContain('ISSUE_CONTEXT=issue-context.json')
     const contextStep = renderJob?.steps?.find(s => s.name?.includes('issue context'))
-    expect(contextStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
-    expect(contextStep?.run).toContain('comments?per_page=100')
-    expect(contextStep?.run).toContain('last_page')
-    expect(contextStep?.run).toContain('.[-100:]')
-    expect(contextStep?.run).toContain('commentSnapshot')
-    expect(contextStep?.run).toContain('MAX_COMMENT_CHARS=2000')
-    expect(contextStep?.run).toContain('bodyTruncated')
-    expect(contextStep?.run).toContain('labels')
+    expect(contextStep?.uses).toContain('/issue-comment-context@')
+    expect(contextStep?.with).toEqual({ number: '${{ github.event.issue.number }}' })
     expect(fixIssuePrompt).toContain('fixes #')
     expect(fixIssuePrompt).toContain('start `summary` with the issue URL')
     expect(fixIssuePrompt).toContain('## Root cause')
@@ -268,14 +222,27 @@ describe('fix-issue workflow', () => {
     expect(escalateJob?.needs).toContain('render-prompt')
     expect(escalateJob?.needs).not.toContain('check-duplicates')
 
-    const failStep = escalateJob?.steps?.find(s => s.name?.toLowerCase().includes('comment'))
+    const failStep = escalateJob?.steps?.find(s => s.name?.startsWith('Comment failure'))
+    const revalidateStep = escalateJob?.steps?.find(s =>
+      s.uses?.includes('/comment-command-authorize@'),
+    )
+    expect(escalateJob?.steps?.indexOf(revalidateStep!)).toBeLessThan(
+      escalateJob?.steps?.indexOf(failStep!) ?? -1,
+    )
+    expect(revalidateStep?.with).toEqual({
+      mode: 'revalidate',
+      'issue-number': '${{ github.event.issue.number }}',
+    })
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
-    expect(failStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
-    expect(failStep?.run).toMatch(/OWNER.*COLLABORATOR.*MEMBER/)
-    expect(failStep?.run).not.toMatch(/CONTRIBUTOR|NONE/)
-    expect(failStep?.run).toContain('Suppressing failure comment')
-    expect(failStep?.run).toContain('gh issue comment')
-    expect(failStep?.run).toContain('/fix run failed')
+    const checkStep = escalateJob?.steps?.find(s => s.id === 'check')
+    expect(checkStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
+    expect(checkStep?.run).toContain('Suppressing failure comment')
+    expect(failStep?.if).toBe("steps.check.outputs.valid == 'true'")
+    expect(failStep?.uses).toContain('/comment-harness-session@')
+    expect(failStep?.with).toMatchObject({
+      status: 'failed',
+      headline: '/fix run failed — auto-fix could not complete.',
+    })
   })
 
   it('dispatches from the event sha (default branch head at comment time)', () => {
