@@ -45,6 +45,6 @@ Review the latest CI runs. Find one concrete, bounded improvement that is safe t
 - Backstop check: for any step that has failed by hitting its cap in recent runs, confirm the cap
   kills the whole process group. `timeout-minutes` does not reap children of composite steps or
   detached helpers; long test or build steps that can hang with child processes belong under
-  [`ci/run-bounded.py`](../../../ci/run-bounded.py) as in `tests-playwright.yml` and
+  the published `vouchington-tooling` bounded runner as in `tests-playwright.yml` and
   `build-web-targets`. Keep each job's
   `timeout-minutes` strictly below the sum of its step budgets.

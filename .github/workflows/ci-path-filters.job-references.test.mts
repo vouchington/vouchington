@@ -10,10 +10,12 @@ import {
 } from '../test-helpers/ci-job-path-references.mts'
 
 describe('ci path filters cover files that gated jobs execute', () => {
-  it('finds the Playwright job and its bounded-test wrapper', () => {
+  it('finds the Playwright job and its Node test options wrapper', () => {
     const found = jobReferences().some(
       ref =>
-        ref.area === 'web' && ref.job === 'test-playwright' && ref.file === 'ci/run-bounded.py',
+        ref.area === 'web' &&
+        ref.job === 'test-playwright' &&
+        ref.file === 'ci/with-node-test-options',
     )
     expect(found).toBe(true)
   })
@@ -27,11 +29,11 @@ describe('ci path filters cover files that gated jobs execute', () => {
     expect([...stepFiles([{ run }], new Set(), 'backend').keys()]).toEqual(expected)
     expect([
       ...stepFiles(
-        [{ run: 'python $GITHUB_WORKSPACE/ci/run-bounded.py' }],
+        [{ run: 'bash $GITHUB_WORKSPACE/ci/with-node-test-options' }],
         new Set(),
         'backend',
       ).keys(),
-    ]).toEqual(['ci/run-bounded.py'])
+    ]).toEqual(['ci/with-node-test-options'])
   })
 
   it('resolves bare filenames, parent paths and workspace-root paths', () => {
@@ -50,10 +52,12 @@ describe('ci path filters cover files that gated jobs execute', () => {
       ]).toEqual(expected)
     }
     for (const run of [
-      'python $GITHUB_WORKSPACE/ci/run-bounded.py',
-      'python ${{ github.workspace }}/ci/run-bounded.py',
+      'bash $GITHUB_WORKSPACE/ci/with-node-test-options',
+      'bash ${{ github.workspace }}/ci/with-node-test-options',
     ]) {
-      expect([...stepFiles([{ run }], new Set(), directory).keys()]).toEqual(['ci/run-bounded.py'])
+      expect([...stepFiles([{ run }], new Set(), directory).keys()]).toEqual([
+        'ci/with-node-test-options',
+      ])
     }
   })
 
@@ -93,11 +97,11 @@ describe('ci path filters cover files that gated jobs execute', () => {
       ...jobFiles(
         {
           env: { SCRIPT: 'ci/vitest/shard-total.mts' },
-          steps: [{ run: 'node "$SCRIPT"', env: { SCRIPT: 'ci/run-bounded.py' } }],
+          steps: [{ run: 'node "$SCRIPT"', env: { SCRIPT: 'ci/with-node-test-options' } }],
         },
         new Set(),
       ).keys(),
-    ]).toEqual(['ci/run-bounded.py'])
+    ]).toEqual(['ci/with-node-test-options'])
   })
 
   it('excludes the main-only image resolver from pull-request image jobs', () => {

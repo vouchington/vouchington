@@ -67,7 +67,7 @@ runs:
         CACHE_HIT: ${{ steps.restore-web-targets.outputs.cache-hit }}
       run: |
         if [ "$CACHE_HIT" = 'true' ] && \
-          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 30 node ci/web-build-cache-manifest.mts verify; then
+          python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 30 node ci/web-build-cache-manifest.mts verify; then
           echo 'complete=true' >> "$GITHUB_OUTPUT"
         else
           echo 'complete=false' >> "$GITHUB_OUTPUT"
@@ -87,7 +87,7 @@ runs:
         # grace, and a minute for the timing upload below.
         # run-bounded kills the build process group; timeout-minutes on this composite step did
         # not (merge-group run 37572766026).
-        python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 300 node ci/setup-web-integration.mts
+        python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 300 node ci/setup-web-integration.mts
     - name: Summarize web build timings
       # Renders via ci/write-web-build-timings-summary.mts rather than a raw `cat` into a JSON
       # fence, for readability (issue #10937). Tolerates a missing timings file silently.
