@@ -140,9 +140,21 @@ describe('production test-helper dependency boundary', () => {
       'web/test-helpers/value.ts': 'export const value = 1',
       'ci/test-helpers/value.mts': 'export const value = 1',
       'test-helpers/vitest-config/value.mts': 'export const value = 1',
+      'backend/agents/relative.mts': "export { value } from '../test-helpers/value.mts'",
       'backend/api/relative.mts': "export { value } from '../test-helpers/value.mts'",
+      'backend/config/relative.mts': "export { value } from '../test-helpers/value.mts'",
+      'backend/entrypoints/api/relative.mts':
+        "export { value } from '../../test-helpers/value.mts'",
+      'backend/mcp/relative.mts': "export { value } from '../test-helpers/value.mts'",
+      'backend/md/relative.mts': "export { value } from '../test-helpers/value.mts'",
       'backend/services/alias.mts':
         "import type { Value } from '@voucha/test-helpers/value'; export type Result = Value",
+      'backend/queues/relative.mts': "export { value } from '../test-helpers/value.mts'",
+      'backend/rss/relative.mts': "export { value } from '../test-helpers/value.mts'",
+      'backend/service-registrations/relative.mts':
+        "export { value } from '../test-helpers/value.mts'",
+      'backend/types/relative.mts': "export { value } from '../test-helpers/value.mts'",
+      'backend/worker-runtime/relative.mts': "export { value } from '../test-helpers/value.mts'",
       'web/app/page.ts': "export { value } from '@/test-helpers/value'",
       'lambdas/handler.mts': "export { value } from '../backend/test-helpers/value.mts'",
       'ci/check-runtime.mts': "export { value } from './test-helpers/value.mts'",
@@ -236,9 +248,19 @@ describe('production test-helper dependency boundary', () => {
       expect(failing.stdout + failing.stderr).toContain('mcp-catalog-cli-datastore-lifecycle-only')
       expect(failing.stdout + failing.stderr).toContain('backend/data-stores/psql/index.mts')
       expect(output.summary.violations.map(violation => violation.from).toSorted()).toEqual([
+        'backend/agents/relative.mts',
         'backend/api/relative.mts',
+        'backend/config/relative.mts',
+        'backend/entrypoints/api/relative.mts',
+        'backend/mcp/relative.mts',
+        'backend/md/relative.mts',
+        'backend/queues/relative.mts',
+        'backend/rss/relative.mts',
         'backend/scripts/other-generator.mts',
+        'backend/service-registrations/relative.mts',
         'backend/services/alias.mts',
+        'backend/types/relative.mts',
+        'backend/worker-runtime/relative.mts',
         'ci/check-runtime.mts',
         'ci/check-storybook-browser-optimize-deps.mts',
         'lambdas/handler.mts',
