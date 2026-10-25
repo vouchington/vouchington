@@ -8,8 +8,13 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
+import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
+import { removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { caches } from '@services/entity-cache/caches'
 import { getAgentModerationElectionsByIdBatch } from './get-election-batch.mts'
+import { getAgentModerationElectionVote } from './votes-get.mts'
 import { upsertAgentModerationElectionVotes } from './votes-upsert.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -122,6 +127,80 @@ describe('votes-upsert.generated', () => {
     expect(refreshed?.votes_count_up).toBe(0)
     expect(refreshed?.votes_count_down).toBe(1)
     expect(refreshed?.votes_score_net).toBe(-1)
+  })
+
+  it('waits for agent moderation stats admission after committing the ballot', async () => {
+    const suffix = crypto.randomUUID()
+    const agent = await createTestAgent({ agentType: 'moderator', activated: true })
+    const promptId = await insertTestAgentPrompt({ agentId: agent.id, activated: true })
+    const postId = await insertTestPost({
+      title: `Agent moderation admission ${suffix}`,
+      slug: `agent-moderation-admission-${suffix}`,
+      createdById: user.id,
+      markdown: 'Agent moderation admission',
+    })
+    await insertTestAgentModeration({
+      postId,
+      promptId,
+      agentId: agent.id,
+      flagged: false,
+      results: { flagged: false },
+    })
+    const moderationId = ((await getPostLLMModerations(postId)) as Array<{ id: string }>)[0]?.id
+    expect(moderationId).toBeDefined()
+    if (!moderationId) throw new Error('Agent moderation ID not found')
+    touchedModerationIds.add(moderationId)
+
+    const jobName = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
+    const admission = holdQueueBulkAdmission(
+      voteAggregation,
+      jobName,
+      data =>
+        typeof data === 'object' &&
+        data !== null &&
+        'electionId' in data &&
+        data.electionId === moderationId &&
+        'orderingKey' in data &&
+        data.orderingKey === 'agent_moderation',
+    )
+    let entered = false
+    void admission.entered.then(() => {
+      entered = true
+    })
+    let settled = false
+    let operation: ReturnType<typeof upsertAgentModerationElectionVotes> | undefined
+    try {
+      operation = upsertAgentModerationElectionVotes(user.id, [
+        { entityId: moderationId, score: 1 },
+      ]).finally(() => {
+        settled = true
+      })
+      await admission.entered
+      expect(await getAgentModerationElectionVote(user.id, moderationId)).toMatchObject({
+        entity_id: moderationId,
+        user_id: user.id,
+        choice: 'accurate',
+      })
+      expect(settled).toBe(false)
+
+      admission.release()
+      const [votes, jobs] = await Promise.all([operation, admission.admitted])
+      expect(votes).toEqual([expect.objectContaining({ entity_id: moderationId, score: 1 })])
+      expect(jobs).toEqual([
+        expect.objectContaining({
+          name: jobName,
+          data: { electionId: moderationId, orderingKey: 'agent_moderation' },
+        }),
+      ])
+    } finally {
+      admission.release()
+      try {
+        await operation?.catch(() => undefined)
+        if (entered) await removeEnqueuedJobs([admission.admitted.catch(() => [])], jobName)
+      } finally {
+        admission.restore()
+      }
+    }
   })
 
   it('rolls back the ballot when its required transactional callback fails', async () => {
