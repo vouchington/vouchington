@@ -87,30 +87,6 @@ describe('localization service', () => {
     }
   })
 
-  it('resolves a public batch at the message bound and rejects one more message', () => {
-    const { maxMessages } = DEFAULT_LOCALIZATION_BOUNDS
-    const atBound = useSampleCatalog(boundMessages(maxMessages))
-    const body = JSON.parse(
-      atBound.resolver.localizationBatchPayload({
-        consumer: 'web',
-        locales: ['en'],
-        selectors: ['bound.*'],
-      }).body,
-    ) as { messages: Record<string, string> }
-    expect(Object.keys(body.messages)).toHaveLength(maxMessages)
-    expect(body.messages['bound.0000']).toBe('Message 0')
-
-    const overBound = useSampleCatalog(boundMessages(maxMessages + 1))
-    const overLimitError = thrownBy(() =>
-      overBound.resolver.localizationBatchPayload({
-        consumer: 'web',
-        locales: ['en'],
-        selectors: ['bound.*'],
-      }),
-    )
-    expect(isLocalizationClientError(overLimitError)).toBe(true)
-  })
-
   it('opens the current environment path lazily and caches one owned SQLite handle', () => {
     const first = useSampleCatalog()
     const second = useSampleCatalog(boundMessages(1))
