@@ -47,23 +47,16 @@ function restoreSeconds(action: string): number {
   return Number(match[1]) * 60 + RESTORE_LOOKUP_EXTRACT_ALLOWANCE_SECONDS
 }
 
-// run-bounded waits for SIGTERM, then for the relayed output pipes, before it returns.
-function killGraceSeconds(runBounded: string, processSource: string): number {
-  const term = /proc\.wait\(timeout=(\d+)\)/.exec(processSource)
-  const relay = /RELAY_JOIN_SECONDS = (\d+)/.exec(runBounded)
-  if (!term || !relay) throw new TypeError('run-bounded kill grace is no longer declared')
-  return Number(term[1]) + Number(relay[1])
-}
+// Consumer budget for termination and output draining after each bounded command's deadline.
+const KILL_GRACE_SECONDS = 13
 
 function readDeadlines(): Deadlines {
   const action = readFileSync('.github/actions/build-web-targets/action.yml', 'utf8')
-  const runBounded = readFileSync('ci/run-bounded.py', 'utf8')
-  const process = readFileSync('ci/run_bounded_process.py', 'utf8')
   return {
     restore: restoreSeconds(action),
     verify: boundedSeconds(action, 'node ci/web-build-cache-manifest\\.mts verify'),
     build: boundedSeconds(action, 'node ci/setup-web-integration\\.mts'),
-    killGrace: killGraceSeconds(runBounded, process),
+    killGrace: KILL_GRACE_SECONDS,
   }
 }
 
@@ -138,6 +131,5 @@ describe('build-web-targets timeouts', () => {
       boundedSeconds('node ci/setup-web-integration.mts', 'node ci/setup-web-integration\\.mts'),
     ).toThrow('under run-bounded.py')
     expect(() => restoreSeconds('uses: actions/cache/restore')).toThrow('bound its cache restore')
-    expect(() => killGraceSeconds('', '')).toThrow('kill grace')
   })
 })

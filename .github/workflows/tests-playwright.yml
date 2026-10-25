@@ -210,7 +210,7 @@ jobs:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
         run: |
           set -euo pipefail
-          python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
+          python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
           # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a
           # trace.zip only for a test's first retry attempt, so its presence under
           # test-results/ is a direct signal that something retried in this shard —
