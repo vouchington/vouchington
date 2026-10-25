@@ -129752,6 +129752,10 @@
         "url_hostnames_hostname_check2": {
           "definition": "CHECK ((hostname = TRIM(BOTH FROM hostname)))",
           "validated": true
+        },
+        "url_hostnames_network_backoff_step_check": {
+          "definition": "CHECK ((network_backoff_step >= 0))",
+          "validated": true
         }
       },
       "columns": {
@@ -129785,6 +129789,16 @@
           "nullable": false,
           "ordinalPosition": 16
         },
+        "consecutive_network_failures": {
+          "comment": "Consecutive non-DNS network failures (connection refused/reset, TLS, socket closed) with no HTTP response in between. Resets to 0 when the hostname answers or the backoff opens.",
+          "dataType": "smallint",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 19
+        },
         "crawl_policy_changed_at": {
           "comment": "Most recent change to crawlability, block status, age threshold, rate limit, or attempt threshold; unrelated hostname updates leave it unchanged.",
           "dataType": "timestamp with time zone",
@@ -129813,7 +129827,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35
+          "ordinalPosition": 39
         },
         "created_by_id": {
           "comment": null,
@@ -129823,7 +129837,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 38
         },
         "dns_disabled_at": {
           "comment": "When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.",
@@ -129895,6 +129909,36 @@
           "nullable": true,
           "ordinalPosition": 17
         },
+        "network_backoff_probe_claimed_at": {
+          "comment": "When the in-flight probe was claimed after the backoff expired. A failure while set reopens the backoff at the next step; NULL when no probe is in flight.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22
+        },
+        "network_backoff_step": {
+          "comment": "Current network backoff step; 0 when closed. Each failed probe raises it (capped), doubling the backoff duration. Resets to 0 when the hostname answers.",
+          "dataType": "smallint",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 20
+        },
+        "network_backoff_until": {
+          "comment": "Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21
+        },
         "publicly_introduced_at": {
           "comment": "First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.",
           "dataType": "timestamp with time zone",
@@ -129953,7 +129997,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20
+          "ordinalPosition": 24
         },
         "topic_id": {
           "comment": "The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.",
@@ -129963,7 +130007,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 23
         },
         "unreliable_status_codes": {
           "comment": "RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.",
@@ -129983,7 +130027,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 36
+          "ordinalPosition": 40
         },
         "votes_count_down": {
           "comment": null,
@@ -129993,7 +130037,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30
+          "ordinalPosition": 34
         },
         "votes_count_none": {
           "comment": null,
@@ -130003,7 +130047,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
+          "ordinalPosition": 33
         },
         "votes_count_up": {
           "comment": null,
@@ -130013,7 +130057,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28
+          "ordinalPosition": 32
         },
         "votes_score_down": {
           "comment": null,
@@ -130023,7 +130067,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 31
         },
         "votes_score_net": {
           "comment": null,
@@ -130033,7 +130077,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 36
         },
         "votes_score_none": {
           "comment": null,
@@ -130043,7 +130087,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 30
         },
         "votes_score_sort": {
           "comment": null,
@@ -130053,7 +130097,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 35
         },
         "votes_score_up": {
           "comment": null,
@@ -130063,7 +130107,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25
+          "ordinalPosition": 29
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -130073,7 +130117,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 37
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -130083,7 +130127,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 28
         },
         "web_risk_checked_url": {
           "comment": "URL that produced the Google Web Risk positive verdict for this hostname.",
@@ -130093,7 +130137,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 25
         },
         "web_risk_expire_at": {
           "comment": "Google Web Risk expireTime for the positive verdict.",
@@ -130103,7 +130147,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 27
         },
         "web_risk_threat_types": {
           "comment": "Google Web Risk threat types returned for the checked URL.",
@@ -130113,7 +130157,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 26
         }
       },
       "comment": "Registered hostnames with crawl and moderation policies.",
