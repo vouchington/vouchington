@@ -15,9 +15,11 @@ Every test must protect an app-owned branch, invariant, side effect, mapping, or
 - Tests and fixtures carry no dependency, image, browser, or tool version literals, so a routine bump never needs a matching test edit. Read the version from the owner file or assert a shape such as a digest pin or range match. Pin placement is in the [pinning policy](dependency-updates.md#docs-pinning-policy).
 - Vitest tests do not spawn `no-mistakes` or call its analysis APIs; package-owned rule behavior belongs in that package, and Vouchington tests pin configuration only.
 - Tests that read skills, instructions, or docs must identify a machine consumer or observable runtime contract. Wording and heading order are not contracts.
+- Treat first-party packages and SDKs as dependencies for their direct semantics. A test that only finds text in source or configuration is weak unless it verifies an observable app-owned contract; enforce real static invariants in their owning rule or tool.
+- Shrink fixtures and case sets to the smallest state that crosses each distinct behavior boundary.
 
 ## Deleting a test
 
-Coverage sameness is necessary but not sufficient. Before deleting a weak test that is the sole project coverage owner for production code, consolidate, strengthen, or move that coverage to a valuable test. [Suite rule R12](tests.md#test-suite-rules) governs the before/after measurement, and R10 limits tests to behavior this repository owns.
+Measure before and after under [suite rule R12](tests.md#test-suite-rules), and apply R10's app-owned behavior boundary. A changed instrumented count from dropping a dependency or text-restatement test does not itself show lost app behavior. If app production lines or branches would lose real app behavior coverage, consolidate, strengthen, or rewrite a smaller behavior test. Matching coverage alone does not make a weak test valuable.
 
 For each new or changed test, identify the observable contract, a defect that would make it fail, and why its boundary needs coverage. Establish fixture state deliberately and assert its expected outcome; do not accept either branch just because a shared fixture might contain data. Keep browser coverage for interactions component tests cannot represent, and use retrying locator assertions for asynchronous UI.
