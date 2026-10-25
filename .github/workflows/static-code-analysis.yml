@@ -79,7 +79,7 @@ jobs:
         timeout-minutes: 2
       - name: Install CI tools via mise
         uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
-        # Repository cache policy permits only the pnpm store and Playwright browsers.
+        # Keep mise-action's implicit cache disabled under the hosted CI cache policy.
         with:
           cache: false
         timeout-minutes: 3
@@ -149,7 +149,7 @@ jobs:
         timeout-minutes: 5
       - name: Install CI tools via mise
         uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
-        # Repository cache policy permits only the pnpm store and Playwright browsers.
+        # Keep mise-action's implicit cache disabled under the hosted CI cache policy.
         with:
           cache: false
         timeout-minutes: 3

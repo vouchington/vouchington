@@ -87,18 +87,6 @@ jobs:
         timeout-minutes: 1
         with:
           version: latest-12
-      - name: Resolve pnpm store
-        id: pnpm-store
-        timeout-minutes: 1
-        run: |
-          echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-          echo "lockfile-hash=$(shasum -a 256 pnpm-lock.yaml | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-      - name: Restore pnpm store without saving candidate changes
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        timeout-minutes: 2
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: pnpm-store-${{ runner.os }}-${{ runner.arch }}-${{ steps.pnpm-store.outputs.lockfile-hash }}
       - name: Set fresh PostgreSQL connection
         timeout-minutes: 1
         env:

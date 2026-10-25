@@ -13,10 +13,7 @@ type CacheDocument = {
   runs?: { steps?: CacheStep[] }
 }
 
-const ALLOWED_CACHE_PATHS = new Set([
-  '${{ steps.pnpm-store.outputs.path }}',
-  '~/.cache/ms-playwright',
-])
+const ALLOWED_CACHE_PATHS = new Set(['~/.cache/ms-playwright'])
 const SHARED_WEB_RUNTIME_PATHS = [
   'web/.next/standalone',
   'web/.next/static',
@@ -83,14 +80,13 @@ function cachePathViolations(source: string, label: string): string[] {
 
 describe('actions/cache path allowlist', () => {
   it.each([
-    ['pnpm store', '${{ steps.pnpm-store.outputs.path }}', true],
     ['Playwright browsers', '~/.cache/ms-playwright', true],
     ['shared web paths in unrelated action', SHARED_WEB_RUNTIME_PATHS, false],
     ['node_modules', 'node_modules', false],
     ['npm store', '~/.npm', false],
     ['yarn store', '~/.cache/yarn', false],
     ['arbitrary cache', '.cache/vite/vitest', false],
-    ['mixed paths', ['${{ steps.pnpm-store.outputs.path }}', 'node_modules'], false],
+    ['mixed paths', ['~/.cache/ms-playwright', 'node_modules'], false],
     ['missing path', undefined, false],
   ])('%s allowed: %s', (_name, value, allowed) => {
     expect(cachePathsAreAllowed(value)).toBe(allowed)

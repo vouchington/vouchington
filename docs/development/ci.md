@@ -45,10 +45,10 @@ filters for Playwright, web integration, and Docker image builds should skip Mar
 Vitest-only, test-helper-only, and Storybook-only changes unless the workflow directly owns the
 changed files.
 
-- Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are not
-  allowed. Ephemeral GitHub-hosted jobs may cache the pnpm store, Playwright browsers, and shared
-  web test runtime output through the SHA-pinned `actions/cache` policy in the
-  [GitHub Actions checklist](../checklists/github-actions.md).
+- Hosted CI does not cache the pnpm store or `node_modules`; dependency installs use the runner's
+  store directly, without a cache restore path. `actions/setup-node` package-manager caching is also
+  disabled. Playwright browsers and shared web test runtime output may use SHA-pinned
+  `actions/cache` under the [GitHub Actions checklist](../checklists/github-actions.md).
 - Cache keys that use `hashFiles` must target source files and manifests, not broad directories, so
   dependency trees are never traversed while keys are evaluated.
 - Web-stack test jobs clear Next.js runtime output and Wrangler/Miniflare state before tests,

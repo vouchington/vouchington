@@ -62,11 +62,6 @@ describe('PostgreSQL snapshot update workflow', () => {
     expect(
       generate?.steps?.filter(step => step.run === 'pnpm install --frozen-lockfile'),
     ).toHaveLength(1)
-    expect(generate?.steps?.filter(step => step.uses?.startsWith('actions/cache'))).toEqual([
-      expect.objectContaining({
-        uses: expect.stringMatching(/^actions\/cache\/restore@[a-f0-9]{40}$/),
-      }),
-    ])
   })
 
   it('publishes only after a successful artifact handoff through trusted default-branch code', () => {
