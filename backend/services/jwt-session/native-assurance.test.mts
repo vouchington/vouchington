@@ -10,10 +10,38 @@ import {
 import { createDeviceAndSessionTokens } from './create.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
 import { upgradeVerifiedNativeSession } from './native-upgrade.mts'
+import { refreshSessionState } from './flows.mts'
 
 const userAgent = 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36'
 
 describe('original MFA across verified native authority changes', () => {
+  it('rejects a mismatched identity and a consumed web device credential during upgrade', async () => {
+    const user = await createTestUserDirect()
+    const original = await createDeviceAndSessionTokens({
+      uid: user.id,
+      did: v7(),
+      deviceContext: { user_agent: userAgent },
+    })
+    const upgrade = (did: string) =>
+      upgradeVerifiedNativeSession({
+        deviceToken: original.deviceToken.token,
+        uid: user.id,
+        did,
+        sid: original.sessionToken.payload.sid,
+        fetchUser: (uid, query) => getTestPrivateUserById(uid, { query }),
+      })
+
+    await expect(upgrade(v7())).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    await refreshSessionState({
+      deviceToken: original.deviceToken.token,
+      userAgent,
+      fetchUser: getTestPrivateUserById,
+    })
+    await expect(upgrade(original.deviceToken.payload.did)).rejects.toMatchObject({
+      code: 'SESSION_RELOGIN_REQUIRED',
+    })
+  })
+
   it.each([false, true])(
     'preserves original proof, without creating it, during upgrade and renewal (proof=%s)',
     async proof => {

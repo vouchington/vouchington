@@ -24,6 +24,25 @@ import {
 const userAgent = 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36'
 
 describe('original MFA assurance continuity', () => {
+  it('uses fresh signed claims without a redundant account read', async () => {
+    const user = await createTestUserDirect()
+    const tokens = await createDeviceAndSessionTokens({ uid: user.id, did: v7() })
+    const verified = await verifyDeviceAndSessionTokens({
+      deviceToken: tokens.deviceToken.token,
+      sessionToken: tokens.sessionToken.token,
+    })
+    if (!verified) throw new Error('Expected the minted session pair')
+    const now = Math.floor(Date.now() / 1000)
+    const resolved = await resolveRequestSessionClaims(
+      { ...verified, sca: now + 30, rca: now + 60 },
+      async () => {
+        throw new Error('Fresh claims must not fetch the user')
+      },
+    )
+    expect(resolved.session?.uid).toBe(user.id)
+    expect(resolved.user).toBeUndefined()
+  })
+
   it('admits an administrator only after the fixture verifies a distinct enrolled TOTP factor', async () => {
     const user = await createTestUserDirect({ withEmail: true })
     await insertTestTotpAuthenticator(user.id, 'role-enrollment')
