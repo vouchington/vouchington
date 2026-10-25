@@ -2,12 +2,14 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { kagiSmallWebImportConfig } from './import-config.mts'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { describe, it, expect } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { numberedLine } from './feed-list-lines.mts'
 import { sortAndDiff } from './feed-list-sort.mts'
 import { createFeedListDirectory, removeFeedListDirectory } from './feed-list-temp-file.mts'
 import { processFeedEntry } from './process-feed-entry.mts'
-import { dispatchKagiSmallWeb, dispatchKagiSmallWebPage } from './sync.mts'
+import { dispatchKagiSmallWeb } from './sync.mts'
+import { FEED_LIST_SOURCES } from './sources.mts'
 import {
   KAGI_SMALLWEB_PROCESS_FEED_JOB,
   type KagiFeedJobData,
@@ -16,7 +18,16 @@ import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { observeTestPostgresClientQueries, readAllQueueJobs } from '@voucha/test-helpers'
 import { getTopicByAny } from '@services/topics/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
+import { findExistingFeedByUrl } from '@services/rss-feeds/find-existing-feed'
 import type { ParsedFeedEntry } from './parse.mts'
+
+const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
+vi.mock<typeof import('undici')>(import('undici'), async () => {
+  const actual = await vi.importActual<typeof import('undici')>('undici')
+  return { ...actual, fetch: fetchSpy }
+})
+
+const feedListBodies = new Map<string, string>()
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -97,7 +108,18 @@ describe('dispatchKagiSmallWeb', () => {
   })
 })
 
-describe('dispatchKagiSmallWebPage', () => {
+describe('dispatchKagiSmallWeb owned feed lists', () => {
+  beforeEach(() => {
+    feedListBodies.clear()
+    for (const source of FEED_LIST_SOURCES) feedListBodies.set(source.url, '')
+    fetchSpy.mockReset()
+    fetchSpy.mockImplementation(async (url: string) => {
+      const body = feedListBodies.get(url)
+      if (body === undefined) throw new Error(`Unexpected Kagi list request: ${url}`)
+      return new Response(body)
+    })
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { enabled: true })
+  })
   it('enqueues bounded pages, continues from the last URL, and covers every new entry once', async () => {
     overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { candidate_batch_size: 2 })
     const suffix = randomSuffix()
@@ -116,33 +138,51 @@ describe('dispatchKagiSmallWebPage', () => {
         .filter(job => job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name)
         .map(job => (job.data as KagiFeedJobData).feedUrl)
         .filter(url => urls.has(url))
-    const first = await dispatchKagiSmallWebPage(entries)
-    expect(first).toEqual({ enqueued: 1, total: 5, hasMore: true, nextCursor: sorted[1]!.feedUrl })
-    expect(await enqueuedUrls()).toEqual([sorted[0]!.feedUrl])
-    const second = await dispatchKagiSmallWebPage(entries, sorted[1]!.feedUrl)
-    expect(second).toEqual({ enqueued: 2, total: 3, hasMore: true, nextCursor: sorted[3]!.feedUrl })
+    feedListBodies.set(FEED_LIST_SOURCES[0]!.url, entries.map(entry => entry.feedUrl).join('\n'))
+    // This owned predecessor sorts before a–e, including the already-present control.
+    const first = await dispatchKagiSmallWeb(`https://kagi-page-${suffix}-0.example.com/feed.xml`)
+    try {
+      expect(first).toMatchObject({
+        enqueued: 1,
+        total: 5,
+        hasMore: true,
+        nextCursor: sorted[1]!.feedUrl,
+      })
+      expect(await enqueuedUrls()).toEqual([sorted[0]!.feedUrl])
+      if (!first.feedListDir) throw new Error('Expected the owned feed-list directory')
+      const second = await dispatchKagiSmallWeb(sorted[1]!.feedUrl, undefined, first.feedListDir)
+      expect(second).toMatchObject({
+        enqueued: 2,
+        total: 3,
+        hasMore: true,
+        nextCursor: sorted[3]!.feedUrl,
+      })
 
-    const last = await dispatchKagiSmallWebPage(entries, sorted[3]!.feedUrl)
-    expect(last).toEqual({ enqueued: 1, total: 1 })
+      const last = await dispatchKagiSmallWeb(sorted[3]!.feedUrl, undefined, first.feedListDir)
+      expect(last).toEqual({ enqueued: 1, total: 1 })
 
-    expect((await enqueuedUrls()).toSorted()).toEqual(
-      sorted.filter(entry => entry !== sorted[1]).map(entry => entry.feedUrl),
-    )
+      expect((await enqueuedUrls()).toSorted()).toEqual(
+        sorted.filter(entry => entry !== sorted[1]).map(entry => entry.feedUrl),
+      )
+    } finally {
+      if (first.feedListDir) await removeFeedListDirectory(first.feedListDir)
+    }
   })
 
   it('keeps the later entry when a URL is listed twice', async () => {
     const suffix = randomSuffix()
-    const feedUrl = `https://kagi-last-${suffix}.example.com/feed.xml`
-    const later = {
+    const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=UCkagilast${suffix}`
+    const later: ParsedFeedEntry = {
       feedUrl,
       name: 'Later name',
-      slug: `kagi-last-${suffix}-later`,
-      sourceType: 'web' as const,
+      slug: `later-name-uckagilast${suffix}`,
+      sourceType: 'youtube',
     }
-    const result = await dispatchKagiSmallWebPage([
-      { ...later, name: 'Earlier name', slug: `kagi-last-${suffix}-earlier` },
-      later,
-    ])
+    feedListBodies.set(
+      FEED_LIST_SOURCES[2]!.url,
+      `${feedUrl} # Earlier name\n${feedUrl} # Later name`,
+    )
+    const result = await dispatchKagiSmallWeb(`https://kagi-last-${suffix}.example.com/feed.xml`)
     expect(result).toEqual({ enqueued: 1, total: 1 })
     const jobs = (await readAllQueueJobs(kagiSmallWeb))
       .filter(job => job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name)
@@ -159,8 +199,10 @@ describe('dispatchKagiSmallWebPage', () => {
       slug: `kagi-replay-${suffix}`,
       sourceType: 'web',
     }
-    await dispatchKagiSmallWebPage([entry])
-    await dispatchKagiSmallWebPage([entry])
+    feedListBodies.set(FEED_LIST_SOURCES[0]!.url, entry.feedUrl)
+    const cursor = `https://kagi-replay-${suffix}.example.com/`
+    await dispatchKagiSmallWeb(cursor)
+    await dispatchKagiSmallWeb(cursor)
     const jobs = (await readAllQueueJobs(kagiSmallWeb)).filter(
       job =>
         job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name &&
@@ -170,7 +212,9 @@ describe('dispatchKagiSmallWebPage', () => {
   })
 
   it('copies current feed URLs from the reader', async () => {
-    const observed = await observeTestPostgresClientQueries(() => dispatchKagiSmallWebPage([]))
+    const observed = await observeTestPostgresClientQueries(() =>
+      dispatchKagiSmallWeb(`https://kagi-reader-${randomSuffix()}.example.com/feed.xml`),
+    )
     const membership = observed.queries.filter(query => query.text.includes('copyExistingFeedUrls'))
     expect(membership.map(query => query.pool)).toEqual(['read'])
   })
@@ -203,23 +247,29 @@ describe('dispatchKagiSmallWebPage', () => {
   })
 
   it('distinguishes a new URL from an existing URL with one fewer query backslash', async () => {
-    const suffix = randomSuffix()
+    const suffix = randomUUID()
     const prefix = `https://kagi-copy-${suffix}.example.com/feed.xml?q=`
     const existing: ParsedFeedEntry = {
       feedUrl: `${prefix}\\a`,
-      name: 'Existing backslash feed',
+      name: `Existing backslash feed ${suffix}`,
       slug: `kagi-copy-${suffix}-existing`,
       sourceType: 'web',
     }
     const candidate: ParsedFeedEntry = {
       ...existing,
       feedUrl: `${prefix}\\\\a`,
-      name: 'New backslash feed',
+      name: `New backslash feed ${suffix}`,
       slug: `kagi-copy-${suffix}-candidate`,
     }
-    await processFeedEntry(existing)
+    const seeded = await processFeedEntry(existing)
+    const persisted = await findExistingFeedByUrl(existing.feedUrl)
+    expect({ seeded, persisted }).toMatchObject({
+      seeded: { created: true, topicId: expect.any(String) },
+      persisted: { resolved_feed_url: existing.feedUrl, topic_id: seeded.topicId },
+    })
 
-    const result = await dispatchKagiSmallWebPage([existing, candidate])
+    feedListBodies.set(FEED_LIST_SOURCES[0]!.url, `${existing.feedUrl}\n${candidate.feedUrl}`)
+    const result = await dispatchKagiSmallWeb(`https://kagi-copy-${suffix}.example.com/feed.xml`)
     expect(result).toEqual({ enqueued: 1, total: 2 })
     const urls = new Set([existing.feedUrl, candidate.feedUrl])
     const jobs = (await readAllQueueJobs(kagiSmallWeb))
