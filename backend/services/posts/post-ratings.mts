@@ -15,10 +15,18 @@ import { deletePostRatingRecord } from './post-ratings/delete.mts'
 import { createPostRevision } from '@services/post-revisions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
+import onError from '@modules/on-error'
 
-async function enqueueRssFeedDiscoverabilityForTopics(topicIds: string[]): Promise<void> {
-  const rssFeedIds = await searchRssFeedIdsByTopicIds(topicIds)
-  void enqueueBulkEvaluateRssFeedDiscoverability(rssFeedIds)
+async function settlePostRatingEffects(postId: string, topicIds: string[]): Promise<void> {
+  const entityAdmission = awaitReportedEnqueueAdmission(() => enqueueOnPostUpdated(postId))
+  try {
+    const rssFeedIds = await searchRssFeedIdsByTopicIds(topicIds)
+    await awaitReportedEnqueueAdmission(() => enqueueBulkEvaluateRssFeedDiscoverability(rssFeedIds))
+  } catch (err) {
+    onError(new Error('Post-rating RSS discoverability preparation failed', { cause: err }))
+  }
+  await entityAdmission
 }
 
 async function assertRatingsNotAllSame(query: TransactionQuery, postId: string) {
@@ -93,8 +101,7 @@ export async function addPostRating(
   })
   await query.commit()
 
-  void enqueueOnPostUpdated(post.id)
-  await enqueueRssFeedDiscoverabilityForTopics([input.topic_id])
+  await settlePostRatingEffects(post.id, [input.topic_id])
 }
 
 async function lockPostRatingMutation(query: TransactionQuery, postId: string) {
@@ -179,14 +186,12 @@ export async function updatePostRating(
     impactedTopicIds: [topicId],
   })
   await query.commit()
-  void enqueueOnPostUpdated(post.id)
-  await enqueueRssFeedDiscoverabilityForTopics([topicId])
+  await settlePostRatingEffects(post.id, [topicId])
 }
 export async function deletePostRating(user: PrivateUser, post: Post, topicId: string) {
   assert(currentUserCanUpdatePost(user, post), 403, 'Forbidden')
   assert(post.post_type === 'review', 422, 'Post is not a review')
   assert(isUUID(topicId), 422, 'Invalid topic_id')
   await deletePostRatingRecord(user.id, post.id, topicId)
-  void enqueueOnPostUpdated(post.id)
-  await enqueueRssFeedDiscoverabilityForTopics([topicId])
+  await settlePostRatingEffects(post.id, [topicId])
 }
