@@ -68,7 +68,7 @@ describe('request', () => {
           'x-voucha-client-ja4': 'forged-from-page',
         }),
       )
-      await new ServerRequest().request('/api/v1/auth/me', {
+      await serverApi.request('/api/v1/auth/me', {
         headers: { 'X-Voucha-Client-Ja4': 'forged-override' },
       })
       const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
