@@ -2,7 +2,7 @@ import { decodeProtectedHeader, importJWK, jwtVerify, type JWK } from 'jose'
 import { isUuidv7 } from '@vouchington/session-jwt'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { DBSC_PROOF_REQUIRED, DBSC_PROOF_INVALID } from '@modules/on-error/error-codes'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { assertSessionClientBinding } from './client-binding.mts'
 import { hashDeviceToken, type SessionDeviceAuthorityRow } from './device-authority.mts'
 import {
