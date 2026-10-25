@@ -103,13 +103,3 @@ export async function warmUpApiKeyBloomFilter(): Promise<void> {
   /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
   void enqueueRebuildBloomFilter({ filter: 'api-keys' })
 }
-
-/**
- * Delete the API key bloom filter, any building key, and the ready marker.
- *
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function deleteApiKeyBloomFilter(): Promise<void> {
-  await getApiKeyBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY])
-}
