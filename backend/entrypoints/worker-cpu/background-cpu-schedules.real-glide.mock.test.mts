@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { upsertBackgroundCpuSchedules } from '@queues/background-cpu/enqueues/schedules'
 import { Queue } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'

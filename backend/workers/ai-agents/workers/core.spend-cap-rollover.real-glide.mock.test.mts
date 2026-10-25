@@ -1,11 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  workerQueueCommandClient,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { AI_AGENTS_QUEUE_NAME } from '@queues/ai-agents/config'
 import {

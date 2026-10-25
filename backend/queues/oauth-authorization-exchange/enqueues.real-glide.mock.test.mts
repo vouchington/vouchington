@@ -1,11 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  ENQUEUE_BASE_DEFAULTS,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import { startRealGlideJobLifecycle } from '@voucha/test-helpers/real-glide-job-lifecycle'
 import {
   OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,

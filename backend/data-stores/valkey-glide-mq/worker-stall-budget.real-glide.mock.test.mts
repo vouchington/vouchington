@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { Queue, Worker, UnrecoverableError } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from './index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
   PAGED_DISPATCHER_MAX_STALLED_COUNT,
   withPagedDispatcherStallBudget,

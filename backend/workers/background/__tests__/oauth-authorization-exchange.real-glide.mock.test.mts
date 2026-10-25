@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
   OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
   OAUTH_AUTHORIZATION_EXCHANGE_JOB,

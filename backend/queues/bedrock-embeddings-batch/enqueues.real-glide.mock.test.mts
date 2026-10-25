@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { reconciliationJobOptions } from './enqueues.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())

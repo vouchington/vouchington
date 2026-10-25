@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueueEvents } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import {
   extendCpuProviderCooldownMs,

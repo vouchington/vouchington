@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Worker } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from '../data-stores/valkey-glide-mq/index.mts'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { onGracefulShutdown } from '../data-stores/valkey-core/shutdown.mts'
 import { BACKGROUND_QUEUE_NAME } from '../queues/background/config.mts'
 import { background } from '../queues/background/queues.mts'

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createDataRequest } from '@services/account-data-requests'
 import { createUserDeletionRequest } from '@services/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'

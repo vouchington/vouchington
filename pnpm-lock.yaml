@@ -1770,9 +1770,9 @@ importers:
         specifier: workspace:^
         version: link:../../workers/image-uploads
     devDependencies:
-      '@data-stores/valkey-glide-mq':
+      '@data-stores/valkey-core':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -2533,9 +2533,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@data-stores/valkey-glide-mq':
+      '@data-stores/valkey-core':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
+        version: link:../../data-stores/valkey-core
 
   backend/modules/request-client-info:
     dependencies:
@@ -2826,6 +2826,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -2933,6 +2936,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -2964,9 +2970,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@data-stores/valkey-glide-mq':
+      '@data-stores/valkey-core':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -3079,6 +3085,9 @@ importers:
         specifier: workspace:^
         version: link:../background-cpu
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -3201,6 +3210,10 @@ importers:
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
 
   backend/queues/kagi-smallweb:
     dependencies:
@@ -3298,6 +3311,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -3398,9 +3414,6 @@ importers:
 
   backend/queues/ses-inbound:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
@@ -3419,6 +3432,10 @@ importers:
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
 
   backend/queues/sitemaps:
     dependencies:
@@ -4126,6 +4143,9 @@ importers:
         specifier: ^0.11.2
         version: 0.11.2
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -9789,6 +9809,9 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -10507,6 +10530,9 @@ importers:
         specifier: ^0.11.2
         version: 0.11.2
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
@@ -12332,6 +12358,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../data-stores/valkey
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../data-stores/valkey-core
       '@data-stores/valkey-rate-limiter':
         specifier: workspace:^
         version: link:../data-stores/valkey-rate-limiter
@@ -12549,9 +12578,6 @@ importers:
 
   backend/workers/account-lifecycle:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@data-stores/valkey-pubsub':
         specifier: workspace:^
         version: link:../../data-stores/valkey-pubsub
@@ -12580,6 +12606,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -12626,6 +12655,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
@@ -12832,6 +12864,9 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12981,6 +13016,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
@@ -13111,6 +13149,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -13182,9 +13223,6 @@ importers:
 
   backend/workers/bedrock-embeddings-batch:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
@@ -13210,6 +13248,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -13421,6 +13462,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -13469,6 +13513,10 @@ importers:
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
 
   backend/workers/crawl-referral-links:
     dependencies:
@@ -13506,9 +13554,6 @@ importers:
 
   backend/workers/crawler:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -13531,6 +13576,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -13881,6 +13929,9 @@ importers:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@26.6.5)
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -14188,6 +14239,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -14219,6 +14273,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -14503,6 +14560,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils

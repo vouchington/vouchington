@@ -1,11 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  workerQueueCommandClient,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import {
   beginSpendCapDelayedJobRelease,
   spendCapDelayedRegistryKey,

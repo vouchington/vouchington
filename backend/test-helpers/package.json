@@ -36,6 +36,7 @@
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-core": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
     "@jongleberry/vurst-markdown": "^0.4.3",
     "@modules/http-signatures": "workspace:^",

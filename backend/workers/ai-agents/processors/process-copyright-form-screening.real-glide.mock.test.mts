@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import type { CopyrightFormScreeningJobData } from '@queues/ai-agents/types'
 import * as modelProviders from '@modules/model-providers/generate'

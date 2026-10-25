@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
   disconnectRequestedJobOptions,
   enqueueBackfillBlueskyDisconnectRequests,

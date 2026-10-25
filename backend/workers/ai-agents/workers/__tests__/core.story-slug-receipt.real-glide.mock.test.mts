@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { Queue } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { callStoryPostAgent } from '@agents/story-post'
 import { makeModelCallResult } from '@voucha/test-helpers/agents/model-call-result'
 import {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { FOLLOWER_DISTRIBUTIONS_PROCESS_JOB } from '@queues/background/enqueues/follower-distributions-jobs'
 import { sendPostToFollowers } from '@services/follower-distributions'
 import { followerDistributionsWorkConfig } from '@services/follower-distributions/work-limits'

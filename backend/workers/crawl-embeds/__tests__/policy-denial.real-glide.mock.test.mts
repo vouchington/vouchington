@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { CRAWL_EMBEDS_DEFAULTS } from '@queues/crawl-embeds/config'
 import { getPendingCrawlEmbed } from '@services/crawl-embeds/get-pending'
 import { isCrawlEmbedBackfillCandidate } from '@voucha/test-helpers/entities/crawl-embeds'

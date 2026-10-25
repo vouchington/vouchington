@@ -1,8 +1,6 @@
 import type { ViewUrl } from '@services/urls/types'
 import type { ViewRssFeed } from '@voucha/types/entities/rss-feed'
 import type { Topic } from '@services/topics/types'
-import type { ElectionVote } from '@services/elections-votes/shared'
-import type { PageInfo } from '@voucha/types/pagination'
 import type { RssFeedItemsResult } from '@voucha/types/entities/rss-feed-item-search'
 
 export type ViewRssFeedItem = {
@@ -30,20 +28,6 @@ export type ViewRssFeedItem = {
 }
 
 export type { RssFeedItemsResult }
-
-type RssFeedItemsLookup = Record<string, ViewRssFeedItem>
-
-type RssFeedItemsResponseBody = {
-  rss_feed_items: RssFeedItemsLookup
-  bookmarks?: Record<string, Record<string, boolean>>
-  election_votes?: Record<string, ElectionVote>
-  results: RssFeedItemsResult[]
-}
-
-/** @public cross-workspace type consumed by web workspace */
-export type RssFeedItemsFeedResponseBody = RssFeedItemsResponseBody & {
-  page_info: PageInfo
-}
 
 // Normalized from feedsmith parseFeed() (RSS, Atom, JSON Feed)
 export type RssFeedItemToUpsert = {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,

@@ -1,11 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { Queue } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  workerQueueCommandClient,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import { getAggregatedQueueMetricStats, getQueueStats } from './get-queue-stats.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())

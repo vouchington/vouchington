@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,

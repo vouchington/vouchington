@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import {
-  ENQUEUE_BASE_DEFAULTS,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import { startRealGlideJobLifecycle } from '@voucha/test-helpers/real-glide-job-lifecycle'
 import { getExtractImageMetadataJobOptions } from './enqueues.mts'
 import { imageUploadsQueue } from './queues.mts'

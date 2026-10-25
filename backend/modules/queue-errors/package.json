@@ -28,6 +28,6 @@
     "glide-mq": "^0.19.0"
   },
   "devDependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^"
+    "@data-stores/valkey-core": "workspace:^"
   }
 }
