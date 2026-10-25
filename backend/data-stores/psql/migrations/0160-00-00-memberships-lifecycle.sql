@@ -597,7 +597,7 @@ ON membership_renewal_price_increase_notification_work_items (lease_token) WHERE
 CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available
 ON membership_renewal_price_increase_notification_work_items (available_at, membership_id)
 WHERE completed_at IS NULL AND delivery_attempted_at IS NULL;
-COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression because no retention currently removes them.';
+COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until the owning membership is removed; no time-based retention applies.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_id IS 'Membership projection that currently owns the notice; fallback restoration transfers the entire work row atomically.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.generation IS 'Monotone snapshot generation; retries and fallback transfer preserve it, while a changed provider snapshot advances it.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_provider_observation_id IS 'Immutable authoritative observation that supplied this notice snapshot.';
