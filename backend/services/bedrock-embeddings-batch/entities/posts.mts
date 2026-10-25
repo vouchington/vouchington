@@ -15,7 +15,7 @@ import {
   streamPendingEntities,
   type PendingEntity,
 } from './shared.mts'
-import * as banEvasion from '@services/communities/ban-evasion'
+import * as banEvasion from '@services/posts/ban-evasion-embedding-enqueues'
 
 type PendingPost = PendingEntity
 

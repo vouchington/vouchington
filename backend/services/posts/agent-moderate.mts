@@ -11,6 +11,7 @@ import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { repairFailedImageDeliveryMutation } from '@services/media-delivery-safety'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
+import { rearmNextPostBanEvasionEmbedding } from './ban-evasion-embeddings.mts'
 
 /**
  * Three-state result for agent-driven content removal:
@@ -90,6 +91,7 @@ async function removeCommentInTransaction(input: {
   ])
   if ((rowCount ?? 0) === 0) return 'already-removed'
   await runSequentially([
+    () => rearmNextPostBanEvasionEmbedding(query, commentId),
     () => retirePostImagePlacements(commentId, query),
     () =>
       createPostRevision(

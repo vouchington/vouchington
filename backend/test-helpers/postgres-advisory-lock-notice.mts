@@ -10,6 +10,14 @@ type Settings = {
 
 /** Observe one real reserved connection; PostgreSQL emits this LOG while its lock is still blocked. */
 export function observeTestAdvisoryLockNotice(client: PoolClient, lockTag: string) {
+  return observeTestPostgresLockNotice(client, lockTag, 'ExclusiveLock')
+}
+
+export function observeTestTransactionLockNotice(client: PoolClient, transactionId: string) {
+  return observeTestPostgresLockNotice(client, `transaction ${transactionId}`, 'ShareLock')
+}
+
+function observeTestPostgresLockNotice(client: PoolClient, lockTag: string, mode: string) {
   const noticed = Promise.withResolvers<void>()
   let processId: number | undefined
   let original: Settings | undefined
@@ -19,7 +27,7 @@ export function observeTestAdvisoryLockNotice(client: PoolClient, lockTag: strin
     if (
       processId !== undefined &&
       event.message?.startsWith(
-        `process ${processId} still waiting for ExclusiveLock on ${lockTag} after `,
+        `process ${processId} still waiting for ${mode} on ${lockTag} after `,
       )
     )
       noticed.resolve()

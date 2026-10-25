@@ -25,6 +25,7 @@ import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/acti
 import { lockDelegatedPostThread } from './delegated-write-locks.mts'
 import onError from '@modules/on-error'
 import { runSequentially } from '@modules/utils/run-sequentially'
+import { rearmNextPostBanEvasionEmbedding } from './ban-evasion-embeddings.mts'
 
 export const deletePost = async (
   deleter: PrivateUser,
@@ -73,6 +74,7 @@ export const deletePost = async (
     ])
     if ((rowCount ?? 0) > 0) {
       await runSequentially([
+        () => rearmNextPostBanEvasionEmbedding(query, post.id),
         () => retirePostImagePlacements(post.id, query),
         () =>
           createPostRevision(

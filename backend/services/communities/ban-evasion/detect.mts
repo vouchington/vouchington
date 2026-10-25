@@ -1,6 +1,7 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
+import { DELETED_USER_ID } from '@voucha/types/entities/user-constants'
 import { getPublicUserByAny } from '@services/users/get'
 import { getSystemUserByUsername } from '@services/users/system-users'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
@@ -18,6 +19,9 @@ export async function detectBanEvasionForMember(
   userId: string,
   triggeringPostId?: string,
 ): Promise<BanEvasionDetectResult> {
+  if (userId === DELETED_USER_ID) {
+    return { flagged: false, combinedScore: 0, sourceUserId: null }
+  }
   // Check if already flagged or dismissed — skip if so (idempotent)
   const { rows: memberRows } = await read<{
     suspected_ban_evader_at: Date | null

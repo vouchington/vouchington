@@ -67,7 +67,7 @@
       "reason": "delegates each selected user to the captured transactional cleanup writer"
     },
     {
-      "path": "backend/services/communities/ban-evasion/get.mts",
+      "path": "backend/services/posts/ban-evasion-embeddings.mts",
       "reason": "enforcement is a precursor signal; clearance owns publication state"
     },
     {
