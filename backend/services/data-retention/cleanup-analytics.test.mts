@@ -4,22 +4,31 @@ import os from 'node:os'
 import path from 'node:path'
 import { acquireModerationOperationRetentionTestLock } from '@voucha/test-helpers'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
+import { flush as flushFirehose } from '../../data-stores/analytics/backend-firehose.mts'
+import * as firehoseProvider from '../../modules/aws/firehose.mts'
 import { cleanupAnalyticsLocalFiles, runDataRetentionCleanup } from './cleanup.mts'
 
 describe('cleanupAnalyticsLocalFiles', () => {
   const originalAnalyticsBackend = process.env.ANALYTICS_BACKEND
   const originalAnalyticsLocalDir = process.env.ANALYTICS_LOCAL_DIR
+  let cleanupFirehose: (() => Promise<void>) | undefined
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-05-01T00:00:00.000Z'))
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     try {
-      restoreAnalyticsEnv()
+      await cleanupFirehose?.()
     } finally {
-      vi.useRealTimers()
+      cleanupFirehose = undefined
+      try {
+        restoreAnalyticsEnv()
+      } finally {
+        vi.useRealTimers()
+      }
     }
   })
 
@@ -56,6 +65,18 @@ describe('cleanupAnalyticsLocalFiles', () => {
     onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
+    const firehoseSender = vi.spyOn(firehoseProvider, 'putFirehoseRecordBatch').mockResolvedValue({
+      $metadata: {},
+      FailedPutCount: 0,
+      RequestResponses: [],
+    })
+    cleanupFirehose = async () => {
+      try {
+        await flushFirehose()
+      } finally {
+        firehoseSender.mockRestore()
+      }
+    }
     process.env.ANALYTICS_BACKEND = 'firehose'
     const now = new Date()
     const limits = { batchSize: 10, maxBatches: 10 }
@@ -115,6 +136,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
     })
+    await flushFirehose()
+    expect(firehoseSender).toHaveBeenCalled()
+    expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
   })
 
   function restoreAnalyticsEnv() {
