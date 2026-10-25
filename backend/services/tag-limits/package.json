@@ -29,6 +29,7 @@
     "@modules/on-error": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/sentry": "^0.4.0",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

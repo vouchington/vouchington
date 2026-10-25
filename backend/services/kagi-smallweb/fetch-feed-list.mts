@@ -1,7 +1,7 @@
 import { Readable, Transform, compose } from 'node:stream'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { fetch } from 'undici'
-import { HttpResponseSizeError } from '@modules/on-error/errors'
+import { HttpResponseSizeError } from '@vouchington/sentry'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 type CachedHeaders = {

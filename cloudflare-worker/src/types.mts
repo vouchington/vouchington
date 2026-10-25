@@ -66,7 +66,7 @@ export interface Env {
   PRODUCTION?: string
   /**
    * Deployed-environment label for the shared fail-closed Sentry gate
-   * (`resolveSentryDsnEnablement`). Set to 'staging' or 'production' per environment;
+   * (`resolveSentryEnablement`). Set to 'staging' or 'production' per environment;
    * unset in local dev, CI, and tests, which keeps Sentry disabled there.
    */
   ENVIRONMENT?: string

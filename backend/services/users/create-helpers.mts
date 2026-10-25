@@ -9,7 +9,7 @@ import {
 } from '@services/oauth-accounts'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { USER_CREATION_RACE } from '@modules/on-error/error-codes'
 import type { PrivateUser, CreateUserOptions, GetUserOptions } from './types.mts'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'

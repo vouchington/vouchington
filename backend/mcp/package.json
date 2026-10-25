@@ -103,6 +103,7 @@
     "@voucha/api-fixtures": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/mcp-server": "^0.2.0",
+    "@vouchington/sentry": "^0.4.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "valkyries": "^0.11.2"

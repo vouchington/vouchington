@@ -1,6 +1,6 @@
 import { Worker } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
-import { HttpRateLimitError } from '@modules/on-error/errors'
+import { HttpRateLimitError } from '@vouchington/sentry'
 import { cancelResponseBody } from '@modules/utils/http'
 import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
 

@@ -32,10 +32,9 @@ async function handleSubmit(e: React.FormEvent) {
 - `onSuccess(message, options?)` — Sonner success toast. Pass `description` for an additional detail line.
 - Branch on precondition codes (`IDENTITY_REQUIRED`, `MFA_REAUTH_REQUIRED`, etc.) above the `onError` call so they continue to open action-oriented modals — see [Precondition Errors and Action-Oriented Modals](reference-error-handling-precondition-errors-and-action-oriented-modals.md#precondition-errors-and-action-oriented-modals).
 - `skipSentry: true` suppresses Sentry capture even for unexpected errors. Use it for known-expected business outcomes that surface as plain `Error` (not `ApiError`): client-side validation rejections (e.g. invalid UUID before hitting the API), user-cancelled WebAuthn prompts (`NotAllowedError`), and wrapper errors like `PostSavedWithRatingError` where the underlying cause has already been reported elsewhere. Do **not** use `skipSentry` to hide real failures.
-- `scrubSentryError(event, hint)` — filters expected errors first, then scrubs request URLs,
-  credential headers, and cookies from every non-null error event across client, server, and edge.
-- `scrubSentrySpan(span)` — applies the same request-metadata contract to a streamed span's
-  `attributes`, which carry the request URL, headers, and cookies. See
+- Sentry event filtering and scrubbing come from `@vouchington/sentry` through
+  `createVouchaSentryInitOptions()` (`ts-shared/utils/sentry-init-options.mts`) in the client,
+  server, and edge options modules. See
   [Sentry request-metadata scrubbing](../../requirements/security/reference-security-observability-scrubbing.md).
 
 ### Routing rules

@@ -1,6 +1,6 @@
 import { addGracefulShutdownDrainCallback } from '@data-stores/graceful-shutdown'
 import onError from '@modules/on-error'
-import { HttpRateLimitError, HttpServerError } from '@modules/on-error/errors'
+import { HttpRateLimitError, HttpServerError } from '@vouchington/sentry'
 import { createHttpDispatchers } from '@vouchington/http-transport/dispatchers'
 import * as transport from '@vouchington/http-transport/fetch'
 import { createEgressGuardrailInterceptor } from './http-egress-guardrail.mts'

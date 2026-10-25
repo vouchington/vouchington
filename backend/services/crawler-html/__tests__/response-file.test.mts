@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { HttpResponseSizeError } from '@modules/on-error/errors'
+import { HttpResponseSizeError } from '@vouchington/sentry'
 import { writeResponseToTemporaryFile } from '../response-file.mts'
 
 describe('writeResponseToTemporaryFile', () => {

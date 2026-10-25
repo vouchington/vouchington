@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS, FORBIDDEN } from '@modules/on-error/error-codes'
 import { validateUUID } from '@modules/utils'
 import { runContributionAdmission } from './admission.mts'

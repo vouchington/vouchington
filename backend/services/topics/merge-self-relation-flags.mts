@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { mapped } from './merge-reference-sql.mts'
 import { relationElectionTables, relationReferences } from './merge-relations.mts'
 

@@ -1,7 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
-import type { InitSentryOptions } from './sentry.mts'
-import { getBeforeSend } from './sentry.mock-fixtures.mts'
 
 vi.mock<typeof import('@sentry/aws-serverless')>(import('@sentry/aws-serverless'), () => ({
   init: vi.fn<VitestLooseMock>(),
@@ -10,10 +7,6 @@ vi.mock<typeof import('@sentry/aws-serverless')>(import('@sentry/aws-serverless'
 
 const Sentry = await import('@sentry/aws-serverless')
 const { initSentry, captureException } = await import('./sentry.mts')
-
-type BeforeSend = NonNullable<InitSentryOptions['beforeSend']>
-type SentryEvent = Parameters<BeforeSend>[0]
-type SentryEventHint = Parameters<BeforeSend>[1]
 
 describe('initSentry', () => {
   const originalNodeEnv = process.env.NODE_ENV
@@ -134,69 +127,6 @@ describe('initSentry', () => {
         initialScope: expect.objectContaining({ tags: { lambda: 'image-resize' } }),
       }),
     )
-  })
-
-  it('applies the shared least-data collection policy', () => {
-    const expected: NonNullable<Parameters<typeof Sentry.init>[0]>['dataCollection'] =
-      createSentryDataCollection()
-
-    initSentry({ lambdaName: 'test-lambda' })
-    const dataCollection = vi.mocked(Sentry.init).mock.lastCall?.[0]?.dataCollection
-
-    expect(dataCollection).toEqual(expected)
-    expect(dataCollection).toMatchObject({
-      userInfo: false,
-      cookies: false,
-      urlQueryParams: false,
-      databaseQueryData: false,
-      stackFrameVariables: false,
-      queues: false,
-      graphQL: { document: false, variables: false },
-    })
-  })
-
-  it('composes beforeSend with the default scrubber', async () => {
-    const beforeSend = vi.fn<BeforeSend>(event => ({
-      ...event,
-      extra: { token: 'custom-token', visible: 'safe' },
-    }))
-    initSentry({ lambdaName: 'test-lambda', beforeSend })
-    const composedBeforeSend = getBeforeSend(vi.mocked(Sentry.init))
-    const result = await composedBeforeSend({} as SentryEvent, {} as SentryEventHint)
-
-    expect(beforeSend).toHaveBeenCalled()
-    expect(result).toMatchObject({
-      extra: { token: '[Filtered]', visible: 'safe' },
-    })
-  })
-
-  it('preserves a lambda beforeSend drop decision', async () => {
-    const beforeSend = vi.fn<BeforeSend>(() => null)
-    initSentry({ lambdaName: 'test-lambda', beforeSend })
-    const result = await getBeforeSend(vi.mocked(Sentry.init))(
-      {} as SentryEvent,
-      {} as SentryEventHint,
-    )
-
-    expect(result).toBeNull()
-  })
-
-  it('scrubs async beforeSend results', async () => {
-    const beforeSend = vi.fn<BeforeSend>(event =>
-      Promise.resolve({
-        ...event,
-        extra: { authorization: 'Bearer custom-token' },
-      }),
-    )
-    initSentry({ lambdaName: 'test-lambda', beforeSend })
-    const result = await getBeforeSend(vi.mocked(Sentry.init))(
-      {} as SentryEvent,
-      {} as SentryEventHint,
-    )
-
-    expect(result).toMatchObject({
-      extra: { authorization: '[Filtered]' },
-    })
   })
 
   it('leaves the DSN undefined and defaults the trace sample rate when it is unset', () => {

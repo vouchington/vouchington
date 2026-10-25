@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ENTITY_RELATION_REFERRAL_LINK_GUARD_UNREGISTERED } from '@modules/on-error/error-codes'
 import type { QueryOptions } from '@data-stores/psql/types'
 

@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { HttpNoBodyError, HttpResponseSizeError } from '@modules/on-error/errors'
+import { HttpNoBodyError, HttpResponseSizeError } from '@vouchington/sentry'
 import type { CrawlerHtmlTempFile } from './types.mts'
 
 export async function writeResponseToTemporaryFile(

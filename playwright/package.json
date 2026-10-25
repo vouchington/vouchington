@@ -14,7 +14,7 @@
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/utils": "^0.9.0",
+    "@vouchington/utils": "^0.10.0",
     "vitest": "^5.0.5",
     "vouchington-tooling": "^0.72.0"
   }

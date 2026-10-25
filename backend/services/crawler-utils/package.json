@@ -28,6 +28,7 @@
     "@services/analytics": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@vouchington/http-transport": "^0.1.0",
+    "@vouchington/sentry": "^0.4.0",
     "ssrf-guard": "^1.0.0"
   }
 }

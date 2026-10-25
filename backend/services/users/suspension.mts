@@ -1,6 +1,6 @@
 import { beginTransaction, read, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { assertSuspensionTarget } from './suspension-target.mts'
 import { isAdminUser } from './authorization.mts'

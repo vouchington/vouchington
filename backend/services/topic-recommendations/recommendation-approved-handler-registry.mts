@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { TOPIC_RECOMMENDATIONS_APPROVED_HANDLER_UNREGISTERED } from '@modules/on-error/error-codes'
 
 export type RecommendationApprovedHandler = (

@@ -15,7 +15,7 @@ import type { PrivateUser } from '@services/users/types'
 import { hasOAuthAccount } from '@services/user-rate-limits/trust-tier'
 import { assertCanContribute } from '@services/contribution-gating/assert'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import {
   OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
   POST_CONTENT_EDIT_WINDOW_EXPIRED,

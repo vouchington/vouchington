@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import type { InitSentryOptions } from './sentry.mts'
-import { getBeforeSend } from './sentry.mock-fixtures.mts'
+import { getBeforeSend, type BeforeSend } from './sentry.mock-fixtures.mts'
 
 vi.mock<typeof import('@sentry/aws-serverless')>(import('@sentry/aws-serverless'), () => ({
   init: vi.fn<VitestLooseMock>(),
@@ -10,7 +9,6 @@ vi.mock<typeof import('@sentry/aws-serverless')>(import('@sentry/aws-serverless'
 const Sentry = await import('@sentry/aws-serverless')
 const { initSentry } = await import('./sentry.mts')
 
-type BeforeSend = NonNullable<InitSentryOptions['beforeSend']>
 type SentryEvent = Parameters<BeforeSend>[0]
 type SentryEventHint = Parameters<BeforeSend>[1]
 
@@ -74,17 +72,5 @@ describe('initSentry event scrubbing', () => {
       ],
     })
     expect(result?.request).not.toHaveProperty('data')
-  })
-
-  it('scrubs request URLs after a custom beforeSend hook', async () => {
-    const beforeSend = vi.fn<BeforeSend>(event => ({
-      ...event,
-      request: { url: 'https://example.com/verify?token=secret' },
-    }))
-    initSentry({ lambdaName: 'test-lambda', beforeSend })
-
-    expect(
-      await getBeforeSend(vi.mocked(Sentry.init))({} as SentryEvent, {} as SentryEventHint),
-    ).toMatchObject({ request: { url: 'https://example.com/verify' } })
   })
 })

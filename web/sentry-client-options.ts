@@ -1,10 +1,6 @@
 import type * as Sentry from '@sentry/nextjs'
-import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
-import {
-  resolveSentryDsnEnablement,
-  SENTRY_CONFIGURATION_WARNING,
-} from '@ts-shared/utils/sentry-deployment-gate'
-import { scrubSentryError, scrubSentrySpan } from '@/lib/on-error/scrub-sentry-event'
+import { createVouchaSentryInitOptions } from '@ts-shared/utils/sentry-init-options'
+import { isExpectedApiError } from '@vouchington/api-client'
 import {
   getBrowserRuntimePublicConfig,
   getBrowserRuntimePublicConfigIfAvailable,
@@ -16,70 +12,35 @@ export type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
 
 interface SentryClientInitDeps {
   getRuntimePublicConfig?: () => RuntimePublicConfig | undefined
-  resolveSentryEnablement?: typeof resolveSentryDsnEnablement
-  scrubSentryError?: typeof scrubSentryError
-  scrubSentrySpan?: typeof scrubSentrySpan
 }
 
 interface RuntimePublicConfigEventTarget {
   addEventListener(type: string, listener: () => void, options: { once: true }): void
 }
 
-let sentryConfigurationInvalidLogged = false
-
-function warnIfSentryConfigurationInvalid(configurationInvalid: boolean): void {
-  if (configurationInvalid && !sentryConfigurationInvalidLogged) {
-    console.warn(SENTRY_CONFIGURATION_WARNING)
-    sentryConfigurationInvalidLogged = true
-  }
-}
-
 export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): SentryInitOptions {
-  const getRuntimeConfig = deps.getRuntimePublicConfig ?? getBrowserRuntimePublicConfig
-  const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
-  const beforeSend = deps.scrubSentryError ?? scrubSentryError
-  const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const runtimeConfig = getRuntimeConfig() ?? {}
-  const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
-    dsn: runtimeConfig.sentryDsn,
-    environment: runtimeConfig.environment,
-  })
-  warnIfSentryConfigurationInvalid(configurationInvalid)
+  const runtimeConfig = (deps.getRuntimePublicConfig ?? getBrowserRuntimePublicConfig)() ?? {}
 
   return {
-    dsn: sentryDsn?.dsn,
-
-    // Route Sentry events through the CF Worker tunnel to bypass ad-blockers.
-    // The CF Worker intercepts POST /monitoring and forwards to Sentry directly.
-    tunnel: '/monitoring',
-
-    // Set sample rate (1.0 = 100% for development, adjust for production)
-    tracesSampleRate: 1,
+    ...createVouchaSentryInitOptions({
+      dsn: runtimeConfig.sentryDsn,
+      environment: runtimeConfig.environment,
+      release: process.env.NEXT_PUBLIC_GIT_COMMIT,
+      tracesSampleRate: 1,
+      // Route Sentry events through the CF Worker tunnel to bypass ad-blockers.
+      // The CF Worker intercepts POST /monitoring and forwards to Sentry directly.
+      tunnel: '/monitoring',
+      // Drop expected 4xx ApiError events: client errors are normal and not actionable.
+      filter: { isExpected: isExpectedApiError },
+    }),
 
     // Configure which URLs receive trace headers for distributed tracing.
     // Production API calls use relative URLs (same-origin through the CF Worker),
     // so Sentry attaches trace headers to them automatically — no production URLs needed here.
     tracePropagationTargets: ['localhost', /^http:\/\/localhost:2999/],
 
-    // Environment detection
-    environment: environment ?? 'development',
-
-    release: process.env.NEXT_PUBLIC_GIT_COMMIT || undefined,
-
-    enabled,
-
     // Enable debug mode in development
     debug: false,
-
-    // Least-data policy: no client IP, cookies, query strings, bodies, DB values, stack locals
-    // or gen-AI content (see sentry-data-collection.mts).
-    dataCollection: createSentryDataCollection(),
-
-    // Drop expected 4xx ApiError events — client errors are normal and not actionable.
-    beforeSend,
-
-    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
-    beforeSendSpan,
 
     // Suppress common browser noise that is not actionable.
     ignoreErrors: [

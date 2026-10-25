@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import type { PrivateUser } from './types.mts'
 

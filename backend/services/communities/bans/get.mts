@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { COMMUNITY_BANNED } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
 import type { CommunityBan } from '../types.mts'

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'

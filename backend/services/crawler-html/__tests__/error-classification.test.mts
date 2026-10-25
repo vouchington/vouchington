@@ -4,15 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import CrawlerHtml from '../index.mts'
 import {
+  HttpNoBodyError,
+  HttpRateLimitError,
+  HttpResponseSizeError,
+  HttpServerError,
+} from '@vouchington/sentry'
+import {
   CrawlerNetworkError,
   CrawlerRateLimitError,
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
   CrawlerTimeoutError,
-  HttpNoBodyError,
-  HttpRateLimitError,
-  HttpResponseSizeError,
-  HttpServerError,
 } from '@modules/on-error/errors'
 
 const fetched = (response: unknown) => ({

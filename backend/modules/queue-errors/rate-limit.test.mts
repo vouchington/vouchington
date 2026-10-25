@@ -1,6 +1,6 @@
 import { UnrecoverableError, Worker } from 'glide-mq'
 import { describe, expect, it } from 'vitest'
-import { HttpRateLimitError } from '@modules/on-error/errors'
+import { HttpRateLimitError } from '@vouchington/sentry'
 import { DEFAULT_RATE_LIMIT_DELAY_MS } from '@vouchington/queue-errors'
 import { getRetryAfterMs, throwIfRateLimitedResponse, wrapHttpForRetry } from './index.mts'
 

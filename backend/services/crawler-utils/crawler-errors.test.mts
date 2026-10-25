@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { HttpNoBodyError } from '@vouchington/sentry'
 import {
   CrawlerNetworkError,
   CrawlerRateLimitError,
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
   CrawlerTimeoutError,
-  HttpNoBodyError,
 } from '@modules/on-error/errors'
 import { handleErrors, readBodyAsBuffer } from './index.mts'
 

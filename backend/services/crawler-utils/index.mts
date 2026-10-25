@@ -1,13 +1,15 @@
 import {
+  HttpResponseSizeError,
+  HttpNoBodyError,
+  HttpRateLimitError,
+  HttpServerError,
+} from '@vouchington/sentry'
+import {
   CrawlerTimeoutError,
   CrawlerNetworkError,
   CrawlerRateLimitError,
   CrawlerServerError,
   CrawlerResponseSizeExceededError,
-  HttpResponseSizeError,
-  HttpNoBodyError,
-  HttpRateLimitError,
-  HttpServerError,
   CrawlerSsrfError,
 } from '@modules/on-error/errors'
 import { validateUrl, UnsafeUrlError } from 'ssrf-guard/node'

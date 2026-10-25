@@ -9,7 +9,7 @@ import { providerTableConfigs, type OAuthProvider, type OAuthAccount } from './p
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { invalidateVerifiedEmailCache } from '@services/contribution-gating/email-verification'
 import onError from '@modules/on-error'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 
 type OAuthAccountConnectionPostCommitDependencies = {

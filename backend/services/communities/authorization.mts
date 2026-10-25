@@ -1,6 +1,6 @@
 import type { PrivateUser } from '@services/users/types'
 import { isModerationStaff } from '@services/users'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { IDENTITY_REQUIRED } from '@modules/on-error/error-codes'
 import { getActiveCommunityBan } from './bans/get.mts'
 import { getPendingApplicationForUser } from './applications/pending.mts'

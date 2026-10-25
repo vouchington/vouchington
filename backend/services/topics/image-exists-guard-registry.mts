@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { TOPICS_IMAGE_EXISTS_GUARD_UNREGISTERED } from '@modules/on-error/error-codes'
 
 export type ImageExistsGuard = (imageId: string) => Promise<void>

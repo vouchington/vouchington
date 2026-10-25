@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { IDEMPOTENCY_KEY_REUSED, INVALID_INPUT } from '@modules/on-error/error-codes'
 import { encryptSecret } from '@modules/token-secrets'
 import { enqueueProcessMembershipVerification } from '@queues/memberships/enqueues'

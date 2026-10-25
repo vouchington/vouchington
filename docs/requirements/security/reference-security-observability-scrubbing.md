@@ -18,14 +18,15 @@ The product rule is that the least data leaves the app. By default Sentry collec
 cookies, query strings, every HTTP body, bound database values, stack-frame variables, queue task
 arguments, and gen-AI inputs and outputs. Request bodies carry legal identities and perjury
 statements from copyright forms, and gen-AI inputs carry user content and MCP tool arguments. So
-[`ts-shared/utils/sentry-data-collection.mts`](../../../ts-shared/utils/sentry-data-collection.mts)
-turns these off at the source and every SDK init site passes it as `dataCollection`. The configured pipeline
-in `ts-shared/utils/sentry-event-scrubbing.mts` are defense in depth behind that policy, not the
-only control.
+`@vouchington/sentry` turns these off at the source and every SDK init site passes the policy as
+`dataCollection` through `ts-shared/utils/sentry-init-options.mts`. The credential and URL scrubbing
+configured in `ts-shared/utils/sentry-scrub-options.mts` is defense in depth behind that policy, not
+the only control.
 
 ## Boundary
 
-The shared scrubbing contract covers request metadata and bodies: URLs, query strings, credential
-headers, cookies, and the matching span attributes. It does not inspect arbitrary `extra` values,
-contexts, attachments, replays, or logs. Lambda events keep their own broader deep scrubber.
-Scrubbers still drop body data that reaches the scope by any other path.
+Every init site scrubs request metadata and bodies (URLs, query strings, credential headers,
+cookies, span attributes) and recursively redacts sensitive keys and free-text secrets across the
+whole event, including `user`, `extra`, `contexts`, and breadcrumbs. It does not inspect
+attachments, replays, or logs. Scrubbers still drop body data that reaches the scope by any other
+path.

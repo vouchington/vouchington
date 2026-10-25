@@ -53,6 +53,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/http-transport": "^0.1.0",
+    "@vouchington/sentry": "^0.4.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0",

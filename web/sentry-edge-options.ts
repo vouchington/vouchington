@@ -1,66 +1,24 @@
 import type * as Sentry from '@sentry/nextjs'
-import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
-import {
-  resolveSentryDsnEnablement,
-  SENTRY_CONFIGURATION_WARNING,
-} from '@ts-shared/utils/sentry-deployment-gate'
-import { scrubSentryError, scrubSentrySpan } from '@/lib/on-error/scrub-sentry-event'
+import { createVouchaSentryInitOptions } from '@ts-shared/utils/sentry-init-options'
+import { isExpectedApiError } from '@vouchington/api-client'
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
 
-interface SentryEdgeInitDeps {
-  resolveSentryEnablement?: typeof resolveSentryDsnEnablement
-  scrubSentryError?: typeof scrubSentryError
-  scrubSentrySpan?: typeof scrubSentrySpan
-}
-
-let sentryConfigurationInvalidLogged = false
-
-function warnIfSentryConfigurationInvalid(configurationInvalid: boolean): void {
-  if (configurationInvalid && !sentryConfigurationInvalidLogged) {
-    console.warn(SENTRY_CONFIGURATION_WARNING)
-    sentryConfigurationInvalidLogged = true
-  }
-}
-
 export function createSentryEdgeInitOptions(
   envVars: NodeJS.ProcessEnv = process.env,
-  deps: SentryEdgeInitDeps = {},
 ): SentryInitOptions {
-  const env = envVars.NODE_ENV || 'development'
-  const resolveEnablement = deps.resolveSentryEnablement ?? resolveSentryDsnEnablement
-  const beforeSend = deps.scrubSentryError ?? scrubSentryError
-  const beforeSendSpan = deps.scrubSentrySpan ?? scrubSentrySpan
-  const { enabled, environment, sentryDsn, configurationInvalid } = resolveEnablement({
-    dsn: envVars.SENTRY_DSN,
-    environment: envVars.ENVIRONMENT,
-  })
-  warnIfSentryConfigurationInvalid(configurationInvalid)
-
   return {
-    dsn: sentryDsn?.dsn,
-
-    // Set sample rate (1.0 = 100% for development, adjust for production)
-    tracesSampleRate: 1,
-
-    // Environment detection
-    environment: environment ?? env,
-
-    release: envVars.NEXT_PUBLIC_GIT_COMMIT || envVars.GIT_COMMIT || undefined,
-
-    enabled,
+    ...createVouchaSentryInitOptions({
+      dsn: envVars.SENTRY_DSN,
+      environment: envVars.ENVIRONMENT,
+      fallbackEnvironment: envVars.NODE_ENV || 'development',
+      release: envVars.NEXT_PUBLIC_GIT_COMMIT || envVars.GIT_COMMIT,
+      tracesSampleRate: 1,
+      // Drop expected 4xx ApiError events: client errors are normal and not actionable.
+      filter: { isExpected: isExpectedApiError },
+    }),
 
     // Enable debug mode in development
     debug: false,
-
-    // Least-data policy: no client IP, cookies, query strings, bodies, DB values, stack locals
-    // or gen-AI content (see sentry-data-collection.mts).
-    dataCollection: createSentryDataCollection(),
-
-    // Drop expected 4xx ApiError events — client errors are normal and not actionable.
-    beforeSend,
-
-    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
-    beforeSendSpan,
   }
 }

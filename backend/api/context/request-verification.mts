@@ -1,5 +1,5 @@
 import type { Application, Context } from '@jongleberry/api-server'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ATTESTATION_SIGNATURE_REQUIRED } from '@modules/on-error/error-codes'
 import onError from '@modules/on-error'
 import {

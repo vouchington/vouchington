@@ -1,4 +1,5 @@
-import * as Sentry from '@sentry/nextjs'
+import { captureException } from '@sentry/nextjs'
+import { captureError } from '@vouchington/sentry/browser'
 import { toast } from 'sonner'
 import { ApiError, isExpectedApiError, getApiErrorMessage } from '@vouchington/api-client'
 import { getRateLimitMessage, isRateLimitError } from '@/lib/api/rate-limit-error'
@@ -25,12 +26,12 @@ export default function onError(err: unknown, options: OnErrorOptions): string {
     message = fallback
   }
   toast.error(message)
-  if (!skipSentry && !isExpectedApiError(err)) {
-    const captured = err instanceof Error ? err : new Error(fallback)
-    const captureExtra = err instanceof Error ? extra : { ...extra, originalValue: err }
-    Sentry.captureException(captured, {
-      ...(tags && { tags }),
-      ...(captureExtra && Object.keys(captureExtra).length > 0 && { extra: captureExtra }),
+  if (!skipSentry) {
+    captureError({ captureException }, err, {
+      fallbackMessage: fallback,
+      tags,
+      extra,
+      isExpected: isExpectedApiError,
     })
   }
   return message
