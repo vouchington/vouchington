@@ -125,13 +125,14 @@ export async function ensureSession(
   }
 
   const isProduction = isDeployedWorkerEnvironment(env)
-  const requiresConfiguredEdgeKeys = !isLocalWorkerDevelopment(env) && env.PRODUCTION !== undefined
+  const requiresConfiguredEdgeKeys =
+    isProduction || (!isLocalWorkerDevelopment(env) && env.PRODUCTION !== undefined)
   const edgePrivateKeys = env.VOUCHA_EDGE_ANON_SESSION_JWT_PRIVATE_KEYS_B64
   const edgePublicKeys = env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
   if (requiresConfiguredEdgeKeys && (!edgePrivateKeys || !edgePublicKeys)) {
     if (!privateKeyMissingLogged) {
       console.warn(
-        'VOUCHA_EDGE_ANON_SESSION_JWT_PRIVATE_KEYS_B64 and VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64 are required in deployed Worker environments — anonymous visitors will not receive dt/st cookies.',
+        'Edge anonymous session keys are unavailable; anonymous visitors will not receive dt/st cookies.',
       )
       privateKeyMissingLogged = true
     }

@@ -53,4 +53,18 @@ describe('Worker session configuration boundary', () => {
     expect(fetchInner).not.toHaveBeenCalled()
     expect(await response.text()).not.toContain('VOUCHA_SESSION_JWT')
   })
+  it('dispatches staging requests without edge-anon signing keys', async () => {
+    const fetchInner = vi.fn<typeof FetchInner>().mockResolvedValue(new Response('origin'))
+    const worker = createWorker({ fetchInner, captureException: vi.fn<VitestLooseMock>() })
+    const env = {
+      ENVIRONMENT: 'staging',
+      PRODUCTION: 'false',
+      VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: configuredSessionKeys.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64,
+    }
+
+    const response = await worker.fetch(new Request('https://voucha.ai/'), env, createContext(env))
+
+    expect(response.status).toBe(200)
+    expect(fetchInner).toHaveBeenCalledOnce()
+  })
 })

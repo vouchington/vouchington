@@ -7,8 +7,9 @@ export async function assertWorkerSessionJwtConfiguration(env: Env): Promise<voi
   await assertSessionJwtConfiguration({ env, mode: 'production' })
   const privateKeys = env.VOUCHA_EDGE_ANON_SESSION_JWT_PRIVATE_KEYS_B64
   const publicKeys = env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
-  if (!privateKeys || !publicKeys)
-    throw new Error('Deployed Worker anonymous session keys must be configured')
+  if (Boolean(privateKeys) !== Boolean(publicKeys))
+    throw new Error('Worker edge anon session keys must be configured together')
+  if (!privateKeys) return
   await assertSessionJwtConfiguration(
     {
       mode: 'production',

@@ -8,14 +8,28 @@ describe('Worker deployed key configuration', () => {
       assertWorkerSessionJwtConfiguration({ ENVIRONMENT: 'staging', PRODUCTION: 'false' }),
     ).rejects.toThrow('must be configured')
   })
-  it('requires anonymous signing keys before dispatch in deployed environments', async () => {
+  it('accepts the session verifier without edge-anon keys on staging', async () => {
     await expect(
       assertWorkerSessionJwtConfiguration({
         ENVIRONMENT: 'staging',
         VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64:
           configuredSessionKeys.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64,
       }),
-    ).rejects.toThrow('anonymous session keys')
+    ).resolves.toBeUndefined()
+  })
+  it.each([
+    ['private', configuredSessionKeys.VOUCHA_EDGE_ANON_SESSION_JWT_PRIVATE_KEYS_B64, undefined],
+    ['public', undefined, configuredSessionKeys.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64],
+  ])('rejects only the %s edge-anon key on staging', async (_kind, privateKeys, publicKeys) => {
+    await expect(
+      assertWorkerSessionJwtConfiguration({
+        ENVIRONMENT: 'staging',
+        VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64:
+          configuredSessionKeys.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64,
+        VOUCHA_EDGE_ANON_SESSION_JWT_PRIVATE_KEYS_B64: privateKeys,
+        VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64: publicKeys,
+      }),
+    ).rejects.toThrow('edge anon session keys must be configured together')
   })
   it('accepts explicit configured key sets on staging', async () => {
     await expect(
