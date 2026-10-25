@@ -2776,12 +2776,7 @@ rules:
         - '@jongleberry/'
         - '@jonathanong/'
         - '@vouchington/'
-      temporaryGroups:
-        - selectors:
-            - '@react-email/render@2.1.1'
-            - 'react-email@6.11.3'
-          reason: Required peer releases for the authorized published @vouchington/email adoption.
-          eligibleForRemovalAt: '2026-10-18T12:43:19Z'
+      temporaryGroups: []
       workspaceYaml: pnpm-workspace.yaml
       dependabotPath: .github/dependabot.yml
       lockfilePath: pnpm-lock.yaml
