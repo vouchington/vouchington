@@ -3,6 +3,7 @@ import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-disp
 import { defineBackgroundJob } from './define-job.mts'
 import {
   EMAIL_DIGESTS_DOMAIN as DOMAIN,
+  ENGAGEMENT_DISPATCH_ORDERING,
   type DispatchApiKeyExpiryRemindersData,
   type EmptyEmailDigestsJobData as EmptyData,
   type EngagementDispatchData,
@@ -23,6 +24,7 @@ export const EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB = defineBackgroundJob<Engagem
   DOMAIN,
   {
     name: 'dispatchEngagementEmails',
+    ordering: ENGAGEMENT_DISPATCH_ORDERING,
     ...DISPATCH,
     ...pagedDispatchJobOptions('engagement'),
     sensitive: true,

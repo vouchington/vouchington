@@ -6,13 +6,15 @@ import type {
 } from '@email-templates/core'
 import { defineBackgroundDomain } from './define-job.mts'
 
-// Digest dispatch and send jobs share a globally bounded lane. Event-triggered sends use the
-// separate `emails` queue and never wait behind a digest backlog.
+// Engagement sweeps have a singleton lane; other digest work shares the bounded domain lane.
+// Event-triggered sends use the separate `emails` queue and never wait behind a digest backlog.
 export const EMAIL_DIGESTS_DOMAIN = defineBackgroundDomain({
   domain: 'email-digests',
   deferral: 'job',
   workerConcurrency: 5,
 })
+
+export const ENGAGEMENT_DISPATCH_ORDERING = { key: 'email-digests:engagement-dispatcher' } as const
 
 export type EmptyEmailDigestsJobData = Record<string, never>
 export type EngagementDispatchData = {

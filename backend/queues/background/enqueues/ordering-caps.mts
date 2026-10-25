@@ -32,6 +32,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'kagi-smallweb': 5,
   'kagi-smallweb:dispatcher': 1,
   'email-digests': 5,
+  'email-digests:engagement-dispatcher': 1,
   imports: 10,
   'moderation-signals': 10,
 } as const

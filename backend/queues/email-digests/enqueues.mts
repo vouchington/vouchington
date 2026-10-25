@@ -7,22 +7,22 @@ import {
   EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB,
   EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB,
 } from '@queues/background/enqueues/email-digests-jobs'
-import type {
-  EmailDigestInput,
-  ProcessSendCommunityModerationSummaryEmailVariables,
-  ProcessSendFollowNewsSourcesEmailVariables,
-  ProcessSendFollowTopicsEmailVariables,
-  ProcessSendPostReferralLinkEmailVariables,
-  EngagementDispatchData,
-  SendFollowNewsSourcesEmailData,
-  SendFollowTopicsEmailData,
-  SendPostReferralLinkEmailData,
+import {
+  ENGAGEMENT_DISPATCH_ORDERING,
+  type EmailDigestInput,
+  type ProcessSendCommunityModerationSummaryEmailVariables,
+  type ProcessSendFollowNewsSourcesEmailVariables,
+  type ProcessSendFollowTopicsEmailVariables,
+  type ProcessSendPostReferralLinkEmailVariables,
+  type EngagementDispatchData,
+  type SendFollowNewsSourcesEmailData,
+  type SendFollowTopicsEmailData,
+  type SendPostReferralLinkEmailData,
 } from '@queues/background/enqueues/email-digests-domain'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   ENGAGEMENT_DISPATCH_DEDUP_TTL_MS,
-  ENGAGEMENT_DISPATCH_ORDERING,
   MODERATION_SUMMARY_DISPATCH_DEDUP_TTL_MS,
 } from './config.mts'
 

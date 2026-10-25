@@ -11,7 +11,6 @@ import {
   enqueueDispatchEngagementEmails,
 } from '../enqueues.mts'
 import { enqueueDispatchApiKeyExpiryReminders } from './api-key-expiry.mts'
-import { ENGAGEMENT_DISPATCH_ORDERING } from '../config.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
@@ -38,10 +37,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_
     template: {
       name: EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB.name,
       data: {},
-      opts: toSchedulerTemplateOptions({
-        ...EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB.options,
-        ordering: ENGAGEMENT_DISPATCH_ORDERING,
-      }),
+      opts: toSchedulerTemplateOptions(EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB.options),
     },
     operatorSurfaces: [
       {

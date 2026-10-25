@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB } from '@queues/background/enqueues/email-digests-jobs'
 import { background } from '@queues/background/queues'
-import { ENGAGEMENT_DISPATCH_ORDERING } from './config.mts'
+import { ENGAGEMENT_DISPATCH_ORDERING } from '@queues/background/enqueues/email-digests-domain'
 import {
   enqueueDispatchEngagementEmails,
   enqueueEngagementDispatchContinuation,
@@ -52,10 +52,12 @@ describe('engagement dispatch singleton admission', () => {
   })
 
   it('uses one lane for manual, scheduled, and continued pages', async () => {
+    const ordering = { ...ENGAGEMENT_DISPATCH_ORDERING, concurrency: 1 }
+    expect(EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB.options.ordering).toEqual(ordering)
     const direct = await enqueueDispatchEngagementEmails()
     expect(direct).toMatchObject({
       name: EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB.name,
-      opts: { ordering: ENGAGEMENT_DISPATCH_ORDERING },
+      opts: { ordering },
     })
 
     const scheduled = scheduledJobManifest.jobs.find(
@@ -65,7 +67,7 @@ describe('engagement dispatch singleton admission', () => {
       typeof scheduled?.template.opts === 'function'
         ? scheduled.template.opts()
         : scheduled?.template.opts
-    expect(schedulerOptions?.ordering).toEqual(ENGAGEMENT_DISPATCH_ORDERING)
+    expect(schedulerOptions?.ordering).toEqual(ordering)
     expect(scheduled?.operatorSurfaces[0]).toMatchObject({
       trigger: enqueueDispatchEngagementEmails,
     })
@@ -84,7 +86,7 @@ describe('engagement dispatch singleton admission', () => {
     )
     expect(continued).toMatchObject({
       name: EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB.name,
-      opts: { ordering: ENGAGEMENT_DISPATCH_ORDERING },
+      opts: { ordering },
     })
   })
 })
