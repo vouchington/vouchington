@@ -29,7 +29,7 @@ describe('enqueueSpamDetection', () => {
         mode: 'debounce',
       },
     })
-    expect(job!.opts.ordering).toBeUndefined()
+    expect(job!.opts.ordering).toMatchObject({ key: 'moderation-signals' })
   })
 
   it('keeps the legacy post-level deduplication id when no content hash is provided', async () => {

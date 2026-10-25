@@ -34,7 +34,12 @@ describe('follower distribution background handlers', () => {
     await background.add(
       FOLLOWER_DISTRIBUTIONS_PROCESS_JOB.name,
       { distributionId: distribution.distribution_id },
-      { attempts: 1, removeOnComplete: true, removeOnFail: true },
+      {
+        ...FOLLOWER_DISTRIBUTIONS_PROCESS_JOB.options,
+        attempts: 1,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
     )
 
     const sent = await getManualSendNotificationRowsForTest({

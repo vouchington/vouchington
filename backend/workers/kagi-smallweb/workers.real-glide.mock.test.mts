@@ -56,7 +56,11 @@ describe('Kagi paged dispatcher through the background handler', () => {
       candidate => candidate.job.name === KAGI_SMALLWEB_SYNC_JOB.name,
     )
     if (!handler) throw new Error('Kagi sync handler is not registered')
-    const root = await background.add(KAGI_SMALLWEB_SYNC_JOB.name, {})
+    const root = await background.add(
+      KAGI_SMALLWEB_SYNC_JOB.name,
+      {},
+      KAGI_SMALLWEB_SYNC_JOB.options,
+    )
     if (!root) throw new Error('Expected Kagi sync job admission')
     let continuation: Awaited<ReturnType<typeof background.getJob>> | undefined
     try {
@@ -140,7 +144,11 @@ describe('Kagi paged dispatcher through the background handler', () => {
       candidate => candidate.job.name === KAGI_SMALLWEB_SYNC_JOB.name,
     )
     if (!handler) throw new Error('Kagi sync handler is not registered')
-    const root = await background.add(KAGI_SMALLWEB_SYNC_JOB.name, {})
+    const root = await background.add(
+      KAGI_SMALLWEB_SYNC_JOB.name,
+      {},
+      KAGI_SMALLWEB_SYNC_JOB.options,
+    )
     if (!root) throw new Error('Expected Kagi sync job admission')
     const continuations: Array<Awaited<ReturnType<typeof background.getJob>>> = []
     try {

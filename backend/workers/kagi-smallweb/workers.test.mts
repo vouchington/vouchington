@@ -12,7 +12,7 @@ const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 async function run(name: string, data: unknown) {
   const handler = kagiSmallWebHandlers.find(candidate => candidate.job.name === name)
   if (!handler) throw new Error(`No kagi-smallweb handler for ${name}`)
-  const job = await kagiSmallWeb.add(name, data)
+  const job = await kagiSmallWeb.add(name, data, handler.job.options)
   if (!job) throw new Error('Expected Kagi job admission')
   return handler.handle(job as Job<never>)
 }

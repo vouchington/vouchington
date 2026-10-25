@@ -49,6 +49,7 @@ describe('ActivityPub worker paged dispatch', () => {
       targetPostId: postId,
     }
     const root = await activitypub.add(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name, data, {
+      ...ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.options,
       jobId: `test-activitypub-page-${randomUUID()}`,
     })
     if (!root) throw new Error('Expected a root distribution job')

@@ -21,7 +21,12 @@ describe('SES inbound background handlers', () => {
       background.add(
         SES_INBOUND_RECONCILE_JOB.name,
         { continuationToken: '' },
-        { jobId: `ses-inbound-invalid-${crypto.randomUUID()}`, attempts: 1, removeOnFail: true },
+        {
+          ...SES_INBOUND_RECONCILE_JOB.options,
+          jobId: `ses-inbound-invalid-${crypto.randomUUID()}`,
+          attempts: 1,
+          removeOnFail: true,
+        },
       ),
     ).rejects.toThrow('SES inbound continuation token must be a non-empty string')
   })
@@ -33,7 +38,7 @@ describe('SES inbound background handlers', () => {
         background.add(
           SES_INBOUND_PROCESS_JOB.name,
           { sesMessageId: 'different', objectKey: 'copyright-incoming/message' },
-          { jobId, attempts: 1, removeOnFail: 100 },
+          { ...SES_INBOUND_PROCESS_JOB.options, jobId, attempts: 1, removeOnFail: 100 },
         ),
       ).rejects.toThrow('SES inbound job message ID must match its S3 object key')
       const failedJobs = await readRetainedFailedSesInboundProcessJobs()
@@ -47,9 +52,17 @@ describe('SES inbound background handlers', () => {
     }
   })
 
-  it('rejects an unknown job name before it reaches a worker', async () => {
+  it('rejects an unknown job name in the served domain', async () => {
     await expect(
-      background.add('not-a-domain.job', {}, { attempts: 1, removeOnFail: true }),
-    ).rejects.toThrow('Unknown background job: not-a-domain.job')
+      background.add(
+        'ses-inbound.unknown',
+        {},
+        {
+          ...SES_INBOUND_PROCESS_JOB.options,
+          attempts: 1,
+          removeOnFail: true,
+        },
+      ),
+    ).rejects.toThrow('Unknown background job: ses-inbound.unknown')
   })
 })

@@ -20,7 +20,16 @@ async function failProcessJob(): Promise<void> {
   const jobId = `ses-domain-retry-${randomUUID()}`
   failedJobIds.push(jobId)
   await expect(
-    background.add(SES_INBOUND_PROCESS_JOB.name, {}, { jobId, attempts: 1, removeOnFail: 1_000 }),
+    background.add(
+      SES_INBOUND_PROCESS_JOB.name,
+      {},
+      {
+        ...SES_INBOUND_PROCESS_JOB.options,
+        jobId,
+        attempts: 1,
+        removeOnFail: 1_000,
+      },
+    ),
   ).rejects.toThrow('seeded failure')
 }
 

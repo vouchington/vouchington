@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { backgroundCpu } from '@queues/background-cpu/queues'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { parseCleanupAbandonedUploadsData } from '@queues/content-analysis/payload/upload-cleanup'
 import { getImageByIdFromPrimary } from '@services/images/get'
 import { imagesWorkConfig } from '@services/images/work-limits'
@@ -16,7 +17,8 @@ describe('upload cleanup processor', () => {
       overrideDynamicConfigFieldsForTest(imagesWorkConfig, { abandoned_threshold_hours: 24 }),
     )
     const imageId = await createOwnedStagedImage(new Date(Date.now() - 25 * 60 * 60 * 1000))
-    const job = await backgroundCpu.add('content-analysis.cleanup-abandoned-uploads', {})
+    const definition = requireBackgroundCpuJob('content-analysis.cleanup-abandoned-uploads')
+    const job = await backgroundCpu.add(definition.name, {}, definition.options)
     if (!job) throw new Error('Expected an owned cleanup job')
     onTestFinished(async () => {
       await job.remove()
