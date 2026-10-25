@@ -159,4 +159,21 @@ test.describe('Community interactive controls', () => {
     await navigateTo(page, `/communities/invite/${inviteCode}`)
     await expect(page.getByTestId('invite-redemption-redeem')).toBeVisible()
   })
+
+  const viewportWidths = [1280, 1024, 390]
+  viewportWidths.forEach(width => {
+    test(`owner controls stay inside the member row at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 })
+      await loginAsUser(page, ownerId)
+      await navigateTo(page, `/communities/${publicSlug}/members`)
+      const transfer = page.getByTestId('community-transfer-ownership-dialog-transfer-ownership')
+      await expect(transfer).toBeVisible()
+      const row = page.getByTestId('community-member-row').filter({ has: transfer })
+      expect(await row.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      await transfer.click()
+      await expect(
+        page.getByTestId('community-transfer-ownership-dialog-confirm-transfer'),
+      ).toBeVisible()
+    })
+  })
 })

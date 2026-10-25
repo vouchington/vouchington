@@ -33,10 +33,11 @@ export function CommunityMemberRow(props: CommunityMemberRowProps) {
 
   return (
     <div
-      className='flex items-center justify-between rounded-md border bg-card p-4'
+      className='flex flex-wrap items-center justify-between gap-3 rounded-md border bg-card p-4'
+      data-pw='community-member-row'
       data-community-member-id={props.member.user_id}
     >
-      <div className='flex items-center gap-3'>
+      <div className='flex max-w-full min-w-0 items-center gap-3'>
         <UserAvatar
           profileImagePlacement={user?.profile_image_placement}
           username={
@@ -44,7 +45,7 @@ export function CommunityMemberRow(props: CommunityMemberRowProps) {
           }
           size='sm'
         />
-        <div>
+        <div className='min-w-0 break-all'>
           {user?.username ? (
             <Link
               href={userHref({ id: props.member.user_id, username: user?.username })}
@@ -60,7 +61,7 @@ export function CommunityMemberRow(props: CommunityMemberRowProps) {
           )}
         </div>
       </div>
-      <div className='flex items-center gap-2'>
+      <div className='flex min-w-0 flex-wrap items-center gap-2'>
         {canManageNotes && (
           <UserModNotesControl
             targetUserId={props.member.user_id}
