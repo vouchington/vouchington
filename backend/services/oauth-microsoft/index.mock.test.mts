@@ -122,7 +122,7 @@ describe('Microsoft provider adapter', () => {
       signToken({
         oid: providerUserId,
         aud: 'other-client',
-        email: 'a@example.com',
+        email: createRandomEmailAddress(),
         xms_edov: true,
       }),
     )
