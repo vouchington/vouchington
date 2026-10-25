@@ -3,7 +3,7 @@ import {
   upsertScheduledJobManifest,
   type ScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import { BACKGROUND_QUEUE_NAME } from '../config.mts'
+import { BACKGROUND_QUEUE_NAME, backgroundQueueConfig } from '../config.mts'
 import { background } from '../queues.mts'
 
 /**
@@ -22,5 +22,6 @@ export function combineBackgroundManifests(
 export async function upsertBackgroundSchedules(
   domainManifests: readonly ScheduledJobManifest[],
 ): Promise<void> {
+  await backgroundQueueConfig.waitForInitialization()
   await upsertScheduledJobManifest(background, combineBackgroundManifests(domainManifests))
 }

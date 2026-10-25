@@ -2,12 +2,10 @@ import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-disp
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue's cap was its worker concurrency of 5. Feed imports share one domain-wide group of
-// 5; the sync keeps its own singleton lane (outside the group) so pages never overlap. Imports reach
-// independent feed hosts, so a rate-limit signal delays only its own job.
+// Feed imports share a domain lane; sync pages use a separate singleton lane.
 export const KAGI_SMALLWEB_DOMAIN = defineBackgroundDomain({
   domain: 'kagi-smallweb',
-  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 5,
 })
 

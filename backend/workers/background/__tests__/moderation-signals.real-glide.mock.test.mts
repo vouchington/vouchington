@@ -49,7 +49,7 @@ describe('moderation-signals domain through real GlideMQ', () => {
     expect(seen).toEqual(['spam', 'ban'])
   })
 
-  it('keeps each job’s attempts, backoff, priority, and no ordering key or limiter', async () => {
+  it('keeps each job’s attempts, backoff, priority, and domain ordering key', async () => {
     harness = await startBackgroundHarness({
       connection,
       createProcessor: createBackgroundProcessor,
@@ -60,15 +60,15 @@ describe('moderation-signals domain through real GlideMQ', () => {
       userId: randomUUID(),
     })
 
-    expect(getBackgroundDomainDefinition('moderation-signals').group).toBeUndefined()
+    expect(getBackgroundDomainDefinition('moderation-signals').rateLimit).toBeUndefined()
     expect(spam.opts).toMatchObject({ attempts: 1, priority: 10 })
-    expect(spam.opts.ordering).toBeUndefined()
+    expect(spam.opts.ordering?.key).toBe('moderation-signals')
     expect(ban.opts).toMatchObject({
       attempts: 3,
       priority: 10,
       backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
     })
-    expect(ban.opts.ordering).toBeUndefined()
+    expect(ban.opts.ordering?.key).toBe('moderation-signals')
   })
 
   it('fails a spam-detection job after its single attempt', async () => {

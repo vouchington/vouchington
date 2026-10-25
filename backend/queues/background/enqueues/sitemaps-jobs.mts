@@ -1,14 +1,11 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
+import { SITEMAPS_ORDERING } from '../../sitemaps/config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue's cap was its worker concurrency of 5, and every job ran in one of four singleton
-// lanes (today's post-day sitemaps, past post-day sitemaps, the index sitemaps, and the backfill
-// dispatchers), so at most 4 ran at once. The lanes are namespaced at enqueue time and each
-// serializes writes to one set of sitemap files, so the group is `lanes` and the cap is their sum.
-// Every job must name a lane.
+// Each lane serializes writes to one set of sitemap files. Post-day enqueues choose today's or
+// past days' lane from the job data; the registry supplies today's lane as its base option.
 export const SITEMAPS_DOMAIN = defineBackgroundDomain({
   domain: 'sitemaps',
-  group: { kind: 'lanes', cap: 4 },
   workerConcurrency: 5,
 })
 
@@ -28,40 +25,56 @@ export type SitemapPostDayData = { postType: PostType; day: string }
 export const SITEMAPS_POST_DAY_JOB = defineBackgroundJob<SitemapPostDayData>(SITEMAPS_DOMAIN, {
   name: 'processUpdatePostDaySitemap',
   priority: PRIORITY_TASK,
+  ordering: SITEMAPS_ORDERING.post_day_today,
   ...DEFAULTS,
 })
 export const SITEMAPS_POST_TYPE_INDEX_JOB = defineBackgroundJob<{ postType: PostType }>(
   SITEMAPS_DOMAIN,
-  { name: 'processUpdatePostTypeIndex', priority: PRIORITY_TASK, ...DEFAULTS },
+  {
+    name: 'processUpdatePostTypeIndex',
+    priority: PRIORITY_TASK,
+    ordering: SITEMAPS_ORDERING.indexes,
+    ...DEFAULTS,
+  },
 )
 export const SITEMAPS_POSTS_INDEX_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   name: 'processUpdatePostsIndex',
   priority: PRIORITY_TASK,
+  ordering: SITEMAPS_ORDERING.indexes,
   ...DEFAULTS,
 })
 export const SITEMAPS_FAMILY_JOB = defineBackgroundJob<{ family: string }>(SITEMAPS_DOMAIN, {
   name: 'processUpdateFamilySitemap',
   priority: PRIORITY_TASK,
+  ordering: SITEMAPS_ORDERING.indexes,
   ...DEFAULTS,
 })
 export const SITEMAPS_ROOT_INDEX_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   name: 'processUpdateRootIndex',
   priority: PRIORITY_TASK,
+  ordering: SITEMAPS_ORDERING.indexes,
   ...DEFAULTS,
 })
 export const SITEMAPS_NIGHTLY_BACKFILL_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   name: 'processNightlyBackfillWeekDispatcher',
   priority: PRIORITY_DISPATCH,
+  ordering: SITEMAPS_ORDERING.dispatcher,
   ...DEFAULTS,
 })
 export const SITEMAPS_WEEKLY_BACKFILL_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   name: 'processWeeklyBackfillMonthDispatcher',
   priority: PRIORITY_DISPATCH,
+  ordering: SITEMAPS_ORDERING.dispatcher,
   ...DEFAULTS,
 })
 export const SITEMAPS_MONTHLY_BACKFILL_JOB = defineBackgroundJob<SitemapArchiveBackfillData>(
   SITEMAPS_DOMAIN,
-  { name: 'processMonthlyBackfillArchiveDispatcher', priority: PRIORITY_DISPATCH, ...DEFAULTS },
+  {
+    name: 'processMonthlyBackfillArchiveDispatcher',
+    priority: PRIORITY_DISPATCH,
+    ordering: SITEMAPS_ORDERING.dispatcher,
+    ...DEFAULTS,
+  },
 )
 
 export const SITEMAPS_JOBS = [

@@ -1,11 +1,13 @@
+import { BACKGROUND_ORDERING_CAPS, getBackgroundOrderingLimits } from './ordering-caps.mts'
+import { orderingConfigField, orderingConfigFields } from '../shared-ordering.mts'
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const BACKGROUND_QUEUE_NAME = 'background'
 
-/** Task jobs rank below dispatchers so a fan-out never starves the work it already enqueued. */
+/** Task jobs use the higher queue priority tier; an existing shared group uses its FIFO. */
 export const PRIORITY_TASK = 10
-/** Dispatchers, backfills, and recovery run behind the tasks they create. */
+/** Lowest queue priority tier for dispatchers, backfills, and recovery. */
 export const PRIORITY_DISPATCH = 100
 
 /**
@@ -41,6 +43,13 @@ export const BACKGROUND_DOMAINS = [
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]
 
+// One global cap per ordering key. The worker's slot count is configured separately.
+const orderingFields = orderingConfigFields(BACKGROUND_ORDERING_CAPS)
+
+export function isBackgroundOrderingKey(key: string): boolean {
+  return Object.hasOwn(BACKGROUND_ORDERING_CAPS, key)
+}
+
 export function isBackgroundDomain(value: string): value is BackgroundDomain {
   return (BACKGROUND_DOMAINS as readonly string[]).includes(value)
 }
@@ -48,14 +57,29 @@ export function isBackgroundDomain(value: string): value is BackgroundDomain {
 export const backgroundQueueConfig = new DynamicConfig({
   key: 'background-queue-config',
   fieldTypes: {
+    ...orderingFields.fieldTypes,
     pause_recheck_ms: 'number',
     pause_cache_ms: 'number',
     domain_stats_scan_cap: 'number',
   },
-  defaultFields: { pause_recheck_ms: 5_000, pause_cache_ms: 2_000, domain_stats_scan_cap: 1_000 },
+  defaultFields: {
+    ...orderingFields.defaultFields,
+    pause_recheck_ms: 5_000,
+    pause_cache_ms: 2_000,
+    domain_stats_scan_cap: 1_000,
+  },
 })
 
+export function getBackgroundOrderingConcurrency(key: string): number {
+  const { configKey, defaultValue, maxValue } = getBackgroundOrderingLimits(key)
+  return getBoundedPositiveIntegerField(backgroundQueueConfig, orderingConfigField(configKey), {
+    defaultValue,
+    maxValue,
+  })
+}
+
 export const backgroundQueueMaxValues = {
+  ...orderingFields.maxValues,
   pause_recheck_ms: 600_000,
   pause_cache_ms: 60_000,
   domain_stats_scan_cap: 10_000,

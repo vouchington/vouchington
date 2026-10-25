@@ -55,8 +55,8 @@ async function runWithProviderCooldown(job: Job, handler: BackgroundCpuHandler):
  * only the current job. The job rechecks the durable pause control when it activates again.
  */
 function deferJob(job: Job, domain: BackgroundCpuDomain, delayMs: number): Promise<never> {
-  const { group } = getBackgroundCpuDomainDefinition(domain)
-  if (group?.kind === 'domain' && group.deferral !== 'job' && job.groupKey === domain) {
+  const { deferral } = getBackgroundCpuDomainDefinition(domain)
+  if (deferral !== 'job' && job.groupKey === domain) {
     return job.rateLimitGroup(delayMs)
   }
   return job.moveToDelayed(Date.now() + delayMs)

@@ -9,6 +9,5 @@ export const OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_INTERVAL_MS = SCHEDULING_FLOO
 export const OAUTH_AUTHORIZATION_EXCHANGE_ORDERING = {
   dispatcher: {
     key: entityOrderingKey('oauth-authorization-exchange', 'dispatcher'),
-    concurrency: 1,
   },
 } as const

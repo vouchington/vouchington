@@ -5,11 +5,9 @@ import type {
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// One group for the whole domain: process and reconcile jobs run one at a time across every
-// worker, which also keeps the reconciler a singleton.
+// Processing and reconciliation stay serial across every worker process.
 export const SES_INBOUND_DOMAIN = defineBackgroundDomain({
   domain: 'ses-inbound',
-  group: { kind: 'domain', concurrency: 1 },
   workerConcurrency: 1,
 })
 

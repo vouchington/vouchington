@@ -51,7 +51,6 @@ export function enqueueBulkCrawlReferralLinks(
       priority: PRIORITY_DEFAULT,
       ordering: {
         key: `crawl:${hostnameId}`,
-        concurrency: 1,
         rateLimit: { max: 1, duration: rateLimitMs },
       },
     } satisfies Partial<JobOptions>,

@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { SITEMAPS_ORDERING } from '../../sitemaps/config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 import { BACKGROUND_DOMAINS, isBackgroundDomain } from '../config.mts'
 import {
   BACKGROUND_DOMAIN_DEFINITIONS,
   BACKGROUND_JOBS,
-  getBackgroundDomainDefinition,
   getBackgroundJob,
   getBackgroundJobNames,
   getBackgroundWorkerBaseline,
@@ -23,57 +21,22 @@ describe('background registry', () => {
     }
   })
 
-  it('gives each job of a domain-wide group the domain as its ordering key and limits', () => {
+  it('gives every job a registered domain-prefixed ordering key', () => {
     for (const job of BACKGROUND_JOBS) {
-      const { group } = getBackgroundDomainDefinition(job.domain)
-      if (group?.kind === 'lanes') continue
-      const expected =
-        group?.kind === 'domain'
-          ? {
-              key: job.domain,
-              concurrency: group.concurrency,
-              ...(group.rateLimit ? { rateLimit: group.rateLimit } : {}),
-            }
-          : undefined
-      expect(job.options.ordering).toEqual(expected)
+      const key = job.options.ordering?.key
+      expect(key === job.domain || key?.startsWith(`${job.domain}:`)).toBe(true)
+      expect(getBackgroundJob(job.name)).toBe(job)
     }
   })
 
-  it('keeps each domain lane cap equal to its independent lane concurrencies', () => {
-    for (const domain of BACKGROUND_DOMAIN_DEFINITIONS) {
-      if (domain.group?.kind !== 'lanes') continue
-      const lanes = new Map<string, number>()
-      // Sitemaps select their fixed lane from job data at enqueue time.
-      const orderings =
-        domain.domain === 'sitemaps'
-          ? Object.values(SITEMAPS_ORDERING)
-          : BACKGROUND_JOBS.filter(job => job.domain === domain.domain).map(
-              job => job.options.ordering!,
-            )
-      for (const ordering of orderings) {
-        expect(ordering.key.startsWith(`${domain.domain}:`)).toBe(true)
-        expect(ordering.concurrency).toBeGreaterThan(0)
-        expect(ordering.concurrency).toBe(lanes.get(ordering.key) ?? ordering.concurrency)
-        lanes.set(ordering.key, ordering.concurrency!)
-      }
-      expect([...lanes.values()].reduce((sum, concurrency) => sum + concurrency, 0)).toBe(
-        domain.group.cap,
-      )
-    }
-  })
-
-  it('reserves independent ActivityPub cleanup capacity beside both delivery directions', () => {
-    const job = (name: string) => getBackgroundJob(`activitypub.${name}`)
-    for (const name of ['distributeActivity', 'deliverActivity']) {
-      expect(job(name)!.options.ordering).toEqual({ key: 'activitypub:outbound', concurrency: 5 })
-    }
-    for (const name of ['processDelivery', 'recoverDeliveries', 'rearmFailedDeliveries']) {
-      expect(job(name)!.options.ordering).toEqual({ key: 'activitypub:inbound', concurrency: 4 })
-    }
-    expect(job('cleanupExpiredDeliveries')!.options.ordering).toEqual({
-      key: 'activitypub:cleanup',
-      concurrency: 1,
-    })
+  it('reserves independent ActivityPub delivery and cleanup lanes', () => {
+    const key = (name: string) => getBackgroundJob(`activitypub.${name}`)?.options.ordering?.key
+    expect(key('distributeActivity')).toBe('activitypub:outbound')
+    expect(key('deliverActivity')).toBe('activitypub:outbound')
+    expect(key('processDelivery')).toBe('activitypub:inbound')
+    expect(key('recoverDeliveries')).toBe('activitypub:inbound')
+    expect(key('rearmFailedDeliveries')).toBe('activitypub:inbound')
+    expect(key('cleanupExpiredDeliveries')).toBe('activitypub:cleanup')
   })
 
   it('ranks tasks at the default tier and dispatchers at 100', () => {
@@ -108,7 +71,6 @@ describe('background registry', () => {
   it('rejects a job or domain that would break the queue contract', () => {
     const domain = defineBackgroundDomain({
       domain: 'ses-inbound',
-      group: { kind: 'lanes', cap: 1 },
       workerConcurrency: 1,
     })
     expect(() => defineBackgroundJob(domain, { name: 'a.b', priority: 10 })).toThrow('dot')
@@ -117,24 +79,15 @@ describe('background registry', () => {
       defineBackgroundJob(domain, { name: 'ok', priority: 10, lockDuration: 0 }),
     ).toThrow('positive integer')
     expect(() =>
-      defineBackgroundDomain({
-        domain: 'ses-inbound',
-        group: { kind: 'domain', concurrency: 0 },
-        workerConcurrency: 1,
+      defineBackgroundJob(domain, {
+        name: 'ok',
+        priority: 10,
+        ordering: { key: 'other-domain:override' },
       }),
-    ).toThrow('group concurrency')
-    expect(() =>
-      defineBackgroundJob(
-        defineBackgroundDomain({
-          domain: 'ses-inbound',
-          group: { kind: 'domain', concurrency: 1 },
-          workerConcurrency: 1,
-        }),
-        { name: 'ok', priority: 10, ordering: { key: 'ses-inbound:override', concurrency: 1 } },
-      ),
-    ).toThrow('domain-wide')
-    expect(
-      defineBackgroundJob(domain, { name: 'ok', priority: 10 }).options.ordering,
-    ).toBeUndefined()
+    ).toThrow('Unregistered background ordering key')
+    expect(defineBackgroundJob(domain, { name: 'ok', priority: 10 }).options.ordering).toEqual({
+      key: 'ses-inbound',
+      concurrency: 1,
+    })
   })
 })

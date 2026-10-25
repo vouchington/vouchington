@@ -16,6 +16,7 @@ import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import { createRetryingCommandClient } from './glide-mq-command-client.mts'
 import { checkedPriorityOptions, type QueuePriorityKind } from './queue-priority.mts'
 import { DEFAULT_MAX_STALLED_COUNT } from './worker-stall-budget.mts'
+import { applySharedQueueOrdering } from './shared-queue-ordering.mts'
 import {
   rejectSelfAdd,
   wrapBatchProcessor,
@@ -25,6 +26,7 @@ import {
 export type PriorityQueue<T> = Queue<T> & { readonly priorityKind: QueuePriorityKind }
 
 const priorityKinds = new Map<string, QueuePriorityKind>()
+const orderingConcurrency = new Map<string, (key: string) => number>()
 
 const runtime = createGlideMqRuntime({
   connection: workerQueueConnection,
@@ -39,16 +41,24 @@ const runtime = createGlideMqRuntime({
   // refuses to let a processor add the job it is running.
   guardAdd: ({ queueName, jobName, opts }) => {
     if (rejectSelfAdd(queueName, jobName, opts)) return 'skip'
-    return { opts: checkedPriorityOptions(queueName, priorityKinds.get(queueName)!, opts) }
+    const checked = checkedPriorityOptions(queueName, priorityKinds.get(queueName)!, opts)
+    const getConcurrency = orderingConcurrency.get(queueName)
+    return {
+      opts: getConcurrency ? applySharedQueueOrdering(jobName, checked, getConcurrency) : checked,
+    }
   },
 })
 
 export function createQueue<T = unknown>(
   name: string,
-  options: RuntimeQueueOptions & { priorityKind: QueuePriorityKind },
+  options: RuntimeQueueOptions & {
+    priorityKind: QueuePriorityKind
+    orderingConcurrency?: (key: string) => number
+  },
 ): PriorityQueue<T> {
-  const { priorityKind, ...queueOptions } = options
+  const { priorityKind, orderingConcurrency: getConcurrency, ...queueOptions } = options
   priorityKinds.set(name, priorityKind)
+  if (getConcurrency) orderingConcurrency.set(name, getConcurrency)
   return Object.assign(runtime.createQueue<T>(name, queueOptions), { priorityKind })
 }
 

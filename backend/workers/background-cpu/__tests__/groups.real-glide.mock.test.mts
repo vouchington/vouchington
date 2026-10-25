@@ -44,13 +44,13 @@ describe('background-cpu groups through real GlideMQ', () => {
   it('keeps Bedrock single definitions in the same production ordering group', () => {
     expect(single.options.ordering).toEqual({
       key: 'bedrock-embeddings:single',
-      concurrency: 10,
+      concurrency: 2,
       rateLimit: { max: 10, duration: 1_000 },
     })
     expect(singleTopic.options.ordering).toEqual(single.options.ordering)
   })
 
-  it('configures batch creation jobs with ordering concurrency one', () => {
+  it('configures batch creation jobs with a low global ordering cap', () => {
     expect(creation.options.ordering).toEqual({
       key: 'bedrock-embeddings:creation',
       concurrency: 1,

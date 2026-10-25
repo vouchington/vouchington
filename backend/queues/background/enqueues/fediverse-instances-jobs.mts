@@ -3,7 +3,7 @@ import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
 export const FEDIVERSE_INSTANCES_DOMAIN = defineBackgroundDomain({
   domain: 'fediverse-instances',
-  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 5,
 })
 

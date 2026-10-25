@@ -4,11 +4,9 @@ import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 /** Crash-recovery window for a claimed job, not a runtime cap: exports and deletions run long. */
 export const ACCOUNT_LIFECYCLE_LOCK_DURATION_MS = 600_000
 
-// The old queue ran two jobs at a time across every worker (concurrency 2, scale ignored), so the
-// domain keeps one domain-wide group of two. No job had its own ordering key.
+// Account processing and reconciliation share one global singleton-safe domain lane.
 export const ACCOUNT_LIFECYCLE_DOMAIN = defineBackgroundDomain({
   domain: 'account-lifecycle',
-  group: { kind: 'domain', concurrency: 2 },
   workerConcurrency: 2,
 })
 

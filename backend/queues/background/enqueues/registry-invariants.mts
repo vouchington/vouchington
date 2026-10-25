@@ -1,4 +1,6 @@
 import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../types.mts'
+import { isBackgroundOrderingKey } from '../config.mts'
+import { assertSharedJobOrdering } from '../../shared-ordering.mts'
 
 /** Throws when the registered jobs and domains would break the shared queue's contract. */
 export function assertRegistryInvariants(
@@ -18,5 +20,6 @@ export function assertRegistryInvariants(
   }
   for (const job of jobs) {
     if (!domains.has(job.domain)) throw new Error(`Job ${job.name} names an unregistered domain`)
+    assertSharedJobOrdering(job, isBackgroundOrderingKey)
   }
 }

@@ -8,12 +8,9 @@ export type ReviewSuccessionHistoryAuditJobData = {
   cutoffArchivedAt: string | null
 }
 
-// Every job of the old queue carried the one `publication-reconciliation` key with concurrency 1,
-// so one group for the whole domain keeps reconciliation and its audits strictly serial across
-// every worker. All jobs are dispatcher-tier, so there are no further priority tiers to keep.
+// Reconciliation and audits stay serial across every worker process.
 export const POST_PUBLICATION_DOMAIN = defineBackgroundDomain({
   domain: 'post-publication',
-  group: { kind: 'domain', concurrency: 1 },
   workerConcurrency: 1,
 })
 

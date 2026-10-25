@@ -22,9 +22,9 @@ const INBOX = {
   removeOnComplete: 100,
   removeOnFail: 100,
 } as const
-const OUTBOUND_ORDERING = { key: 'activitypub:outbound', concurrency: 5 } as const
-const INBOUND_ORDERING = { key: 'activitypub:inbound', concurrency: 4 } as const
-const CLEANUP_ORDERING = { key: 'activitypub:cleanup', concurrency: 1 } as const
+const OUTBOUND_ORDERING = { key: 'activitypub:outbound' } as const
+const INBOUND_ORDERING = { key: 'activitypub:inbound' } as const
+const CLEANUP_ORDERING = { key: 'activitypub:cleanup' } as const
 
 export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<DistributeActivityData>(
   DOMAIN,

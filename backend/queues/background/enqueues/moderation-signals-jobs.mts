@@ -1,9 +1,7 @@
 import { PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// Both old queues were DB-only with a worker concurrency of 5 and a 5 per second limiter with no
-// documented reason. There is no limiter and no group: the shared worker's concurrency throttles
-// work that only touches PostgreSQL. `workerConcurrency` keeps the shared worker sized for both.
+// Domain ordering bounds DB-only work globally; workerConcurrency sizes one process.
 export const MODERATION_SIGNALS_DOMAIN = defineBackgroundDomain({
   domain: 'moderation-signals',
   workerConcurrency: 10,

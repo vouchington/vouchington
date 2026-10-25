@@ -1,14 +1,10 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue's cap was its worker concurrency of 4. Exchanges now share one domain-wide group of
-// 4. The recovery dispatcher keeps its own singleton ordering key (`dispatcher`, concurrency 1,
-// namespaced in the queue package's config) so passes never race, which puts it outside the group:
-// the domain runs at most 4 exchanges and 1 dispatcher pass at once. Exchanges reach independent
-// providers, so a rate-limit signal delays only its own job.
+// Exchanges share the domain lane; the recovery dispatcher has a separate singleton lane.
 export const OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN = defineBackgroundDomain({
   domain: 'oauth-authorization-exchange',
-  group: { kind: 'domain', concurrency: 4, deferral: 'job' },
+  deferral: 'job',
   workerConcurrency: 4,
 })
 

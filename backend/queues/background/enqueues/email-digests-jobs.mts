@@ -13,8 +13,7 @@ import {
 
 const BACKOFF = { type: 'exponential', delay: 1000, jitter: 0.5 } as const
 const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFail: 100 } as const
-// Dispatchers stay the lowest tier (100) so each run or cursor page starts only after the sends
-// already promoted have drained; no other job in this domain may use 100 or more.
+// Dispatchers keep the lowest priority tier, though this existing domain lane uses group FIFO.
 const TASK = { priority: PRIORITY_TASK } as const
 const DISPATCH = { priority: PRIORITY_DISPATCH, ...RETRY } as const
 

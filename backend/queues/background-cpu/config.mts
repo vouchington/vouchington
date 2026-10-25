@@ -1,9 +1,11 @@
+import { BACKGROUNDCPU_ORDERING_CAPS, getBackgroundCpuOrderingLimits } from './ordering-caps.mts'
+import { orderingConfigField, orderingConfigFields } from '../shared-ordering.mts'
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const BACKGROUND_CPU_QUEUE_NAME = 'background-cpu'
 
-/** Lower numbers win: tasks run ahead of further dispatcher fan-out. */
+/** Lower numbers win; the new task and dispatcher lanes keep this priority meaningful. */
 export const PRIORITY_TASK = 10
 /** Dispatchers, backfills, and recovery run behind the tasks they create. */
 export const PRIORITY_DISPATCH = 100
@@ -22,6 +24,13 @@ export const BACKGROUND_CPU_DOMAINS = [
 
 export type BackgroundCpuDomain = (typeof BACKGROUND_CPU_DOMAINS)[number]
 
+// Caps are global across worker processes; workerConcurrency only sizes one process.
+const orderingFields = orderingConfigFields(BACKGROUNDCPU_ORDERING_CAPS)
+
+export function isBackgroundCpuOrderingKey(key: string): boolean {
+  return Object.hasOwn(BACKGROUNDCPU_ORDERING_CAPS, key)
+}
+
 export function isBackgroundCpuDomain(value: string): value is BackgroundCpuDomain {
   return (BACKGROUND_CPU_DOMAINS as readonly string[]).includes(value)
 }
@@ -29,12 +38,14 @@ export function isBackgroundCpuDomain(value: string): value is BackgroundCpuDoma
 export const backgroundCpuQueueConfig = new DynamicConfig({
   key: 'background-cpu-queue-config',
   fieldTypes: {
+    ...orderingFields.fieldTypes,
     pause_recheck_ms: 'number',
     pause_cache_ms: 'number',
     domain_stats_scan_cap: 'number',
     single_backlog_scan_cap: 'number',
   },
   defaultFields: {
+    ...orderingFields.defaultFields,
     pause_recheck_ms: 5_000,
     pause_cache_ms: 2_000,
     domain_stats_scan_cap: 1_000,
@@ -42,7 +53,16 @@ export const backgroundCpuQueueConfig = new DynamicConfig({
   },
 })
 
+export function getBackgroundCpuOrderingConcurrency(key: string): number {
+  const { configKey, defaultValue, maxValue } = getBackgroundCpuOrderingLimits(key)
+  return getBoundedPositiveIntegerField(backgroundCpuQueueConfig, orderingConfigField(configKey), {
+    defaultValue,
+    maxValue,
+  })
+}
+
 export const backgroundCpuQueueMaxValues = {
+  ...orderingFields.maxValues,
   pause_recheck_ms: 600_000,
   pause_cache_ms: 60_000,
   domain_stats_scan_cap: 10_000,

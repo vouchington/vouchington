@@ -35,14 +35,9 @@ describe('cache-purge background domain', () => {
 
   it('limits outbound purges to 4 per minute under Workers Cache Free-tier, across every worker', () => {
     expect(CACHE_PURGE_RATE_LIMIT).toEqual({ max: 4, duration: 60_000 })
-    expect(getBackgroundDomainDefinition('cache-purge').group).toEqual({
-      kind: 'domain',
-      concurrency: 5,
-      rateLimit: CACHE_PURGE_RATE_LIMIT,
-    })
+    expect(getBackgroundDomainDefinition('cache-purge').rateLimit).toEqual(CACHE_PURGE_RATE_LIMIT)
     expect(CACHE_PURGE_TAGS_JOB.options.ordering).toEqual({
       key: 'cache-purge',
-      concurrency: 5,
       rateLimit: CACHE_PURGE_RATE_LIMIT,
     })
   })

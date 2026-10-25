@@ -1,15 +1,9 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// Worker concurrency only bounds one process, so replicas would still run Bluesky-token jobs in
-// parallel. The old queue-wide cap of one active job is now a domain-wide group of one: it
-// serializes Bluesky refresh-token rotation across every replica (concurrent reconcile jobs sharing
-// a follower can both refresh that follower's session, and the loser's stale-refresh-token write
-// can overwrite the winner's rotated session; see @modules/bluesky-oauth/README.md). Baseline
-// worker load was 1.
+// Serialize Bluesky refresh-token rotation across replicas so a stale write cannot replace a rotated session.
 export const BLUESKY_FOLLOW_PROPAGATION_DOMAIN = defineBackgroundDomain({
   domain: 'bluesky-follow-propagation',
-  group: { kind: 'domain', concurrency: 1 },
   workerConcurrency: 1,
 })
 

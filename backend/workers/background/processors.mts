@@ -39,8 +39,8 @@ export function createBackgroundProcessor(handlers: ReadonlyMap<string, Backgrou
  * next activation.
  */
 function deferJob(job: Job, domain: BackgroundDomain, delayMs: number): Promise<never> {
-  const { group } = getBackgroundDomainDefinition(domain)
-  if (group?.kind === 'domain' && group.deferral !== 'job' && job.groupKey === domain) {
+  const { deferral } = getBackgroundDomainDefinition(domain)
+  if (deferral !== 'job' && job.groupKey === domain) {
     return job.rateLimitGroup(delayMs)
   }
   return job.moveToDelayed(Date.now() + delayMs)
