@@ -1130,7 +1130,10 @@
     "reason": "Cold device-bound and native credential registration each resolve one immutable user agent through a read, conflict-tolerant insert, and reread.",
     "permanent": true,
     "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
-    "routes": ["POST /api/v1/auth/device-bound-sessions", "POST /api/v1/auth/native/email-address/login"]
+    "routes": [
+      "POST /api/v1/auth/device-bound-sessions",
+      "POST /api/v1/auth/native/email-address/login"
+    ]
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { exportJWK, generateKeyPair, SignJWT } from 'jose'
-import { createRequest, createNativeRequest } from '@voucha/test-helpers/api/server'
+import { createRequest } from '@voucha/test-helpers/api/server'
+import { createNativeRequest } from '@voucha/test-helpers/native-api-request'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
 import { verifySessionJwt } from '@ts-shared/session-jwt'
