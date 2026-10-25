@@ -570,7 +570,7 @@
   },
   {
     "annotation": "lockSessionDeviceAuthority:sessionFence",
-    "route": "POST /api/v1/auth/device-bound-sessions",
+    "routes": ["POST /api/v1/auth/device-bound-sessions"],
     "maxCount": 2,
     "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
     "permanent": true,
@@ -578,7 +578,7 @@
   },
   {
     "annotation": "lockSessionDeviceAuthority:sessionFence",
-    "route": "POST /api/v1/auth/device-bound-sessions/refreshes",
+    "routes": ["POST /api/v1/auth/device-bound-sessions/refreshes"],
     "maxCount": 2,
     "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
     "permanent": true,
@@ -594,7 +594,7 @@
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",
-    "route": "POST /api/v1/auth/device-bound-sessions",
+    "routes": ["POST /api/v1/auth/device-bound-sessions"],
     "maxCount": 2,
     "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
     "permanent": true,
@@ -602,7 +602,7 @@
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",
-    "route": "POST /api/v1/auth/device-bound-sessions/refreshes",
+    "routes": ["POST /api/v1/auth/device-bound-sessions/refreshes"],
     "maxCount": 2,
     "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
     "permanent": true,
@@ -710,7 +710,7 @@
   },
   {
     "annotation": "readSessionDeviceAuthority",
-    "route": "POST /api/v1/auth/device-bound-sessions",
+    "routes": ["POST /api/v1/auth/device-bound-sessions"],
     "maxCount": 3,
     "reason": "Browser proof verification first reads current authority without holding a database lock during signature verification. Challenge consumption locks and rechecks the binding, then canonical credential rotation takes its own lock and rechecks the current digest before spending its unforgeable one-use proof. All three reads are bounded to the same SID.",
     "permanent": true,
@@ -718,7 +718,7 @@
   },
   {
     "annotation": "readSessionDeviceAuthority",
-    "route": "POST /api/v1/auth/device-bound-sessions/refreshes",
+    "routes": ["POST /api/v1/auth/device-bound-sessions/refreshes"],
     "maxCount": 3,
     "reason": "Browser proof verification first reads current authority without holding a database lock during signature verification. Challenge consumption locks and rechecks the binding, then canonical credential rotation takes its own lock and rechecks the current digest before spending its unforgeable one-use proof. All three reads are bounded to the same SID.",
     "permanent": true,
@@ -726,7 +726,7 @@
   },
   {
     "annotation": "readSessionDeviceAuthority",
-    "route": "POST /api/v1/auth/email-address/login",
+    "routes": ["POST /api/v1/auth/email-address/login"],
     "maxCount": 2,
     "reason": "Credential mint locks and writes the durable authority; HTTPS browser registration advertising subsequently rechecks the committed fresh credential before issuing its single-use registration nonce.",
     "permanent": true,
