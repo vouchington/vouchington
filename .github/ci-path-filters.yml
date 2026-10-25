@@ -120,8 +120,6 @@ playwright:
   - 'playwright/tests/**'
   - 'ci/playwright/**'
   - 'ci/setup-web-integration.mts'
-  - 'ci/run-bounded.py'
-  - 'ci/run_bounded_process.py'
   - 'ci/wait-for-apt-locks.sh'
   - 'ci/web-build-cache-manifest.mts'
   - 'ci/run-pnpm-command.mts'
@@ -196,8 +194,6 @@ postgres-schema:
   - 'backend/services/entity-relations/**'
   - 'backend/services/agents/**'
   - 'ts-shared/**'
-  - 'ci/run-bounded.py'
-  - 'ci/run_bounded_process.py'
 ts-shared:
   - '.github/ci-path-filters.yml'
   - 'ts-shared/**'
@@ -426,7 +422,7 @@ runtime-storybook:
   - '!web/{__tests__,app,components,hooks,lib,types}/**/*.spec.ts'
   - '!web/{__tests__,app,components,hooks,lib,types}/**/*.spec.tsx'
 runtime-playwright:
-  - '{.github/ci-path-filters.yml,playwright.config.mts,playwright/config/**,playwright/*.mts,backend/scripts/seeds/playwright-seed-assertions.mts,playwright/global-setup.mts,playwright/helpers/**,playwright/fixtures/**,playwright/tests/**,ci/playwright/**,ci/run-bounded.py,ci/run_bounded_process.py,ci/wait-for-apt-locks.sh,ci/web-build-cache-manifest.mts,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/write-web-build-timings-summary.mts,dev/otel/**,wrangler.*,pnpm-lock.yaml,ts-shared/utils/**,web/**,playwright/package.json,cloudflare-worker/**,lambdas/image-resize/**,lambdas/shared/**}'
+  - '{.github/ci-path-filters.yml,playwright.config.mts,playwright/config/**,playwright/*.mts,backend/scripts/seeds/playwright-seed-assertions.mts,playwright/global-setup.mts,playwright/helpers/**,playwright/fixtures/**,playwright/tests/**,ci/playwright/**,ci/wait-for-apt-locks.sh,ci/web-build-cache-manifest.mts,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/write-web-build-timings-summary.mts,dev/otel/**,wrangler.*,pnpm-lock.yaml,ts-shared/utils/**,web/**,playwright/package.json,cloudflare-worker/**,lambdas/image-resize/**,lambdas/shared/**}'
   - '!web/.dependency-cruiser.cjs'
   - '!**/*.md'
   - '!**/*.mdx'

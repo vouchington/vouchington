@@ -22,7 +22,7 @@ import {
 
 const exec = promisify(execFile)
 const root = resolve(import.meta.dirname, '../../../..')
-const wrapper = join(root, 'ci/run-bounded.py')
+const wrapper = join(root, 'node_modules/vouchington-tooling/scripts/run-bounded.py')
 
 export async function withOwnedMigrationControl(
   role: 'concurrent',

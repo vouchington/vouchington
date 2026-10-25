@@ -74,7 +74,7 @@ export const targets = {
         'postgres schema tests',
         'bash -c \'if [ -f .env ]; then set -a; source .env; set +a; fi; export READ_DATABASE_URL="$DATABASE_URL"; VITEST_CI_REPORTERS=run VITEST_JUNIT_OUTPUT_FILE=postgres-schema-test-report.junit.xml VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity\'',
         'tests-postgres-schema.yml',
-        'VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
+        'VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
       ),
     ],
   },

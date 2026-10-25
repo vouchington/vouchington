@@ -91,7 +91,7 @@ export async function launchMigrationControlChild(
   await promisify(execFile)(
     'python3',
     [
-      join(root, 'ci/run-bounded.py'),
+      join(root, 'node_modules/vouchington-tooling/scripts/run-bounded.py'),
       String(seconds),
       process.execPath,
       ...process.execArgv,

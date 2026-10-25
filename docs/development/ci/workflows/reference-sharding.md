@@ -15,7 +15,7 @@ report and artifact contracts, but its build and setup dominate its runtime, so 
 would only duplicate that work.
 
 Playwright shards are sized from the runnable spec count with a per-spec time heuristic, not a
-per-spec SLA. The step runs the suite through [`ci/run-bounded.py`](../../../../ci/run-bounded.py)
+per-spec SLA. The step runs the suite through the published `vouchington-tooling` bounded runner
 because `timeout-minutes` did not reap a hung Playwright process group, so a hung shard ran until
 the job cap and GitHub dropped the log. The bounded runner kills the group and lets the step exit,
 which keeps the failure log and failure artifacts.

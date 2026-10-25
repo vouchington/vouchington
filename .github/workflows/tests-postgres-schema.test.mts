@@ -23,7 +23,7 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(tests).toBeGreaterThanOrEqual(0)
     expect(snapshot).toBeGreaterThan(tests)
     expect(step).toContain(
-      'VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
+      'VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
     )
   })
 
@@ -94,7 +94,7 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(native).toBeGreaterThan(platformStats)
     expect(tests).toBeGreaterThan(native)
     expect(nativeStep).toContain(
-      'python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 node --experimental-test-module-mocks scripts/check-materialized-view-contracts.mts',
+      'python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 120 node --experimental-test-module-mocks scripts/check-materialized-view-contracts.mts',
     )
     expect(nativeStep.indexOf('--experimental-test-module-mocks')).toBeGreaterThan(-1)
     expect(nativeStep.indexOf('--experimental-test-module-mocks')).toBeLessThan(

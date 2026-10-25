@@ -116,7 +116,7 @@ describe('tests-playwright.yml retry/flake signal (issue #51)', () => {
 describe('tests-playwright.yml shard invocation', () => {
   it('runs the whole suite for the matrix shard', () => {
     expect(runPlaywrightTestsScript).toContain(
-      'python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD"',
+      'python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD"',
     )
     const args = runPlaywrightPnpmArgs({ CI_SHARD: '2/6' })
     expect(args).toEqual([
