@@ -148,9 +148,7 @@ tools stay out of this change.
 
 ## Household invitations
 
-| Capability                                                                                | Web  | Swift                   | .NET                    |
-| ----------------------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
-| Invite an existing user; review, accept, decline, or revoke pending household invitations | Full | Pending client adoption | Pending client adoption |
+Household invitations have full web support; Swift and .NET client adoption remains pending.
 
 Invitations require the invitee's decision before another user's individual joins a household. Web
 provides owner and invitee actions on the household page and opens that page from invitation
