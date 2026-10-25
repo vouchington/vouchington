@@ -6,7 +6,7 @@ import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
 import { getPostModerationInput } from '@services/posts/moderation-input'
 import { getPostImages } from '@services/posts/images'
-import { stagePostImagePlacementDeliveryRecords } from '@services/media-delivery-safety/delivery-registry-staging'
+import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety/delivery-registry-staging'
 import type { Post } from '@services/posts/types'
 import {
   createTestUserDirect,
@@ -40,8 +40,13 @@ describe('deleteImageById rollback races', () => {
     })
     const imageId = await insertTestImage(creator!.id)
     await insertTestPostImage({ postId, imageId })
-    await stagePostImagePlacementDeliveryRecords(postId)
     const initialPlacement = (await getPostImages(postId))[0]!
+    await stageImagePlacementDeliveryRecord({
+      placementId: initialPlacement.placement_id,
+      revision: initialPlacement.placement_revision,
+      imageId,
+      state: 'allow',
+    })
     await completeLocalTestImagePlacementDeliveryRecord({
       placementId: initialPlacement.placement_id,
       revision: initialPlacement.placement_revision,
@@ -94,8 +99,13 @@ describe('deleteImageById rollback races', () => {
     })
     const imageId = await insertTestImage(creator!.id)
     await insertTestPostImage({ postId, imageId })
-    await stagePostImagePlacementDeliveryRecords(postId)
     const initialPlacement = (await getPostImages(postId))[0]!
+    await stageImagePlacementDeliveryRecord({
+      placementId: initialPlacement.placement_id,
+      revision: initialPlacement.placement_revision,
+      imageId,
+      state: 'allow',
+    })
     await completeLocalTestImagePlacementDeliveryRecord({
       placementId: initialPlacement.placement_id,
       revision: initialPlacement.placement_revision,

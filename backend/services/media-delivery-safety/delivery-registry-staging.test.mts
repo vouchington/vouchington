@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { stagePostImagePlacementDeliveryRecords } from './delivery-registry-staging.mts'
 import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
 import {
   createTestUserDirect,
@@ -7,9 +6,6 @@ import {
   getTestMediaDeliveryRecordSnapshot,
   getTestMediaDeliveryTransitionHistory,
   insertTestImage,
-  insertTestPost,
-  insertTestPostImage,
-  getTestPostImagePlacement,
   scheduleTestMediaDeliveryRetry,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
@@ -58,54 +54,6 @@ describe('media registry staging state', () => {
       expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([tuple.imageId])).toBe(0)
       expect(await Promise.all(keys.map(getTestMediaDeliveryRecordSnapshot))).toEqual(before)
     }
-  })
-  it('preserves unchanged post bulk retry evidence and resets changed authority attempts', async () => {
-    const user = await createTestUserDirect()
-    const imageId = await insertTestImage(user.id)
-    const postId = await insertTestPost({
-      title: 'Owned media staging',
-      slug: crypto.randomUUID(),
-      createdById: user.id,
-      markdown: 'owned image',
-    })
-    await insertTestPostImage({ postId, imageId })
-    const placement = await getTestPostImagePlacement(postId, imageId)
-    if (!placement) throw new Error('Missing post placement')
-    const tuple = {
-      placementId: placement.placement_id,
-      revision: placement.placement_revision,
-      imageId,
-    }
-    const initial = await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })
-    await setTestMediaRecoveryState([initial.mediaDeliveryRegistryRecordId], {
-      state: 'pending',
-      attempts: 3,
-      at: new Date().toISOString(),
-      nextAttemptAt: '2300-01-01T00:00:00Z',
-    })
-    const before = await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId)
-    await stagePostImagePlacementDeliveryRecords(postId)
-    expect(await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId)).toEqual(
-      before,
-    )
-    await stageImagePlacementDeliveryRecord({ ...tuple, state: 'withheld' })
-    await setTestMediaRecoveryState([initial.mediaDeliveryRegistryRecordId], {
-      state: 'failed',
-      attempts: 5,
-      at: new Date().toISOString(),
-    })
-    await stagePostImagePlacementDeliveryRecords(postId)
-    expect(
-      await getTestMediaDeliveryRecordSnapshot(initial.mediaDeliveryRegistryRecordId),
-    ).toMatchObject({
-      desired_state: 'allow',
-      state: 'pending',
-      delivery_attempt_count: 0,
-      claimed_at: null,
-      completed_at: null,
-      next_attempt_at: null,
-      failure_message: null,
-    })
   })
   it('preserves every persisted field on unchanged placement staging', async () => {
     const tuple = await createPlacement()

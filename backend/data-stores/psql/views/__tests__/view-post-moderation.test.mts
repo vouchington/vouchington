@@ -13,7 +13,7 @@ import {
   insertTestPostImage,
   markImageModerationFlagged,
 } from '../../../../test-helpers/index.mts'
-import { stagePostImagePlacementDeliveryRecords } from '../../../../services/media-delivery-safety/delivery-registry-staging.mts'
+import { stageImagePlacementDeliveryRecord } from '../../../../services/media-delivery-safety/delivery-registry-staging.mts'
 
 describe('view_posts moderation projection', () => {
   let postId: string
@@ -49,7 +49,12 @@ describe('view_posts moderation projection', () => {
     const placement = await getTestPostImagePlacement(imagePostId, imageId)
     if (!placement) throw new Error('post image placement was not created')
 
-    await stagePostImagePlacementDeliveryRecords(imagePostId)
+    await stageImagePlacementDeliveryRecord({
+      placementId: placement.placement_id,
+      revision: placement.placement_revision,
+      imageId,
+      state: 'allow',
+    })
     expect(await queryLocalTestPostImageIds(imagePostId)).toEqual([])
 
     await completeLocalTestImagePlacementDeliveryRecord({

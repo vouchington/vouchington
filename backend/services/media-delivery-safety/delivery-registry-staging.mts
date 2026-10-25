@@ -3,33 +3,6 @@ import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import type { MediaDeliveryRegistryState } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 
-/** @public Post-image registry staging seam exercised against real PostgreSQL placements. */
-export async function stagePostImagePlacementDeliveryRecords(
-  postId: string,
-  options: QueryOptions = {},
-): Promise<void> {
-  const query = options.query ?? write
-  await query(sql`/* stagePostImagePlacementDeliveryRecords */
-    INSERT INTO media_delivery_registry_records (
-      placement_id, placement_revision, image_id, desired_state
-    )
-    SELECT placement.id, placement.revision, binding.image_id, 'allow'::media_delivery_desired_states
-    FROM image_placements binding
-    JOIN media_placements placement ON placement.id = binding.placement_id
-    JOIN images image ON image.id = binding.image_id
-    WHERE binding.post_id = ${postId} AND placement.retired_at IS NULL
-      AND placement.copyright_withheld_at IS NULL AND image.deleted_at IS NULL
-      AND image.upload_completed_at IS NOT NULL AND image.quarantine_pending_at IS NULL
-      AND image.is_flagged_by_openai_omni_moderation = FALSE
-      AND image.openai_omni_moderation_results IS NOT NULL
-      AND image.openai_omni_moderation_created_at IS NOT NULL
-    ORDER BY placement.id, placement.revision, binding.image_id
-    ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE
-    SET desired_state = EXCLUDED.desired_state
-    WHERE media_delivery_registry_records.desired_state IS DISTINCT FROM EXCLUDED.desired_state
-  `)
-}
-
 export async function stageImagePlacementDeliveryRecord(
   input: {
     placementId: string
