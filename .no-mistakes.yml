@@ -983,7 +983,7 @@ rules:
           }
         - { file: backend/services/bookmarks/get.mts, callee: 'queryBookmarksForRelation' }
         - {
-            file: backend/services/communities/ban-evasion/get.mts,
+            file: backend/services/posts/ban-evasion-embedding-enqueues.mts,
             callee: 'enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk',
           }
         - {

@@ -87755,7 +87755,7 @@
           "ordinalPosition": 35
         },
         "ban_evasion_post_embedding_input_sha256": {
-          "comment": "Post embedding input SHA for which the post-embedding ban-evasion follow-up enqueue has been recorded.",
+          "comment": "Post embedding input SHA for which ban-evasion detection was enqueued or skipped while an earlier live post remained in the same author and community scope. Deletion rearms the immediate live successor.",
           "dataType": "bytea",
           "defaultExpression": null,
           "generated": null,
@@ -88426,7 +88426,7 @@
         "idx_posts__ban_evasion_post_embedding_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__ban_evasion_post_embedding_pending ON ONLY public.posts USING btree (id) WHERE ((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
+          "definition": "CREATE INDEX idx_posts__ban_evasion_post_embedding_pending ON ONLY public.posts USING btree (id) WHERE ((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (created_by_id <> '00000000-0000-7000-8000-000000000000'::uuid) AND (deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
           "immediate": true,
           "keys": [
             {
@@ -88440,7 +88440,7 @@
             }
           ],
           "live": true,
-          "predicate": "((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
+          "predicate": "((community_id IS NOT NULL) AND (created_by_id IS NOT NULL) AND (created_by_id <> '00000000-0000-7000-8000-000000000000'::uuid) AND (deleted_at IS NULL) AND (bedrock_nova_multimodal_v1_embedding IS NOT NULL) AND (bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL) AND (bedrock_nova_multimodal_v1_input_sha256 = bedrock_nova_multimodal_v1_content_sha256) AND ((ban_evasion_post_embedding_input_sha256 IS NULL) OR (ban_evasion_post_embedding_input_sha256 <> bedrock_nova_multimodal_v1_input_sha256)))",
           "primary": false,
           "ready": true,
           "unique": false,

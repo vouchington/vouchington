@@ -1,7 +1,7 @@
 import { copyExistingTopicEmbeddings } from '@services/bedrock-embeddings-batch/entities/topics'
 import { copyExistingPostEmbeddings } from '@services/bedrock-embeddings-batch/entities/posts'
 import { copyExistingRssFeedItemEmbeddings } from '@services/bedrock-embeddings-batch/entities/rss-feed-items'
-import { enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts } from '@services/communities/ban-evasion'
+import { enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts } from '@services/posts/ban-evasion-embedding-enqueues'
 import {
   enqueuePostEmbeddingTriggerRecovery,
   enqueueReconcileExistingEmbeddings,

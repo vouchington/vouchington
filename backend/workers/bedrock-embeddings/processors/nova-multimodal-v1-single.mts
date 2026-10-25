@@ -6,7 +6,7 @@ import { getRssFeedItemById } from '@services/rss-feed-items'
 import { getPostByAny } from '@services/posts/get'
 import type { Job } from 'glide-mq'
 import { dispatchStoryClusteringForEmbeddedItems } from '@services/stories/clustering/dispatch'
-import { enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts } from '@services/communities/ban-evasion'
+import { enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts } from '@services/posts/ban-evasion-embedding-enqueues'
 
 export async function processBedrockNovaMultimodalV1SingleJob(
   job: Job<{ id?: string; rss_feed_item_id?: string }>,

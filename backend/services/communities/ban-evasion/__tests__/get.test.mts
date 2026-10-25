@@ -14,10 +14,8 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
-import {
-  enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts,
-  isFirstCommunityPost,
-} from '../get.mts'
+import { isFirstCommunityPost } from '../get.mts'
+import { enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts } from '../../../posts/ban-evasion-embedding-enqueues.mts'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
 

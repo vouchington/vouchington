@@ -373,6 +373,7 @@ CREATE INDEX IF NOT EXISTS idx_posts__ban_evasion_post_embedding_pending
 ON posts (id)
 WHERE community_id IS NOT NULL
   AND created_by_id IS NOT NULL
+  AND created_by_id != '00000000-0000-7000-8000-000000000000'::uuid
   AND deleted_at IS NULL
   AND bedrock_nova_multimodal_v1_embedding IS NOT NULL
   AND bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
@@ -463,7 +464,7 @@ COMMENT ON COLUMN posts.latest_clearance_change_id IS 'Most recent clearance tra
 COMMENT ON COLUMN posts.approved_at IS 'Set when the current derived clearance status is approved.';
 COMMENT ON COLUMN posts.rejected_at IS 'Set when the current derived clearance status is rejected.';
 COMMENT ON COLUMN posts.in_review_at IS 'Set when the current derived clearance status is in_review.';
-COMMENT ON COLUMN posts.ban_evasion_post_embedding_input_sha256 IS 'Post embedding input SHA for which the post-embedding ban-evasion follow-up enqueue has been recorded.';
+COMMENT ON COLUMN posts.ban_evasion_post_embedding_input_sha256 IS 'Post embedding input SHA for which ban-evasion detection was enqueued or skipped while an earlier live post remained in the same author and community scope. Deletion rearms the immediate live successor.';
 COMMENT ON COLUMN posts.declared_language IS 'User-declared ISO 639-1 language opt-in (default null)';
 
 -- =============================================================================
