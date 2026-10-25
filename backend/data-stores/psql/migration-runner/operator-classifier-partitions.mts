@@ -30,6 +30,11 @@ function candidateFirst(): string[] {
   return [CANDIDATE_TABLE, ...TABLES.filter(table => table !== CANDIDATE_TABLE)]
 }
 
+async function lockClassifierRangeParentRelations(query: QueryExecutor): Promise<void> {
+  await lockClassifierResultFkTargets(query)
+  await lockClassifierResultParents(query)
+}
+
 /** A detached result child has an independent FK copy that would pin the candidate child. */
 async function releaseDetachedCandidateReferences(
   query: QueryExecutor,
@@ -73,8 +78,7 @@ export async function guardAndCreateClassifierResultRange(
   }
   // ast-grep-ignore: no-three-sequential-awaits -- set the lock budget, then lock result parents, then inspect child catalog on this transaction client
   await query(`/* createClassifierResultRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`)
-  await lockClassifierResultFkTargets(query)
-  await lockClassifierResultParents(query)
+  await lockClassifierRangeParentRelations(query)
   const children = await readClassifierChildren(query, range.nameSuffix)
   if (allRangesAttached(children, range.nameSuffix, range.fromId, range.toId)) {
     assertEveryDefaultAttached(children)
@@ -155,8 +159,7 @@ export async function guardAndRetireClassifierResultRange(
   // Producer lock order differs between reservation and completion. Wait for result writers
   // first, then take producer-table locks with NOWAIT: a busy producer causes rollback rather
   // than a reverse wait edge. Once held, no batch/run can become pending during the probes.
-  await lockClassifierResultFkTargets(query)
-  await lockClassifierResultParents(query)
+  await lockClassifierRangeParentRelations(query)
   const children = await readClassifierChildren(query, range.nameSuffix)
   assertEveryDefaultAttached(children)
   const matching = children.filter(child => child.partition_name.endsWith(`__${range.nameSuffix}`))

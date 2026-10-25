@@ -1,21 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { randomBytes } from 'node:crypto'
-import { beginTransaction, write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
 import { supersedeActivePromptVersion } from '@voucha/test-helpers/data-stores/psql/classifier-threshold-management'
 import { createSyntheticFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-classifier'
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
-import { insertTestAiUsageRecord } from '@voucha/test-helpers/entities/ai-usage'
+import {
+  deleteClassifierCacheSubjectPost,
+  probeClassifierRunRemovalRollback,
+  readClassifierRetentionPricedUsage,
+  seedClassifierCacheIdentity,
+  seedClassifierCacheIdentityForSlug,
+  seedClassifierRetentionPricedUsage,
+} from '@voucha/test-helpers/classifier-cache-retention'
 import {
   countClassifierRows,
   seedClassifierRunPayloadsAt,
 } from '@voucha/test-helpers/classifier-retention'
 import { listPendingClassifierRunRequests } from '../../classifier-runs/run-discovery.mts'
-import {
-  cleanupClassifierRecords,
-  deleteOldClassifierRuns,
-} from '../cleanup-classifier-records.mts'
+import { cleanupClassifierRecords } from '../cleanup-classifier-records.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -31,24 +33,8 @@ describe('classifier retention cleanup', () => {
       at,
       terminalCount: 3,
     })
-    const usageId = await insertTestAiUsageRecord({
-      classifierRunId: terminalIds[0],
-      costMicrounits: 319,
-    })
-    const responseId = `classifier-retirement-${randomBytes(16).toString('hex')}`
-    await write(sql`/* seedClassifierRetirementProviderResponse */
-      INSERT INTO ai_usage_provider_response_keys (response_id, ai_usage_record_id)
-      VALUES (${responseId}, ${usageId})`)
-    const ledgerRow = async () => {
-      const { rows } = await write<{ classifier_run_identity_id: string | null }>(sql`
-        /* checkClassifierRetirementPricedLedger */
-        SELECT record.*, key.response_id
-        FROM ai_usage_records record
-        JOIN ai_usage_provider_response_keys key ON key.ai_usage_record_id = record.id
-        WHERE record.id = ${usageId} AND key.response_id = ${responseId}`)
-      return rows[0]
-    }
-    const originalUsage = await ledgerRow()
+    const { recordId, responseId } = await seedClassifierRetentionPricedUsage(terminalIds[0]!)
+    const originalUsage = await readClassifierRetentionPricedUsage(recordId, responseId)
     expect(originalUsage).toMatchObject({
       classifier_run_identity_id: terminalIds[0],
       cost_microunits: '319',
@@ -79,7 +65,10 @@ describe('classifier retention cleanup', () => {
     expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(0)
     expect(await countClassifierRows('classifier_runs', [pendingId])).toBe(1)
     expect(await countClassifierRows('classifier_run_identities', terminalIds)).toBe(0)
-    expect(await ledgerRow()).toEqual({ ...originalUsage, classifier_run_identity_id: null })
+    expect(await readClassifierRetentionPricedUsage(recordId, responseId)).toEqual({
+      ...originalUsage,
+      classifier_run_identity_id: null,
+    })
     expect(await countClassifierRows('classifier_run_identities', [pendingId])).toBe(1)
     expect(await countClassifierRows('classifier_run_requests', [requestId])).toBe(1)
     const request = (await getClassifierRunRequestFacts(setup.post.id, setup.slug))[0]!
@@ -95,22 +84,22 @@ describe('classifier retention cleanup', () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
     const inputSha256 = randomBytes(32)
-    const { rows: oldRows } = await write<{ id: string }>(sql`
-      /* seedOldPromptCacheIdentity */ INSERT INTO classifier_run_identities (
-        classifier_id, prompt_version_id, post_id, input_sha256
-      ) VALUES (
-        ${fixture.classifierId}, ${fixture.promptVersionId}, ${fixture.postId}, ${inputSha256}
-      ) RETURNING id`)
+    const oldId = await seedClassifierCacheIdentity({
+      classifierId: fixture.classifierId,
+      promptVersionId: fixture.promptVersionId,
+      postId: fixture.postId,
+      inputSha256,
+    })
     const nextPromptVersionId = await supersedeActivePromptVersion(
       fixture.classifierId,
       fixture.promptVersionId,
     )
-    const { rows: newRows } = await write<{ id: string }>(sql`
-      /* seedCurrentPromptCacheIdentity */ INSERT INTO classifier_run_identities (
-        classifier_id, prompt_version_id, post_id, input_sha256
-      ) VALUES (
-        ${fixture.classifierId}, ${nextPromptVersionId}, ${fixture.postId}, ${inputSha256}
-      ) RETURNING id`)
+    const newId = await seedClassifierCacheIdentity({
+      classifierId: fixture.classifierId,
+      promptVersionId: nextPromptVersionId,
+      postId: fixture.postId,
+      inputSha256,
+    })
 
     await cleanupClassifierRecords({
       retentionDays: 90,
@@ -119,22 +108,19 @@ describe('classifier retention cleanup', () => {
       lowerBoundDate: startedAt,
       now: new Date(Date.now() + 60_000),
     })
-    expect(await countClassifierRows('classifier_run_identities', [oldRows[0]!.id])).toBe(0)
-    expect(await countClassifierRows('classifier_run_identities', [newRows[0]!.id])).toBe(1)
+    expect(await countClassifierRows('classifier_run_identities', [oldId])).toBe(0)
+    expect(await countClassifierRows('classifier_run_identities', [newId])).toBe(1)
   })
 
   it('prunes a cache identity when its real post is deleted despite a retained subject id', async () => {
     const startedAt = new Date()
     const setup = await createSyntheticFixture()
-    const { rows } = await write<{ id: string }>(sql`
-      /* seedDeletedPostCacheIdentity */ INSERT INTO classifier_run_identities (
-        classifier_id, post_id, input_sha256
-      ) SELECT classifier.id, ${setup.post.id}, ${randomBytes(32)}
-        FROM classifiers classifier WHERE classifier.slug = ${setup.slug}
-      RETURNING id`)
-    await write(
-      sql`/* deleteClassifierCacheSubjectPost */ DELETE FROM posts WHERE id = ${setup.post.id}`,
-    )
+    const identityId = await seedClassifierCacheIdentityForSlug({
+      slug: setup.slug,
+      postId: setup.post.id,
+      inputSha256: randomBytes(32),
+    })
+    await deleteClassifierCacheSubjectPost(setup.post.id)
     await cleanupClassifierRecords({
       retentionDays: 90,
       batchSize: 20,
@@ -142,7 +128,7 @@ describe('classifier retention cleanup', () => {
       lowerBoundDate: startedAt,
       now: new Date(Date.now() + 60_000),
     })
-    expect(await countClassifierRows('classifier_run_identities', [rows[0]!.id])).toBe(0)
+    expect(await countClassifierRows('classifier_run_identities', [identityId])).toBe(0)
   })
 
   it('rolls back both promptless payload and cache removal when their transaction aborts', async () => {
@@ -157,14 +143,10 @@ describe('classifier retention cleanup', () => {
       terminalCount: 1,
     })
     const runId = terminalIds[0]!
-    {
-      await using transaction = await beginTransaction()
-      expect(await deleteOldClassifierRuns(transaction, [runId])).toBe(1)
-      const { rows: removed } = await transaction<{ count: number }>(sql`
-        /* checkClassifierRollbackInsideTransaction */
-        SELECT count(*)::int AS count FROM classifier_run_identities WHERE id = ${runId}`)
-      expect(removed[0]!.count).toBe(0)
-    }
+    expect(await probeClassifierRunRemovalRollback(runId)).toEqual({
+      removedRuns: 1,
+      remainingIdentitiesInsideTransaction: 0,
+    })
     expect(await countClassifierRows('classifier_runs', [runId])).toBe(1)
     expect(await countClassifierRows('classifier_run_identities', [runId])).toBe(1)
     const request = (await getClassifierRunRequestFacts(setup.post.id, setup.slug))[0]!

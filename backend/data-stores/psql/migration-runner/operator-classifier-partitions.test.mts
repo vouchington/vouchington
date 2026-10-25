@@ -105,7 +105,7 @@ describe('operator classifier range sealing SQL contract', () => {
     const firstAttachment = capture.statements.find(statement =>
       statement.includes('createClassifierResultRange:attach'),
     )
-    expect(firstAttachment).toContain('ALTER TABLE classifier_decision_batch_candidates ATTACH')
+    expect(firstAttachment).toMatch(/classifier_decision_batch_candidates ATTACH PARTITION/u)
     expect(positions('createClassifierResultRange:attach')[0]).toBeGreaterThan(
       positions('createClassifierResultRange:rename').at(-1)!,
     )

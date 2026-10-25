@@ -1,6 +1,6 @@
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-import { reviveClassifierRunRequests } from '@services/classifier-run-revival'
+import { reviveClassifierRunRequests } from '../classifier-runs/run-requests.mts'
 import { lockPostPublication } from '@services/post-publication'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import { ensureCurrentPostModerationVersion } from './moderation-ledger.mts'

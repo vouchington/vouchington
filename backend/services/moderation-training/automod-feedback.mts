@@ -2,7 +2,7 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
-import { reviveClassifierRunRequests } from '@services/classifier-run-revival'
+import { reviveClassifierRunRequests } from '../classifier-runs/run-requests.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
