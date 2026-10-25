@@ -86,6 +86,6 @@ Coverlet configuration for native clients lives in the
 [client repository](https://github.com/vouchington/vouchington-clients).
 
 Exact versions in docs are allowed only when they are historical facts that will not be restamped:
-compatibility holds, incident records, and and minimum SHAs. Dual executable pins
+compatibility holds, incident records, and minimum SHAs. Dual executable pins
 that both run (lychee and gitleaks in `.mise.toml` and workflow YAML) stay exact in those files and
 are kept in lockstep by no-mistakes `version-pin-consistency`.
