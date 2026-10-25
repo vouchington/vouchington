@@ -1,10 +1,9 @@
 import '@data-stores/valkey-core/shutdown'
 
-import type { BatchProcessor, Processor, Queue, WorkerOptions } from 'glide-mq'
+import type { Queue } from 'glide-mq'
 import {
   createGlideMqRuntime,
   type RuntimeQueueOptions,
-  type RuntimeWorkerOptions,
 } from '@vouchington/worker-runtime/glide-mq'
 import onError from '@modules/on-error'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
@@ -35,6 +34,10 @@ const runtime = createGlideMqRuntime({
   unregister: instance => unregisterGlideMQInstance(instance as { close(): Promise<void> }),
   onError,
   defaultMaxStalledCount: DEFAULT_MAX_STALLED_COUNT,
+  wrapProcessor: (processor, queueName, workerOptions) =>
+    wrapSingleProcessor(queueName, processor, workerOptions),
+  wrapBatchProcessor: (processor, queueName, workerOptions) =>
+    wrapBatchProcessor(queueName, processor, workerOptions),
   // Every queue add, bulk add and scheduler upsert keeps its queue's priority contract and
   // refuses to let a processor add the job it is running.
   guardAdd: ({ queueName, jobName, opts }) => {
@@ -61,25 +64,9 @@ export function createQueue<T = unknown>(
  */
 export const createMaintenanceQueue = runtime.createMaintenanceQueue
 
-export function createWorker<D = unknown, R = unknown>(
-  name: string,
-  processor: Processor<D, R>,
-  options: RuntimeWorkerOptions = {},
-) {
-  return runtime.createWorker<D, R>(name, wrapSingleProcessor(name, processor, options), options)
-}
+export const createWorker = runtime.createWorker
 
 /** A worker whose processor receives up to `batch.size` jobs at once instead of one. */
-export function createBatchWorker<D = unknown, R = unknown>(
-  name: string,
-  processor: BatchProcessor<D, R>,
-  options: RuntimeWorkerOptions & Required<Pick<WorkerOptions, 'batch'>>,
-) {
-  return runtime.createBatchWorker<D, R>(
-    name,
-    wrapBatchProcessor(name, processor, options),
-    options,
-  )
-}
+export const createBatchWorker = runtime.createBatchWorker
 
 export const closeAndUnregisterGlideMQInstance = runtime.close

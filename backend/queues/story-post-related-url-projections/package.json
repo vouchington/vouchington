@@ -22,7 +22,7 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/worker-runtime": "^0.2.0"
+    "@vouchington/worker-runtime": "^0.2.1"
   },
   "devDependencies": {}
 }

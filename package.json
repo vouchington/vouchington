@@ -142,7 +142,7 @@
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.18",
     "@vouchington/session-jwt": "^0.0.2",
-    "@vouchington/worker-runtime": "^0.2.0",
+    "@vouchington/worker-runtime": "^0.2.1",
     "agent-blackboard": "^0.7.0",
     "coverage-check": "^0.18.0",
     "dependency-cruiser": "^18.7.0",

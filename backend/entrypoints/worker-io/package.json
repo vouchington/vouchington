@@ -48,7 +48,7 @@
     "@queues/urls-domains-blacklist": "workspace:^",
     "@queues/user-rss-feed-imports": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
-    "@vouchington/worker-runtime": "^0.2.0",
+    "@vouchington/worker-runtime": "^0.2.1",
     "@workers/background": "workspace:^",
     "@workers/bedrock-batch-sqs": "workspace:^",
     "@workers/bloom-filters": "workspace:^",
