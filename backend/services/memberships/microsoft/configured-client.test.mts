@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import * as httpDispatchers from '../../../modules/utils/http-dispatchers.mts'
+import * as httpDispatchers from '../../../modules/utils/http.mts'
 import {
   createConfiguredMicrosoftStoreClient,
   getMicrosoftStoreServiceConfig,

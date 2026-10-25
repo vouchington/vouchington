@@ -2,7 +2,7 @@ import { Readable, Transform, compose } from 'node:stream'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { fetch } from 'undici'
 import { HttpResponseSizeError } from '@modules/on-error/errors'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 type CachedHeaders = {
   etag: string | null

@@ -1,4 +1,5 @@
 import undici from 'undici'
+import * as http from '@modules/utils/http'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import CrawlerHtml from '../index.mts'
@@ -14,6 +15,11 @@ import {
   HttpServerError,
 } from '@modules/on-error/errors'
 
+const fetched = (response: unknown) => ({
+  response: response as Response,
+  responseSignal: new AbortController().signal,
+})
+
 // `undici.fetch` aborted by `AbortSignal.timeout()` rejects with a `DOMException` named
 // `TimeoutError`, not `AbortError`. `CrawlerHtml`'s catch block must classify both names as a
 // crawler timeout (504 / 'timeout'); anything else falls through to `CrawlerNetworkError`
@@ -28,7 +34,7 @@ describe('CrawlerHtml timeout classification', () => {
   })
 
   it('classifies a real fetch timeout (DOMException named TimeoutError) as CrawlerTimeoutError', async () => {
-    vi.spyOn(undici, 'fetch').mockRejectedValue(
+    vi.spyOn(http, 'fetchWithTimeout').mockRejectedValue(
       new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
     )
 
@@ -44,7 +50,7 @@ describe('CrawlerHtml timeout classification', () => {
   it('classifies a stream-pipeline abort (Error named AbortError) as CrawlerTimeoutError', async () => {
     const abortError = new Error('The operation was aborted')
     abortError.name = 'AbortError'
-    vi.spyOn(undici, 'fetch').mockRejectedValue(abortError)
+    vi.spyOn(http, 'fetchWithTimeout').mockRejectedValue(abortError)
 
     const error = await CrawlerHtml(
       { url: 'https://example.com', requestTimeoutMs: 1234 },
@@ -56,7 +62,9 @@ describe('CrawlerHtml timeout classification', () => {
   })
 
   it('still classifies a genuine non-timeout error as CrawlerNetworkError', async () => {
-    vi.spyOn(undici, 'fetch').mockRejectedValue(new Error('getaddrinfo ENOTFOUND example.com'))
+    vi.spyOn(http, 'fetchWithTimeout').mockRejectedValue(
+      new Error('getaddrinfo ENOTFOUND example.com'),
+    )
 
     const error = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
 
@@ -65,8 +73,8 @@ describe('CrawlerHtml timeout classification', () => {
   })
 
   it('preserves the upstream retry delay when classifying a rate limit', async () => {
-    vi.spyOn(undici, 'fetch').mockResolvedValue(
-      new undici.Response(null, { status: 429, headers: { 'retry-after': '3' } }),
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(
+      fetched(new undici.Response(null, { status: 429, headers: { 'retry-after': '3' } })),
     )
 
     const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
@@ -77,7 +85,9 @@ describe('CrawlerHtml timeout classification', () => {
   })
 
   it('preserves the upstream status when classifying a server failure', async () => {
-    vi.spyOn(undici, 'fetch').mockResolvedValue(new undici.Response(null, { status: 503 }))
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(
+      fetched(new undici.Response(null, { status: 503 })),
+    )
 
     const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
 
@@ -87,8 +97,8 @@ describe('CrawlerHtml timeout classification', () => {
   })
 
   it('reports the actual bytes and configured limit when an HTML response is too large', async () => {
-    vi.spyOn(undici, 'fetch').mockResolvedValue(
-      new undici.Response('12345', { headers: { 'content-type': 'text/html' } }),
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(
+      fetched(new undici.Response('12345', { headers: { 'content-type': 'text/html' } })),
     )
 
     const err = await CrawlerHtml(
@@ -102,8 +112,8 @@ describe('CrawlerHtml timeout classification', () => {
   })
 
   it('preserves a missing HTML response body as its distinct transport error', async () => {
-    vi.spyOn(undici, 'fetch').mockResolvedValue(
-      new undici.Response(null, { headers: { 'content-type': 'text/html' } }),
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(
+      fetched(new undici.Response(null, { headers: { 'content-type': 'text/html' } })),
     )
 
     const err = await CrawlerHtml({ url: 'https://example.com' }, {}).catch((err: unknown) => err)
@@ -114,7 +124,7 @@ describe('CrawlerHtml timeout classification', () => {
 
   it('propagates an unknown provider rejection without changing its identity', async () => {
     const failure = { reason: 'provider unavailable' }
-    vi.spyOn(undici, 'fetch').mockRejectedValue(failure)
+    vi.spyOn(http, 'fetchWithTimeout').mockRejectedValue(failure)
 
     await expect(CrawlerHtml({ url: 'https://example.com' }, {})).rejects.toBe(failure)
   })

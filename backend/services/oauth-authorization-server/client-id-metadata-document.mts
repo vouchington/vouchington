@@ -1,5 +1,5 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
-import { readResponseBodyAsBuffer } from '@modules/utils/http'
+import { readResponseBodyAsBuffer } from '@modules/utils/http-body'
 import { safeFetch } from 'ssrf-guard/node'
 import { unavailableClientIdMetadata } from './client-id-metadata-errors.mts'
 import { parseClientIdMetadataUrl } from './client-id-metadata-url.mts'

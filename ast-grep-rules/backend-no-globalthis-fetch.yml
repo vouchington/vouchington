@@ -122,13 +122,13 @@ examples:
     isValid: false
     file: 'backend/scripts/validate-seed-rss-feeds/probe.mts'
   - code: |-
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await fetch(url, { dispatcher: getExternalRequestDispatcher() })
     isValid: false
     file: 'backend/services/web-risk/check.mts'
   - code: |-
       import { fetch as undiciFetch } from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await fetch(url, { dispatcher: getExternalRequestDispatcher() })
     isValid: false
     file: 'backend/modules/utils/http.mts'
@@ -185,32 +185,32 @@ examples:
     file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch } from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await fetch(url, { dispatcher: getExternalRequestDispatcher() })
     isValid: true
     file: 'backend/services/web-risk/check.mts'
   - code: |-
       import { fetch } from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await fetch(url, { dispatcher })
     isValid: true
     file: 'backend/services/web-risk/check.mts'
   - code: |-
       import undici from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const dispatcher = getExternalRequestDispatcher()
       const response = await undici.fetch(url, { dispatcher, headers })
     isValid: true
     file: 'backend/modules/utils/http.mts'
   - code: |-
       import * as http from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await http.fetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
     isValid: true
     file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as undiciFetch } from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       export async function fetchProviderJson(params: { fetch?: typeof undiciFetch }) {
         const requestFetch = params.fetch ?? undiciFetch
         return await requestFetch(url, { dispatcher: getExternalRequestDispatcher() })
@@ -219,25 +219,25 @@ examples:
     file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as undiciFetch } from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await undiciFetch(url, { dispatcher: getExternalRequestDispatcher() })
     isValid: true
     file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as httpFetch } from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await httpFetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
     isValid: true
     file: 'backend/modules/utils/http.mts'
   - code: |-
       import { Response, fetch as httpFetch } from 'undici'
-      import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getExternalRequestDispatcher } from '@modules/utils/http'
       const response = await httpFetch(url, { headers, dispatcher: getExternalRequestDispatcher() })
     isValid: true
     file: 'backend/modules/utils/http.mts'
   - code: |-
       import { fetch as undiciFetch } from 'undici'
-      import { getLongRunningExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+      import { getLongRunningExternalRequestDispatcher } from '@modules/utils/http'
       const response = await undiciFetch(url, {
         method: 'POST',
         dispatcher: getLongRunningExternalRequestDispatcher(),
@@ -245,16 +245,6 @@ examples:
       })
     isValid: true
     file: 'backend/modules/utils/http.mts'
-  - code: |-
-      import { fetch as undiciFetch } from 'undici'
-      function createExternalFetch(getDispatcher: () => Dispatcher): ExternalFetch {
-        return (input, init) => {
-          const dispatcher = getDispatcher()
-          return undiciFetch(input, { ...init, dispatcher })
-        }
-      }
-    isValid: true
-    file: 'backend/modules/utils/http-dispatchers.mts'
   - code: |-
       import { fetch } from 'undici'
       import { getProviderRequestDispatcher } from '@modules/api-egress-proxy'

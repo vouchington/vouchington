@@ -1,4 +1,5 @@
 import undici from 'undici'
+import * as http from '@modules/utils/http'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import CrawlerHtml, { fetchCrawlerHtml } from '../index.mts'
@@ -47,6 +48,11 @@ function createReadableBody(html: string): MockBody {
   }
 }
 
+const fetched = (response: unknown) => ({
+  response: response as Response,
+  responseSignal: new AbortController().signal,
+})
+
 describe('fetchCrawlerHtml headers and request options', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -57,7 +63,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('fetches HTML and processes it successfully', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const html =
       '<html><head><title>Test Page</title></head><body><h1>Test</h1><p>Content</p></body></html>'
     const mockResponse = createResponse(
@@ -65,7 +71,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
       { 'content-type': 'text/html; charset=utf-8' },
       createReadableBody(html),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     const options: CrawlerHtmlOptions = {
       url: 'https://example.com',
@@ -74,8 +80,8 @@ describe('fetchCrawlerHtml headers and request options', () => {
     const result = await fetchCrawlerHtml(options, {})
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://example.com',
       expect.objectContaining({
+        url: 'https://example.com',
         headers: expect.objectContaining({
           'User-Agent': 'voucha-bot https://voucha.ai/article/voucha-bot',
           Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -90,8 +96,8 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('records and returns a successful crawl through the service boundary', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
-    fetchSpy.mockResolvedValue(createResponse(304))
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
+    fetchSpy.mockResolvedValue(fetched(createResponse(304)))
 
     const result = await CrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -99,9 +105,9 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('includes If-Modified-Since when lastModifiedAt is provided', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const mockResponse = createResponse(304)
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     await fetchCrawlerHtml(
       {
@@ -112,8 +118,8 @@ describe('fetchCrawlerHtml headers and request options', () => {
     )
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://example.com',
       expect.objectContaining({
+        url: 'https://example.com',
         headers: expect.objectContaining({
           'If-Modified-Since': 'Mon, 01 Jan 2024 00:00:00 GMT',
         }),
@@ -122,9 +128,9 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('includes If-None-Match when etag is provided', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const mockResponse = createResponse(304)
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     await fetchCrawlerHtml(
       {
@@ -135,8 +141,8 @@ describe('fetchCrawlerHtml headers and request options', () => {
     )
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://example.com',
       expect.objectContaining({
+        url: 'https://example.com',
         headers: expect.objectContaining({
           'If-None-Match': '"abc123"',
         }),
@@ -145,9 +151,9 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('includes both conditional headers when provided', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const mockResponse = createResponse(304)
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     await fetchCrawlerHtml(
       {
@@ -159,8 +165,8 @@ describe('fetchCrawlerHtml headers and request options', () => {
     )
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://example.com',
       expect.objectContaining({
+        url: 'https://example.com',
         headers: expect.objectContaining({
           'If-Modified-Since': 'Mon, 01 Jan 2024 00:00:00 GMT',
           'If-None-Match': '"abc123"',
@@ -169,46 +175,32 @@ describe('fetchCrawlerHtml headers and request options', () => {
     )
   })
 
-  it('uses custom timeout when provided', async () => {
-    vi.useFakeTimers()
-    try {
-      const fetchSpy = vi.spyOn(undici, 'fetch')
-      fetchSpy.mockImplementation((_url, init) => {
-        const signal = init?.signal as AbortSignal | undefined
-        return new Promise((_resolve, reject) => {
-          signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
-        })
-      })
+  it('passes custom request and response timeouts to the transport', async () => {
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
+    fetchSpy.mockResolvedValue(fetched(createResponse(304)))
 
-      const handled = fetchCrawlerHtml(
-        {
-          url: 'https://example.com',
-          requestTimeoutMs: 1,
-        },
-        {},
-      ).catch(err => err)
-      await vi.advanceTimersByTimeAsync(1)
-      expect(await handled).toMatchObject({ message: 'aborted' })
+    await fetchCrawlerHtml(
+      { url: 'https://example.com', requestTimeoutMs: 1, responseTimeoutMs: 2 },
+      {},
+    )
 
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.com',
-        expect.objectContaining({
-          signal: expect.any(AbortSignal),
-        }),
-      )
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'https://example.com',
+        requestTimeoutMs: 1,
+        responseTimeoutMs: 2,
+      }),
+    )
   })
 
   it('uses custom maxResponseSizeBytes when provided', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const mockResponse = createResponse(
       200,
       { 'content-type': 'text/html' },
       createReadableBody('<html><body>123456</body></html>'),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     await expect(
       fetchCrawlerHtml(
@@ -222,7 +214,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('includes response headers in the result', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const mockResponse = createResponse(
       200,
       {
@@ -232,7 +224,7 @@ describe('fetchCrawlerHtml headers and request options', () => {
       },
       createReadableBody('<html><body>Headers</body></html>'),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -244,9 +236,9 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('includes request headers in the result', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const mockResponse = createResponse(304)
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml(
       {
@@ -267,9 +259,9 @@ describe('fetchCrawlerHtml headers and request options', () => {
   })
 
   it('includes crawl timestamps in the result', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
+    const fetchSpy = vi.spyOn(http, 'fetchWithTimeout')
     const mockResponse = createResponse(304)
-    fetchSpy.mockResolvedValue(mockResponse)
+    fetchSpy.mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 

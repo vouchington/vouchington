@@ -1,6 +1,14 @@
-import undici from 'undici'
+import * as http from '@modules/utils/http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fetchCrawlerHtml } from '../index.mts'
+
+const fetched = (
+  response: Response,
+  responseSignal: AbortSignal = new AbortController().signal,
+) => ({
+  response,
+  responseSignal,
+})
 
 describe('HTML crawler response body lifecycle', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -15,11 +23,13 @@ describe('HTML crawler response body lifecycle', () => {
         },
         cancel,
       })
-      vi.spyOn(undici, 'fetch').mockResolvedValueOnce(
-        new Response(body, {
-          status,
-          headers: { 'content-type': 'text/html', location: '/destination' },
-        }),
+      vi.spyOn(http, 'fetchWithTimeout').mockResolvedValueOnce(
+        fetched(
+          new Response(body, {
+            status,
+            headers: { 'content-type': 'text/html', location: '/destination' },
+          }),
+        ),
       )
 
       const result = await fetchCrawlerHtml(
@@ -44,8 +54,11 @@ describe('HTML crawler response body lifecycle', () => {
       },
       cancel,
     })
-    vi.spyOn(undici, 'fetch').mockResolvedValueOnce(
-      new Response(body, { headers: { 'content-type': 'text/html' } }),
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValueOnce(
+      fetched(
+        new Response(body, { headers: { 'content-type': 'text/html' } }),
+        AbortSignal.abort(),
+      ),
     )
 
     await expect(
@@ -56,11 +69,13 @@ describe('HTML crawler response body lifecycle', () => {
   })
 
   it('preserves HTML processing when a redirect has no Location', async () => {
-    vi.spyOn(undici, 'fetch').mockResolvedValueOnce(
-      new Response('<html><head><title>Missing Location</title></head></html>', {
-        status: 302,
-        headers: { 'content-type': 'text/html' },
-      }),
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValueOnce(
+      fetched(
+        new Response('<html><head><title>Missing Location</title></head></html>', {
+          status: 302,
+          headers: { 'content-type': 'text/html' },
+        }),
+      ),
     )
 
     const result = await fetchCrawlerHtml(
@@ -78,7 +93,9 @@ describe('HTML crawler response body lifecycle', () => {
   it.each([429, 503])('cancels an ignored %i body before rejecting', async status => {
     const cancel = vi.fn<() => void>()
     const body = new ReadableStream<Uint8Array>({ cancel })
-    vi.spyOn(undici, 'fetch').mockResolvedValueOnce(new Response(body, { status }))
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValueOnce(
+      fetched(new Response(body, { status })),
+    )
 
     await expect(fetchCrawlerHtml({ url: 'https://example.com/' }, {})).rejects.toMatchObject({
       status,

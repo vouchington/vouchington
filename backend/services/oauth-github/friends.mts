@@ -4,7 +4,7 @@ import { decryptSecret } from '@modules/token-secrets'
 import { getOAuthTokenPurpose } from '@services/oauth-accounts/upsert'
 import { fetch } from 'undici'
 import { throwIfRateLimitedResponse } from '@modules/queue-errors'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { githubFollowingHasNextPage } from './friends-pagination.mts'
 import { finalizeGithubFriendSync, persistGithubFriendPage } from './friends-persistence.mts'
 

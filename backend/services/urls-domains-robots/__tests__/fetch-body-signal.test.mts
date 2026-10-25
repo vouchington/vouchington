@@ -1,7 +1,5 @@
-import {
-  readResponseBody as readResponseBodyFn,
-  type fetchWithTimeout as fetchWithTimeoutFn,
-} from '@modules/utils/http'
+import type { fetchWithTimeout as fetchWithTimeoutFn } from '@modules/utils/http'
+import { readResponseBody as readResponseBodyFn } from '@modules/utils/http-body'
 import type { validateUrl as validateUrlFn } from 'ssrf-guard/node'
 import { describe, expect, it, vi } from 'vitest'
 import { defaultRobotsDependencies, fetchRobotsTxtWithRetryOutcome } from '../fetch-retry.mts'

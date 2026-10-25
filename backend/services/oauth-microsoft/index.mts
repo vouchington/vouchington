@@ -3,7 +3,7 @@ import createHttpError from 'http-errors'
 import { MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, MICROSOFT_TENANT_ID } from '@voucha/config'
 import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 type MicrosoftTokenResponse = {
   id_token?: string

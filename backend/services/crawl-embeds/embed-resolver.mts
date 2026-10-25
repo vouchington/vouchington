@@ -1,5 +1,5 @@
 import onError from '@modules/on-error'
-import { getExternalFetch, getPinnedRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalFetch, getPinnedRequestDispatcher } from '@modules/utils/http'
 import { CRAWLER_USER_AGENT } from '@voucha/config'
 import {
   createEmbedResolver,

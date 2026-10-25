@@ -2,7 +2,7 @@ import createHttpError from 'http-errors'
 import { LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET } from '@voucha/config'
 import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 type LinkedInTokenResponse = {
   access_token: string

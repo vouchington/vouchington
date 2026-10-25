@@ -1,4 +1,4 @@
-import { getExternalFetch } from '@modules/utils/http-dispatchers'
+import { getExternalFetch } from '@modules/utils/http'
 import { assertDsaStatementPayload, type DsaStatementPayload } from './dsa-statement-payload.mts'
 
 type ExternalFetch = ReturnType<typeof getExternalFetch>

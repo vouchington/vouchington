@@ -1,5 +1,5 @@
 import onError from '@modules/on-error'
-import { readResponseBodyAsBuffer } from '@modules/utils/http'
+import { readResponseBodyAsBuffer } from '@modules/utils/http-body'
 import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { safeFetch, UnsafeUrlError } from 'ssrf-guard/node'
 import { stringValue } from './chapters-values.mts'

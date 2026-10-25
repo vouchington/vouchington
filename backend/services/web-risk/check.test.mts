@@ -5,7 +5,7 @@ import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { getWebRiskHostnameAuditForTest, updateUrlHostnameBlocked } from '@voucha/test-helpers'
 import { withGoogleWebRiskTest } from '@voucha/test-helpers/web-risk-state'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 const PROBE_URL = new URL('https://web-risk-gate.test/')
 
