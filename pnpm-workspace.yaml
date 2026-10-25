@@ -53,8 +53,6 @@ ignoredOptionalDependencies:
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
   - '@vouchington/dynamic-config'
-  - '@react-email/render@2.1.1'
-  - 'react-email@6.11.3'
   - '@jongleberry/api-server'
   - '@jongleberry/vurst-ai'
   - '@jongleberry/vurst-ai-darwin-arm64'
