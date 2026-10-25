@@ -116,7 +116,10 @@ describe('crawl-url network backoff', () => {
 
     const dns = await host.addPage(2)
     fetchCrawlerHtml.mockRejectedValueOnce(refused(host.hostname, 2, 'ENOTFOUND'))
-    await expect(crawlUrlForTest(dns.id)).rejects.toThrow(CrawlerNetworkError)
+    const dnsCrawl = crawlUrlForTest(dns.id, 0, new Set(), {
+      dependencies: { resolveDnsCanary: () => Promise.resolve() },
+    })
+    await expect(dnsCrawl).rejects.toThrow(CrawlerNetworkError)
     expect(
       (await getTestHostnameNetworkBackoff(host.hostnameId))!.consecutive_network_failures,
     ).toBe(1)

@@ -73,7 +73,9 @@ export async function recordHostnameNetworkFailure(
         ELSE network_backoff_until END,
       network_backoff_probe_claimed_at = NULL
     WHERE id = $1
-      AND NOT (network_backoff_until > CURRENT_TIMESTAMP AND network_backoff_probe_claimed_at IS NULL)
+      AND (network_backoff_until IS NULL
+        OR network_backoff_until <= CURRENT_TIMESTAMP
+        OR network_backoff_probe_claimed_at IS NOT NULL)
     RETURNING hostname, network_backoff_step AS step, consecutive_network_failures = 0 AS opened
   `,
     [
