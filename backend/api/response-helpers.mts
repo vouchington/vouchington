@@ -12,6 +12,7 @@ import {
 } from './request-contract-enforcement-helpers.mts'
 import { withOverlappedRateLimit } from '@vouchington/rate-limit'
 import { enforceLowScoreBotChallenge } from './bot-challenge.mts'
+import { hasSignedWebRefreshCredential } from './optional-web-session-renewal.mts'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 const SUSPENDED_EXCEPTION_ROUTES = [
@@ -73,6 +74,8 @@ export async function getOptionalAuthAndRateLimit(
     ctx.getCurrentUser(),
   )
   await settleBeforeSignatureError(settleRateLimit, signatureError)
+  if (!currentUser && (await hasSignedWebRefreshCredential(ctx)))
+    throw createCodedError(401, 'Unauthorized', AUTH_REQUIRED)
   assertActiveForRoute(currentUser, routeId)
   await enforceLowScoreBotChallenge(ctx)
   return currentUser
