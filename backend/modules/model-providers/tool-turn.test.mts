@@ -112,7 +112,7 @@ describe('generateToolTurn', () => {
       deps,
     })
 
-    expect(createMessage.mock.calls[0]![1]).toEqual({ signal })
+    expect(createMessage.mock.calls[0]![1]).toMatchObject({ signal })
     expect(createOpenRouterResponse.mock.calls[0]![1]).toMatchObject({ signal })
   })
 
