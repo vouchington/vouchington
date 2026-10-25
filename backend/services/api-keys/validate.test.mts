@@ -1,16 +1,49 @@
-import { beforeAll, describe, it, expect } from 'vitest'
+import { afterAll, beforeAll, describe, it, expect, vi } from 'vitest'
+import { bloomValkeyClient } from '@data-stores/valkey'
 import { createTestUser } from '@voucha/test-helpers'
 import { setTestApiKeyPermissions } from '@voucha/test-helpers/entities/api-keys'
-import { createApiKey } from './create.mts'
-import { revokeApiKey } from './revoke.mts'
-import { rebuildApiKeyBloomFilter } from './bloom-filter.mts'
-import { validateApiKey, validateApiKeyForMcpAudience } from './validate.mts'
+import { ValkeyBloomFilter } from 'valkyries/bloom-filter'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { createApiKey } from './create.mts'
+import { hashApiKey } from './generate.mts'
+import { revokeApiKey } from './revoke.mts'
+import { validateApiKey, validateApiKeyForMcpAudience } from './validate.mts'
+
+const unexpectedBloomClientCommands: string[] = []
 
 describe('validate', () => {
+  let restoreBloomConfig: (() => void) | undefined
+
   beforeAll(() => {
+    unexpectedBloomClientCommands.length = 0
+    vi.spyOn(ValkeyBloomFilter.prototype, 'addOrThrow').mockResolvedValue(undefined)
+    vi.spyOn(ValkeyBloomFilter.prototype, 'existsIfReady').mockResolvedValue(true)
+
+    for (const method of ['invokeScript', 'customCommand', 'rename', 'set', 'unlink'] as const) {
+      vi.spyOn(bloomValkeyClient, method).mockImplementation(async () => {
+        unexpectedBloomClientCommands.push(method)
+        throw new Error(`Unexpected API-key Bloom client command: ${method}`)
+      })
+    }
+
+    restoreBloomConfig = overrideDynamicConfigFieldsForTest(bloomFilterConfig, {
+      apiKeyBloomFilterEnabled: true,
+    })
     process.env.API_KEY_CHECKSUM_SECRET ??= 'this is a fake test API key checksum secret'
+  })
+
+  afterAll(() => {
+    try {
+      if (unexpectedBloomClientCommands.length > 0) {
+        throw new Error(
+          `Unexpected API-key Bloom client commands: ${unexpectedBloomClientCommands.join(', ')}`,
+        )
+      }
+    } finally {
+      restoreBloomConfig?.()
+      vi.restoreAllMocks()
+    }
   })
 
   describe('validateApiKey', () => {
@@ -105,28 +138,6 @@ describe('validate', () => {
   })
 
   describe('validateApiKeyForMcpAudience', () => {
-    it('accepts a user-scoped MCP key after a bloom-filter probe', async () => {
-      const user = await createTestUser()
-      const { rawKey } = await createApiKey(
-        user.id,
-        'mcp',
-        `MCP audience ${Math.random().toString(36).slice(2, 8)}`,
-        ['mcp.user:read'],
-      )
-      await rebuildApiKeyBloomFilter()
-      const restoreBloomFilterConfig = overrideDynamicConfigFieldsForTest(bloomFilterConfig, {
-        apiKeyBloomFilterEnabled: true,
-      })
-      try {
-        await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toMatchObject({
-          valid: true,
-          apiKey: { permissions: ['mcp.user:read'] },
-        })
-      } finally {
-        restoreBloomFilterConfig()
-      }
-    })
-
     it('rejects a key whose stored scopes were tampered into the admin audience', async () => {
       const user = await createTestUser({ administrator: true })
       const { rawKey, apiKey } = await createApiKey(
@@ -151,6 +162,45 @@ describe('validate', () => {
         valid: true,
       })
       await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toEqual({ valid: false })
+    })
+
+    it('uses a Bloom hit, rejects a definite miss, and falls back to Postgres after a probe error', async () => {
+      const existsIfReady = vi.mocked(ValkeyBloomFilter.prototype.existsIfReady)
+      const addOrThrow = vi.mocked(ValkeyBloomFilter.prototype.addOrThrow)
+      const probeCallOffset = existsIfReady.mock.calls.length
+      const addCallOffset = addOrThrow.mock.calls.length
+      const probeError = new Error('owned Bloom probe failure')
+      existsIfReady
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
+        .mockRejectedValueOnce(probeError)
+
+      const user = await createTestUser()
+      const { rawKey, apiKey } = await createApiKey(
+        user.id,
+        'mcp',
+        `MCP Bloom fallback ${crypto.randomUUID()}`,
+        ['mcp.user:read'],
+      )
+      const keyHash = hashApiKey(rawKey).toString('hex')
+
+      await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toMatchObject({
+        valid: true,
+        apiKey: { id: apiKey.id, permissions: ['mcp.user:read'] },
+      })
+      await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toEqual({ valid: false })
+      await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toMatchObject({
+        valid: true,
+        apiKey: { id: apiKey.id, permissions: ['mcp.user:read'] },
+      })
+
+      expect(addOrThrow.mock.calls.slice(addCallOffset)).toEqual([[[keyHash]]])
+      expect(existsIfReady.mock.calls.slice(probeCallOffset)).toEqual([
+        ['bloom-filter:api-keys:ready', keyHash],
+        ['bloom-filter:api-keys:ready', keyHash],
+        ['bloom-filter:api-keys:ready', keyHash],
+      ])
+      expect(unexpectedBloomClientCommands).toEqual([])
     })
   })
 })
