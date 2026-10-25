@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { calcCostMicrounits, getPricedModels, isPricedModel } from './pricing.mts'
+import { calcCostMicrounits } from '@voucha/test-helpers/agents/calc-cost-microunits'
+import { getPricedModels, isPricedModel } from './pricing.mts'
 import type { ModelUsage } from '@vouchington/ai/providers'
 
 function usage(overrides: Partial<ModelUsage>): ModelUsage {

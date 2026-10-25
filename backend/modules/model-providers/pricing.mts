@@ -1,6 +1,4 @@
 import {
-  type ModelUsage,
-  calcCostMicrounits as calcListCostMicrounits,
   getPricedModels as getPricedModelsIn,
   isPricedModel as isPricedModelIn,
 } from '@vouchington/ai/providers'
@@ -14,14 +12,4 @@ export function getPricedModels(provider: ModelProvider): readonly string[] {
 
 export function isPricedModel(provider: ModelProvider, model: string): boolean {
   return isPricedModelIn(MODEL_PRICES, provider, model)
-}
-
-/** List-price cost of one call in USD microunits, or null when the served model/tier is unpriced. */
-export function calcCostMicrounits(
-  provider: string,
-  model: string,
-  serviceTier: string,
-  usage: ModelUsage,
-): number | null {
-  return calcListCostMicrounits(MODEL_PRICES, provider, model, serviceTier, usage)
 }

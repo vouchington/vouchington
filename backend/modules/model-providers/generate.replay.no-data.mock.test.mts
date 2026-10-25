@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
 import { generateJson } from './generate.mts'
-import { calcCostMicrounits } from './pricing.mts'
+import { calcCostMicrounits } from '@voucha/test-helpers/agents/calc-cost-microunits'
 
 // Recorded Messages API responses are served through the real Anthropic SDK's `fetch` option, so
 // the SDK builds the request and parses real status lines, headers and JSON bodies. The fixtures

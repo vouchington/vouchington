@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { calcCostMicrounits } from '@modules/model-providers/pricing'
+import { calcCostMicrounits } from '@voucha/test-helpers/agents/calc-cost-microunits'
 import { generateToolTurn } from '@modules/model-providers/tool-turn'
 import type { ToolTurnRequest } from '@vouchington/ai/providers'
 import { TEST_MODEL_SELECTION } from '@voucha/test-helpers/agents/model-call-result'

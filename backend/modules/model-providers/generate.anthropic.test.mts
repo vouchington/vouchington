@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { generateJson } from './generate.mts'
-import { calcCostMicrounits } from './pricing.mts'
+import { calcCostMicrounits } from '@voucha/test-helpers/agents/calc-cost-microunits'
 
 type Verdict = { capital: string }
 
