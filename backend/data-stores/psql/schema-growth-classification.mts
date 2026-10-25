@@ -105,7 +105,7 @@ export function buildUnboundedUnpartitionedTables(
       {
         tables: UNBOUNDED_MEMBERSHIP_WORK_ITEMS,
         reason:
-          'Terminal work remains with its membership or verification parent; no retention currently removes these rows.',
+          'Terminal work remains until its owning parent is removed; no time-based retention applies.',
       },
       {
         tables: INDEFINITE_EDGE_TABLES,
