@@ -25,7 +25,7 @@ const INTEGER_MONEY_SUFFIX = /_(?:minor_units|microunits)(?:_per_[a-z][a-z0-9_]*
 const LEGACY_MONEY_NAME = /(?:^|_)(?:cents|dollars)(?:_|$)|^(?:cents_per_point|cost_usd)$/
 const MONEY_NAME_TOKEN =
   /(?:^|_)(?:amount|balance|bonus|cost|credit_limit|fee|income|mrr|price|refund|revenue|valuation)(?:_|$)/
-const DECIMAL_OR_FLOAT_TYPES = /(?:numeric|decimal|double precision|float4|float8|real)/
+const DECIMAL_OR_FLOAT_TYPES = /(?:numeric|decimal|double precision|float4|float8|real|money)/
 
 function isPublicContractFile(file: string): boolean {
   if (!PUBLIC_CONTRACT_PREFIXES.some(prefix => file.startsWith(prefix))) return false

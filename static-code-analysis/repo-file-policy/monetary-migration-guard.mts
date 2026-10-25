@@ -10,9 +10,11 @@ const DECIMAL_OR_FLOAT_SQL_TYPES = new Set([
   'double precision',
   'float4',
   'float8',
+  'money',
   'numeric',
   'pg_catalog.float4',
   'pg_catalog.float8',
+  'pg_catalog.money',
   'pg_catalog.numeric',
   'real',
 ])

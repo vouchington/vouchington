@@ -4,12 +4,12 @@ import { checkMonetarySnapshot } from './monetary-contract-guard.mts'
 import { checkMonetaryMigration } from './monetary-migration-guard.mts'
 
 describe('monetary migration storage guard', () => {
-  it('rejects FLOAT and DEC declarations for monetary columns', async () => {
+  it('rejects FLOAT, DEC, and money declarations for monetary columns', async () => {
     const errors: string[] = []
 
     await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
-      'CREATE TABLE invoices (annual_fee FLOAT, service_fee FLOAT(24), total_fee FLOAT(53), renewal_fee DEC(10,2));',
+      'CREATE TABLE invoices (annual_fee FLOAT, service_fee FLOAT(24), total_fee FLOAT(53), renewal_fee DEC(10,2), late_fee money, processing_fee MONEY[]);',
       errors,
     )
 
@@ -18,6 +18,30 @@ describe('monetary migration storage guard', () => {
       expect.stringContaining('invoices.service_fee'),
       expect.stringContaining('invoices.total_fee'),
       expect.stringContaining('invoices.renewal_fee'),
+      expect.stringContaining('invoices.late_fee stores money as pg_catalog.money'),
+      expect.stringContaining('invoices.processing_fee stores money as pg_catalog.money'),
+    ])
+  })
+
+  it('rejects money and MONEY[] in the final monetary storage snapshot', () => {
+    const errors: string[] = []
+    checkMonetarySnapshot(
+      {
+        tables: {
+          invoices: {
+            columns: {
+              annual_fee: { type: 'money' },
+              service_fee: { type: 'MONEY[]' },
+            },
+          },
+        },
+      } as never,
+      errors,
+    )
+
+    expect(errors).toEqual([
+      expect.stringContaining('invoices.annual_fee stores money as money'),
+      expect.stringContaining('invoices.service_fee stores money as MONEY[]'),
     ])
   })
 
