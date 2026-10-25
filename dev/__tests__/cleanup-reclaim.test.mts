@@ -117,7 +117,7 @@ describe('dev/cleanup worktree reclaim', () => {
       const out = await runCleanup(dir, bin, ['--yes'])
 
       expect(out).toContain('Skipping worktree reclaim: the worktree resource operation lock')
-      expect(out).toContain('another worktree resource operation is running')
+      expect(out).toContain('another worktree operation is running')
       expect(out).not.toContain('reclaim-args')
       await expect(readlink(lock)).resolves.toBe(token)
     })
