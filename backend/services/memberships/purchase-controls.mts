@@ -39,24 +39,3 @@ export function isMembershipPurchaseEnabled(provider: MembershipPurchaseProvider
   }
   return fields[PROVIDER_CONTROL[provider]] === true
 }
-
-const PROVIDER_COLLISION_CONTROL = {
-  stripe: 'stripe_automatic_collision_resolution_enabled',
-  apple_app_store: 'apple_app_store_automatic_collision_resolution_enabled',
-  google_play: 'google_play_automatic_collision_resolution_enabled',
-  microsoft_store: 'microsoft_store_automatic_collision_resolution_enabled',
-} as const
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function isMembershipAutomaticCollisionResolutionEnabled(
-  provider: MembershipPurchaseProvider,
-): boolean {
-  const fields = {
-    ...membershipBillingControls.defaultFields,
-    ...membershipBillingControls.getFields(),
-  }
-  return fields[PROVIDER_COLLISION_CONTROL[provider]] === true
-}
