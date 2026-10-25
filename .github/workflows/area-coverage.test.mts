@@ -36,7 +36,9 @@ const clausesOf = (condition = ''): string[] => condition.split('&&').map(clause
 
 const fullLcovUploads = (reusable: string): Step[] =>
   Object.values(readWorkflow(reusable).jobs ?? {}).flatMap(job =>
-    (job.steps ?? []).filter(step => step.uses === './.github/actions/upload-full-lcov'),
+    (job.steps ?? []).filter(step =>
+      step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/upload-full-lcov@'),
+    ),
   )
 
 // The artifact names a reusable test workflow uploads as full LCOV (first attempt and suffixed

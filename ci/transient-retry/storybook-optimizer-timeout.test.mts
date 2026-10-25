@@ -47,19 +47,14 @@ describe('Storybook optimizer timeout live topology', () => {
     const browserIndex = steps.findIndex(step => step.name === storybookBrowserTestStepName)
     const browserUploads = steps
       .slice(browserIndex + 1)
-      .filter(step => step.uses === './.github/actions/upload-full-lcov')
+      .filter(step =>
+        step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/upload-full-lcov@'),
+      )
     expect(browserUploads).toHaveLength(2)
     for (const upload of browserUploads) {
       expect(upload.if).toContain('inputs.publish_coverage')
       expect(upload.if).not.toMatch(/always\(|failure\(|cancelled\(/)
     }
-    const action = parseYaml(
-      readFileSync('.github/actions/upload-full-lcov/action.yml', 'utf8'),
-    ) as {
-      runs: { steps: Step[] }
-    }
-    const upload = action.runs.steps.find(step => step.uses?.startsWith('actions/upload-artifact@'))
-    expect(upload?.with?.path).toBe('coverage-full/lcov.info')
   })
 
   it('matches current browser timeout without missing-artifact text after snapshot output', async () => {

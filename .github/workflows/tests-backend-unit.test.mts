@@ -169,7 +169,9 @@ describe('backend uncredentialed Docker test workflow', () => {
 
     expect(fallbackStepIndex).toBeGreaterThanOrEqual(0)
     expect(fallbackStep).toContain('continue-on-error: true')
-    expect(fallbackStep).toContain('uses: ./.github/actions/upload-full-lcov')
+    expect(fallbackStep).toContain(
+      'uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@',
+    )
     expect(fallbackStep).toContain('suite: backend-shard-${{ matrix.shard }}')
   })
 
