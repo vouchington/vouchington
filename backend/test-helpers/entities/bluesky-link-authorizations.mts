@@ -7,8 +7,11 @@ import sql from 'sql-template-strings'
 
 export interface TestBlueskyLinkAuthorizationRow {
   id: string
+  user_id: string
   status: string
   handle: string | null
+  callback_mode: 'web' | 'native'
+  completion_proof_challenge: string | null
 }
 
 export async function getTestBlueskyLinkAttachmentTime(
@@ -26,7 +29,7 @@ export async function getTestBlueskyLinkAuthorizationRow(
 ): Promise<TestBlueskyLinkAuthorizationRow | null> {
   const { rows } = await read<TestBlueskyLinkAuthorizationRow>(
     sql`/* getTestBlueskyLinkAuthorizationRow */
-      SELECT id, status, handle
+      SELECT id, user_id, status, handle, callback_mode, completion_proof_challenge
       FROM bluesky_link_authorizations
       WHERE id = ${authorizationId}`,
   )

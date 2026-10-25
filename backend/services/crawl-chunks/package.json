@@ -28,8 +28,7 @@
     "@modules/utils": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@voucha/types": "workspace:^",
-    "pgvector": "^0.3.0",
-    "sql-template-strings": "^2.2.2"
+    "pgvector": "^0.3.0"
   },
   "devDependencies": {}
 }

@@ -1,4 +1,4 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -38,17 +38,6 @@ export async function createBlueskyLinkAuthorization(input: {
 
   await query.commit()
   return authorizationId
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getBlueskyLinkAuthorization(
-  authorizationId: string,
-): Promise<BlueskyLinkAuthorization> {
-  const { rows } = await readBlueskyLinkAuthorization(authorizationId, read)
-  return assertUsableBlueskyLinkAuthorization(rows[0])
 }
 
 export async function getBlueskyLinkAuthorizationForCallbackFromPrimary(

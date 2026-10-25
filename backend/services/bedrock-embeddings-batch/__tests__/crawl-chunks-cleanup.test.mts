@@ -1,9 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import {
-  finalizeChunksIfComplete,
-  finalizeChunksIfCompleteForMany,
-  deleteOldCrawlChunks,
-} from '@services/crawl-chunks/cleanup'
+import { finalizeChunksIfCompleteForMany } from '@services/crawl-chunks/cleanup'
 import {
   createTestCrawlWithChunks,
   insertTestCrawlPending,
@@ -11,21 +7,18 @@ import {
   getCrawlEmbeddingsGeneratedAt,
   getAllCrawlChunksForUrl,
   countCrawlChunks,
-  getCrawlChunksGroupedByCrawl,
   type TestCrawlWithChunks,
 } from '@voucha/test-helpers'
 import { applyCrawlChunkBatchUpdates } from '../entities/crawl-chunks.mts'
 import { createCrawlChunkEntityId } from '../entities/crawl-chunk-entity-id.mts'
 
 describe('cleanup', () => {
-  it('finalizeChunksIfComplete returns false when chunks are still pending', async () => {
+  it('does not finalize while chunks are still pending', async () => {
     const uniqueText = `Test incomplete ${Date.now()} ${Math.random()}`
     const { url, crawl } = (await createTestCrawlWithChunks({
       markdown: uniqueText,
     })) as TestCrawlWithChunks
-    // Should return false because chunks don't have embeddings yet
-    const result = await finalizeChunksIfComplete(url!.id, crawl.id)
-    expect(result).toBe(false)
+    await finalizeChunksIfCompleteForMany([crawl.id])
 
     // Verify crawl still has pending embeddings
     const hasPendingEmbeddings = await crawlHasPendingEmbeddings(url!.id, crawl.id)
@@ -35,7 +28,7 @@ describe('cleanup', () => {
     expect(embeddingsGeneratedAt).toBeNull()
   })
 
-  it('finalizeChunksIfComplete returns true and updates crawl when all chunks complete', async () => {
+  it('updates the crawl when all chunks complete', async () => {
     const uniqueText = `Test complete ${Date.now()} ${Math.random()}`
     const { url, crawl } = (await createTestCrawlWithChunks({
       markdown: uniqueText,
@@ -57,9 +50,7 @@ describe('cleanup', () => {
 
     await applyCrawlChunkBatchUpdates(updates)
 
-    // Now finalize should succeed
-    const result = await finalizeChunksIfComplete(url!.id, crawl.id)
-    expect(result).toBe(true)
+    await finalizeChunksIfCompleteForMany([crawl.id])
 
     // Verify crawl has been finalized
     const hasPendingEmbeddings = await crawlHasPendingEmbeddings(url!.id, crawl.id)
@@ -69,48 +60,14 @@ describe('cleanup', () => {
     expect(embeddingsGeneratedAt).not.toBeNull()
   })
 
-  it('deleteOldCrawlChunks removes chunks from previous crawls', async () => {
-    const uniqueText1 = `Test old crawl ${Date.now()} ${Math.random()}`
-    const uniqueText2 = `Test new crawl ${Date.now() + 1} ${Math.random()}`
-
-    // Create first crawl
-    const crawl1 = (await createTestCrawlWithChunks({
-      markdown: uniqueText1,
-    })) as TestCrawlWithChunks
-    // Create second crawl for the same URL
-    await createTestCrawlWithChunks({ markdown: uniqueText2 })
-    // Count chunks before deletion
-    const beforeCount = await countCrawlChunks({ urlId: crawl1.url!.id })
-    expect(beforeCount).toBeGreaterThan(0)
-
-    // Delete old chunks (keeping crawl1)
-    await deleteOldCrawlChunks(crawl1.url!.id, crawl1.crawl.id)
-
-    // Verify only crawl1's chunks remain
-    const afterGroups = await getCrawlChunksGroupedByCrawl(crawl1.url!.id)
-
-    // Should only have chunks for crawl1
-    expect(afterGroups).toHaveLength(1)
-    expect(afterGroups[0].crawl_id).toBe(crawl1.crawl.id)
-  })
-
-  it.each([
-    [
-      'finalizeChunksIfComplete',
-      (urlId: string, id: string) => finalizeChunksIfComplete(urlId, id),
-    ],
-    [
-      'finalizeChunksIfCompleteForMany',
-      (_urlId: string, id: string) => finalizeChunksIfCompleteForMany([id]),
-    ],
-  ])('%s clears the pending marker of superseded crawls', async (_name, finalize) => {
+  it('clears the pending marker of superseded crawls', async () => {
     const older = (await createTestCrawlWithChunks({
       markdown: `Test superseded ${Date.now()} ${Math.random()}`,
     })) as TestCrawlWithChunks
     const urlId = older.url!.id
     const newer = await insertTestCrawlPending(urlId, older.crawler.id)
 
-    await finalize(urlId, newer.id)
+    await finalizeChunksIfCompleteForMany([newer.id])
 
     expect(await crawlHasPendingEmbeddings(urlId, older.crawl.id)).toBe(false)
     expect(await countCrawlChunks({ urlId })).toBe(0)
