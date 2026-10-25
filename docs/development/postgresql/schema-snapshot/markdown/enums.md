@@ -217,8 +217,9 @@
 - `local_outcomes`
 - `runs`
 - `calls`
-- `batch_candidates`
 - `batches`
+- `identities`
+- `versioned_identities`
 
 ## `classifier_run_terminal_failure_kinds`
 

@@ -55,7 +55,7 @@ _none_
 - `ai_usage_records_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `ai_usage_records_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 - `ai_usage_records_service_tier_id_fkey`: `FOREIGN KEY (service_tier_id) REFERENCES ai_service_tiers(id) ON DELETE RESTRICT`
-- `fk_ai_usage_records__classifier_run_identity`: `FOREIGN KEY (classifier_run_identity_id) REFERENCES classifier_run_identities(id) ON DELETE RESTRICT`
+- `fk_ai_usage_records__classifier_run_identity`: `FOREIGN KEY (classifier_run_identity_id) REFERENCES classifier_run_identities(id) ON DELETE SET NULL`
 
 **Indexes:**
 

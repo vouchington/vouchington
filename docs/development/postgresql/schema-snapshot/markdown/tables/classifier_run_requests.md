@@ -13,7 +13,8 @@ Not partitioned — growth: unbounded.
 | `post_id`          | `uuid`                     | yes      |                              |          |           |           | Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.                    |
 | `rss_feed_item_id` | `uuid`                     | yes      |                              |          |           |           | Retained feed-item identity in the request deduplication key; deleting the live item does not erase it or authorize replay.               |
 | `input_sha256`     | `bytea`                    | no       |                              |          |           |           | Subject content digest current when the request was written; a request settles once per content version.                                  |
-| `run_identity_id`  | `uuid`                     | yes      |                              |          |           |           | Durable run identity that settled this request; NULL while unsettled. Payload expiry never reopens it.                                    |
+| `run_identity_id`  | `uuid`                     | yes      |                              |          |           |           | Cache run identity that settled this request while present; cache eviction clears this FK without reopening the request.                  |
+| `run_settled_at`   | `timestamp with time zone` | yes      |                              |          |           |           | Durable time a run settled this request, retained after its cache identity is removed.                                                    |
 | `no_work_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Time the classifier resolved to no configured work for the subject; a settled request is not swept again until a new approval re-arms it. |
 | `stale_at`         | `timestamp with time zone` | yes      |                              |          |           |           | Time the request was superseded by a newer content version of the same subject.                                                           |
 | `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                           |
@@ -26,7 +27,7 @@ _none_
 
 **Check constraints:**
 
-- `chk_classifier_run_requests__one_settlement`: `CHECK ((num_nonnulls(run_identity_id, no_work_at, stale_at) <= 1))`
+- `chk_classifier_run_requests__one_settlement`: `CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))`
 - `chk_classifier_run_requests__one_subject`: `CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))`
 - `classifier_run_requests_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 
@@ -35,12 +36,12 @@ _none_
 - `classifier_run_requests_classifier_id_fkey`: `FOREIGN KEY (classifier_id) REFERENCES classifiers(id) ON DELETE RESTRICT`
 - `classifier_run_requests_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`
 - `classifier_run_requests_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT`
-- `classifier_run_requests_run_identity_id_fkey`: `FOREIGN KEY (run_identity_id) REFERENCES classifier_run_identities(id) ON DELETE RESTRICT`
+- `classifier_run_requests_run_identity_id_fkey`: `FOREIGN KEY (run_identity_id) REFERENCES classifier_run_identities(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `idx_classifier_run_requests__classifier`: `CREATE INDEX idx_classifier_run_requests__classifier ON public.classifier_run_requests USING btree (classifier_id, id)`
-- `idx_classifier_run_requests__pending`: `CREATE INDEX idx_classifier_run_requests__pending ON public.classifier_run_requests USING btree (id) WHERE ((run_identity_id IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))`
+- `idx_classifier_run_requests__pending`: `CREATE INDEX idx_classifier_run_requests__pending ON public.classifier_run_requests USING btree (id) WHERE ((run_settled_at IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))`
 - `idx_classifier_run_requests__post`: `CREATE INDEX idx_classifier_run_requests__post ON public.classifier_run_requests USING btree (post_id, id) WHERE (post_id IS NOT NULL)`
 - `idx_classifier_run_requests__rss_feed_item`: `CREATE INDEX idx_classifier_run_requests__rss_feed_item ON public.classifier_run_requests USING btree (rss_feed_item_id, id) WHERE (rss_feed_item_id IS NOT NULL)`
 - `idx_classifier_run_requests__run_identity`: `CREATE INDEX idx_classifier_run_requests__run_identity ON public.classifier_run_requests USING btree (run_identity_id, id) WHERE (run_identity_id IS NOT NULL)`

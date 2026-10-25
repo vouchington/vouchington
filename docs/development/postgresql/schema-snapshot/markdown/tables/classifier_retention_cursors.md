@@ -6,14 +6,17 @@ One independent cyclic keyset position per bounded classifier record retention s
 
 Not partitioned — growth: bounded.
 
-| Column            | Type                          | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                       |
-| ----------------- | ----------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
-| `sweep`           | `classifier_retention_sweeps` | no       |                     |          |           |           | The classifier record family whose daily sweep owns this position.                            |
-| `cursor_id`       | `uuid`                        | yes      |                     |          |           |           | Last raw UUIDv7 row examined; no FK so deletion preserves progress.                           |
-| `cursor_ordinal`  | `integer`                     | yes      |                     |          |           |           | Last candidate ordinal examined within cursor_id when sweeping run candidates.                |
-| `cursor_child_id` | `uuid`                        | yes      |                     |          |           |           | Last topic or decision candidate ID examined within cursor_id for composite-key child sweeps. |
-| `sweep_end_key`   | `uuid`                        | yes      |                     |          |           |           | Fixed exclusive UUIDv7 cutoff captured when a sweep cycle begins.                             |
-| `updated_at`      | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed sweep progress.                                                                |
+| Column                     | Type                          | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                       |
+| -------------------------- | ----------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
+| `sweep`                    | `classifier_retention_sweeps` | no       |                     |          |           |           | The classifier record family whose daily sweep owns this position.                            |
+| `cursor_id`                | `uuid`                        | yes      |                     |          |           |           | Last raw UUIDv7 row examined; no FK so deletion preserves progress.                           |
+| `cursor_ordinal`           | `integer`                     | yes      |                     |          |           |           | Last candidate ordinal examined within cursor_id when sweeping run candidates.                |
+| `cursor_child_id`          | `uuid`                        | yes      |                     |          |           |           | Last topic or decision candidate ID examined within cursor_id for composite-key child sweeps. |
+| `cursor_classifier_id`     | `uuid`                        | yes      |                     |          |           |           | Classifier scope for the versioned identity cache sweep.                                      |
+| `cursor_prompt_version_id` | `uuid`                        | yes      |                     |          |           |           | Prompt-version scope for the versioned identity cache sweep.                                  |
+| `sweep_start_key`          | `uuid`                        | yes      |                     |          |           |           | Fixed inclusive UUIDv7 lower bound for a scoped identity cache sweep cycle.                   |
+| `sweep_end_key`            | `uuid`                        | yes      |                     |          |           |           | Fixed exclusive UUIDv7 cutoff captured when a sweep cycle begins.                             |
+| `updated_at`               | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed sweep progress.                                                                |
 
 **Primary key:** `PRIMARY KEY (sweep)`
 
@@ -21,7 +24,8 @@ Not partitioned — growth: bounded.
 _none_
 
 **Check constraints:**
-_none_
+
+- `chk_classifier_retention_cursors__version_scope`: `CHECK ((num_nonnulls(cursor_classifier_id, cursor_prompt_version_id) = ANY (ARRAY[0, 2])))`
 
 **Foreign keys:**
 _none_

@@ -183,8 +183,9 @@
         "local_outcomes",
         "runs",
         "calls",
-        "batch_candidates",
-        "batches"
+        "batches",
+        "identities",
+        "versioned_identities"
       ]
     },
     "classifier_run_terminal_failure_kinds": {
@@ -1525,7 +1526,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches\n  WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates\n  WHERE id = NEW.candidate_id FOR SHARE;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  SELECT * INTO threshold FROM classifier_candidate_thresholds\n  WHERE id = NEW.threshold_id FOR SHARE;\n  IF threshold.id IS NULL\n    OR threshold.classifier_id IS DISTINCT FROM NEW.classifier_id\n    OR threshold.candidate_id IS DISTINCT FROM NEW.candidate_id\n    OR threshold.prompt_version_id IS DISTINCT FROM NEW.prompt_version_id\n    OR threshold.deactivated_at IS NOT NULL THEN\n    RAISE EXCEPTION 'classifier batch candidate threshold must be its active configuration revision' USING ERRCODE = '23514';\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier batch candidate thresholds must match captured configuration' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_classifier_batch_candidate_owner_delete()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)\n    AND NOT (\n      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'\n      AND EXISTS (\n        SELECT 1 FROM classifier_decision_batches AS batch\n        WHERE batch.id = OLD.batch_id AND batch.completed_at IS NOT NULL\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_runs AS run\n        WHERE run.decision_batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_decision_calls AS call\n        WHERE call.batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM topic_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM story_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots require terminal, expired, unreferenced decisions before deletion' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)\n    AND NOT (\n      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_runs AS run\n        WHERE run.decision_batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_decision_calls AS call\n        WHERE call.batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM topic_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM story_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots require expired, unreferenced decisions before deletion' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
     },
     "fn_reject_classifier_candidate_community_override_lifecycle()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_community_override_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at\n    OR (\n      NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id\n      AND NOT (\n        NEW.enabled_by_id IS NULL\n        AND fn_classifier_audit_actor_was_deleted(OLD.enabled_by_id)\n      )\n    )\n    OR NOT (\n      NEW.disabled_at IS NOT DISTINCT FROM OLD.disabled_at\n      OR (OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL)\n    )\n    OR (\n      NEW.disabled_by_id IS DISTINCT FROM OLD.disabled_by_id\n      AND NOT (\n        OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL\n        OR (\n          NEW.disabled_by_id IS NULL\n          AND fn_classifier_audit_actor_was_deleted(OLD.disabled_by_id)\n        )\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -6056,7 +6057,7 @@
         },
         "fk_ai_usage_records__classifier_run_identity": {
           "columns": ["classifier_run_identity_id"],
-          "onDelete": "RESTRICT",
+          "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "classifier_run_identities",
@@ -11501,7 +11502,7 @@
         "classifier_decision_batch_candidates_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX classifier_decision_batch_candidates_pkey ON public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id)",
+          "definition": "CREATE UNIQUE INDEX classifier_decision_batch_candidates_pkey ON ONLY public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id)",
           "immediate": true,
           "keys": [
             {
@@ -11533,7 +11534,7 @@
         "idx_classifier_decision_batch_candidates__candidate": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__candidate ON public.classifier_decision_batch_candidates USING btree (candidate_id)",
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__candidate ON ONLY public.classifier_decision_batch_candidates USING btree (candidate_id)",
           "immediate": true,
           "keys": [
             {
@@ -11556,7 +11557,7 @@
         "idx_classifier_decision_batch_candidates__classifier": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__classifier ON public.classifier_decision_batch_candidates USING btree (classifier_id)",
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__classifier ON ONLY public.classifier_decision_batch_candidates USING btree (classifier_id)",
           "immediate": true,
           "keys": [
             {
@@ -11579,7 +11580,7 @@
         "idx_classifier_decision_batch_candidates__prompt": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__prompt ON public.classifier_decision_batch_candidates USING btree (prompt_version_id)",
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__prompt ON ONLY public.classifier_decision_batch_candidates USING btree (prompt_version_id)",
           "immediate": true,
           "keys": [
             {
@@ -11602,7 +11603,7 @@
         "idx_classifier_decision_batch_candidates__threshold": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__threshold ON public.classifier_decision_batch_candidates USING btree (threshold_id)",
+          "definition": "CREATE INDEX idx_classifier_decision_batch_candidates__threshold ON ONLY public.classifier_decision_batch_candidates USING btree (threshold_id)",
           "immediate": true,
           "keys": [
             {
@@ -11625,7 +11626,7 @@
         "uq_classifier_decision_batch_candidates__result_lineage": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batch_candidates__result_lineage ON public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold)",
+          "definition": "CREATE UNIQUE INDEX uq_classifier_decision_batch_candidates__result_lineage ON ONLY public.classifier_decision_batch_candidates USING btree (batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id, effective_lower_threshold, effective_upper_threshold)",
           "immediate": true,
           "keys": [
             {
@@ -11700,11 +11701,13 @@
           "valid": true
         }
       },
-      "physicalPartition": null,
+      "physicalPartition": {
+        "key": "RANGE (batch_id)"
+      },
       "primaryKey": {
         "columns": ["batch_id", "candidate_id"]
       },
-      "relationKind": "table",
+      "relationKind": "partitioned table",
       "triggers": {
         "trigger_classifier_decision_batch_candidates_append_only": {
           "definition": "CREATE TRIGGER trigger_classifier_decision_batch_candidates_append_only BEFORE UPDATE ON public.classifier_decision_batch_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
@@ -12702,10 +12705,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_classifier_prompt_versions__classifier": {
+        "idx_classifier_prompt_versions__activated_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_prompt_versions__classifier ON public.classifier_prompt_versions USING btree (classifier_id)",
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__activated_id ON public.classifier_prompt_versions USING btree (classifier_id, id) WHERE ((activated_at IS NOT NULL) AND (deleted_at IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -12713,6 +12716,47 @@
               "column": "classifier_id",
               "descending": false,
               "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((activated_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_prompt_versions__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__classifier ON public.classifier_prompt_versions USING btree (classifier_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -12873,7 +12917,12 @@
       }
     },
     "classifier_retention_cursors": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "chk_classifier_retention_cursors__version_scope": {
+          "definition": "CHECK ((num_nonnulls(cursor_classifier_id, cursor_prompt_version_id) = ANY (ARRAY[0, 2])))",
+          "validated": true
+        }
+      },
       "columns": {
         "cursor_child_id": {
           "comment": "Last topic or decision candidate ID examined within cursor_id for composite-key child sweeps.",
@@ -12884,6 +12933,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 4
+        },
+        "cursor_classifier_id": {
+          "comment": "Classifier scope for the versioned identity cache sweep.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
         },
         "cursor_id": {
           "comment": "Last raw UUIDv7 row examined; no FK so deletion preserves progress.",
@@ -12905,6 +12964,16 @@
           "nullable": true,
           "ordinalPosition": 3
         },
+        "cursor_prompt_version_id": {
+          "comment": "Prompt-version scope for the versioned identity cache sweep.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
         "sweep": {
           "comment": "The classifier record family whose daily sweep owns this position.",
           "dataType": "classifier_retention_sweeps",
@@ -12923,7 +12992,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 8
+        },
+        "sweep_start_key": {
+          "comment": "Fixed inclusive UUIDv7 lower bound for a scoped identity cache sweep cycle.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
         },
         "updated_at": {
           "comment": "Last committed sweep progress.",
@@ -12933,7 +13012,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 9
         }
       },
       "comment": "One independent cyclic keyset position per bounded classifier record retention sweep.",
@@ -13317,10 +13396,6 @@
           "definition": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
           "validated": true
         },
-        "classifier_run_identities_configuration_sha256_check": {
-          "definition": "CHECK ((octet_length(configuration_sha256) = 32))",
-          "validated": true
-        },
         "classifier_run_identities_input_sha256_check": {
           "definition": "CHECK ((octet_length(input_sha256) = 32))",
           "validated": true
@@ -13336,16 +13411,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "configuration_sha256": {
-          "comment": "Exact classifier configuration digest in the immutable run deduplication key.",
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6
         },
         "created_at": {
           "comment": null,
@@ -13375,10 +13440,20 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "post_id": {
           "comment": "Retained post identity in the deduplication key; never grants live-post access.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "prompt_version_id": {
+          "comment": "Real prompt-version relation in the deduplication key; NULL for classifier runs without a prompt version.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -13395,10 +13470,10 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         }
       },
-      "comment": "Minimal exact-dedup identity retained after the classifier run payload expires; never authorizes a deleted subject.",
+      "comment": "Bounded classifier deduplication cache; never authorizes a deleted subject.",
       "foreignKeys": {
         "classifier_run_identities_classifier_id_fkey": {
           "columns": ["classifier_id"],
@@ -13423,13 +13498,21 @@
           "referencedColumns": ["id"],
           "referencedTable": "retained_rss_feed_item_identities",
           "validated": true
+        },
+        "fk_classifier_run_identities__prompt_classifier": {
+          "columns": ["prompt_version_id", "classifier_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_prompt_versions",
+          "validated": true
         }
       },
       "indexes": {
         "idx_classifier_run_identities__classifier": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_run_identities__classifier ON public.classifier_run_identities USING btree (classifier_id, id)",
+          "definition": "CREATE INDEX idx_classifier_run_identities__classifier ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, id) WHERE (prompt_version_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -13443,9 +13526,41 @@
             },
             {
               "collation": null,
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
               "column": "id",
               "descending": false,
               "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(prompt_version_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_identities__classifier_lookup": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_identities__classifier_lookup ON public.classifier_run_identities USING btree (classifier_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -13485,6 +13600,38 @@
           ],
           "live": true,
           "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_identities__prompt_classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_identities__prompt_classifier ON public.classifier_run_identities USING btree (prompt_version_id, classifier_id) WHERE (prompt_version_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(prompt_version_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -13548,7 +13695,7 @@
         "uq_classifier_run_identities__post": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__post ON public.classifier_run_identities USING btree (classifier_id, post_id, input_sha256, configuration_sha256) WHERE (post_id IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__post ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, post_id, input_sha256) NULLS NOT DISTINCT WHERE (post_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -13556,6 +13703,15 @@
               "column": "classifier_id",
               "descending": false,
               "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -13577,15 +13733,6 @@
               "nullsFirst": false,
               "opclass": "pg_catalog.bytea_ops",
               "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "configuration_sha256",
-              "descending": false,
-              "expression": "configuration_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
             }
           ],
           "live": true,
@@ -13598,7 +13745,7 @@
         "uq_classifier_run_identities__rss_feed_item": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (classifier_id, rss_feed_item_id, input_sha256, configuration_sha256) WHERE (rss_feed_item_id IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256) NULLS NOT DISTINCT WHERE (rss_feed_item_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -13606,6 +13753,15 @@
               "column": "classifier_id",
               "descending": false,
               "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -13624,15 +13780,6 @@
               "column": "input_sha256",
               "descending": false,
               "expression": "input_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "configuration_sha256",
-              "descending": false,
-              "expression": "configuration_sha256",
               "nullsFirst": false,
               "opclass": "pg_catalog.bytea_ops",
               "orderingSupported": true
@@ -13657,7 +13804,7 @@
     "classifier_run_requests": {
       "checkConstraints": {
         "chk_classifier_run_requests__one_settlement": {
-          "definition": "CHECK ((num_nonnulls(run_identity_id, no_work_at, stale_at) <= 1))",
+          "definition": "CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))",
           "validated": true
         },
         "chk_classifier_run_requests__one_subject": {
@@ -13688,7 +13835,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "id": {
           "comment": null,
@@ -13718,7 +13865,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "post_id": {
           "comment": "Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.",
@@ -13741,7 +13888,7 @@
           "ordinalPosition": 4
         },
         "run_identity_id": {
-          "comment": "Durable run identity that settled this request; NULL while unsettled. Payload expiry never reopens it.",
+          "comment": "Cache run identity that settled this request while present; cache eviction clears this FK without reopening the request.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -13749,6 +13896,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 6
+        },
+        "run_settled_at": {
+          "comment": "Durable time a run settled this request, retained after its cache identity is removed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
         },
         "stale_at": {
           "comment": "Time the request was superseded by a newer content version of the same subject.",
@@ -13758,7 +13915,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "updated_at": {
           "comment": null,
@@ -13768,7 +13925,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         }
       },
       "comment": "Durable per-subject request for a classifier run, written in the same transaction as the fact that makes a subject eligible so the sweep can recover a subject that never got a run receipt; independent of classifier configuration.",
@@ -13799,7 +13956,7 @@
         },
         "classifier_run_requests_run_identity_id_fkey": {
           "columns": ["run_identity_id"],
-          "onDelete": "RESTRICT",
+          "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "classifier_run_identities",
@@ -13842,7 +13999,7 @@
         "idx_classifier_run_requests__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_run_requests__pending ON public.classifier_run_requests USING btree (id) WHERE ((run_identity_id IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
+          "definition": "CREATE INDEX idx_classifier_run_requests__pending ON public.classifier_run_requests USING btree (id) WHERE ((run_settled_at IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -13856,7 +14013,7 @@
             }
           ],
           "live": true,
-          "predicate": "((run_identity_id IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
+          "predicate": "((run_settled_at IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -14142,7 +14299,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "completed_at": {
           "comment": "Time all durable effects completed atomically and the exclusive claim was released.",
@@ -14152,7 +14309,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "configuration_json": {
           "comment": "PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.",
@@ -14162,7 +14319,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "configuration_sha256": {
           "comment": "SHA256 of the PostgreSQL JSONB text representation, identifying the exact replay configuration.",
@@ -14172,7 +14329,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "created_at": {
           "comment": null,
@@ -14182,7 +14339,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "decision_batch_id": {
           "comment": "Concrete same-subject C3 batch reserved before provider execution; NULL for local-only work.",
@@ -14192,7 +14349,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "id": {
           "comment": null,
@@ -14212,7 +14369,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "lease_expires_at": {
           "comment": "Deadline after which another worker may replace the current claim.",
@@ -14222,7 +14379,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "lease_token": {
           "comment": "Opaque fencing token for the current exclusive claimant; rotated on transfer and unrelated to any durable entity.",
@@ -14232,7 +14389,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "leased_at": {
           "comment": "Start of the current exclusive run claim.",
@@ -14242,7 +14399,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "outcomes_persisted_at": {
           "comment": "Time the complete configured outcomes became durable and eligible for effect application.",
@@ -14252,10 +14409,20 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "post_id": {
           "comment": "Post subject whose approved content is classified; deleting the post removes its run receipts. Exactly one subject column is set.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "prompt_version_id": {
+          "comment": "Concrete prompt-version relation for remote classifier work; NULL for promptless agent work.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -14272,7 +14439,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "rss_feed_item_id": {
           "comment": "RSS feed item subject classified by the run; deleting the item removes its run receipts. Exactly one subject column is set.",
@@ -14282,7 +14449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "shared_actor_user_id": {
           "comment": "Shared classifier system user attributing automatic topic votes and tags.",
@@ -14292,7 +14459,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "superseded_at": {
           "comment": "Current obsolete-run marker; cleared when the exact subject content/configuration identity becomes current again. Outcomes and attempt budget remain immutable.",
@@ -14302,7 +14469,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "sweep_enqueue_count": {
           "comment": "Recovery-sweep enqueues that actually added a job for this run; monotone and bounded, and a run at the bound is made terminal once its last job is gone.",
@@ -14312,7 +14479,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "terminal_failed_at": {
           "comment": "Time the run became terminal for this content and configuration identity; a terminal run is never dispatched again.",
@@ -14322,7 +14489,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "terminal_failure_kind": {
           "comment": "Durable reason the run stopped for good; client-unavailable means the provider client could not be built, sweep-bound-exceeded means the recovery sweep re-enqueued the run its bounded number of times.",
@@ -14332,7 +14499,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "updated_at": {
           "comment": null,
@@ -14342,7 +14509,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         }
       },
       "comment": "One classifier/subject/content/configuration run receipt shared by every fixed classifier; C3 and C4 retain remote results and votes.",
@@ -14417,6 +14584,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id", "rss_feed_item_id"],
           "referencedTable": "classifier_decision_batches",
+          "validated": true
+        },
+        "fk_classifier_runs__prompt_classifier": {
+          "columns": ["prompt_version_id", "classifier_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_prompt_versions",
           "validated": true
         }
       },
@@ -14535,6 +14710,38 @@
           ],
           "live": true,
           "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_runs__prompt_classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__prompt_classifier ON public.classifier_runs USING btree (prompt_version_id, classifier_id) WHERE (prompt_version_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(prompt_version_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
