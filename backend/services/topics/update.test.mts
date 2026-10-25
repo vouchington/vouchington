@@ -51,7 +51,8 @@ describe('updateTopic', () => {
       sourceId,
       destinationId,
       () => mergeTopicAliases(user!, source!, destination!),
-      query => updateTopic(user!, source!, { logo_image_id: null }, { query }),
+      query =>
+        updateTopic(user!, source!, { logo_image_id: null }, { query, skipSideEffects: true }),
     )
     expect(mergeResult.status).toBe('fulfilled')
     expect(updateResult).toMatchObject({ status: 'rejected', reason: { status: 409 } })
