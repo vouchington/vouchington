@@ -29,6 +29,16 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   queue as a domain. Express domain limits per job: group (`ordering`) `concurrency`, `rateLimit`,
   or `tokenBucket` in place of a separate queue, `setGlobalConcurrency`, or a queue-wide
   `limiter`; per-job `lockDuration` and `timeout` in place of worker-level values.
+- **Every shared-queue job sets `ordering`.** A job with no ordering key is limited only by worker
+  slots, so one flood of it can take every slot in the queue. Use a domain-prefixed key
+  (`<domain>:<lane>`) for each job.
+  - The cap is global. `ordering.concurrency` limits jobs across all workers, while
+    `workerConcurrency` sizes a single process. Never derive lane caps from worker size, or adding
+    workers adds no capacity.
+  - Read each cap from DynamicConfig. Give work that outside input can flood its own small lane,
+    and give batched work low caps.
+  - Keep dispatchers and tasks in separate lanes. GlideMQ releases a group's waiting jobs in FIFO
+    order, not by priority.
 - **Operate per domain.** A shared queue needs pause, retry, and stats per domain, with pausing as a
   domain-control database field, not `Queue.pause()`. The [background queue](../overview/architecture/queues/README.md)
   has them ([#2855](https://github.com/vouchington/vouchington/issues/2855)): register the domain in its

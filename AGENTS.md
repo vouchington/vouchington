@@ -10,6 +10,8 @@
 - Joined ids and relations are foreign keys. Structured JSON, data points, and change history stay
   JSON and are not joined. Retained-identity rows survive deletion and do not authorize the deleted
   entity. Read [PostgreSQL instructions](backend/data-stores/psql/AGENTS.md) for schema changes.
+- No UUIDs on the web: public URLs and pages identify entities by slug or natural key (such as a
+  hostname). Ids stay in API/MCP fields and joins.
 - Non-main databases and Valkey are disposable; recreate via [dev workflow](dev/AGENTS.md).
   Main's shared database remains guarded.
 - For user/staff UI or shared API changes, coordinate Vouchington and client work through the
