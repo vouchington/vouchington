@@ -28,7 +28,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.1155.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1156.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
