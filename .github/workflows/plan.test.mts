@@ -41,9 +41,14 @@ describe('plan workflow', () => {
     const gateJob = workflow.jobs?.['gate']
     expect(gateJob?.if).toContain('github.event.issue.pull_request == null')
     expect(gateJob?.if).toContain("contains(github.event.comment.body, '/plan')")
-    expect(gateJob?.if).toContain(`fromJSON('["OWNER","COLLABORATOR","MEMBER"]')`)
-    expect(gateJob?.if).not.toContain('CONTRIBUTOR')
-    expect(gateJob?.if).not.toContain('NONE')
+    expect(gateJob?.if).not.toContain('author_association')
+    expect(gateJob?.steps?.find(step => step.id === 'authorize')?.uses).toContain(
+      '/comment-command-authorize@',
+    )
+    expect(gateJob?.steps?.find(step => step.id === 'extract-plan')?.if).toBe(
+      "steps.authorize.outputs.authorized == 'true'",
+    )
+    expect(gateJob?.outputs?.['accepted']).toContain("steps.authorize.outputs.authorized == 'true'")
     expect(planPrompt).toMatch(
       /live\s+`author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`/,
     )
@@ -53,7 +58,6 @@ describe('plan workflow', () => {
     const gateJob = workflow.jobs?.['gate']
     const extractStep = gateJob?.steps?.find(step => step.id === 'extract-plan')
 
-    expect(gateJob?.outputs?.['accepted']).toBe('${{ steps.extract-plan.outputs.accepted }}')
     expect(gateJob?.outputs?.['plan_request']).toBe(
       '${{ steps.extract-plan.outputs.plan_request }}',
     )
@@ -67,7 +71,9 @@ describe('plan workflow', () => {
   it('rejects non-standalone first lines before acknowledgement or downstream jobs', () => {
     const gateJob = workflow.jobs?.['gate']
     const extractStep = gateJob?.steps?.find(step => step.id === 'extract-plan')
-    const ackStep = gateJob?.steps?.find(step => step.name?.toLowerCase().includes('reaction'))
+    const ackStep = gateJob?.steps?.find(step =>
+      step.uses?.includes('/comment-command-acknowledge@'),
+    )
     if (!extractStep?.run) throw new Error('Missing /plan extraction script')
 
     expect(executeFixRequestExtraction(extractStep.run, 'please /plan this')).toEqual({
@@ -82,7 +88,9 @@ describe('plan workflow', () => {
   it('accepts a standalone /plan for live issue inspection', () => {
     const gateJob = workflow.jobs?.['gate']
     const extractStep = gateJob?.steps?.find(step => step.id === 'extract-plan')
-    const ackStep = gateJob?.steps?.find(step => step.name?.toLowerCase().includes('reaction'))
+    const ackStep = gateJob?.steps?.find(step =>
+      step.uses?.includes('/comment-command-acknowledge@'),
+    )
     if (!extractStep?.run) throw new Error('Missing /plan extraction script')
     const extractionScript = extractStep.run
 
@@ -132,24 +140,12 @@ describe('plan workflow', () => {
     expect(extractIndex).toBeGreaterThan(checkoutIndex)
   })
 
-  it('acknowledges the /plan comment with an eyes reaction and first-attempt run link', () => {
-    const gateJob = workflow.jobs?.['gate']
-    const ackStep = gateJob?.steps?.find(step => step.name?.toLowerCase().includes('reaction'))
-
-    expect(ackStep).toBeDefined()
-    expect(ackStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
-    expect(ackStep?.env?.['ISSUE_NUMBER']).toBe('${{ github.event.issue.number }}')
-    expect(ackStep?.env?.['RUN_ATTEMPT']).toBe('${{ github.run_attempt }}')
-    expect(ackStep?.env?.['RUN_URL']).toBe(
-      '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+  it('acknowledges the /plan comment through the tooling action', () => {
+    const ackStep = workflow.jobs?.['gate']?.steps?.find(step =>
+      step.uses?.includes('/comment-command-acknowledge@'),
     )
-    expect(ackStep?.run).toContain('reactions')
-    expect(ackStep?.run).toContain('eyes')
-    expect(ackStep?.run).toContain('[[ "$RUN_ATTEMPT" == "1" ]]')
-    expect(ackStep?.run).toContain('gh issue comment "$ISSUE_NUMBER"')
-    expect(ackStep?.run).toContain('[View the automation workflow run]($RUN_URL)')
-    expect(ackStep?.run).toContain('::warning::Could not add eyes reaction')
-    expect(ackStep?.run).toContain('::warning::Could not post workflow run link')
+
+    expect(ackStep?.with).toEqual({ command: '/plan' })
   })
 
   it('renders the plan automation template', () => {
@@ -209,8 +205,13 @@ describe('plan workflow', () => {
     expect(escalateJob?.needs).toContain('render-prompt')
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
     expect(commentStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
-    expect(commentStep?.run).toMatch(/OWNER.*COLLABORATOR.*MEMBER/)
-    expect(commentStep?.run).not.toMatch(/CONTRIBUTOR|NONE/)
+    const revalidateStep = escalateJob?.steps?.find(step =>
+      step.uses?.includes('/comment-command-authorize@'),
+    )
+    expect(revalidateStep?.with).toEqual({
+      mode: 'revalidate',
+      'issue-number': '${{ github.event.issue.number }}',
+    })
     expect(commentStep?.run).toContain('Suppressing failure comment')
     expect(commentStep?.run).toContain('gh issue comment')
     expect(commentStep?.run).toContain('/plan run failed')

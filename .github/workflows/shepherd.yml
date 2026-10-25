@@ -18,9 +18,7 @@ jobs:
       vars.HARNESS_DISPATCH_ENABLED == 'true' &&
       vars.HARNESS_SHEPHERD_ENABLED == 'true' &&
       github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/shepherd') &&
-      contains(fromJSON('["OWNER","COLLABORATOR","MEMBER"]'),
-               github.event.comment.author_association)
+      contains(github.event.comment.body, '/shepherd')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -29,7 +27,7 @@ jobs:
       issues: write
       pull-requests: write
     outputs:
-      should_dispatch: ${{ steps.gate.outputs.should_dispatch }}
+      should_dispatch: ${{ steps.authorize.outputs.authorized == 'true' && steps.gate.outputs.should_dispatch }}
       pr_number: ${{ steps.gate.outputs.pr_number }}
       pr_title: ${{ steps.gate.outputs.pr_title }}
       pr_url: ${{ steps.gate.outputs.pr_url }}
@@ -38,18 +36,25 @@ jobs:
       checkpoint_comment_id: ${{ steps.checkpoint.outputs.checkpoint_comment_id }}
       resume_session_id: ${{ steps.checkpoint.outputs.resume_session_id }}
     steps:
+      - id: authorize
+        timeout-minutes: 1
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
+        if: steps.authorize.outputs.authorized == 'true'
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
+        if: steps.authorize.outputs.authorized == 'true'
 
       - name: Resolve PR and validate command
         timeout-minutes: 2
         id: gate
+        if: steps.authorize.outputs.authorized == 'true'
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
           GH_TOKEN: ${{ github.token }}
@@ -160,18 +165,13 @@ jobs:
           echo "resume_session_id=$RESUME_SESSION_ID" >> "$GITHUB_OUTPUT"
           echo "checkpoint_comment_id=$CHECKPOINT_COMMENT_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Acknowledge command with eyes reaction
+      - name: Acknowledge
         timeout-minutes: 2
         if: steps.gate.outputs.should_dispatch == 'true'
-        env:
-          COMMENT_ID: ${{ github.event.comment.id }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if ! gh api -X POST \
-            "/repos/${{ github.repository }}/issues/comments/${COMMENT_ID}/reactions" \
-            -f content=eyes; then
-            echo "::warning::Could not add eyes reaction to /shepherd comment. comment_id=${COMMENT_ID}."
-          fi
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        with:
+          command: /shepherd
+          post-run-link: 'false'
 
   render-prompt:
     name: Render automation prompt
@@ -320,19 +320,21 @@ jobs:
       THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
     steps:
-      - name: Comment failure on PR
+      - name: Revalidate trigger comment
         timeout-minutes: 1
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        with:
+          mode: revalidate
+          issue-number: ${{ needs.gate.outputs.pr_number }}
+
+      - name: Comment failure on PR
+        timeout-minutes: 2
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
             'select(.state == "open" and .head.repo.full_name == env.GITHUB_REPOSITORY and .head.ref == env.PR_HEAD_REF and .head.sha == env.PR_HEAD_SHA) | .number' \
             | grep -qx "$PR_NUMBER"
           COMMENT_JSON="$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$TRIGGER_COMMENT_ID")"
-          jq -e \
-            'select((.id | tostring) == env.TRIGGER_COMMENT_ID and
-              (.issue_url | endswith("/issues/" + env.PR_NUMBER)) and
-              (.author_association == "OWNER" or .author_association == "COLLABORATOR" or .author_association == "MEMBER"))' \
-            <<< "$COMMENT_JSON" > /dev/null
           COMMAND="$(jq -r '.body' <<< "$COMMENT_JSON" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
           if [[ "$COMMAND" != "/shepherd" ]]; then
             echo "Suppressing failure comment because the triggering /shepherd command is no longer valid."

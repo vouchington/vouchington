@@ -39,10 +39,18 @@ describe('shepherd workflow', () => {
     expect(gateJob?.if).toContain('github.event.issue.pull_request != null')
     expect(gateJob?.if).toContain("contains(github.event.comment.body, '/shepherd')")
   })
-  it('uses the same authorized associations as /fix (OWNER + COLLABORATOR + MEMBER)', () => {
+  it('authorizes the commenter with the tooling action before resolving the PR', () => {
     const gateJob = workflow.jobs?.['gate']
-    expect(gateJob?.if).toContain(`fromJSON('["OWNER","COLLABORATOR","MEMBER"]')`)
-    expect(gateJob?.if).not.toMatch(/CONTRIBUTOR|NONE/)
+    const steps = gateJob?.steps ?? []
+    expect(gateJob?.if).not.toContain('author_association')
+    expect(steps[0]?.id).toBe('authorize')
+    expect(steps[0]?.uses).toContain('/comment-command-authorize@')
+    expect(steps.find(step => step.id === 'gate')?.if).toBe(
+      "steps.authorize.outputs.authorized == 'true'",
+    )
+    expect(gateJob?.outputs?.['should_dispatch']).toContain(
+      "steps.authorize.outputs.authorized == 'true'",
+    )
     expect(shepherdPrompt).toContain('require its body to remain exactly `/shepherd`')
     expect(shepherdPrompt).toMatch(
       /live\s+`author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`/,
@@ -128,7 +136,9 @@ describe('shepherd workflow', () => {
   it('prepares append-only bot checkpoint state and acknowledges the command with eyes', () => {
     const gateJob = workflow.jobs?.['gate']
     const steps = gateJob?.steps ?? []
-    const ackStep = gateJob?.steps?.find(step => step.name?.toLowerCase().includes('reaction'))
+    const ackStep = gateJob?.steps?.find(step =>
+      step.uses?.includes('/comment-command-acknowledge@'),
+    )
     const checkpointStep = gateJob?.steps?.find(step => step.id === 'checkpoint')
     const setupNodeIndex = steps.findIndex(
       step => step.uses === './.github/actions/setup-node-pnpm',
@@ -159,9 +169,7 @@ describe('shepherd workflow', () => {
       '${{ steps.checkpoint.outputs.resume_session_id }}',
     )
     expect(ackStep?.if).toContain("steps.gate.outputs.should_dispatch == 'true'")
-    expect(ackStep?.env?.['GH_TOKEN']).toBe('${{ github.token }}')
-    expect(ackStep?.run).toContain('reactions')
-    expect(ackStep?.run).toContain('eyes')
+    expect(ackStep?.with).toEqual({ command: '/shepherd', 'post-run-link': 'false' })
   })
 
   it('dispatches pr-shepherd through the reusable Harness workflow', () => {
@@ -200,7 +208,7 @@ describe('shepherd workflow', () => {
     const checkoutStep = gateJob?.steps?.find(step => step.with?.['path'] === '.gated-pr')
     const inspectStep = gateJob?.steps?.find(step => step.id === 'inspect')
 
-    expect(gateJob?.outputs?.['should_dispatch']).toBe('${{ steps.gate.outputs.should_dispatch }}')
+    expect(gateJob?.outputs?.['should_dispatch']).toContain('steps.gate.outputs.should_dispatch')
     expect(checkoutStep).toBeUndefined()
     expect(inspectStep).toBeUndefined()
     expect(workflowText).not.toContain('.gated-pr')
@@ -289,8 +297,13 @@ describe('shepherd workflow', () => {
     const commentStep = escalateJob?.steps?.find(step => step.name === 'Comment failure on PR')
     expect(commentStep?.run).toContain('pulls/$PR_NUMBER')
     expect(commentStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
-    expect(commentStep?.run).toMatch(/OWNER.*COLLABORATOR.*MEMBER/)
-    expect(commentStep?.run).not.toMatch(/CONTRIBUTOR|NONE/)
+    const revalidateStep = escalateJob?.steps?.find(step =>
+      step.uses?.includes('/comment-command-authorize@'),
+    )
+    expect(revalidateStep?.with).toEqual({
+      mode: 'revalidate',
+      'issue-number': '${{ needs.gate.outputs.pr_number }}',
+    })
     expect(commentStep?.run).toContain('Suppressing failure comment')
     expect(commentStep?.run).toContain('gh issue comment "$PR_NUMBER"')
     expect(commentStep?.run).not.toContain('needs.dispatch.outputs.session-id')

@@ -23,16 +23,14 @@ jobs:
       vars.HARNESS_DISPATCH_ENABLED == 'true' &&
       vars.HARNESS_FIX_ISSUE_ENABLED == 'true' &&
       github.event.issue.pull_request == null &&
-      contains(github.event.comment.body, '/fix') &&
-      contains(fromJSON('["OWNER","COLLABORATOR","MEMBER"]'),
-               github.event.comment.author_association)
+      contains(github.event.comment.body, '/fix')
     runs-on: ubuntu-slim
     timeout-minutes: 4
     permissions:
       contents: read
       issues: write
     outputs:
-      accepted: ${{ steps.extract-fix.outputs.accepted }}
+      accepted: ${{ steps.authorize.outputs.authorized == 'true' && steps.extract-fix.outputs.accepted }}
       fix_request: ${{ steps.extract-fix.outputs.fix_request }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,9 +39,14 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
 
+      - id: authorize
+        timeout-minutes: 1
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+
       - name: Extract /fix request
         timeout-minutes: 2
         id: extract-fix
+        if: steps.authorize.outputs.authorized == 'true'
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_ID: ${{ github.event.comment.id }}
@@ -120,36 +123,12 @@ jobs:
           "$GITHUB_WORKSPACE/ci/write-github-multiline-output.sh" fix_request < "$REQUEST_FILE"
           echo "accepted=true" >> "$GITHUB_OUTPUT"
 
-      - name: Acknowledge with eyes reaction and run link
+      - name: Acknowledge
         timeout-minutes: 2
         if: steps.extract-fix.outputs.accepted == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          COMMENT_ID: ${{ github.event.comment.id }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          set -euo pipefail
-
-          if ! gh api -X POST \
-            "/repos/${{ github.repository }}/issues/comments/${COMMENT_ID}/reactions" \
-            -f content=eyes; then
-            echo "::warning::Could not add eyes reaction to /fix comment. comment_id=${COMMENT_ID}. Continuing so Harness dispatch can run."
-            {
-              echo "## /fix acknowledgement warning"
-              echo
-              echo "- Comment id: ${COMMENT_ID}"
-              echo
-              echo "GitHub rejected the optional eyes reaction. The workflow will continue to Harness dispatch."
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          if [[ "$RUN_ATTEMPT" == "1" ]] && ! gh issue comment "$ISSUE_NUMBER" \
-            --repo "$GITHUB_REPOSITORY" \
-            --body "👀 [View the automation workflow run]($RUN_URL)."; then
-            echo "::warning::Could not post workflow run link for /fix. issue_number=${ISSUE_NUMBER}. Continuing so Harness dispatch can run."
-          fi
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        with:
+          command: /fix
 
   render-prompt:
     name: Render automation prompt
@@ -171,33 +150,9 @@ jobs:
 
       - name: Capture trusted issue context
         timeout-minutes: 2
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-        run: |
-          set -euo pipefail
-          MAX_COMMENT_CHARS=2000
-          gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" > issue.json
-          comment_count="$(jq -er '.comments' issue.json)"
-          : > issue-comments.ndjson
-          if (( comment_count > 0 )); then
-            last_page="$(((comment_count + 99) / 100))"
-            first_page="$((last_page > 1 ? last_page - 1 : 1))"
-            for ((page = first_page; page <= last_page; page++)); do
-              gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER/comments?per_page=100&page=$page" |
-                jq -c --argjson maxChars "$MAX_COMMENT_CHARS" \
-                  '.[] | {id, author: .user.login,
-                    body: (.body // "" | .[0:$maxChars]), bodyTruncated: ((.body // "" | length) > $maxChars),
-                    created_at, updated_at}' >> issue-comments.ndjson
-            done
-          fi
-          jq -s 'sort_by(.created_at) | .[-100:]' issue-comments.ndjson > issue-comments.json
-          jq --slurpfile comments issue-comments.json --argjson commentCount "$comment_count" \
-            --argjson maxCommentChars "$MAX_COMMENT_CHARS" '{
-            body, labels: [.labels[].name], comments: $comments[0],
-            commentSnapshot: {total: $commentCount, included: ($comments[0] | length),
-              capped: ($commentCount > 100), maxCommentChars: $maxCommentChars}
-          }' issue.json > issue-context.json
+        uses: vouchington/vouchington-tooling/.github/actions/issue-comment-context@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        with:
+          number: ${{ github.event.issue.number }}
 
       - name: Prepare prompt variables
         timeout-minutes: 2
@@ -300,18 +255,20 @@ jobs:
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
       SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
     steps:
-      - name: Comment failure on source issue
+      - name: Revalidate trigger comment
         timeout-minutes: 1
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        with:
+          mode: revalidate
+          issue-number: ${{ github.event.issue.number }}
+
+      - name: Comment failure on source issue
+        timeout-minutes: 2
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER" --jq \
             'select(.state == "open") | .number' | grep -qx "$ISSUE_NUMBER"
           COMMENT_JSON="$(gh api "repos/$GITHUB_REPOSITORY/issues/comments/$TRIGGER_COMMENT_ID")"
-          jq -e \
-            'select((.id | tostring) == env.TRIGGER_COMMENT_ID and
-              (.issue_url | endswith("/issues/" + env.ISSUE_NUMBER)) and
-              (.author_association == "OWNER" or .author_association == "COLLABORATOR" or .author_association == "MEMBER"))' \
-            <<< "$COMMENT_JSON" > /dev/null
           COMMAND="$(jq -r '.body | split("\n")[0]' <<< "$COMMENT_JSON" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
           if [[ "$COMMAND" != "/fix" ]]; then
             echo "Suppressing failure comment because the triggering /fix command is no longer valid."
