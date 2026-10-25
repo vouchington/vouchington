@@ -46,7 +46,7 @@ export function createVoteStatsUpdater(
 export function createVotesUpsert(
   config: EntityElectionConfig,
   options: {
-    enqueueElectionStats: (entityIds: string[]) => unknown
+    enqueueElectionStats: (entityIds: string[]) => Promise<unknown>
     getEntityIds?: (
       votes: Array<{ entityId: string; score: ElectionVoteScore }>,
       upsertedVotes: ElectionVoteMutationResult[],

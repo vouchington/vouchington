@@ -68,6 +68,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",

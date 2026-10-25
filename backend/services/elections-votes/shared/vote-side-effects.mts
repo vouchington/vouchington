@@ -1,9 +1,10 @@
 import { registerPostCommitAction } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import type { ElectionVoteMutationResult } from './types.mts'
 
 type VoteSideEffectOptions = {
-  enqueueElectionStats: (entityIds: string[]) => unknown
+  enqueueElectionStats: (entityIds: string[]) => Promise<unknown>
   afterUpsert?: (entityIds: string[], upsertedVotes: ElectionVoteMutationResult[]) => Promise<void>
 }
 
@@ -14,10 +15,16 @@ export async function publishElectionVoteSideEffects(
   upsertedVotes: ElectionVoteMutationResult[],
 ): Promise<void> {
   const publish = async () => {
-    // Queue factories report failures internally; awaiting would turn a transient queue outage
-    // into a user-facing failure after PostgreSQL has already committed the vote.
-    void options.enqueueElectionStats(entityIds)
-    await options.afterUpsert?.(entityIds, upsertedVotes)
+    // Start stats admission before the strict afterUpsert callback, then join its factory-reported
+    // outcome even if that callback fails. A committed vote must not fail on queue admission.
+    const statsAdmission = awaitReportedEnqueueAdmission(() =>
+      options.enqueueElectionStats(entityIds),
+    )
+    try {
+      await options.afterUpsert?.(entityIds, upsertedVotes)
+    } finally {
+      await statsAdmission
+    }
   }
   if (queryOptions.query) {
     registerPostCommitAction(queryOptions.query, publish)
