@@ -4,6 +4,7 @@ import type { checkRssFeedCrawlable } from '../fetch-robots-check.mts'
 import { fetchRssFeed } from '../fetch.mts'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
+import { getRssFeedById } from '../get.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { NETWORK_BACKOFF_FAILURE_THRESHOLD } from '@services/urls-hostnames/network-backoff'
 import { CrawlerNetworkError } from '@modules/on-error/errors'
@@ -68,8 +69,11 @@ describe('fetch.network-backoff', () => {
     expect(state.is_crawlable).toBe(true)
 
     mockCrawlerRss.mockClear()
+    const lastFetchedAt = (await getRssFeedById(feedId)).last_fetched_at
     await expect(fetchRssFeedForTest(feedId)).resolves.toEqual([])
     expect(mockCrawlerRss).not.toHaveBeenCalled()
+    // The skip leaves the feed due, so it is fetched as the probe once the backoff expires.
+    expect((await getRssFeedById(feedId)).last_fetched_at).toEqual(lastFetchedAt)
   })
 
   it('leaves the probe unclaimed when robots.txt disallows the feed', async () => {

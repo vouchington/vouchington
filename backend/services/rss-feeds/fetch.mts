@@ -50,11 +50,8 @@ export async function fetchRssFeed(
     rssRateLimit.assertRssFetchHostnameNotRateLimited(fetchHostnameId, feedUrl),
     loadRssFetchHostnameNetworkBackoff(fetchHostnameId),
   ])
-  // Skipped, not failed: the feed waits for its next due fetch instead of counting a failure.
-  if (networkBackoff.isOpen) {
-    await updateRssFeedById(rssFeedId, { last_fetched_at: true })
-    return []
-  }
+  // Skipped, not fetched: last_fetched_at stays put so the feed is due for the probe on expiry.
+  if (networkBackoff.isOpen) return []
   try {
     await assertUrlAllowedByWebRisk(feedUrl)
   } catch (err) {
@@ -62,10 +59,11 @@ export async function fetchRssFeed(
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
     return []
   }
-  if (!(await crawlableCheck(feedUrl, rssFeed)) || !(await networkBackoff.claimProbe())) {
+  if (!(await crawlableCheck(feedUrl, rssFeed))) {
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
     return []
   }
+  if (!(await networkBackoff.claimProbe())) return []
   const latestCrawlSummary = await getLatestRssFeedCrawlForFeedWithOptions(rssFeedId, {
     includeFeedData: false,
   })
