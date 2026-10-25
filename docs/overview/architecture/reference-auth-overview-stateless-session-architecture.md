@@ -73,8 +73,9 @@ partitioned `RANGE(id)` with a default partition only. `created_at` is derived f
 `uuid_extract_timestamp(id)`, so the public API still returns creation time without a separate
 mutable timestamp column. Login flows (`email OTP`, `OAuth`, `discoverable passkey`, and MFA
 completion) insert or refresh the current session row with the current device/IP/user-agent
-metadata. `GET /api/v1/auth/sessions` repairs a missing current row for already-issued JWTs,
-`DELETE /api/v1/auth/sessions/:id` revokes a single owned session, `POST /api/v1/auth/sessions/revocations`
+metadata. A missing current row invalidates an already-issued authenticated JWT; session listing
+requires the durable row and never recreates it. `DELETE /api/v1/auth/sessions/:id` revokes a
+single owned session, `POST /api/v1/auth/sessions/revocations`
 revokes all of the current user's active sessions, and logout marks the current row revoked
-alongside the Valkey revocation flag. `last_seen_at` advances on login, list, logout, revoke, and
-warm/cold refreshes, but not on the hot JWT verification path.
+alongside the Valkey revocation flag. `last_seen_at` advances on login, logout, revoke, and
+warm/cold refreshes, but not on listing or the hot JWT verification path.
