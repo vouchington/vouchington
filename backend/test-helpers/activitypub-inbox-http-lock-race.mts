@@ -3,7 +3,7 @@ import { onTestFinished } from 'vitest'
 import sql from 'sql-template-strings'
 import { beginTransaction, writePool } from '@data-stores/psql'
 import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 /** Hold the real counter row while observing the owned HTTP INSERT's unchanged native promise. */
 export function withActivityPubInboxHttpLockRace<Result>(

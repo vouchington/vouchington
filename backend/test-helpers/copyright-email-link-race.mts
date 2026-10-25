@@ -3,7 +3,7 @@ import { writePool } from '@data-stores/psql'
 import { appendCopyrightEmailIntakeRecommendation } from '../services/copyright-notices/email-recommendations.mts'
 import { linkCopyrightEmailIntakeToNotice } from '../services/copyright-notices/email-threading.mts'
 import { markTestCopyrightNoticeErasedAndCommit } from './copyright-email-manual-association.mts'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 /** Commit a real link after the writer reads its absent link, before it takes the intake lock. */
 export async function appendCopyrightEmailAfterConcurrentLink(

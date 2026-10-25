@@ -3,7 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { readPool, writePool } from '@data-stores/psql'
 import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
 import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 const queryFailureContext = new AsyncLocalStorage<{ active: boolean }>()
 

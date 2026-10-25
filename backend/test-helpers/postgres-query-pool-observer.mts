@@ -2,7 +2,7 @@ import type pg from 'pg'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
 import { readPool, writePool } from '@data-stores/psql'
-import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
+import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 
 export type ObservedPostgresQueryPool = 'read' | 'write'
 
