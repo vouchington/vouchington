@@ -16,7 +16,7 @@ import { hasTestRetainedIdentityRoot } from '@voucha/test-helpers/entities/retai
 import { cleanupRetainedIdentityRoots } from '../data-retention/cleanup-retained-identities.mts'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { readTestCopyrightSurfaceRetainedEvidence } from '@voucha/test-helpers/copyright-surface-retained-evidence'
-import { selectCopyrightPlacementPartyUserIds } from '@services/media-delivery-safety/copyright-placement-parties'
+import { readTestCopyrightPlacementParties } from '@voucha/test-helpers/copyright-placement-policy-boundaries'
 import { recordCopyrightRepeatInfringerReviewOutcome } from '../copyright-notices/index.mts'
 
 describe('deleted copyright surface evidence', () => {
@@ -98,9 +98,9 @@ describe('deleted copyright surface evidence', () => {
 
     expect(await hasTestRetainedIdentityRoot('user', fixture.actorUserId)).toBe(true)
     expect(await readTestCopyrightSurfaceRetainedEvidence(notice.targetId)).toEqual(before)
-    expect(await selectCopyrightPlacementPartyUserIds(notice.targetId, 'respond')).toEqual([])
-    expect(await selectCopyrightPlacementPartyUserIds(notice.targetId, 'strike')).toEqual([])
-    expect(await selectCopyrightPlacementPartyUserIds(notice.targetId, 'retain')).toContain(
+    expect(await readTestCopyrightPlacementParties(notice.targetId, 'respond')).toEqual([])
+    expect(await readTestCopyrightPlacementParties(notice.targetId, 'strike')).toEqual([])
+    expect(await readTestCopyrightPlacementParties(notice.targetId, 'retain')).toContain(
       fixture.actorUserId,
     )
   })

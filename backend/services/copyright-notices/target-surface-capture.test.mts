@@ -9,7 +9,7 @@ import {
 import { reactivateTestCommunityImageWithoutBinder } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { updateCommunity } from '@services/communities/update'
 import { readTestCopyrightSurfaceRetainedEvidence } from '@voucha/test-helpers/copyright-surface-retained-evidence'
-import { selectCopyrightPlacementPartyUserIds } from '@services/media-delivery-safety/copyright-placement-parties'
+import { readTestCopyrightPlacementParties } from '@voucha/test-helpers/copyright-placement-policy-boundaries'
 
 describe('copyright target surface activation capture', () => {
   it('keeps a target on its exact setter epoch and captures trigger-only reactivation as unknown', async () => {
@@ -55,10 +55,10 @@ describe('copyright target surface activation capture', () => {
     expect(await readTestCopyrightSurfaceRetainedEvidence(originalNotice.targetId)).toEqual(
       originalEvidence,
     )
-    expect(await selectCopyrightPlacementPartyUserIds(originalNotice.targetId, 'respond')).toEqual([
+    expect(await readTestCopyrightPlacementParties(originalNotice.targetId, 'respond')).toEqual([
       fixture.actorUserId,
     ])
-    expect(await selectCopyrightPlacementPartyUserIds(reboundNotice.targetId, 'respond')).toEqual([
+    expect(await readTestCopyrightPlacementParties(reboundNotice.targetId, 'respond')).toEqual([
       replacementSetter.id,
     ])
 
@@ -74,10 +74,8 @@ describe('copyright target surface activation capture', () => {
       uploaded_by_id: null,
       is_bound_by_administrator: null,
     })
-    expect(await selectCopyrightPlacementPartyUserIds(unknownNotice.targetId, 'respond')).toEqual(
-      [],
-    )
-    expect(await selectCopyrightPlacementPartyUserIds(originalNotice.targetId, 'respond')).toEqual([
+    expect(await readTestCopyrightPlacementParties(unknownNotice.targetId, 'respond')).toEqual([])
+    expect(await readTestCopyrightPlacementParties(originalNotice.targetId, 'respond')).toEqual([
       fixture.actorUserId,
     ])
   })
