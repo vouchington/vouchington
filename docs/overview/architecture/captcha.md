@@ -80,6 +80,12 @@ Management degrade gracefully.
 
 The generic Turnstile token travels in its own header rather than the route body's
 `cf_turnstile_response`, so a successful retry does not spend one single-use token at two gates.
+After a successful generic proof, the verified session receives a short-lived clearance. This
+prevents repeated interactive challenges during a burst of protected writes while keeping the
+clearance tied to that session rather than the account. A new session for the same account must
+prove again. Operators can disable clearance through DynamicConfig; that setting takes
+effect even for sessions whose earlier clearance has not expired. Route-specific CAPTCHA,
+passkey, vote and request-signing checks still apply.
 Native clients select the equivalent App Attest operation challenge with the shared `app-attest`
 marker in that header and put its assertion in the dedicated bot-challenge App Attest headers. The
 marker is not an exemption: the hardware-backed assertion must still verify against the generic

@@ -5,6 +5,11 @@ import { hasVerifiedSessionCredential } from '@modules/request-client-info/sessi
 import { getOptionalRequestOrigin } from '@modules/request-client-info'
 import { BOT_CHALLENGE_REQUIRED } from '@modules/on-error/error-codes'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
+import { getBotChallengeClearanceSeconds } from '@services/captcha/bot-challenge-config'
+import {
+  hasBotChallengeClearance,
+  recordBotChallengeClearance,
+} from '@services/captcha/bot-challenge-clearance'
 import {
   BOT_CHALLENGE_ACTION_TAG,
   BOT_CHALLENGE_NATIVE_PROOF,
@@ -34,14 +39,20 @@ export async function enforceLowScoreBotChallenge(ctx: Context): Promise<void> {
 
   const existing = verificationByRequest.get(ctx.req)
   if (existing) return existing
-  const verification = verifyLowScoreProof(ctx)
+  const verification = verifyLowScoreProofOrClearance(ctx)
   verificationByRequest.set(ctx.req, verification)
   return verification
 }
 
-async function verifyLowScoreProof(ctx: Context): Promise<void> {
+async function verifyLowScoreProofOrClearance(ctx: Context): Promise<void> {
   await ctx.verifyAttestedRequestSignature()
-  const token = singleHeader(ctx.req.headers[VOUCHA_BOT_CHALLENGE_TOKEN_HEADER])
+  const clearanceSeconds = getBotChallengeClearanceSeconds()
+  const { sid } = await ctx.getSessionTokenData()
+  const tokenHeader = ctx.req.headers[VOUCHA_BOT_CHALLENGE_TOKEN_HEADER]
+  if (clearanceSeconds > 0 && tokenHeader === undefined && (await hasBotChallengeClearance(sid)))
+    return
+
+  const token = singleHeader(tokenHeader)
   const useNativeChallenge = token === BOT_CHALLENGE_NATIVE_PROOF
   await verifyCaptchaOrAttestation(
     ctx,
@@ -63,6 +74,7 @@ async function verifyLowScoreProof(ctx: Context): Promise<void> {
         : null,
     },
   )
+  if (clearanceSeconds > 0) await recordBotChallengeClearance(sid, clearanceSeconds)
 }
 
 export function isBotChallengeRequiredError(error: unknown): error is BotChallengeRequiredError {

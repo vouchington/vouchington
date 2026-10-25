@@ -9,6 +9,15 @@ import { describe, expect, it } from 'vitest'
 import { assertRegistryOrderIncludesEntries } from './registry-entries.mts'
 
 describe('dynamic config registry entry ordering', () => {
+  it('registers the bounded bot challenge clearance window', () => {
+    expect(
+      dynamicConfigRegistry.get('bot-challenge-config')?.fields.clearance_seconds,
+    ).toMatchObject({
+      integer: true,
+      minValue: 0,
+      maxValue: 3600,
+    })
+  })
   it('registers every field with its static hard ceiling and integer metadata', () => {
     const entry = dynamicConfigRegistry.get('pagination-config')!
     expect(paginationConfig.key).toBe('dynamic-config:pagination-config')
