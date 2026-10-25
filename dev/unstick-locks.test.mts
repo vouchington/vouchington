@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
 const devDir = import.meta.dirname
+const toolingDir = join(devDir, '..', 'node_modules', 'vouchington-tooling')
 
 async function makeRepo() {
   const repo = await mkdtemp(join(tmpdir(), 'voucha-unstick-locks-'))
@@ -21,6 +22,8 @@ async function makeRepo() {
     const destination = join(repo, 'dev', relativePath)
     await writeFile(destination, await readFile(join(devDir, relativePath), 'utf8'))
   }
+  await mkdir(join(repo, 'node_modules'))
+  await symlink(toolingDir, join(repo, 'node_modules', 'vouchington-tooling'))
   return repo
 }
 

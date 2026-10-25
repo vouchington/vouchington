@@ -40,7 +40,7 @@ if worktree_resource_clear_stale_operation_lock; then
         echo -e "${GREEN}Removed stale worktree resource operation lock.${NC}"
         removed=$((removed + 1))
     fi
-elif [ "$WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS" = active ]; then
+elif [ "$WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS" = active ] || [ "$WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS" = busy ]; then
     echo -e "${YELLOW}Worktree resource operation lock is active — not removed.${NC}"
     in_use=$((in_use + 1))
 else

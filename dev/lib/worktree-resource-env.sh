@@ -68,83 +68,23 @@ worktree_resource_current_dir() {
   worktree_resource_dir_from_path "$1"
 }
 
+WORKTREE_RESOURCE_OPERATION_LOCK_ROOT="${HOME}/.voucha/worktree-resource-operations"
+worktree_resource_load_operation_lock() {
+  declare -F worktree_operation_lock_acquire >/dev/null 2>&1 && return 0
+  # shellcheck source=/dev/null
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)/node_modules/vouchington-tooling/scripts/worktree/operation-lock.sh"
+}
 worktree_resource_acquire_operation_lock() {
-  local lock_root="${HOME}/.voucha/worktree-resource-operations"
-  local lock_path="$lock_root/lock"
-  local token="owner.$$.$RANDOM$RANDOM"
-  local owner_path="$lock_root/$token"
-  local held_owner_path held_pid held_token
-
-  mkdir -p "$lock_root"
-  printf '%s\n' "$$" >"$owner_path"
-
-  if ln -s "$token" "$lock_path" 2>/dev/null; then
-    if [ "$(readlink "$lock_path" 2>/dev/null || true)" = "$token" ]; then
-      WORKTREE_RESOURCE_OPERATION_LOCK_TOKEN=$token
-      return 0
-    fi
-    held_token=$(readlink "$lock_path" 2>/dev/null || true)
-    if [[ "$held_token" =~ ^owner\.[0-9]+\.[0-9]+$ ]] \
-      && [ -L "$lock_root/$held_token/$token" ] \
-      && [ "$(readlink "$lock_root/$held_token/$token")" = "$token" ]; then
-      rm -f "$lock_root/$held_token/$token"
-    fi
-  fi
-  if [ ! -L "$lock_path" ]; then
-    rm -f "$owner_path"
-    echo "Error: worktree resource operation lock is not a symbolic link: $lock_path" >&2
-    return 1
-  fi
-  held_token=$(readlink "$lock_path")
-  if [[ ! "$held_token" =~ ^owner\.[0-9]+\.[0-9]+$ ]]; then
-    rm -f "$owner_path"
-    echo "Error: worktree resource operation lock has an invalid owner: $lock_path" >&2
-    return 1
-  fi
-  held_owner_path="$lock_root/$held_token"
-  held_pid=$(cat "$held_owner_path" 2>/dev/null || true)
-  rm -f "$owner_path"
-  if [[ "$held_pid" =~ ^[0-9]+$ ]] && kill -0 "$held_pid" 2>/dev/null; then
-    echo "Error: another worktree resource operation is running (PID $held_pid)." >&2
-  else
-    echo "Error: the worktree resource operation lock is stale; run ./dev/unstick-locks when no resource operation is running." >&2
-  fi
-  return 1
+  worktree_resource_load_operation_lock && worktree_operation_lock_acquire "$WORKTREE_RESOURCE_OPERATION_LOCK_ROOT"
 }
-
-worktree_resource_clear_stale_operation_lock() {
-  local lock_root="${HOME}/.voucha/worktree-resource-operations"
-  local lock_path="$lock_root/lock"
-  local held_owner_path held_pid held_token
-  export WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS=missing
-  [ -L "$lock_path" ] || return 0
-  held_token=$(readlink "$lock_path")
-  [[ "$held_token" =~ ^owner\.[0-9]+\.[0-9]+$ ]] || {
-    export WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS=invalid
-    return 1
-  }
-  held_owner_path="$lock_root/$held_token"
-  held_pid=$(cat "$held_owner_path" 2>/dev/null || true)
-  if [[ "$held_pid" =~ ^[0-9]+$ ]] && kill -0 "$held_pid" 2>/dev/null; then
-    export WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS=active
-    return 1
-  fi
-  [ "$(readlink "$lock_path" 2>/dev/null || true)" = "$held_token" ] || return 1
-  rm -f "$lock_path"
-  rm -f "$held_owner_path"
-  export WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS=removed
-}
-
 worktree_resource_release_operation_lock() {
-  local token=${WORKTREE_RESOURCE_OPERATION_LOCK_TOKEN:-}
-  local lock_root="${HOME}/.voucha/worktree-resource-operations"
-  local lock_path="$lock_root/lock"
-  [ -n "$token" ] || return 0
-  if [ "$(readlink "$lock_path" 2>/dev/null || true)" = "$token" ]; then
-    rm -f "$lock_path"
-  fi
-  rm -f "$lock_root/$token"
-  unset WORKTREE_RESOURCE_OPERATION_LOCK_TOKEN
+  worktree_resource_load_operation_lock && worktree_operation_lock_release
+}
+worktree_resource_clear_stale_operation_lock() {
+  worktree_resource_load_operation_lock && worktree_operation_lock_clear_stale "$WORKTREE_RESOURCE_OPERATION_LOCK_ROOT"
+  local rc=$?
+  export WORKTREE_RESOURCE_LOCK_CLEANUP_STATUS=${WORKTREE_OPERATION_LOCK_CLEANUP_STATUS:-missing}
+  return $rc
 }
 
 # is_disposable_checkout_path lives in refuse-on-main.sh.
