@@ -87,8 +87,9 @@ The root Vitest config installs a `configureVitest` plugin that rejects an effec
 
 ## Live policy inputs and finite controls
 
-The repository-file policy aggregate owns Docker image mirror checks, Trivy scan and exception
-policy, and workspace root catalog correspondence. It consumes tracked inputs once in static CI;
-unit controls supply finite source trees instead of scanning the checkout. Shell quoting uses its
-existing aggregate guard with finite YAML and shell controls. Literal Vitest project exclude arrays
-are checked by the canonical ast-grep scan; resolved-project behavior remains a unit contract.
+The root repository-file policy command runs the released Docker image mirror and Trivy scan and
+exception checks alongside the repository-specific aggregate. Static CI runs those released checks
+as separate steps. The aggregate still owns workspace root catalog correspondence; finite unit
+controls supply source trees instead of scanning the checkout. Shell quoting uses its existing
+aggregate guard with finite YAML and shell controls. Literal Vitest project exclude arrays are
+checked by the canonical ast-grep scan; resolved-project behavior remains a unit contract.
