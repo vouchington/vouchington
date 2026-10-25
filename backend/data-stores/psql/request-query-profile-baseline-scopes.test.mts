@@ -17,13 +17,13 @@ const permanent = {
 }
 const firstRoute = 'POST /api/v1/example/first'
 const secondRoute = 'POST /api/v1/example/second'
+const worker = { queue: 'example-queue', job: 'example-job' }
 
-// Pure consumer policy: no query execution, provider mocks or dependency implementation tests.
 describe('route-scoped repeated-query allowances', () => {
   it('accepts the same annotation on distinct explicit routes with independent bounds', () => {
     const entries = [
-      { ...temporary, route: firstRoute, maxCount: 2 },
-      { ...permanent, route: secondRoute, maxCount: 3 },
+      { ...temporary, routes: [firstRoute], maxCount: 2 },
+      { ...permanent, routes: [secondRoute], maxCount: 3 },
     ]
     expect(parseRepeatBaseline(entries)).toEqual(entries)
   })
@@ -32,8 +32,8 @@ describe('route-scoped repeated-query allowances', () => {
     'rejects duplicate annotation/route pairs across metadata kinds (reverse=%s)',
     reverse => {
       const entries = [
-        { ...temporary, route: firstRoute, maxCount: 2 },
-        { ...permanent, route: firstRoute, maxCount: 3 },
+        { ...temporary, routes: [firstRoute], maxCount: 2 },
+        { ...permanent, routes: [firstRoute], maxCount: 3 },
       ]
       expect(() => parseRepeatBaseline(reverse ? entries.toReversed() : entries)).toThrow(
         'duplicate',
@@ -41,43 +41,36 @@ describe('route-scoped repeated-query allowances', () => {
     },
   )
 
-  it('rejects duplicate global entries', () => {
+  it('rejects duplicate routes within one entry', () => {
+    expect(() =>
+      parseRepeatBaseline([{ ...permanent, routes: [firstRoute, firstRoute], maxCount: 2 }]),
+    ).toThrow('duplicate')
+  })
+
+  it('rejects duplicate worker scopes across entries', () => {
     expect(() =>
       parseRepeatBaseline([
-        { ...temporary, route: null, maxCount: null },
-        { ...permanent, route: null, maxCount: null },
+        { ...temporary, routes: [], workers: [worker], maxCount: 2 },
+        { ...permanent, routes: [], workers: [worker], maxCount: 3 },
       ]),
     ).toThrow('duplicate')
   })
 
-  it.each([false, true])(
-    'rejects overlap between global and explicit route allowances (globalFirst=%s)',
-    globalFirst => {
-      const global = { ...temporary, route: null, maxCount: null }
-      const scoped = { ...permanent, route: firstRoute, maxCount: 2 }
-      expect(() => parseRepeatBaseline(globalFirst ? [global, scoped] : [scoped, global])).toThrow(
-        'overlap',
-      )
-    },
-  )
-
-  it('rejects a global allowance after several distinct scoped entries', () => {
-    expect(() =>
+  it('allows the same annotation on distinct route and worker scopes', () => {
+    expect(
       parseRepeatBaseline([
-        { ...temporary, route: firstRoute, maxCount: 2 },
-        { ...permanent, route: secondRoute, maxCount: 3 },
-        { ...temporary, route: null, maxCount: null },
+        { ...temporary, routes: [firstRoute], maxCount: 2 },
+        { ...permanent, routes: [], workers: [worker], maxCount: 3 },
       ]),
-    ).toThrow('overlap')
+    ).toHaveLength(2)
   })
 
   it.each([false, true])(
     'uses only the matching route bound regardless of entry order (reverse=%s)',
     reverse => {
       const entries = [
-        { ...temporary, route: firstRoute, maxCount: 2 },
-        { ...permanent, route: secondRoute, maxCount: 3 },
-        { ...permanent, annotation: 'globalRepeat', route: null, maxCount: null },
+        { ...temporary, routes: [firstRoute], maxCount: 2 },
+        { ...permanent, routes: [secondRoute], maxCount: 3 },
       ]
       const baseline = parseRepeatBaseline(reverse ? entries.toReversed() : entries)
       const two = [{ annotation: 'readAuthority', count: 2 }]
@@ -90,12 +83,6 @@ describe('route-scoped repeated-query allowances', () => {
       expect(findUnbaselinedRepeats('GET /api/v1/example/first', two, baseline)).toEqual(two)
       expect(findUnbaselinedRepeats(`${firstRoute}/extra`, two, baseline)).toEqual(two)
       expect(findUnbaselinedRepeats('POST /api/v1/example/third', two, baseline)).toEqual(two)
-      expect(
-        findUnbaselinedRepeats(firstRoute, [{ annotation: 'globalRepeat', count: 20 }], baseline),
-      ).toEqual([])
-      expect(
-        findUnbaselinedRepeats(secondRoute, [{ annotation: 'globalRepeat', count: 20 }], baseline),
-      ).toEqual([])
     },
   )
 })
