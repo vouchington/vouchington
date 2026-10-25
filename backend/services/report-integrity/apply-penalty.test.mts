@@ -14,7 +14,8 @@ import { applyReportAbusePenalty } from './apply-penalty.mts'
 import { revokeReportAbusePenalty } from './revoke-penalty.mts'
 import { resolveReportIntegrityFlag } from './resolve-flag.mts'
 import type { PrivateUser } from '@services/users/types'
-import { getJwtStaleKey, isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { getJwtStaleKey } from '@data-stores/valkey/jwt-stale'
+import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -58,11 +59,9 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     expect(await getTestUserBadFaithReporterAt(reporter1.id)).not.toBeNull()
     expect(await getTestUserBadFaithReporterAt(reporter2.id)).not.toBeNull()
     expect(await getTestUserBadFaithReporterAt(reporter3.id)).not.toBeNull()
-    expect(await Promise.all([reporter1.id, reporter2.id, reporter3.id].map(isJwtStale))).toEqual([
-      true,
-      true,
-      true,
-    ])
+    expect(
+      await Promise.all([reporter1.id, reporter2.id, reporter3.id].map(readTestJwtStaleMarker)),
+    ).toEqual([expect.any(String), expect.any(String), expect.any(String)])
   })
 
   it('skips reporters whose accounts no longer exist', async () => {
@@ -164,7 +163,8 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
         expect(completed).toBe(false)
         release.resolve()
         await expect(operation).resolves.toMatchObject({ penalized_user_count: 1 })
-        expect(await isJwtStale(reporter.id)).toBe(outcome === 'success')
+        const storedMarker = await readTestJwtStaleMarker(reporter.id)
+        expect(storedMarker !== null).toBe(outcome === 'success')
         expect(
           sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
         ).toHaveLength(outcome === 'failure' ? 1 : 0)
@@ -261,7 +261,7 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
       expect(completed).toBe(false)
       release.resolve()
       await expect(operation).resolves.toMatchObject({ penaltyId: penalty!.id })
-      await expect(isJwtStale(reporter.id)).resolves.toBe(true)
+      await expect(readTestJwtStaleMarker(reporter.id)).resolves.not.toBeNull()
 
       const updatedPenalties = await getTestReportAbusePenaltiesByUserId(reporter.id)
       expect(updatedPenalties.find(p => p.id === penalty!.id)?.revoked_at).not.toBeNull()

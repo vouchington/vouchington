@@ -3,7 +3,8 @@ import { v7 } from 'uuid'
 import { it, expect, describe, beforeAll, onTestFinished, vi } from 'vitest'
 import { runInsideTestWorkerProcessor } from '@vouchington/worker-runtime/testing'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { clearJwtStaleIfCurrent, getJwtStaleKey, isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { clearJwtStaleIfCurrent, getJwtStaleKey } from '@data-stores/valkey/jwt-stale'
+import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { countUserRoleAssignments, createTestUser, getTestUserRaw } from '@voucha/test-helpers'
@@ -94,7 +95,7 @@ describe('roles-permissions', () => {
         await grant
         expect(jobId).toBeDefined()
         expect((await voteAggregation.getJob(jobId!))?.data).toEqual({ userId: grantedUser.id })
-        expect(await isJwtStale(grantedUser.id)).toBe(true)
+        expect(await readTestJwtStaleMarker(grantedUser.id)).toBe(marker)
         expect(sentryCaptureExceptionMock.mock.calls.slice(reportsBefore)).toEqual([])
       } finally {
         await cleanup()

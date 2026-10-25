@@ -49,13 +49,6 @@ export async function markJwtStaleBatch(userIds: readonly string[]): Promise<Map
   return markersByUserId
 }
 
-/** Returns true if the user's JWT claims are marked stale. */
-/** @public Documented read-only JWT stale-marker query. */
-export async function isJwtStale(userId: string): Promise<boolean> {
-  const result = await sessionValkeyClient.get(getJwtStaleKey(userId))
-  return result !== null
-}
-
 /** Clear the stale flag only if no newer invalidation has replaced it. */
 export async function clearJwtStaleIfCurrent(
   userId: string,

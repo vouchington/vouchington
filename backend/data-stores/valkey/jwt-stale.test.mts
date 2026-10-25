@@ -2,43 +2,37 @@ import { it, expect, describe } from 'vitest'
 import {
   markJwtStale,
   markJwtStaleBatch,
-  isJwtStale,
+  getJwtStaleKey,
   clearJwtStaleIfCurrent,
 } from './jwt-stale.mts'
 import { v7 } from 'uuid'
+import { sessionValkeyClient } from './clients.mts'
 
 describe('jwt-stale', () => {
-  it('isJwtStale returns false for a user with no stale flag', async () => {
-    const userId = v7()
-    const result = await isJwtStale(userId)
-    expect(result).toBe(false)
-  })
-
   it('markJwtStale marks user claims as stale', async () => {
     const userId = v7()
 
     const marker = await markJwtStale(userId)
     expect(marker).toEqual(expect.any(String))
-    const result = await isJwtStale(userId)
-    expect(result).toBe(true)
+    expect((await sessionValkeyClient.get(getJwtStaleKey(userId)))?.toString()).toBe(marker)
   })
 
   it('clears the captured current stale marker', async () => {
     const userId = v7()
 
     const marker = await markJwtStale(userId)
-    expect(await isJwtStale(userId)).toBe(true)
+    expect((await sessionValkeyClient.get(getJwtStaleKey(userId)))?.toString()).toBe(marker)
 
     await expect(clearJwtStaleIfCurrent(userId, marker)).resolves.toBe(true)
-    expect(await isJwtStale(userId)).toBe(false)
+    expect(await sessionValkeyClient.get(getJwtStaleKey(userId))).toBeNull()
   })
 
   it('markJwtStale is idempotent', async () => {
     const userId = v7()
 
     await markJwtStale(userId)
-    await markJwtStale(userId)
-    expect(await isJwtStale(userId)).toBe(true)
+    const marker = await markJwtStale(userId)
+    expect((await sessionValkeyClient.get(getJwtStaleKey(userId)))?.toString()).toBe(marker)
   })
 
   it('markJwtStaleBatch marks multiple users and returns per-user markers', async () => {
@@ -50,12 +44,18 @@ describe('jwt-stale', () => {
     expect(markers.size).toBe(2)
     expect(markers.get(userIdA)).toEqual(expect.any(String))
     expect(markers.get(userIdB)).toEqual(expect.any(String))
-    expect(await isJwtStale(userIdA)).toBe(true)
-    expect(await isJwtStale(userIdB)).toBe(true)
+    expect((await sessionValkeyClient.get(getJwtStaleKey(userIdA)))?.toString()).toBe(
+      markers.get(userIdA),
+    )
+    expect((await sessionValkeyClient.get(getJwtStaleKey(userIdB)))?.toString()).toBe(
+      markers.get(userIdB),
+    )
 
     await expect(clearJwtStaleIfCurrent(userIdA, markers.get(userIdA)!)).resolves.toBe(true)
-    expect(await isJwtStale(userIdA)).toBe(false)
-    expect(await isJwtStale(userIdB)).toBe(true)
+    expect(await sessionValkeyClient.get(getJwtStaleKey(userIdA))).toBeNull()
+    expect((await sessionValkeyClient.get(getJwtStaleKey(userIdB)))?.toString()).toBe(
+      markers.get(userIdB),
+    )
   })
 
   it('markJwtStaleBatch uses the single-user path for one unique user', async () => {
@@ -65,7 +65,7 @@ describe('jwt-stale', () => {
 
     expect(markers.size).toBe(1)
     await expect(clearJwtStaleIfCurrent(userId, markers.get(userId)!)).resolves.toBe(true)
-    expect(await isJwtStale(userId)).toBe(false)
+    expect(await sessionValkeyClient.get(getJwtStaleKey(userId))).toBeNull()
   })
 
   it('markJwtStaleBatch does nothing for empty input', async () => {
@@ -83,9 +83,9 @@ describe('jwt-stale', () => {
     const newMarker = await markJwtStale(userId)
 
     await expect(clearJwtStaleIfCurrent(userId, oldMarker)).resolves.toBe(false)
-    expect(await isJwtStale(userId)).toBe(true)
+    expect((await sessionValkeyClient.get(getJwtStaleKey(userId)))?.toString()).toBe(newMarker)
 
     await expect(clearJwtStaleIfCurrent(userId, newMarker)).resolves.toBe(true)
-    expect(await isJwtStale(userId)).toBe(false)
+    expect(await sessionValkeyClient.get(getJwtStaleKey(userId))).toBeNull()
   })
 })
