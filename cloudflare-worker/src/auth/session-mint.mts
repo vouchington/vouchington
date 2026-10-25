@@ -7,7 +7,7 @@ import {
   type SessionTokenPayload,
 } from '@ts-shared/session-jwt'
 import type { SessionCachePayload } from './jwt.mts'
-import { isProductionMode } from '../production-mode.mts'
+import { isDeployedWorkerEnvironment } from '../production-mode.mts'
 import type { Env } from '../types.mts'
 
 export type EnsuredSession =
@@ -83,7 +83,10 @@ export async function isBackendIssuedAnonSession(
   }
 
   try {
-    const jwtOptions = { env, mode: isProductionMode(env) ? 'production' : 'development' } as const
+    const jwtOptions = {
+      env,
+      mode: isDeployedWorkerEnvironment(env) ? 'production' : 'development',
+    } as const
     const soloDevicePayload = await verifyDeviceJwt(deviceToken, jwtOptions)
     return soloDevicePayload !== null
   } catch (err) {
@@ -121,14 +124,15 @@ export async function ensureSession(
     return { kind: 'anon-passthrough' }
   }
 
-  const isProduction = isProductionMode(env)
-  const requiresConfiguredEdgeKeys = !isLocalWorkerDevelopment(env) && env.PRODUCTION !== undefined
+  const isProduction = isDeployedWorkerEnvironment(env)
+  const requiresConfiguredEdgeKeys =
+    isProduction || (!isLocalWorkerDevelopment(env) && env.PRODUCTION !== undefined)
   const edgePrivateKeys = env.VOUCHA_EDGE_ANON_SESSION_JWT_PRIVATE_KEYS_B64
   const edgePublicKeys = env.VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64
   if (requiresConfiguredEdgeKeys && (!edgePrivateKeys || !edgePublicKeys)) {
     if (!privateKeyMissingLogged) {
       console.warn(
-        'VOUCHA_EDGE_ANON_SESSION_JWT_PRIVATE_KEYS_B64 and VOUCHA_EDGE_ANON_SESSION_JWT_PUBLIC_KEYS_B64 are required in deployed Worker environments — anonymous visitors will not receive dt/st cookies.',
+        'Edge anonymous session keys are unavailable; anonymous visitors will not receive dt/st cookies.',
       )
       privateKeyMissingLogged = true
     }

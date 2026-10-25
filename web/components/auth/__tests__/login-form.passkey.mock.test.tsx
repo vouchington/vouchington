@@ -101,8 +101,8 @@ const turnstileCallbacks = vi.hoisted(() => ({
   onSuccess: undefined as ((token: string) => void) | undefined,
   reset: vi.fn<VitestLooseMock>(),
 }))
-vi.mock(import('@vouchington/script-loader/turnstile'), () => ({
-  useTurnstile: ({ onSuccess }: { onSuccess: (token: string) => void }) => {
+vi.mock(import('@/hooks/use-turnstile-action'), () => ({
+  useTurnstileAction: ({ onSuccess }: { onSuccess: (token: string) => void }) => {
     turnstileCallbacks.onSuccess = onSuccess
     return { ref: () => {}, reset: turnstileCallbacks.reset, isError: false }
   },

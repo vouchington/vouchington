@@ -22,7 +22,7 @@ export function CopyrightCounterNoticeForm({
   targetIds: string[]
 }) {
   const router = useRouter()
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('copyright-notices.counter-notice')
   const [submitted, setSubmitted] = useState(false)
   const [values, setValues] = useState({ name: '', address: '', telephone: '', signature: '' })
   const [selectedTargetIds, setSelectedTargetIds] = useCopyrightTargetSelection(targetIds)

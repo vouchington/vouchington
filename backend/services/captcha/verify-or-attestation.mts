@@ -50,5 +50,9 @@ export async function verifyCaptchaOrAttestation(
     return
   }
 
-  await verifyCaptchaToken(extractTurnstileTokenFromBody(body, opts.fieldNames), ctx.ip)
+  await verifyCaptchaToken(
+    extractTurnstileTokenFromBody(body, opts.fieldNames),
+    ctx.ip,
+    opts.actionTag,
+  )
 }

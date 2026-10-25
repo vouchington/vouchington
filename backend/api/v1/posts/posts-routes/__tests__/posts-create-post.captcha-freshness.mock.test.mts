@@ -21,7 +21,9 @@ describe('POST /api/v1/posts freshness after CAPTCHA', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
-    mockFetch.mockResolvedValue(new UndiciResponse(JSON.stringify({ success: true })))
+    mockFetch.mockResolvedValue(
+      new UndiciResponse(JSON.stringify({ success: true, hostname: 'localhost', action: 'test' })),
+    )
   })
 
   afterEach(() => {
@@ -48,7 +50,9 @@ describe('POST /api/v1/posts freshness after CAPTCHA', () => {
       mockFetch.mockImplementationOnce(async () => {
         if (state === 'deleted') await softDeleteTopic(topicId, user.id)
         else await mergeTopicForTest(topicId, destinationId, user.id)
-        return new UndiciResponse(JSON.stringify({ success: true }))
+        return new UndiciResponse(
+          JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
+        )
       })
       const response = await request
         .post('/api/v1/posts')
@@ -74,7 +78,9 @@ describe('POST /api/v1/posts freshness after CAPTCHA', () => {
     await request.authenticateAs(user)
     mockFetch.mockImplementationOnce(async () => {
       await hardDeleteTestUrl(urlId)
-      return new UndiciResponse(JSON.stringify({ success: true }))
+      return new UndiciResponse(
+        JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
+      )
     })
     const response = await request
       .post('/api/v1/posts')

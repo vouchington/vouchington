@@ -1,6 +1,8 @@
+import { assertBackendSessionJwtConfiguration } from '@services/jwt-session/configuration'
 import { describe, expect, it } from 'vitest'
 import {
   shouldRejectSkipCaptchaVerification,
+  shouldRejectPlaywrightTest,
   shouldRejectTurnstileTestSecret,
 } from './boot-guards.mts'
 
@@ -86,5 +88,30 @@ describe('shouldRejectSkipCaptchaVerification', () => {
   it('allows a deployed environment when SKIP_CAPTCHA_VERIFICATION is unset', () => {
     expect(shouldRejectSkipCaptchaVerification({ ENVIRONMENT: 'staging' })).toBe(false)
     expect(shouldRejectSkipCaptchaVerification({ ENVIRONMENT: 'production' })).toBe(false)
+  })
+})
+
+describe('deployed Playwright bypass guard', () => {
+  it('refuses test bypasses in staging and production', () => {
+    for (const ENVIRONMENT of ['staging', 'production']) {
+      expect(
+        shouldRejectPlaywrightTest({ ENVIRONMENT, NODE_ENV: 'test', PLAYWRIGHT_TEST: 'true' }),
+      ).toBe(true)
+      expect(shouldRejectPlaywrightTest({ ENVIRONMENT, PLAYWRIGHT_TEST: 'false' })).toBe(false)
+    }
+    expect(shouldRejectPlaywrightTest({ NODE_ENV: 'test', PLAYWRIGHT_TEST: 'true' })).toBe(false)
+  })
+})
+
+describe('deployed API session key configuration', () => {
+  it('rejects missing signing keys before deployed API startup', async () => {
+    await expect(
+      assertBackendSessionJwtConfiguration({
+        ENVIRONMENT: 'staging',
+        NODE_ENV: 'test',
+        VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: '',
+        VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: '',
+      }),
+    ).rejects.toThrow('must be configured')
   })
 })

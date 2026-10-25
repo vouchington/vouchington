@@ -148,9 +148,7 @@ tools stay out of this change.
 
 ## Household invitations
 
-| Capability                                                                                | Web  | Swift                   | .NET                    |
-| ----------------------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
-| Invite an existing user; review, accept, decline, or revoke pending household invitations | Full | Pending client adoption | Pending client adoption |
+Household invitations have full web support; Swift and .NET client adoption remains pending.
 
 Invitations require the invitee's decision before another user's individual joins a household. Web
 provides owner and invitee actions on the household page and opens that page from invitation
@@ -178,3 +176,16 @@ The authorization-request response includes `client_is_unverified`; `client_host
 metadata host for CIMD/native clients and the selected callback host for registered clients.
 The web owns rendering this browser flow; native clients continue to open the authorization URL.
 Dynamic registration cannot reserve first-party names or authorize staff resources.
+
+## Browser challenge context
+
+| Behavior                                                                      | Web  | Swift                   | .NET                    |
+| ----------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
+| Render Turnstile fallback with its operation action and configured web origin | Full | Pending client adoption | Pending client adoption |
+
+Browser challenge producers identify the operation when rendering a Turnstile widget. Server
+verification binds that result to the configured site and the operation being requested. Native
+App Attest retains its existing operation tags; clients that embed a browser challenge need the
+same action mapping and configured web origin. Native adoption is tracked in
+[vouchington-clients#486](https://github.com/vouchington/vouchington-clients/issues/486), with the
+producer landing first.

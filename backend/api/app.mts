@@ -1,3 +1,4 @@
+import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { verifyDeviceJwt, type DeviceTokenPayload } from '@ts-shared/session-jwt'
 import { v7 } from 'uuid'
@@ -99,11 +100,10 @@ app.on('error', (err: Error) => onError(normalizeErrorForLogging(err)))
 
 app.errorHandler((ctx, error: unknown) => {
   if (ctx.res.headersSent) return
-  const env = process.env.NODE_ENV ?? 'development'
   const rawRequestId = ctx.req.headers['x-request-id']
   const requestId = Array.isArray(rawRequestId) ? rawRequestId[0] : rawRequestId
   const { status, body } = buildApiErrorEnvelope(error, {
-    exposeDetails: env !== 'production',
+    exposeDetails: !isDeployedEnvironment(),
     requestId,
   })
   ctx.setStatus(status)

@@ -14,7 +14,7 @@ import { CopyrightEuGuestReceipt } from './copyright-eu-guest-receipt'
 export function CopyrightEuNoticeForm() {
   const router = useRouter()
   const { currentUser } = useAuth()
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('copyright-eu-notices.create')
   const [pending, startTransition] = useTransition()
   const [values, setValues] = useState({
     name: '',

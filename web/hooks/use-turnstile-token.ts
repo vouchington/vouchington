@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTurnstile } from '@vouchington/script-loader/turnstile'
+import { useTurnstileAction } from './use-turnstile-action'
 import {
   TURNSTILE_ALWAYS_APPROVE_TOKEN,
   useTurnstileAlwaysApprove,
@@ -23,7 +23,7 @@ export interface UseTurnstileTokenReturn {
 }
 
 /**
- * Wraps {@link useTurnstile} with the token-state + reset bookkeeping that every
+ * Wraps {@link useTurnstileAction} with the token-state + reset bookkeeping that every
  * content-creation form needs: it owns the token, clears it on expiry/error, and
  * exposes a single `reset()` that both resets the widget and clears the token so
  * the submit button re-disables until a fresh challenge completes.
@@ -32,21 +32,23 @@ export interface UseTurnstileTokenReturn {
  * so create forms (post, comment, topic recommendation, community, report) don't
  * each re-implement it. Pair with {@link TurnstileField} for the container markup.
  */
-export function useTurnstileToken(): UseTurnstileTokenReturn {
+export function useTurnstileToken(actionTag: string): UseTurnstileTokenReturn {
   const runtimePublicConfig = useRuntimePublicConfig()
   const alwaysApprove = useTurnstileAlwaysApprove()
-  const [token, setToken] = useState<string | null>(null)
-  const turnstile = useTurnstile({
+  const [challenge, setChallenge] = useState<{ actionTag: string; token: string } | null>(null)
+  const token = challenge?.actionTag === actionTag ? challenge.token : null
+  const turnstile = useTurnstileAction({
+    actionTag,
     siteKey: getTurnstileSiteKey(runtimePublicConfig),
     enabled: !alwaysApprove,
-    onSuccess: setToken,
-    onExpire: () => setToken(null),
-    onError: () => setToken(null),
+    onSuccess: token => setChallenge({ actionTag, token }),
+    onExpire: () => setChallenge(null),
+    onError: () => setChallenge(null),
   })
 
   function reset() {
     turnstile.reset()
-    if (!alwaysApprove) setToken(null)
+    if (!alwaysApprove) setChallenge(null)
   }
 
   return {

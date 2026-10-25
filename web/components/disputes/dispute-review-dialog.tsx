@@ -74,7 +74,7 @@ export function DisputeReviewDialog({
     error: null,
     submitted: false,
   })
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('disputes.create')
 
   useEffect(() => {
     if (open) return

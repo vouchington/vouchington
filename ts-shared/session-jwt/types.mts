@@ -13,6 +13,8 @@ export const SESSION_TOKEN_AUDIENCE = 'voucha:session'
 export type JwtRuntimeMode = 'production' | 'development' | 'test'
 
 export interface SessionJwtEnvironment {
+  ENVIRONMENT?: string
+  NODE_ENV?: string
   VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64?: string
   VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64?: string
 }

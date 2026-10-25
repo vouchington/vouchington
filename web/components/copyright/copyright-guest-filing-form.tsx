@@ -26,7 +26,7 @@ const filingKinds: { value: CopyrightGuestFilingKind; label: string }[] = [
 ]
 
 export function CopyrightGuestFilingForm({ noticeId }: { noticeId: string }) {
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('copyright-notices.guest-filing')
   const [token, setToken] = useState('')
   const [kind, setKind] = useState<CopyrightGuestFilingKind>('supplement')
   const [statement, setStatement] = useState('')

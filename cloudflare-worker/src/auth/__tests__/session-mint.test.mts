@@ -61,8 +61,15 @@ describe('ensureSession', () => {
     expect(mockEnsureAnonymousSession).not.toHaveBeenCalled()
   })
 
-  it('returns unavailable in deployed non-production when edge keys are absent', async () => {
-    const env: Env = { PRODUCTION: 'false' }
+  it('returns unavailable in deployed staging when edge keys are absent', async () => {
+    const env: Env = { ENVIRONMENT: 'staging', PRODUCTION: 'false' }
+    const result = await ensureSession(new Map(), null, null, null, env, DEPS)
+    expect(result).toEqual({ kind: 'unavailable' })
+    expect(mockEnsureAnonymousSession).not.toHaveBeenCalled()
+  })
+
+  it('does not use development fallback when deployed staging omits PRODUCTION', async () => {
+    const env: Env = { ENVIRONMENT: 'staging' }
     const result = await ensureSession(new Map(), null, null, null, env, DEPS)
     expect(result).toEqual({ kind: 'unavailable' })
     expect(mockEnsureAnonymousSession).not.toHaveBeenCalled()
