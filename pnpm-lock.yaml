@@ -9277,6 +9277,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/postgres':
+        specifier: ^0.0.18
+        version: 0.0.18
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -11539,6 +11542,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/postgres':
+        specifier: ^0.0.18
+        version: 0.0.18
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
