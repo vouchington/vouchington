@@ -56,7 +56,6 @@ export function executeGateWithTitle(
   gateRun: string,
   prTitle = MALICIOUS_PR_TITLE,
   options: {
-    commentBody?: string
     headRepo?: string
     prFields?: Record<string, unknown>
   } = {},
@@ -98,7 +97,6 @@ export function executeGateWithTitle(
     execFileSync('bash', ['-c', gateRun], {
       env: {
         ...process.env,
-        COMMENT_BODY: options.commentBody ?? '/shepherd',
         FAKE_GH_LOG: ghLogPath,
         FAKE_PR_JSON: prJsonPath,
         GITHUB_OUTPUT: githubOutputPath,

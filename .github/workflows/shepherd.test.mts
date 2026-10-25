@@ -55,10 +55,11 @@ describe('shepherd workflow', () => {
   it('validates an exact standalone command and same-repo PR', () => {
     const gateJob = workflow.jobs?.['gate']
     const gateStep = gateJob?.steps?.find(step => step.id === 'gate')
-    expect(gateStep?.env?.['COMMENT_BODY']).toBe('${{ github.event.comment.body }}')
+    const parseStep = gateJob?.steps?.find(step => step.id === 'parse')
+    expect(parseStep?.uses).toContain('/comment-command-parse@')
+    expect(parseStep?.with).toEqual({ command: '/shepherd', mode: 'whole-body' })
+    expect(gateStep?.if).toContain("steps.parse.outputs.accepted == 'true'")
     expect(gateStep?.env?.['PR_NUMBER']).toBe('${{ github.event.issue.number }}')
-    expect(gateStep?.run).toContain('COMMAND="$(printf')
-    expect(gateStep?.run).toContain('[[ "$COMMAND" != "/shepherd" ]]')
     expect(gateStep?.run).toContain('gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"')
     expect(gateStep?.run).toContain('HEAD_REPO')
     expect(gateStep?.run).toContain('Cannot run \\`/shepherd\\` on fork PRs')
@@ -100,19 +101,6 @@ describe('shepherd workflow', () => {
     expect(outputs['should_dispatch']).toBe('true')
     expect(outputs).not.toHaveProperty('injected_output')
     expect(executeGateWithTitle(gateRun, '-n').outputs['pr_title']).toBe('-n')
-  })
-
-  it('behaviorally rejects non-standalone commands', () => {
-    const gateRun = workflow.jobs?.['gate']?.steps?.find(step => step.id === 'gate')?.run
-    expect(gateRun).toBeDefined()
-    if (!gateRun) throw new Error('Missing gate script')
-
-    const { ghLog, outputs } = executeGateWithTitle(gateRun, 'Ignored', {
-      commentBody: '/shepherd please',
-    })
-    expect(outputs['should_dispatch']).toBe('false')
-    expect(outputs).not.toHaveProperty('pr_number')
-    expect(ghLog).toBe('')
   })
 
   it('behaviorally rejects fork PRs', () => {
@@ -282,19 +270,21 @@ describe('shepherd workflow', () => {
     expect(escalateJob?.if).toContain("needs.checkpoint-dispatch.result == 'cancelled'")
     expect(escalateJob?.needs).toContain('render-prompt')
     expect(escalateJob?.env?.['PR_NUMBER']).toBe('${{ needs.gate.outputs.pr_number }}')
-    expect(escalateJob?.env?.['PR_URL']).toBe('${{ needs.gate.outputs.pr_url }}')
-    expect(escalateJob?.env?.['SESSION_ID']).toBe('${{ needs.dispatch.outputs.session-id }}')
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
 
     const commentStep = escalateJob?.steps?.find(step => step.name === 'Comment failure on PR')
-    expect(commentStep?.run).toContain('pulls/$PR_NUMBER')
-    expect(commentStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
+    const checkStep = escalateJob?.steps?.find(step => step.id === 'check')
+    expect(checkStep?.run).toContain('pulls/$PR_NUMBER')
+    expect(checkStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
     expect(escalateJob?.steps?.[0]?.with).toMatchObject({ mode: 'revalidate' })
     expect(escalateJob?.steps?.[0]?.with?.['issue-number']).toContain('gate.outputs.pr_number')
-    expect(commentStep?.run).toContain('Suppressing failure comment')
-    expect(commentStep?.run).toContain('gh issue comment "$PR_NUMBER"')
-    expect(commentStep?.run).not.toContain('needs.dispatch.outputs.session-id')
-    expect(commentStep?.run).toContain('/shepherd run failed')
-    expect(commentStep?.run).not.toContain('dispatch-exit-reason')
+    expect(checkStep?.run).toContain('Suppressing failure comment')
+    expect(commentStep?.if).toBe("steps.check.outputs.valid == 'true'")
+    expect(commentStep?.uses).toContain('/comment-harness-session@')
+    expect(commentStep?.with).toMatchObject({
+      status: 'failed',
+      headline: '/shepherd run failed.',
+      details: '**PR:** ${{ needs.gate.outputs.pr_url }}',
+    })
   })
 })

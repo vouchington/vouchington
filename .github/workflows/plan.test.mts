@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeFixRequestExtraction } from '../test-helpers/fix-issue.fixtures.mts'
 
 type WorkflowJob = {
   'runs-on'?: string | string[]
@@ -54,72 +53,25 @@ describe('plan workflow', () => {
     )
   })
 
-  it('extracts the request after an exact /plan token', () => {
+  it('parses the /plan request through the tooling action', () => {
     const gateJob = workflow.jobs?.['gate']
     const extractStep = gateJob?.steps?.find(step => step.id === 'extract-plan')
 
-    expect(gateJob?.outputs?.['plan_request']).toBe(
-      '${{ steps.extract-plan.outputs.plan_request }}',
-    )
-    expect(extractStep?.run).toContain('/plan')
-    expect(extractStep?.run).toContain(
-      'write-github-multiline-output.sh" plan_request < "$REQUEST_FILE"',
-    )
-    expect(extractStep?.run).toContain('::error::Unable to extract exact /plan command')
+    expect(gateJob?.outputs?.['plan_request']).toBe('${{ steps.extract-plan.outputs.request }}')
+    expect(extractStep?.uses).toContain('/comment-command-parse@')
+    expect(extractStep?.with).toEqual({ command: '/plan' })
   })
 
   it('rejects non-standalone first lines before acknowledgement or downstream jobs', () => {
     const gateJob = workflow.jobs?.['gate']
-    const extractStep = gateJob?.steps?.find(step => step.id === 'extract-plan')
     const ackStep = gateJob?.steps?.find(step =>
       step.uses?.includes('/comment-command-acknowledge@'),
     )
-    if (!extractStep?.run) throw new Error('Missing /plan extraction script')
 
-    expect(executeFixRequestExtraction(extractStep.run, 'please /plan this')).toEqual({
-      accepted: 'false',
-    })
     expect(ackStep?.if).toBe("steps.extract-plan.outputs.accepted == 'true'")
     expect(workflow.jobs?.['render-prompt']?.if).toBe("needs.gate.outputs.accepted == 'true'")
     expect(workflow.jobs?.dispatch?.if).toBe("needs.gate.outputs.accepted == 'true'")
     expect(workflow.jobs?.escalate?.if).toContain("needs.gate.outputs.accepted == 'true'")
-  })
-
-  it('accepts a standalone /plan for live issue inspection', () => {
-    const gateJob = workflow.jobs?.['gate']
-    const extractStep = gateJob?.steps?.find(step => step.id === 'extract-plan')
-    const ackStep = gateJob?.steps?.find(step =>
-      step.uses?.includes('/comment-command-acknowledge@'),
-    )
-    if (!extractStep?.run) throw new Error('Missing /plan extraction script')
-    const extractionScript = extractStep.run
-
-    expect(executeFixRequestExtraction(extractionScript, '/plan')).toEqual({
-      accepted: 'true',
-      plan_request: '',
-    })
-    expect(extractionScript).not.toContain('authorized bounded issue snapshot')
-    expect(ackStep?.if).toBe("steps.extract-plan.outputs.accepted == 'true'")
-    expect(workflow.jobs?.['render-prompt']?.if).toBe("needs.gate.outputs.accepted == 'true'")
-    expect(workflow.jobs?.dispatch?.if).toBe("needs.gate.outputs.accepted == 'true'")
-  })
-
-  it('normalizes whitespace-only requests while preserving valid request text', () => {
-    const extractStep = workflow.jobs?.gate?.steps?.find(step => step.id === 'extract-plan')
-    if (!extractStep?.run) throw new Error('Missing /plan extraction script')
-    const extractScript = extractStep.run
-
-    expect(executeFixRequestExtraction(extractScript, '/plan\n  \n\t  ')).toEqual({
-      accepted: 'true',
-      plan_request: '  \n\t  ',
-    })
-    expect(
-      executeFixRequestExtraction(extractScript, '/plan\nInvestigate the retry policy.'),
-    ).toEqual({
-      accepted: 'true',
-      plan_request: 'Investigate the retry policy.',
-    })
-    expect(extractScript).not.toContain(`grep -q '[^[:space:]]' "$REQUEST_FILE"`)
   })
 
   it('checks out the trusted event revision before extracting the request', () => {
@@ -204,7 +156,8 @@ describe('plan workflow', () => {
     expect(escalateJob?.if).toContain("needs.render-prompt.result == 'failure'")
     expect(escalateJob?.needs).toContain('render-prompt')
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
-    expect(commentStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
+    const checkStep = escalateJob?.steps?.find(step => step.id === 'check')
+    expect(checkStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
     const revalidateStep = escalateJob?.steps?.find(step =>
       step.uses?.includes('/comment-command-authorize@'),
     )
@@ -212,8 +165,12 @@ describe('plan workflow', () => {
       mode: 'revalidate',
       'issue-number': '${{ github.event.issue.number }}',
     })
-    expect(commentStep?.run).toContain('Suppressing failure comment')
-    expect(commentStep?.run).toContain('gh issue comment')
-    expect(commentStep?.run).toContain('/plan run failed')
+    expect(checkStep?.run).toContain('Suppressing failure comment')
+    expect(commentStep?.if).toBe("steps.check.outputs.valid == 'true'")
+    expect(commentStep?.uses).toContain('/comment-harness-session@')
+    expect(commentStep?.with).toMatchObject({
+      status: 'failed',
+      headline: '/plan run failed — plan generation could not complete.',
+    })
   })
 })

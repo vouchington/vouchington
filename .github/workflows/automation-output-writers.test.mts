@@ -47,8 +47,6 @@ describe('automation output writers', () => {
 
   it('centralizes every automation multiline output in the shared helper', () => {
     const expectedUses: Record<string, number> = {
-      '.github/workflows/fix-issue.yml': 1,
-      '.github/workflows/plan.yml': 1,
       '.github/workflows/shepherd.yml': 1,
     }
 

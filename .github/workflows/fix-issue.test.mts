@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { executeFixRequestExtraction } from '../test-helpers/fix-issue.fixtures.mts'
 
 const read = (path: string) => readFileSync(path, 'utf8')
 
@@ -117,51 +116,21 @@ describe('fix-issue workflow', () => {
     expect(parsedIssue.jobs?.['gate']?.permissions?.['issues']).toBe('write')
   })
 
-  it('extracts the text after /fix as a gate output with CI diagnostics', () => {
+  it('parses the /fix request through the tooling action', () => {
     const gateJob = parsedIssue.jobs?.['gate']
     const extractStep = gateJob?.steps?.find(s => s.id === 'extract-fix')
 
-    expect(gateJob?.outputs?.['fix_request']).toBe('${{ steps.extract-fix.outputs.fix_request }}')
-    expect(extractStep?.env?.['COMMENT_BODY']).toBe('${{ github.event.comment.body }}')
-    expect(extractStep?.env?.['COMMENT_ID']).toBe('${{ github.event.comment.id }}')
-    expect(extractStep?.run).toContain('/fix')
-    expect(extractStep?.run).toContain(
-      'write-github-multiline-output.sh" fix_request < "$REQUEST_FILE"',
-    )
-    expect(extractStep?.run).toContain('::error::Unable to extract exact /fix command')
-    expect(extractStep?.run).toContain('GITHUB_STEP_SUMMARY')
-    expect(extractStep?.run).toContain('comment_id=$COMMENT_ID')
-    expect(extractStep?.run).toContain('comment_length=$COMMENT_LENGTH')
-    expect(extractStep?.run).toContain('preview=$(escape_command "$PREVIEW")')
-  })
-
-  it('keeps forged output syntax inside the extracted /fix request', () => {
-    const extractStep = parsedIssue.jobs?.['gate']?.steps?.find(step => step.id === 'extract-fix')
-    if (!extractStep?.run) throw new Error('Missing /fix extraction script')
-
-    const request = [
-      'Preserve the complete request',
-      'CODEX_FIX_REQUEST',
-      'fix_request=forged',
-      'injected_output=true',
-      'discarded<<CODEX_FIX_REQUEST',
-    ].join('\n')
-    const outputs = executeFixRequestExtraction(extractStep.run, `/fix\n${request}`)
-
-    expect(outputs).toEqual({ accepted: 'true', fix_request: request })
+    expect(gateJob?.outputs?.['fix_request']).toBe('${{ steps.extract-fix.outputs.request }}')
+    expect(extractStep?.uses).toContain('/comment-command-parse@')
+    expect(extractStep?.with).toEqual({ command: '/fix' })
   })
 
   it('rejects non-standalone first lines before acknowledgement or downstream jobs', () => {
     const gateJob = parsedIssue.jobs?.['gate']
-    const extractStep = gateJob?.steps?.find(step => step.id === 'extract-fix')
     const ackStep = gateJob?.steps?.find(step =>
       step.uses?.includes('/comment-command-acknowledge@'),
     )
-    if (!extractStep?.run) throw new Error('Missing /fix extraction script')
 
-    expect(executeFixRequestExtraction(extractStep.run, 'please /fix this')).toEqual({
-      accepted: 'false',
-    })
     expect(ackStep?.if).toBe("steps.extract-fix.outputs.accepted == 'true'")
     expect(parsedIssue.jobs?.['render-prompt']?.if).toContain(
       "needs.gate.outputs.accepted == 'true'",
@@ -265,10 +234,15 @@ describe('fix-issue workflow', () => {
       'issue-number': '${{ github.event.issue.number }}',
     })
     expect(escalateJob?.env?.['TRIGGER_COMMENT_ID']).toBe('${{ github.event.comment.id }}')
-    expect(failStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
-    expect(failStep?.run).toContain('Suppressing failure comment')
-    expect(failStep?.run).toContain('gh issue comment')
-    expect(failStep?.run).toContain('/fix run failed')
+    const checkStep = escalateJob?.steps?.find(s => s.id === 'check')
+    expect(checkStep?.run).toContain('issues/comments/$TRIGGER_COMMENT_ID')
+    expect(checkStep?.run).toContain('Suppressing failure comment')
+    expect(failStep?.if).toBe("steps.check.outputs.valid == 'true'")
+    expect(failStep?.uses).toContain('/comment-harness-session@')
+    expect(failStep?.with).toMatchObject({
+      status: 'failed',
+      headline: '/fix run failed — auto-fix could not complete.',
+    })
   })
 
   it('dispatches from the event sha (default branch head at comment time)', () => {

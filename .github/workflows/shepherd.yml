@@ -38,7 +38,7 @@ jobs:
     steps:
       - id: authorize
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
@@ -49,24 +49,25 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
 
+      - id: parse
+        timeout-minutes: 2
+        if: steps.authorize.outputs.authorized == 'true'
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-parse@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+        with:
+          command: /shepherd
+          mode: whole-body
+
       - name: Resolve PR and validate command
         timeout-minutes: 2
         id: gate
-        if: steps.authorize.outputs.authorized == 'true'
+        if: steps.authorize.outputs.authorized == 'true' && steps.parse.outputs.accepted == 'true'
         env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
 
           echo "should_dispatch=false" >> "$GITHUB_OUTPUT"
-
-          COMMAND="$(printf '%s' "$COMMENT_BODY" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
-          if [[ "$COMMAND" != "/shepherd" ]]; then
-            echo "Ignoring non-standalone /shepherd comment."
-            exit 0
-          fi
 
           PR_JSON="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
           HEAD_REPO="$(echo "$PR_JSON" | jq -r '.head.repo.full_name')"
@@ -166,7 +167,7 @@ jobs:
       - name: Acknowledge
         timeout-minutes: 2
         if: steps.gate.outputs.should_dispatch == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-acknowledge@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
         with:
           command: /shepherd
           post-run-link: 'false'
@@ -313,20 +314,18 @@ jobs:
       PR_HEAD_REF: ${{ needs.gate.outputs.pr_head_ref }}
       PR_HEAD_SHA: ${{ needs.gate.outputs.pr_head_sha }}
       PR_NUMBER: ${{ needs.gate.outputs.pr_number }}
-      PR_URL: ${{ needs.gate.outputs.pr_url }}
-      SESSION_ID: ${{ needs.dispatch.outputs.session-id }}
-      THIS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       TRIGGER_COMMENT_ID: ${{ github.event.comment.id }}
     steps:
       - name: Revalidate trigger comment
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@1d787d0f6ebffa0a81cdc763fad6af7531593cc3 # v0.71.0
+        uses: vouchington/vouchington-tooling/.github/actions/comment-command-authorize@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
         with:
           mode: revalidate
           issue-number: ${{ needs.gate.outputs.pr_number }}
 
-      - name: Comment failure on PR
-        timeout-minutes: 2
+      - name: Check the PR head and trigger are still valid
+        timeout-minutes: 1
+        id: check
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq \
@@ -338,21 +337,17 @@ jobs:
             echo "Suppressing failure comment because the triggering /shepherd command is no longer valid."
             exit 0
           fi
+          echo "valid=true" >> "$GITHUB_OUTPUT"
 
-          BODY="/shepherd run failed.
-
-          **PR:** $PR_URL
-          **Auto-shepherd run:** $THIS_RUN_URL"
-
-          if [[ -n "$SESSION_ID" ]]; then
-            BODY="$BODY
-          **Harness session:** $SESSION_ID"
-          fi
-
-          BODY="$BODY
-
-          Please investigate manually or re-comment \`/shepherd\` to retry."
-
-          gh issue comment "$PR_NUMBER" \
-            --repo "$GITHUB_REPOSITORY" \
-            --body "$BODY"
+      - name: Comment failure on PR
+        timeout-minutes: 1
+        if: steps.check.outputs.valid == 'true'
+        uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+        with:
+          status: failed
+          target: ${{ needs.gate.outputs.pr_number }}
+          session-id: ${{ needs.dispatch.outputs.session-id }}
+          headline: '/shepherd run failed.'
+          details: '**PR:** ${{ needs.gate.outputs.pr_url }}'
+          run-label: Auto-shepherd run
+          closing: 'Please investigate manually or re-comment `/shepherd` to retry.'
