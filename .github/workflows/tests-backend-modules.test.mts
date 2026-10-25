@@ -62,7 +62,9 @@ describe('backend module test workflow', () => {
     )
     expect(workflow).toContain('FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}')
     expect(workflow).toContain('RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}')
-    expect(workflow).toContain('uses: ./.github/actions/upload-full-lcov')
+    expect(workflow).toContain(
+      'uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@',
+    )
     expect(workflow).toContain('suite: backend-modules')
     expect(workflow).toContain('FAMILY: full-lcov')
     expect(workflow).toContain("inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure'")

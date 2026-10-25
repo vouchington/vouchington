@@ -39,7 +39,9 @@ describe('web API workflow', () => {
   })
 
   it('publishes full LCOV for the concrete matrix partition', () => {
-    expect(workflow).toContain('uses: ./.github/actions/upload-full-lcov')
+    expect(workflow).toContain(
+      'uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@',
+    )
     expect(workflow).toContain('suite: web-api-shard-${{ matrix.shard }}')
   })
 })

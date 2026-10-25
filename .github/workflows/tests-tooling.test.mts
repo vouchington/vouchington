@@ -187,7 +187,9 @@ describe('tests-tooling.yml setup timing', () => {
     expect(routeBoundsRun.run).toContain('--project i18n-route-bounds')
     expect(routeBoundsRun['timeout-minutes']).toBeGreaterThanOrEqual(5)
     expect(
-      routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-full-lcov'),
+      routeBoundsJob?.steps?.some(step =>
+        step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/upload-full-lcov@'),
+      ),
     ).toBe(false)
   })
 

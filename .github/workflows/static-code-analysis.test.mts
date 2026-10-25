@@ -18,7 +18,11 @@ describe('static-code-analysis workflow', () => {
 
     expect(jscpd?.if).toBeUndefined()
     expect(jscpd?.['timeout-minutes']).toBeLessThanOrEqual(3)
-    expect(steps.some(step => step.uses === './.github/actions/fetch-base-ref')).toBe(false)
+    expect(
+      steps.some(step =>
+        step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/fetch-base-ref@'),
+      ),
+    ).toBe(false)
   })
 
   it('runs the tracked Lua Selene script on every call with a step timeout', () => {

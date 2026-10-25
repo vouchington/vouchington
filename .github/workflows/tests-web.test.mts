@@ -92,7 +92,9 @@ describe('Web Tests workflow', () => {
     expect(tests).toContain('SUITE: web-shard-${{ matrix.shard }}')
     expect(tests).toContain('FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}')
     expect(tests).toContain('RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}')
-    expect(tests).toContain('uses: ./.github/actions/upload-full-lcov')
+    expect(tests).toContain(
+      'uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@',
+    )
     expect(tests).toContain('suite: web-shard-${{ matrix.shard }}')
     expect(tests).toContain('FAMILY: full-lcov')
     expect(tests).toContain("inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure'")

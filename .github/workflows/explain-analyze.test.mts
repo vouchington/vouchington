@@ -183,7 +183,9 @@ describe('native migration coverage fan-in', () => {
     )
     expect(preserve).toBeGreaterThan(conversion)
     expect(steps[conversion]?.run).toContain("--include 'backend/data-stores/psql/migrate.mts'")
-    const uploads = steps.filter(step => step.uses === './.github/actions/upload-full-lcov')
+    const uploads = steps.filter(step =>
+      step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/upload-full-lcov@'),
+    )
     expect(uploads.map(step => step.with)).toEqual([
       { suite: 'backend-native-migrations' },
       { suite: 'backend-native-migrations', 'name-suffix': '-retry' },
