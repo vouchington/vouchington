@@ -32,6 +32,7 @@
     "@services/entity-cache": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/postgres": "^0.0.18",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2"
   },

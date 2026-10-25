@@ -5,6 +5,7 @@ import {
   type TransactionQuery,
 } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import { createTransactionLockOnce } from '@vouchington/postgres'
 import type { PostPublicationScope } from './types.mts'
 
 export function postPublicationScopeIdentifier(scope: PostPublicationScope): string {
@@ -47,50 +48,17 @@ export async function lockPostPublication(query: TransactionQuery, postId: strin
 }
 
 // A query object must not be reused to re-fence after rolling back a savepoint taken on it.
-const topicRssFeedAttachmentIdsLockedInQuery = new WeakMap<TransactionQuery, Set<string>>()
-const pendingTopicRssFeedAttachmentLocks = new WeakMap<TransactionQuery, Promise<void>>()
+const topicRssFeedAttachmentLocks = createTransactionLockOnce({
+  namespace: 'topic-rss-feed-attachment:',
+  annotation: 'lockTopicRssFeedAttachmentLifecycles',
+})
 
 /** Serializes attachment of an RSS feed to an existing topic with topic merges. */
 export async function lockTopicRssFeedAttachmentLifecycles(
   query: TransactionQuery,
   topicIds: readonly string[],
 ): Promise<void> {
-  if (topicIds.length === 0) return
-  const previous = pendingTopicRssFeedAttachmentLocks.get(query)
-  const pending = (async () => {
-    if (previous) await previous.catch(continueAfterAttachmentFenceFailure)
-    const held = topicRssFeedAttachmentIdsLockedInQuery.get(query) ?? new Set<string>()
-    const ids = [...new Set(topicIds.map(id => id.toLowerCase()))]
-      .toSorted()
-      .filter(id => !held.has(id))
-    if (ids.length === 0) return
-    await query(
-      `/* lockTopicRssFeedAttachmentLifecycles */
-      WITH ordered_ids AS MATERIALIZED (
-        SELECT DISTINCT topic_id
-        FROM UNNEST($1::uuid[]) AS ids(topic_id)
-        ORDER BY topic_id
-      )
-      SELECT pg_advisory_xact_lock(hashtextextended('topic-rss-feed-attachment:' || topic_id::text, 0))
-      FROM ordered_ids
-      ORDER BY topic_id`,
-      [ids],
-    )
-    for (const id of ids) held.add(id)
-    topicRssFeedAttachmentIdsLockedInQuery.set(query, held)
-  })()
-  pendingTopicRssFeedAttachmentLocks.set(query, pending)
-  try {
-    await pending
-  } finally {
-    if (pendingTopicRssFeedAttachmentLocks.get(query) === pending)
-      pendingTopicRssFeedAttachmentLocks.delete(query)
-  }
-}
-
-// The failed caller owns its rejection; a later attempt must still execute and acquire its fence.
-function continueAfterAttachmentFenceFailure(): undefined {
-  return undefined
+  await topicRssFeedAttachmentLocks.lock(query, topicIds)
 }
 
 export async function lockTopicRssFeedAttachmentLifecycle(
