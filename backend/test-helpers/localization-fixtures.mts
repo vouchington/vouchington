@@ -1,15 +1,15 @@
 import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { CatalogMessage } from '@vouchington/localization'
 import { compileLocalizationSqlite } from '@vouchington/localization-compiler'
+import { catalogScratchDirectory } from '../services/localization/compile-catalog.mts'
 import { createLocalizationDatabaseOwner } from '../services/localization/database.mts'
 import { createLocalizationResolver } from '../services/localization/resolve.mts'
 
 export function createSampleLocalizationContext(
   messages: readonly CatalogMessage[] = sampleCatalogMessages(),
 ) {
-  const directory = mkdtempSync(join(tmpdir(), 'localization-'))
+  const directory = mkdtempSync(join(catalogScratchDirectory(), 'localization-'))
   const path = join(directory, 'catalog.sqlite')
   const databaseOwner = createLocalizationDatabaseOwner(() => path)
   let closed = false
@@ -20,7 +20,14 @@ export function createSampleLocalizationContext(
     closed = true
   }
   try {
-    compileLocalizationSqlite(messages, path)
+    const previousTmpdir = process.env.TMPDIR
+    process.env.TMPDIR = directory
+    try {
+      compileLocalizationSqlite(messages, path)
+    } finally {
+      if (previousTmpdir === undefined) Reflect.deleteProperty(process.env, 'TMPDIR')
+      else process.env.TMPDIR = previousTmpdir
+    }
     const database = databaseOwner.get()
     return {
       path,
