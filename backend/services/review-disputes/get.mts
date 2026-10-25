@@ -69,27 +69,36 @@ const DISPUTE_JOINS = sql`
   ) post_slug ON true
 `
 
-function addIsOverdue(dispute: ReviewDisputeResponse): ReviewDisputeResponse {
+function addIsOverdue(dispute: ReviewDisputeResponse, now: Date): ReviewDisputeResponse {
   if (dispute.status !== 'pending') return dispute
-  const ageHours = (Date.now() - dispute.created_at.getTime()) / 3_600_000
+  const ageHours = (now.getTime() - dispute.created_at.getTime()) / 3_600_000
   return { ...dispute, is_overdue: ageHours > DISPUTE_SLA_HOURS }
 }
 
-export async function getReviewDisputeById(id: string): Promise<ReviewDisputeResponse | null> {
-  return queryReviewDisputeById(id, read)
+export async function getReviewDisputeById(
+  id: string,
+  now: Date = new Date(),
+): Promise<ReviewDisputeResponse | null> {
+  return queryReviewDisputeById(id, read, now)
 }
 
 /** Reads from the primary, or through `options.query` to see the caller's own uncommitted rows. */
 export async function getReviewDisputeByIdFromPrimary(
   id: string,
   options?: QueryOptions,
+  now: Date = new Date(),
 ): Promise<ReviewDisputeResponse | null> {
-  return queryReviewDisputeById(id, statement => write(statement, options))
+  return queryReviewDisputeById(
+    id,
+    statement => write(statement, { ...options, readOnly: false }),
+    now,
+  )
 }
 
 async function queryReviewDisputeById(
   id: string,
   query: QueryExecutor,
+  now: Date,
 ): Promise<ReviewDisputeResponse | null> {
   const { rows } = await query<ReviewDisputeResponse>(
     sql`/* getReviewDisputeById */
@@ -104,14 +113,15 @@ async function queryReviewDisputeById(
   `),
   )
   const row = rows[0]
-  return row ? addIsOverdue(row) : null
+  return row ? addIsOverdue(row, now) : null
 }
 
 export async function getReviewDisputeAfterMutation(
   id: string,
   options?: QueryOptions,
+  now: Date = new Date(),
 ): Promise<ReviewDisputeResponse> {
-  const dispute = await getReviewDisputeByIdFromPrimary(id, options)
+  const dispute = await getReviewDisputeByIdFromPrimary(id, options, now)
   assert(dispute, 500, 'Dispute disappeared after mutation')
   return dispute
 }
@@ -121,12 +131,13 @@ export type ListReviewDisputesOptions = {
   limit?: number
   beforeId?: string | null
   disputantUserId?: string | null
+  now?: Date
 }
 
 export async function listReviewDisputes(
   options: ListReviewDisputesOptions = {},
 ): Promise<{ disputes: ReviewDisputeResponse[]; hasNextPage: boolean }> {
-  const { status = 'pending', limit = 25, beforeId, disputantUserId } = options
+  const { status = 'pending', limit = 25, beforeId, disputantUserId, now = new Date() } = options
   const fetchLimit = limit + 1
 
   const query = sql`/* listReviewDisputes */
@@ -149,7 +160,7 @@ export async function listReviewDisputes(
   query.append(sql` ORDER BY rd.id DESC LIMIT ${fetchLimit}`)
 
   const { rows } = await read(query)
-  const disputes = (rows as ReviewDisputeResponse[]).map(addIsOverdue)
+  const disputes = (rows as ReviewDisputeResponse[]).map(dispute => addIsOverdue(dispute, now))
   const hasNextPage = disputes.length > limit
   return { disputes: disputes.slice(0, limit), hasNextPage }
 }

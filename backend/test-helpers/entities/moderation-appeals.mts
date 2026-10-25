@@ -1,5 +1,6 @@
 import { write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import type { ModerationAppeal } from '@voucha/types/entities/moderation-appeal'
 import { openOrGetOpenCase } from './_moderation-case-support.mts'
 
@@ -11,6 +12,7 @@ type InsertTestModerationAppealOptions =
       communityId?: string | null
       appealReason?: string
       publicResponse?: string | null
+      createdAt?: Date
     }
   | {
       appellantId: string
@@ -19,6 +21,7 @@ type InsertTestModerationAppealOptions =
       communityId?: string | null
       appealReason?: string
       publicResponse?: string | null
+      createdAt?: Date
     }
 
 export async function insertTestModerationAppeal(
@@ -27,6 +30,7 @@ export async function insertTestModerationAppeal(
   const communityId = options.communityId ?? null
   const appealReason = options.appealReason ?? 'Test appeal reason'
   const publicResponse = options.publicResponse ?? null
+  const appealId = options.createdAt ? uuidv7({ msecs: options.createdAt.getTime() }) : null
 
   let caseId: string
   if (options.userWarningId) {
@@ -53,6 +57,7 @@ export async function insertTestModerationAppeal(
     ),
     new_appeal AS (
       INSERT INTO moderation_appeals (
+        id,
         appellant_user_id,
         user_warning_id,
         user_suspension_id,
@@ -64,6 +69,7 @@ export async function insertTestModerationAppeal(
         created_via
       )
       VALUES (
+        COALESCE(${appealId}::uuid, uuidv7()),
         ${options.appellantId}::uuid,
         ${userWarningId}::uuid,
         ${userSuspensionId}::uuid,

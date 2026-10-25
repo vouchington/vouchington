@@ -6,30 +6,33 @@ import { APPEAL_SLA_HOURS, type ModerationAppealStatus } from './config.mts'
 import type { ModerationAppealResponse } from './types.mts'
 import { APPEAL_JOINS, APPEAL_SELECT } from './get-query.mts'
 
-function addIsOverdue(appeal: ModerationAppealResponse): ModerationAppealResponse {
+function addIsOverdue(appeal: ModerationAppealResponse, now: Date): ModerationAppealResponse {
   if (appeal.status !== 'pending') return appeal
-  const ageHours = (Date.now() - appeal.created_at.getTime()) / 3_600_000
+  const ageHours = (now.getTime() - appeal.created_at.getTime()) / 3_600_000
   return { ...appeal, is_overdue: ageHours > APPEAL_SLA_HOURS }
 }
 
 export async function getModerationAppealById(
   id: string,
+  now: Date = new Date(),
 ): Promise<ModerationAppealResponse | null> {
-  return queryModerationAppealById(id, undefined, true)
+  return queryModerationAppealById(id, undefined, true, now)
 }
 
 /** Reads from the primary, or through `options.query` to see the caller's own uncommitted rows. */
 export async function getModerationAppealByIdFromPrimary(
   id: string,
   options?: QueryOptions,
+  now: Date = new Date(),
 ): Promise<ModerationAppealResponse | null> {
-  return queryModerationAppealById(id, options, false)
+  return queryModerationAppealById(id, options, false, now)
 }
 
 async function queryModerationAppealById(
   id: string,
   options: QueryOptions | undefined,
   defaultReadOnly: boolean,
+  now: Date,
 ): Promise<ModerationAppealResponse | null> {
   const statement = sql``
     .append(APPEAL_SELECT)
@@ -46,14 +49,15 @@ async function queryModerationAppealById(
     { ...options, readOnly: defaultReadOnly },
   )
   const row = rows[0]
-  return row ? addIsOverdue(row) : null
+  return row ? addIsOverdue(row, now) : null
 }
 
 export async function getModerationAppealAfterMutation(
   id: string,
   options?: QueryOptions,
+  now: Date = new Date(),
 ): Promise<ModerationAppealResponse> {
-  const appeal = await getModerationAppealByIdFromPrimary(id, options)
+  const appeal = await getModerationAppealByIdFromPrimary(id, options, now)
   assert(appeal, 500, 'Appeal disappeared after mutation')
   return appeal
 }
@@ -63,12 +67,13 @@ export type ListModerationAppealsOptions = {
   limit?: number
   beforeId?: string | null
   appellantUserId?: string | null
+  now?: Date
 }
 
 export async function listModerationAppeals(
   options: ListModerationAppealsOptions = {},
 ): Promise<{ appeals: ModerationAppealResponse[]; hasNextPage: boolean }> {
-  const { status = 'pending', limit = 25, beforeId, appellantUserId } = options
+  const { status = 'pending', limit = 25, beforeId, appellantUserId, now = new Date() } = options
   const fetchLimit = limit + 1
 
   const query = sql`/* listModerationAppeals */
@@ -91,7 +96,7 @@ export async function listModerationAppeals(
   query.append(sql` ORDER BY ma.id DESC LIMIT ${fetchLimit}`)
 
   const { rows } = await read(query)
-  const appeals = (rows as ModerationAppealResponse[]).map(addIsOverdue)
+  const appeals = (rows as ModerationAppealResponse[]).map(appeal => addIsOverdue(appeal, now))
   const hasNextPage = appeals.length > limit
   return { appeals: appeals.slice(0, limit), hasNextPage }
 }
