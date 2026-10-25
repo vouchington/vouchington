@@ -324,6 +324,17 @@
   },
   {
     "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "Device-bound registration or refresh reads the user once while verifying the signed proof, then rereads after proof consumption when session refresh takes the authority lock. The second read must observe deletion or credential changes committed during verification.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/auth-dbsc.mts:32",
+    "routes": [
+      "POST /api/v1/auth/device-bound-sessions",
+      "POST /api/v1/auth/device-bound-sessions/refreshes"
+    ]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
     "maxCount": null,
     "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
     "permanent": true,
@@ -1080,6 +1091,17 @@
   },
   {
     "annotation": "upsertAuthenticatedSession",
+    "maxCount": 2,
+    "reason": "One device-bound registration or refresh writes the authenticated session once; its user advisory lock and session-row upsert carry the same annotation in two SQL statements.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
+    "routes": [
+      "POST /api/v1/auth/device-bound-sessions",
+      "POST /api/v1/auth/device-bound-sessions/refreshes"
+    ]
+  },
+  {
+    "annotation": "upsertAuthenticatedSession",
     "maxCount": null,
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
     "permanent": true,
@@ -1101,6 +1123,14 @@
     "permanent": true,
     "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
     "routes": ["POST /api/v1/auth/email-address/login"]
+  },
+  {
+    "annotation": "upsertUserAgentString",
+    "maxCount": 3,
+    "reason": "Cold device-bound and native credential registration each resolve one immutable user agent through a read, conflict-tolerant insert, and reread.",
+    "permanent": true,
+    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
+    "routes": ["POST /api/v1/auth/device-bound-sessions", "POST /api/v1/auth/native/email-address/login"]
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",

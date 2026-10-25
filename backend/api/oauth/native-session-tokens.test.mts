@@ -32,12 +32,13 @@ import { getProfile } from '@services/my/profile'
 const PATH = '/api/v1/oauth/native-session-tokens'
 const BODY = { client_app: 'ios' }
 
-async function sessionCookies(authOrigin: 'web' | 'native') {
+async function sessionCookies(authOrigin: 'web' | 'native', clock?: () => number) {
   const user = await createTestUser()
   const tokens = await createDeviceAndSessionTokens({
     did: v7(),
     uid: user.id,
     authOrigin,
+    clock,
   })
   return {
     user,
@@ -213,7 +214,7 @@ describe('native session MCP token mint', () => {
   })
 
   it('cuts off a minted token when the session expires', async () => {
-    const native = await sessionCookies('native')
+    const native = await sessionCookies('native', () => Date.now() - 5_000)
     const { body } = await mint(native.cookies).expect(200)
     await expireTestUserSession(native.sid)
     await expect(validateOAuthAccessToken(body.access_token, 'user')).resolves.toBeNull()
