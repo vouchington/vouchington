@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "^3.1155.0",
-    "@sentry/aws-serverless": "^11.8.0",
+    "@sentry/aws-serverless": "^11.9.0",
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/utils": "workspace:^"
   },
