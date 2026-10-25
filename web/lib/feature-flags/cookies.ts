@@ -27,8 +27,8 @@ function encodeCookieValue(value: string): string {
 
 // Matches js-cookie's `defaultConverter.read`: strips one pair of wrapping quotes (some servers
 // quote cookie values) and decodes every percent-escape — including ones this module never writes
-// itself — so a value written by a prior js-cookie-based build still reads back correctly. A
-// malformed percent-escape (e.g. a lone `%C3`) throws here, same as js-cookie — not a regression.
+// itself — so a value written by a prior js-cookie-based build still reads back correctly.
+// The cookie reader discards values with malformed percent-encoding.
 function decodeCookieValue(value: string): string {
   const unquoted = value[0] === '"' ? value.slice(1, -1) : value
   return unquoted.replace(/(%[\dA-F]{2})+/gi, decodeURIComponent)
@@ -52,13 +52,11 @@ function readCookie(name: string): string | undefined {
     const rawValue = separatorIndex === -1 ? '' : pair.slice(separatorIndex + 1)
     try {
       if (decodeURIComponent(rawName) !== name) continue
+      return decodeCookieValue(rawValue)
     } catch {
-      // Malformed percent-encoding in the cookie name: skip it. js-cookie never decodes
-      // names (only values), so there's no js-cookie behavior to match here — this is
-      // purely a defensive parse guard.
+      // A malformed cookie name or value must not interrupt feature-flag reads.
       continue
     }
-    return decodeCookieValue(rawValue)
   }
   return undefined
 }
