@@ -17,7 +17,7 @@ import {
   type InvalidCursorResult,
   type SearchPageInfo,
 } from './paged-search.mts'
-import { nullable } from './output-schema-shapes.mts'
+import { nullable } from '@vouchington/mcp-server/schema'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
 

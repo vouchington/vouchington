@@ -3,7 +3,7 @@ import assert from 'http-assert'
 import { getProfile } from '@services/my/profile'
 import type { BasicUser } from '@services/users/types'
 import { requirePrivateToolUser } from './private-user.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 
 type ToolResult = { success: true; profile: { id: string; markdown: string } }

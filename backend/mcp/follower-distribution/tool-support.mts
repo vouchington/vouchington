@@ -4,7 +4,7 @@ import {
   type FollowerDistributionAccepted,
 } from '@services/follower-distributions'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
-import { objectSchema } from '../output-schema-shapes.mts'
+import { objectSchema } from '@vouchington/mcp-server/schema'
 import { userReferenceSchema } from '../entity-reference-schema.mts'
 
 const UUID_SCHEMA = { type: 'string', format: 'uuid' }

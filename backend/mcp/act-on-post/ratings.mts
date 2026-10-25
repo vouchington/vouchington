@@ -15,7 +15,7 @@ import type { MergedToolSource } from '../create-merged-tool.mts'
 import { POST_TARGET_SCHEMA, postActionMeta } from './meta.mts'
 import { getDelegatedToolAuthority } from '../delegated-authority.mts'
 import { requireActiveToolUser } from '../private-user.mts'
-import { successSchema } from '../output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { topicReferenceSchema } from '../entity-reference-schema.mts'
 import { canonicalEntityId } from '../resolve-entity-reference.mts'
 

@@ -3,7 +3,7 @@ import { getPaginationLimitsForContract } from '@services/pagination'
 import type { BasicUser } from '@services/users/types'
 import { getTrendingTopics, trendingTopicsPaginationParser } from '@services/trending-topics'
 import type { TrendingTopicsResult } from '@services/trending-topics/types'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 
 const TIME_RANGES = ['day', 'week', 'month'] as const

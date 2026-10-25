@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createGetMyEntityListTool } from './create-get-my-entity-list-tool.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import { routeResponseSchema, successResultSchema } from './route-response-schema.mts'
+import { routeResponseSchema } from './route-response-schema.mts'
+import { successResultSchema } from '@vouchington/mcp-server/schema'
 import type { ToolMeta } from '@services/openai-agents/tool-types'
 
 const LIST_META = {

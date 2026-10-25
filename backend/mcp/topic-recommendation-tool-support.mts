@@ -3,7 +3,7 @@ import { getPostByAnyCached } from '@services/entity-fetch'
 import { postReferenceSchema } from './entity-reference-schema.mts'
 import { asTopicRecommendationPost } from '@services/topic-recommendations'
 import { componentSchema } from './route-response-schema.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 
 export type TopicRecommendationIdArgs = { id: string }
 

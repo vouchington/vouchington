@@ -4,7 +4,7 @@ import type { MergedToolSource } from './create-merged-tool.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { routeResponseSchema } from './route-response-schema.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 
 export const uuid = { type: 'string', format: 'uuid' }
 export const pageProperties = {

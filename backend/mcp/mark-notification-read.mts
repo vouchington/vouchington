@@ -6,7 +6,7 @@ import {
   NOTIFICATION_ID_PARAMETERS,
   type NotificationToolArgs,
 } from './notification-tool-support.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
 const tool: MergedToolSource<NotificationToolArgs, { success: true }> = {

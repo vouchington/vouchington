@@ -18,7 +18,7 @@ import {
 import { pageProperties, type McpPage } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
-import { selectApiByArgument } from './select-api-by-argument.mts'
+import { selectApiByArgument } from '@vouchington/mcp-server/tools'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {

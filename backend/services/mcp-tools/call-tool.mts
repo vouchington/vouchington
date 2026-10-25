@@ -1,7 +1,7 @@
 import { McpError, ErrorCode, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import onError from '@modules/on-error'
 import { runWithRequestContext } from '@modules/utils/request-context'
-import { isHttpError } from 'http-errors'
+import createHttpError, { isHttpError } from 'http-errors'
 import {
   CONFLICT,
   FORBIDDEN,
@@ -22,8 +22,8 @@ import type { ApiScope } from '@modules/scopes'
 import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import { resolveMcpToolCall, type McpToolCallResolution } from './resolve-tool-call.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
-import { buildToolResult } from './build-tool-result.mts'
-import { McpToolResultTooLargeError } from './serialize-mcp-tool-result.mts'
+import { buildToolResult, McpToolResultTooLargeError } from '@vouchington/mcp-server/results'
+import { ManageEntityInputError } from '@vouchington/mcp-server/tools'
 import { buildRateLimitedToolResult } from './rate-limited-result.mts'
 import { ToolRateLimitError } from '@services/openai-agents/tool-rate-limit-error'
 
@@ -84,7 +84,12 @@ export async function callMcpTool(
       tool.meta?.outputSchema,
       tool.meta?.selectOutputSchema?.(args as Record<string, unknown>),
     )
-  } catch (err) {
+  } catch (err_) {
+    // The package's input error carries the 422 an http error would, so it takes the same path.
+    const err =
+      err_ instanceof ManageEntityInputError
+        ? createHttpError(err_.status, err_.message, { cause: err_ })
+        : err_
     if (err instanceof ToolRateLimitError) {
       await rateLimitContext?.onRateLimited()
       return buildRateLimitedToolResult(err.retryAfterSeconds)

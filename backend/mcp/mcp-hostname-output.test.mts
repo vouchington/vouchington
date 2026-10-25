@@ -4,7 +4,7 @@ import { assertMcpLocalSchemaRefs } from '../test-helpers/mcp-local-schema-refs.
 import { describe, expect, it } from 'vitest'
 import getTopHostnamesTool from './get-top-hostnames.mts'
 import { HOSTNAME_PAGE_LIMIT, mcpHostnameSchema } from './mcp-hostname-output.mts'
-import { inlineSchemaReferences } from './route-response-schema.mts'
+import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import searchHostnamesTool from './search-hostnames.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 

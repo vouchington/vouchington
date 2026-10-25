@@ -1,7 +1,7 @@
 import { indexById } from '@modules/utils'
 import { getHostnameElectionByIdCachedBatch } from '@services/entity-fetch'
 import { toPublicViewHostname, type ViewHostname } from '@services/urls-hostnames'
-import { nullable } from './output-schema-shapes.mts'
+import { nullable } from '@vouchington/mcp-server/schema'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 import {
   pageProperties,

@@ -1,4 +1,4 @@
-import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import {
   CONTENT_COUNT_PROPERTIES,
   FOLLOWERS_SCHEMA,

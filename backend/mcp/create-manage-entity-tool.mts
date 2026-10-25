@@ -1,23 +1,26 @@
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import type { Tool, ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
+import type {
+  Tool,
+  ToolInvocationContext,
+  ToolMeta,
+  ToolOutputSchema,
+} from '@services/openai-agents/tool-types'
+import {
+  createManageEntityTool as createPackageManageEntityTool,
+  type ManageEntityArgs,
+  type ManageEntityResult,
+} from '@vouchington/mcp-server/tools'
 import { requireActiveToolUser } from './private-user.mts'
-import { selectApiByArgument } from './select-api-by-argument.mts'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
-import createHttpError from 'http-errors'
 
-type AddArgs<TAdd extends Record<string, unknown>> = { action: 'add' } & TAdd
-type UpdateArgs<TUpdate extends Record<string, unknown>> = {
-  action: 'update'
-  id: string
-} & Partial<TUpdate>
-type RemoveArgs = { action: 'remove'; id: string }
-type ManageEntityArgs<
-  TAdd extends Record<string, unknown>,
-  TUpdate extends Record<string, unknown>,
-> = AddArgs<TAdd> | UpdateArgs<TUpdate> | RemoveArgs
-
-type ManageEntityResult = { success: true; result: unknown }
+type AddArgs<TAdd extends Record<string, unknown>> = Extract<
+  ManageEntityArgs<TAdd, Record<string, unknown>>,
+  { action: 'add' }
+>
+type UpdateArgs<TUpdate extends Record<string, unknown>> = Extract<
+  ManageEntityArgs<Record<string, unknown>, TUpdate>,
+  { action: 'update' }
+>
 
 type ManageEntityToolConfig<
   TAdd extends Record<string, unknown>,
@@ -36,98 +39,27 @@ type ManageEntityToolConfig<
   meta?: Omit<ToolMeta, 'outputSchema'>
 }
 
-// NOTE: Tools created via this factory are not inspected by the tool-conventions
-// current-user policy (which only analyzes ObjectLiteralExpression initializers).
-// Convention: the `function` property MUST keep `currentUser: BasicUser` as its first
-// parameter and this file is the sole source of truth for that contract.
+// Binds the active-user check and the generated contract component to the package tool.
 export function createManageEntityTool<
   TAdd extends Record<string, unknown>,
   TUpdate extends Record<string, unknown>,
->(
-  config: ManageEntityToolConfig<TAdd, TUpdate>,
-): Tool<ManageEntityArgs<TAdd, TUpdate>, ManageEntityResult> {
-  return {
-    schema: {
-      name: config.toolName,
-      type: 'function',
-      description: config.description,
-      parameters: {
-        type: 'object',
-        properties: {
-          action: {
-            type: 'string',
-            enum: ['add', 'update', 'remove'],
-          },
-          id: {
-            type: 'string',
-            description: 'Required for update and remove actions.',
-          },
-          ...config.addProperties,
-          ...config.updateProperties,
-        },
-        required: ['action'],
-      },
-      strict: null,
-    },
-    ...(config.meta
-      ? {
-          meta: {
-            ...config.meta,
-            selectApi: selectApiByArgument('action', actionEndpoints(config.meta.api ?? [])),
-            outputSchema: deriveOutputSchema(config.toolName, config.entity),
-          },
-        }
-      : {}),
-    function:
-      (currentUser: BasicUser) =>
-      async (args: ManageEntityArgs<TAdd, TUpdate>): Promise<ManageEntityResult> => {
-        const user = await requireActiveToolUser(currentUser)
-
-        switch (args.action) {
-          case 'add': {
-            const result = await config.addFn(user, args)
-            return { success: true, result }
-          }
-          case 'update': {
-            if (!args.id) throw createHttpError(422, 'id is required for update')
-            const result = await config.updateFn(user, args)
-            return { success: true, result }
-          }
-          case 'remove': {
-            if (!args.id) throw createHttpError(422, 'id is required for remove')
-            await config.removeFn(user, args.id)
-            // The service returns the deleted storage row. Only its identity is a stable result.
-            return { success: true, result: { id: args.id } }
-          }
-          default:
-            throw unsupportedAction(args)
-        }
-      },
-  }
-}
-
-const ACTION_METHODS = { add: 'POST', update: 'PATCH', remove: 'DELETE' } as const
-
-// Each action calls the REST route of its method, so a call charges only that route's bucket.
-function actionEndpoints(api: readonly ToolApiEndpoint[]): Record<string, ToolApiEndpoint> {
-  return Object.fromEntries(
-    Object.entries(ACTION_METHODS).flatMap(([action, method]) => {
-      const endpoint = api.find(candidate => candidate.method === method)
-      return endpoint ? [[action, endpoint]] : []
-    }),
-  )
-}
-
-// The results above and their schema live side by side, so they change together. Add and update
-// return the entity view, remove returns the id it deleted.
-function deriveOutputSchema(toolName: string, entity: string | undefined) {
-  if (!entity) throw new Error(`${toolName} must name the contract entity its results return`)
-  return successSchema({
-    result: { oneOf: [componentSchema(entity), objectSchema({ id: { type: 'string' } })] },
+>({
+  entity,
+  ...config
+}: ManageEntityToolConfig<TAdd, TUpdate>): Tool<
+  ManageEntityArgs<TAdd, TUpdate>,
+  ManageEntityResult
+> {
+  return createPackageManageEntityTool<
+    TAdd,
+    TUpdate,
+    BasicUser,
+    PrivateUser,
+    ToolInvocationContext,
+    ToolMeta
+  >({
+    ...config,
+    requireUser: requireActiveToolUser,
+    ...(entity ? { entitySchema: componentSchema(entity) as ToolOutputSchema } : {}),
   })
-}
-
-function unsupportedAction(args: never): Error {
-  const action = (args as { action?: unknown }).action
-  return createHttpError(422, `Unsupported action: ${String(action)}`)
 }

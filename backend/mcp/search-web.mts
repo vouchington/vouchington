@@ -8,7 +8,7 @@ import {
   sanitizedTitle,
   type McpPageLimit,
 } from './mcp-read-output.mts'
-import { nullable } from './output-schema-shapes.mts'
+import { nullable } from '@vouchington/mcp-server/schema'
 import { EMPTY_PAGE_INFO, type SearchPageInfo } from './paged-search.mts'
 import { closedObject, foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'

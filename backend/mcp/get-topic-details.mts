@@ -9,7 +9,7 @@ import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 import type { Topic } from '@services/topics/types'
 import type { Money } from '@ts-shared/money'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { nullable, outcomeSchema } from './output-schema-shapes.mts'
+import { nullable, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema, componentSchema } from './route-response-schema.mts'
 import {
   getTopicHierarchyResult,

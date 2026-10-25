@@ -9,7 +9,7 @@ import {
   type ListItemToolArgs,
 } from './list-tool-support.mts'
 import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
-import { selectApiByArgument } from './select-api-by-argument.mts'
+import { selectApiByArgument } from '@vouchington/mcp-server/tools'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 
 const ENDPOINTS: Record<string, ToolApiEndpoint> = {

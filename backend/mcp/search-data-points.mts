@@ -9,7 +9,7 @@ import {
 } from '@ts-shared/data-points'
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
-import { nullable, objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
 const SCORE_RANGES = CREDIT_SCORE_RANGES.map(o => o.value)

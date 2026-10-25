@@ -1,7 +1,7 @@
 import { deleteProfileLink } from '@services/my/profile-links'
 import type { BasicUser } from '@services/users/types'
 import { PROFILE_LINK_ID_PARAMETER } from './profile-tool-support.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 

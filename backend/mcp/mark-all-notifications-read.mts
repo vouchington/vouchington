@@ -1,7 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { markAllNotificationsRead } from '@services/notifications'
 import type { BasicUser } from '@services/users/types'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
 const tool: MergedToolSource<Record<string, never>, { success: true; marked_read: number }> = {

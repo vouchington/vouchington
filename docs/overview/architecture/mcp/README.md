@@ -155,6 +155,14 @@ private docs site at `/mcp/`, alongside the PostgreSQL reference.
 - **Alternatives** — `get_domain_ratings` takes exactly one of `url` or `hostname`; its schema
   enforces this with `minProperties`/`maxProperties`, which MCP argument validation checks.
 
+### Shared building blocks
+
+Schema validation, merged and manage-entity tool factories, bounded results, and untrusted-output
+wrapping come from `@vouchington/mcp-server`. The app injects what is Voucha's own: the tools, the
+merged-tool compatibility key, the untrusted and private field sets, the active-user check, and the
+checked-in REST contracts. Authentication, scopes, plans, route charging, audit, and usage metering
+stay in the app.
+
 ### Merged tools
 
 A merged tool is one MCP name whose input is `{ option, arguments }`. Every option in that tool

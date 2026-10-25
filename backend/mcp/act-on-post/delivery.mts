@@ -18,7 +18,7 @@ import {
 } from '../follower-distribution/tool-support.mts'
 import { requireActiveToolUser } from '../private-user.mts'
 import { canonicalEntityIds, MISSING_REFERENCE_ID } from '../resolve-entity-reference.mts'
-import { successSchema } from '../output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 
 type DistributionArgs = { id: string } & Partial<SendFollowersInput>
 

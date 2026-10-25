@@ -1,7 +1,7 @@
 import { getManageableList, type ListItemType, type ListVisibility } from '@services/lists'
 import type { BasicUser } from '@services/users/types'
 import { postReferenceSchema } from './entity-reference-schema.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 import { closedObject, omitProperties } from './read-tool-output-schema.mts'
 import { componentSchema } from './route-response-schema.mts'

@@ -6,11 +6,6 @@ import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { PrivateUser } from '@services/users/types'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
-import {
-  MAX_MCP_TOOL_RESULT_BYTES,
-  MAX_MCP_TOOL_RESULT_VISITS,
-  serializeMcpToolResult,
-} from './serialize-mcp-tool-result.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
@@ -95,68 +90,6 @@ describe('callMcpTool', () => {
   beforeAll(async () => {
     user = { ...(await createTestUser()), membership_plan: null }
     plusUser = { ...(await createTestUser()), membership_plan: 'plus' }
-  })
-
-  it('rejects serialized tool results over the MCP response limit', () => {
-    expect(() =>
-      serializeMcpToolResult({ value: 'x'.repeat(MAX_MCP_TOOL_RESULT_BYTES + 1) }),
-    ).toThrow('MCP response limit')
-  })
-
-  it('rejects tool results whose values fit but whose total exceeds the MCP response limit', () => {
-    const half = 'x'.repeat(MAX_MCP_TOOL_RESULT_BYTES / 2)
-
-    expect(() => serializeMcpToolResult([half, half])).toThrow('MCP response limit')
-  })
-
-  it('bounds traversal when object properties serialize to no output', () => {
-    const value = Object.fromEntries(
-      Array.from({ length: MAX_MCP_TOOL_RESULT_VISITS }, (_, index) => [index, undefined]),
-    )
-
-    expect(() => serializeMcpToolResult(value)).toThrow('MCP response traversal limit')
-  })
-
-  it('counts inherited enumerable properties against the traversal budget', () => {
-    const prototype = Object.fromEntries(
-      Array.from({ length: MAX_MCP_TOOL_RESULT_VISITS }, (_, index) => [index, undefined]),
-    )
-
-    expect(() => serializeMcpToolResult(Object.create(prototype))).toThrow(
-      'MCP response traversal limit',
-    )
-  })
-
-  it('preserves JSON serialization for bounded tool results', () => {
-    expect(serializeMcpToolResult({ value: ['test', null, true] })).toBe(
-      JSON.stringify({ value: ['test', null, true] }),
-    )
-  })
-
-  it('matches JSON.stringify semantics for supported edge cases', () => {
-    const inherited = Object.assign(Object.create({ ignored: true }), { own: 'value' })
-    const value = {
-      array: [undefined, () => undefined, Symbol('ignored'), Number.POSITIVE_INFINITY],
-      inherited,
-      omitted: undefined,
-      text: '😊',
-      nested: {
-        toJSON(key: string) {
-          return { key, value: true }
-        },
-      },
-    }
-
-    expect(serializeMcpToolResult(value)).toBe(JSON.stringify(value))
-  })
-
-  it('rejects unsupported top-level and recursive values', () => {
-    expect(() => serializeMcpToolResult(undefined)).toThrow('not JSON serializable')
-    expect(() => serializeMcpToolResult(1n)).toThrow('BigInt')
-
-    const circular: Record<string, unknown> = {}
-    circular.self = circular
-    expect(() => serializeMcpToolResult(circular)).toThrow('circular structure')
   })
 
   it('throws McpError when tool is not found', async () => {

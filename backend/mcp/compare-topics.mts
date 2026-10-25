@@ -7,7 +7,7 @@ import {
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import { resolveTopics } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
-import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { INSIGHTS_PROPERTIES } from './topic-output-schema-parts.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)

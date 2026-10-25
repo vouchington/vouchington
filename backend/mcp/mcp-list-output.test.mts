@@ -6,7 +6,7 @@ import getListItemsTool from './get-list-items.mts'
 import getListTool from './get-list.mts'
 import getMyListsTool from './get-my-lists.mts'
 import { LIST_PAGE_LIMIT, mcpListItemSchema, mcpListSchema } from './mcp-list-output.mts'
-import { inlineSchemaReferences } from './route-response-schema.mts'
+import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import type { Tool } from '@services/openai-agents/tool-types'
 
 type JsonSchema = Record<string, unknown>

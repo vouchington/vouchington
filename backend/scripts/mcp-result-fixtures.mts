@@ -1,6 +1,5 @@
 import type { McpResultFixtureCase } from '@voucha/test-helpers/native-mcp-result-cases'
-import { findSchemaViolation } from '@voucha/mcp/schema-validator'
-import { getOptionOutputSchema } from '@voucha/mcp/option-output-pointers'
+import { findSchemaViolation, getOptionOutputSchema } from '@vouchington/mcp-server/schema'
 import type { McpCatalog } from '@services/mcp-tools/catalog/build-mcp-catalog'
 
 /** Validate generated result cases against the same catalog exposed to clients. */

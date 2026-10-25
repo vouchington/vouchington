@@ -10,7 +10,8 @@ import {
 } from './mcp-read-output.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, type InvalidCursorResult } from './paged-search.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
-import { routePropertySchema, routeResponseSchema } from './route-response-schema.mts'
+import { routeResponseSchema } from './route-response-schema.mts'
+import { routePropertySchema } from '@vouchington/mcp-server/schema'
 import { clampToolLimit } from './search-system.mts'
 
 type ToolArgs = {

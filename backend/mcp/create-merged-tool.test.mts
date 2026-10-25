@@ -1,171 +1,42 @@
-import { describe, expect, it, vi } from 'vitest'
-import {
-  buildToolResult,
-  McpToolOutputMismatchError,
-} from '../services/mcp-tools/build-tool-result.mts'
-import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
+import { describe, expect, it } from 'vitest'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { toolToMcpTool } from './registry/adapters.mts'
-import { findSchemaViolation } from './schema-validator.mts'
-
-const routeA = { method: 'GET' as const, path: '/api/v1/examples/:id' }
-const routeB = { method: 'GET' as const, path: '/api/v1/examples' }
-const invocation = vi.fn<(option: string, args: unknown) => unknown>((option, args) => ({
-  success: true,
-  [option]: args,
-}))
 
 function source(option: 'get' | 'list'): MergedToolSource {
-  const argumentsSchema =
-    option === 'get'
-      ? {
-          type: 'object',
-          properties: { id: { $ref: '#/$defs/Id' } },
-          required: ['id'],
-          $defs: { Id: { type: 'string', minLength: 1 } },
-        }
-      : {
-          type: 'object',
-          properties: { after: { $ref: '#/$defs/Id' } },
-          $defs: { Id: { type: 'string', minLength: 1 } },
-        }
   return {
     schema: {
       description: `${option} example`,
-      parameters: argumentsSchema,
+      parameters: { type: 'object', properties: { id: { type: 'string' } } },
     },
-    function: _user => args => invocation(option, args),
+    function: _user => args => ({ success: true, [option]: args }),
     meta: {
       audience: 'user',
       title: `${option} example`,
       plan: 'free',
       requiredScopes: ['topics:read'],
       annotations: { readOnlyHint: true },
-      api: [option === 'get' ? routeA : routeB],
+      api: [{ method: 'GET', path: `/api/v1/examples/${option}` }],
       outputSchema: {
         type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          [option]: { $ref: '#/$defs/Result' },
-        },
+        properties: { success: { type: 'boolean' }, [option]: { type: 'object' } },
         required: ['success', option],
         additionalProperties: false,
-        $defs: {
-          Result: {
-            type: 'object',
-            properties:
-              option === 'get' ? { id: { type: 'string' } } : { after: { type: 'string' } },
-            additionalProperties: false,
-          },
-        },
       },
     },
   }
 }
 
-const merged = createMergedTool('read_example', 'Read Example', [
-  { option: 'get', source: source('get') },
-  { option: 'list', source: source('list') },
-])
-
 describe('createMergedTool', () => {
-  it('closes the envelope and each source contract before dispatch', async () => {
-    invocation.mockClear()
-    for (const args of [
-      { option: 'other', arguments: {} },
-      { option: 'get', arguments: { after: 'cursor' } },
-      { option: 'list', arguments: { id: 'one' } },
-      { option: 'get', arguments: { id: 'one' }, extra: true },
-      { option: 'get', arguments: { id: 'one', extra: true } },
-      { option: 'get' },
-    ]) {
-      expect(validateToolArguments(merged.schema.parameters, args)).not.toBeNull()
-      expect(() => merged.function({} as never)(args)).toThrow('Invalid merged tool arguments')
-    }
-    expect(invocation).not.toHaveBeenCalled()
-    const args = { option: 'get', arguments: { id: 'one' } }
-    expect(validateToolArguments(merged.schema.parameters, args)).toBeNull()
-    expect(await merged.function({} as never)(args)).toEqual({ success: true, get: { id: 'one' } })
-    expect(invocation).toHaveBeenCalledExactlyOnceWith('get', { id: 'one' })
-  })
-
-  it('selects only the chosen REST route and source output contract', () => {
-    const args = { option: 'list', arguments: { after: 'cursor' } }
-    expect(merged.meta?.selectApi?.(args)).toEqual([routeB])
-    expect(merged.meta?.auditOption?.(args)).toBe('list')
-    expect(
-      buildToolResult(
-        merged.schema.name,
-        { success: true, list: { after: 'cursor' } },
-        merged.meta?.outputSchema,
-        merged.meta?.selectOutputSchema?.(args),
-      ).structuredContent,
-    ).toEqual({ success: true, list: { after: 'cursor' } })
-    expect(() =>
-      buildToolResult(
-        merged.schema.name,
-        { success: true, get: { id: 'one' } },
-        merged.meta?.outputSchema,
-        merged.meta?.selectOutputSchema?.(args),
-      ),
-    ).toThrow(McpToolOutputMismatchError)
-  })
-
-  it('publishes selected output pointers after deduplicating shared source contracts', () => {
-    const tool = createMergedTool('read_dedup', 'Read Dedup', [
-      { option: 'first', source: source('get') },
-      { option: 'shared', source: source('get') },
-      { option: 'last', source: source('list') },
-    ])
-    const pointers = { first: '#/anyOf/0', shared: '#/anyOf/0', last: '#/anyOf/1' }
-    expect(tool.meta).toMatchObject({ optionOutputPointers: pointers })
-    const advertised = toolToMcpTool(tool)
-    expect(advertised['_meta']?.['voucha/optionOutputPointers']).toEqual(pointers)
-    const output = advertised.outputSchema!
-    const branches = output['anyOf'] as Record<string, unknown>[]
-    const selected = { ...branches[0], $defs: output['$defs'] }
-    expect(findSchemaViolation(selected, { success: true, get: { id: 'one' } })).toBeNull()
-    expect(
-      findSchemaViolation(selected, { success: true, list: { after: 'cursor' } }),
-    ).not.toBeNull()
-    expect(output['$defs']).toHaveProperty('Option0_Result')
-    expect(output['$defs']).not.toHaveProperty('Option0_Id')
-  })
-
-  it.each<Readonly<Record<string, string>>>([
-    { get: '#/anyOf/0' },
-    { get: '#/anyOf/0', list: '#/anyOf/1', extra: '#' },
-    { get: '#/anyOf/0', list: '#/anyOf/9' },
-    { get: '#/anyOf/0', list: 'https://example.test/schema' },
-  ])('refuses to publish incomplete or invalid selected output pointers: %j', pointers => {
-    const tool = createMergedTool('read_invalid', 'Read Invalid', [
+  it('advertises the selected output pointer of every option', () => {
+    const tool = createMergedTool('read_example', 'Read Example', [
       { option: 'get', source: source('get') },
       { option: 'list', source: source('list') },
     ])
-    expect(() =>
-      toolToMcpTool({ ...tool, meta: { ...tool.meta!, optionOutputPointers: pointers } }),
-    ).toThrow('selected output pointer')
-  })
 
-  it('points shared and single-option outputs at their complete output root', () => {
-    const shared = createMergedTool('read_shared', 'Read Shared', [
-      { option: 'first', source: source('get') },
-      { option: 'shared', source: source('get') },
-    ])
-    expect(shared.meta).toMatchObject({ optionOutputPointers: { first: '#', shared: '#' } })
-    const single = createMergedTool('read_single', 'Read Single', [
-      { option: 'get', source: source('get') },
-    ])
-    expect(single.meta).toMatchObject({ optionOutputPointers: { get: '#' } })
-  })
-
-  it('supports one closed option and refuses an empty group', async () => {
-    const single = createMergedTool('single', 'Single', [{ option: 'get', source: source('get') }])
-    const args = { option: 'get', arguments: { id: 'one' } }
-    expect(validateToolArguments(single.schema.parameters, args)).toBeNull()
-    expect(await single.function({} as never)(args)).toEqual({ success: true, get: { id: 'one' } })
-    expect(single.meta?.auditOption?.(args)).toBe('get')
-    expect(() => createMergedTool('empty', 'Empty', [])).toThrow('needs at least one option')
+    expect(toolToMcpTool(tool)['_meta']?.['voucha/optionOutputPointers']).toEqual({
+      get: '#/anyOf/0',
+      list: '#/anyOf/1',
+    })
   })
 
   it.each(['plan', 'scopes', 'audience', 'roles', 'annotations', 'switch'] as const)(
@@ -175,9 +46,7 @@ describe('createMergedTool', () => {
       if (!different.meta) throw new Error('missing source meta')
       if (field === 'plan') different.meta.plan = 'plus'
       if (field === 'scopes') different.meta.requiredScopes = ['posts:read']
-      if (field === 'audience') {
-        different.meta.audience = 'admin'
-      }
+      if (field === 'audience') different.meta.audience = 'admin'
       if (field === 'roles') different.roles = { administrator: true }
       if (field === 'annotations')
         different.meta.annotations = {

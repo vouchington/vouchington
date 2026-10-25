@@ -1,7 +1,8 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
 import type { PrivateUser } from '@services/users/types'
 import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
-import { inlineSchemaReferences, routeResponseSchema } from './route-response-schema.mts'
+import { routeResponseSchema } from './route-response-schema.mts'
+import { inlineSchemaReferences } from '@vouchington/mcp-server/schema'
 import {
   adminOutputSchema,
   filterPrivateOutputFields,

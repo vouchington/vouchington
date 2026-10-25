@@ -4,7 +4,7 @@ import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { getPrioritizedReferralLinks } from '@services/prioritized-referral-links/get-prioritized'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
-import { nullable, objectSchema, outcomeSchema } from './output-schema-shapes.mts'
+import { nullable, objectSchema, outcomeSchema } from '@vouchington/mcp-server/schema'
 import { componentPropertySchema } from './route-response-schema.mts'
 
 // The REST twin documents its body inline and carries more per link, so the tool owns this schema.

@@ -4,7 +4,7 @@ import assert from 'http-assert'
 import { deleteBookmarkAction } from '@services/entity-relation-actions'
 import { BOOKMARK_TOOL_PARAMETERS, type BookmarkToolArgs } from './bookmark-tool-support.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requirePrivateToolUser } from './private-user.mts'
 
 const tool: MergedToolSource<BookmarkToolArgs, { success: true }> = {

@@ -5,7 +5,7 @@ import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import type { Money } from '@ts-shared/money'
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
-import { outcomeSchema } from './output-schema-shapes.mts'
+import { outcomeSchema } from '@vouchington/mcp-server/schema'
 import { INSIGHTS_PROPERTIES } from './topic-output-schema-parts.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)

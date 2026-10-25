@@ -87,6 +87,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/image-resize'
   - '@vouchington/localization'
   - '@vouchington/localization-compiler'
+  - '@vouchington/mcp-server'
   - '@vouchington/media'
   - '@vouchington/memberships'
   - '@vouchington/oauth-client'

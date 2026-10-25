@@ -1,7 +1,8 @@
 import type { BasicUser, PrivateUser } from '@services/users/types'
 import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from './private-user.mts'
-import { routeResponseSchema, successResultSchema } from './route-response-schema.mts'
+import { routeResponseSchema } from './route-response-schema.mts'
+import { successResultSchema } from '@vouchington/mcp-server/schema'
 
 type GetMyEntityListToolConfig<TArgs extends Record<string, unknown>> = {
   toolName: string

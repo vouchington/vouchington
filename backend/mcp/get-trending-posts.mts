@@ -5,7 +5,7 @@ import { getTrendingPosts, trendingPostsPaginationParser } from '@services/trend
 import type { TrendingPostsResult } from '@services/trending-posts/types'
 import { resolveTopic } from './resolve-topic.mts'
 import { topicReferenceSchema } from './entity-reference-schema.mts'
-import { outcomeSchema, objectSchema } from './output-schema-shapes.mts'
+import { outcomeSchema, objectSchema } from '@vouchington/mcp-server/schema'
 import { componentSchema } from './route-response-schema.mts'
 import {
   VALID_TRENDING_POST_TYPES,

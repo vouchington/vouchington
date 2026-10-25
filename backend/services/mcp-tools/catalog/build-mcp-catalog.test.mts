@@ -129,7 +129,7 @@ describe('MCP catalog contracts with a tiny registry', () => {
               ...tool,
               description: 'changed description',
               title: 'Changed title',
-              inputSchema: { type: 'object', properties: { changed: { type: 'string' } } },
+              inputSchema: { type: 'object' as const, properties: { changed: { type: 'string' } } },
             }
           : tool,
       )

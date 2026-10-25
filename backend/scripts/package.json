@@ -107,6 +107,7 @@
     "@voucha/mcp": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/mcp-server": "^0.2.0",
     "@vouchington/postgres": "^0.0.18",
     "@vouchington/rss-parser": "^0.1.0",
     "@workers/rss-feeds": "workspace:^",

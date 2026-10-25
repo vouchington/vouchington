@@ -1,7 +1,8 @@
 import type { Notification, NotificationResult } from '@services/notifications'
 import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { externalText, iso, sanitizedTitle } from './mcp-read-output.mts'
-import { routePropertySchema, routeResponseSchema } from './route-response-schema.mts'
+import { routeResponseSchema } from './route-response-schema.mts'
+import { routePropertySchema } from '@vouchington/mcp-server/schema'
 
 const UNREAD_SUMMARY = {
   method: 'GET',

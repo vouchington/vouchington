@@ -10,7 +10,7 @@ import { admitDelegatedCreate } from '@services/contribution-gating/admit-delega
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { communityReferenceSchema } from './entity-reference-schema.mts'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
 type Args = {

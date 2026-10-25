@@ -11,7 +11,7 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import assert from 'http-assert'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
-import { objectSchema, successSchema } from './output-schema-shapes.mts'
+import { objectSchema, successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
 type Args = {

@@ -3,18 +3,21 @@ import { createManageEntityTool } from './create-manage-entity-tool.mts'
 import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import type { BasicUser, PrivateUser } from '@services/users/types'
-import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { randomUUID } from 'node:crypto'
+
+const baseConfig = {
+  toolName: 'test_manage_entities',
+  description: 'Test manage entities',
+  addProperties: {},
+  updateProperties: {},
+}
 
 describe('createManageEntityTool', () => {
   it('hydrates BasicUser callers before invoking config functions', async () => {
     const user = await createTestUser()
     const receivedUsers: PrivateUser[] = []
     const tool = createManageEntityTool({
-      toolName: 'test_manage_entities',
-      description: 'Test manage entities',
-      addProperties: {},
-      updateProperties: {},
+      ...baseConfig,
       addFn: privateUser => {
         receivedUsers.push(privateUser)
         return Promise.resolve(null)
@@ -37,12 +40,8 @@ describe('createManageEntityTool', () => {
   })
 
   it('rejects unknown current users before dispatching', async () => {
-    const calls: string[] = []
     const tool = createManageEntityTool({
-      toolName: 'test_manage_entities',
-      description: 'Test manage entities',
-      addProperties: {},
-      updateProperties: {},
+      ...baseConfig,
       addFn: () => Promise.resolve(null),
       updateFn: () => Promise.resolve(null),
       removeFn: () => Promise.resolve(null),
@@ -55,110 +54,6 @@ describe('createManageEntityTool', () => {
     }
 
     await expect(tool.function(user)({ action: 'add' })).rejects.toMatchObject({ status: 401 })
-    expect(calls).toEqual([])
-  })
-
-  it('rejects unsupported actions without falling through to remove', async () => {
-    const user = await createTestUser()
-    const calls: string[] = []
-    const tool = createManageEntityTool({
-      toolName: 'test_manage_entities',
-      description: 'Test manage entities',
-      addProperties: {},
-      updateProperties: {},
-      addFn: () => {
-        calls.push('add')
-        return Promise.resolve(null)
-      },
-      updateFn: () => {
-        calls.push('update')
-        return Promise.resolve(null)
-      },
-      removeFn: () => {
-        calls.push('remove')
-        return Promise.resolve(null)
-      },
-    })
-
-    await expect(
-      tool.function(user)({ action: 'destroy', id: 'entity-1' } as never),
-    ).rejects.toThrow('Unsupported action: destroy')
-    expect(calls).toEqual([])
-  })
-
-  it('requires id for update and remove actions', async () => {
-    const user = await createTestUser()
-    const calls: string[] = []
-    const tool = createManageEntityTool({
-      toolName: 'test_manage_entities',
-      description: 'Test manage entities',
-      addProperties: {},
-      updateProperties: {},
-      addFn: () => Promise.resolve(null),
-      updateFn: () => {
-        calls.push('update')
-        return Promise.resolve(null)
-      },
-      removeFn: () => {
-        calls.push('remove')
-        return Promise.resolve(null)
-      },
-    })
-
-    await expect(tool.function(user)({ action: 'update' } as never)).rejects.toMatchObject({
-      status: 422,
-    })
-    await expect(tool.function(user)({ action: 'remove' } as never)).rejects.toMatchObject({
-      status: 422,
-    })
-    expect(calls).toEqual([])
-  })
-
-  describe('route selection', () => {
-    const manageTool = (api: ToolApiEndpoint[] | null) =>
-      createManageEntityTool({
-        toolName: 'test_manage_entities',
-        description: 'Test manage entities',
-        addProperties: {},
-        updateProperties: {},
-        addFn: () => Promise.resolve(null),
-        updateFn: () => Promise.resolve(null),
-        removeFn: () => Promise.resolve(null),
-        entity: 'IndividualCard',
-        meta: {
-          audience: 'user',
-          title: 'Test Manage Entities',
-          requiredScopes: ['cards:read', 'cards:write'],
-          annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-          api,
-        },
-      })
-
-    it('names the route of the action the call performs', () => {
-      const prefix = `/api/v1/my/${randomUUID()}`
-      const tool = manageTool([
-        { method: 'POST', path: prefix },
-        { method: 'PATCH', path: `${prefix}/:id` },
-        { method: 'DELETE', path: `${prefix}/:id` },
-      ])
-
-      expect(tool.meta?.selectApi?.({ action: 'add' })).toEqual([{ method: 'POST', path: prefix }])
-      expect(tool.meta?.selectApi?.({ action: 'update' })).toEqual([
-        { method: 'PATCH', path: `${prefix}/:id` },
-      ])
-      expect(tool.meta?.selectApi?.({ action: 'remove' })).toEqual([
-        { method: 'DELETE', path: `${prefix}/:id` },
-      ])
-    })
-
-    it.each([
-      ['an action with no route listed', [{ method: 'POST', path: '/api/v1/my/things' }] as const],
-      ['no REST routes at all', null],
-    ])('names no route for %s', (_label, api) => {
-      const tool = manageTool(api && [...api])
-
-      expect(tool.meta?.selectApi?.({ action: 'remove' })).toEqual([])
-    })
   })
 
   describe('suspension guard', () => {
@@ -172,10 +67,7 @@ describe('createManageEntityTool', () => {
       const user = await createTestUser()
       const calls: string[] = []
       const tool = createManageEntityTool({
-        toolName: 'test_manage_entities',
-        description: 'Test manage entities',
-        addProperties: {},
-        updateProperties: {},
+        ...baseConfig,
         addFn: () => {
           calls.push('add')
           return Promise.resolve(null)

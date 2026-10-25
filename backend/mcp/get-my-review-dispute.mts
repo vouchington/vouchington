@@ -2,7 +2,7 @@ import type { MergedToolSource } from './create-merged-tool.mts'
 import assert from 'http-assert'
 import { getReviewDisputeByIdFromPrimary } from '@services/review-disputes/get'
 import { DISPUTE_SCHEMA, toMcpDispute, type McpDispute } from './mcp-case-output.mts'
-import { successSchema } from './output-schema-shapes.mts'
+import { successSchema } from '@vouchington/mcp-server/schema'
 import { requirePrivateToolUser } from './private-user.mts'
 
 type Args = { dispute_id: string }
