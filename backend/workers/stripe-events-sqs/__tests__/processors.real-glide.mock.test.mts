@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
-import { getStripeEventByStripeEventId, type ingestStripeEvent } from '@services/stripe/events'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
+import type { ingestStripeEvent } from '@services/stripe/events'
 import { memberships } from '@queues/memberships/queues'
 import { processStripeEventsSqsMessage } from '../processors.mts'
 
@@ -93,7 +94,7 @@ describe('processStripeEventsSqsMessage', () => {
 
     await processStripeEventsSqsMessage(eventBridgeMessage(event))
 
-    const stored = await getStripeEventByStripeEventId(event.id)
+    const stored = await getTestStripeEventByStripeEventId(event.id)
     expect(stored).toMatchObject({ stripe_event_id: event.id, status: 'received' })
     createdRecordIds.push(stored!.id)
 
@@ -117,7 +118,7 @@ describe('processStripeEventsSqsMessage', () => {
   it('does not assign an ordering key to an EventBridge event without a subscription', async () => {
     const event = createStripeEvent()
     await processStripeEventsSqsMessage(eventBridgeMessage(event))
-    const stored = await getStripeEventByStripeEventId(event.id)
+    const stored = await getTestStripeEventByStripeEventId(event.id)
     createdRecordIds.push(stored!.id)
 
     const [job] = await findStripeEventJobsFor(stored!.id)
@@ -140,7 +141,7 @@ describe('processStripeEventsSqsMessage', () => {
 
     await processStripeEventsSqsMessage(eventBridgeMessage(event))
 
-    const stored = await getStripeEventByStripeEventId(event.id)
+    const stored = await getTestStripeEventByStripeEventId(event.id)
     expect(stored).toMatchObject({ invoice_id: invoiceId, subscription_id: null })
     createdRecordIds.push(stored!.id)
     const [job] = await findStripeEventJobsFor(stored!.id)
@@ -156,7 +157,7 @@ describe('processStripeEventsSqsMessage', () => {
     await processStripeEventsSqsMessage(message)
     await processStripeEventsSqsMessage(message)
 
-    const stored = await getStripeEventByStripeEventId(event.id)
+    const stored = await getTestStripeEventByStripeEventId(event.id)
     createdRecordIds.push(stored!.id)
 
     const jobs = await findStripeEventJobsFor(stored!.id)
@@ -177,7 +178,7 @@ describe('processStripeEventsSqsMessage', () => {
 
     // Locks in the envelope-unwrap contract: a bare (non-enveloped) event must never be accepted
     // as `.detail` and must never reach insertStripeEvent.
-    expect(await getStripeEventByStripeEventId(event.id)).toBeNull()
+    expect(await getTestStripeEventByStripeEventId(event.id)).toBeNull()
   })
 
   it('throws SyntaxError when message.body is not valid JSON, so SQS redelivery routes to the DLQ', async () => {

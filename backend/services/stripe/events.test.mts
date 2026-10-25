@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import {
-  getStripeEventByStripeEventId,
   markStripeEventCompleted,
   markStripeEventFailed,
   markStripeEventProcessing,
@@ -85,7 +85,7 @@ describe('events', () => {
       expect(processing?.attempt_count).toBe(1)
 
       await markStripeEventFailed(inserted.id, 'test failure', inserted.lease_token)
-      const failed = await getStripeEventByStripeEventId(inserted.stripe_event_id)
+      const failed = await getTestStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(failed?.status).toBe('failed')
       expect(failed?.failed_at).toBeInstanceOf(Date)
       expect(failed?.last_error_message).toBe('test failure')
@@ -100,7 +100,7 @@ describe('events', () => {
       expect(retried?.last_error_message).toBeNull()
 
       await markStripeEventCompleted(inserted.id, 'processed', retryAttemptId!)
-      const processed = await getStripeEventByStripeEventId(inserted.stripe_event_id)
+      const processed = await getTestStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(processed?.status).toBe('processed')
       expect(processed?.processed_at).not.toBeNull()
       expect(processed?.ignored_at).toBeNull()
@@ -119,7 +119,7 @@ describe('events', () => {
       await markStripeEventProcessing(inserted.id, inserted.lease_token)
       await markStripeEventCompleted(inserted.id, 'ignored', inserted.lease_token)
 
-      const ignored = await getStripeEventByStripeEventId(inserted.stripe_event_id)
+      const ignored = await getTestStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(ignored?.status).toBe('ignored')
       expect(ignored?.ignored_at).toBeInstanceOf(Date)
       expect(ignored?.processed_at).toBeNull()
@@ -155,7 +155,7 @@ describe('events', () => {
       await markStripeEventCompleted(inserted.id, 'processed', inserted.lease_token)
       await markStripeEventFailed(inserted.id, 'late failure', inserted.lease_token)
 
-      const completed = await getStripeEventByStripeEventId(inserted.stripe_event_id)
+      const completed = await getTestStripeEventByStripeEventId(inserted.stripe_event_id)
       expect(completed?.status).toBe('processed')
       expect(completed?.processed_at).toBeInstanceOf(Date)
       expect(completed?.failed_at).toBeNull()

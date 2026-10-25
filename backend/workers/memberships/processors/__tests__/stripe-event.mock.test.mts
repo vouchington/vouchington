@@ -7,7 +7,7 @@ import {
   getTestMembershipRaw,
 } from '@voucha/test-helpers'
 import { getMembershipByUserId } from '@services/memberships'
-import { getStripeEventByStripeEventId } from '@services/stripe/events'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import { insertStripeEvent } from '@services/stripe/insert-event'
 import * as stripeCustomers from '@modules/stripe/customers'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
@@ -83,7 +83,7 @@ describe('stripe-event', () => {
       const raw = await getTestMembershipRaw(membership!.id)
       expect(raw?.expires_at).not.toBeNull()
 
-      const processedEvent = await getStripeEventByStripeEventId(storedEvent.stripe_event_id)
+      const processedEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
       expect(processedEvent?.status).toBe('processed')
     })
 
@@ -187,7 +187,7 @@ describe('stripe-event', () => {
       )
       await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
 
-      const ignoredEvent = await getStripeEventByStripeEventId(storedEvent.stripe_event_id)
+      const ignoredEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
       expect(ignoredEvent?.status).toBe('ignored')
     })
 
@@ -229,7 +229,7 @@ describe('stripe-event', () => {
       await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
       await processStripeEvent(toJobData(storedEvent), true, undefined, applicationContext)
 
-      const processedEvent = await getStripeEventByStripeEventId(storedEvent.stripe_event_id)
+      const processedEvent = await getTestStripeEventByStripeEventId(storedEvent.stripe_event_id)
       expect(processedEvent?.attempt_count).toBe(1)
 
       const raw = await getTestMembershipRaw(membership.id)

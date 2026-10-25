@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   getStripeEventById,
-  getStripeEventByStripeEventId,
   markStripeEventFailed,
   markStripeEventProcessing,
 } from '@services/stripe/events'
+import type { StripeEventRecord } from '@services/stripe/events-types'
 import { handleStripeEvent } from '@services/stripe-event-processing'
 import { createStripeEvent } from '@voucha/test-helpers/membership-stripe-fixtures'
 import { processStripeEvent } from '../stripe-event.mts'
@@ -14,7 +14,7 @@ describe('stripe-event processing failures', () => {
     const storedEvent = {
       id: 'event-record-1',
       payload: createStripeEvent('invoice.upcoming', { object: 'invoice' }),
-    } as NonNullable<Awaited<ReturnType<typeof getStripeEventByStripeEventId>>>
+    } as StripeEventRecord
     const markFailed = vi.fn<typeof markStripeEventFailed>().mockResolvedValue(undefined)
     const failure = new Error('handler failed')
 

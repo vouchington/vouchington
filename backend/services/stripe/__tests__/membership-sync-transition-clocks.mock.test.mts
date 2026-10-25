@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestSku, createTestUser, getTestMembershipRaw } from '@voucha/test-helpers'
 import { createMembership } from '@services/memberships'
-import { getStripeEventByStripeEventId } from '../events.mts'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import { insertStripeEvent } from '../insert-event.mts'
 
 vi.mock<typeof import('@modules/stripe/customers')>(
@@ -42,7 +42,7 @@ describe('existing Stripe membership transition clocks', () => {
       const { membership, sku, subscriptionId } = await createExistingMembership()
       const eventId = `evt_missing_terminal_${randomUUID()}`
       await insertStripeEvent(makeSubscriptionEvent(eventId, subscriptionId))
-      const event = await getStripeEventByStripeEventId(eventId)
+      const event = await getTestStripeEventByStripeEventId(eventId)
       mockSubscription({ subscriptionId, skuId: sku.stripe_price_id, status: stripeStatus })
 
       await ensureMembershipFromStripeSubscription(
@@ -72,7 +72,7 @@ describe('existing Stripe membership transition clocks', () => {
         makeSubscriptionEvent(eventId, subscriptionId),
         new Date('2024-01-01T00:00:00.000Z'),
       )
-      const event = await getStripeEventByStripeEventId(eventId)
+      const event = await getTestStripeEventByStripeEventId(eventId)
       mockSubscription({
         subscriptionId,
         skuId: sku.stripe_price_id,

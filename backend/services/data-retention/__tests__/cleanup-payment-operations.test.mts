@@ -17,7 +17,7 @@ import {
   createMembershipVerification,
 } from '@voucha/test-helpers/data-stores/psql/membership-verifications'
 import { randomUUID } from 'node:crypto'
-import { getStripeEventByStripeEventId } from '../../stripe/events.mts'
+import { getTestStripeEventByStripeEventId } from '@voucha/test-helpers/stripe-event-readers'
 import { insertStripeEvent } from '../../stripe/insert-event.mts'
 import { handleStripeEvent } from '../../stripe-event-processing/event-handlers.mts'
 import {
@@ -85,7 +85,9 @@ describe('payment operational retention', () => {
     expect(await stripeEventWorkExists(pendingId)).toBe(true)
     const replay = await insertStripeEvent(firstEvent)
     expect(replay).toMatchObject({ is_new: false, status: 'retained', lease_token: null })
-    expect(await getStripeEventByStripeEventId(firstEvent.id)).toMatchObject({ status: 'retained' })
+    expect(await getTestStripeEventByStripeEventId(firstEvent.id)).toMatchObject({
+      status: 'retained',
+    })
   })
 
   it('deletes abandoned, failed, ownerless and expired Checkout intents while preserving live and verified intents', async () => {
