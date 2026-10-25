@@ -30,8 +30,6 @@ export const requiredClassifierGoldenFiles = [
   'backend/agents/post-classifier/classifier-input.mts',
   'backend/agents/autotagger/classifier-run-bindings.mts',
   'backend/agents/autotagger/content.mts',
-  'email-templates/index.mts',
-  'email-templates/types.mts',
 ]
 
 export type ClassifierGoldenAuditInput = {
