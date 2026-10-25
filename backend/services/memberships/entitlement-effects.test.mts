@@ -8,7 +8,7 @@ import {
   getTestMembershipRaw,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   claimPendingMembershipEntitlementEffects,
@@ -112,7 +112,7 @@ describe('membership entitlement effects', () => {
     if (!rawMembership?.latest_change_id) throw new Error('Expected recorded change')
 
     await expect(deliverPendingMembershipEntitlementEffects(10_000)).resolves.toBeGreaterThan(0)
-    expect(await isJwtStale(user.id)).toBe(true)
+    expect(await readTestJwtStaleMarker(user.id)).not.toBeNull()
     expect(await getTestMembershipEntitlementEffects(rawMembership.latest_change_id)).toEqual([
       expect.objectContaining({ delivered_at: expect.any(Date), delivery_claim_token: null }),
     ])

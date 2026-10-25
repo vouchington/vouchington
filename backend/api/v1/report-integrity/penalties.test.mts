@@ -14,7 +14,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { applyReportAbusePenalty } from '@services/report-integrity/apply-penalty'
 import * as jwtInvalidation from '@services/jwt-session/invalidation'
-import { clearJwtStaleIfCurrent, isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { clearJwtStaleIfCurrent } from '@data-stores/valkey/jwt-stale'
 
 describe('report-integrity penalties API', () => {
   const randomUsername = () => `test-ri-pen-${randomBytes(4).toString('hex')}`
@@ -273,7 +273,6 @@ describe('report-integrity penalties API', () => {
       const batchWrites = ownedWrites()
       expect(batchWrites).toHaveLength(2)
       await Promise.all(batchWrites)
-      expect(await isJwtStale(reporter!.id)).toBe(true)
       const marker = await readTestJwtStaleMarker(reporter!.id)
       expect(marker).not.toBeNull()
       await expect(clearJwtStaleIfCurrent(reporter!.id, marker!)).resolves.toBe(true)
@@ -292,9 +291,9 @@ describe('report-integrity penalties API', () => {
       )
       expect(singleWrites).toHaveLength(1)
       await Promise.all(singleWrites)
-      expect(await isJwtStale(reporter!.id)).toBe(true)
-      expect(await isJwtStale(target1!.id)).toBe(false)
-      expect(await isJwtStale(target2!.id)).toBe(false)
+      expect(await readTestJwtStaleMarker(reporter!.id)).not.toBeNull()
+      expect(await readTestJwtStaleMarker(target1!.id)).toBeNull()
+      expect(await readTestJwtStaleMarker(target2!.id)).toBeNull()
     }, 30_000)
   })
 })
