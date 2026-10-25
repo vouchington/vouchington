@@ -50,7 +50,7 @@ describe('enqueueUndoFollowSideEffects', () => {
   })
 
   it('does not enqueue for another relation', async () => {
-    enqueueUndoFollowSideEffects(muteRelation, [deletedPair])
+    await enqueueUndoFollowSideEffects(muteRelation, [deletedPair])
     await settleEnqueues(pendingEnqueues)
 
     expect(await ownedActivityJobs()).toEqual([])
@@ -58,7 +58,7 @@ describe('enqueueUndoFollowSideEffects', () => {
   })
 
   it('does not enqueue for an empty Follow deletion result', async () => {
-    enqueueUndoFollowSideEffects(followRelation, [])
+    await enqueueUndoFollowSideEffects(followRelation, [])
     await settleEnqueues(pendingEnqueues)
 
     expect(await ownedActivityJobs()).toEqual([])
@@ -66,7 +66,7 @@ describe('enqueueUndoFollowSideEffects', () => {
   })
 
   it('enqueues matching ActivityPub UndoFollow and Bluesky reconciliation jobs', async () => {
-    enqueueUndoFollowSideEffects(followRelation, [deletedPair])
+    await enqueueUndoFollowSideEffects(followRelation, [deletedPair])
     await settleEnqueues(pendingEnqueues)
 
     const activityPubJobs = await ownedActivityJobs()
@@ -91,7 +91,7 @@ describe('enqueueUndoFollowSideEffects', () => {
 
   it('reconciles Bluesky without fabricating an UndoFollow for a legacy unknown identity', async () => {
     const legacyFollowerId = randomUUID()
-    enqueueUndoFollowSideEffects(followRelation, [
+    await enqueueUndoFollowSideEffects(followRelation, [
       {
         subjectId: legacyFollowerId,
         objectId: deletedPair.objectId,

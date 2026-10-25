@@ -29,6 +29,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/activitypub": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/background-cpu": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",
     "@queues/crawler": "workspace:^",
