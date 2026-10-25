@@ -27,10 +27,9 @@ export async function seedClassifierRunPayloadsAt(input: {
     await write(sql`/* seedClassifierRunPayloadAt */
       WITH identity AS (
         INSERT INTO classifier_run_identities (
-          id, classifier_id, post_id, input_sha256, configuration_sha256
+          id, classifier_id, post_id, input_sha256
         ) VALUES (
-          ${id}, ${classifierId}, ${input.postId}, ${inputHash},
-          digest('{"version": 1}'::jsonb::text, 'sha256')
+          ${id}, ${classifierId}, ${input.postId}, ${inputHash}
         ) RETURNING id
       )
       INSERT INTO classifier_runs (
@@ -45,9 +44,10 @@ export async function seedClassifierRunPayloadsAt(input: {
   const requestId = uuidv7()
   await write(sql`/* seedClassifierRunRequestIdentity */
     INSERT INTO classifier_run_requests (
-      id, classifier_id, post_id, input_sha256, run_identity_id
+      id, classifier_id, post_id, input_sha256, run_identity_id, run_settled_at
     ) VALUES (
-      ${requestId}, ${classifierId}, ${input.postId}, ${input.currentInputSha256}, ${ids[0]}
+      ${requestId}, ${classifierId}, ${input.postId}, ${input.currentInputSha256}, ${ids[0]},
+      ${input.at}
     )
   `)
   return {

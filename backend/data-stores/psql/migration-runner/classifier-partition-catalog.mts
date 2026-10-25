@@ -89,7 +89,16 @@ export function assertEveryDefaultAttached(children: readonly ClassifierChild[])
 
 export async function lockClassifierResultParents(query: QueryExecutor): Promise<void> {
   await query(`/* lockClassifierResultParents */
-    LOCK TABLE ${CLASSIFIER_RESULT_TABLES.join(', ')} IN ACCESS EXCLUSIVE MODE`)
+    LOCK TABLE ${CLASSIFIER_RESULT_TABLES.join(', ')} IN ACCESS EXCLUSIVE MODE NOWAIT`)
+}
+
+/** ATTACH recreates result-child FKs; acquire their referenced tables without a wait edge. */
+export async function lockClassifierResultFkTargets(query: QueryExecutor): Promise<void> {
+  await query(`/* lockClassifierResultFkTargets */
+    LOCK TABLE classifier_decision_batches, classifier_decision_calls, classifiers,
+      classifier_candidates, classifier_candidate_thresholds, community_agent_prompts,
+      topics, stories, rss_feed_items
+    IN SHARE ROW EXCLUSIVE MODE NOWAIT`)
 }
 
 type DefaultRow = { parent_table: string; batch_id: string; inside_range: boolean }

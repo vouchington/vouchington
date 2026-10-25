@@ -39,6 +39,7 @@ export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
   'topic_classifier_results',
   'story_classifier_results',
   'community_prompt_classifier_results',
+  'classifier_decision_batch_candidates',
 ]
 
 /**

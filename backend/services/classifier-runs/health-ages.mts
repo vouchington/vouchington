@@ -50,7 +50,7 @@ export async function readOldestPendingClassifierRequest(
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${classifier}
-      AND request.run_identity_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
+      AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
     ORDER BY request.id
     LIMIT 1
   `)

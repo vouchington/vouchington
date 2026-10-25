@@ -159,10 +159,6 @@ export function buildUnboundedUnpartitionedTables(
         'Permanent paid-call idempotency receipts require global operation-key uniqueness; the unique-key lookup remains selective.',
       ],
       [
-        'classifier_run_identities',
-        'Minimal classifier, subject, content and configuration identity survives payload retirement to preserve exact deduplication; unique-key lookups remain selective.',
-      ],
-      [
         'classifier_run_requests',
         'Minimal subject and content request identity survives run payload retirement so pending recovery and exact follow-on deduplication remain durable.',
       ],

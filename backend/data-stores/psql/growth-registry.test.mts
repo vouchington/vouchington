@@ -219,7 +219,12 @@ describe('schema growth registry', () => {
       children: 'default',
       retentionOwner: 'operatorPartitionDrop',
     })
-    expect(PARTITION_POLICIES.has('classifier_decision_batch_candidates')).toBe(false)
+    expect(PARTITION_POLICIES.get('classifier_decision_batch_candidates')).toMatchObject({
+      strategy: 'RANGE',
+      key: 'batch_id',
+      children: 'default',
+      retentionOwner: 'operatorPartitionDrop',
+    })
     expect(PARTITION_POLICIES.get('story_classifier_results')).toMatchObject({
       strategy: 'RANGE',
       key: 'batch_id',

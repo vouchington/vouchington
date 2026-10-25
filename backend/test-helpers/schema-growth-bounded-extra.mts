@@ -14,6 +14,10 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One persisted cyclic keyset cursor for each finite classifier record cleanup family.',
   ],
   [
+    'classifier_run_identities',
+    'Old prompt-version and deleted-subject cache identities retire through bounded cleanup.',
+  ],
+  [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
   ],

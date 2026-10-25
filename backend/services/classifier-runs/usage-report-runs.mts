@@ -83,7 +83,7 @@ export async function readClassifierRunUsage(
       encode(run.configuration_sha256, 'hex') AS configuration_sha256,
       run.community_identity_id,
       run.decision_batch_id AS batch_id,
-      batch.prompt_version_id,
+      run.prompt_version_id,
       -- An agent run has no prompt version: its provider and model are what the ledger billed.
       COALESCE(prompt.model_provider::text, usage.ledger_provider) AS provider,
       COALESCE(prompt.model_name, usage.ledger_model) AS model,
@@ -126,7 +126,7 @@ export async function readClassifierRunUsage(
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
     LEFT JOIN classifier_decision_batches batch ON batch.id = run.decision_batch_id
-    LEFT JOIN classifier_prompt_versions prompt ON prompt.id = batch.prompt_version_id
+    LEFT JOIN classifier_prompt_versions prompt ON prompt.id = run.prompt_version_id
     LEFT JOIN post_classifier_local_outcomes local_outcome ON local_outcome.run_id = run.id
     CROSS JOIN LATERAL (
       SELECT count(*)::int AS provider_calls,

@@ -7,7 +7,7 @@ import {
 } from '../cleanup-classifier-decisions.mts'
 
 describe('classifier decision parent retention', () => {
-  it('keeps completed calls and batches while any result family or live child still references them', async () => {
+  it('keeps calls and batches while any live run, result, or child still references them', async () => {
     const statements: SQLStatement[] = []
     const query = (async (statement: SQLStatement) => {
       statements.push(statement)
@@ -20,7 +20,7 @@ describe('classifier decision parent retention', () => {
     expect(statements).toHaveLength(2)
     const [calls, batches] = statements
     for (const statement of [calls!, batches!]) {
-      expect(statement.text).toContain('completed_at IS NOT NULL')
+      expect(statement.text).toContain('FROM classifier_runs run')
       for (const table of [
         'topic_classifier_results',
         'story_classifier_results',

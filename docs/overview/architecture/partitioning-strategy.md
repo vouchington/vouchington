@@ -56,14 +56,20 @@ Classifier results use a narrower operator path. An admin selects one UTC batch 
 checks that every row in each result DEFAULT fits it under a fixed row budget and seals the existing
 physical children as aligned explicit ranges in one transaction. A new DEFAULT receives later
 results. An oversized or mixed DEFAULT refuses the operation before DDL, so operators should seal
-small ranges as they grow. The candidate snapshots stay unpartitioned: the topic and story result
-foreign keys prevent detaching a populated candidate partition. Their bounded row cleanup waits
-for old results, calls, and run payloads to leave and never weakens the foreign keys. Classifier
+small ranges as they grow. Candidate snapshots join the aligned range because their batch-scoped
+configuration is part of the retained decision payload. Calls and batches remain ordinary tables;
+their bounded cleanup waits until all referenced snapshots and result rows have retired. Classifier
 range retirement is operator initiated and checks the configured retention window and pending work
 under the partition locks. Its batch and run checks use indexed existence probes, so a sealed range
 can grow beyond the creation row budget and still retire. If a producer holds the batch or run
 table, the retirement transaction refuses the operation without waiting on a reverse lock order.
 The scheduled monthly job still owns only crawl and RSS history.
+
+Classifier run identities are a deduplication cache, while requests and usage are durable records.
+Prompt-backed cache entries become expendable after a newer prompt version is active; promptless
+entries follow their run payload's lifetime. Deleting a real subject also makes its cache entries
+expendable. A live run retains its identity through the report window. Request settlement and billed
+cost survive cache eviction without allowing the deleted subject to be replayed or authorized.
 
 ## Related
 

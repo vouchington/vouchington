@@ -113,7 +113,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_classifier_prompt_versions__classifier_act
   ON classifier_prompt_versions (classifier_id)
   WHERE activated_at IS NOT NULL AND deactivated_at IS NULL AND deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_prompt_versions__classifier
-  ON classifier_prompt_versions (classifier_id);
+  ON classifier_prompt_versions (classifier_id, id);
+CREATE INDEX IF NOT EXISTS idx_classifier_prompt_versions__activated_id
+  ON classifier_prompt_versions (classifier_id, id)
+  WHERE activated_at IS NOT NULL AND deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_prompt_versions__created_by
   ON classifier_prompt_versions (created_by_id);
 CREATE INDEX IF NOT EXISTS idx_classifier_prompt_versions__updated_by
@@ -506,7 +509,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batch_candidates (
       batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id,
       effective_lower_threshold, effective_upper_threshold
     )
-);
+) PARTITION BY RANGE (batch_id);
 
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__classifier
   ON classifier_decision_batch_candidates (classifier_id);
@@ -573,10 +576,6 @@ BEGIN
     AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)
     AND NOT (
       uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'
-      AND EXISTS (
-        SELECT 1 FROM classifier_decision_batches AS batch
-        WHERE batch.id = OLD.batch_id AND batch.completed_at IS NOT NULL
-      )
       AND NOT EXISTS (
         SELECT 1 FROM classifier_runs AS run
         WHERE run.decision_batch_id = OLD.batch_id
@@ -594,7 +593,7 @@ BEGIN
         WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id
       )
     ) THEN
-    RAISE EXCEPTION 'classifier batch candidate snapshots require terminal, expired, unreferenced decisions before deletion' USING ERRCODE = '23503';
+    RAISE EXCEPTION 'classifier batch candidate snapshots require expired, unreferenced decisions before deletion' USING ERRCODE = '23503';
   END IF;
   RETURN OLD;
 END $$;
@@ -1057,7 +1056,7 @@ COMMENT ON COLUMN community_prompt_classifier_results.scope_community_id IS 'Com
 -- cannot make a daily run inspect an unbounded number of rows.
 CREATE TYPE classifier_retention_sweeps AS ENUM (
   'run_candidates', 'agent_topics', 'local_outcomes', 'runs', 'calls',
-  'batch_candidates', 'batches'
+  'batches', 'identities', 'versioned_identities'
 );
 
 CREATE TABLE IF NOT EXISTS classifier_retention_cursors (
@@ -1065,8 +1064,14 @@ CREATE TABLE IF NOT EXISTS classifier_retention_cursors (
   cursor_id UUID,
   cursor_ordinal INTEGER,
   cursor_child_id UUID,
+  cursor_classifier_id UUID,
+  cursor_prompt_version_id UUID,
+  sweep_start_key UUID,
   sweep_end_key UUID,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_classifier_retention_cursors__version_scope CHECK (
+    num_nonnulls(cursor_classifier_id, cursor_prompt_version_id) IN (0, 2)
+  )
 );
 
 CREATE OR REPLACE TRIGGER trigger_classifier_retention_cursors_updated_at
@@ -1078,5 +1083,8 @@ COMMENT ON COLUMN classifier_retention_cursors.sweep IS 'The classifier record f
 COMMENT ON COLUMN classifier_retention_cursors.cursor_id IS 'Last raw UUIDv7 row examined; no FK so deletion preserves progress.';
 COMMENT ON COLUMN classifier_retention_cursors.cursor_ordinal IS 'Last candidate ordinal examined within cursor_id when sweeping run candidates.';
 COMMENT ON COLUMN classifier_retention_cursors.cursor_child_id IS 'Last topic or decision candidate ID examined within cursor_id for composite-key child sweeps.';
+COMMENT ON COLUMN classifier_retention_cursors.cursor_classifier_id IS 'Classifier scope for the versioned identity cache sweep.';
+COMMENT ON COLUMN classifier_retention_cursors.cursor_prompt_version_id IS 'Prompt-version scope for the versioned identity cache sweep.';
+COMMENT ON COLUMN classifier_retention_cursors.sweep_start_key IS 'Fixed inclusive UUIDv7 lower bound for a scoped identity cache sweep cycle.';
 COMMENT ON COLUMN classifier_retention_cursors.sweep_end_key IS 'Fixed exclusive UUIDv7 cutoff captured when a sweep cycle begins.';
 COMMENT ON COLUMN classifier_retention_cursors.updated_at IS 'Last committed sweep progress.';

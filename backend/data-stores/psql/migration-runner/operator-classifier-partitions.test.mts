@@ -89,12 +89,23 @@ describe('operator classifier range sealing SQL contract', () => {
     const positions = (marker: string) =>
       capture.statements.flatMap((statement, index) => (statement.includes(marker) ? [index] : []))
     expect(positions('lockClassifierResultParents')).toHaveLength(1)
+    expect(positions('lockClassifierResultFkTargets')[0]).toBeLessThan(
+      positions('lockClassifierResultParents')[0]!,
+    )
     expect(positions('assertDefaultsFitRange')[0]).toBeLessThan(
       positions('createClassifierResultRange:detach')[0]!,
     )
     for (const marker of ['detach', 'rename', 'attach', 'newDefault']) {
-      expect(positions(`createClassifierResultRange:${marker}`)).toHaveLength(3)
+      expect(positions(`createClassifierResultRange:${marker}`)).toHaveLength(tables.length)
     }
+    expect(positions('releaseDetachedCandidateReferences')).toHaveLength(2)
+    expect(positions('releaseDetachedCandidateReferences').at(-1)).toBeLessThan(
+      positions('createClassifierResultRange:detach').at(-1)!,
+    )
+    const firstAttachment = capture.statements.find(statement =>
+      statement.includes('createClassifierResultRange:attach'),
+    )
+    expect(firstAttachment).toContain('ALTER TABLE classifier_decision_batch_candidates ATTACH')
     expect(positions('createClassifierResultRange:attach')[0]).toBeGreaterThan(
       positions('createClassifierResultRange:rename').at(-1)!,
     )
@@ -247,7 +258,7 @@ describe('operator classifier range sealing SQL contract', () => {
     ).toBe(false)
   })
 
-  it('requires all three aligned children when validating an attached range', () => {
+  it('requires all four aligned children when validating an attached range', () => {
     expect(() => assertAllRangesAttached([], range.nameSuffix, range.fromId, range.toId)).toThrow(
       'incomplete',
     )

@@ -11,6 +11,7 @@ const SWEEP_TABLES = {
   runs: 'classifier_runs',
   calls: 'classifier_decision_calls',
   batches: 'classifier_decision_batches',
+  identities: 'classifier_run_identities',
 } as const
 
 type Sweep = keyof typeof SWEEP_TABLES

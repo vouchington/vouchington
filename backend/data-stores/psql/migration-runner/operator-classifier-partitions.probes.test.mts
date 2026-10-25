@@ -87,20 +87,38 @@ describe('operator classifier range retirement SQL contract', () => {
     expect(capture.statements.some(statement => statement.includes(':detach'))).toBe(false)
   })
 
-  it('checks the locked catalog and bounded probes before three aligned detach/drop pairs', async () => {
+  it('checks the locked catalog and bounded probes before four aligned detach/drop pairs', async () => {
     const capture = createCapture()
     await guardAndRetireClassifierResultRange(capture.query, input, 90, referenceDate)
+    const batchProbe = capture.statements.find(statement =>
+      statement.includes('assertNoPendingClassifierWork:batches'),
+    )!
+    expect(batchProbe).toContain('run.decision_batch_id = batch.id')
+    expect(batchProbe).toContain('run.terminal_failed_at IS NULL')
     const positions = (marker: string) =>
       capture.statements.flatMap((statement, index) => (statement.includes(marker) ? [index] : []))
-    expect(positions('retireClassifierResultRange:lockChild')).toHaveLength(3)
+    expect(positions('lockClassifierResultFkTargets')[0]).toBeLessThan(
+      positions('lockClassifierResultParents')[0]!,
+    )
+    expect(positions('retireClassifierResultRange:lockChild')).toHaveLength(
+      CLASSIFIER_RESULT_PARTITION_TABLES.length,
+    )
     expect(positions('retireClassifierResultRange:lockRuns')[0]).toBeGreaterThan(
       positions('retireClassifierResultRange:lockChild').at(-1)!,
     )
     expect(positions('assertNoPendingClassifierWork:runs')[0]).toBeLessThan(
       positions('retireClassifierResultRange:detach')[0]!,
     )
-    expect(positions('retireClassifierResultRange:detach')).toHaveLength(3)
-    expect(positions('retireClassifierResultRange:drop')).toHaveLength(3)
+    expect(positions('retireClassifierResultRange:detach')).toHaveLength(
+      CLASSIFIER_RESULT_PARTITION_TABLES.length,
+    )
+    expect(positions('releaseDetachedCandidateReferences')).toHaveLength(2)
+    expect(positions('releaseDetachedCandidateReferences').at(-1)).toBeLessThan(
+      positions('retireClassifierResultRange:detach').at(-1)!,
+    )
+    expect(positions('retireClassifierResultRange:drop')).toHaveLength(
+      CLASSIFIER_RESULT_PARTITION_TABLES.length,
+    )
 
     capture.statements.length = 0
     capture.setAttached(false)

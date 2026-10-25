@@ -178,7 +178,8 @@ async function hasClassifierRunReceipt<C, L, E>(
     SELECT 1 FROM classifier_run_identities
     WHERE classifier_id = (SELECT id FROM classifiers WHERE slug = ${slug})
       AND input_sha256 = ${current.inputSha256}
-      AND configuration_sha256 = ${resolved.configurationSha256} AND `.append(subjectMatch),
+      AND prompt_version_id IS NOT DISTINCT FROM ${resolved.remote?.promptVersionId ?? null}::uuid
+      AND `.append(subjectMatch),
   )
   return rows.length > 0
 }

@@ -9,7 +9,7 @@ import {
   deleteOldClassifierCalls,
 } from './cleanup-classifier-decisions.mts'
 import { sweepClassifierPages } from './cleanup-classifier-pages.mts'
-import { sweepClassifierBatchCandidates } from './cleanup-classifier-batch-candidates.mts'
+import { sweepClassifierVersionedIdentities } from './cleanup-classifier-identity-versions.mts'
 
 type CleanupCount = { deleted: number; hasMore: boolean; scanned: number }
 type ClassifierCleanupOptions = {
@@ -26,14 +26,15 @@ export type ClassifierCleanupResult = {
   localOutcomes: CleanupCount
   runs: CleanupCount
   calls: CleanupCount
-  batchCandidates: CleanupCount
   batches: CleanupCount
+  identities: CleanupCount
 }
 
 /**
- * Expire terminal run payloads after bounded child sweeps. Request and run identity rows survive
- * indefinitely for recovery and exact deduplication; usage ledger links target the identity.
- * Decision calls and batches are deleted only after operator-owned result partitions are gone.
+ * Expire terminal run payloads after bounded child sweeps. Promptless identities retire with their
+ * removed run in the same transaction. Versioned cache identities retire after a newer activated
+ * prompt version exists or the real subject is deleted; pending run payloads keep their identity.
+ * Decision calls and batches retire only after operator-owned result partitions are gone.
  */
 export async function cleanupClassifierRecords(
   options: ClassifierCleanupOptions,
@@ -46,7 +47,7 @@ export async function cleanupClassifierRecords(
     sweepClassifierChildren('agent_topics', cutoffId, lowerBoundId, batchSize, maxBatches),
     sweepClassifierChildren('local_outcomes', cutoffId, lowerBoundId, batchSize, maxBatches),
   ])
-  // ast-grep-ignore: no-three-sequential-awaits -- runs, calls, and batch candidate snapshots retire in FK order, each bounded phase commits before its dependent phase
+  // ast-grep-ignore: no-three-sequential-awaits -- runs, calls, and batches retire in FK order, each bounded phase commits before its dependent phase
   const runs = await sweepClassifierPages(
     'runs',
     cutoffId,
@@ -63,12 +64,6 @@ export async function cleanupClassifierRecords(
     maxBatches,
     deleteOldClassifierCalls,
   )
-  const batchCandidates = await sweepClassifierBatchCandidates(
-    cutoffId,
-    lowerBoundId,
-    batchSize,
-    maxBatches,
-  )
   const batches = await sweepClassifierPages(
     'batches',
     cutoffId,
@@ -77,14 +72,52 @@ export async function cleanupClassifierRecords(
     maxBatches,
     deleteOldClassifierBatches,
   )
-  return { runCandidates, agentTopics, localOutcomes, runs, calls, batchCandidates, batches }
+  const deletedSubjects = await sweepClassifierPages(
+    'identities',
+    getMinUUIDv7ForDate(options.now ?? new Date()),
+    lowerBoundId,
+    batchSize,
+    maxBatches,
+    deleteDeletedSubjectClassifierIdentities,
+  )
+  const oldVersions = await sweepClassifierVersionedIdentities(
+    getMinUUIDv7ForDate(options.now ?? new Date()),
+    lowerBoundId,
+    batchSize,
+    maxBatches,
+  )
+  const identities = {
+    scanned: deletedSubjects.scanned + oldVersions.scanned,
+    deleted: deletedSubjects.deleted + oldVersions.deleted,
+    hasMore: deletedSubjects.hasMore || oldVersions.hasMore,
+  }
+  return { runCandidates, agentTopics, localOutcomes, runs, calls, batches, identities }
 }
 
-async function deleteOldClassifierRuns(
+async function deleteDeletedSubjectClassifierIdentities(
   query: OwnedTransaction,
   ids: readonly string[],
 ): Promise<number> {
-  const { rowCount } = await query(sql`/* deleteOldClassifierRuns */
+  const { rowCount } = await query(sql`/* deleteDeletedSubjectClassifierIdentities */
+    DELETE FROM classifier_run_identities identity
+    WHERE identity.id = ANY(${[...ids]}::uuid[])
+      AND NOT EXISTS (SELECT 1 FROM classifier_runs run WHERE run.id = identity.id)
+      AND (
+        (identity.post_id IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM posts post WHERE post.id = identity.post_id
+        ))
+        OR (identity.rss_feed_item_id IS NOT NULL AND NOT EXISTS (
+          SELECT 1 FROM rss_feed_items item WHERE item.id = identity.rss_feed_item_id
+        ))
+      )`)
+  return rowCount ?? 0
+}
+
+export async function deleteOldClassifierRuns(
+  query: OwnedTransaction,
+  ids: readonly string[],
+): Promise<number> {
+  const { rows: deletedRuns } = await query<{ id: string }>(sql`/* deleteOldClassifierRuns */
     DELETE FROM classifier_runs run
     WHERE run.id = ANY(${[...ids]}::uuid[])
       AND (run.completed_at IS NOT NULL OR run.superseded_at IS NOT NULL
@@ -98,6 +131,13 @@ async function deleteOldClassifierRuns(
       AND NOT EXISTS (
         SELECT 1 FROM post_classifier_local_outcomes outcome WHERE outcome.run_id = run.id
       )
+    RETURNING run.id
   `)
-  return rowCount ?? 0
+  if (deletedRuns.length > 0) {
+    await query(sql`/* deleteRetiredPromptlessClassifierIdentities */
+      DELETE FROM classifier_run_identities identity
+      WHERE identity.id = ANY(${deletedRuns.map(row => row.id)}::uuid[])
+        AND identity.prompt_version_id IS NULL`)
+  }
+  return deletedRuns.length
 }

@@ -6,7 +6,7 @@ export type ClassifierPartitionRangeInput = {
   maxDefaultRows?: number
 }
 
-/** One operator request touches three aligned result tables and at most this many DEFAULT rows per table. */
+/** One operator request touches four aligned tables and at most this many DEFAULT rows per table. */
 export const CLASSIFIER_PARTITION_MAX_DEFAULT_ROWS = 5_000
 export const CLASSIFIER_PARTITION_MAX_TOTAL_ROWS = 15_000
 
