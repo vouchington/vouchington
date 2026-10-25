@@ -68,7 +68,6 @@
     "@services/users": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/worker-runtime": "^0.2.0",
     "glide-mq": "^0.19.0",
     "http-assert": "^1.5.0",
     "p-map": "^7.1.0"
