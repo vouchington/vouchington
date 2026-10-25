@@ -26,7 +26,7 @@
     "@modules/api-egress-proxy": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/utils": "^0.8.0",
+    "@vouchington/utils": "^0.9.0",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {

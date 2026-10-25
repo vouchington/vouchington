@@ -39,7 +39,7 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/utils": "^0.8.0",
+    "@vouchington/utils": "^0.9.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",

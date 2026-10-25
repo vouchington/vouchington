@@ -24,6 +24,6 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey": "workspace:^",
-    "@vouchington/utils": "^0.8.0"
+    "@vouchington/utils": "^0.9.0"
   }
 }

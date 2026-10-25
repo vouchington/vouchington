@@ -32,13 +32,15 @@ export function createMicrosoftIdentitySigningFixture() {
         aud: 'test-microsoft-client',
         iss: `https://login.microsoftonline.com/${tenantId}/v2.0`,
         tid: tenantId,
+        sub: 'fixture-pairwise-subject',
+        iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 300,
         ...override,
       },
       signingKey,
     )
   }
-  return { privateKey, publicKey, keyId, tenantId, signToken, signJsonToken }
+  return { privateKey, publicKey, keyId, tenantId, signToken }
 }
 
 /** Normalize the actual undici request argument while keeping provider mocks typed. */
