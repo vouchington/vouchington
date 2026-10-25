@@ -2,10 +2,6 @@ import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
 import type http from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  findUnbaselinedRepeats,
-  formatUnbaselinedRepeats,
-} from '../../test-helpers/request-query-profile-baseline.mts'
 import { createRequestQueryProfile } from '../../test-helpers/query-profiles.mts'
 import { recordQueryTiming } from './query-timing.mts'
 import { createVouchaApiApp } from '../../api/app.mts'
@@ -20,86 +16,6 @@ const BASELINE_URL = new URL(
 )
 
 describe('request query profile baseline', () => {
-  const baseline = [
-    {
-      annotation: 'knownRepeat',
-      routes: ['GET /v1/things/:id'],
-      maxCount: null,
-      reason: 'r',
-      issue: 1,
-    },
-  ]
-  const repeat = (annotation: string, count = 2) => ({ annotation, count })
-
-  it('allows an exact route and reports new annotations and unlisted routes', () => {
-    expect(
-      findUnbaselinedRepeats('GET /v1/things/:id', [repeat('knownRepeat', 5)], baseline),
-    ).toEqual([])
-    const fresh = findUnbaselinedRepeats(
-      'GET /v1/things/:id',
-      [repeat('knownRepeat'), repeat('newRepeat', 3)],
-      baseline,
-    )
-    expect(fresh).toEqual([{ annotation: 'newRepeat', count: 3 }])
-    expect(formatUnbaselinedRepeats('GET /v1/things/:id', fresh)).toContain(
-      'GET /v1/things/:id: newRepeat (x3)',
-    )
-    expect(findUnbaselinedRepeats('GET /v1/other', [repeat('knownRepeat')], baseline)).toEqual([
-      repeat('knownRepeat'),
-    ])
-  })
-
-  it('allows exactly two on the named route while guarding other routes and a third query', () => {
-    const scoped = [
-      {
-        annotation: 'getRssFeedsByIdBatch',
-        routes: ['GET /api/v1/rss-feeds/trending'],
-        maxCount: 2,
-        reason: 'r',
-        permanent: true as const,
-        code: 'backend/services/entity-fetch/rss-feeds.mts:12',
-      },
-    ]
-    const repeats = [repeat('getRssFeedsByIdBatch', 2)]
-    expect(findUnbaselinedRepeats(scoped[0]!.routes[0]!, repeats, scoped)).toEqual([])
-    expect(findUnbaselinedRepeats('GET /api/v1/rss-feeds/recommended', repeats, scoped)).toEqual(
-      repeats,
-    )
-    const three = [repeat('getRssFeedsByIdBatch', 3)]
-    expect(findUnbaselinedRepeats(scoped[0]!.routes[0]!, three, scoped)).toEqual(three)
-  })
-
-  it('keeps worker-only annotations out of request matching', () => {
-    const workerOnly = [
-      {
-        annotation: 'workerRepeat',
-        routes: [],
-        workers: [{ queue: 'background', job: 'refresh' }],
-        maxCount: null,
-        reason: 'r',
-        permanent: true as const,
-        code: 'backend/workers/refresh.mts:12',
-      },
-    ]
-    expect(findUnbaselinedRepeats('GET /v1/things', [repeat('workerRepeat')], workerOnly)).toEqual([
-      repeat('workerRepeat'),
-    ])
-  })
-
-  it('applies separate counts to disjoint routes of the same annotation', () => {
-    const entries = [
-      { annotation: 'recheck', routes: ['GET /one'], maxCount: 2, reason: 'r', issue: 1 },
-      { annotation: 'recheck', routes: ['GET /two'], maxCount: 3, reason: 'r', issue: 1 },
-    ]
-    expect(findUnbaselinedRepeats('GET /one', [repeat('recheck', 3)], entries)).toEqual([
-      repeat('recheck', 3),
-    ])
-    expect(findUnbaselinedRepeats('GET /two', [repeat('recheck', 3)], entries)).toEqual([])
-    expect(findUnbaselinedRepeats('GET /unknown', [repeat('recheck', 2)], entries)).toEqual([
-      repeat('recheck', 2),
-    ])
-  })
-
   it('attributes queries recorded by a module instance loaded after vi.resetModules()', async () => {
     const profile = createRequestQueryProfile()
     vi.resetModules()

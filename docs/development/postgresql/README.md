@@ -51,9 +51,8 @@ records exceptions against their exact HTTP route and/or worker queue and job na
 are diagnostic only; they do not exempt or fail an HTTP request. An entry is either temporary,
 owned by an open issue that removes the repeat, or permanent, for a repeat the code needs on purpose
 (a re-read after a lock that rejects a concurrent change); its reason names the mechanism.
-`parseRepeatBaseline` in
-[`request-query-profile-baseline.mts`](../../../backend/test-helpers/request-query-profile-baseline.mts)
-owns the exact fields, and the test setup rejects an entry that fits neither.
+`parseRepeatBaseline` from `vouchington-tooling/request-query-profile` owns the exact fields,
+and the test setup rejects an entry that fits neither.
 
 `request-query-profile-open-issues.mts` fails when a temporary entry's issue is not open. Static
 Analysis runs it when a pull request or merge group changes the baseline, and the nightly run

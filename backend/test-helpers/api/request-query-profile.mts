@@ -5,10 +5,10 @@ import type http from 'node:http'
 import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
+  formatRequestProfileLine,
   parseRepeatBaseline,
-} from '../request-query-profile-baseline.mts'
+} from 'vouchington-tooling/request-query-profile'
 import { createRequestQueryProfile, type RequestQueryProfile } from '../query-profiles.mts'
-import { formatRequestProfileLine } from '../request-query-profile-line.mts'
 import { resolveRequestProfileRoute, type RouteMatcher } from '../request-query-profile-route.mts'
 import { recordRequestQueryProfileViolation } from './request-query-profile-violations.mts'
 
@@ -76,7 +76,11 @@ function reportRequestQueryProfile(route: string, profile: RequestQueryProfile):
     const summary = profile.summarize()
     const unbaselined = findUnbaselinedRepeats(route, summary.repeats, BASELINE)
     if (unbaselined.length > 0) {
-      recordRequestQueryProfileViolation(formatUnbaselinedRepeats(route, unbaselined))
+      recordRequestQueryProfileViolation(
+        formatUnbaselinedRepeats(route, unbaselined, {
+          baselineFile: 'backend/test-helpers/api/request-query-profile-baseline.json',
+        }),
+      )
     }
     if (process.env.VITEST_DIAGNOSTICS === '1') {
       const line = formatRequestProfileLine(route, summary, { all: true })
