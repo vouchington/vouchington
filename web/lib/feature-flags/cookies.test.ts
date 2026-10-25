@@ -69,6 +69,20 @@ describe('cookies', () => {
   })
 
   describe('getFeatureFlagSnapshot', () => {
+    it('ignores malformed cookie encoding and recovers when a valid cookie replaces it', () => {
+      cookieJar.setRaw(FF_COOKIE, encodeFeatureFlagCookie({ fediverse: true }))
+      expect(getFeatureFlagSnapshot()).toEqual({ fediverse: true })
+
+      cookieJar.setRaw(FF_COOKIE, '%C3')
+      expect(getFeatureFlagOverrides()).toEqual({})
+      const snapshot = getFeatureFlagSnapshot()
+      expect(snapshot).toEqual({})
+      expect(getFeatureFlagSnapshot()).toBe(snapshot)
+
+      cookieJar.setRaw(FF_COOKIE, encodeFeatureFlagCookie({ fediverse: false }))
+      expect(getFeatureFlagSnapshot()).toEqual({ fediverse: false })
+    })
+
     it('returns parsed flags when a cookie is set', () => {
       cookieJar.setRaw(FF_COOKIE, encodeFeatureFlagCookie({ memberships: true }))
       expect(getFeatureFlagSnapshot()).toEqual({ memberships: true })
