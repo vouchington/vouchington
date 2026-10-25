@@ -16,12 +16,13 @@ import {
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   createOAuthBrowserBindingHash,
-  beginOAuthAuthorizationRequest,
+  beginValidatedOAuthAuthorizationRequest,
   getNativeOAuthClientDocument,
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
   getOAuthAuthorizationRequestForUser,
   updateOwnedOAuthApp,
+  validateOAuthAuthorizationRequest,
 } from './index.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
@@ -118,19 +119,21 @@ describe('OAuth consent', () => {
     const document = getNativeOAuthClientDocument('ios')
     const deviceId = uuidv7()
     const sessionId = uuidv7()
-    const pending = await beginOAuthAuthorizationRequest({
+    const parameters = {
       clientId: document.client_id,
       codeChallenge: 'A'.repeat(43),
-      codeChallengeMethod: 'S256',
+      codeChallengeMethod: 'S256' as const,
       deviceId,
       sessionId,
       userId: owner.id,
       redirectUri: document.redirect_uris[0]!,
       resource: TEST_OAUTH_RESOURCE,
-      responseType: 'code',
+      responseType: 'code' as const,
       scope: document.scope,
       state: 'native-state',
-    })
+    }
+    const validated = await validateOAuthAuthorizationRequest(parameters)
+    const pending = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
     await expect(
       getOAuthAuthorizationRequestForUser(
         owner.id,
