@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@services/classifier-run-revival": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/post-publication": "workspace:^",
