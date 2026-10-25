@@ -2,7 +2,6 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import type { PrivateUser } from '@services/users/types'
 import {
   beginTransaction,
-  read,
   withTransactionOptions,
   write,
   type QueryOptions,
@@ -15,15 +14,6 @@ export type FediverseIntegrationStatus = 'pending' | 'approved' | 'blocked'
 
 export type SetIntegrationStatusResult = 'updated' | 'noop'
 
-export type FediverseInstanceIntegrationChange = {
-  id: string
-  topic_id: string
-  integration_status: FediverseIntegrationStatus
-  changed_by_id: string | null
-  reason: string | null
-  created_at: Date
-}
-
 export type SetIntegrationStatusInput = {
   topicId: string
   integrationStatus: FediverseIntegrationStatus
@@ -32,27 +22,6 @@ export type SetIntegrationStatusInput = {
 
 function assertReason(reason: string | null | undefined): void {
   assert(reason === undefined || reason === null || reason.length <= 1000, 400, 'reason too long')
-}
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getLatestIntegrationStatusChange(
-  topicId: string,
-  options: QueryOptions = {},
-): Promise<FediverseInstanceIntegrationChange | null> {
-  const { rows } = await read(
-    `/* getLatestFediverseInstanceIntegrationStatusChange */
-      SELECT id, topic_id, change_type AS integration_status, changed_by_id, reason, created_at
-      FROM fediverse_instance_integration_changes
-      WHERE topic_id = $1
-      ORDER BY id DESC
-      LIMIT 1`,
-    [topicId],
-    options,
-  )
-  return (rows[0] as FediverseInstanceIntegrationChange | undefined) ?? null
 }
 
 async function insertChange(

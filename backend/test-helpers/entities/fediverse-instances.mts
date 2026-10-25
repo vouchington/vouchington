@@ -49,6 +49,25 @@ export async function getTestFediverseInstanceIntegrationStatus(
   return (rows[0]?.integration_status as string | undefined) ?? null
 }
 
+export async function getTestFediverseInstanceIntegrationChange(topicId: string): Promise<{
+  integration_status: string
+  changed_by_id: string | null
+  reason: string | null
+} | null> {
+  const { rows } = await read(sql`/* getTestFediverseInstanceIntegrationChange */
+    SELECT change_type AS integration_status, changed_by_id, reason
+    FROM fediverse_instance_integration_changes
+    WHERE topic_id = ${topicId}
+    ORDER BY id DESC
+    LIMIT 1
+  `)
+  return (
+    (rows[0] as
+      | { integration_status: string; changed_by_id: string | null; reason: string | null }
+      | undefined) ?? null
+  )
+}
+
 // Inserts a row directly into fediverse_instance_integration_changes, bypassing the
 // service layer, so tests can control the row's UUIDv7 id (and therefore its
 // insert-order relative to other rows) to simulate out-of-order transaction commits.
