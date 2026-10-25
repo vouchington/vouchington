@@ -1,10 +1,15 @@
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http'
 import { describe, expect, it } from 'vitest'
 import { createWorkerSecretValidator, isAdminDashboardRequest } from './dashboard-auth.mts'
-import { revokeSession, verifyDeviceAndSessionTokens } from '@services/jwt-session'
+import {
+  createDeviceAndSessionTokens,
+  revokeSession,
+  verifyDeviceAndSessionTokens,
+} from '@services/jwt-session'
 import { revokeUserSessionsBefore } from '@services/jwt-session/session-revocation-keys'
 import { addTestUserRole } from '@voucha/test-helpers'
 import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
+import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 
 function req(headers: IncomingHttpHeaders): IncomingMessage {
   return { headers } as IncomingMessage
@@ -45,13 +50,17 @@ describe('dashboard auth', () => {
     await expect(isAdminDashboardRequest(req({ cookie }))).resolves.toBe(false)
   })
 
-  it('rejects an MFA-assured administrator session from a different browser agent', async () => {
-    const { userId } = await createTestSessionCookies()
+  it('rejects an administrator session from a different browser agent', async () => {
+    const { dtCookie, userId } = await createTestSessionCookies()
     await addTestUserRole(userId, 'administrator')
-    const assured = await createVerifiedMfaTestSession(userId, {
-      user_agent: 'Original browser agent',
+    const device = await verifyDeviceJwt(dtCookie.slice(3))
+    if (!device) throw new Error('Expected the test device credential')
+    const bound = await createDeviceAndSessionTokens({
+      uid: userId,
+      did: device.did,
+      deviceContext: { user_agent: 'Original browser agent' },
     })
-    const cookie = `dt=${assured.deviceToken.token}; st=${assured.sessionToken.token}`
+    const cookie = `dt=${bound.deviceToken.token}; st=${bound.sessionToken.token}`
 
     await expect(
       isAdminDashboardRequest(req({ cookie, 'user-agent': 'Original browser agent' })),

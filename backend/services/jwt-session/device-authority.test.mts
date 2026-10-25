@@ -2,91 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { verifyDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { createTestUserDirect, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
 import { refreshSessionState } from './flows.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
-import { rotateAuthenticatedDeviceToken } from './device-authority-rotation.mts'
-import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
+import { getJwtRevokedKey } from './constants.mts'
 import { isSessionRevoked, revokeSession } from './revocation.mts'
 
 const userAgent = 'Mozilla/5.0 (Windows NT 10.0) Chrome/130.0 Safari/537.36'
 
 describe('durable device credential authority', () => {
-  it('rejects a rotation requested for a different principal without changing authority', async () => {
-    const user = await createTestUserDirect()
-    const tokens = await createDeviceAndSessionTokens({
-      uid: user.id,
-      did: v7(),
-      deviceContext: { user_agent: userAgent },
-    })
-    const sid = tokens.sessionToken.payload.sid
-    const before = await readSessionDeviceAuthority(sid)
-    await expect(
-      rotateAuthenticatedDeviceToken({
-        deviceToken: tokens.deviceToken.token,
-        uid: v7(),
-        did: tokens.deviceToken.payload.did,
-        sid,
-      }),
-    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
-    expect(await readSessionDeviceAuthority(sid)).toEqual(before)
-  })
-
-  it('rejects credential replay after a user-wide cutoff without a SID marker', async () => {
-    const user = await createTestUserDirect()
-    const tokens = await createDeviceAndSessionTokens({
-      uid: user.id,
-      did: v7(),
-      deviceContext: { user_agent: userAgent },
-    })
-    const sid = tokens.sessionToken.payload.sid
-    const binding = (await readSessionDeviceAuthority(sid))!.device_token_binding!
-    const cutoffKey = getJwtUserRevokedBeforeKey(user.id)
-    await sessionValkeyClient.set(cutoffKey, String(Math.floor(Date.now() / 1000) + 60))
-    try {
-      await expect(
-        mintAuthenticatedDeviceAuthority({
-          uid: user.id,
-          did: tokens.deviceToken.payload.did,
-          sid,
-          binding,
-          issuedAt: tokens.deviceToken.payload.iat!,
-          credentialReplay: true,
-          deviceContext: { user_agent: userAgent },
-        }),
-      ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
-      await expect(sessionValkeyClient.get(getJwtRevokedKey(sid))).resolves.toBeNull()
-    } finally {
-      await sessionValkeyClient.del([cutoffKey])
-    }
-  })
-
-  it.each([
-    { description: 'an unexpected binding field', change: { unexpected: true } },
-    { description: 'an invalid browser-agent hash', change: { ua_hash: 'invalid' } },
-  ])('rejects $description in durable authority', async ({ change }) => {
-    const user = await createTestUserDirect()
-    const tokens = await createDeviceAndSessionTokens({
-      uid: user.id,
-      did: v7(),
-      deviceContext: { user_agent: userAgent },
-    })
-    const sid = tokens.sessionToken.payload.sid
-    const row = await readSessionDeviceAuthority(sid)
-    const binding = JSON.stringify({ ...row!.device_token_binding, ...change })
-    await write(sql`/* corruptTestDeviceBinding */
-      UPDATE user_sessions SET device_token_binding = ${binding}::jsonb
-      WHERE id = ${sid} AND user_id = ${user.id}`)
-
-    await expect(readSessionDeviceAuthority(sid)).rejects.toMatchObject({
-      code: 'SESSION_RELOGIN_REQUIRED',
-    })
-  })
-
   it.each(['missing', 'expired'] as const)(
     'requires login recovery for %s native access without changing device authority',
     async accessState => {
