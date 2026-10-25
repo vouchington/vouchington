@@ -108,6 +108,6 @@
     "tailwindcss": "^4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.4",
-    "vouchington-tooling": "^0.66.1"
+    "vouchington-tooling": "^0.67.0"
   }
 }
