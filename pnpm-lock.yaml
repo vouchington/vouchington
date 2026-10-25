@@ -2347,27 +2347,18 @@ importers:
 
   backend/modules/bluesky-oauth:
     dependencies:
-      '@atproto-labs/fetch-node':
-        specifier: ^0.4.1
-        version: 0.4.1
-      '@atproto-labs/handle-resolver-node':
-        specifier: ^0.2.12
-        version: 0.2.12
-      '@atproto/jwk':
-        specifier: ^0.7.4
-        version: 0.7.4
-      '@atproto/jwk-jose':
-        specifier: ^0.2.4
-        version: 0.2.4
       '@atproto/oauth-client-node':
-        specifier: ^0.5.9
-        version: 0.5.9
+        specifier: ^0.5.12
+        version: 0.5.12
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../api-egress-proxy
       '@modules/utils':
         specifier: workspace:^
         version: link:../utils
+      '@vouchington/oauth-client':
+        specifier: ^0.1.0
+        version: 0.1.0(@atproto/oauth-client-node@0.5.12)
 
   backend/modules/child-process: {}
 
@@ -8608,6 +8599,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/api-egress-proxy':
+        specifier: workspace:^
+        version: link:../../modules/api-egress-proxy
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -8623,6 +8617,9 @@ importers:
       '@services/email-address-validator':
         specifier: workspace:^
         version: link:../email-address-validator
+      '@vouchington/utils':
+        specifier: ^0.8.0
+        version: 0.8.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -8645,15 +8642,12 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
+      '@vouchington/utils':
+        specifier: ^0.8.0
+        version: 0.8.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
-      undici:
-        specifier: ^8.12.3
-        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8661,6 +8655,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/services/oauth-authorization-server:
     dependencies:
@@ -8796,22 +8793,16 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
-      http-errors:
-        specifier: ^2.0.1
-        version: 2.0.1
-      undici:
-        specifier: ^8.12.3
-        version: 8.12.3
+      '@vouchington/utils':
+        specifier: ^0.8.0
+        version: 0.8.0
     devDependencies:
-      '@types/http-errors':
-        specifier: ^2.0.5
-        version: 2.0.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/services/oauth-linkedin:
     dependencies:
@@ -8824,16 +8815,13 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
-      http-errors:
-        specifier: ^2.0.1
-        version: 2.0.1
+      '@vouchington/utils':
+        specifier: ^0.8.0
+        version: 0.8.0
+    devDependencies:
       undici:
         specifier: ^8.12.3
         version: 8.12.3
-    devDependencies:
-      '@types/http-errors':
-        specifier: ^2.0.5
-        version: 2.0.5
 
   backend/services/oauth-microsoft:
     dependencies:
@@ -8883,6 +8871,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/utils':
+        specifier: ^0.8.0
+        version: 0.8.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -14683,7 +14674,7 @@ importers:
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
         specifier: ^0.67.0
-        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.98.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.98.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5)(zod@4.6.5)
 
   static-code-analysis:
     dependencies:
@@ -15165,32 +15156,28 @@ packages:
     engines: {node: '>= 12.0.0'}
     hasBin: true
 
-  '@atproto-labs/did-resolver@0.3.10':
-    resolution: {integrity: sha512-SPWOcJG/rsqrp2XQZQe8ctC9Y604mivZfXTrCsXbo7dXeAukYSgljPPa/7yWAlTvCbqUSNKScVEWpdCyel/nFw==}
+  '@atproto-labs/did-resolver@0.3.11':
+    resolution: {integrity: sha512-CeAC6VY3xaXQ8CaOXLz4EOopSvfcQBcuJvX3J5ew2nbf+BM0nes45ZvxUieP5ZlLPXbJborwJh5zDeJcYpwCFQ==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/fetch-node@0.4.1':
-    resolution: {integrity: sha512-7mHaXKuBYY8WTAVY4PtTEoeAWZlLk6TWAnljuOqmNKt8x1ZKWWBTHcspWAWYgtcMzyJ9yifTThHYUGbHfyneiQ==}
-    engines: {node: '>=22'}
-
-  '@atproto-labs/fetch@0.3.6':
-    resolution: {integrity: sha512-ro/J/cnqIp4bnSzDl8N3SkruvQcE3Pze+1H70mKdFfyFcdhPr+7O4lggl4VCbhI84Yqgz47c0xC6F/Yl39SxDA==}
+  '@atproto-labs/fetch-node@0.4.3':
+    resolution: {integrity: sha512-qENUCoXKKNegxin34IpFxNd8yRijTfHq9FEoAVk7ZSciedstUJrVbt4CbdGLkn1t5gcZUH+Csct+MTAEQzvNbA==}
     engines: {node: '>=22'}
 
   '@atproto-labs/fetch@0.4.0':
     resolution: {integrity: sha512-9HEcZuCU4nWAzV3XZ7nwbDPdV8tbhICzyYeyE5SPHTPuuKS6C3i5WOdwGP1diCCUaYF3Vadw5ArVlQPtXnn73w==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/handle-resolver-node@0.2.12':
-    resolution: {integrity: sha512-U4W8QlpvUq6vBYwUOJs7yS8TMIaMkArG3jcpZ+2Ql/7jwzDxKbHFiJAZ6lYEbEKscM42wRg4nE8SsAfJt3+Ykw==}
+  '@atproto-labs/handle-resolver-node@0.2.14':
+    resolution: {integrity: sha512-O7vJyelVurDZfSbh57GgdRaMhGyLA1RPeFX8yVaeLDoGNhhexy6uoXqwPAylPUDjzCc29OPLhfv6Jozi3SqT3A==}
     engines: {node: '>=22'}
 
   '@atproto-labs/handle-resolver@0.4.10':
     resolution: {integrity: sha512-hsYYvGhi6Tv6f4Fti//i/vllVIb/wrJaOcbT3Yh7oo10VxBKAyxzVaB7mIJcho2YJ5kHd2kbCYYPWLw8pvm/bg==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/identity-resolver@0.4.10':
-    resolution: {integrity: sha512-deKu7csOsM8lnIRnLa97te6ODIUx0Lm3Srxid/Ix+UYQqFKA0sIpfYmHZduAK7B+aTqiPcHjoA9Y/qpJyzgnMw==}
+  '@atproto-labs/identity-resolver@0.4.11':
+    resolution: {integrity: sha512-6k5hZ05D5HmFu6MDy2/z8z42UxZy6xw3JbvbKxDp5ChSZ/9L2Hv1MeTruruGKK2ATP6sYxx7xcsGaiTmTIHYFw==}
     engines: {node: '>=22'}
 
   '@atproto-labs/pipe@0.2.4':
@@ -15207,10 +15194,6 @@ packages:
 
   '@atproto/api@0.28.0':
     resolution: {integrity: sha512-u2qjG4rLT1JazUKZ1MmaVZ+oEmUxc2l40RO/TGxHBhWoz8GKpzzHstOOBwpdcfPcSsndYFdMm22LCMPARHp2Rw==}
-    engines: {node: '>=22'}
-
-  '@atproto/common-web@0.5.14':
-    resolution: {integrity: sha512-eJEgJVI61n5t/ieluVOxaEl16hWKipvy60SWOLcISanOywvEW5MkOeeg4PVeYqntBvYn1ldZiNHDrFsEyt6+Jg==}
     engines: {node: '>=22'}
 
   '@atproto/common-web@0.5.15':
@@ -15241,36 +15224,24 @@ packages:
     resolution: {integrity: sha512-4ABSfAkv+zLiPHvexZ7n/xR8wCLShbpEqcGxvniejZGsFrms980nl+BOaWPuU+OgLRNzpicMwSVOYDF6X62IHg==}
     engines: {node: '>=22'}
 
-  '@atproto/lexicon@0.7.16':
-    resolution: {integrity: sha512-iZ7LI/EfrQ++DAD4G4OrnB6tNHs+x3Qf5dxyXdLYOxjdjp5SjH2lipL/ecQxUMn9q/4eEkqEC0rvyx4eZd772w==}
-    engines: {node: '>=22'}
-
   '@atproto/lexicon@0.7.17':
     resolution: {integrity: sha512-FR2CPlsGVjAfzvvvTHnoW1wFOFS0Tl9GPlS5yvqjb5GTtRCrDzXmuX+DlFjEvKTUVizx8hWwzCgDihIKCm10HA==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client-node@0.5.9':
-    resolution: {integrity: sha512-oSXGfAQPukUdQpYkPSUciWBiJrF0JtMwziy+GhtIWDU9fh76pHA44lcBxmnQKLiF0baI1dXXWAi5MiBn+/VeWg==}
+  '@atproto/oauth-client-node@0.5.12':
+    resolution: {integrity: sha512-Afz863wyf+i28EMB0U0kATla4C0fX33GQLR3JYSvYj6OcMHMxhsYfGggPkXqnCrmlTUt4PXbLrvpIMnwisdoww==}
     engines: {node: '>=22'}
 
-  '@atproto/oauth-client@0.8.9':
-    resolution: {integrity: sha512-K7IBkM4mCGOX3qDFyPIUEbFSxgxe1NCWRncYqTCFaayAie9O2iTZedagFxV47ZnvKHCWf7u1OUtYO/WqEs8uXg==}
+  '@atproto/oauth-client@0.8.10':
+    resolution: {integrity: sha512-vo8HyiM4eqmierE6dTYcUnnWXUwM/+YarWO7AqTqqPmRMlJSLGh29o6NUdOw7K/omNZboJFwruiayW22UEL+Og==}
     engines: {node: '>=22'}
 
   '@atproto/oauth-types@0.7.7':
     resolution: {integrity: sha512-HhY0n6BJtFlxHJTOwT34uf7BiMaEluuwiZqHkamWoFvl+Gk7bPgWhPslr4kX2J/7ryFxhdsKVj1tjWjy0AhjTw==}
     engines: {node: '>=22'}
 
-  '@atproto/syntax@0.7.6':
-    resolution: {integrity: sha512-luKQTcWw1H1jLmYvX34ldBqNjz2orF082njmcF9fxbWTqVhsO+TpY0FHRKVPoV7dwL0Y3L16DNz1ma0LFGH25g==}
-    engines: {node: '>=22'}
-
   '@atproto/syntax@0.7.7':
     resolution: {integrity: sha512-MJ+QUo8yzAGP2SOQKs2CBI2ouY5KaO9Pv5a7laX3xtrkfWmS/s96L/FCJm5VBHEvKXmd6ap/HSGypYclQcfoWA==}
-    engines: {node: '>=22'}
-
-  '@atproto/xrpc@0.8.15':
-    resolution: {integrity: sha512-WEH4L1Sf9e5YiMDwBTCj3NOtDquB+AlWyQ/BpfRyLqNuYIOLcf3N2LXJodoap50KjG5j9SDLg3RmJ/Ack0t7jA==}
     engines: {node: '>=22'}
 
   '@atproto/xrpc@0.8.16':
@@ -20096,6 +20067,12 @@ packages:
     resolution: {integrity: sha512-I46h8Se7jv81xCD5/4CvRb1BtCcQYjHscEy8BjxmSga1LGi4KiHmeNC0KVqxLSmypi4aUQmrsldij5BhStTkog==}
     engines: {node: '>=24.0.0'}
 
+  '@vouchington/oauth-client@0.1.0':
+    resolution: {integrity: sha512-itsc/rBLgZU4nHVTL5Jq/SBkLeGqK7FMBTbf4VPYIPpBJRiy34FDFzUGDxqDzMuO52DbS+BmakDWKdBQIFV5IQ==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      '@atproto/oauth-client-node': ^0.5.12
+
   '@vouchington/oauth-server@0.3.0':
     resolution: {integrity: sha512-evL75txE0G/hbvwWPvI4OsT1zu7icymy+TEkJ+Tb0pz3SCiwSMA010AJhcQA1OttowIOrz82TrITLGCUJ/UXrg==}
     engines: {node: '>=24.0.0'}
@@ -20289,6 +20266,11 @@ packages:
 
   ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
+    peerDependenciesMeta:
+      ajv:
+        optional: true
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -23695,12 +23677,16 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@6.28.1:
-    resolution: {integrity: sha512-zWpdTVD54H48CIybL0rWQ3ukpb9d23wM7eH5RtfdmeP70cWHNjtfo7P4vZX+5CoDcO53J4Pu5uXp7lNfjc6DRA==}
+  undici@6.29.1:
+    resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
     engines: {node: '>=18.17'}
 
   undici@7.29.1:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
+    engines: {node: '>=20.18.1'}
+
+  undici@7.30.1:
+    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
     engines: {node: '>=20.18.1'}
 
   undici@8.12.3:
@@ -24240,35 +24226,31 @@ snapshots:
       '@ast-grep/cli-win32-ia32-msvc': 0.51.0
       '@ast-grep/cli-win32-x64-msvc': 0.51.0
 
-  '@atproto-labs/did-resolver@0.3.10':
+  '@atproto-labs/did-resolver@0.3.11':
     dependencies:
-      '@atproto-labs/fetch': 0.3.6
+      '@atproto-labs/fetch': 0.4.0
       '@atproto-labs/pipe': 0.2.4
       '@atproto-labs/simple-store': 0.5.1
       '@atproto-labs/simple-store-memory': 0.2.6
       '@atproto/did': 0.5.6
       zod: 3.25.76
 
-  '@atproto-labs/fetch-node@0.4.1':
+  '@atproto-labs/fetch-node@0.4.3':
     dependencies:
       '@atproto-labs/fetch': 0.4.0
       '@atproto-labs/pipe': 0.2.4
       ipaddr.js: 2.5.0
-      undici_v6: undici@6.28.1
-      undici_v7: undici@7.29.1
+      undici_v6: undici@6.29.1
+      undici_v7: undici@7.30.1
       undici_v8: undici@8.12.3
-
-  '@atproto-labs/fetch@0.3.6':
-    dependencies:
-      '@atproto-labs/pipe': 0.2.4
 
   '@atproto-labs/fetch@0.4.0':
     dependencies:
       '@atproto-labs/pipe': 0.2.4
 
-  '@atproto-labs/handle-resolver-node@0.2.12':
+  '@atproto-labs/handle-resolver-node@0.2.14':
     dependencies:
-      '@atproto-labs/fetch-node': 0.4.1
+      '@atproto-labs/fetch-node': 0.4.3
       '@atproto-labs/handle-resolver': 0.4.10
       '@atproto/did': 0.5.6
 
@@ -24279,9 +24261,9 @@ snapshots:
       '@atproto/did': 0.5.6
       zod: 3.25.76
 
-  '@atproto-labs/identity-resolver@0.4.10':
+  '@atproto-labs/identity-resolver@0.4.11':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.10
+      '@atproto-labs/did-resolver': 0.3.11
       '@atproto-labs/handle-resolver': 0.4.10
 
   '@atproto-labs/pipe@0.2.4': {}
@@ -24302,13 +24284,6 @@ snapshots:
       await-lock: 3.0.0
       multiformats: 13.4.2
       tlds: 1.261.0
-      zod: 3.25.76
-
-  '@atproto/common-web@0.5.14':
-    dependencies:
-      '@atproto/lex-data': 0.1.8
-      '@atproto/lex-json': 0.1.7
-      '@atproto/syntax': 0.7.6
       zod: 3.25.76
 
   '@atproto/common-web@0.5.15':
@@ -24349,13 +24324,6 @@ snapshots:
       '@atproto/lex-data': 0.1.8
       tslib: 2.8.1
 
-  '@atproto/lexicon@0.7.16':
-    dependencies:
-      '@atproto/common-web': 0.5.14
-      '@atproto/syntax': 0.7.6
-      multiformats: 13.4.2
-      zod: 3.25.76
-
   '@atproto/lexicon@0.7.17':
     dependencies:
       '@atproto/common-web': 0.5.15
@@ -24363,30 +24331,30 @@ snapshots:
       multiformats: 13.4.2
       zod: 3.25.76
 
-  '@atproto/oauth-client-node@0.5.9':
+  '@atproto/oauth-client-node@0.5.12':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.10
-      '@atproto-labs/handle-resolver-node': 0.2.12
+      '@atproto-labs/did-resolver': 0.3.11
+      '@atproto-labs/handle-resolver-node': 0.2.14
       '@atproto-labs/simple-store': 0.5.1
       '@atproto/did': 0.5.6
       '@atproto/jwk': 0.7.4
       '@atproto/jwk-jose': 0.2.4
       '@atproto/jwk-webcrypto': 0.3.4
-      '@atproto/oauth-client': 0.8.9
+      '@atproto/oauth-client': 0.8.10
       '@atproto/oauth-types': 0.7.7
 
-  '@atproto/oauth-client@0.8.9':
+  '@atproto/oauth-client@0.8.10':
     dependencies:
-      '@atproto-labs/did-resolver': 0.3.10
-      '@atproto-labs/fetch': 0.3.6
+      '@atproto-labs/did-resolver': 0.3.11
+      '@atproto-labs/fetch': 0.4.0
       '@atproto-labs/handle-resolver': 0.4.10
-      '@atproto-labs/identity-resolver': 0.4.10
+      '@atproto-labs/identity-resolver': 0.4.11
       '@atproto-labs/simple-store': 0.5.1
       '@atproto-labs/simple-store-memory': 0.2.6
       '@atproto/did': 0.5.6
       '@atproto/jwk': 0.7.4
       '@atproto/oauth-types': 0.7.7
-      '@atproto/xrpc': 0.8.15
+      '@atproto/xrpc': 0.8.16
       core-js: 3.50.0
       multiformats: 13.4.2
       zod: 3.25.76
@@ -24397,20 +24365,10 @@ snapshots:
       '@atproto/jwk': 0.7.4
       zod: 3.25.76
 
-  '@atproto/syntax@0.7.6':
-    dependencies:
-      iso-datestring-validator: 2.2.2
-      tslib: 2.8.1
-
   '@atproto/syntax@0.7.7':
     dependencies:
       iso-datestring-validator: 2.2.2
       tslib: 2.8.1
-
-  '@atproto/xrpc@0.8.15':
-    dependencies:
-      '@atproto/lexicon': 0.7.16
-      zod: 3.25.76
 
   '@atproto/xrpc@0.8.16':
     dependencies:
@@ -28716,12 +28674,33 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@typescript-eslint/parser@8.72.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
+    dependencies:
+      '@typescript-eslint/scope-manager': 8.72.0
+      '@typescript-eslint/types': 8.72.0
+      '@typescript-eslint/typescript-estree': 8.72.0(supports-color@10.2.2)(typescript@6.0.3)
+      '@typescript-eslint/visitor-keys': 8.72.0
+      debug: 4.4.3(supports-color@10.2.2)
+      eslint: 10.5.0(jiti@2.7.0)(supports-color@10.2.2)
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@typescript-eslint/project-service@8.72.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)':
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.72.0(@typescript/typescript6@6.0.2)
       '@typescript-eslint/types': 8.72.0
       debug: 4.4.3(supports-color@10.2.2)
       typescript: '@typescript/typescript6@6.0.2'
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/project-service@8.72.0(supports-color@10.2.2)(typescript@6.0.3)':
+    dependencies:
+      '@typescript-eslint/tsconfig-utils': 8.72.0(typescript@6.0.3)
+      '@typescript-eslint/types': 8.72.0
+      debug: 4.4.3(supports-color@10.2.2)
+      typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
 
@@ -28733,6 +28712,10 @@ snapshots:
   '@typescript-eslint/tsconfig-utils@8.72.0(@typescript/typescript6@6.0.2)':
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
+
+  '@typescript-eslint/tsconfig-utils@8.72.0(typescript@6.0.3)':
+    dependencies:
+      typescript: 6.0.3
 
   '@typescript-eslint/types@8.71.1': {}
 
@@ -28750,6 +28733,21 @@ snapshots:
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(@typescript/typescript6@6.0.2)
       typescript: '@typescript/typescript6@6.0.2'
+    transitivePeerDependencies:
+      - supports-color
+
+  '@typescript-eslint/typescript-estree@8.72.0(supports-color@10.2.2)(typescript@6.0.3)':
+    dependencies:
+      '@typescript-eslint/project-service': 8.72.0(supports-color@10.2.2)(typescript@6.0.3)
+      '@typescript-eslint/tsconfig-utils': 8.72.0(typescript@6.0.3)
+      '@typescript-eslint/types': 8.72.0
+      '@typescript-eslint/visitor-keys': 8.72.0
+      debug: 4.4.3(supports-color@10.2.2)
+      minimatch: 10.2.6
+      semver: 7.8.5
+      tinyglobby: 0.2.17
+      ts-api-utils: 2.5.0(typescript@6.0.3)
+      typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
 
@@ -29053,6 +29051,14 @@ snapshots:
       '@aws-sdk/s3-request-presigner': 3.1155.0
 
   '@vouchington/memberships@0.2.0': {}
+
+  '@vouchington/oauth-client@0.1.0(@atproto/oauth-client-node@0.5.12)':
+    dependencies:
+      '@atproto-labs/fetch-node': 0.4.3
+      '@atproto-labs/handle-resolver-node': 0.2.14
+      '@atproto/jwk': 0.7.4
+      '@atproto/jwk-jose': 0.2.4
+      '@atproto/oauth-client-node': 0.5.12
 
   '@vouchington/oauth-server@0.3.0':
     dependencies:
@@ -32932,6 +32938,10 @@ snapshots:
     dependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
+  ts-api-utils@2.5.0(typescript@6.0.3):
+    dependencies:
+      typescript: 6.0.3
+
   ts-dedent@2.3.0: {}
 
   tsconfck@3.1.6(@typescript/typescript6@6.0.2):
@@ -33016,9 +33026,11 @@ snapshots:
 
   undici-types@8.9.0: {}
 
-  undici@6.28.1: {}
+  undici@6.29.1: {}
 
   undici@7.29.1: {}
+
+  undici@7.30.1: {}
 
   undici@8.12.3: {}
 
@@ -33231,6 +33243,37 @@ snapshots:
       pg: 8.23.1
       react: 19.3.1
       typescript: '@typescript/typescript6@6.0.2'
+      vitest: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - eslint
+      - supports-color
+      - zod
+
+  vouchington-tooling@0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.98.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5)(zod@4.6.5):
+    dependencies:
+      '@types/mdast': 4.0.4
+      '@types/unist': 3.0.3
+      '@typescript-eslint/parser': 8.72.0(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+      agent-blackboard: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
+      csv-parse: 7.0.3
+      csv-stringify: 6.9.0
+      dockerfile-ast: 0.7.1
+      picomatch: 4.0.7
+      remark: 15.0.1(supports-color@10.2.2)
+      remark-gfm: 4.0.1(supports-color@10.2.2)
+      spdx-expression-parse: 5.0.0
+      yaml: 2.9.1
+    optionalDependencies:
+      '@libpg-query/parser': 18.0.0
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
+      '@playwright/test': 1.64.1
+      '@typescript/typescript6': 6.0.2
+      next: 16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      no-mistakes: 0.98.0(vitest@5.0.5)
+      pg: 8.23.1
+      react: 19.3.1
+      typescript: 6.0.3
       vitest: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - '@cfworker/json-schema'

@@ -10,12 +10,6 @@ import {
 const useLoadScriptMock = vi.hoisted(() =>
   vi.fn<VitestLooseMock>(() => ({ isLoaded: true, isError: false })),
 )
-const openOAuthPopupMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
-const generateStateMock = vi.hoisted(() => vi.fn<VitestLooseMock>(() => 'state-123'))
-const generateCodeVerifierMock = vi.hoisted(() => vi.fn<VitestLooseMock>(() => 'verifier-123'))
-const generateCodeChallengeMock = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>(() => Promise.resolve('challenge-123')),
-)
 
 function callbackUrl(path: string): string {
   return `${window.location.origin}${path}`
@@ -23,16 +17,6 @@ function callbackUrl(path: string): string {
 
 vi.mock(import('@vouchington/script-loader'), () => ({
   useLoadScript: useLoadScriptMock,
-}))
-
-vi.mock(import('@/lib/auth/open-oauth-popup'), () => ({
-  openOAuthPopup: openOAuthPopupMock,
-}))
-
-vi.mock(import('@/lib/auth/pkce'), () => ({
-  generateState: generateStateMock,
-  generateCodeVerifier: generateCodeVerifierMock,
-  generateCodeChallenge: generateCodeChallengeMock,
 }))
 
 interface GooglePromptNotification {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startOAuthBrokerAuthorization } from './oauth-broker'
-import { OAuthCancelledError } from './oauth-error'
+import { OAuthCancelledError } from '@vouchington/utils/oauth-popup'
 
 const mockBeginOAuthAuthorization = vi.hoisted(() => vi.fn<VitestLooseMock>())
 

@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useGithubAuth } from '../use-github-auth'
 import { useLinkedInAuth } from '../use-linkedin-auth'
 import { useMicrosoftAuth } from '../use-microsoft-auth'
@@ -9,78 +9,126 @@ import {
   setRuntimePublicConfigForTest,
 } from '@/test-helpers/runtime-public-config'
 
-const useLoadScriptMock = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>(() => ({ isLoaded: true, isError: false })),
-)
-const openOAuthPopupMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
-const generateStateMock = vi.hoisted(() => vi.fn<VitestLooseMock>(() => 'state-123'))
-const generateCodeVerifierMock = vi.hoisted(() => vi.fn<VitestLooseMock>(() => 'verifier-123'))
-const generateCodeChallengeMock = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>(() => Promise.resolve('challenge-123')),
-)
+const runPopupOAuthLoginMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
-function callbackUrl(path: string): string {
-  return `${window.location.origin}${path}`
+vi.mock(import('@vouchington/utils/oauth-popup'), async importOriginal => ({
+  ...(await importOriginal()),
+  runPopupOAuthLogin: runPopupOAuthLoginMock,
+}))
+
+type PopupConfig = {
+  clientId: string
+  authUrl: string | (() => string)
+  mapResult: (result: { code: string; codeVerifier?: string; redirectUri: string }) => unknown
 }
 
-vi.mock(import('@vouchington/script-loader'), () => ({
-  useLoadScript: useLoadScriptMock,
-}))
-
-vi.mock(import('@/lib/auth/open-oauth-popup'), () => ({
-  openOAuthPopup: openOAuthPopupMock,
-}))
-
-vi.mock(import('@/lib/auth/pkce'), () => ({
-  generateState: generateStateMock,
-  generateCodeVerifier: generateCodeVerifierMock,
-  generateCodeChallenge: generateCodeChallengeMock,
-}))
+function lastConfig(): PopupConfig {
+  return runPopupOAuthLoginMock.mock.calls.at(-1)![0] as PopupConfig
+}
 
 describe('OAuth popup provider wrappers', () => {
-  beforeEach(() => {
-    openOAuthPopupMock.mockResolvedValue({ code: 'code-123' })
-    generateStateMock.mockReturnValue('state-123')
-    generateCodeVerifierMock.mockReturnValue('verifier-123')
-    generateCodeChallengeMock.mockResolvedValue('challenge-123')
-  })
-
   afterEach(() => {
     vi.clearAllMocks()
     clearRuntimePublicConfigForTest()
   })
 
-  it('builds GitHub popup auth URLs and returns the code with redirectUri', async () => {
-    setRuntimePublicConfigForTest({ githubClientId: 'github-client-id' })
+  it.each([
+    {
+      runtimeConfig: { githubClientId: 'github-client-id' },
+      useAuth: useGithubAuth,
+      expected: {
+        clientId: 'github-client-id',
+        authUrl: 'https://github.com/login/oauth/authorize',
+        callbackPath: '/auth/callback/github',
+        popupName: 'github-oauth',
+        provider: 'github',
+        providerLabel: 'GitHub',
+        scope: 'read:user user:email',
+      },
+      result: { code: 'code-123', redirectUri: 'https://app/cb' },
+    },
+    {
+      runtimeConfig: { xClientId: 'x-client-id' },
+      useAuth: useXAuth,
+      expected: {
+        clientId: 'x-client-id',
+        authUrl: 'https://x.com/i/oauth2/authorize',
+        callbackPath: '/auth/callback/x',
+        popupName: 'x-oauth',
+        provider: 'x',
+        providerLabel: 'X',
+        scope: 'tweet.read users.read',
+        responseType: 'code',
+        pkce: true,
+      },
+      result: { code: 'code-123', codeVerifier: 'verifier-123', redirectUri: 'https://app/cb' },
+    },
+    {
+      runtimeConfig: { linkedinClientId: 'linkedin-client-id' },
+      useAuth: useLinkedInAuth,
+      expected: {
+        clientId: 'linkedin-client-id',
+        authUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+        callbackPath: '/auth/callback/linkedin',
+        popupName: 'linkedin-oauth',
+        provider: 'linkedin',
+        providerLabel: 'LinkedIn',
+        scope: 'openid profile email',
+        responseType: 'code',
+        pkce: true,
+      },
+      result: { code: 'code-123', codeVerifier: 'verifier-123', redirectUri: 'https://app/cb' },
+    },
+  ])('configures the shared popup login for $expected.provider', async config => {
+    setRuntimePublicConfigForTest(config.runtimeConfig)
+    runPopupOAuthLoginMock.mockImplementation(async (popup: PopupConfig) =>
+      popup.mapResult(config.result),
+    )
+    const { result } = renderHook(() => config.useAuth())
 
-    const { result } = renderHook(() => useGithubAuth())
-
-    await expect(result.current.login()).resolves.toEqual({
-      code: 'code-123',
-      redirectUri: callbackUrl('/auth/callback/github'),
-    })
+    await expect(result.current.login()).resolves.toEqual(config.result)
 
     expect(result.current).toMatchObject({ isAvailable: true, isLoaded: true })
-    expect(openOAuthPopupMock).toHaveBeenCalledWith({
-      authUrl: expect.any(URL),
-      popupName: 'github-oauth',
-      provider: 'github',
-      providerLabel: 'GitHub',
-      state: 'state-123',
+    expect(lastConfig()).toMatchObject(config.expected)
+  })
+
+  it('uses the Microsoft tenant fallback and response_mode=query', async () => {
+    setRuntimePublicConfigForTest({ microsoftClientId: 'microsoft-client-id' })
+    runPopupOAuthLoginMock.mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useMicrosoftAuth())
+    await result.current.login()
+
+    const config = lastConfig()
+    expect((config.authUrl as () => string)()).toBe(
+      'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    )
+    expect(config).toMatchObject({
+      scope: 'openid profile email User.Read',
+      responseMode: 'query',
+      pkce: true,
     })
-    const { authUrl } = openOAuthPopupMock.mock.calls[0]![0] as { authUrl: URL }
-    expect(authUrl.origin + authUrl.pathname).toBe('https://github.com/login/oauth/authorize')
-    expect(authUrl.searchParams.get('client_id')).toBe('github-client-id')
-    expect(authUrl.searchParams.get('redirect_uri')).toBe(callbackUrl('/auth/callback/github'))
-    expect(authUrl.searchParams.get('scope')).toBe('read:user user:email')
-    expect(authUrl.searchParams.get('state')).toBe('state-123')
-    expect(authUrl.searchParams.has('code_challenge')).toBe(false)
+  })
+
+  it('uses a configured Microsoft tenant', async () => {
+    setRuntimePublicConfigForTest({
+      microsoftClientId: 'microsoft-client-id',
+      microsoftTenantId: 'organizations',
+    })
+    runPopupOAuthLoginMock.mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useMicrosoftAuth())
+    await result.current.login()
+
+    expect((lastConfig().authUrl as () => string)()).toBe(
+      'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize',
+    )
   })
 
   it('guards popup providers against concurrent login attempts', async () => {
     setRuntimePublicConfigForTest({ githubClientId: 'github-client-id' })
-    let resolvePopup: (value: { code: string }) => void = () => {}
-    openOAuthPopupMock.mockReturnValue(
+    let resolvePopup: (value: string) => void = () => {}
+    runPopupOAuthLoginMock.mockReturnValue(
       new Promise(resolve => {
         resolvePopup = resolve
       }),
@@ -90,102 +138,11 @@ describe('OAuth popup provider wrappers', () => {
     const firstLogin = result.current.login()
 
     await expect(result.current.login()).rejects.toThrow('login already in progress')
-    expect(openOAuthPopupMock).toHaveBeenCalledTimes(1)
+    expect(runPopupOAuthLoginMock).toHaveBeenCalledTimes(1)
 
-    resolvePopup({ code: 'code-after-wait' })
-    await expect(firstLogin).resolves.toEqual({
-      code: 'code-after-wait',
-      redirectUri: callbackUrl('/auth/callback/github'),
-    })
-  })
-
-  it.each([
-    {
-      runtimeConfig: { xClientId: 'x-client-id' },
-      clientId: 'x-client-id',
-      useAuth: useXAuth,
-      originPath: 'https://x.com/i/oauth2/authorize',
-      redirectUri: callbackUrl('/auth/callback/x'),
-      scope: 'tweet.read users.read',
-      popupName: 'x-oauth',
-      provider: 'x',
-      providerLabel: 'X',
-    },
-    {
-      runtimeConfig: { linkedinClientId: 'linkedin-client-id' },
-      clientId: 'linkedin-client-id',
-      useAuth: useLinkedInAuth,
-      originPath: 'https://www.linkedin.com/oauth/v2/authorization',
-      redirectUri: callbackUrl('/auth/callback/linkedin'),
-      scope: 'openid profile email',
-      popupName: 'linkedin-oauth',
-      provider: 'linkedin',
-      providerLabel: 'LinkedIn',
-    },
-  ])('builds PKCE popup auth URLs for $provider', async config => {
-    setRuntimePublicConfigForTest(config.runtimeConfig)
-    const { result } = renderHook(() => config.useAuth())
-
-    await expect(result.current.login()).resolves.toEqual({
-      code: 'code-123',
-      codeVerifier: 'verifier-123',
-      redirectUri: config.redirectUri,
-    })
-
-    expect(openOAuthPopupMock).toHaveBeenCalledWith({
-      authUrl: expect.any(URL),
-      popupName: config.popupName,
-      provider: config.provider,
-      providerLabel: config.providerLabel,
-      state: 'state-123',
-    })
-    const { authUrl } = openOAuthPopupMock.mock.calls[0]![0] as { authUrl: URL }
-    expect(authUrl.origin + authUrl.pathname).toBe(config.originPath)
-    expect(authUrl.searchParams.get('response_type')).toBe('code')
-    expect(authUrl.searchParams.get('client_id')).toBe(config.clientId)
-    expect(authUrl.searchParams.get('redirect_uri')).toBe(config.redirectUri)
-    expect(authUrl.searchParams.get('scope')).toBe(config.scope)
-    expect(authUrl.searchParams.get('state')).toBe('state-123')
-    expect(authUrl.searchParams.get('code_challenge')).toBe('challenge-123')
-    expect(authUrl.searchParams.get('code_challenge_method')).toBe('S256')
-  })
-
-  it('uses the Microsoft tenant fallback and response_mode=query', async () => {
-    setRuntimePublicConfigForTest({ microsoftClientId: 'microsoft-client-id' })
-
-    const { result } = renderHook(() => useMicrosoftAuth())
-
-    await expect(result.current.login()).resolves.toEqual({
-      code: 'code-123',
-      codeVerifier: 'verifier-123',
-      redirectUri: callbackUrl('/auth/callback/microsoft'),
-    })
-
-    const { authUrl } = openOAuthPopupMock.mock.calls[0]![0] as { authUrl: URL }
-    expect(authUrl.origin + authUrl.pathname).toBe(
-      'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-    )
-    expect(authUrl.searchParams.get('scope')).toBe('openid profile email User.Read')
-    expect(authUrl.searchParams.get('response_mode')).toBe('query')
-  })
-
-  it('uses a configured Microsoft tenant', async () => {
-    setRuntimePublicConfigForTest({
-      microsoftClientId: 'microsoft-client-id',
-      microsoftTenantId: 'organizations',
-    })
-
-    const { result } = renderHook(() => useMicrosoftAuth())
-
-    await expect(result.current.login()).resolves.toEqual({
-      code: 'code-123',
-      codeVerifier: 'verifier-123',
-      redirectUri: callbackUrl('/auth/callback/microsoft'),
-    })
-
-    const { authUrl } = openOAuthPopupMock.mock.calls[0]![0] as { authUrl: URL }
-    expect(authUrl.origin + authUrl.pathname).toBe(
-      'https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize',
-    )
+    resolvePopup('done')
+    await expect(firstLogin).resolves.toBe('done')
+    runPopupOAuthLoginMock.mockResolvedValue('again')
+    await expect(result.current.login()).resolves.toBe('again')
   })
 })

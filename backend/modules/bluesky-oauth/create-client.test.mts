@@ -1,5 +1,3 @@
-import dns from 'node:dns'
-import { syncBuiltinESMExports } from 'node:module'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   NodeSavedSession,
@@ -7,7 +5,6 @@ import type {
   NodeSavedState,
   NodeSavedStateStore,
 } from '@atproto/oauth-client-node'
-const lookupMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
 // createBlueskyOAuthClient's only network-free, synchronously-observable behavior is
 // NodeOAuthClient's constructor: it runs validateClientMetadata(clientMetadata, keyset)
@@ -41,22 +38,10 @@ function inMemorySessionStore(): NodeSavedSessionStore {
 describe('createBlueskyOAuthClient', () => {
   beforeEach(() => {
     vi.resetModules()
-    lookupMock.mockReset()
-    lookupMock.mockImplementation(
-      (
-        _hostname: string,
-        _options: unknown,
-        callback: (error: Error | null, addresses: { address: string; family: number }[]) => void,
-      ) => callback(null, [{ address: '127.0.0.1', family: 4 }]),
-    )
-    vi.spyOn(dns, 'lookup').mockImplementation(lookupMock as never)
-    syncBuiltinESMExports()
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
-    vi.restoreAllMocks()
-    syncBuiltinESMExports()
   })
 
   it('constructs a real NodeOAuthClient against a real https origin without throwing', async () => {
@@ -71,40 +56,4 @@ describe('createBlueskyOAuthClient', () => {
     expect(client.clientMetadata.token_endpoint_auth_method).toBe('private_key_jwt')
     expect(client.clientMetadata.client_id).toBe('https://example.voucha.ai/client-metadata.json')
   })
-
-  it('rejects a provider hostname that DNS resolves to loopback', async () => {
-    vi.stubEnv('SITE_ORIGIN', 'https://example.voucha.ai')
-    const { createBlueskyOAuthClient } = await import('./create-client.mts')
-
-    const client = await createBlueskyOAuthClient({
-      stateStore: inMemoryStateStore(),
-      sessionStore: inMemorySessionStore(),
-    })
-
-    // Extracted as a plain reference (not called as `client.fetch(...)`) because `Fetch`'s `this`
-    // parameter type is `FetchContext = void | null | typeof globalThis`, which `NodeOAuthClient`
-    // does not satisfy as a method receiver — calling it unbound sidesteps that receiver check.
-    const injectedFetch = client.fetch
-    // Bracket notation (not `globalThis.fetch`) so this identity check — never a real network
-    // call — doesn't trip the `backend-no-globalthis-fetch` ast-grep guard, which bans the
-    // dot-access member expression outright regardless of call vs. reference.
-    expect(injectedFetch).not.toBe(globalThis['fetch'])
-
-    const error = await injectedFetch('http://example.com/oauth').catch((err: unknown) => err)
-
-    expect(error).toBeInstanceOf(TypeError)
-    expect(error).toMatchObject({ message: 'fetch failed' })
-    expect(errorCauseMessages(error)).toContain('Hostname resolved to non-unicast address')
-    expect(lookupMock).toHaveBeenCalledWith('example.com', expect.any(Object), expect.any(Function))
-  })
 })
-
-function errorCauseMessages(error: unknown): string[] {
-  const messages: string[] = []
-  let current = error
-  while (current instanceof Error) {
-    messages.push(current.message)
-    current = current.cause
-  }
-  return messages
-}

@@ -24,11 +24,13 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@modules/api-egress-proxy": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/email-address-validator": "workspace:^",
+    "@vouchington/utils": "^0.8.0",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {

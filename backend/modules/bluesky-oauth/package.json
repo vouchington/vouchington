@@ -24,12 +24,9 @@
   },
   "scripts": {},
   "dependencies": {
-    "@atproto-labs/fetch-node": "^0.4.1",
-    "@atproto-labs/handle-resolver-node": "^0.2.12",
-    "@atproto/jwk": "^0.7.4",
-    "@atproto/jwk-jose": "^0.2.4",
-    "@atproto/oauth-client-node": "^0.5.9",
+    "@atproto/oauth-client-node": "^0.5.12",
     "@modules/api-egress-proxy": "workspace:^",
-    "@modules/utils": "workspace:^"
+    "@modules/utils": "workspace:^",
+    "@vouchington/oauth-client": "^0.1.0"
   }
 }

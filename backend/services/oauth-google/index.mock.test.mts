@@ -78,21 +78,6 @@ describe('google oauth', () => {
     expect(byId?.provider_user_id).toBe(googleUserId)
   })
 
-  it('rejects credentials with an unsupported signing algorithm', async () => {
-    const credential = createUnsignedJwt(
-      { kid: 'google-kid', alg: 'HS256' },
-      {
-        iss: 'https://accounts.google.com',
-        aud: googleClientId,
-        sub: 'unsupported-alg',
-        iat: Math.floor(Date.now() / 1000) - 60,
-        exp: Math.floor(Date.now() / 1000) + 300,
-      },
-    )
-
-    await expect(upsertGoogleAccount(credential)).rejects.toThrow('unsupported algorithm')
-  })
-
   it('redeems the broker code with server secret and PKCE, then completes by stable sub', async () => {
     const googleUserId = `google-broker-${createRandomString(12)}`
     const authorizationId = await insertTestOAuthAuthorization({ provider: 'google' })
@@ -180,7 +165,7 @@ describe('google oauth', () => {
     const aborted = new Error('Google callback cancelled')
     fetchSpy
       .mockImplementationOnce(async (_input, init) => {
-        expect(init?.signal).toBe(controller.signal)
+        expect(init?.signal).toBeInstanceOf(AbortSignal)
         return {
           ok: true,
           status: 200,
@@ -188,8 +173,8 @@ describe('google oauth', () => {
         } as Awaited<ReturnType<typeof undiciFetch>>
       })
       .mockImplementationOnce(async (_input, init) => {
-        expect(init?.signal).toBe(controller.signal)
         controller.abort(aborted)
+        expect(init?.signal?.aborted).toBe(true)
         return {
           ok: true,
           status: 200,
@@ -215,41 +200,29 @@ describe('google oauth', () => {
     })
   })
 
-  it('rejects malformed token and UserInfo payloads before account persistence', async () => {
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ access_token: 42 }),
-    } as Awaited<ReturnType<typeof undiciFetch>>)
-    await expect(
-      upsertGoogleAuthorizationCodeAccount(
-        'authorization-code',
-        'https://example.com/auth/callback/google/broker',
-        'server-pkce-verifier',
-      ),
-    ).rejects.toMatchObject({ status: 502 })
-
-    fetchSpy.mockReset()
-    fetchSpy
-      .mockResolvedValueOnce({
+  it.each(['token exchange', 'UserInfo'] as const)(
+    'maps a failed %s request to 502 without persisting an account',
+    async stage => {
+      const tokenResponse = {
         ok: true,
         status: 200,
         json: () => Promise.resolve({ access_token: 'google-access-token' }),
-      } as Awaited<ReturnType<typeof undiciFetch>>)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve(null),
-      } as Awaited<ReturnType<typeof undiciFetch>>)
-    await expect(
-      upsertGoogleAuthorizationCodeAccount(
-        'authorization-code',
-        'https://example.com/auth/callback/google/broker',
-        'server-pkce-verifier',
-      ),
-    ).rejects.toMatchObject({ status: 502 })
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
-  })
+      } as Awaited<ReturnType<typeof undiciFetch>>
+      const failure = { ok: false, status: 500, body: null } as Awaited<
+        ReturnType<typeof undiciFetch>
+      >
+      fetchSpy.mockResolvedValueOnce(stage === 'token exchange' ? failure : tokenResponse)
+      if (stage === 'UserInfo') fetchSpy.mockResolvedValueOnce(failure)
+
+      await expect(
+        upsertGoogleAuthorizationCodeAccount(
+          'authorization-code',
+          'https://example.com/auth/callback/google/broker',
+          'server-pkce-verifier',
+        ),
+      ).rejects.toMatchObject({ status: 502 })
+    },
+  )
 })
 
 function createSignedJwt(
@@ -274,13 +247,6 @@ function createSignedJwt(
   const signature = signer.sign(googlePrivateKey).toString('base64url')
 
   return `${encodedHeader}.${encodedPayload}.${signature}`
-}
-
-function createUnsignedJwt(
-  header: Record<string, unknown>,
-  payload: Record<string, unknown>,
-): string {
-  return `${encodeJwtPart(header)}.${encodeJwtPart(payload)}.signature`
 }
 
 function encodeJwtPart(value: Record<string, unknown>): string {

@@ -61,7 +61,7 @@ describe('LinkedIn broker provider exchange', () => {
     })
     const [tokenUrl, tokenInit] = fetchSpy.mock.calls[0]!
     expect(tokenUrl).toBe('https://www.linkedin.com/oauth/v2/accessToken')
-    expect(tokenInit).toMatchObject({ method: 'POST', signal: cancellation.signal })
+    expect(tokenInit).toMatchObject({ method: 'POST', signal: expect.any(AbortSignal) })
     const body = new URLSearchParams(String(tokenInit.body))
     expect(Object.fromEntries(body)).toMatchObject({
       grant_type: 'authorization_code',
@@ -75,7 +75,7 @@ describe('LinkedIn broker provider exchange', () => {
       'https://api.linkedin.com/v2/userinfo',
       expect.objectContaining({
         headers: { Authorization: 'Bearer linked-access' },
-        signal: cancellation.signal,
+        signal: expect.any(AbortSignal),
       }),
     ])
   })
