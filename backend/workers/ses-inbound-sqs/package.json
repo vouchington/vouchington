@@ -26,6 +26,6 @@
     "http-assert": "^1.5.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1155.0"
+    "@aws-sdk/client-sqs": "^3.1156.0"
   }
 }
