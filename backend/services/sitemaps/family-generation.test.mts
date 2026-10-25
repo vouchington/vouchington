@@ -1,25 +1,20 @@
+import { spyOnSitemapObjectStore } from '@voucha/test-helpers/sitemap-object-store'
 import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import { Readable } from 'node:stream'
 import { gunzipSync } from 'node:zlib'
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3'
 import { createTestUser, insertTestPost, setPostVotesScoreUp } from '@voucha/test-helpers'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildSitemapFamilyIndexEntry, generateSitemapFamilyFiles } from './family-generation.mts'
 import { generateSitemapPage, type GenerationPageDependencies } from './generation-page.mts'
 import type { SitemapGenerationProgress } from './generation-storage.mts'
 import { generatePostDaySitemapFiles } from './generation.mts'
-import type { PostDayManifest } from './storage.mts'
+import { getPostDayManifest, type PostDayManifest } from './storage.mts'
 import type { SitemapFamilyEntry } from './types.mts'
 
 describe('sitemap generation publication', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.useRealTimers()
     vi.unstubAllEnvs()
   })
 
@@ -27,26 +22,27 @@ describe('sitemap generation publication', () => {
     vi.stubEnv('SITEMAP_BASE_URL', 'https://example.com')
     const user = await createTestUser()
     const previousGenerationId = randomUUID()
-    const manifestKey = 'families/users/_meta.json'
     const indexKey = 'sitemaps/families/users.xml'
-    const objects = new Map<string, Buffer>([
+    const objects = new Map<string, Buffer>([[indexKey, Buffer.from('previous-public-index')]])
+    const metadata = new Map([
       [
-        manifestKey,
-        Buffer.from(
-          JSON.stringify({
-            active_page_count: 1,
-            generation_id: previousGenerationId,
-            generated_at: '2026-01-01T00:00:00.000Z',
-          }),
-        ),
+        indexKey,
+        {
+          active_page_count: 1,
+          generation_id: previousGenerationId,
+          generated_at: '2026-01-01T00:00:00.000Z',
+          content_hash: 'previous-content',
+        },
       ],
-      [indexKey, Buffer.from('previous-public-index')],
     ])
     let failStagedPage = true
-    spyOnSitemapObjectStore(objects, key =>
-      /^families\/users\/[^/]+\/1\.xml$/u.test(key) && failStagedPage
-        ? new Error('staged family page failed')
-        : undefined,
+    spyOnSitemapObjectStore(
+      objects,
+      key =>
+        /^families\/users\/[^/]+\/1\.xml$/u.test(key) && failStagedPage
+          ? new Error('staged family page failed')
+          : undefined,
+      metadata,
     )
 
     await expect(generateSitemapFamilyFiles('users')).rejects.toThrow('staged family page failed')
@@ -91,27 +87,31 @@ describe('sitemap generation publication', () => {
     await setPostVotesScoreUp(postId, 1)
     const previousGenerationId = randomUUID()
     const indexKey = 'posts/2026/06/10/article/index.xml'
-    const objects = new Map<string, Buffer>([
+    const objects = new Map<string, Buffer>([[indexKey, Buffer.from('previous-public-index')]])
+    const metadata = new Map([
       [
-        'posts/2026/06/10/article/_meta.json',
-        Buffer.from(
-          JSON.stringify({
-            active_page_count: 1,
-            generation_id: previousGenerationId,
-            generated_at: '2026-06-09T00:00:00.000Z',
-          }),
-        ),
+        indexKey,
+        {
+          active_page_count: 1,
+          generation_id: previousGenerationId,
+          generated_at: '2026-06-09T00:00:00.000Z',
+          content_hash: 'previous-content',
+        },
       ],
-      [indexKey, Buffer.from('previous-public-index')],
     ])
-    spyOnSitemapObjectStore(objects, key =>
-      key === indexKey ? new Error('post-day index upload failed') : undefined,
+    spyOnSitemapObjectStore(
+      objects,
+      key => (key === indexKey ? new Error('post-day index upload failed') : undefined),
+      metadata,
     )
 
     await expect(generatePostDaySitemapFiles('article', '2026-06-10')).rejects.toThrow(
       'post-day index upload failed',
     )
     expect(objects.get(indexKey)?.toString()).toBe('previous-public-index')
+    expect((await getPostDayManifest('article', '2026-06-10'))?.generation_id).toBe(
+      previousGenerationId,
+    )
     const progress = JSON.parse(
       objects.get('posts/2026/06/10/article/_progress.json')!.toString(),
     ) as {
@@ -148,6 +148,7 @@ describe('sitemap generation publication', () => {
       active_page_count: 1,
       generation_id: '11111111-1111-4111-8111-111111111111',
       generated_at: '2026-03-01T00:00:00.000Z',
+      content_hash: 'previous-content',
     }
     const objects = new Map<string, string>([['sitemaps/families/topics.xml', 'previous-index']])
     let failNextPage = true
@@ -173,15 +174,13 @@ describe('sitemap generation publication', () => {
       pageStorageKey: (generationId, page) => `families/topics/${generationId}/${page}.xml`,
       pageRoutePath: (generationId, page) => `sitemaps/topics/${generationId}/${page}.xml`,
       indexStorageKey: 'sitemaps/families/topics.xml',
-      putManifest: async value => {
-        manifest = value
-      },
       retireGeneration: async () => {},
       toUrl: entry => ({
         loc: `https://test.com${entry.path}`,
         lastmod: entry.updated_at.toISOString(),
       }),
-      putObjectFile: async (key, filePath) => {
+      putObjectFile: async (key, filePath, options) => {
+        if (options.manifest) manifest = options.manifest
         if (key.endsWith('/2.xml') && failNextPage) throw new Error('staged upload failed')
         objects.set(key, gunzipSync(await readFile(filePath)).toString())
       },
@@ -213,36 +212,3 @@ describe('sitemap generation publication', () => {
     })
   })
 })
-
-function spyOnSitemapObjectStore(
-  objects: Map<string, Buffer>,
-  rejectPut: (key: string) => Error | undefined,
-): void {
-  vi.spyOn(S3Client.prototype, 'send').mockImplementation(async command => {
-    if (command instanceof GetObjectCommand) {
-      const body = objects.get(command.input.Key!)
-      if (!body) throw Object.assign(new Error('missing object'), { name: 'NoSuchKey' })
-      return { Body: { transformToString: async () => body.toString() } } as never
-    }
-    if (command instanceof PutObjectCommand) {
-      const key = command.input.Key!
-      const failure = rejectPut(key)
-      if (failure) throw failure
-      const body = command.input.Body
-      const chunks: Buffer[] = []
-      if (typeof body === 'string' || body instanceof Uint8Array) {
-        chunks.push(Buffer.from(body))
-      } else {
-        for await (const chunk of body as Readable) chunks.push(Buffer.from(chunk))
-      }
-      const bytes = Buffer.concat(chunks)
-      objects.set(key, bytes)
-      return {} as never
-    }
-    if (command instanceof DeleteObjectCommand) {
-      objects.delete(command.input.Key!)
-      return {} as never
-    }
-    throw new Error(`Unexpected S3 command: ${command.constructor.name}`)
-  })
-}

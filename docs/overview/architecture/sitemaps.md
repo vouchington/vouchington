@@ -21,9 +21,17 @@ flowchart TD
 Day and family rebuilds stage child files under an opaque generation ID. Each job reads one bounded
 keyset page and persists its position and fixed source ID ceiling before the next job runs. The
 ceiling excludes newly created identities from an in-progress generation; visibility and content
-updates are observed when each page is read. The stable index is written only after every staged
+updates are observed when each page is read. Progress has a runtime-configured maximum age; an expired candidate restarts from current sources
+and retires abandoned children without replacing the published generation. The stable index and its
+compact generation manifest commit atomically in one S3 object only after every staged
 child exists, so failed or unfinished rebuilds leave the prior public index intact. Child URLs
 include the generation ID so cached old indexes continue to resolve to their original files.
+
+A rolling hash of the ordered plaintext child hashes reuses the current complete generation when
+all day or family contents match. All child URLs remain stable for that unchanged logical sitemap;
+changed content rotates the complete generation. Comparison still stages candidate children, which
+become bounded retirement work when the published generation is reused. No children are shared
+across generation prefixes.
 
 The Worker only maps supported sitemap XML paths to S3 object keys. Unsupported paths, including
 paths with impossible `YYYY-MM-DD` dates or URL-encoded dot, slash, or backslash octets, return 404
@@ -60,7 +68,9 @@ Dynamic non-post sitemap families are generated separately:
 - **`family-queries.mts`** / **`family-generation.mts`** — non-post dynamic sitemap families
 - Generation cleanup delays removal of replaced child objects until the Worker cache lifetime,
   stale revalidation window, and stale error allowance have elapsed. The Worker caps the sitemap
-  cache TTL; the cleanup grace has a matching minimum in DynamicConfig.
+  cache TTL; the cleanup grace has a matching minimum in DynamicConfig. Nightly work starts a
+  bounded cleanup pass, and separate continuation jobs resume its durable record and page cursor
+  until drained. The nightly overlap window is runtime-configured independently of the weekly window.
 - **`tracked-range-cache.mts`** / **`tracked-range-discovery.mts`** — tracks which UUIDv7 ranges have
   been included, enabling incremental updates without full regeneration. Post-day generation uses
   one atomic Lua upsert on the warm-cache path; the script returns both the previous and next range

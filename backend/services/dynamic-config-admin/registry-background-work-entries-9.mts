@@ -91,7 +91,10 @@ export const backgroundWorkRegistryEntries9 = {
     descriptions: {
       archive_backfill_day_page_size: 'Days per archive sitemap backfill page.',
       generation_page_row_limit: 'Source rows read and staged per sitemap generation job.',
+      nightly_backfill_days: 'Recent days included by the nightly sitemap dispatcher.',
       weekly_backfill_days: 'Recent days included by the weekly sitemap dispatcher.',
+      generation_max_age_seconds:
+        'Maximum age of an unfinished sitemap generation before restarting from current sources.',
       retired_generation_grace_seconds:
         'Delay before deleting replaced sitemap child files; minimum covers the edge sitemap TTL and stale window.',
       retired_generation_delete_page_size: 'Retired sitemap child files deleted per cleanup run.',

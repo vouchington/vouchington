@@ -12,7 +12,7 @@ import {
   putSitemapFamilyProgress,
   putRetiredSitemapGeneration,
 } from './generation-storage.mts'
-import { getSitemapFamilyManifest, putSitemapFamilyManifest } from './storage.mts'
+import { getSitemapFamilyManifest } from './storage.mts'
 import { buildFamilySitemapUrl, buildSitemapUrl } from './url-builder.mts'
 import { getSitemapsWorkLimit } from './work-limits.mts'
 import type { SitemapFamilyEntry, SitemapFamilyType } from './types.mts'
@@ -31,7 +31,6 @@ export async function generateSitemapFamilyFiles(
       pageStorageKey: (generationId, page) => buildFamilyPageStorageKey(family, generationId, page),
       pageRoutePath: (generationId, page) => buildFamilyPageRoutePath(family, generationId, page),
       indexStorageKey: buildFamilyIndexStorageKey(family),
-      putManifest: manifest => putSitemapFamilyManifest(family, manifest),
       retireGeneration: (generationId, pageCount) =>
         putRetiredSitemapGeneration({
           generation_id: generationId,

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { SitemapUrl } from './types.mts'
 import { createGzipFileFromUtf8Chunks, deleteTemporaryGzipFile } from './gzip.mts'
@@ -6,6 +6,7 @@ import type { SitemapGenerationProgress } from './generation-storage.mts'
 import { putSitemapObjectFile, type PostDayManifest } from './storage.mts'
 import { buildSitemapUrl } from './url-builder.mts'
 import { iterateSitemapIndexXml, iterateUrlsetXml } from './xml-builder.mts'
+import { getSitemapsWorkLimit } from './work-limits.mts'
 
 type SourceEntry = { id: string; path?: string }
 
@@ -23,7 +24,6 @@ export type GenerationPageDependencies<T extends SourceEntry> = {
   pageStorageKey: (generationId: string, page: number) => string
   pageRoutePath: (generationId: string, page: number) => string
   indexStorageKey: string
-  putManifest: (manifest: PostDayManifest) => Promise<void>
   retireGeneration: (generationId: string, pageCount: number) => Promise<void>
   afterPublication?: () => Promise<void>
   toUrl: (entry: T) => SitemapUrl
@@ -40,12 +40,40 @@ export type GenerationPageResult = {
 export async function generateSitemapPage<T extends SourceEntry>(
   maxRows: number,
   dependencies: GenerationPageDependencies<T>,
+  now = new Date(),
 ): Promise<GenerationPageResult> {
   let progress = await dependencies.getProgress()
+  const publishedManifest = await dependencies.getManifest()
+  const ageMs = progress ? now.getTime() - Date.parse(progress.started_at) : 0
+  if (
+    progress &&
+    (!Number.isFinite(ageMs) ||
+      ageMs < 0 ||
+      ageMs >= getSitemapsWorkLimit('generation_max_age_seconds') * 1000)
+  ) {
+    if (publishedManifest?.generation_id !== progress.generation_id) {
+      // A lost upload acknowledgement can leave one child beyond the saved page count.
+      await dependencies.retireGeneration(
+        progress.generation_id,
+        Math.min(
+          SITEMAP_CONFIG.MAX_URLS_PER_SITEMAP,
+          progress.page_count + (progress.finished ? 0 : 1),
+        ),
+      )
+    } else if (progress.previous_generation_id) {
+      await dependencies.retireGeneration(
+        progress.previous_generation_id,
+        progress.previous_page_count,
+      )
+    }
+    progress = null
+  }
   if (!progress) {
-    const previousManifest = await dependencies.getManifest()
+    const previousManifest = publishedManifest
     progress = {
       generation_id: randomUUID(),
+      started_at: now.toISOString(),
+      content_hash: '',
       high_water_id: null,
       after_id: null,
       after_path: null,
@@ -79,6 +107,10 @@ export async function generateSitemapPage<T extends SourceEntry>(
       const file = await createGzipFileFromUtf8Chunks(
         iterateUrlsetXml(pageRows.map(dependencies.toUrl)),
       )
+      const contentHash = createHash('sha256')
+        .update(progress.content_hash)
+        .update(file.contentHash)
+        .digest('hex')
       try {
         await (dependencies.putObjectFile ?? putSitemapObjectFile)(
           dependencies.pageStorageKey(progress.generation_id, page),
@@ -95,6 +127,7 @@ export async function generateSitemapPage<T extends SourceEntry>(
         after_id: last.id,
         after_path: last.path ?? null,
         page_count: page,
+        content_hash: contentHash,
         finished: rows.length <= maxRows,
       }
     } else {
@@ -110,22 +143,35 @@ export async function generateSitemapPage<T extends SourceEntry>(
     }
   }
 
+  if (
+    publishedManifest &&
+    publishedManifest.generation_id !== progress.generation_id &&
+    publishedManifest.active_page_count === progress.page_count &&
+    publishedManifest.content_hash === progress.content_hash
+  ) {
+    await dependencies.retireGeneration(progress.generation_id, progress.page_count)
+    await dependencies.afterPublication?.()
+    await dependencies.deleteProgress()
+    return { manifest: publishedManifest, hasMore: false }
+  }
+
   const index = await createGzipFileFromUtf8Chunks(
     iterateSitemapIndexXml(iteratePageEntries(progress, dependencies.pageRoutePath)),
   )
   const manifest: PostDayManifest = {
     active_page_count: progress.page_count,
     generation_id: progress.generation_id,
-    generated_at: new Date().toISOString(),
+    generated_at: now.toISOString(),
+    content_hash: progress.content_hash,
   }
   try {
-    await dependencies.putManifest(manifest)
     await (dependencies.putObjectFile ?? putSitemapObjectFile)(
       dependencies.indexStorageKey,
       index.filePath,
       {
         contentType: 'application/xml; charset=utf-8',
         contentEncoding: 'gzip',
+        manifest,
       },
     )
   } finally {

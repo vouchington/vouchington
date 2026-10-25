@@ -25,6 +25,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 const manifest: PostDayManifest = {
   active_page_count: 1,
   generation_id: '11111111-1111-4111-8111-111111111111',
+  content_hash: 'previous-content',
   generated_at: '2026-06-01T00:00:00.000Z',
 }
 
@@ -137,6 +138,7 @@ describe('sitemap processors', () => {
       await processNightlyBackfillWeekDispatcher({
         enqueueBulkUpdatePostDaySitemaps: bulkSpy,
         enqueueUpdateFamilySitemap: familySpy,
+        enqueueRetiredSitemapCleanupContinuation: vi.fn<VitestLooseMock>(),
         cleanupRetiredSitemapGenerations: vi
           .fn<VitestLooseMock>()
           .mockResolvedValue({ deletedPages: 0, hasMore: false }),

@@ -176,3 +176,9 @@ RSS alias category recovery resumes from mismatched category rows. An alias dirt
 acknowledged only after both item and feed mappings finish; capped pages chain through the existing
 maintenance queue. Community digest catch-up likewise chains bounded weekly-window pages while
 retaining the original closed-window target.
+
+Sitemap retirement cleanup starts with the nightly dispatcher and drains through separate bounded
+continuation jobs in the sitemap dispatcher lane. Its durable S3 cursor advances only after child
+deletion settles, so a failed continuation is recoverable at the next nightly run without holding
+a worker for the full backlog. See [sitemap publication](../sitemaps.md) for the atomic index and
+generation retirement contract.

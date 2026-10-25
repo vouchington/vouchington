@@ -1,3 +1,4 @@
+import { processRetiredSitemapCleanup } from './processors/retired-cleanup.mts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { TrackedDayRange } from '@services/sitemaps/types'
 import {
@@ -20,6 +21,7 @@ import {
   enqueueFamilySitemapContinuation,
   enqueueMonthlyBackfillArchiveContinuation,
   enqueuePostDaySitemapContinuation,
+  enqueueRetiredSitemapCleanupContinuation,
   enqueueUpdateFamilySitemap,
   enqueueUpdatePostTypeIndex,
   enqueueUpdatePostsIndex,
@@ -84,6 +86,7 @@ export const backfillDispatcherDependencies = {
   enqueueMonthlyBackfillArchiveContinuation,
   enqueueUpdateFamilySitemap,
   cleanupRetiredSitemapGenerations,
+  enqueueRetiredSitemapCleanupContinuation,
 }
 
 export async function processUpdatePostDaySitemap(
@@ -149,6 +152,7 @@ export async function processNightlyBackfillWeekDispatcher(
     | 'enqueueBulkUpdatePostDaySitemaps'
     | 'enqueueUpdateFamilySitemap'
     | 'cleanupRetiredSitemapGenerations'
+    | 'enqueueRetiredSitemapCleanupContinuation'
   > = backfillDispatcherDependencies,
 ): Promise<void> {
   const now = new Date()
@@ -157,7 +161,7 @@ export async function processNightlyBackfillWeekDispatcher(
     dependencies.enqueueBulkUpdatePostDaySitemaps(entries),
     ...SITEMAP_CONFIG.FAMILY_TYPES.map(family => dependencies.enqueueUpdateFamilySitemap(family)),
   ])
-  await dependencies.cleanupRetiredSitemapGenerations(now)
+  await processRetiredSitemapCleanup(dependencies, now)
 }
 
 export async function processWeeklyBackfillMonthDispatcher(): Promise<void> {

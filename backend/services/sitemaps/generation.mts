@@ -15,12 +15,7 @@ import {
   putPostDayProgress,
   putRetiredSitemapGeneration,
 } from './generation-storage.mts'
-import {
-  getPostDayManifest,
-  markTrackedDay,
-  putPostDayManifest,
-  putSitemapObjectFile,
-} from './storage.mts'
+import { getPostDayManifest, markTrackedDay, putSitemapObjectFile } from './storage.mts'
 import { buildPostSitemapUrl, buildSitemapUrl } from './url-builder.mts'
 import { iterateSitemapIndexXml } from './xml-builder.mts'
 import { getSitemapsWorkLimit } from './work-limits.mts'
@@ -42,7 +37,6 @@ export async function generatePostDaySitemapFiles(
     pageRoutePath: (generationId, page) =>
       buildPostDayPageRoutePath(postType, day, generationId, page),
     indexStorageKey: buildPostDayIndexStorageKey(postType, day),
-    putManifest: manifest => putPostDayManifest(postType, day, manifest),
     retireGeneration: (generationId, pageCount) =>
       putRetiredSitemapGeneration({
         generation_id: generationId,

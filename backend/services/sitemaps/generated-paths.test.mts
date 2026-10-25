@@ -2,12 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   buildFamilyIndexRoutePath,
   buildFamilyIndexStorageKey,
-  buildFamilyMetaStorageKey,
   buildFamilyPageRoutePath,
   buildFamilyPageStorageKey,
   buildPostDayIndexRoutePath,
   buildPostDayIndexStorageKey,
-  buildPostDayMetaStorageKey,
   buildPostDayPageRoutePath,
   buildPostDayPageStorageKey,
   buildPostsIndexRoutePath,
@@ -46,15 +44,11 @@ describe('generated sitemap paths', () => {
     expect(buildFamilyPageStorageKey('landing-pages', generationId, 2)).toBe(
       `families/landing-pages/${generationId}/2.xml`,
     )
-    expect(buildFamilyMetaStorageKey('landing-pages')).toBe('families/landing-pages/_meta.json')
     expect(buildPostDayIndexStorageKey('review', '2026-03-04')).toBe(
       'posts/2026/03/04/review/index.xml',
     )
     expect(buildPostDayPageStorageKey('review', '2026-03-04', generationId, 2)).toBe(
       `posts/2026/03/04/review/${generationId}/2.xml`,
-    )
-    expect(buildPostDayMetaStorageKey('review', '2026-03-04')).toBe(
-      'posts/2026/03/04/review/_meta.json',
     )
   })
 })

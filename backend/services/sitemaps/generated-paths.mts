@@ -66,10 +66,6 @@ export function buildFamilyProgressStorageKey(family: SitemapFamilyType): string
   return `families/${family}/_progress.json`
 }
 
-export function buildFamilyMetaStorageKey(family: SitemapFamilyType): string {
-  return `families/${family}/_meta.json`
-}
-
 export function buildTypeIndexStorageKey(postType: SitemapPostType): string {
   return `sitemaps/types/${postType}.xml`
 }
@@ -92,9 +88,4 @@ export function buildPostDayPageStorageKey(
 export function buildPostDayProgressStorageKey(postType: SitemapPostType, day: string): string {
   const parts = parseUtcDay(day)
   return `posts/${parts.year}/${parts.month}/${parts.day}/${postType}/_progress.json`
-}
-
-export function buildPostDayMetaStorageKey(postType: SitemapPostType, day: string): string {
-  const parts = parseUtcDay(day)
-  return `posts/${parts.year}/${parts.month}/${parts.day}/${postType}/_meta.json`
 }

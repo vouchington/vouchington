@@ -20,7 +20,7 @@ export const retiredCleanupDependencies = {
   getSitemapsWorkLimit,
 }
 
-/** One bounded pass over retired generations; the nightly sitemap dispatcher invokes it. */
+/** One bounded retirement pass; the nightly dispatcher starts it and continuation jobs drain it. */
 export async function cleanupRetiredSitemapGenerations(
   now = new Date(),
   dependencies = retiredCleanupDependencies,

@@ -168,6 +168,8 @@ describe('retired sitemap S3 operations', () => {
     })
     const progress: SitemapGenerationProgress = {
       generation_id: '11111111-1111-4111-8111-111111111111',
+      started_at: '2026-10-25T00:00:00.000Z',
+      content_hash: '',
       high_water_id: '22222222-2222-4222-8222-222222222222',
       after_id: null,
       after_path: null,

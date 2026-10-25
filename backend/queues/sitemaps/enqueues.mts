@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
   type SitemapArchiveBackfillData,
@@ -8,6 +9,7 @@ import {
   SITEMAPS_POST_DAY_JOB,
   SITEMAPS_POST_TYPE_INDEX_JOB,
   SITEMAPS_ROOT_INDEX_JOB,
+  SITEMAPS_RETIRED_CLEANUP_JOB,
   SITEMAPS_WEEKLY_BACKFILL_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
 import type { BackgroundJobDefinition } from '@queues/background/types'
@@ -167,6 +169,20 @@ export const enqueueMonthlyBackfillArchiveContinuation = (afterDay: string): Enq
     { afterDay },
     {
       jobId: `${SITEMAPS_MONTHLY_BACKFILL_JOB.name}__${afterDay}`,
+      ordering: SITEMAPS_ORDERING.dispatcher,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )
+
+const enqueueRetiredSitemapCleanupJob = createBackgroundEnqueue(SITEMAPS_RETIRED_CLEANUP_JOB)
+
+/** Resumes the durable cleanup cursor in a new bounded job, without waiting for worker completion. */
+export const enqueueRetiredSitemapCleanupContinuation = (): EnqueueReturnType =>
+  enqueueRetiredSitemapCleanupJob(
+    {},
+    {
+      jobId: `${SITEMAPS_RETIRED_CLEANUP_JOB.name}__${randomUUID()}`,
       ordering: SITEMAPS_ORDERING.dispatcher,
       removeOnComplete: true,
       removeOnFail: true,

@@ -7,6 +7,7 @@ import type { PostDayManifest } from './storage.mts'
 const manifest: PostDayManifest = {
   active_page_count: 1,
   generation_id: '11111111-1111-4111-8111-111111111111',
+  content_hash: 'previous-content',
   generated_at: '2026-06-10T00:00:00.000Z',
 }
 

@@ -6,7 +6,10 @@ export function getNightlyBackfillEntries(
   now: Date,
   postTypes: readonly SitemapPostType[],
 ): Array<{ postType: SitemapPostType; day: string }> {
-  return buildEntries(getPreviousUtcDays(7, { baseDate: now }), postTypes)
+  return buildEntries(
+    getPreviousUtcDays(getSitemapsWorkLimit('nightly_backfill_days'), { baseDate: now }),
+    postTypes,
+  )
 }
 
 export function getWeeklyBackfillEntries(

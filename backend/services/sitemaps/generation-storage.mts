@@ -10,6 +10,8 @@ import type { SitemapFamilyType, SitemapPostType } from './types.mts'
 
 export type SitemapGenerationProgress = {
   generation_id: string
+  started_at: string
+  content_hash: string
   high_water_id: string | null
   after_id: string | null
   after_path: string | null
