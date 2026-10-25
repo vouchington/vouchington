@@ -213,7 +213,7 @@ describe('fix-issue workflow', () => {
 
   it('instructs Codex to fix the issue with PR title ending in (fixes #N)', () => {
     const renderJob = parsedIssue.jobs?.['render-prompt']
-    const setupStep = renderJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))
+    const setupStep = renderJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
     const renderStep = renderJob?.steps?.find(s => s.id === 'render')
 
     expect(setupStep).toBeDefined()

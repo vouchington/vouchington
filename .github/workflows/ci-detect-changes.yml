@@ -108,7 +108,7 @@ jobs:
       # and the blobless filter skips file contents because every diff here reads names only.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 2
-      - uses: vouchington/vouchington-tooling/.github/actions/fetch-base-ref@a22a2ee622c81c15a5f15fc058de2b00287fce3c # v0.70.0
+      - uses: vouchington/vouchington-tooling/.github/actions/fetch-base-ref@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
         timeout-minutes: 2
         with:
           filter: blob:none

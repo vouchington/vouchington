@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: ./.github/actions/setup-node-pnpm
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
         timeout-minutes: 5
       - name: Compute Playwright shards
         id: shards

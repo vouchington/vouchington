@@ -22,8 +22,8 @@ describe('fix-dependabot workflow', () => {
     const dispatchJob = parsed.jobs?.['dispatch']
     const triageJob = parsed.jobs?.['triage-and-rerun']
     const renderJob = parsed.jobs?.['render-prompt']
-    const triageSetup = triageJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))
-    const renderSetup = renderJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))
+    const triageSetup = triageJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
+    const renderSetup = renderJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
 
     expect(dispatchJob?.with?.['install-workspace-dependencies']).toBeUndefined()
     expect(triageSetup?.with).toBeUndefined()
@@ -165,7 +165,7 @@ describe('fix-dependabot workflow', () => {
   it('dispatches Harness against the existing Dependabot branch and PR', () => {
     const dispatchJob = parsed.jobs?.['dispatch']
     const renderJob = parsed.jobs?.['render-prompt']
-    const setupStep = renderJob?.steps?.find(s => s.uses?.endsWith('/setup-node-pnpm'))
+    const setupStep = renderJob?.steps?.find(s => s.uses?.includes('/setup-node-pnpm@'))
     const renderStep = renderJob?.steps?.find(s => s.id === 'render')
     const sourceStateStep = renderJob?.steps?.find(s => s.id === 'source-state')
 

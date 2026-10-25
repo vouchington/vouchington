@@ -114,13 +114,17 @@ describe('Web Tests workflow', () => {
   it('installs shared TypeScript package dependencies for Vite source aliases', () => {
     const tests = jobSection('web-tests')
 
-    expect(tests).toContain('uses: ./.github/actions/setup-node-pnpm')
+    expect(tests).toContain(
+      'uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
+    )
     expect(tests).not.toContain('pnpm install ')
   })
 
   it('runs Vitest on every shard right after dependency install, with no gates after it', () => {
     const tests = jobSection('web-tests')
-    const install = tests.indexOf('uses: ./.github/actions/setup-node-pnpm')
+    const install = tests.indexOf(
+      'uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
+    )
     const runTests = tests.indexOf('      - name: Run web tests')
     const uploadCoverage = tests.indexOf(
       'name: Upload full web-shard-${{ matrix.shard }} LCOV to GitHub (attempt 1)',

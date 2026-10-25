@@ -18,7 +18,7 @@ const workflow = load(readFileSync('.github/workflows/shepherd.yml', 'utf8')) as
 describe('shepherd trusted version', () => {
   it('resolves pr-shepherd through the workspace CLI', () => {
     const renderJob = workflow.jobs?.['render-prompt']
-    const setupStep = renderJob?.steps?.find(step => step.uses?.endsWith('/setup-node-pnpm'))
+    const setupStep = renderJob?.steps?.find(step => step.uses?.includes('/setup-node-pnpm@'))
     const versionStep = renderJob?.steps?.find(step => step.id === 'pr-shepherd-version')
 
     expect(setupStep).toBeDefined()

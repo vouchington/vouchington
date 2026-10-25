@@ -38,7 +38,9 @@ describe('web image workflow', () => {
 
   it('serves Docker smoke copy from the real localization backend', () => {
     const steps = readBuildWebImagesSteps()
-    const install = steps.findIndex(step => step.uses === './.github/actions/setup-node-pnpm')
+    const install = steps.findIndex(step =>
+      step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@'),
+    )
     const smoke = steps.findIndex(step => step.name === 'Run Docker smoke test')
     expect(install).toBeGreaterThan(-1)
     expect(smoke).toBeGreaterThan(install)

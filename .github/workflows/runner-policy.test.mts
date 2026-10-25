@@ -184,7 +184,7 @@ describe('workflow runner policy (real workflows)', () => {
         if (uses.startsWith('docker/') || uses.includes('/docker/')) {
           violations.push(`${label}: ubuntu-slim job must not use a Docker action (${uses})`)
         }
-        if (uses === './.github/actions/setup-node-pnpm') {
+        if (uses.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@')) {
           violations.push(`${label}: ubuntu-slim job must not use setup-node-pnpm`)
         }
         if (uses === './.github/actions/setup-backend') {

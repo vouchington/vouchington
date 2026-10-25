@@ -60,11 +60,11 @@ function localActionBeforeCheckoutViolations(path: string, document: Document): 
 describe('local composite actions require a checkout', () => {
   it('flags a local action without a preceding checkout in the same job', () => {
     const checkout = { uses: `actions/checkout@${'0'.repeat(40)}` }
-    const local = { name: 'setup', uses: './.github/actions/setup-node-pnpm' }
+    const local = { name: 'setup', uses: './.github/actions/setup-backend' }
 
     expect(
       localActionBeforeCheckoutViolations('wf', { jobs: { a: { steps: [local, checkout] } } }),
-    ).toEqual(['wf#a step setup: ./.github/actions/setup-node-pnpm before checkout'])
+    ).toEqual(['wf#a step setup: ./.github/actions/setup-backend before checkout'])
     expect(
       localActionBeforeCheckoutViolations('wf', { jobs: { a: { steps: [local] } } }),
     ).toHaveLength(1)
@@ -80,7 +80,7 @@ describe('local composite actions require a checkout', () => {
       uses: `actions/checkout@${'0'.repeat(40)}`,
       with: extra,
     })
-    const local = { name: 'setup', uses: './.github/actions/setup-node-pnpm' }
+    const local = { name: 'setup', uses: './.github/actions/setup-backend' }
     const violationCount = (extra: Record<string, string>) =>
       localActionBeforeCheckoutViolations('wf', {
         jobs: { a: { steps: [checkout(extra), local] } },

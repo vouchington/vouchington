@@ -26,7 +26,7 @@ jobs:
         timeout-minutes: 1
         with:
           fetch-depth: 1
-      - uses: ./.github/actions/setup-node-pnpm
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
         timeout-minutes: 5
       - name: Clear stale lambdas JUnit report
         timeout-minutes: 1
@@ -63,7 +63,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@a22a2ee622c81c15a5f15fc058de2b00287fce3c # v0.70.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
         with:
           suite: lambdas
       - name: Upload full lambdas LCOV to GitHub (attempt 2)
@@ -71,7 +71,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 1
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@a22a2ee622c81c15a5f15fc058de2b00287fce3c # v0.70.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
         with:
           suite: lambdas
           name-suffix: -retry

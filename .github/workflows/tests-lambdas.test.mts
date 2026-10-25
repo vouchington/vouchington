@@ -46,7 +46,9 @@ describe('Lambda Tests workflow', () => {
   })
 
   it('leaves dependency and TypeScript checks with checks-static.yml', () => {
-    const install = workflow.indexOf('uses: ./.github/actions/setup-node-pnpm')
+    const install = workflow.indexOf(
+      'uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
+    )
     const tests = workflow.indexOf('vitest run --bail=3 --project lambdas')
 
     expect(install).toBeGreaterThanOrEqual(0)
@@ -64,7 +66,9 @@ describe('Lambda Tests workflow', () => {
   })
 
   it('uses the shared full install without another direct install', () => {
-    expect(workflow).toContain('- uses: ./.github/actions/setup-node-pnpm')
+    expect(workflow).toContain(
+      '- uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
+    )
     expect(workflow).not.toContain('pnpm install')
     expect(workflow).not.toContain('timeout_prefix')
   })

@@ -38,7 +38,7 @@ const workflows = new Map(workflowFiles.map(file => [file, readWorkflow(file)]))
 const setupCalls: SetupCall[] = [...workflows].flatMap(([file, workflow]) =>
   Object.entries(workflow.jobs ?? {}).flatMap(([jobId, job]) =>
     (job.steps ?? []).flatMap((step, stepIndex) =>
-      step.uses === './.github/actions/setup-node-pnpm' ||
+      step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@') ||
       step.uses === './.github/actions/setup-backend'
         ? [{ file, jobId, job, step, stepIndex }]
         : [],
@@ -50,7 +50,7 @@ const setupCalls: SetupCall[] = [...workflows].flatMap(([file, workflow]) =>
 // same input contract as workflow jobs.
 const setupSteps = stepLists.flatMap(({ owner, steps }) =>
   steps.flatMap(step =>
-    step.uses === './.github/actions/setup-node-pnpm' ||
+    step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@') ||
     step.uses === './.github/actions/setup-backend'
       ? [{ owner, step }]
       : [],
@@ -85,7 +85,10 @@ describe('pnpm install workflow policy', () => {
     const unexpected = setupSteps.flatMap(({ owner, step }) =>
       Object.keys(step.with ?? {})
         .filter(
-          input => step.uses !== './.github/actions/setup-node-pnpm' || input !== 'install-scripts',
+          input =>
+            !step.uses?.startsWith(
+              'vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@',
+            ) || input !== 'install-scripts',
         )
         .map(input => `${owner}: ${input}`),
     )
@@ -125,16 +128,14 @@ describe('pnpm install workflow policy', () => {
   })
 
   it('keeps pnpm install owned by setup-node-pnpm', () => {
-    // setup-node-pnpm owns the shared frozen-lockfile install. The snapshot generator uses
+    // the published setup-node-pnpm owns the shared frozen-lockfile install. The snapshot generator uses
     // pinned public actions and a direct install, never candidate composites.
     const directInstalls = stepLists.flatMap(({ owner, steps }) =>
-      owner === '.github/actions/setup-node-pnpm/action.yml'
-        ? []
-        : steps.flatMap(step => {
-            const command = step.with?.command
-            const bodies = [step.run, typeof command === 'string' ? command : undefined]
-            return bodies.some(runsPnpmInstall) ? [owner] : []
-          }),
+      steps.flatMap(step => {
+        const command = step.with?.command
+        const bodies = [step.run, typeof command === 'string' ? command : undefined]
+        return bodies.some(runsPnpmInstall) ? [owner] : []
+      }),
     )
     expect(directInstalls).toEqual(['.github/workflows/postgresql-snapshot-update.yml#generate'])
 
@@ -148,22 +149,5 @@ describe('pnpm install workflow policy', () => {
       runsPnpmInstall('pnpm exec playwright install chromium'),
       runsPnpmInstall('pnpm --filter web exec playwright install'),
     ]).toEqual([true, true, true, true, true, false, false, false])
-  })
-
-  it('runs both shared installs at the warn log level', () => {
-    // --loglevel=warn drops the resolved/progress lines and the devDependencies summary. Current pnpm
-    // (pnpm/pnpm#16076) keeps a failed lifecycle script's full output and a failed supply-chain
-    // verdict at that level, so warnings and errors stay visible. Only setup-node-pnpm is pinned:
-    // the snapshot generator is a separate direct installer that owns its own output.
-    const setup = stepLists.find(
-      ({ owner }) => owner === '.github/actions/setup-node-pnpm/action.yml',
-    )
-    const installs = (setup?.steps ?? []).flatMap(step =>
-      runsPnpmInstall(step.run) ? [step.run ?? ''] : [],
-    )
-    expect(installs).toHaveLength(2)
-    expect(installs.filter(command => !command.split(/\s+/).includes('--loglevel=warn'))).toEqual(
-      [],
-    )
   })
 })
