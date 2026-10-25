@@ -12,28 +12,22 @@ import {
   validateAuthorizationRequest,
   type AuthorizationParameters,
 } from '@vouchington/oauth-server'
-import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
+import {
+  assertOAuthClientMayAuthorizeResource,
+  mayUserAuthorizeOAuthResource,
+} from './resource-authorization.mts'
 import { OAUTH_SCOPE_POLICY } from './validation.mts'
 import type {
   OAuthAuthorizationRequestView,
   OAuthClient,
   ValidatedOAuthAuthorizationRequest,
+  OAuthAuthorizationRequestRow,
 } from './types.mts'
 import { getOAuthClientDisplayName } from './known-clients.mts'
 import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 import { findOAuthProtectedResource } from './resources.mts'
 import { createProtocolClientLookup } from './protocol-client.mts'
-
-type AuthorizationRequestRow = {
-  id: string
-  redirect_uri: string
-  resource: string
-  scopes: OAuthClient['scopes']
-  expires_at: Date
-  client_name: string
-  metadata_url: string | null
-  redirect_uris: string[]
-}
+import { findNativeOAuthClientDocument } from './native-clients.mts'
 
 export async function beginValidatedOAuthAuthorizationRequest(
   input: { deviceId: string; sessionId: string; userId: string },
@@ -57,6 +51,7 @@ export async function beginValidatedOAuthAuthorizationRequest(
     throw invalidRequest('redirect_uri is not registered for this client')
   }
   assertClientMayRequestScopes(OAUTH_SCOPE_POLICY, lockedClient.scopes, scopes)
+  assertOAuthClientMayAuthorizeResource(lockedClient, resource)
   if (!(await mayUserAuthorizeOAuthResource(input.userId, resource, query))) {
     throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
   }
@@ -102,16 +97,24 @@ export async function beginValidatedOAuthAuthorizationRequest(
 export async function validateOAuthAuthorizationRequest(
   input: AuthorizationParameters,
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
+  onClientLoaded?: (client: OAuthClient) => void,
 ): Promise<ValidatedOAuthAuthorizationRequest> {
   const foundClients: OAuthClient[] = []
+  let clientLookup: Promise<OAuthClient | null> | undefined
   const findClient = createProtocolClientLookup(
     async (clientId, dependencies: Partial<ClientIdMetadataDependencies>) => {
-      const client = await getOAuthClientForAuthorization(clientId, dependencies)
-      if (client) foundClients.push(client)
+      const client = await (clientLookup ??= getOAuthClientForAuthorization(clientId, dependencies))
+      if (client && foundClients.length === 0) {
+        foundClients.push(client)
+        onClientLoaded?.(client)
+      }
       return client
     },
     clientIdMetadataDependencies,
   )
+  // Native callback handling also applies to errors parsed before scope validation reaches
+  // client lookup. Share this promise with validation so successful requests still load once.
+  if (findNativeOAuthClientDocument(input.clientId)) await findClient(input.clientId)
   const validated = await validateAuthorizationRequest(input, {
     scopes: OAUTH_SCOPE_POLICY,
     resolveResource: findOAuthProtectedResource,
@@ -121,6 +124,7 @@ export async function validateOAuthAuthorizationRequest(
   if (!client || !validated.scopes.every(isApiScope)) {
     throw new OAuthProtocolError('server_error', 'authorization request validation failed', 503)
   }
+  assertOAuthClientMayAuthorizeResource(client, validated.resource)
   return {
     client,
     codeChallenge: validated.codeChallenge,
@@ -136,7 +140,7 @@ export async function getOAuthAuthorizationRequestForUser(
   requestId: string,
   browserBindingHash: string,
 ): Promise<OAuthAuthorizationRequestView | null> {
-  const result = await write<AuthorizationRequestRow>(
+  const result = await write<OAuthAuthorizationRequestRow>(
     `/* getOAuthAuthorizationRequestForUser */ SELECT
        request.id,
        request.redirect_uri,
@@ -170,7 +174,8 @@ export async function getOAuthAuthorizationRequestForUser(
   return {
     id: row.id,
     client_name: row.metadata_url ? getOAuthClientDisplayName(row.metadata_url) : row.client_name,
-    client_hostname: row.metadata_url ? new URL(row.metadata_url).hostname : null,
+    client_hostname: new URL(row.metadata_url ?? row.redirect_uri).hostname,
+    client_is_unverified: row.metadata_url === null,
     resource: row.resource,
     scopes: row.scopes,
     sensitive_scopes: row.scopes.filter(scope => SCOPE_DEFINITIONS[scope].requiresExactGrant),

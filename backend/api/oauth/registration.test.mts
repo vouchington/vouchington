@@ -17,6 +17,38 @@ describe('OAuth dynamic client registration route', () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
   })
 
+  it.each(['Vоucha', 'Voucha for Android', 'Voucha (iOS)', 'Voucha Support', 'v-o-u-c-h-a'])(
+    'rejects first-party lookalike name %s',
+    async client_name => {
+      const response = await createRequest()
+        .post('/register')
+        .send({
+          client_name,
+          redirect_uris: [randomRedirectUri()],
+          scope: SCOPE,
+        })
+        .expect(400)
+      expect(response.body.error).toBe('invalid_client_metadata')
+    },
+  )
+
+  it.each([
+    'mcp.admin:read',
+    'mcp.admin:write',
+    'copyright-notices:read',
+    'copyright-notices:write',
+  ])('rejects dynamic registration with staff scope %s', async scope => {
+    const response = await createRequest()
+      .post('/register')
+      .send({
+        client_name: 'Independent client',
+        redirect_uris: [randomRedirectUri()],
+        scope: `mcp.user:read ${scope}`,
+      })
+      .expect(400)
+    expect(response.body.error).toBe('invalid_client_metadata')
+  })
+
   it('rejects unsafe dynamic registration metadata', async () => {
     await createRequest()
       .post('/register')

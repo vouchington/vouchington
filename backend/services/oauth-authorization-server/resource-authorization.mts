@@ -1,3 +1,5 @@
+import { OAuthProtocolError } from '@vouchington/oauth-server'
+import type { OAuthClient } from './types.mts'
 import { write, type QueryExecutor } from '@data-stores/psql'
 import { findOAuthProtectedResource, OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR } from './resources.mts'
 
@@ -22,4 +24,18 @@ export async function mayUserAuthorizeOAuthResource(
     [userId],
   )
   return result.rows.at(0)?.is_administrator ?? false
+}
+
+export function assertOAuthClientMayAuthorizeResource(
+  client: Pick<OAuthClient, 'metadata_url'>,
+  resource: string,
+): void {
+  const audience = findOAuthProtectedResource(resource)?.audience
+  if (!client.metadata_url && (audience === 'admin' || audience === 'legal')) {
+    throw new OAuthProtocolError(
+      'unauthorized_client',
+      'client may not authorize this resource',
+      403,
+    )
+  }
 }

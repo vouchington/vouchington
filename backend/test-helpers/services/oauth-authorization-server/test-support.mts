@@ -12,6 +12,7 @@ import {
   type OAuthResourceAudience,
 } from '../../../services/oauth-authorization-server/index.mts'
 import { mintNativeSessionMcpToken } from '../../../services/oauth-authorization-server/native-session-tokens.mts'
+import { resolveClientIdMetadataDocument } from '../../../services/oauth-authorization-server/client-id-metadata-document.mts'
 
 type TestUser = Pick<Awaited<ReturnType<typeof createTestUserDirect>>, 'id'>
 
@@ -73,12 +74,20 @@ export async function createTestPendingOAuthAuthorization(
   }: TestOAuthAuthorizationOptions = {},
 ) {
   const redirectUri = randomTestOAuthRedirectUri()
-  const client = await registerOAuthClient({
+  const metadata = {
     client_name: `Test ${tokenEndpointAuthMethod} ${randomBytes(6).toString('hex')}`,
     redirect_uris: [redirectUri],
     scope,
     token_endpoint_auth_method: tokenEndpointAuthMethod,
-  })
+  }
+  const client =
+    audience === 'admin' ||
+    audience === 'legal' ||
+    scope
+      .split(' ')
+      .some(value => value.startsWith('mcp.admin:') || value.startsWith('copyright-notices:'))
+      ? await registerTestMetadataClient(metadata)
+      : await registerOAuthClient(metadata)
   const verifier = randomBytes(32).toString('base64url')
   const deviceId = uuidv7()
   const sessionId = uuidv7()
@@ -122,4 +131,38 @@ export async function mintTestNativeSessionMcpGrant(
     clientApp: 'ios',
     attestationStatus: 'unattested',
   })
+}
+
+export async function registerTestMetadataClient(metadata: {
+  client_name: string
+  redirect_uris: string[]
+  scope: string
+  token_endpoint_auth_method: 'none' | 'client_secret_basic'
+}): Promise<Awaited<ReturnType<typeof registerOAuthClient>>> {
+  const clientId = `https://client.example/${crypto.randomUUID()}/metadata.json`
+  const document = {
+    ...metadata,
+    client_id: clientId,
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    token_endpoint_auth_method: 'none',
+  }
+  const client = await resolveClientIdMetadataDocument(clientId, {
+    safeFetch: async () => ({
+      body: null,
+      headers: new Headers({ 'content-type': 'application/json', 'cache-control': 'max-age=600' }),
+      ok: true,
+      status: 200,
+      url: clientId,
+    }),
+    readResponseBodyAsBuffer: async () => Buffer.from(JSON.stringify(document)),
+  })
+  if (!client) throw new Error('metadata client was not created')
+  return {
+    ...document,
+    client_id_issued_at: Math.floor(client.created_at.getTime() / 1000),
+    token_endpoint_auth_method: 'none',
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+  }
 }

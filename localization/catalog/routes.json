@@ -44564,6 +44564,7 @@
 {"alias":"shared.oauth.consent.resourceHeading","consumer":"web","pattern":"/oauth/consent"},
 {"alias":"shared.oauth.consent.sensitivePermissionsHeading","consumer":"web","pattern":"/oauth/consent"},
 {"alias":"shared.oauth.consent.title","consumer":"web","pattern":"/oauth/consent"},
+{"alias":"shared.oauth.consent.unverifiedApp","consumer":"web","pattern":"/oauth/consent"},
 {"alias":"extracted.offline.page.offline_a1794783","consumer":"web","pattern":"/offline"},
 {"alias":"extracted.offline.page.youReOfflineRightNowReconnect_6450a16d","consumer":"web","pattern":"/offline"},
 {"alias":"extracted.asides.aboutVouchaAside.aboutVoucha_693dc277","consumer":"web","pattern":"/plans"},

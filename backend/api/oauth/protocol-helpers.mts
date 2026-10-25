@@ -48,3 +48,14 @@ export function sendOAuthError(ctx: Context, error: OAuthProtocolError): void {
   for (const [name, value] of Object.entries(response.headers)) ctx.set(name, value)
   ctx.json(response.body)
 }
+
+export function sendOAuthAuthorizationErrorPage(ctx: Context, error: OAuthProtocolError): void {
+  ctx.setStatus(error.status)
+  ctx.set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'")
+  ctx.response.buffer(
+    Buffer.from(
+      '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Authorization unavailable</title><h1>Authorization unavailable</h1><p>Return to the app and start again.</p></html>',
+    ),
+    'text/html; charset=utf-8',
+  )
+}

@@ -15,7 +15,10 @@ import {
   matchesRegisteredRedirectUri,
 } from '@vouchington/oauth-server'
 import { getOAuthIssuer } from './resources.mts'
-import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
+import {
+  assertOAuthClientMayAuthorizeResource,
+  mayUserAuthorizeOAuthResource,
+} from './resource-authorization.mts'
 
 export async function decideOAuthAuthorizationRequest(
   userId: string,
@@ -38,6 +41,7 @@ export async function decideOAuthAuthorizationRequest(
   ) {
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
+  assertOAuthClientMayAuthorizeResource(request, request.resource)
   if (
     decision === 'deny' ||
     !(await mayUserAuthorizeOAuthResource(request.user_id, request.resource, query))
@@ -52,7 +56,8 @@ export async function decideOAuthAuthorizationRequest(
       ),
     }
   }
-  const rawCode = await approveAuthorizationRequest(request, query)
+  const grantId = await recordAuthorizationApproval(request, query)
+  const rawCode = await issueAuthorizationCode(request, grantId, query)
   await query.commit()
   return {
     redirect_uri: buildAuthorizationResponseUrl(
@@ -73,13 +78,6 @@ async function denyAuthorizationRequest(
      WHERE id = $1`,
     [request.id],
   )
-}
-async function approveAuthorizationRequest(
-  request: AuthorizationRequestRow,
-  query: TransactionQuery,
-): Promise<string> {
-  const grantId = await recordAuthorizationApproval(request, query)
-  return issueAuthorizationCode(request, grantId, query)
 }
 async function recordAuthorizationApproval(
   request: AuthorizationRequestRow,
@@ -159,7 +157,7 @@ async function lockAuthorizationRequest(
   const result = await query<AuthorizationRequestRow>(
     `/* lockAuthorizationRequest */ SELECT request.id, request.client_id, request.user_id, request.redirect_uri, request.client_state,
        request.resource, request.scopes::text[] AS scopes, request.code_challenge, client.owner_user_id,
-       client.scopes::text[] AS client_scopes, client.redirect_uris
+       client.scopes::text[] AS client_scopes, client.redirect_uris, client.metadata_url
      FROM oauth_authorization_requests AS request
      JOIN oauth_clients AS client ON client.id = request.client_id
      WHERE request.id = $1

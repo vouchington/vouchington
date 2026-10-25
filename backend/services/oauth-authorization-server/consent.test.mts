@@ -16,10 +16,13 @@ import {
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   createOAuthBrowserBindingHash,
+  beginValidatedOAuthAuthorizationRequest,
+  getNativeOAuthClientDocument,
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
   getOAuthAuthorizationRequestForUser,
   updateOwnedOAuthApp,
+  validateOAuthAuthorizationRequest,
 } from './index.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
@@ -63,7 +66,8 @@ describe('OAuth consent', () => {
     await expect(
       getOAuthAuthorizationRequestForUser(owner.id, pending.requestId, pending.bindingHash),
     ).resolves.toMatchObject({
-      client_hostname: null,
+      client_hostname: new URL(pending.redirectUri).hostname,
+      client_is_unverified: true,
       client_name: pending.client.client_name,
       resource: TEST_OAUTH_RESOURCE,
       sensitive_scopes: [],
@@ -81,6 +85,66 @@ describe('OAuth consent', () => {
         scopes: ['mcp.user:read', 'mcp.user:write'],
       },
     ])
+  })
+
+  it.each([
+    ['admin', 'mcp.admin:read'],
+    ['legal', 'copyright-notices:read'],
+  ] as const)(
+    'preserves administrator consent for metadata clients on the %s resource',
+    async (audience, scope) => {
+      const administrator = await createTestUserDirect({ administrator: true })
+      const pending = await createTestPendingOAuthAuthorization(administrator, { audience, scope })
+      const view = await getOAuthAuthorizationRequestForUser(
+        administrator.id,
+        pending.requestId,
+        pending.bindingHash,
+      )
+      expect(view).toMatchObject({ client_hostname: 'client.example', client_is_unverified: false })
+      await expect(
+        decideOAuthAuthorizationRequest(
+          administrator.id,
+          pending.requestId,
+          'approve',
+          pending.bindingHash,
+        ),
+      ).resolves.toMatchObject({ redirect_uri: expect.stringContaining('code=') })
+      await expect(
+        createTestPendingOAuthAuthorization(owner, { audience, scope }),
+      ).rejects.toMatchObject({ code: 'access_denied' })
+    },
+  )
+
+  it('identifies the native client without an unverified label', async () => {
+    const document = getNativeOAuthClientDocument('ios')
+    const deviceId = uuidv7()
+    const sessionId = uuidv7()
+    const parameters = {
+      clientId: document.client_id,
+      codeChallenge: 'A'.repeat(43),
+      codeChallengeMethod: 'S256' as const,
+      deviceId,
+      sessionId,
+      userId: owner.id,
+      redirectUri: document.redirect_uris[0]!,
+      resource: TEST_OAUTH_RESOURCE,
+      responseType: 'code' as const,
+      scope: document.scope,
+      state: 'native-state',
+    }
+    const validated = await validateOAuthAuthorizationRequest(parameters)
+    const pending = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
+    await expect(
+      getOAuthAuthorizationRequestForUser(
+        owner.id,
+        pending.request_id,
+        createOAuthBrowserBindingHash(deviceId, sessionId),
+      ),
+    ).resolves.toMatchObject({
+      client_name: document.client_name,
+      client_hostname: new URL(document.client_id).hostname,
+      client_is_unverified: false,
+    })
   })
 
   it('lists every exact-grant scope separately from ordinary permissions', async () => {

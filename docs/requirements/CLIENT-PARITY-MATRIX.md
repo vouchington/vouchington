@@ -169,3 +169,12 @@ matching a registered email requires the user to sign in with their existing met
 the provider from settings. Web, Swift, and .NET clients should compose that guidance from the
 factual conflict code and preserve the existing sign-in and connect flows. The producer lands first;
 client copy adoption remains dependent client work.
+
+## OAuth consent identity
+
+Authorization runs in the browser for web and native callers. Consent identifies a registered app
+with its selected callback host and an unverified label, alongside localized permission descriptions.
+The authorization-request response includes `client_is_unverified`; `client_hostname` is the
+metadata host for CIMD/native clients and the selected callback host for registered clients.
+The web owns rendering this browser flow; native clients continue to open the authorization URL.
+Dynamic registration cannot reserve first-party names or authorize staff resources.

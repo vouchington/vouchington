@@ -14,11 +14,11 @@ import {
 import { handleMcpHttpRequest } from '../services/mcp-tools/handle-request.mts'
 import { createTestMembership } from './entities/memberships.mts'
 import { createTestUser } from './entities/users.mts'
-import { randomTestOAuthRedirectUri } from './services/oauth-authorization-server/test-support.mts'
 import {
-  registerOAuthClient,
-  getOAuthClient,
-} from '../services/oauth-authorization-server/index.mts'
+  randomTestOAuthRedirectUri,
+  registerTestMetadataClient,
+} from './services/oauth-authorization-server/test-support.mts'
+import { getOAuthClient } from '../services/oauth-authorization-server/index.mts'
 
 const preModerationScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
   scope => scope !== 'community-moderation:read' && scope !== 'community-moderation:write',
@@ -111,13 +111,14 @@ export async function connectSdkCatalog<T>(
   if (testCase.plan !== null) await createTestMembership({ user_id: owner.id, plan: testCase.plan })
   const user = { ...owner, membership_plan: testCase.plan }
   // This SDK harness enters verified dispatch directly so it can vary caller roles independently
-  // of OAuth grant admission. A real registered client supplies staff content provenance.
+  // of OAuth grant admission. A real metadata client supplies staff content provenance.
   const client = testCase.server.acceptsApiKeys
     ? null
-    : await registerOAuthClient({
+    : await registerTestMetadataClient({
         client_name: 'MCP SDK contract',
         redirect_uris: [randomTestOAuthRedirectUri()],
         scope: testCase.server.audience === 'legal' ? 'copyright-notices:read' : 'mcp.admin:read',
+        token_endpoint_auth_method: 'none',
       })
   const origin: CredentialRequestOrigin = client
     ? {

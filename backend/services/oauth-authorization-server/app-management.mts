@@ -4,9 +4,9 @@ import { hashToken } from '@modules/token-secrets'
 import {
   generateOpaqueToken,
   invalidClientMetadata,
-  validateClientName,
   validateRedirectUris,
 } from '@vouchington/oauth-server'
+import { validateOAuthAppName } from './client-names.mts'
 import { insertOAuthClient } from './clients.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import type {
@@ -100,7 +100,7 @@ export async function updateOwnedOAuthApp(
   changes: OAuthAppChanges,
 ): Promise<OAuthAppView | null> {
   const clientName =
-    changes.client_name === undefined ? null : validateClientName(changes.client_name)
+    changes.client_name === undefined ? null : validateOAuthAppName(changes.client_name)
   const redirectUris =
     changes.redirect_uris === undefined ? null : validateRedirectUris(changes.redirect_uris)
   if (clientName === null && redirectUris === null) {
