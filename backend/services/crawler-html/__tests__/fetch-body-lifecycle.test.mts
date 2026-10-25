@@ -57,7 +57,7 @@ describe('HTML crawler response body lifecycle', () => {
     vi.spyOn(http, 'fetchWithTimeout').mockResolvedValueOnce(
       fetched(
         new Response(body, { headers: { 'content-type': 'text/html' } }),
-        AbortSignal.timeout(100),
+        AbortSignal.abort(),
       ),
     )
 
