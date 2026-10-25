@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import type { ReviewDisputeReason } from '@ts-shared/utils/moderation-catalogs'
 
 type ReviewDisputeSubjectMutation = { disputeId: string } & (
@@ -14,12 +15,14 @@ export async function insertTestReviewDispute(input: {
   disputantUserId: string
   reason?: ReviewDisputeReason
   claimText?: string
+  createdAt?: Date
 }): Promise<string> {
   const reason = input.reason ?? 'other'
   const claimText = input.claimText ?? 'Test review dispute fixture.'
+  const fixtureId = input.createdAt ? uuidv7({ msecs: input.createdAt.getTime() }) : null
   const { rows } = await write<{ id: string }>(sql`/* insertTestReviewDispute */
     WITH ids AS (
-      SELECT uuidv7() AS dispute_id, uuidv7() AS lifecycle_change_id
+      SELECT COALESCE(${fixtureId}::uuid, uuidv7()) AS dispute_id, uuidv7() AS lifecycle_change_id
     ),
     inserted_dispute AS (
       INSERT INTO review_disputes (

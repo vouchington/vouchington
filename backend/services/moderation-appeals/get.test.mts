@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
+  insertTestModerationAppeal,
   insertTestUserWarning,
   softDeleteUser,
   WEB_PROVENANCE,
@@ -8,7 +9,12 @@ import {
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
-import { getModerationAppealById, listModerationAppeals } from './get.mts'
+import {
+  getModerationAppealById,
+  getModerationAppealByIdFromPrimary,
+  listModerationAppeals,
+} from './get.mts'
+import { APPEAL_SLA_HOURS } from './config.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
 import { resolveModerationAppealReduce } from './resolve.mts'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
@@ -89,9 +95,43 @@ describe('getModerationAppealById', () => {
       appeal_reason: 'Checking overdue flag.',
     })
     const { appeal: created } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
-    const fetched = await getModerationAppealById(created.id)
+    const fetched = await getModerationAppealById(created.id, created.created_at)
 
     expect(fetched!.is_overdue).toBe(false)
+  })
+
+  it('uses the observed UTC clock across appeal reads at the strict SLA cutoff', async () => {
+    const owner = await createTestUser()
+    const warning = await insertTestUserWarning({
+      userId: owner.id,
+      issuedById: staff.id,
+      reason: 'spam',
+    })
+    const calendarNow = new Date()
+    const cutoff = new Date(
+      Date.UTC(calendarNow.getUTCFullYear(), calendarNow.getUTCMonth(), 0, 23, 59, 59, 999),
+    )
+    const nextMonth = new Date(cutoff.getTime() + 1)
+    const createdAt = new Date(cutoff.getTime() - APPEAL_SLA_HOURS * 3_600_000)
+    const appeal = await insertTestModerationAppeal({
+      appellantId: owner.id,
+      userWarningId: warning.id,
+      createdAt,
+    })
+
+    expect((await getModerationAppealById(appeal.id, cutoff))?.is_overdue).toBe(false)
+    expect(
+      (await getModerationAppealByIdFromPrimary(appeal.id, undefined, nextMonth))?.is_overdue,
+    ).toBe(true)
+
+    const atCutoff = await listModerationAppeals({ appellantUserId: owner.id, now: cutoff })
+    const afterCutoff = await listModerationAppeals({ appellantUserId: owner.id, now: nextMonth })
+    expect(atCutoff.appeals).toContainEqual(
+      expect.objectContaining({ id: appeal.id, is_overdue: false }),
+    )
+    expect(afterCutoff.appeals).toContainEqual(
+      expect.objectContaining({ id: appeal.id, is_overdue: true }),
+    )
   })
 
   it('does not set is_overdue for a resolved appeal', async () => {
@@ -108,7 +148,8 @@ describe('getModerationAppealById', () => {
     const { appeal: created } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
     await deliverModerationAppealForTest(staff.id, created.id)
     await dismissModerationAppeal(staff.id, created.id, 'staff_or_user')
-    const fetched = await getModerationAppealById(created.id)
+    const observedAt = new Date(created.created_at.getTime() + APPEAL_SLA_HOURS * 3_600_000 + 1)
+    const fetched = await getModerationAppealById(created.id, observedAt)
 
     expect(fetched!.status).toBe('dismissed')
     expect(fetched!.is_overdue).toBeUndefined()

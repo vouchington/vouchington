@@ -5,6 +5,7 @@ import {
   insertTestTopic,
   insertTestPost,
   insertTestPostReview,
+  insertTestReviewDispute,
   updateTestPostReviewRating,
   deleteTestPostReviewRating,
   updateTestReviewDisputeSubject,
@@ -15,10 +16,16 @@ import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { parseCreateReviewDisputeInput } from './parse.mts'
 import { createReviewDispute } from './create.mts'
-import { getReviewDisputeById, listReviewDisputes, listDisputesForPost } from './get.mts'
+import {
+  getReviewDisputeById,
+  getReviewDisputeByIdFromPrimary,
+  listReviewDisputes,
+  listDisputesForPost,
+} from './get.mts'
+import { DISPUTE_SLA_HOURS } from './config.mts'
 import { dismissReviewDispute } from './resolve.mts'
 
-async function makeDisputeFixture(staffId: string, suffix = '') {
+async function makeDisputeFixture(staffId: string, suffix = '', createdAt?: Date) {
   const creator = await createTestUser()
   const claimant = await createTestUser()
   const topicId = await insertTestTopic({
@@ -41,12 +48,23 @@ async function makeDisputeFixture(staffId: string, suffix = '') {
     postType: 'review',
   })
   await insertTestPostReview(postId, topicId, 2)
+  const claimText = `Get svc test ${crypto.randomUUID()}`
   const input = parseCreateReviewDisputeInput({
     post_id: postId,
     reason: 'other',
-    claim_text: `Get svc test ${crypto.randomUUID()}`,
+    claim_text: claimText,
   })
-  const { dispute } = await createReviewDispute(claimant, input)
+  const dispute = createdAt
+    ? {
+        id: await insertTestReviewDispute({
+          postId,
+          topicId,
+          disputantUserId: claimant.id,
+          claimText,
+          createdAt,
+        }),
+      }
+    : (await createReviewDispute(claimant, input)).dispute
   return { dispute, postId, topicId, claimant }
 }
 
@@ -74,6 +92,30 @@ describe('getReviewDisputeById', () => {
   it('returns null for unknown id', async () => {
     const result = await getReviewDisputeById(crypto.randomUUID())
     expect(result).toBeNull()
+  })
+
+  it('uses the observed UTC clock across dispute reads at the strict SLA cutoff', async () => {
+    const calendarNow = new Date()
+    const cutoff = new Date(
+      Date.UTC(calendarNow.getUTCFullYear(), calendarNow.getUTCMonth(), 0, 23, 59, 59, 999),
+    )
+    const nextMonth = new Date(cutoff.getTime() + 1)
+    const createdAt = new Date(cutoff.getTime() - DISPUTE_SLA_HOURS * 3_600_000)
+    const { dispute, claimant } = await makeDisputeFixture(staff.id, crypto.randomUUID(), createdAt)
+
+    expect((await getReviewDisputeById(dispute.id, cutoff))?.is_overdue).toBe(false)
+    expect(
+      (await getReviewDisputeByIdFromPrimary(dispute.id, undefined, nextMonth))?.is_overdue,
+    ).toBe(true)
+
+    const atCutoff = await listReviewDisputes({ disputantUserId: claimant.id, now: cutoff })
+    const afterCutoff = await listReviewDisputes({ disputantUserId: claimant.id, now: nextMonth })
+    expect(atCutoff.disputes).toContainEqual(
+      expect.objectContaining({ id: dispute.id, is_overdue: false }),
+    )
+    expect(afterCutoff.disputes).toContainEqual(
+      expect.objectContaining({ id: dispute.id, is_overdue: true }),
+    )
   })
 
   it('keeps a dispute readable with durable actor fallback after disputant deletion', async () => {
@@ -146,13 +188,20 @@ describe('listReviewDisputes', () => {
   })
 
   it('filters by status dismissed', async () => {
-    const { dispute } = await makeDisputeFixture(staff.id)
+    const { dispute, claimant } = await makeDisputeFixture(staff.id)
+    const pending = await getReviewDisputeById(dispute.id)
+    const observedAt = new Date(pending!.created_at.getTime() + DISPUTE_SLA_HOURS * 3_600_000 + 1)
     await deliverReviewDisputeForTest(staff.id, dispute.id)
     await dismissReviewDispute(staff.id, dispute.id, 'staff_or_user')
-    const { disputes } = await listReviewDisputes({ status: 'dismissed' })
+    const { disputes } = await listReviewDisputes({
+      status: 'dismissed',
+      disputantUserId: claimant.id,
+      now: observedAt,
+    })
     const found = disputes.find(d => d.id === dispute.id)
     expect(found).toBeDefined()
     expect(found!.status).toBe('dismissed')
+    expect(found!.is_overdue).toBeUndefined()
   })
 
   it('filters by disputantUserId', async () => {
