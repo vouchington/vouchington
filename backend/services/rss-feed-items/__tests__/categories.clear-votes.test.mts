@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { clearCategoriesForUnlinkedTopicAlias } from '../clear-topic-alias-categories.mts'
 import { applyCollaborativeTopicRelations } from '../collaborative-topic-relations.mts'
-import { clearCategorizerVotesForUnreferencedCategoryTopicRelations } from '../category-topic-votes.mts'
+import { clearCategorizerVotesInTransaction } from '../category-topic-votes.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -25,9 +25,13 @@ import {
   insertEntityRelation,
   insertTestRssFeedDirect,
   holdTestEntityRelationVoteLock,
+  getTestPostgresAdvisoryLockHolderProcessId,
+  getTestPostgresBackendProcessId,
+  waitForTestPostgresLockWaiter,
   setTestRssFeedItemCategoryTopicId,
   withFailingTransactionQueryOptionsForTest,
 } from '@voucha/test-helpers'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 
 describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
   it('rolls back category clearing when primary relation stats persistence fails', async () => {
@@ -233,13 +237,43 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
     await setTestRssFeedItemCategoryTopicId(item!.id, categoryText, null)
 
     const holder = await holdTestEntityRelationVoteLock(categorizer!.id, relationId!)
-
-    const cleanup = clearCategorizerVotesForUnreferencedCategoryTopicRelations([
-      { rss_feed_item_id: item!.id, topic_id: topic.id },
-    ])
-    await setTestRssFeedItemCategoryTopicId(item!.id, categoryText, topic.id)
-    await holder.release()
-    await cleanup
+    const lockKey = `relation__rss_feed_item__category__topic__votes:${categorizer!.id}:${relationId!}`
+    try {
+      const holderProcessId = await getTestPostgresAdvisoryLockHolderProcessId({ key: lockKey })
+      await withCommittedPostgresTransactionForTest(async query => {
+        let cleanupSettled: Promise<void> | undefined
+        try {
+          const waiterProcessId = await getTestPostgresBackendProcessId(query)
+          const cleanup = clearCategorizerVotesInTransaction(
+            [{ rss_feed_item_id: item!.id, topic_id: topic.id }],
+            query,
+          )
+          cleanupSettled = cleanup.then(
+            () => undefined,
+            () => undefined,
+          )
+          await waitForTestPostgresLockWaiter(
+            holderProcessId,
+            'clearCategoriesForUnlinkedTopicAlias lock',
+            'advisoryLock',
+            undefined,
+            undefined,
+            waiterProcessId,
+          )
+          await setTestRssFeedItemCategoryTopicId(item!.id, categoryText, topic.id)
+          await holder.release()
+          await cleanup
+        } finally {
+          try {
+            await holder.release()
+          } finally {
+            await cleanupSettled
+          }
+        }
+      })
+    } finally {
+      await holder.release()
+    }
 
     await expect(
       getEntityRelationElectionVote(categorizer!.id, relationId!),

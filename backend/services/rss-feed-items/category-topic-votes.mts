@@ -1,8 +1,4 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
-import {
-  publishEntityRelationElectionVoteStats,
-  updateEntityRelationElectionVoteStatsFromPrimaryBatch,
-} from '@services/elections-votes/entity-relation/vote-stats-batch'
+import type { QueryExecutor } from '@data-stores/psql'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import {
@@ -13,26 +9,6 @@ import { RSS_FEED_CATEGORIZER_USERNAME } from '@services/users/constants'
 import { getSystemUserByUsername } from '@services/users/system-users'
 
 export type ClearedCategoryTopicMapping = { rss_feed_item_id: string; topic_id: string }
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function clearCategorizerVotesForUnreferencedCategoryTopicRelations(
-  mappings: ClearedCategoryTopicMapping[],
-): Promise<void> {
-  await using query = await beginTransaction()
-  const clearedVotes = await clearCategorizerVotesInTransaction(mappings, query)
-  const targets = getClearedCategorizerVoteStatTargets(clearedVotes)
-  await updateEntityRelationElectionVoteStatsFromPrimaryBatch(targets, {
-    query,
-    invalidateCache: false,
-    enqueueTopHashtagRefresh: false,
-  })
-  const statTargets = targets
-  await query.commit()
-  await publishEntityRelationElectionVoteStats(statTargets, { enqueueTopHashtagRefresh: false })
-}
 
 export async function clearCategorizerVotesInTransaction(
   mappings: ClearedCategoryTopicMapping[],
