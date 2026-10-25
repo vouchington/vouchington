@@ -9,6 +9,7 @@ import {
   getTestHostnameNetworkBackoff,
 } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
 import {
+  CrawlerInvalidContentTypeError,
   CrawlerNetworkError,
   CrawlerServerError,
   CrawlerTimeoutError,
@@ -188,6 +189,11 @@ describe('network-backoff', () => {
     expect(isHostnameAnsweredError(truncated)).toBe(true)
     expect(isHostnameAnsweredError(new CrawlerTimeoutError(url, 5, 5, undefined, 200))).toBe(true)
     expect(isHostnameAnsweredError(new CrawlerTimeoutError(url, 5, 5))).toBe(false)
+    expect(
+      isHostnameAnsweredError(
+        new CrawlerInvalidContentTypeError(url, 'text/html', 5, ['application/rss+xml']),
+      ),
+    ).toBe(true)
     expect(isHostnameUnreachableError(new CrawlerTimeoutError(url, 5, 5))).toBe(false)
   })
 })

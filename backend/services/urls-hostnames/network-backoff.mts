@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import {
   CrawlerHttpClientError,
+  CrawlerInvalidContentTypeError,
   CrawlerNetworkError,
   CrawlerRateLimitError,
   CrawlerResponseSizeExceededError,
@@ -44,6 +45,7 @@ export function isHostnameAnsweredError(error: unknown): boolean {
     ((error instanceof CrawlerNetworkError || error instanceof CrawlerTimeoutError) &&
       error.responseStatus !== null) ||
     error instanceof CrawlerRateLimitError ||
+    error instanceof CrawlerInvalidContentTypeError ||
     error instanceof CrawlerServerError ||
     error instanceof CrawlerHttpClientError ||
     error instanceof CrawlerResponseSizeExceededError ||
