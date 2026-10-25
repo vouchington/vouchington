@@ -1,3 +1,4 @@
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { maintainBookmarkBloomForRelations } from '@services/entity-relations/bookmark-bloom-maintenance'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import {
@@ -32,7 +33,7 @@ export async function finalizeTopicAliasMerge(input: {
 }) {
   const { merger, sourceTopic, destinationTopic, movedAliases, movedAliasIds } = input
   await refreshMergedTopicMetrics(destinationTopic.id, input.relationElectionTargets)
-  void addEntityBloomKeys('topics', movedAliases.map(normalizeKey))
+  const bloomWrite = addEntityBloomKeys('topics', movedAliases.map(normalizeKey))
   await repairMergedTopicBookmarkBlooms(input.bookmarkMoves)
   await Promise.all([
     invalidate.entity_relation_elections(...input.previousRelationElectionTargets),
@@ -45,9 +46,14 @@ export async function finalizeTopicAliasMerge(input: {
     ),
     invalidatePostsForTopicAliases(movedAliasIds),
   ])
-  void enqueueBulkTopicAliasesUpdate([sourceTopic.id, destinationTopic.id])
-  void enqueueOnTopicUpdated(sourceTopic.id, merger.id)
-  void enqueueOnTopicUpdated(destinationTopic.id, merger.id)
+  await Promise.all([
+    bloomWrite,
+    awaitReportedEnqueueAdmission(() =>
+      enqueueBulkTopicAliasesUpdate([sourceTopic.id, destinationTopic.id]),
+    ),
+    awaitReportedEnqueueAdmission(() => enqueueOnTopicUpdated(sourceTopic.id, merger.id)),
+    awaitReportedEnqueueAdmission(() => enqueueOnTopicUpdated(destinationTopic.id, merger.id)),
+  ])
   const refreshedDestinationTopic = await getTopicByAny(destinationTopic.id)
   assert(refreshedDestinationTopic, 500, 'Merged destination topic not found')
   return refreshedDestinationTopic

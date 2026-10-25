@@ -1,3 +1,4 @@
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueBulkTopicAliasesUpdate } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
@@ -86,13 +87,16 @@ export async function linkTopicAlias(
   }
   const linkedAlias = await runTopicAliasTransaction(options, run)
   if (!options.skipSideEffects) {
-    void addEntityBloomKeys('topics', [normalizeKey(linkedAlias.alias)])
+    const bloomWrite = addEntityBloomKeys('topics', [normalizeKey(linkedAlias.alias)])
     const affectedTopicIds = previousTopicId ? [...new Set([previousTopicId, topicId])] : [topicId]
     await Promise.all([
       invalidate.topicsWithMetrics(affectedTopicIds, linkedAlias.alias),
       invalidatePostsForTopicAliases([linkedAlias.id]),
     ])
-    void enqueueBulkTopicAliasesUpdate(affectedTopicIds)
+    await Promise.all([
+      bloomWrite,
+      awaitReportedEnqueueAdmission(() => enqueueBulkTopicAliasesUpdate(affectedTopicIds)),
+    ])
   }
   return linkedAlias
 }
