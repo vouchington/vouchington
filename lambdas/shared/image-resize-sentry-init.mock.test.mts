@@ -10,12 +10,6 @@ const Sentry = await import('@sentry/aws-serverless')
 describe('image-resize sentry-init', () => {
   it('initializes Sentry tagged for the image-resize Lambda on import', async () => {
     await import('../image-resize/sentry-init.mts')
-    console.log(
-      'CALLS',
-      Sentry.init.mock.calls.length,
-      Object.keys(Sentry),
-      (await import('@lambdas/shared/sentry')).initSentry.toString().slice(0, 80),
-    )
 
     expect(Sentry.init).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ initialScope: { tags: { lambda: 'image-resize' } } }),
