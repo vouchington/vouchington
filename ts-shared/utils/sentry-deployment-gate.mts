@@ -23,15 +23,6 @@ export interface SentryDsnConfig {
   projectId: string
 }
 
-export interface ResolveSentryDsnEnablementInput extends ResolveSentryEnablementInput {
-  dsn: string | undefined
-}
-
-export interface SentryDsnEnablement extends SentryEnablement {
-  configurationInvalid: boolean
-  sentryDsn: SentryDsnConfig | undefined
-}
-
 // This message intentionally contains no configured value. It is emitted at most once by each
 // runtime isolate when a deployed environment cannot initialize Sentry.
 export const SENTRY_CONFIGURATION_WARNING =
@@ -89,16 +80,10 @@ export function resolveSentryEnablement({
   return { enabled: isDeployedEnvironment, environment }
 }
 
-export function resolveSentryDsnEnablement({
-  dsn,
-  environment,
-}: ResolveSentryDsnEnablementInput): SentryDsnEnablement {
-  const enablement = resolveSentryEnablement({ environment })
-  const sentryDsn = getSentryDsnConfig(dsn)
-  return {
-    ...enablement,
-    enabled: enablement.enabled && Boolean(sentryDsn),
-    configurationInvalid: enablement.enabled && !sentryDsn,
-    sentryDsn,
-  }
+let sentryConfigurationInvalidLogged = false
+
+export function warnSentryConfigurationInvalidOnce(): void {
+  if (sentryConfigurationInvalidLogged) return
+  console.warn(SENTRY_CONFIGURATION_WARNING)
+  sentryConfigurationInvalidLogged = true
 }

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
-import { createSentryOptions, scrubSentrySpan } from '../sentry.mts'
+import { createSentryOptions } from '../sentry.mts'
 
 describe('createSentryOptions', () => {
   it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
@@ -29,23 +28,6 @@ describe('createSentryOptions', () => {
       expect(opts.tracesSampleRate).toBe(0.1)
     },
   )
-
-  it('applies the shared least-data collection policy', () => {
-    const expected: ReturnType<typeof createSentryOptions>['dataCollection'] =
-      createSentryDataCollection()
-    const dataCollection = createSentryOptions({ ENVIRONMENT: 'production' }).dataCollection
-
-    expect(dataCollection).toEqual(expected)
-    expect(dataCollection).toMatchObject({
-      userInfo: false,
-      cookies: false,
-      urlQueryParams: false,
-      databaseQueryData: false,
-      stackFrameVariables: false,
-      queues: false,
-      graphQL: { document: false, variables: false },
-    })
-  })
 
   it('returns enabled=false when ENVIRONMENT is unset', () => {
     const opts = createSentryOptions({})
@@ -87,33 +69,5 @@ describe('createSentryOptions', () => {
         headers: { authorization: '[Filtered]' },
       },
     })
-    expect(opts.beforeSendSpan).toBe(scrubSentrySpan)
-  })
-})
-
-describe('scrubSentrySpan', () => {
-  it('strips the query string in place and deletes query/fragment-only attributes', () => {
-    const span = {
-      attributes: {
-        'url.full': 'https://example.com/unsubscribe?token=abc123',
-        'url.query': 'token=abc123',
-      },
-    } as unknown as Parameters<typeof scrubSentrySpan>[0]
-
-    const result = scrubSentrySpan(span)
-    expect(result.attributes['url.full']).toBe('https://example.com/unsubscribe')
-    expect('url.query' in result.attributes).toBe(false)
-    expect(
-      scrubSentrySpan({
-        attributes: { 'http.request.header.cookie.dt': 'secret' },
-      } as unknown as Parameters<typeof scrubSentrySpan>[0]).attributes,
-    ).toEqual({ 'http.request.header.cookie.dt': '[Filtered]' })
-  })
-
-  it('returns the same span reference when no attributes need scrubbing', () => {
-    const span = { attributes: { 'http.request.method': 'GET' } } as unknown as Parameters<
-      typeof scrubSentrySpan
-    >[0]
-    expect(scrubSentrySpan(span)).toBe(span)
   })
 })

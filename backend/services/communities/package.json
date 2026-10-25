@@ -59,6 +59,7 @@
     "@ts-shared/languages": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/sentry": "^0.4.0",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "p-map": "^7.1.0",

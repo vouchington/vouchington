@@ -1,7 +1,7 @@
 import type { Topic } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { buildTopicRelationAuditConflictsSql } from './merge-relations.mts'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import assert from 'http-assert'
 
 type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &

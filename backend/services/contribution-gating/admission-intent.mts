@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { isUUID } from '@modules/utils'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { INVALID_INPUT } from '@modules/on-error/error-codes'
 
 export function canonicalizeAdmissionIntent(intent: unknown): string {

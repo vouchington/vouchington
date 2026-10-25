@@ -7,7 +7,7 @@ Sentry is initialized via [`src/sentry.mts`](../../../../cloudflare-worker/src/s
 - **DSNs:** `SENTRY_DSN` configures the Worker SDK. `SENTRY_WEB_DSN` configures browser monitoring through web runtime-public config and is trusted by the tunnel. During browser DSN rotation, deploy the replacement as `SENTRY_WEB_DSN` with the retiring value in `SENTRY_TUNNEL_PREVIOUS_WEB_DSN`, then remove the latter after the browser rollout. All three are public identifiers configured as ordinary environment values.
 - **Initialization:** `withSentry(createSentryOptions, worker)` in [`src/index.mts`](../../../../cloudflare-worker/src/index.mts) wraps the handler in-place for per-request initialization, distributed tracing, and automatic flushing via `context.waitUntil`
 - **Enabled:** only when `ENVIRONMENT` is `staging` or `production` and `SENTRY_DSN` is valid, via
-  the shared `resolveSentryDsnEnablement()` gate (`ts-shared/utils/sentry-deployment-gate.mts`). A
+  the shared `createVouchaSentryInitOptions()` gate (`ts-shared/utils/sentry-init-options.mts`). A
   missing or invalid deployed DSN disables reporting and emits one value-free warning per isolate;
   dev, CI, and test remain silent. This is independent of `PRODUCTION`, which only gates
   HSTS/strict-mode; see reference-production-mode.md.

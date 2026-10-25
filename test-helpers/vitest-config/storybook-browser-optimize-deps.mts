@@ -9,6 +9,7 @@ export const storybookBrowserOptimizeDeps = [
   '@ts-shared/utils > @vouchington/html-utils',
   '@ts-shared/utils > @vouchington/memberships',
   '@ts-shared/utils > @vouchington/phone-validation',
+  '@ts-shared/utils > @vouchington/sentry/browser',
   '@ts-shared/utils > @vouchington/utils/bigint-ids',
   '@ts-shared/utils > @vouchington/utils/collections',
   '@ts-shared/utils > @vouchington/utils/cookies',

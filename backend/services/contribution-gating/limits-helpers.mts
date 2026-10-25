@@ -1,5 +1,5 @@
 import type { RateLimiter } from '@data-stores/valkey-rate-limiter'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import { getContributionLimitValue, getContributionLimitWindowSeconds } from './limits-config.mts'
 import { UNLIMITED_CONTRIBUTION_LIMIT } from './limit-defaults.mts'

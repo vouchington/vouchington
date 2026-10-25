@@ -9,43 +9,20 @@
 // rejections, cache-purge auth and validation failures) do not.
 
 import { captureException, type CloudflareOptions } from '@sentry/cloudflare'
-import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
-import { resolveSentryDsnEnablement } from '@ts-shared/utils/sentry-deployment-gate'
-import {
-  composeSentryBeforeSend,
-  scrubSpanAttributes,
-} from '@ts-shared/utils/sentry-event-scrubbing'
+import { createVouchaSentryInitOptions } from '@ts-shared/utils/sentry-init-options'
 import type { BotTier } from './bot-tier.mts'
 import type { Env } from './types.mts'
-
-type SentrySpan = Parameters<NonNullable<CloudflareOptions['beforeSendSpan']>>[0]
 
 // Called by withSentry() on each request to build initialization options.
 // Disabled unless ENVIRONMENT is an allowlisted deployed environment
 // (staging/production).
 export function createSentryOptions(env: Env): CloudflareOptions {
-  const { enabled, environment, sentryDsn } = resolveSentryDsnEnablement({
+  return createVouchaSentryInitOptions({
     dsn: env.SENTRY_DSN,
     environment: env.ENVIRONMENT,
-  })
-  return {
-    dsn: sentryDsn?.dsn,
-    environment: environment ?? 'development',
     release: env.GIT_COMMIT ?? undefined,
-    enabled,
     tracesSampleRate: 0.1,
-    // Least-data policy: no client IP, cookies, query strings, bodies, DB values, stack locals
-    // or gen-AI content (see sentry-data-collection.mts).
-    dataCollection: createSentryDataCollection(),
-    beforeSend: composeSentryBeforeSend(),
-    // Scrub request URLs and credentials from errors and spans (request data rides on segment-span attributes).
-    beforeSendSpan: scrubSentrySpan,
-  }
-}
-
-export function scrubSentrySpan(span: SentrySpan): SentrySpan {
-  const attributes = scrubSpanAttributes(span.attributes)
-  return attributes === span.attributes ? span : { ...span, attributes }
+  })
 }
 
 export interface WorkerExceptionTags {

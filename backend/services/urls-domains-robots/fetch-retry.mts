@@ -2,7 +2,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { cancelResponseBody, fetchWithTimeout, fetchWithTimeoutSimple } from '@modules/utils/http'
 import { isNetworkError, isRetryableError } from '@vouchington/http-transport/fetch'
 import { readResponseBody } from '@modules/utils/http-body'
-import { HttpResponseSizeError } from '@modules/on-error/errors'
+import { HttpResponseSizeError } from '@vouchington/sentry'
 import { UnsafeUrlError, validateUrl } from 'ssrf-guard/node'
 import { checkDomainBlacklisted } from './check-domain-blacklisted.mts'
 import {

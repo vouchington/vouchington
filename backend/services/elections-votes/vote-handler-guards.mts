@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { NEUTRAL_REQUIRES_EXISTING_BALLOT } from '@modules/on-error/error-codes'
 import { createPlatformAccountVoteForbiddenError } from './shared/index.mts'
 import { isPlatformAccount } from '@services/users'

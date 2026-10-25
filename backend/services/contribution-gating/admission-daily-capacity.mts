@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
 import type {

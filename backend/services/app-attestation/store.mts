@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ATTESTATION_REJECTED } from '@modules/on-error/error-codes'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'

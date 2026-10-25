@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { getTopicsWorkLimit } from './work-limits.mts'
 
 /** Walk only indexed outgoing parent edges. A depth overflow rejects the merge as a cycle risk. */

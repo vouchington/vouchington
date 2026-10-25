@@ -1,5 +1,5 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT, INVALID_INPUT, SERVICE_UNAVAILABLE } from '@modules/on-error/error-codes'
 import { createMembershipCheckoutSessionOperation } from '@modules/stripe/operations'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'

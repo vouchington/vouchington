@@ -1,5 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'

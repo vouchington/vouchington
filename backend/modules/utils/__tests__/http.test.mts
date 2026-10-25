@@ -2,7 +2,7 @@ import { once } from 'node:events'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { HttpRateLimitError, HttpServerError } from '@modules/on-error/errors'
+import { HttpRateLimitError, HttpServerError } from '@vouchington/sentry'
 import {
   enableApiEgressGuardrail,
   fetchWithTimeoutSimple,

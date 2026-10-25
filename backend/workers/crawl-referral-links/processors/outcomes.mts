@@ -1,6 +1,7 @@
 import { updateReferralLinkAfterCrawl } from '@services/crawler-referral-links'
 import { isCsrEmptyShell } from '@services/crawls/csr-detection'
 import type { CrawlBasic } from '@services/crawls/types'
+import { HttpNoBodyError } from '@vouchington/sentry'
 import {
   CrawlerHttpClientError,
   CrawlerRateLimitError,
@@ -9,7 +10,6 @@ import {
   CrawlerNetworkError,
   CrawlerResponseSizeExceededError,
   CrawlerSsrfError,
-  HttpNoBodyError,
   CrawlerInvalidContentTypeError,
 } from '@modules/on-error/errors'
 import onError from '@modules/on-error'

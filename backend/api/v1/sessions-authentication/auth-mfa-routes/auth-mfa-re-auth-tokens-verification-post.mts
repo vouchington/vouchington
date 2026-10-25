@@ -1,5 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { MFA_REAUTH_REQUIRED } from '@modules/on-error/error-codes'
 import { verifyAndDeleteReAuthToken } from '@services/mfa'
 import app from '../../../app.mts'

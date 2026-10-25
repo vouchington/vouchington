@@ -1,3 +1,4 @@
+import { HttpNoBodyError } from '@vouchington/sentry'
 import {
   CrawlerHttpClientError,
   CrawlerNetworkError,
@@ -6,7 +7,6 @@ import {
   CrawlerServerError,
   CrawlerSsrfError,
   CrawlerTimeoutError,
-  HttpNoBodyError,
   isCrawlerNetworkDnsError,
 } from '@modules/on-error/errors'
 import onError from '@modules/on-error'

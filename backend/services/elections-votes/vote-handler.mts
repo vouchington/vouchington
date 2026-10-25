@@ -15,7 +15,7 @@ import { enqueueVoteIntegrityCheck } from '@queues/vote-aggregation/enqueues/vot
 import type { VoteEventContext } from '@voucha/types/entities/election'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { EMAIL_VERIFICATION_REQUIRED } from '@modules/on-error/error-codes'
 import type { PrivateUser } from '@services/users/types'
 import type { CreateVoteHandlerOptions } from './vote-handler-options.mts'

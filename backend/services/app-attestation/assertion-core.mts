@@ -1,5 +1,5 @@
 import { createPublicKey } from 'node:crypto'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ATTESTATION_REJECTED } from '@modules/on-error/error-codes'
 import { verifyAssertion as verifyAppAttestAssertion } from 'node-app-attest'
 import {

@@ -27,9 +27,6 @@
     "@modules/request-client-info": "workspace:^",
     "@sentry/node": "^11.9.0",
     "@ts-shared/utils": "workspace:^",
-    "http-errors": "^2.0.1"
-  },
-  "devDependencies": {
-    "@types/http-errors": "^2.0.5"
+    "@vouchington/sentry": "^0.4.0"
   }
 }

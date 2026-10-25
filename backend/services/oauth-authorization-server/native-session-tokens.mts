@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { generateOpaqueToken } from '@vouchington/oauth-server'
 import { getOAuthClientForAuthorization } from './clients.mts'
 import {

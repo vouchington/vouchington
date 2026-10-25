@@ -1,4 +1,4 @@
-import { HttpNoBodyError, HttpResponseSizeError } from '@modules/on-error/errors'
+import { HttpNoBodyError, HttpResponseSizeError } from '@vouchington/sentry'
 import onError from '@modules/on-error'
 import type { Response as UndiciResponse } from 'undici'
 import {

@@ -1,12 +1,12 @@
 import { searchCrawlerRefreshUrlCandidatesByHostnameId } from '@services/crawlers/refresh'
 import { getUrlById } from '@services/urls/get'
 import { computeRateLimitForHostname } from './hostname-rate-limit.mts'
+import { HttpNoBodyError } from '@vouchington/sentry'
 import {
   CrawlerNetworkError,
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
   CrawlerTimeoutError,
-  HttpNoBodyError,
 } from '@modules/on-error/errors'
 
 import { getRetryCrawlUrlCount } from '@services/crawlers/refresh-limits'

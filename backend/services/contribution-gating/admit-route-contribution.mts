@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { INVALID_INPUT } from '@modules/on-error/error-codes'
 import type { TransactionQuery } from '@data-stores/psql'
 import type { PrivateUser } from '@voucha/types/entities/user'

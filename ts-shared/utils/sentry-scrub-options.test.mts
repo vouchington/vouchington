@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
-  composeSentryBeforeSend,
-  scrubSentryEvent,
-  scrubSpanAttributes,
-} from './sentry-event-scrubbing.mts'
+  composeBeforeSend,
+  scrubEvent,
+  scrubSpanAttributes as scrubSpans,
+} from '@vouchington/utils/observability'
+import { SENTRY_SCRUB_OPTIONS } from './sentry-scrub-options.mts'
+
+const scrubSentryEvent = (event: Parameters<typeof scrubEvent>[0]) =>
+  scrubEvent(event, SENTRY_SCRUB_OPTIONS)
+const scrubSpanAttributes = (data: Record<string, unknown>) =>
+  scrubSpans(data, SENTRY_SCRUB_OPTIONS)
 
 describe('Voucha credential scrubbing policy', () => {
   it('filters product credentials in request metadata and span headers', () => {
@@ -31,13 +37,16 @@ describe('Voucha credential scrubbing policy', () => {
   })
 
   it('applies product policy after a beforeSend callback adds request data', async () => {
-    const callback = composeSentryBeforeSend<{ request?: object }, undefined>(() => ({
-      request: {
-        data: { legalName: 'Claimant' },
-        headers: { 'X-App-Attest-Assertion': 'proof' },
-        url: 'https://grafana.example/oncall/integrations/v1/formatted_webhook/bearer/heartbeat/?token=secret',
-      },
-    }))
+    const callback = composeBeforeSend<{ request?: object }, undefined>(
+      () => ({
+        request: {
+          data: { legalName: 'Claimant' },
+          headers: { 'X-App-Attest-Assertion': 'proof' },
+          url: 'https://grafana.example/oncall/integrations/v1/formatted_webhook/bearer/heartbeat/?token=secret',
+        },
+      }),
+      SENTRY_SCRUB_OPTIONS,
+    )
     expect(await callback({}, undefined)).toEqual({
       request: {
         headers: { 'X-App-Attest-Assertion': '[Filtered]' },

@@ -112,13 +112,6 @@ export class CrawlerResponseSizeExceededError extends Error {
   }
 }
 
-export {
-  HttpNoBodyError,
-  HttpRateLimitError,
-  HttpResponseSizeError,
-  HttpServerError,
-} from './errors-http.mts'
-
 export class CrawlerInvalidContentTypeError extends Error {
   code: string
   status: number

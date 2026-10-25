@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, QueueEvents, Worker, type Job, type WorkerOptions } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { HttpRateLimitError } from '@modules/on-error/errors'
+import { HttpRateLimitError } from '@vouchington/sentry'
 
 import { wrapHttpForRetry } from './index.mts'
 

@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import {
   ATTESTATION_NONCE_REPLAYED,
   ATTESTATION_TIMESTAMP_INVALID,

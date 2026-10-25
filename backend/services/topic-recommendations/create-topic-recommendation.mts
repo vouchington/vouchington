@@ -17,7 +17,7 @@ import {
   type MaterializedTopicRecommendationInput,
 } from './materialize-topic-recommendation.mts'
 import { setPostClearanceStatus } from '@services/post-clearance'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { DUPLICATE_RECOMMENDATION, DUPLICATE_TOPIC } from '@modules/on-error/error-codes'
 import { createSlugFromTitle } from '@modules/utils/slugs'
 import { findTopicRecommendationDuplicates } from './find-topic-recommendation-duplicates.mts'

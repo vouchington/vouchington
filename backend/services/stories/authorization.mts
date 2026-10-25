@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { FEED_NOT_DISCOVERABLE } from '@modules/on-error/error-codes'
 import type { PrivateUser } from '@services/users/types'
 

@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { TAG_LIMIT_REACHED } from '@modules/on-error/error-codes'
 import { getContributionLimitTier } from '@services/contribution-gating/limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'

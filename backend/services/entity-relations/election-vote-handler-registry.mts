@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { ENTITY_RELATION_ELECTION_HANDLER_UNREGISTERED } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from './metadata.mts'

@@ -1,6 +1,7 @@
-import type { InitSentryOptions } from './sentry.mts'
+import type * as Sentry from '@sentry/aws-serverless'
 
-type BeforeSend = NonNullable<InitSentryOptions['beforeSend']>
+type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
+export type BeforeSend = NonNullable<SentryInitOptions['beforeSend']>
 type MockWithCalls = {
   mock: { calls: unknown[][] }
 }

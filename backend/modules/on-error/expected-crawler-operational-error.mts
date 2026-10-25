@@ -8,8 +8,8 @@ import {
   CrawlerServerError,
   CrawlerSsrfError,
   CrawlerTimeoutError,
-  HttpNoBodyError,
 } from './errors.mts'
+import { HttpNoBodyError } from '@vouchington/sentry'
 
 export function isExpectedCrawlerOperationalError(error: unknown): boolean {
   return (

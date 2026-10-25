@@ -2728,6 +2728,8 @@ rules:
           reason: First-party robots.txt parsing and evaluation primitives published by the repo author.
         - name: '@vouchington/script-loader'
           reason: First-party React script-loading and Turnstile hooks published by the repo author.
+        - name: '@vouchington/sentry'
+          reason: First-party Sentry init, scrubbing and coded-error primitives published by the repo author.
         - name: '@vouchington/session-jwt'
           reason: First-party portable JWT primitive library published by the repo author.
         - name: '@vouchington/stripe'

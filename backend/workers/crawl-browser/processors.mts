@@ -10,13 +10,13 @@ import { applyCrawlerRules } from '@services/crawlers/apply-rules'
 import { createCrawl } from '@services/crawls/create'
 import { updateCrawl } from '@services/crawls/update'
 import type { CrawlerHtmlStructuredObject } from '@services/crawls/types'
+import { HttpNoBodyError } from '@vouchington/sentry'
 import {
   CrawlerConnectError,
   CrawlerRateLimitError,
   CrawlerTimeoutError,
   CrawlerNetworkError,
   CrawlerSsrfError,
-  HttpNoBodyError,
 } from '@modules/on-error/errors'
 import onError from '@modules/on-error'
 

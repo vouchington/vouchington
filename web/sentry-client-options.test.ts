@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
 import {
   RUNTIME_PUBLIC_CONFIG_READY_EVENT,
   type RuntimePublicConfig,
@@ -9,9 +8,6 @@ import {
   initializeSentryClient,
   type SentryInitOptions,
 } from './sentry-client-options'
-
-const scrubSentryError = () => ({ scrubbedError: true }) as never
-const scrubSentrySpan = () => ({ scrubbedSpan: true }) as never
 
 describe('createSentryClientInitOptions', () => {
   it('uses the configured runtime-public web DSN in deployed environments', () => {
@@ -36,8 +32,6 @@ describe('createSentryClientInitOptions', () => {
   it('stays disabled when the runtime public config bootstrap is absent', () => {
     const options = createSentryClientInitOptions({
       getRuntimePublicConfig: () => ({}),
-      scrubSentryError,
-      scrubSentrySpan,
     })
 
     expect(options.enabled).toBe(false)
@@ -51,43 +45,19 @@ describe('createSentryClientInitOptions', () => {
           environment,
           sentryDsn: 'https://public@example.test/123',
         }),
-        scrubSentryError,
-        scrubSentrySpan,
       })
 
       expect(options.enabled).toBe(true)
       expect(options.environment).toBe(environment)
-      expect(options.beforeSend).toBe(scrubSentryError)
-      expect(options.beforeSendSpan).toBe(scrubSentrySpan)
     },
   )
 
   it('stays disabled for a non-deployed environment value', () => {
     const options = createSentryClientInitOptions({
       getRuntimePublicConfig: () => ({ environment: 'development' }),
-      scrubSentryError,
-      scrubSentrySpan,
     })
 
     expect(options.enabled).toBe(false)
-  })
-
-  it('applies the shared least-data collection policy', () => {
-    const expected: SentryInitOptions['dataCollection'] = createSentryDataCollection()
-    const dataCollection = createSentryClientInitOptions({
-      getRuntimePublicConfig: () => ({ environment: 'production' }),
-    }).dataCollection
-
-    expect(dataCollection).toEqual(expected)
-    expect(dataCollection).toMatchObject({
-      userInfo: false,
-      cookies: false,
-      urlQueryParams: false,
-      databaseQueryData: false,
-      stackFrameVariables: false,
-      queues: false,
-      graphQL: { document: false, variables: false },
-    })
   })
 
   it('sets no replay sample rates because no replay integration is registered', () => {

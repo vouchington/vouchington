@@ -14,6 +14,8 @@ import {
   HttpServerError,
   HttpResponseSizeError,
   HttpNoBodyError,
+} from '@vouchington/sentry'
+import {
   CrawlerTimeoutError,
   CrawlerNetworkError,
   CrawlerRateLimitError,

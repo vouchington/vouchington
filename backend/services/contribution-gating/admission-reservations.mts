@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
 import {

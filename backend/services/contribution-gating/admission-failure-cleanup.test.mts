@@ -6,7 +6,7 @@ import {
   getContributionAdmissionReservationStateForTest,
   executeTestAdmittedPost,
 } from '@voucha/test-helpers'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { DUPLICATE_TOPIC } from '@modules/on-error/error-codes'
 import { runContributionAdmission } from './admission.mts'
 import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'

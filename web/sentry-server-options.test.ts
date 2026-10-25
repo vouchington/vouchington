@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createSentryDataCollection } from '@ts-shared/utils/sentry-data-collection'
-import { resolveSentryDsnEnablement } from '@ts-shared/utils/sentry-deployment-gate'
+import { ApiError } from '@vouchington/api-client'
 import { createSentryServerInitOptions } from './sentry-server-options'
-
-const scrubSentryError = () => ({ scrubbedError: true }) as never
-const scrubSentrySpan = () => ({ scrubbedSpan: true }) as never
 
 describe('createSentryServerInitOptions', () => {
   it('uses SENTRY_DSN and disables deployed reporting when it is missing or invalid', () => {
@@ -32,28 +28,8 @@ describe('createSentryServerInitOptions', () => {
     )
   })
 
-  it('applies the shared least-data collection policy', () => {
-    const expected: ReturnType<typeof createSentryServerInitOptions>['dataCollection'] =
-      createSentryDataCollection()
-    const dataCollection = createSentryServerInitOptions({ NODE_ENV: 'production' }).dataCollection
-
-    expect(dataCollection).toEqual(expected)
-    expect(dataCollection).toMatchObject({
-      userInfo: false,
-      cookies: false,
-      urlQueryParams: false,
-      databaseQueryData: false,
-      stackFrameVariables: false,
-      queues: false,
-      graphQL: { document: false, variables: false },
-    })
-  })
-
   it('stays disabled outside the deployed-environment allowlist', () => {
-    const options = createSentryServerInitOptions(
-      { NODE_ENV: 'production' },
-      { scrubSentryError, scrubSentrySpan },
-    )
+    const options = createSentryServerInitOptions({ NODE_ENV: 'production' })
 
     expect(options.enabled).toBe(false)
   })
@@ -61,35 +37,29 @@ describe('createSentryServerInitOptions', () => {
   it.each(['staging', 'production'] as const)(
     'enables reporting for the deployed environment %s',
     environment => {
-      const options = createSentryServerInitOptions(
-        {
-          ENVIRONMENT: environment,
-          NODE_ENV: 'production',
-          SENTRY_DSN: 'https://public@example.test/123',
-        },
-        { scrubSentryError, scrubSentrySpan },
-      )
+      const options = createSentryServerInitOptions({
+        ENVIRONMENT: environment,
+        NODE_ENV: 'production',
+        SENTRY_DSN: 'https://public@example.test/123',
+      })
 
       expect(options.dsn).toBe('https://public@example.test/123')
       expect(options.enabled).toBe(true)
       expect(options.environment).toBe(environment)
-      expect(options.beforeSend).toBe(scrubSentryError)
-      expect(options.beforeSendSpan).toBe(scrubSentrySpan)
     },
   )
 
-  it('uses the shared resolveSentryEnablement helper by default', () => {
-    const options = createSentryServerInitOptions({
-      ENVIRONMENT: 'staging',
-      NODE_ENV: 'production',
-      SENTRY_DSN: 'https://public@example.test/123',
-    })
+  it('drops expected 4xx ApiError events and keeps 5xx ones', async () => {
+    const options = createSentryServerInitOptions({ NODE_ENV: 'production' })
+    const event = { request: { url: 'https://example.com/x?token=secret' } } as never
 
-    expect(options.enabled).toBe(
-      resolveSentryDsnEnablement({
-        dsn: 'https://public@example.test/123',
-        environment: 'staging',
-      }).enabled,
-    )
+    expect(
+      await options.beforeSend?.(event, { originalException: new ApiError('Bad', 400) }),
+    ).toBeNull()
+    expect(
+      await options.beforeSend?.(event, { originalException: new ApiError('Boom', 500) }),
+    ).toEqual({
+      request: { url: 'https://example.com/x' },
+    })
   })
 })

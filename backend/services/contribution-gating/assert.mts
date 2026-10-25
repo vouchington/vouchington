@@ -1,5 +1,5 @@
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONTRIBUTION_GATED, EMAIL_VERIFICATION_REQUIRED } from '@modules/on-error/error-codes'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { CONTRIBUTION_GATE_ACCOUNT_AGE_MS } from './config.mts'

@@ -7,7 +7,7 @@ import {
   isCommunityRootPostType,
 } from '@services/communities'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { IDENTITY_REQUIRED } from '@modules/on-error/error-codes'
 import {
   admitDelegatedContribution,

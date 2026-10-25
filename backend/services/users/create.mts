@@ -12,7 +12,7 @@ import { enqueueSendWelcomeEmail } from '@queues/emails/enqueues'
 import { getReferrerIdForSession, updateAttributionSignup } from '@services/attribution'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { OAUTH_ACCOUNT_EMAIL_CONFLICT, USER_CREATION_RACE } from '@modules/on-error/error-codes'
 import type { PrivateUser, UpsertUserOptions } from './types.mts'
 import {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { scrubSentryEvent, scrubSpanAttributes } from './sentry-event-scrubbing.mts'
+import { scrubEvent, scrubSpanAttributes as scrubSpans } from '@vouchington/utils/observability'
+import { SENTRY_SCRUB_OPTIONS } from './sentry-scrub-options.mts'
+
+const scrubSentryEvent = (event: Parameters<typeof scrubEvent>[0]) =>
+  scrubEvent(event, SENTRY_SCRUB_OPTIONS)
+const scrubSpanAttributes = (data: Record<string, unknown>) =>
+  scrubSpans(data, SENTRY_SCRUB_OPTIONS)
 
 describe('bot challenge credential scrubbing', () => {
   it('redacts browser and native challenge proof headers', () => {

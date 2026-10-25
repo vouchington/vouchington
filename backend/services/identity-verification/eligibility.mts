@@ -1,5 +1,5 @@
 import createHttpError from 'http-errors'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { EMAIL_VERIFICATION_REQUIRED } from '@modules/on-error/error-codes'
 import { assertNotSuspended } from '@services/users/suspension'
 import { hasVerifiedNonDisposableEmail } from '@services/contribution-gating/email-verification'

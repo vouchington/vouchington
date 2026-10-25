@@ -1,5 +1,5 @@
 import type { QueryExecutor } from './types.mts'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 
 /** Map only the schema's topic lifecycle rejection; preserve every other PostgreSQL error. */
 export function normalizeTopicReferenceError(error: unknown): unknown {

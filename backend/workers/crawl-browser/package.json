@@ -28,6 +28,7 @@
     "@services/urls": "workspace:^",
     "@services/urls-domains-robots": "workspace:^",
     "@voucha/config": "workspace:^",
+    "@vouchington/sentry": "^0.4.0",
     "glide-mq": "^0.19.0",
     "ssrf-guard": "^1.0.0"
   },

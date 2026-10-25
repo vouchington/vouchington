@@ -9,11 +9,13 @@ import {
   CrawlerServerError,
   CrawlerSsrfError,
   CrawlerTimeoutError,
+} from './errors.mts'
+import {
   HttpNoBodyError,
   HttpRateLimitError,
   HttpResponseSizeError,
   HttpServerError,
-} from './errors.mts'
+} from '@vouchington/sentry'
 import { isExpectedCrawlerOperationalError } from './expected-crawler-operational-error.mts'
 
 describe('CrawlerTimeoutError', () => {
@@ -163,50 +165,6 @@ describe('CrawlerInvalidContentTypeError', () => {
     expect(err.url).toBe('https://example.com/feed')
     expect(err.contentType).toBe('text/html')
     expect(err.duration).toBe(100)
-  })
-})
-
-describe('HttpRateLimitError', () => {
-  it('has correct structured properties', () => {
-    const err = new HttpRateLimitError('https://example.com', 429, 30_000)
-    expect(err.name).toBe('HttpRateLimitError')
-    expect(err.code).toBe('HTTP_RATE_LIMIT')
-    expect(err.status).toBe(429)
-    expect(err.retryAfterMs).toBe(30_000)
-  })
-
-  it('supports null retryAfterMs', () => {
-    const err = new HttpRateLimitError('https://example.com', 429, null)
-    expect(err.retryAfterMs).toBeNull()
-  })
-})
-
-describe('HttpServerError', () => {
-  it('has correct structured properties', () => {
-    const err = new HttpServerError('https://example.com', 500)
-    expect(err.name).toBe('HttpServerError')
-    expect(err.code).toBe('HTTP_SERVER_ERROR')
-    expect(err.status).toBe(500)
-  })
-})
-
-describe('HttpResponseSizeError', () => {
-  it('has correct structured properties', () => {
-    const err = new HttpResponseSizeError('https://example.com', 5_000_000, 1_000_000)
-    expect(err.name).toBe('HttpResponseSizeError')
-    expect(err.code).toBe('HTTP_RESPONSE_SIZE_EXCEEDED')
-    expect(err.status).toBe(413)
-    expect(err.actualSize).toBe(5_000_000)
-    expect(err.maxSize).toBe(1_000_000)
-  })
-})
-
-describe('HttpNoBodyError', () => {
-  it('has correct structured properties', () => {
-    const err = new HttpNoBodyError('https://example.com')
-    expect(err.name).toBe('HttpNoBodyError')
-    expect(err.code).toBe('HTTP_NO_BODY')
-    expect(err.status).toBe(502)
   })
 })
 

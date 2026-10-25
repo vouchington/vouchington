@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { CONFLICT, IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import type { MembershipPlanSlug } from './types.mts'
 

@@ -1,7 +1,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { MFA_REAUTH_REQUIRED } from '@modules/on-error/error-codes'
 import { getUserMfaStatus } from './status.mts'
 import { verifyAndDeleteReAuthToken } from './re-auth.mts'

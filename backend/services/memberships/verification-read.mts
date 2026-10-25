@@ -1,5 +1,5 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { NOT_FOUND } from '@modules/on-error/error-codes'
 import sql from 'sql-template-strings'
 import type { MembershipPurchaseProvider } from './purchase-intent-launches.mts'
