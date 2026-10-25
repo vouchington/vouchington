@@ -336,7 +336,7 @@
   {
     "annotation": "getPrivateUserByAny",
     "maxCount": 2,
-    "reason": "Native email login first resolves or creates the account, then rereads its private projection under the credential-admission user lock before minting authority. The locked reread must see a concurrent first-factor removal or deletion.",
+    "reason": "Existing-user native email login reads the private projection before credential admission, then rereads it under the user lock before minting authority. The locked reread must see a concurrent first-factor removal or deletion.",
     "permanent": true,
     "code": "backend/services/users/authentication-flows.mts:81",
     "routes": ["POST /api/v1/auth/native/email-address/login"]
