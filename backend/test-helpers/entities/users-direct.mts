@@ -27,6 +27,15 @@ type CreateTestUserWithAgeOptions = CreateTestUserOptions & {
   noEmail?: boolean
 }
 
+async function seedTestUserRoles(userId: string, options: CreateTestUserOptions): Promise<void> {
+  const roles = new Set(options.extraRoles ?? [])
+  if (options.administrator) roles.add('administrator')
+  if (roles.has('administrator')) {
+    await insertTestTotpAuthenticator(userId, 'administrator-fixture')
+  }
+  for (const roleSlug of roles) await addTestUserRole(userId, roleSlug)
+}
+
 // Raw-primitive user creation backing users.mts's createTestUser — see that call site for why
 // this package cannot depend on the real @services/users/create's upsertUser.
 export async function createTestUserDirect(
@@ -49,13 +58,7 @@ export async function createTestUserDirect(
     `)
   }
 
-  if (options.administrator) {
-    await insertTestTotpAuthenticator(userId, 'administrator-fixture')
-    await addTestUserRole(userId, 'administrator')
-  }
-  for (const roleSlug of options.extraRoles ?? []) {
-    await addTestUserRole(userId, roleSlug)
-  }
+  await seedTestUserRoles(userId, options)
   const phoneNumber = getTestPhoneNumber(options.phone_number)
   if (phoneNumber) {
     await attachTestPhoneNumber(userId, phoneNumber)
@@ -75,13 +78,7 @@ export async function createUnonboardedTestUserDirect(
     RETURNING id
   `)
   const userId = rows[0].id as string
-  if (options.administrator) {
-    await insertTestTotpAuthenticator(userId, 'administrator-fixture')
-    await addTestUserRole(userId, 'administrator')
-  }
-  for (const roleSlug of options.extraRoles ?? []) {
-    await addTestUserRole(userId, roleSlug)
-  }
+  await seedTestUserRoles(userId, options)
   const phoneNumber = getTestPhoneNumber(options.phone_number)
   if (phoneNumber) {
     await attachTestPhoneNumber(userId, phoneNumber)
@@ -136,10 +133,7 @@ export async function createTestUserWithAge(
     `)
   }
 
-  if (options.administrator) {
-    await insertTestTotpAuthenticator(id, 'administrator-fixture')
-    await addTestUserRole(id, 'administrator')
-  }
+  await seedTestUserRoles(id, options)
   const phoneNumber = getTestPhoneNumber(options.phone_number)
   if (phoneNumber) {
     await attachTestPhoneNumber(id, phoneNumber)

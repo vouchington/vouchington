@@ -23,6 +23,11 @@ export async function createAuthenticatedTestSession(user: PrivateUser) {
   return createDeviceAndSessionTokens({ did, uid: user.id, ...claims })
 }
 
+export async function hasCurrentAdministratorRole(userId: string): Promise<boolean> {
+  const user = await getPrivateUserByAny(userId, { readOnly: false })
+  return user?.roles.includes('administrator') ?? false
+}
+
 /** Complete a real TOTP factor challenge before minting an MFA-assured test session. */
 export async function createVerifiedMfaTestSession(userId: string, deviceContext?: DeviceContext) {
   const user = await getPrivateUserByAny(userId, { readOnly: false })

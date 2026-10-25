@@ -3,7 +3,7 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createTestPost } from '../../../backend/test-helpers/entities/create-test-entities.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
-import { withCleanUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser, withCleanUser } from '../../helpers/auth.mts'
 
 test.describe('Typed comment permalink routes', () => {
   test.use({ storageState: AUTH_STATE })
@@ -112,6 +112,7 @@ test.describe('Typed comment permalink routes', () => {
     const title = `Permalink story ${suffix}`
     const body = `Owned comment story ${suffix}`
     const user = await withCleanUser(page, { administrator: true })
+    await loginAsMfaUser(page, user.id)
     const slug = `permalink-story-${suffix}`
     const id = await insertTestPost({
       title,

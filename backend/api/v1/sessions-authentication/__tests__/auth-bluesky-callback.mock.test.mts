@@ -40,10 +40,14 @@ describe('GET /api/v1/auth/bluesky/callback', () => {
     const did = fakeDid()
     const flowId = v7()
     const stateKey = v7()
-    await ensureTestBlueskyLinkAuthorization({ authorizationId: flowId, userId: user.id })
+    await request.authenticateAs(user)
+    await ensureTestBlueskyLinkAuthorization({
+      authorizationId: flowId,
+      userId: user.id,
+      initiatingSessionId: request.sid,
+    })
     const appState = JSON.stringify({ authorizationId: flowId })
     await new BlueskyStateStore().set(stateKey, fakeState(appState))
-    await request.authenticateAs(user)
     completeBlueskyCallbackMock.mockImplementationOnce(async () => {
       await new BlueskySessionStore().set(did, fakeSession(did))
       return { session: { did } as OAuthSession, state: appState }
@@ -63,10 +67,14 @@ describe('GET /api/v1/auth/bluesky/callback', () => {
     const did = fakeDid()
     const flowId = v7()
     const stateKey = v7()
-    await ensureTestBlueskyLinkAuthorization({ authorizationId: flowId, userId: user.id })
+    await request.authenticateAs(user)
+    await ensureTestBlueskyLinkAuthorization({
+      authorizationId: flowId,
+      userId: user.id,
+      initiatingSessionId: request.sid,
+    })
     const appState = JSON.stringify({ authorizationId: flowId })
     await new BlueskyStateStore().set(stateKey, fakeState(appState))
-    await request.authenticateAs(user)
     completeBlueskyCallbackMock.mockImplementationOnce(async () => {
       await new BlueskySessionStore().set(did, fakeSession(did))
       await suspendTestUser(user.id)

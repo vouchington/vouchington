@@ -8,6 +8,7 @@ import {
   insertTestTotpAuthenticator,
 } from '@voucha/test-helpers'
 import { setTestSessionMfaVerifiedAt } from '@voucha/test-helpers/entities/session-assurance'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { createDeviceAndSessionTokens } from './create.mts'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
@@ -41,6 +42,20 @@ describe('original MFA assurance continuity', () => {
       expect(tokens.sessionToken.payload.rol).toContain('administrator')
       expect(tokens.deviceToken.payload.mfa_at).toBe(tokens.sessionToken.payload.mfa_at)
     }
+  })
+  it('authenticates from the current administrator role after a fixture adds it', async () => {
+    const user = await createTestUserDirect({ withEmail: true })
+    await insertTestTotpAuthenticator(user.id, 'role-admission')
+    await addTestUserRole(user.id, 'administrator')
+    const request = createRequest()
+    await request.authenticateAs(user)
+    await request.get('/api/v1/admin/oauth-clients').expect(200)
+  })
+  it('enrolls an administrator role supplied through extraRoles before authentication', async () => {
+    const user = await createTestUserDirect({ withEmail: true, extraRoles: ['administrator'] })
+    const request = createRequest()
+    await request.authenticateAs(user)
+    await request.get('/api/v1/admin/oauth-clients').expect(200)
   })
   it('preserves the exact timestamp through encrypted replay, cold enrichment and web rotation', async () => {
     const user = await createTestUserDirect()

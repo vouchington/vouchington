@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { loginAsTestUser } from '../../helpers/auth.mts'
+import { loginAsAdmin } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 
 async function logout(page: import('../../helpers/test.mts').Page) {
@@ -26,7 +26,7 @@ test.describe('Post Broadcast & Privacy', () => {
   // per-test isolated login (fresh device id) instead of the shared AUTH_STATE
   // so one test's logout cannot break others sharing the captured session.
   test.beforeEach(async ({ page }) => {
-    await loginAsTestUser(page)
+    await loginAsAdmin(page)
   })
 
   test('post form shows audience controls and reveals visibility for restricted audiences', async ({

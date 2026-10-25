@@ -85,7 +85,7 @@ describe('OAuth resource binding routes', () => {
   ] as const)(
     'denies owned apps the %s resource (administrator=%s)',
     async (audience, scope, administrator) => {
-      const user = await createTestUserDirect({ administrator })
+      const user = await createTestUserDirect({ administrator, withEmail: true })
       const request = createRequest()
       await request.authenticateAs(user)
       const response = await authorize(request, {

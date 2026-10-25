@@ -1,5 +1,6 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { createTestPost } from '../../../backend/test-helpers/entities/create-test-entities.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
@@ -71,6 +72,7 @@ test.describe('Typed post tag management', () => {
     })
     const targetName = `Post category ${suffix}`
     await insertTestTopic(targetName, `post-category-${suffix}`, 'topic')
+    await loginAsUser(page, user.id)
     await navigateTo(page, `/story/${id}/tags/topic`)
     await expect(page.getByTestId('manage-tags-active-heading')).toHaveText('Category Topics')
     await expect(page.getByTestId('manage-post-tags-content')).toBeVisible()

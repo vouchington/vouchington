@@ -78,7 +78,7 @@ test.describe('Topic Recommendations', () => {
     const topicTitle = `Playwright Topic ${stamp}`
     const topicSlug = `playwright-topic-${stamp}`
 
-    await loginAsTestUser(page)
+    await loginAsAdmin(page)
     await navigateTo(page, '/topic-recommendations')
     await expect(page.getByTestId('topic-recommendations-heading')).toBeVisible()
     await expect(page.getByTestId('topic-recommendations-table')).toBeVisible()
@@ -240,6 +240,12 @@ test.describe('Topic Recommendations', () => {
       const topicSlug = `playwright-referral-program-${stamp}`
       const exampleLink = `https://example-${stamp}.com/referral?ref=test`
 
+      const user = requireTestValue(
+        await createEligibleTestUser(`topic-rec-referral-${stamp}`),
+        'Failed to create eligible referral recommender',
+      )
+      await loginAsUser(page, user.id)
+
       await navigateTo(page, '/topic-recommendations/create')
       await expect(page.getByTestId('suggest-topic-heading')).toBeVisible()
 
@@ -268,6 +274,12 @@ test.describe('Topic Recommendations', () => {
       const stamp = randomSuffix()
       const topicTitle = `Playwright Card ${stamp}`
       const topicSlug = `playwright-card-${stamp}`
+
+      const user = requireTestValue(
+        await createEligibleTestUser(`topic-rec-card-${stamp}`),
+        'Failed to create eligible card recommender',
+      )
+      await loginAsUser(page, user.id)
 
       await navigateTo(page, '/topic-recommendations/create')
       await expect(page.getByTestId('suggest-topic-heading')).toBeVisible()

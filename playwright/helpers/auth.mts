@@ -27,12 +27,21 @@ export async function loginAsAdmin(
   page: Page,
   dependencies?: Partial<LoginAsUserDependencies>,
 ): Promise<void> {
+  await loginAsMfaUser(page, TEST_USER_ID, dependencies)
+}
+
+/** Complete a TOTP challenge for a specific enrolled administrator. */
+export async function loginAsMfaUser(
+  page: Page,
+  userId: string,
+  dependencies?: Partial<LoginAsUserDependencies>,
+): Promise<void> {
   const createVerifiedMfaTestSession =
     dependencies?.createVerifiedMfaTestSession ??
     (await import('../../backend/test-helpers/authenticated-session.mts'))
       .createVerifiedMfaTestSession
   const userAgent = await page.evaluate(() => navigator.userAgent)
-  const tokens = await createVerifiedMfaTestSession(TEST_USER_ID, { user_agent: userAgent })
+  const tokens = await createVerifiedMfaTestSession(userId, { user_agent: userAgent })
   await setSessionCookies(
     page,
     tokens,

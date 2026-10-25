@@ -1,5 +1,13 @@
 [
   {
+    "annotation": "assertOAuthAccountConnectionUserActive",
+    "maxCount": 4,
+    "reason": "The callback writes the provider session and then attaches it in separate transactions. Each checks active ownership before reading the authorization and again after locking the initiating session; suspension can commit between those transactions.",
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
+  },
+  {
     "annotation": "addListItem",
     "maxCount": 100,
     "reason": "The recorded #3345 decision keeps these writes per target so each batch result retains its own persisted row; the delegated batch contract caps the loop at 100 items.",
@@ -466,6 +474,14 @@
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
+    "annotation": "lockBlueskyInitiatingSession",
+    "maxCount": 2,
+    "reason": "SDK session persistence and final account attachment commit separately, so each transaction rechecks the initiating authorization and current actor session.",
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
+  },
+  {
     "annotation": "lockBlueskyLinkAuthorization",
     "maxCount": null,
     "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
@@ -520,6 +536,22 @@
     "permanent": true,
     "code": "backend/services/fediverse-instances/create-instance.mts:34",
     "routes": ["POST /api/v1/fediverse/instances"]
+  },
+  {
+    "annotation": "lockOAuthAccountConnectionUser",
+    "maxCount": 4,
+    "reason": "Each of the two callback transactions admits the active account before authorization lookup and again with the initiating SID and device authority; both checks take the deletion fence.",
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
+  },
+  {
+    "annotation": "lockOAuthAccountConnectionUserRow",
+    "maxCount": 4,
+    "reason": "Each active-account admission locks the user row after the deletion fence, twice in provider persistence and twice in final attachment.",
+    "permanent": true,
+    "code": "backend/services/oauth-accounts/connect.mts:99",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
     "annotation": "lockPostPublicationCaptures",
@@ -581,6 +613,14 @@
   },
   {
     "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["GET /api/v1/auth/bluesky/callback"],
+    "maxCount": 2,
+    "reason": "Provider session persistence and final attachment separately lock and verify the original initiating SID against revocation.",
+    "permanent": true,
+    "code": "backend/services/mfa/active-account-session.mts:56"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
     "routes": ["POST /api/v1/app-attestation/attest"],
     "maxCount": 2,
     "reason": "Atomic first-native upgrade locks the old browser SID before revocation and the replacement native SID before minting, so exactly two distinct session admissions share one transaction.",
@@ -602,6 +642,14 @@
     "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
     "permanent": true,
     "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["GET /api/v1/auth/bluesky/callback"],
+    "maxCount": 2,
+    "reason": "Provider session persistence and final attachment separately lock and verify the original account and SID against deletion and revocation.",
+    "permanent": true,
+    "code": "backend/services/mfa/active-account-session.mts:56"
   },
   {
     "annotation": "lockSessionDeviceAuthority:userFence",
@@ -718,6 +766,14 @@
       "POST /api/v1/copyright-form-intakes/:id/reviews",
       "POST /api/v1/copyright-uk-notices/:id/reviews"
     ]
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["GET /api/v1/auth/bluesky/callback"],
+    "maxCount": 4,
+    "reason": "Each of the two independently committed callback stages reads the original SID to derive its device and rereads under the SID lock before accepting that stage.",
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:34"
   },
   {
     "annotation": "readSessionDeviceAuthority",

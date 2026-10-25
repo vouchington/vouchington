@@ -9,6 +9,7 @@ import type { PrivateUser } from '../../services/users/types.mts'
 import {
   createAuthenticatedTestSession,
   createVerifiedMfaTestSession,
+  hasCurrentAdministratorRole,
 } from '../authenticated-session.mts'
 import type { FeatureFlags } from '../../services/feature-flags/index.mts'
 import {
@@ -103,7 +104,7 @@ export const createRequest = (
   }
 
   agent.authenticateAs = async function (user: PrivateUser) {
-    if (user.roles.includes('administrator')) return this.authenticateAsMfa(user)
+    if (await hasCurrentAdministratorRole(user.id)) return this.authenticateAsMfa(user)
     return this.authenticateAsRaw(user)
   }
 
