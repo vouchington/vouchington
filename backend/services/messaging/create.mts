@@ -1,6 +1,7 @@
 import { read, write, beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueOnConversationMessageCreated } from '@queues/entity-listeners/enqueues'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import type { DirectConversation, DirectMessage } from './types.mts'
 import createHttpError from 'http-errors'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
@@ -154,7 +155,9 @@ export async function createConversationMessage(
   const message = rows[0] as DirectMessage | undefined
   if (!message) throw createHttpError(403, 'Not a participant')
 
-  void enqueueOnConversationMessageCreated(conversationId, message.id, currentUserId)
+  await awaitReportedEnqueueAdmission(() =>
+    enqueueOnConversationMessageCreated(conversationId, message.id, currentUserId),
+  )
 
   return message
 }
