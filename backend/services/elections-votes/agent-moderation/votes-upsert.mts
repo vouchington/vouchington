@@ -5,6 +5,7 @@ import {
   type TransactionQuery,
 } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import type {
   ElectionVoteMutationResult,
@@ -139,9 +140,11 @@ export async function upsertAgentModerationElectionVotes(
     const entityIds = [...valuesByEntityId.keys()]
     // Re-enqueue current no-op retries too: their preceding committed ballot may have outlived a
     // transient aggregate-enqueue failure. The queue boundary reports failures independently.
-    registerPostCommitAction(query, async () => {
-      void enqueueBulkUpdateAgentModerationElectionVoteStats(entityIds)
-    })
+    registerPostCommitAction(query, () =>
+      awaitReportedEnqueueAdmission(() =>
+        enqueueBulkUpdateAgentModerationElectionVoteStats(entityIds),
+      ),
+    )
 
     return rows
   })

@@ -1,4 +1,5 @@
 import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,
@@ -26,9 +27,9 @@ export async function upsertRssFeedItemElectionVotes(
     context,
   )
   if (votes.length > 0) {
-    void enqueueBulkUpdateRssFeedItemElectionVoteStats([
-      ...new Set(votes.map(vote => vote.entityId)),
-    ])
+    await awaitReportedEnqueueAdmission(() =>
+      enqueueBulkUpdateRssFeedItemElectionVoteStats([...new Set(votes.map(vote => vote.entityId))]),
+    )
   }
   return insertedVotes
 }
