@@ -55,6 +55,7 @@ export async function runLogoutPushCleanupAndRevoke(
   cleanup: () => Promise<void>,
   exactBinding?: ExactPushBinding,
   registryQuery?: QueryExecutor,
+  onFallbackRevoked?: () => void,
 ): Promise<void> {
   try {
     const admitted = await admitLogoutCleanup(sessionId, revocationOptions)
@@ -64,9 +65,12 @@ export async function runLogoutPushCleanupAndRevoke(
     // Cleanup or its cache coordination cannot prevent durable logout. Preserve the
     // original failure so callers never mistake unavailable cleanup for success.
     onError(err instanceof Error ? err : new Error(String(err)))
-    await revokeSession(sessionId).catch(err =>
-      onError(err instanceof Error ? err : new Error(String(err))),
-    )
+    try {
+      await revokeSession(sessionId)
+      onFallbackRevoked?.()
+    } catch (err_) {
+      onError(err_ instanceof Error ? err_ : new Error(String(err_)))
+    }
     throw err
   }
 

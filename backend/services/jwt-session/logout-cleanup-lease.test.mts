@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { isSessionRevoked } from './revocation.mts'
 import { logoutCleanupLease, runLogoutPushCleanupAndRevoke } from './logout-cleanup-lease.mts'
+import { revokeSessionForLogout } from './web-refresh.mts'
 import {
   admitLogoutCleanupScript,
   getJwtLogoutCleanupAdmissionKey,
@@ -181,11 +182,55 @@ describe('logout cleanup lease', () => {
         : invoke.call(sessionValkeyClient, ...args),
     )
     const cleanup = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    await expect(runLogoutPushCleanupAndRevoke(sid, { userId }, cleanup)).rejects.toBe(error)
+    const onFallbackRevoked = vi.fn<() => void>()
+    await expect(
+      runLogoutPushCleanupAndRevoke(
+        sid,
+        { userId },
+        cleanup,
+        undefined,
+        undefined,
+        onFallbackRevoked,
+      ),
+    ).rejects.toBe(error)
     expect(cleanup).not.toHaveBeenCalled()
+    expect(onFallbackRevoked).toHaveBeenCalledOnce()
     await sessionValkeyClient.unlink([getJwtRevokedKey(sid)])
     await expect(isSessionRevoked(sid, { userId })).resolves.toBe(true)
     expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(error, expect.any(Object))
+  })
+
+  it('leaves signed-device fallback available when the first revocation attempt fails', async () => {
+    const { dtCookie, stCookie, sid, userId } = await createTestSessionCookies()
+    const error = new Error('admission unavailable')
+    const invoke = sessionValkeyClient.invokeScript
+    vi.spyOn(sessionValkeyClient, 'invokeScript').mockImplementation((...args) =>
+      args[0] === admitLogoutCleanupScript
+        ? Promise.reject(error)
+        : invoke.call(sessionValkeyClient, ...args),
+    )
+    vi.spyOn(sessionValkeyClient, 'set').mockRejectedValueOnce(
+      new Error('revocation marker unavailable'),
+    )
+    const onFallbackRevoked = vi.fn<() => void>()
+
+    await expect(
+      runLogoutPushCleanupAndRevoke(
+        sid,
+        { userId },
+        async () => {},
+        undefined,
+        undefined,
+        onFallbackRevoked,
+      ),
+    ).rejects.toBe(error)
+    expect(onFallbackRevoked).not.toHaveBeenCalled()
+
+    await revokeSessionForLogout({
+      deviceToken: dtCookie.slice(3),
+      sessionToken: stCookie.slice(3),
+    })
+    await expect(isSessionRevoked(sid)).resolves.toBe(true)
   })
 
   it('does not let an expired owner release its replacement lease', async () => {

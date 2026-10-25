@@ -32,9 +32,9 @@ const {
 })
 
 vi.mock(import('next/server'), () => {
-  function NextResponse() {
+  function NextResponse(_body?: unknown, init?: ResponseInit) {
     const headers = new Headers()
-    return { cookies: { set: mockCookiesSet }, headers }
+    return { cookies: { set: mockCookiesSet }, headers, status: init?.status ?? 200 }
   }
   NextResponse.next = mockNextResponseNext
   NextResponse.rewrite = mockNextResponseRewrite

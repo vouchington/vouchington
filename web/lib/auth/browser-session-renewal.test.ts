@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renewBrowserSession } from '../api/client/session-renewal'
 
 describe('browser session renewal coordination', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
   it('shares one renewal for concurrent callers and requests an exclusive browser lock', async () => {
     let release: () => void = () => {
       throw new Error('Lock was not acquired')
@@ -87,5 +90,20 @@ describe('browser session renewal coordination', () => {
     await expect(renewBrowserSession()).rejects.toMatchObject({ status: 502 })
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/session', '/api/v1/session'])
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'DELETE' })
+  })
+
+  it('reports cleanup failure without hiding the original renewal failure', async () => {
+    vi.stubGlobal('navigator', {})
+    const cleanupError = new Error('origin unavailable')
+    const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(cleanupError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(renewBrowserSession()).rejects.toMatchObject({ status: 401 })
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      '/api/v1/session',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+    expect(consoleError).toHaveBeenCalledWith('Session cleanup failed', cleanupError)
   })
 })

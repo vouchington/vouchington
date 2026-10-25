@@ -26,6 +26,7 @@ app.route('/api/v1/auth/logout').post(async ctx => {
   const dt = ctx.cookies.get('dt')
   const st = ctx.cookies.get('st')
   clearAuthenticationCookies(ctx)
+  let fallbackRevoked = false
   try {
     const binding = await parseLogoutPushBinding(ctx)
     // Without a push binding this branch consumes no contract body carrier.
@@ -49,14 +50,19 @@ app.route('/api/v1/auth/logout').post(async ctx => {
                 )
             : async () => {},
           binding,
+          undefined,
+          () => {
+            fallbackRevoked = true
+          },
         )
       }
     }
   } catch (err) {
     clearAuthenticationCookies(ctx)
-    await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch(err =>
-      onError(err instanceof Error ? err : new Error(String(err))),
-    )
+    if (!fallbackRevoked)
+      await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch(err =>
+        onError(err instanceof Error ? err : new Error(String(err))),
+      )
     throw err
   }
 

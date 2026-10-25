@@ -135,6 +135,21 @@ describe('proxy.session', () => {
         )
       })
 
+      it('leaves expired authenticated prefetch without a cached renewal redirect', async () => {
+        mockDecodeSessionJwt.mockReturnValue({ ...AUTH_ST_PAYLOAD, exp: 0 })
+        const response = await proxy(
+          makeRequest({
+            pathname: '/news',
+            cookies: { dt: 'my-dt', st: 'my-st' },
+            headers: { 'next-router-prefetch': '1' },
+          }) as any,
+        )
+
+        expect(response.status).toBe(204)
+        expect(mockNextResponseRedirect).not.toHaveBeenCalled()
+        expect(fetchMock).not.toHaveBeenCalled()
+      })
+
       it('skips /api/v1/session when st is anonymous (uid null)', async () => {
         mockDecodeSessionJwt.mockReturnValue({
           uid: null,
