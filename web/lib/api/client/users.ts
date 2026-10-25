@@ -1,7 +1,7 @@
 'use client'
 
 import { clientApi } from './instance'
-import { clientFetch } from './raw-fetch'
+import { authRecoveryFetch } from './auth-recovery-fetch'
 import { assertPathIdentifier } from './path-identifiers'
 import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
 import type {
@@ -100,7 +100,9 @@ export function isDataRequestResponse(data: CreateOrConflictDataRequestResponse)
 
 export async function getUserDataRequest(userId: string): Promise<DataRequest> {
   const safeId = assertPathIdentifier(userId)
-  const response = await clientFetch(`/api/v1/users/${encodeURIComponent(safeId)}/data-request`)
+  const response = await authRecoveryFetch(
+    `/api/v1/users/${encodeURIComponent(safeId)}/data-request`,
+  )
   if (!response.ok) {
     throw new ApiError(
       'Failed to load export status',

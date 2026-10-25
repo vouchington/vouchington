@@ -58,6 +58,9 @@ export function createAuthRecoveryFetch(
   }
 }
 
+/** Shared by typed requests and raw API responses that must retain their original response body. */
+export const authRecoveryFetch = createAuthRecoveryFetch()
+
 function isSessionEndpoint(input: RequestInfo | URL): boolean {
   const raw = input instanceof Request ? input.url : input.toString()
   return new URL(raw, 'https://example.invalid').pathname === '/api/v1/session'
