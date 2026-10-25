@@ -31,6 +31,7 @@ export function getNetworkBackoffDurationMs(step: number): number {
 export function isHostnameUnreachableError(error: unknown): error is CrawlerNetworkError {
   return (
     error instanceof CrawlerNetworkError &&
+    error.responseStatus === null &&
     !isCrawlerNetworkDnsError(error) &&
     !isCrawlerNetworkTlsHostnameError(error)
   )
@@ -39,6 +40,7 @@ export function isHostnameUnreachableError(error: unknown): error is CrawlerNetw
 /** The hostname answered with an HTTP response, even if the crawl failed. */
 export function isHostnameAnsweredError(error: unknown): boolean {
   return (
+    (error instanceof CrawlerNetworkError && error.responseStatus !== null) ||
     error instanceof CrawlerRateLimitError ||
     error instanceof CrawlerServerError ||
     error instanceof CrawlerHttpClientError ||

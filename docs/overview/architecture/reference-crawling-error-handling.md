@@ -21,12 +21,12 @@ The crawler system retries with exponential backoff. 429 errors re-enqueue with 
 
 ### Network backoff
 
-Some publishers reject every connection from our egress (bot/WAF blocking). They never answer, so each URL used to spend its whole retry budget on every dispatch run, wasting most crawl jobs and risking wider blocking. The non-DNS, non-TLS-hostname `CrawlerNetworkError`s are counted per hostname in `url_hostnames` (HTML crawls and RSS fetches share the count). Enough consecutive failures, with no HTTP response in between, open a backoff:
+Some publishers reject every connection from our egress (bot/WAF blocking). They never answer, so each URL used to spend its whole retry budget on every dispatch run, wasting most crawl jobs and risking wider blocking. Non-DNS, non-TLS-hostname `CrawlerNetworkError`s raised before any response headers arrive are counted per hostname in `url_hostnames` (HTML crawls and RSS fetches share the count). Enough consecutive failures, with no HTTP response in between, open a backoff:
 
 - While it is open, the dispatchers leave the hostname out and preflight skips jobs already queued. The jobs are skipped, not deferred.
 - When it expires, one job claims a single probe.
   - A failed probe reopens the backoff at the next step, which doubles the duration up to a cap.
-  - Any HTTP response (even an error status) closes the backoff and resets the count.
+  - Any HTTP response (even an error status, a redirect, or a body that fails mid-read) closes the backoff and resets the count.
 
 Unlike the DNS latch, the backoff never sets `is_crawlable = FALSE` and never needs an admin. The state lives in Postgres so the doubling step survives cache loss. Each open and close emits a `crawler_requests` event (`network_backoff_opened` / `network_backoff_closed`). Its `retry_after_ms` carries the backoff duration, from which the step can be derived.
 

@@ -44,6 +44,7 @@ export async function fetchCrawlerHtml(
     resolvedAddresses,
   }: CrawlerHtmlOptions,
   markdownOptions: CrawlerHtmlToMarkdownOptions,
+  progress: { responseStatus: number | null } = { responseStatus: null },
 ): Promise<CrawlerHtmlResult> {
   const startedAt = new Date()
   const headers: Record<string, string> = {
@@ -61,6 +62,7 @@ export async function fetchCrawlerHtml(
     responseTimeoutMs,
     resolvedAddresses,
   })
+  progress.responseStatus = response.status
   const response_headers = Object.fromEntries(response.headers?.entries() ?? [])
   const output: CrawlerHtmlResult = {
     request_headers: headers,
@@ -130,8 +132,10 @@ export default async function CrawlerHtml(
   } = options
   const domain = extractDomain(url)
 
+  // Lets a failure after headers arrived be told apart from one where the hostname never answered.
+  const progress = { responseStatus: null as number | null }
   try {
-    const result = await fetchCrawlerHtml(options, markdownOptions)
+    const result = await fetchCrawlerHtml(options, markdownOptions, progress)
     const duration = Date.now() - startedAt.getTime()
     trackCrawlerRequest('html', domain, result.response_status_code, duration, true)
     return result
@@ -170,7 +174,7 @@ export default async function CrawlerHtml(
 
     if (err instanceof Error) {
       trackCrawlerRequest('html', domain, 0, duration, false, 'CrawlerNetworkError')
-      throw new CrawlerNetworkError(url, duration, err)
+      throw new CrawlerNetworkError(url, duration, err, progress.responseStatus)
     }
 
     trackCrawlerRequest('html', domain, 0, duration, false, 'UnknownError')

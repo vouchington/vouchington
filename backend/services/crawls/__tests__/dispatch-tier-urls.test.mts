@@ -9,13 +9,15 @@ import {
   createTestUser,
   createTestUserProfileLink,
   deleteTestRobotsTxtCache,
-  expireTestHostnameNetworkBackoff,
   insertTestRssFeedDirect,
   insertTestUrlDirect,
   insertTestUserReferralProgramLink,
-  openTestHostnameNetworkBackoff,
   setTestRobotsTxtCache,
 } from '@voucha/test-helpers'
+import {
+  expireTestHostnameNetworkBackoff,
+  openTestHostnameNetworkBackoff,
+} from '@voucha/test-helpers/entities/url-hostname-network-backoff'
 import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 import { getUrlById } from '@services/urls/get'
 import { updateUrlHostname } from '@services/urls-hostnames/update'

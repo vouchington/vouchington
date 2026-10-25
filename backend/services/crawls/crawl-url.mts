@@ -1,4 +1,6 @@
 import CrawlerHtml from '@services/crawler-html'
+import onError from '@modules/on-error'
+import { resetHostnameFailures } from '@services/urls-hostnames/network-backoff'
 import { CrawlerTimeoutError } from '@modules/on-error/errors'
 import { loadCrawlPreflight } from './crawl-url/preflight.mts'
 import { resolveSafeCrawlerAddresses } from './crawl-url/safety.mts'
@@ -92,6 +94,10 @@ export const crawlUrl = async (
       scopedOptions.skipEmbedResolution,
       crawlerOptions,
       dependencies,
+    )
+    // Any response, redirects included, proves the hostname resolved and answered.
+    await resetHostnameFailures(hostname.id, { crawlerType: 'html', includeDns: true }).catch(
+      onError,
     )
 
     try {

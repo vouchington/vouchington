@@ -6,7 +6,7 @@ import { useCrawlUrlRedirectHarness } from '@voucha/test-helpers/services/crawls
 import {
   expireTestHostnameNetworkBackoff,
   getTestHostnameNetworkBackoff,
-} from '@voucha/test-helpers'
+} from '@voucha/test-helpers/entities/url-hostname-network-backoff'
 import { CrawlerNetworkError, CrawlerRateLimitError } from '@modules/on-error/errors'
 import { dispatchCrawlUrlsPerHostname } from '../dispatch-per-hostname.mts'
 import { getDomainRateLimitRemainingMs } from '../domain-rate-limit.mts'
@@ -86,6 +86,24 @@ describe('crawl-url network backoff', () => {
       network_backoff_step: 0,
       network_backoff_ends_at: null,
       consecutive_network_failures: 0,
+    })
+  }, 30_000)
+
+  it('closes the backoff when the probe answers with a redirect', async () => {
+    const host = await createHostname('net-backoff-redirect')
+    await tripBackoff(host)
+    await expireTestHostnameNetworkBackoff(host.hostnameId)
+
+    const probeUrl = await host.addPage(100)
+    const target = `https://net-backoff-target-${crypto.randomUUID()}.example.com/`
+    fetchCrawlerHtml
+      .mockResolvedValueOnce(createMockCrawlerResult(301, null, target))
+      .mockResolvedValueOnce(createMockCrawlerResult(200, null, null))
+    await crawlUrlForTest(probeUrl.id)
+
+    expect(await getTestHostnameNetworkBackoff(host.hostnameId)).toMatchObject({
+      network_backoff_step: 0,
+      network_backoff_ends_at: null,
     })
   }, 30_000)
 

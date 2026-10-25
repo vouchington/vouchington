@@ -19,14 +19,17 @@ export class CrawlerNetworkError extends Error {
   status: number
   url: string
   duration: number
+  /** The HTTP status when the failure happened after headers arrived; null if none arrived. */
+  responseStatus: number | null
 
-  constructor(url: string, duration: number, cause: Error) {
+  constructor(url: string, duration: number, cause: Error, responseStatus: number | null = null) {
     super(`Network error while fetching ${url}: ${cause.message}`, { cause })
     this.name = 'CrawlerNetworkError'
     this.code = 'CrawlerNetworkError'
     this.status = 502
     this.url = url
     this.duration = duration
+    this.responseStatus = responseStatus
   }
 }
 

@@ -7,11 +7,8 @@ import { updateRssFeedById } from '../update.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { NETWORK_BACKOFF_FAILURE_THRESHOLD } from '@services/urls-hostnames/network-backoff'
 import { CrawlerNetworkError } from '@modules/on-error/errors'
-import {
-  createTestTopic,
-  getTestHostnameNetworkBackoff,
-  WEB_PROVENANCE,
-} from '@voucha/test-helpers'
+import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { getTestHostnameNetworkBackoff } from '@voucha/test-helpers/entities/url-hostname-network-backoff'
 
 const mockCrawlerRss = vi.fn<typeof CrawlerRss>()
 const mockCheckRssFeedCrawlable = vi.fn<typeof checkRssFeedCrawlable>()
