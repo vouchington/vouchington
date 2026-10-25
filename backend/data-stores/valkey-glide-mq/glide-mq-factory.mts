@@ -82,7 +82,4 @@ export function createBatchWorker<D = unknown, R = unknown>(
   )
 }
 
-/** @public Documented GlideMQ factory contract. */
-export const createFlowProducer = runtime.createFlowProducer
-
 export const closeAndUnregisterGlideMQInstance = runtime.close

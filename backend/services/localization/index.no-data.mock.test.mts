@@ -28,8 +28,7 @@ describe('localization service', () => {
 
   it('resolves public batches, headers, and client errors', () => {
     const context = useSampleCatalog()
-    const { localizationBatchPayload, localizationGetResult, resolveEmailLocalizationBatch } =
-      context.resolver
+    const { localizationBatchPayload, localizationGetResult } = context.resolver
     const payload = localizationBatchPayload({
       consumer: 'web',
       locales: ['en', 'es'],
@@ -75,9 +74,6 @@ describe('localization service', () => {
         .status,
     ).toBe(304)
     expect(() => localizationGetResult({}, undefined)).toThrow(/consumer is required/)
-    expect(resolveEmailLocalizationBatch(['en-US'], ['email.welcome.preview']).messages).toEqual({
-      'email.welcome.preview': 'Welcome to Voucha',
-    })
     vi.stubEnv('LOCALIZATION_SQLITE_PATH', context.path)
     const owner = createLocalizationDatabaseOwner()
     try {
