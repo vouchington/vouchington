@@ -6,7 +6,7 @@ import { getTrustedClientJa4 } from './cloudflare-signals.mts'
 describe('trusted Cloudflare client metadata', () => {
   it.each([undefined, 'worker-secret'])(
     'ignores caller JA4 without successful origin authentication (%s)',
-    configured => {
+    async configured => {
       const req = {
         method: 'GET',
         url: '/',
@@ -16,7 +16,7 @@ describe('trusted Cloudflare client metadata', () => {
       const listener = createOriginGuardedListener(request => {
         observed = getTrustedClientJa4(request)
       }, configured)
-      listener(req, { writeHead() {}, end() {} } as unknown as ServerResponse)
+      await listener(req, { writeHead() {}, end() {} } as unknown as ServerResponse)
       expect(observed).toBeUndefined()
       expect(getTrustedClientJa4(req)).toBeUndefined()
     },
@@ -24,7 +24,7 @@ describe('trusted Cloudflare client metadata', () => {
 
   it.each([undefined, 'cloudflare-ja4'])(
     'accepts optional JA4 only after the real origin guard (%s)',
-    ja4 => {
+    async ja4 => {
       const req = {
         method: 'GET',
         url: '/',
@@ -34,7 +34,7 @@ describe('trusted Cloudflare client metadata', () => {
         },
       } as unknown as IncomingMessage
       let observed: string | undefined
-      createOriginGuardedListener(request => {
+      await createOriginGuardedListener(request => {
         observed = getTrustedClientJa4(request)
       }, 'worker-secret')(req, {} as ServerResponse)
       expect(observed).toBe(ja4)
