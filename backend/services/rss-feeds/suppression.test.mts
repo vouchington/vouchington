@@ -16,7 +16,7 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { updateRssFeedById } from '@services/rss-feeds'
 import { updateRssFeedWithStateAsCurrentUser } from '@services/rss-feeds/update-current-user'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
-import { getPublisherTypeTopicId } from '@services/topics/publisher-type-topics'
+import { getPublisherTypeTopics } from '@services/topics/publisher-type-topics'
 
 describe('suppression', () => {
   function sha256(data: unknown): Buffer {
@@ -116,7 +116,9 @@ describe('suppression', () => {
     const admin = await createTestUser({ administrator: true })
     const feed = await createTestRssFeed({})
     const itemId = await createItemWithFeed(feed.id)
-    const aggregatorTopicId = await getPublisherTypeTopicId('aggregator')
+    const aggregatorTopicId = (await getPublisherTypeTopics()).find(
+      topic => topic.slug === 'aggregator',
+    )?.id
     expect(aggregatorTopicId).toBeTruthy()
 
     await updateRssFeedWithStateAsCurrentUser(
@@ -140,7 +142,9 @@ describe('suppression', () => {
     const random = Math.random().toString(36).slice(2, 15)
     const feed = await createTestRssFeed({})
     const itemId = await createItemWithFeed(feed.id)
-    const aggregatorTopicId = await getPublisherTypeTopicId('aggregator')
+    const aggregatorTopicId = (await getPublisherTypeTopics()).find(
+      topic => topic.slug === 'aggregator',
+    )?.id
     const noncanonicalPublisher = await createTestTopic({
       slug: `noncanonical-publisher-${random}`,
       hostname: `noncanonical-publisher-${random}.example.com`,
