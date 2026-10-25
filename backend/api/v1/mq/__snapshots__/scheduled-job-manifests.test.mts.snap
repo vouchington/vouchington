@@ -982,8 +982,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 10,
-          "key": "activitypub",
+          "concurrency": 4,
+          "key": "activitypub:inbound",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -1019,8 +1019,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 10,
-          "key": "activitypub",
+          "concurrency": 1,
+          "key": "activitypub:cleanup",
         },
         "priority": 100,
         "removeOnComplete": 100,

@@ -55,6 +55,11 @@ export function defineBackgroundJob<TData = Record<string, never>>(
   ] as const) {
     if (value !== undefined) assertPositiveInteger(`${spec.name} ${label}`, value)
   }
+  if (domain.group?.kind === 'domain' && spec.ordering) {
+    throw new TypeError(
+      `Background job ${domain.domain}.${spec.name} cannot override domain-wide ordering`,
+    )
+  }
   const { name, sensitive, ...jobOptions } = spec
   return {
     name: `${domain.domain}.${name}`,
@@ -64,6 +69,7 @@ export function defineBackgroundJob<TData = Record<string, never>>(
       ...jobOptions,
       ...(sensitive ? { removeOnComplete: true, removeOnFail: true } : {}),
       ...(domainOrdering(domain) ?? {}),
+      ...(spec.ordering ? { ordering: spec.ordering } : {}),
     },
   }
 }
