@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { encryptSecret } from '@modules/token-secrets'
 import { signDeviceJwt, verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { SESSION_REFRESH_REUSED } from '@modules/on-error/error-codes'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { revokeSessionKey } from './session-revocation-keys.mts'
 import {
   assertActiveDeviceAuthority,

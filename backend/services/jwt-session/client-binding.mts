@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { createHash } from 'node:crypto'
 import { getSessionUserAgentFingerprint } from './session-device-name.mts'
 import { SESSION_USER_AGENT_MISMATCH, SESSION_JA4_MISMATCH } from '@modules/on-error/error-codes'

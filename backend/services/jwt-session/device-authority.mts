@@ -3,7 +3,7 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { SESSION_RELOGIN_REQUIRED } from '@modules/on-error/error-codes'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import type { SessionClientBinding } from './types.mts'
 
 export interface SessionDeviceAuthorityRow {

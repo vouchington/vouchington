@@ -1,4 +1,4 @@
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { AUTH_REQUIRED } from '@modules/on-error/error-codes'
 import type { Context } from '@jongleberry/api-server'
 import type { PrivateUser } from '@services/users/types'
