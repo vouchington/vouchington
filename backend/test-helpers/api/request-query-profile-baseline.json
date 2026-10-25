@@ -1000,6 +1000,14 @@
   },
   {
     "annotation": "upsertAuthenticatedSession",
+    "maxCount": 2,
+    "reason": "A single refresh registration takes the user advisory lock and then writes the durable session row; both statements use this annotation in one transaction.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
+    "routes": ["PATCH /api/v1/session"]
+  },
+  {
+    "annotation": "upsertAuthenticatedSession",
     "maxCount": null,
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
     "permanent": true,

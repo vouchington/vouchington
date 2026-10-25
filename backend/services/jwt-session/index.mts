@@ -19,7 +19,7 @@ export * from './revocation.mts'
 export * from './logout-cleanup-lease.mts'
 export * from './enrich.mts'
 export * from './request-claims.mts'
-export { listActiveUserSessions, registerAuthenticatedSession } from './user-sessions.mts'
+export { listActiveUserSessions } from './user-sessions.mts'
 export {
   revokeAllAuthenticatedSessions,
   revokeAuthenticatedSession,

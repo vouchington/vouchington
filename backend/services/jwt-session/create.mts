@@ -8,7 +8,7 @@ import type {
 import {
   signDeviceJwt,
   signSessionJwt,
-  sessionExpiryFor,
+  sessionExpirySecondsFor,
   DEVICE_EXPIRATION_STRING,
   DEVICE_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
@@ -95,7 +95,7 @@ export async function createDeviceAndSessionTokens({
         ),
     signSessionJwt(
       { did, sid, uid: uid ?? null, ...binding, ...sessionPayloadExtra },
-      { expiresIn: sessionExpiryFor(deviceClass, binding?.client), issuedAt: now },
+      { expiresIn: now + sessionExpirySecondsFor(deviceClass, binding?.client), issuedAt: now },
     ),
   ])
 
@@ -172,7 +172,7 @@ export async function createSessionToken({
   const payload = { did, sid, uid: uid ?? null, ...binding, ...sessionPayloadExtra }
 
   const token = await signSessionJwt(payload, {
-    expiresIn: sessionExpiryFor(deviceClass, binding?.client),
+    expiresIn: now + sessionExpirySecondsFor(deviceClass, binding?.client),
     issuedAt: now,
   })
   recordSessionMintEvent({ did, sid, uid, eventType }, query)
