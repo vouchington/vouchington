@@ -1,7 +1,6 @@
 import { Buffer } from 'node:buffer'
 import {
   DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
-  encodeFeatureFlagCookie as encodeSharedFeatureFlagCookie,
   extractBooleanFeatureFlags,
   parseFeatureFlagCookieMaxLength,
   parseFeatureFlagCookie as parseSharedFeatureFlagCookie,
@@ -13,8 +12,7 @@ import { featureFlagsConfig } from './config.mts'
 
 export type { FeatureFlags } from '@vouchington/utils/feature-flags'
 
-const featureFlagCookieCodec: FeatureFlagCookieCodec = {
-  encodeBase64: value => Buffer.from(value, 'utf8').toString('base64'),
+const featureFlagCookieCodec: Pick<FeatureFlagCookieCodec, 'decodeBase64'> = {
   decodeBase64: value => Buffer.from(value, 'base64').toString('utf8'),
 }
 
@@ -50,12 +48,4 @@ export function parseFeatureFlagCookie(cookieValue: string): FeatureFlags {
     featureFlagCookieCodec,
     getFeatureFlagCookieOptions(),
   )
-}
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function encodeFeatureFlagCookie(overrides: FeatureFlags): string {
-  return encodeSharedFeatureFlagCookie(overrides, featureFlagCookieCodec)
 }

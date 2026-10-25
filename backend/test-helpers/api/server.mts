@@ -7,9 +7,10 @@ import fn, { createApiRequestGuardedListener } from '../../api/app.mts'
 // routes from their own test files to avoid dependency cycles.
 import '../../api/index.mts'
 import http from 'node:http'
+import { Buffer } from 'node:buffer'
 import type { PrivateUser } from '../../services/users/types.mts'
 import { createDeviceAndSessionTokens } from '../../services/jwt-session/index.mts'
-import { encodeFeatureFlagCookie, type FeatureFlags } from '../../services/feature-flags/index.mts'
+import type { FeatureFlags } from '../../services/feature-flags/index.mts'
 import { v7 } from 'uuid'
 import {
   listenOnLoopbackEphemeralPort,
@@ -113,7 +114,7 @@ export const createRequest = (
   }
 
   agent.setFeatureFlags = function (overrides: FeatureFlags) {
-    const encoded = encodeFeatureFlagCookie(overrides)
+    const encoded = Buffer.from(JSON.stringify(overrides)).toString('base64')
     this.featureFlagCookie = `ff=${encoded}`
     this.jar.setCookies([this.featureFlagCookie], address.host, '/')
     syncCookieHeader(this)
