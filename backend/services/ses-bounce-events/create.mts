@@ -111,6 +111,7 @@ export async function createSesBounceEvent(
       CROSS JOIN LATERAL jsonb_array_elements_text(event.recipients) recipient(email_address)
       WHERE event.notification_type = 'complaint'
         OR (event.notification_type = 'bounce' AND event.bounce_type = 'permanent')
+      ORDER BY recipient.email_address ASC NULLS LAST
       ON CONFLICT (email_address) DO UPDATE SET
         first_event_at = LEAST(amazon_ses_address_suppressions.first_event_at, EXCLUDED.first_event_at),
         first_notification_type = CASE

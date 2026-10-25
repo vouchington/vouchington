@@ -47,10 +47,10 @@ flowchart TD
 - **No raw external URLs.** RSS item notifications carry only an internal redirect id; the server
   resolves the destination.
 - **Tombstone retention follows reconciliation.** Daily bounded sweeps remove old dismissed
-  post and RSS notifications only when they have no event key, their source is gone, and no push
-  intent survives. Copyright and other event-key notifications retain durable replay suppression;
-  a surviving source can still be restored or must continue to suppress re-notification, so its
-  tombstone remains regardless of age. Moderator-summary send keys expire after their deduplication
+  notifications with no event key or push intent when no post or RSS source survives, including
+  rows whose content source IDs are all null. Copyright and other event-key notifications retain
+  durable replay suppression; a surviving content source can still be restored or must continue
+  to suppress re-notification, so its tombstone remains regardless of age. Moderator-summary send keys expire after their deduplication
   window; the worker rejects queued windows older than that same horizon so a delayed retry cannot
   send again after its claim expires. SES delivery callbacks are acknowledged without storing their
   payloads. Permanent bounces and complaints fold into one durable suppression row per address;

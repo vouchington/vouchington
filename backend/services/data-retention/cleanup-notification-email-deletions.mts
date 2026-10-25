@@ -55,11 +55,7 @@ export async function deleteNotificationEmailPage(
        AND notification.delete_reason = $3::notification_delete_reasons
        AND notification.entity_type <> 'copyright_notice'
        AND notification.event_key IS NULL
-       AND (
-         notification.post_id IS NOT NULL OR notification.publication_post_id IS NOT NULL
-         OR notification.rss_feed_item_id IS NOT NULL
-         OR notification.publication_rss_feed_item_id IS NOT NULL
-       )
+       -- Null source IDs are eligible; the probes below retain every surviving content source.
        AND NOT EXISTS (SELECT 1 FROM posts WHERE id = notification.post_id)
        AND NOT EXISTS (SELECT 1 FROM posts WHERE id = notification.publication_post_id)
        AND NOT EXISTS (SELECT 1 FROM rss_feed_items WHERE id = notification.rss_feed_item_id)

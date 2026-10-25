@@ -50,6 +50,7 @@ export async function listNotificationEmailCandidates(
     }
   }
   parameters.push(limit)
+  // Notification tombstones span user partitions; the retention indexes serve this capped global keyset page.
   const { rows } = await query<Candidate>(
     `/* listNotificationEmailRetentionCandidates */
      SELECT ${notification ? `${alias}.user_id, ` : ''}${alias}.id,
