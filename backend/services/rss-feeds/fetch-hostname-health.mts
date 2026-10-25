@@ -17,6 +17,7 @@ import {
   resetHostnameFailures,
 } from '@services/urls-hostnames/network-backoff'
 import { isRssParseFeedError } from './is-permanent-fetch-error.mts'
+import { lockRssFetchHostnameOnRateLimit } from './domain-rate-limit.mts'
 
 /** Whether the fetch hostname is in a network backoff, claiming the probe when it has expired. */
 export async function isRssFetchHostnameInNetworkBackoff(fetchHostnameId: string) {
@@ -32,12 +33,14 @@ export async function recordRssFetchHostnameSuccess(fetchHostnameId: string) {
   )
 }
 
-/** Routes a failed fetch to the hostname's DNS/configuration latch or network backoff. */
+/** Routes a failed fetch to the hostname's rate-limit lock, DNS/configuration latch, or network backoff. */
 export async function recordRssFetchHostnameFailure(
   failure: unknown,
   fetchHostnameId: string,
+  feedUrl: string,
   resolveDnsCanary: (() => Promise<void>) | undefined,
 ) {
+  await lockRssFetchHostnameOnRateLimit(failure, fetchHostnameId, feedUrl)
   if (failure instanceof CrawlerNetworkError && isCrawlerNetworkDnsError(failure)) {
     await recordHostnameDnsFailure(fetchHostnameId, resolveDnsCanary).catch(onError)
   }

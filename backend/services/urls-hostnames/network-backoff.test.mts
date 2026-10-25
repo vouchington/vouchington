@@ -49,8 +49,10 @@ describe('network-backoff', () => {
 
   async function backoffEvents(hostname: string) {
     await flush()
-    return query(
-      `SELECT event_type, retry_after_ms, success FROM crawler_requests WHERE domain = '${hostname}' ORDER BY event_time`,
+    const events = await query(`SELECT * FROM crawler_requests WHERE domain = '${hostname}'`)
+    return events.toSorted(
+      (a, b) =>
+        new Date(a.event_time as string).getTime() - new Date(b.event_time as string).getTime(),
     )
   }
 

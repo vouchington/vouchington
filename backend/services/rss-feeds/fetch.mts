@@ -74,8 +74,12 @@ export async function fetchRssFeed(
     data = await fetchCrawlerRss(feedUrl, options)
     await recordRssFetchHostnameSuccess(fetchHostnameId)
   } catch (err) {
-    await rssRateLimit.lockRssFetchHostnameOnRateLimit(err, fetchHostnameId, feedUrl)
-    await recordRssFetchHostnameFailure(err, fetchHostnameId, dependencies.resolveDnsCanary)
+    await recordRssFetchHostnameFailure(
+      err,
+      fetchHostnameId,
+      feedUrl,
+      dependencies.resolveDnsCanary,
+    )
     await fetchFailures.maybeSoftDeletePermanentFetchErrorForFetch({
       error: err,
       feedUrl,
