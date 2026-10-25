@@ -12,8 +12,7 @@ import { featureFlagsConfig } from './config.mts'
 
 export type { FeatureFlags } from '@vouchington/utils/feature-flags'
 
-const featureFlagCookieCodec: FeatureFlagCookieCodec = {
-  encodeBase64: value => Buffer.from(value, 'utf8').toString('base64'),
+const featureFlagCookieCodec: Pick<FeatureFlagCookieCodec, 'decodeBase64'> = {
   decodeBase64: value => Buffer.from(value, 'base64').toString('utf8'),
 }
 
