@@ -1,7 +1,10 @@
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http'
 import { describe, expect, it } from 'vitest'
-import { createIsAdminDashboardRequest, createWorkerSecretValidator } from './dashboard-auth.mts'
-import type { PrivateUser } from '@services/users/types'
+import { createWorkerSecretValidator, isAdminDashboardRequest } from './dashboard-auth.mts'
+import { revokeSession, verifyDeviceAndSessionTokens } from '@services/jwt-session'
+import { revokeUserSessionsBefore } from '@services/jwt-session/session-revocation-keys'
+import { addTestUserRole } from '@voucha/test-helpers'
+import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
 
 function req(headers: IncomingHttpHeaders): IncomingMessage {
   return { headers } as IncomingMessage
@@ -16,53 +19,29 @@ describe('dashboard auth', () => {
   })
 
   it('rejects revoked admin sessions', async () => {
-    let getUserCalls = 0
-    const isAdminDashboardRequest = createIsAdminDashboardRequest({
-      verifyDeviceAndSessionTokens: async () => ({ did: 'did', sid: 'sid', uid: 'user-1' }),
-      isSessionRevoked: async () => true,
-      getPrivateUserByAny: async () => {
-        getUserCalls += 1
-        return null
-      },
-      currentUserCanAccessQueueStats: () => true,
-    })
+    const { dtCookie, stCookie, userId, sid } = await createTestSessionCookies()
+    await addTestUserRole(userId, 'administrator')
+    await revokeSession(sid)
 
-    await expect(isAdminDashboardRequest(req({ cookie: 'dt=device; st=session' }))).resolves.toBe(
-      false,
-    )
-    expect(getUserCalls).toBe(0)
+    await expect(
+      isAdminDashboardRequest(req({ cookie: `${dtCookie}; ${stCookie}` })),
+    ).resolves.toBe(false)
   })
 
   it('allows non-revoked users with queue stats permission', async () => {
-    let receivedUser: PrivateUser | null | undefined
-    let revocationOptions: { userId?: string | null; issuedAt?: number } | undefined
-    const user = {
-      __entity_type: 'user',
-      id: 'user-1',
-      roles: ['administrator'],
-    } as unknown as PrivateUser
-    const isAdminDashboardRequest = createIsAdminDashboardRequest({
-      verifyDeviceAndSessionTokens: async () => ({
-        did: 'did',
-        sid: 'sid',
-        uid: 'user-1',
-        iat: 123,
-      }),
-      isSessionRevoked: async (_sid, options) => {
-        revocationOptions = options
-        return false
-      },
-      getPrivateUserByAny: async () => user,
-      currentUserCanAccessQueueStats: currentUser => {
-        receivedUser = currentUser
-        return true
-      },
-    })
+    const { dtCookie, stCookie, userId } = await createTestSessionCookies()
+    await addTestUserRole(userId, 'administrator')
+    const cookie = `${dtCookie}; ${stCookie}`
 
-    await expect(isAdminDashboardRequest(req({ cookie: 'dt=device; st=session' }))).resolves.toBe(
-      true,
-    )
-    expect(receivedUser).toBe(user)
-    expect(revocationOptions).toEqual({ userId: 'user-1', issuedAt: 123 })
+    await expect(isAdminDashboardRequest(req({ cookie }))).resolves.toBe(true)
+
+    const verified = await verifyDeviceAndSessionTokens({
+      deviceToken: dtCookie.slice(3),
+      sessionToken: stCookie.slice(3),
+    })
+    if (!verified || verified.iat === undefined) throw new Error('Expected an issued session')
+    await revokeUserSessionsBefore(userId, verified.iat)
+
+    await expect(isAdminDashboardRequest(req({ cookie }))).resolves.toBe(false)
   })
 })

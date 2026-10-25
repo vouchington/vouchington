@@ -19,48 +19,24 @@ export function createWorkerSecretValidator(secret = process.env.CF_WORKER_SECRE
   }
 }
 
-type DashboardAuthDependencies = {
-  verifyDeviceAndSessionTokens: typeof verifyDeviceAndSessionTokens
-  isSessionRevoked: typeof isSessionRevoked
-  getPrivateUserByAny: typeof getPrivateUserByAny
-  currentUserCanAccessQueueStats: typeof currentUserCanAccessQueueStats
-}
-
-const defaultDashboardAuthDependencies = {
-  verifyDeviceAndSessionTokens,
-  isSessionRevoked,
-  getPrivateUserByAny,
-  currentUserCanAccessQueueStats,
-} satisfies DashboardAuthDependencies
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
- */
-export function createIsAdminDashboardRequest(
-  dependencies: DashboardAuthDependencies = defaultDashboardAuthDependencies,
-) {
-  return async function isAdminDashboardRequest(req: http.IncomingMessage): Promise<boolean> {
-    const cookies = parseCookieHeader(req.headers.cookie ?? '')
-    const dt = cookies.dt
-    const st = cookies.st
-    if (!dt || !st) return false
-    const sessionData = await dependencies.verifyDeviceAndSessionTokens({
-      deviceToken: dt,
-      sessionToken: st,
+export async function isAdminDashboardRequest(req: http.IncomingMessage): Promise<boolean> {
+  const cookies = parseCookieHeader(req.headers.cookie ?? '')
+  const dt = cookies.dt
+  const st = cookies.st
+  if (!dt || !st) return false
+  const sessionData = await verifyDeviceAndSessionTokens({
+    deviceToken: dt,
+    sessionToken: st,
+  })
+  if (!sessionData || !sessionData.uid) return false
+  if (
+    await isSessionRevoked(sessionData.sid, {
+      userId: sessionData.uid,
+      issuedAt: sessionData.iat,
     })
-    if (!sessionData || !sessionData.uid) return false
-    if (
-      await dependencies.isSessionRevoked(sessionData.sid, {
-        userId: sessionData.uid,
-        issuedAt: sessionData.iat,
-      })
-    ) {
-      return false
-    }
-    const user = await dependencies.getPrivateUserByAny(sessionData.uid)
-    return dependencies.currentUserCanAccessQueueStats(user)
+  ) {
+    return false
   }
+  const user = await getPrivateUserByAny(sessionData.uid)
+  return currentUserCanAccessQueueStats(user)
 }
-
-export const isAdminDashboardRequest = createIsAdminDashboardRequest()
