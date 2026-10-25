@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { gracefulShutdownPeriodSeconds } from '@voucha/config'
 import { shutdownDataStoresForOneOffCommand } from './index.mts'
 
 function createDeferred<T>() {
@@ -9,18 +10,39 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-describe('one-off data-store shutdown', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
+/**
+ * Capture only the force-exit timer instead of installing process-wide fake timers: the fork's
+ * live GlideMQ worker schedules its wakes with `setTimeout`, and faking or clearing them strands
+ * an in-flight background job, which fails the fork-leak settle hook of whichever test runs next.
+ * Every other timer still reaches the real `setTimeout`.
+ */
+function captureForceExitTimer() {
+  const realSetTimeout = globalThis.setTimeout
+  const unref = vi.fn<() => void>()
+  let fire: () => void = () => {
+    throw new Error('The force-exit timer was never scheduled')
+  }
+  vi.spyOn(globalThis, 'setTimeout').mockImplementation(((
+    callback: () => void,
+    delay?: number,
+    ...args: unknown[]
+  ) => {
+    if (delay !== gracefulShutdownPeriodSeconds * 1000) {
+      return Reflect.apply(realSetTimeout, globalThis, [callback, delay, ...args])
+    }
+    fire = callback
+    return { unref }
+  }) as unknown as typeof setTimeout)
+  return { unref, fire: () => fire() }
+}
 
+describe('one-off data-store shutdown', () => {
   afterEach(() => {
-    vi.clearAllTimers()
-    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
   it('propagates cleanup failures after attempting every data store', async () => {
+    captureForceExitTimer()
     const valkeyError = new Error('valkey close failed')
     const psqlError = new Error('psql close failed')
     const onGracefulShutdownValkey = vi.fn<() => Promise<void>>().mockRejectedValue(valkeyError)
@@ -38,6 +60,7 @@ describe('one-off data-store shutdown', () => {
   })
 
   it('bounds an incomplete shutdown with exit code 1', async () => {
+    const forceExitTimer = captureForceExitTimer()
     const deferred = createDeferred<void>()
     const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -46,18 +69,20 @@ describe('one-off data-store shutdown', () => {
       onGracefulShutdownPSQL: async () => {},
     })
 
-    await vi.runOnlyPendingTimersAsync()
+    forceExitTimer.fire()
 
     expect(errorSpy).toHaveBeenCalledWith(
       'One-off shutdown: process did not terminate in time, forcing exit...',
     )
     expect(exitSpy).toHaveBeenCalledWith(1)
+    expect(forceExitTimer.unref).not.toHaveBeenCalled()
 
     deferred.resolve()
     await shutdown
   })
 
   it('forces a nonzero exit when native handles remain after cleanup succeeds', async () => {
+    const forceExitTimer = captureForceExitTimer()
     const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -65,7 +90,8 @@ describe('one-off data-store shutdown', () => {
       onGracefulShutdownValkey: async () => {},
       onGracefulShutdownPSQL: async () => {},
     })
-    await vi.runOnlyPendingTimersAsync()
+    expect(forceExitTimer.unref).toHaveBeenCalledTimes(1)
+    forceExitTimer.fire()
 
     expect(exitSpy).toHaveBeenCalledWith(1)
     expect(errorSpy).toHaveBeenCalledWith(
