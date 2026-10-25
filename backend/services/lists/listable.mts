@@ -45,8 +45,8 @@ export async function filterListablePostIds(
       access_post.created_by_id AS root_created_by_id,
       access_post.privacy AS root_privacy,
       `
-  query.append(named ?? sql`TRUE`).append(sql` AS named_eligible, `)
-  query.append(discovery ?? sql`TRUE`).append(sql` AS discovery_eligible
+  query.append(named).append(sql` AS named_eligible, `)
+  query.append(discovery).append(sql` AS discovery_eligible
     FROM posts candidate_post
     JOIN posts access_post
       ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)

@@ -18,7 +18,7 @@ export type PostMutationAccess = {
 type AccessGroup = {
   role: 'subject' | 'object'
   ids: readonly string[]
-  filter: SQLStatement | null
+  filter: SQLStatement
   excludedAccessPostTypes?: readonly string[]
 }
 
@@ -48,7 +48,7 @@ export async function selectPostMutationAccess(
       FROM posts candidate_post
       JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       WHERE candidate_post.id = ANY(${group.ids}::uuid[])`)
-    if (group.filter) query.append(sql` AND `).append(group.filter)
+    query.append(sql` AND `).append(group.filter)
     if (group.excludedAccessPostTypes?.length) {
       query.append(
         sql` AND access_post.post_type::text != ALL(${[...group.excludedAccessPostTypes]}::text[])`,

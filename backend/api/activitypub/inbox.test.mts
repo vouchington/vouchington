@@ -20,7 +20,7 @@ import {
   createRemoteActorFixture,
   randomSuffix,
 } from '@voucha/test-helpers/api/activitypub/inbox.fixtures'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('POST /ap/inbox', () => {
   it('does not charge an invalid signature against the sender allowance', async () => {
@@ -171,7 +171,7 @@ describe('POST /ap/inbox', () => {
 
     expect(response.body).toEqual({ received: true })
     const relations = await getEntityRelations('remote_actor', remoteActor!.id, 'follow', 'user', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
     })
     expect(relations.some(relation => relation.object_id === user.id)).toBe(true)
   })

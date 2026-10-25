@@ -31,7 +31,7 @@ export function importCommunityListPostsSourceSql(
       AND item.removed_at IS NULL
       AND `
   const eligibility = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'listed')
-  statement.append(eligibility ?? sql` TRUE `)
+  statement.append(eligibility)
   if (delegated) {
     statement.append(
       sql`AND access_post.post_type::text != ALL(${[...BLOCKED_POST_TYPES]}::text[])`,

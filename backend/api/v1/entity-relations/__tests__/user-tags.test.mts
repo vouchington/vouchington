@@ -18,7 +18,7 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { getEntityRelations } from '@services/entity-relations/query'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('user tag entity relations', () => {
   it('requires authentication to list user tags', async () => {
@@ -113,12 +113,12 @@ describe('user tag entity relations', () => {
 
     await expect(
       getEntityRelations('user', voter.id, 'follow', 'user', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       }),
     ).resolves.toHaveLength(1)
     await expect(
       getEntityRelations('user', voter.id, 'mute', 'user', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       }),
     ).resolves.toHaveLength(0)
   })

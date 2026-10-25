@@ -72,7 +72,7 @@ describe('topic merge ownership and lifecycle ordering', () => {
     expect(writeError).toBeNull()
     expect(mergeError).toBeNull()
     const relations = await getEntityRelations('topic', destination.id, 'publisher_type', 'topic', {
-      viewer: { kind: 'system' },
+      viewer: { kind: 'anonymous' },
     })
     expect(relations.map(relation => relation.object_id)).toContain(publisherTypeId)
   })

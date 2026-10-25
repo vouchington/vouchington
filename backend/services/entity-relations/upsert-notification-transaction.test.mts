@@ -1,7 +1,7 @@
 import { runEntityRelationNotificationTestTransaction } from '@voucha/test-helpers/data-stores/psql/entity-relation-notification-transactions'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import { upsertEntityRelation } from './upsert.mts'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from './viewer.mts'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from './viewer.mts'
 import { getEntityRelations } from './query.mts'
 import {
   createTestPost,
@@ -49,7 +49,7 @@ describe('entity-relation notification transaction ownership', () => {
       expect(hasPostNotification(await readAllQueueJobs(notifications), post.id)).toBe(false)
       expect(
         await getEntityRelations('post', post.id, 'category', 'topic', {
-          viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+          viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
           readOnly: false,
         }),
       ).toEqual([])

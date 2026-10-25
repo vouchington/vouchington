@@ -1,13 +1,11 @@
 import type { DirectPostEligibilityOptions } from '@modules/feed-query-builders'
 
 /**
- * Who a relation read is for. Request readers pass the signed-in user, or `anonymous`; `system`
- * is reserved for trusted internal jobs (such as moderation) that must see relations on content
- * no viewer can read yet. Callers derive `staffRole` with `entityRelationViewerFor` in
+ * Who a relation read is for. Request readers pass the signed-in user, or `anonymous`.
+ * Callers derive `staffRole` with `entityRelationViewerFor` in
  * `@services/users`, because that package depends on this one.
  */
 export type EntityRelationViewer =
-  | { readonly kind: 'system' }
   | { readonly kind: 'anonymous' }
   | {
       readonly kind: 'user'
@@ -16,16 +14,10 @@ export type EntityRelationViewer =
     }
 
 export const ANONYMOUS_ENTITY_RELATION_VIEWER: EntityRelationViewer = { kind: 'anonymous' }
-/** @public the trusted-reader seam; the relation suites and test helpers read as the system viewer */
-export const SYSTEM_ENTITY_RELATION_VIEWER: EntityRelationViewer = { kind: 'system' }
 
-/** Post access for the viewer, or null when the viewer bypasses post visibility. */
-export function postEligibilityFor(
-  viewer: EntityRelationViewer,
-): DirectPostEligibilityOptions | null {
+/** Post access for the viewer. */
+export function postEligibilityFor(viewer: EntityRelationViewer): DirectPostEligibilityOptions {
   switch (viewer.kind) {
-    case 'system':
-      return null
     case 'anonymous':
       return { currentUserId: null, isModerationStaff: false }
     case 'user':
@@ -35,15 +27,13 @@ export function postEligibilityFor(
 
 /**
  * The viewer whose own anonymous authorship stays visible, or `undefined` when the viewer sees
- * every relation creator. Administrators and system readers see creators, matching
+ * every relation creator. Administrators see creators, matching
  * `maskAnonymousPost`; everyone else sees anonymous authors only on their own relations.
  */
 export function anonymousAuthorMaskFor(
   viewer: EntityRelationViewer,
 ): { readonly viewerUserId: string | null } | undefined {
   switch (viewer.kind) {
-    case 'system':
-      return undefined
     case 'anonymous':
       return { viewerUserId: null }
     case 'user':

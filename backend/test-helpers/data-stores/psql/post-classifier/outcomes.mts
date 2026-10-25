@@ -1,8 +1,4 @@
 import type { PersistClassifierDecisionInput } from '../../../../services/classifiers/types.mts'
-import {
-  getEntityRelations,
-  SYSTEM_ENTITY_RELATION_VIEWER,
-} from '../../../../services/entity-relations/index.mts'
 import type { PostClassifierLocalOutcome } from '../../../../services/post-classifier/index.mts'
 import type { PostClassifierExecutionFixture } from './execution.mts'
 
@@ -65,11 +61,4 @@ export function remoteDecisionFor(
       },
     ],
   }
-}
-
-export function categoryRelationsForTest(postId: string) {
-  return getEntityRelations('post', postId, 'category', 'topic', {
-    viewer: SYSTEM_ENTITY_RELATION_VIEWER,
-    readOnly: false,
-  })
 }

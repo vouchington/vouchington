@@ -11,7 +11,7 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { streamEntityRelations } from '@services/account-data-requests/stream-entity-relations'
 import { streamVotes } from '@services/account-data-requests/stream'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 async function collectRows(rows: AsyncGenerator<Record<string, unknown>>) {
   const collected: Record<string, unknown>[] = []
@@ -67,7 +67,7 @@ describe('user tag account-data lifecycle', () => {
 
     await expect(
       getEntityRelations('user', target.id, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       }),
     ).resolves.toHaveLength(0)
   })

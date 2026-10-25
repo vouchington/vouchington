@@ -6,7 +6,7 @@ import {
   createApprovedClassifierPost,
   initializePostClassifierExecutionTests,
 } from './data-stores/psql/post-classifier/execution.mts'
-import { categoryRelationsForTest } from './data-stores/psql/post-classifier/outcomes.mts'
+import { readSubjectTopicRelationFacts } from './data-stores/psql/classifier-runs/subject-topic-relations.mts'
 
 /** Every remote toggle: marketplace asks five questions and each of the other five asks one. */
 const EVERY_REMOTE_TOGGLE = [
@@ -35,7 +35,7 @@ export const postClassifierEfficiencyDriver: EfficiencyDriver = {
       subject: { postId: post.id, rssFeedItemId: null },
       inputSha256,
       candidates: questionCount,
-      effects: () => categoryRelationsForTest(post.id),
+      effects: () => readSubjectTopicRelationFacts({ postId: post.id, rssFeedItemId: null }),
     }
   },
   executeWithoutCompleting: run =>

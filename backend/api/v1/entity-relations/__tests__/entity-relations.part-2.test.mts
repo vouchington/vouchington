@@ -19,7 +19,7 @@ import { getPublisherTypeTopics } from '@services/topics/publisher-type-topics'
 import type { PrivateUser } from '@services/users/types'
 
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 
 describe('entity-relations', () => {
   let user: PrivateUser
@@ -56,7 +56,7 @@ describe('entity-relations', () => {
 
         // Call the service directly (HTTP layer filters non-election rows via relationsWithId)
         const relations = await getEntityRelations('post', postId, 'mentioned', 'user', {
-          viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+          viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
         })
 
         expect(relations.length).toBeGreaterThan(0)

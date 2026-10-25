@@ -25,7 +25,7 @@ import { updateEntityRelationElectionVoteStatsFromPrimary } from '@services/elec
 import { upsertEntityRelation } from '@services/entity-relations'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 import { getEntityRelations } from '@services/entity-relations/query'
-import { SYSTEM_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
+import { ANONYMOUS_ENTITY_RELATION_VIEWER } from '@services/entity-relations/viewer'
 import { getUserTagTopics } from '@services/topics/user-tag-topics'
 
 type Voter = Awaited<ReturnType<typeof createVoter>>
@@ -130,7 +130,7 @@ describe('withdraw_entity_relation_vote contract — real DB', () => {
         createEntityRelationElectionTarget(relationId, USER_TAG_TABLE),
       )
       const [relation] = await getEntityRelations('user', target.id, 'category', 'topic', {
-        viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+        viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
       })
       return { up: relation!.votes_count_up, net: relation!.votes_score_net }
     }
@@ -141,7 +141,7 @@ describe('withdraw_entity_relation_vote contract — real DB', () => {
     await webRequest.delete(`/api/v1/entity-relations/${relationId}/vote`).expect(204)
     // The route refreshes a user-tag relation's stats from the primary before it answers.
     const [afterWeb] = await getEntityRelations('user', target.id, 'category', 'topic', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
     })
     expect({ up: afterWeb!.votes_count_up, net: afterWeb!.votes_score_net }).toEqual({
       up: 2,
@@ -150,7 +150,7 @@ describe('withdraw_entity_relation_vote contract — real DB', () => {
 
     expect(await withdraw(toolVoter! as Voter, relationId)).toEqual({ success: true })
     const [afterTool] = await getEntityRelations('user', target.id, 'category', 'topic', {
-      viewer: SYSTEM_ENTITY_RELATION_VIEWER,
+      viewer: ANONYMOUS_ENTITY_RELATION_VIEWER,
     })
     expect({ up: afterTool!.votes_count_up, net: afterTool!.votes_score_net }).toEqual({
       up: 1,

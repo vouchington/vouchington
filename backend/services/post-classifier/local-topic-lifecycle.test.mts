@@ -1,3 +1,4 @@
+import { readSubjectTopicRelationFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   completeClassifierRun,
@@ -10,10 +11,7 @@ import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
 import { createLocalTopicLifecycleFixture } from '@voucha/test-helpers/post-classifier-local-topic-lifecycle'
 import { initializePostClassifierExecutionTests } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
-import {
-  categoryRelationsForTest,
-  makePostClassifierLocalOutcome,
-} from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
+import { makePostClassifierLocalOutcome } from '@voucha/test-helpers/data-stores/psql/post-classifier/outcomes'
 
 describe('local classifier label lifecycle', () => {
   let release: (() => Promise<void>) | undefined
@@ -50,7 +48,9 @@ describe('local classifier label lifecycle', () => {
       await expect(completeClassifierRun(setup.adapter, setup.lease)).resolves.toEqual({
         kind: 'replay',
       })
-      await expect(categoryRelationsForTest(setup.post.id)).resolves.toEqual([])
+      await expect(
+        readSubjectTopicRelationFacts({ postId: setup.post.id, rssFeedItemId: null }),
+      ).resolves.toEqual([])
     },
   )
 
@@ -84,7 +84,9 @@ describe('local classifier label lifecycle', () => {
       await expect(completeClassifierRun(setup.adapter, setup.lease)).resolves.toEqual({
         kind: 'replay',
       })
-      await expect(categoryRelationsForTest(setup.post.id)).resolves.toEqual([])
+      await expect(
+        readSubjectTopicRelationFacts({ postId: setup.post.id, rssFeedItemId: null }),
+      ).resolves.toEqual([])
     },
   )
 })
