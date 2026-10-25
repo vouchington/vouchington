@@ -76,6 +76,7 @@ export function getSitemapFamilyManifest(
 }
 
 /** Index body and compact manifest share one S3 commit; unfinished uploads cannot change this truth. */
+/* no-mistakes: integration=aws */
 async function getPublishedSitemapManifest(key: string): Promise<PostDayManifest | null> {
   try {
     const response = await S3ImagesClient.send(

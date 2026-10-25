@@ -80,6 +80,7 @@ export const SITEMAPS_MONTHLY_BACKFILL_JOB = defineBackgroundJob<SitemapArchiveB
 export const SITEMAPS_RETIRED_CLEANUP_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   name: 'processRetiredSitemapCleanup',
   priority: PRIORITY_DISPATCH,
+  ordering: SITEMAPS_ORDERING.dispatcher,
   ...DEFAULTS,
 })
 
