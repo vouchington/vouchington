@@ -30,7 +30,7 @@ export const dispatchCrawlUrlsPerHostname = async (
     !hostname ||
     !hostname.is_crawlable ||
     hostname.is_blocked ||
-    (hostname.network_backoff_until && hostname.network_backoff_until.getTime() > Date.now())
+    (hostname.network_backoff_ends_at && hostname.network_backoff_ends_at.getTime() > Date.now())
   )
     return { count: 0, hasMore: false }
   const attemptThresholdHours = hostname.attempt_threshold_hours ?? 1
@@ -60,7 +60,7 @@ export const dispatchCrawlUrlsPerHostname = async (
       AND (${cursor?.afterId ?? null}::uuid IS NULL OR u.id > ${cursor?.afterId ?? null}::uuid)
       AND h.is_crawlable
       AND NOT h.is_blocked
-      AND (h.network_backoff_until IS NULL OR h.network_backoff_until <= CURRENT_TIMESTAMP)
+      AND (h.network_backoff_ends_at IS NULL OR h.network_backoff_ends_at <= CURRENT_TIMESTAMP)
       AND NOT EXISTS (
         SELECT 1 FROM crawls c
         WHERE c.url_id = u.id

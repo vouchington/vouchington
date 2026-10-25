@@ -30,8 +30,8 @@ export async function getCrawlHostnameCandidates(
       EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id) AS has_url
     FROM url_hostnames uh
     WHERE uh.is_crawlable AND NOT uh.is_blocked
-      AND (uh.network_backoff_until IS NULL
-        OR uh.network_backoff_until <= CURRENT_TIMESTAMP)
+      AND (uh.network_backoff_ends_at IS NULL
+        OR uh.network_backoff_ends_at <= CURRENT_TIMESTAMP)
       AND uh.age_threshold_days = ${cursor.bucketDays}
       AND uh.id < ${getMinUUIDv7ForDate(new Date(cursor.sweepStartedAt))}::uuid
 `

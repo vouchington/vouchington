@@ -64,7 +64,7 @@ describe('network-backoff', () => {
     const row = (await getTestHostnameNetworkBackoff(id))!
     expect(row.network_backoff_step).toBe(1)
     expect(row.consecutive_network_failures).toBe(0)
-    expect(row.network_backoff_until!.getTime()).toBeGreaterThan(Date.now())
+    expect(row.network_backoff_ends_at!.getTime()).toBeGreaterThan(Date.now())
     expect(row.is_crawlable).toBe(true)
     expect(await isOutsideHostnameNetworkBackoff({ id, ...row })).toBe(false)
 
@@ -120,7 +120,7 @@ describe('network-backoff', () => {
       const row = (await getTestHostnameNetworkBackoff(id))!
       expect(row.network_backoff_step).toBe(Math.min(step, NETWORK_BACKOFF_MAX_STEP))
       expect(row.network_backoff_probe_claimed_at).toBeNull()
-      expect(row.network_backoff_until!.getTime()).toBeGreaterThan(
+      expect(row.network_backoff_ends_at!.getTime()).toBeGreaterThan(
         Date.now() + getNetworkBackoffDurationMs(Math.min(step, NETWORK_BACKOFF_MAX_STEP)) / 2,
       )
     }
@@ -141,7 +141,7 @@ describe('network-backoff', () => {
     expect(row).toMatchObject({
       consecutive_network_failures: 0,
       network_backoff_step: 0,
-      network_backoff_until: null,
+      network_backoff_ends_at: null,
       network_backoff_probe_claimed_at: null,
     })
     expect(await isOutsideHostnameNetworkBackoff({ id, ...row })).toBe(true)

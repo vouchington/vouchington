@@ -77,8 +77,8 @@ async function getRssFeedsTiered(
 
   const enabledWhere = `rss_feeds.deleted_at IS NULL
       AND rss_feeds.is_enabled = TRUE
-      AND (url_hostnames.network_backoff_until IS NULL
-        OR url_hostnames.network_backoff_until <= CURRENT_TIMESTAMP)`
+      AND (url_hostnames.network_backoff_ends_at IS NULL
+        OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)`
 
   const query = `/* getRssFeedsTiered */
     WITH candidates AS (

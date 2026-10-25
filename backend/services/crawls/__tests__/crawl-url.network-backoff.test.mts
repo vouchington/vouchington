@@ -84,7 +84,7 @@ describe('crawl-url network backoff', () => {
     await expect(probe).resolves.not.toBeNull()
     expect(await getTestHostnameNetworkBackoff(host.hostnameId)).toMatchObject({
       network_backoff_step: 0,
-      network_backoff_until: null,
+      network_backoff_ends_at: null,
       consecutive_network_failures: 0,
     })
   }, 30_000)
@@ -92,8 +92,8 @@ describe('crawl-url network backoff', () => {
   it('reopens the backoff for longer when the probe fails', async () => {
     const host = await createHostname('net-backoff-reopen')
     await tripBackoff(host)
-    const firstUntil = (await getTestHostnameNetworkBackoff(host.hostnameId))!
-      .network_backoff_until!
+    const firstEndsAt = (await getTestHostnameNetworkBackoff(host.hostnameId))!
+      .network_backoff_ends_at!
     await expireTestHostnameNetworkBackoff(host.hostnameId)
 
     const probeUrl = await host.addPage(100)
@@ -102,7 +102,7 @@ describe('crawl-url network backoff', () => {
 
     const state = (await getTestHostnameNetworkBackoff(host.hostnameId))!
     expect(state.network_backoff_step).toBe(2)
-    expect(state.network_backoff_until!.getTime()).toBeGreaterThan(firstUntil.getTime())
+    expect(state.network_backoff_ends_at!.getTime()).toBeGreaterThan(firstEndsAt.getTime())
   }, 30_000)
 
   it('keeps DNS failures on the DNS path and 429s on the rate-limit lock', async () => {

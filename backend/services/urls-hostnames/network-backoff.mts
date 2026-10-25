@@ -68,13 +68,13 @@ export async function recordHostnameNetworkFailure(
       consecutive_network_failures = CASE WHEN ${OPENS} THEN 0
         ELSE consecutive_network_failures + 1 END,
       network_backoff_step = CASE WHEN ${OPENS} THEN ${NEXT_STEP} ELSE network_backoff_step END,
-      network_backoff_until = CASE WHEN ${OPENS}
+      network_backoff_ends_at = CASE WHEN ${OPENS}
         THEN CURRENT_TIMESTAMP + make_interval(secs => $4 * power(2, ${NEXT_STEP} - 1))
-        ELSE network_backoff_until END,
+        ELSE network_backoff_ends_at END,
       network_backoff_probe_claimed_at = NULL
     WHERE id = $1
-      AND (network_backoff_until IS NULL
-        OR network_backoff_until <= CURRENT_TIMESTAMP
+      AND (network_backoff_ends_at IS NULL
+        OR network_backoff_ends_at <= CURRENT_TIMESTAMP
         OR network_backoff_probe_claimed_at IS NOT NULL)
     RETURNING hostname, network_backoff_step AS step, consecutive_network_failures = 0 AS opened
   `,
@@ -92,18 +92,18 @@ export async function recordHostnameNetworkFailure(
 
 /**
  * Claims the single probe allowed after an open backoff expires. The claim pushes
- * network_backoff_until out by the probe window, so exactly one concurrent caller wins and a
+ * network_backoff_ends_at out by the probe window, so exactly one concurrent caller wins and a
  * probe that never reports back is retried after the window.
  */
 export async function claimHostnameNetworkProbe(hostnameId: string): Promise<boolean> {
   const { rows } = await write<{ id: string }>(
     `/* claimHostnameNetworkProbe */
     UPDATE url_hostnames SET
-      network_backoff_until = CURRENT_TIMESTAMP + make_interval(secs => $2),
+      network_backoff_ends_at = CURRENT_TIMESTAMP + make_interval(secs => $2),
       network_backoff_probe_claimed_at = CURRENT_TIMESTAMP
     WHERE id = $1
       AND network_backoff_step > 0
-      AND network_backoff_until <= CURRENT_TIMESTAMP
+      AND network_backoff_ends_at <= CURRENT_TIMESTAMP
     RETURNING id
   `,
     [hostnameId, NETWORK_BACKOFF_PROBE_WINDOW_SECONDS],
@@ -118,9 +118,9 @@ export async function claimHostnameNetworkProbe(hostnameId: string): Promise<boo
 export async function isOutsideHostnameNetworkBackoff(hostname: {
   id: string
   network_backoff_step: number
-  network_backoff_until: Date | null
+  network_backoff_ends_at: Date | null
 }): Promise<boolean> {
-  if (hostname.network_backoff_until && hostname.network_backoff_until.getTime() > Date.now()) {
+  if (hostname.network_backoff_ends_at && hostname.network_backoff_ends_at.getTime() > Date.now()) {
     return false
   }
   if (hostname.network_backoff_step === 0) return true
@@ -142,7 +142,7 @@ export async function resetHostnameFailures(
       consecutive_dns_failures = CASE WHEN $2 THEN 0 ELSE h.consecutive_dns_failures END,
       consecutive_network_failures = 0,
       network_backoff_step = 0,
-      network_backoff_until = NULL,
+      network_backoff_ends_at = NULL,
       network_backoff_probe_claimed_at = NULL
     FROM (
       SELECT id, network_backoff_step
