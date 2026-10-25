@@ -55,20 +55,12 @@ export function sesFailureNotes(verdicts: CopyrightEmailSesVerdicts): string[] {
   return notes
 }
 
-/** Only an explicit malware `fail` quarantines the original; anything short of `pass` warrants care. */
-export function sesMalwareState(
-  virus: CopyrightEmailSesVerdict,
-): 'quarantined' | 'unconfirmed' | 'clean' {
-  if (virus === 'fail') return 'quarantined'
-  return virus === 'pass' ? 'clean' : 'unconfirmed'
-}
-
-/** The raw `.eml` link staff may use, or null when SES quarantined the original or none was sent. */
+/** The raw `.eml` link is available only after a passing SES virus verdict. */
 export function availableOriginalUrl(
   downloadUrl: string | null,
   virus: CopyrightEmailSesVerdict,
 ): string | null {
-  return sesMalwareState(virus) === 'quarantined' ? null : downloadUrl
+  return virus === 'pass' ? downloadUrl : null
 }
 
 export function sesVerdictLabel(verdict: CopyrightEmailSesVerdict): string {

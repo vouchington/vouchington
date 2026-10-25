@@ -31890,7 +31890,7 @@
           "ordinalPosition": 8
         },
         "virus_verdict": {
-          "comment": "SES malware verdict from the X-SES-Virus-Verdict header SES added at receipt; unknown when SES reported none. A fail quarantines the original message so staff cannot download it.",
+          "comment": "SES malware verdict from the X-SES-Virus-Verdict header SES added at receipt; unknown when SES reported none. Only pass permits staff to download the original message; every other verdict quarantines it.",
           "dataType": "email_security_verdicts",
           "defaultExpression": null,
           "generated": null,

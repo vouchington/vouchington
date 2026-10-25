@@ -45,14 +45,14 @@ describe('copyright email raw evidence', () => {
     await expect(loadCopyrightEmailRawEvidence(intake.id, moderator)).rejects.toMatchObject({
       status: 409,
       code: COPYRIGHT_EMAIL_QUARANTINED,
-      message: expect.stringContaining('malware'),
+      message: expect.stringContaining('passing virus scan'),
     })
     await expect(loadCopyrightEmailRawEvidence(intake.id, user)).resolves.toBeNull()
     expect(send).not.toHaveBeenCalled()
   })
 
   it.each(['gray', 'processing_failed', 'unknown'] as const)(
-    'still serves the original when SES could not clear it (virus %s) so staff can review it',
+    'quarantines an original SES did not clear (virus %s) without reading it',
     async virus => {
       const bytes = Buffer.from('From: claimant@example.test\r\n\r\nUnscanned notice')
       const intake = await createIntake(bytes, copyrightEmailSesVerdictsWithVirus(virus))
@@ -60,14 +60,17 @@ describe('copyright email raw evidence', () => {
         ReturnType<typeof createTestUser>
       >
       vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', 'copyright-evidence-test')
-      vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
+      const send = vi.spyOn(S3Client.prototype, 'send').mockResolvedValue({
         Body: Readable.from([bytes]),
         ContentLength: bytes.byteLength,
       } as never)
 
-      await expect(loadCopyrightEmailRawEvidence(intake.id, moderator)).resolves.toMatchObject({
-        bytes,
+      await expect(loadCopyrightEmailRawEvidence(intake.id, moderator)).rejects.toMatchObject({
+        status: 409,
+        code: COPYRIGHT_EMAIL_QUARANTINED,
+        message: expect.stringContaining('passing virus scan'),
       })
+      expect(send).not.toHaveBeenCalled()
     },
   )
 
