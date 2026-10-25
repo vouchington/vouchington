@@ -46,8 +46,10 @@ export async function fetchRssFeed(
     return []
   }
   const fetchHostnameId = await getFetchHostnameId(rssFeed.url_hostname_id, rssFeed.url, feedUrl)
-  await rssRateLimit.assertRssFetchHostnameNotRateLimited(fetchHostnameId, feedUrl)
-  const networkBackoff = await loadRssFetchHostnameNetworkBackoff(fetchHostnameId)
+  const [, networkBackoff] = await Promise.all([
+    rssRateLimit.assertRssFetchHostnameNotRateLimited(fetchHostnameId, feedUrl),
+    loadRssFetchHostnameNetworkBackoff(fetchHostnameId),
+  ])
   // Skipped, not failed: the feed waits for its next due fetch instead of counting a failure.
   if (networkBackoff.isOpen) {
     await updateRssFeedById(rssFeedId, { last_fetched_at: true })
