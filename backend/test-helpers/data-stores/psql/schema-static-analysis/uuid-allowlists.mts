@@ -171,10 +171,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'user_sessions.device_id',
     'No devices table exists; did is an ephemeral dt device-token claim paired with the persisted session id.',
   ],
-  [
-    'post_dispute_annotations.removed_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
+  ['post_dispute_annotations.removed_by_id', 'Audit snapshot survives user deletion.'],
   [
     'review_dispute_lifecycle_changes.changed_by_id',
     'Audit snapshot intentionally survives user deletion.',
