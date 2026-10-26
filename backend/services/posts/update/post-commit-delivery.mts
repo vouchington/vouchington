@@ -6,7 +6,7 @@ import { normalizeKey } from '@ts-shared/utils/strings'
 import onError from '@modules/on-error'
 import { settlePostCommitEffects, type PostCommitOperation } from '../post-commit-completion.mts'
 
-export type PostCommitDeliveryDependencies = {
+type PostCommitDeliveryDependencies = {
   enqueueOnPostUpdated: typeof enqueueOnPostUpdated
   invalidatePosts: typeof startPostCacheInvalidation
   onError: typeof onError

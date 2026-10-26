@@ -187,9 +187,7 @@ export const preparePostWithCommunityReviews = async (
     void enqueueReconcileMediaDeliveryRegistry()
     return finalizePreparedPost({
       communityReviews,
-      creator,
       post: post!,
-      postType: defaults.postType,
       resolvedUrlHostnameId,
       resolvedUrlStrings,
       updates,

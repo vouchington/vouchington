@@ -17,7 +17,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 
 describe('post-commit failure reporting ownership', () => {
   it('retains a real entity admission rejection without reporting it again', async () => {
-    const { creator, post } = await createPostCompletionFixture()
+    const { post } = await createPostCompletionFixture()
     const failure = new Error('Owned entity admission failure')
     const outerReport = vi.fn<typeof onError>()
     const original = entitiesListeners.add
@@ -35,10 +35,7 @@ describe('post-commit failure reporting ownership', () => {
     })
     try {
       await expect(
-        applyPostCommitSideEffects(
-          { creator, post, postType: 'discussion', updates: {} },
-          { onError: outerReport },
-        ),
+        applyPostCommitSideEffects({ post }, { onError: outerReport }),
       ).resolves.toBeUndefined()
       expect(outerReport).not.toHaveBeenCalled()
       expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(

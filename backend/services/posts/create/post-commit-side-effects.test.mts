@@ -11,8 +11,8 @@ import {
 } from '../../../test-helpers/post-commit-completion.mts'
 
 async function fixture() {
-  const { creator, post } = await createPostCompletionFixture()
-  return { creator, post, postType: 'discussion' as const, updates: {} }
+  const { post } = await createPostCompletionFixture()
+  return { post }
 }
 
 describe('applyPostCommitSideEffects', () => {
