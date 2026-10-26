@@ -114,10 +114,13 @@ literal area prefix and cancels only superseded pull-request runs, and
 
 The Backend area prepares one migrated PostgreSQL baseline per workflow run for every backend database
 consumer: unit shards, trusted provider tests, schema contracts, smoke tests, and EXPLAIN scenarios.
-The producer checks SQL safety and staging RSS and retained-relation bootstrap, then uploads a
+The producer checks SQL safety, staging RSS and retained-relation bootstrap, and the canonical schema
+snapshot, then uploads a
 short-lived custom-format dump. Each consumer restores that artifact into its isolated PostgreSQL
 service before running its checks. Standalone suite dispatches prepare the same baseline themselves.
 Dedicated native migration-control scenarios still execute migrations as the behavior under test.
+Snapshot validation runs on fresh migration output because PostgreSQL can re-parenthesize equivalent
+conditions during dump/restore.
 
 <a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job and the Web
 area's `test-playwright-credentialed` job call live providers as informational smoke checks: their

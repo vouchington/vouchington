@@ -136,11 +136,6 @@ jobs:
           path: postgres-schema-test-report.junit.xml
           retention-days: 1
           if-no-files-found: ignore
-      - name: Check PostgreSQL schema snapshot is up to date
-        if: ${{ !cancelled() }}
-        working-directory: backend
-        run: node data-stores/psql/schema-snapshot/generate.mts --check
-        timeout-minutes: 2
       - name: Convert native materialized-view coverage
         if: ${{ inputs.publish_coverage }}
         timeout-minutes: 1

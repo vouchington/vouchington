@@ -71,6 +71,12 @@ jobs:
           retention-days: 1
           overwrite: true
           if-no-files-found: ignore
+      # pg_dump/pg_restore reparses and flattens Boolean expression parentheses. Validate
+      # the canonical migration output before that semantically equivalent round trip.
+      - name: Check PostgreSQL schema snapshot is up to date
+        working-directory: backend
+        run: node data-stores/psql/schema-snapshot/generate.mts --check
+        timeout-minutes: 2
       - name: Dump prepared PostgreSQL database
         timeout-minutes: 2
         run: |

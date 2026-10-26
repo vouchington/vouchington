@@ -15,13 +15,11 @@ describe('PostgreSQL Schema Tests workflow', () => {
 
   it('serializes the destructive ActivityPub capacity project and reaps its process group', () => {
     const tests = workflow.indexOf('      - name: Run PostgreSQL schema tests')
-    const snapshot = workflow.indexOf(
-      '      - name: Check PostgreSQL schema snapshot is up to date',
-    )
-    const step = workflow.slice(tests, snapshot)
+    const report = workflow.indexOf('      - name: Upload PostgreSQL schema JUnit report')
+    const step = workflow.slice(tests, report)
 
     expect(tests).toBeGreaterThanOrEqual(0)
-    expect(snapshot).toBeGreaterThan(tests)
+    expect(report).toBeGreaterThan(tests)
     expect(step).toContain(
       'VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
     )
@@ -39,16 +37,16 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(workflow).not.toContain('check-staging-rss-bootstrap.mts')
   })
 
-  it('checks the schema snapshot after schema tests, even when Vitest is skipped', () => {
-    const tests = workflow.indexOf(
-      'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
-    )
-    const snapshotCheck = workflow.indexOf(
-      '      - name: Check PostgreSQL schema snapshot is up to date',
-    )
-    expect(snapshotCheck).toBeGreaterThan(tests)
-    expect(workflow.slice(snapshotCheck)).toContain('if: ${{ !cancelled() }}')
-    expect(workflow).toContain('node data-stores/psql/schema-snapshot/generate.mts --check')
+  it('checks the canonical migration snapshot in preparation before dumping the baseline', () => {
+    const producer = readFileSync('.github/workflows/prepare-postgres.yml', 'utf8')
+    const migrate = producer.indexOf('node data-stores/psql/migrate.mts')
+    const snapshot = producer.indexOf('node data-stores/psql/schema-snapshot/generate.mts --check')
+    const dump = producer.indexOf('      - name: Dump prepared PostgreSQL database')
+
+    expect(migrate).toBeGreaterThanOrEqual(0)
+    expect(snapshot).toBeGreaterThan(migrate)
+    expect(dump).toBeGreaterThan(snapshot)
+    expect(workflow).not.toContain('node data-stores/psql/schema-snapshot/generate.mts --check')
   })
 
   it('runs the bounded native MV owner between bootstrap checks and Vitest on the same database', () => {
@@ -73,13 +71,13 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(nativeStep).toContain('ANALYTICS_BACKEND: local')
   })
 
-  it('converts the native V8 directory after the unchanged schema snapshot check', () => {
-    const snapshot = workflow.indexOf('node data-stores/psql/schema-snapshot/generate.mts --check')
+  it('converts the native V8 directory after schema tests finish', () => {
+    const tests = workflow.indexOf('      - name: Upload PostgreSQL schema JUnit report')
     const conversion = workflow.indexOf('      - name: Convert native materialized-view coverage')
     const publisher = workflow.indexOf('      - name: Preserve full native materialized-view LCOV')
     const conversionStep = workflow.slice(conversion, publisher)
 
-    expect(conversion).toBeGreaterThan(snapshot)
+    expect(conversion).toBeGreaterThan(tests)
     expect(publisher).toBeGreaterThan(conversion)
     expect(conversionStep).toContain('pnpm exec coverage-check native-v8-to-lcov')
     expect(conversionStep).toContain('--v8-dir "$RUNNER_TEMP/native-mv-v8"')
