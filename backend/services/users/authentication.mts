@@ -115,12 +115,12 @@ export async function createAndEnqueueEmailAddressReAuthToken(
   scope: Extract<EmailAuthenticationScope, { purpose: 're_auth' }>,
 ): Promise<string> {
   const result = await createEmailAddressLoginToken(emailAddress, scope)
-  await awaitReportedEnqueueAdmission(() =>
-    enqueueSendReauthenticationToken(
+  await awaitReportedEnqueueAdmission(async () => {
+    await enqueueSendReauthenticationToken(
       { emailAddress: result.emailAddress, uiLocale },
       { token: result.token, expiresInMinutes: EMAIL_AUTHENTICATION_TOKEN_EXPIRATION_MINUTES },
-    ),
-  )
+    )
+  })
   return result.emailAddress
 }
 
