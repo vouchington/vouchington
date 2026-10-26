@@ -55,3 +55,18 @@ export async function insertTestTopicLandingPageUrlRelations(options: {
     [options.topicIds, options.urlId, options.createdById],
   )
 }
+
+export async function insertTestHostnameBlockCleanupRoot(options: {
+  blockId: string
+  hostnameId: string
+  blockedById: string
+}): Promise<void> {
+  await write(
+    `/* insertTestHostnameBlockCleanupRoot */
+    INSERT INTO url_hostname_blocks (
+      id, url_hostname_id, blocked_by_id, blocked_source,
+      relation_cleanup_root_block_id, relation_cleanup_blocked_hostname_count
+    ) VALUES ($1, $2, $3, 'admin', $1, 1)`,
+    [options.blockId, options.hostnameId, options.blockedById],
+  )
+}

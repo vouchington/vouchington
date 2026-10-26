@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
   createTestUserDirect,
+  insertTestHostnameBlockCleanupRoot,
   insertTestUrlHostname,
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
+import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { v7 as uuidv7 } from 'uuid'
 import {
@@ -17,7 +19,7 @@ import { searchPendingHostnameBlockCleanups } from './cleanup-recovery.mts'
 import { projectNextHostnameBlockSubdomainPage } from './cleanup-subdomains.mts'
 
 describe('hostname block cleanup recovery', () => {
-  it('attaches a current inherited parent block and exposes it to bounded recovery', async () => {
+  it('attaches a current inherited parent block as a durable cleanup operation', async () => {
     const administrator = await createTestUserDirect({
       username: `cleanup-recovery-${randomToken()}`,
       administrator: true,
@@ -50,8 +52,6 @@ describe('hostname block cleanup recovery', () => {
     await expect(getHostnameBlockCleanupOperation(operation.blockId)).resolves.toMatchObject({
       blockId: operation.blockId,
     })
-    const pending = await searchPendingHostnameBlockCleanups(operation.blockId, 100)
-    expect(pending.every(candidate => candidate.blockId > operation.blockId)).toBe(true)
   })
 
   it('returns stable no-work results for unknown, stale, and completed generations', async () => {
@@ -100,7 +100,20 @@ describe('hostname block cleanup recovery', () => {
     await expect(
       advanceHostnameBlockPenaltyPage(operation.blockId, operation.progress, false),
     ).resolves.toMatchObject({ blockId: operation.blockId, completedAt: expect.any(Date) })
+    const { firstId: recoveryAnchor, secondId: recoveryBlockId } = createTestUuidWindow()
+    const recoveryHostnameId = await insertTestUrlHostname({
+      hostname: `cleanup-recovery-query-${randomToken()}.example.com`,
+    })
+    await insertTestHostnameBlockCleanupRoot({
+      blockId: recoveryBlockId,
+      hostnameId: recoveryHostnameId,
+      blockedById: administrator.id,
+    })
+    await expect(searchPendingHostnameBlockCleanups(recoveryAnchor, 1)).resolves.toEqual([
+      { blockId: recoveryBlockId, progress: 0 },
+    ])
     await expect(searchPendingHostnameBlockCleanups(undefined, 1)).resolves.toHaveLength(1)
+    await advanceHostnameBlockPenaltyPage(recoveryBlockId, 0, true)
   })
 
   it('continues an exact-limit subdomain page from its durable reversed-hostname cursor', async () => {
