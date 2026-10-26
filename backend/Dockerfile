@@ -1,11 +1,11 @@
-# syntax=mirror.gcr.io/docker/dockerfile:1-labs
+# syntax=ghcr.io/vouchington/dependency-dockerfile:1-labs@sha256:ad43eec41369d9ef94412c0d1eb3203d12218d01da225afc92a3aeba3a0e7796
 
 # Base Node.js image with Debian security patches applied once.
 # node:26-trixie-slim (Debian trixie, glibc 2.40) is required over bookworm-slim (glibc 2.36)
 # because @glidemq/speedkey's prebuilt native binary references __isoc23_sscanf (added in glibc 2.38).
 # Running apt-get upgrade here rather than in each downstream stage deduplicates
 # the network IO and shrinks the BuildKit cache export.
-FROM mirror.gcr.io/library/node:26-trixie-slim AS base-node
+FROM ghcr.io/vouchington/dependency-node:26-trixie-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS base-node
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* /var/lib/dpkg/info/*.md5sums \
            /usr/share/man /usr/share/doc /usr/share/locale /usr/share/info
@@ -34,8 +34,7 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
 # @glidemq/speedkey's prebuilt native binary (__isoc23_sscanf, added in glibc 2.38) works.
 # ENTRYPOINT is /nodejs/bin/node; /nodejs/bin is NOT on PATH, so callers that
 # bypass ENTRYPOINT (ECS healthcheck CMD, docker exec) must use the absolute path.
-# renovate: datasource=docker depName=gcr.io/distroless/nodejs26-debian13
-FROM gcr.io/distroless/nodejs26-debian13:nonroot AS runtime-base
+FROM ghcr.io/vouchington/dependency-distroless-nodejs:nonroot@sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6 AS runtime-base
 COPY --from=openssl-overlay /distroless-openssl/ /
 
 # Stage 1: Build Node.js application with dependencies

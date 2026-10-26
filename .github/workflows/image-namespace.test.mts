@@ -18,8 +18,14 @@ const activeValidationSourcePaths = [
 const forbiddenRegistryReferences = ['ghcr.io/', 'type=registry']
 
 function validationSourceViolations(path: string, source: string): string[] {
+  // BuildKit itself is a reviewed, digest-pinned input. Registry-backed build
+  // caches and publish targets remain forbidden in validation actions.
+  const withoutBuildkitInput = source.replaceAll(
+    /ghcr\.io\/vouchington\/dependency-buildkit:buildx-stable-1@sha256:[0-9a-f]{64}/gu,
+    '',
+  )
   const violations = forbiddenRegistryReferences
-    .filter(reference => source.includes(reference))
+    .filter(reference => withoutBuildkitInput.includes(reference))
     .map(reference => `${path}: ${reference}`)
 
   if (/docker\/login-action|docker login/u.test(source)) violations.push(`${path}: registry login`)

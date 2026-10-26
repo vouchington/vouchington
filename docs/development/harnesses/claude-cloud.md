@@ -11,8 +11,8 @@ from the repository root. It supplies what host provisioning owns elsewhere (the
 pnpm, and mise; for `backend` and `web`, the Docker daemon and CI's digest-pinned PostgreSQL), then
 runs `./dev/initialize`. It refuses to run unless `CLAUDE_CODE_REMOTE=true`, and every step is
 idempotent: rerun it when a session resumes on a rebuilt VM, because the Docker daemon and
-containers do not survive. Images are pulled through `mirror.gcr.io` because anonymous Docker Hub
-pulls from shared cloud egress are rate-limited.
+containers do not survive. PostgreSQL and Valkey use the same reviewed, digest-pinned GHCR
+dependency images as CI so cloud sessions do not depend on shared anonymous registry quotas.
 
 A fresh cloud clone is not a linked worktree, so the dev scripts treat it as main: it uses the shared
 `voucha` database and Valkey names, and the main-reset guards apply.

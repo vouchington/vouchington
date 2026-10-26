@@ -104,7 +104,7 @@ jobs:
         run: pnpm exec vouchington trivy-policy --cleanup-url-prefix https://github.com/vouchington/vouchington/issues/
         timeout-minutes: 2
       - name: Check Docker image mirrors
-        run: pnpm exec vouchington docker-image-mirror
+        run: pnpm exec vouchington docker-image-mirror --allow-registry ghcr.io/vouchington/dependency- --require-digest --allow-ref-expression '$''{{ needs.prepare.outputs.postgres_image }}'
         timeout-minutes: 2
       - name: Check live repository policies
         run: node ci/check-repository-policy-scans.mts

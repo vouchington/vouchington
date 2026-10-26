@@ -30,7 +30,9 @@ describe('tests-playwright.yml OTel collector', () => {
     expect(startOtelCollector).toBeLessThan(runPlaywright)
     expect(workflow.slice(allocatePorts, startOtelCollector)).not.toMatch(/\n {6}- (?:name|uses):/)
     expect(workflow).toContain('echo "Starting OTel collector"')
-    expect(workflow).toMatch(/otel\/opentelemetry-collector-contrib:\d+\.\d+\.\d+/u)
+    expect(workflow).toMatch(
+      /ghcr\.io\/vouchington\/dependency-otel:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}/u,
+    )
     expect(workflow).toContain('dev/otel/collector-config-ci.yaml')
     expect(workflow).toContain('chmod 0777 "$RUNNER_TEMP/otel-output"')
     expect(workflow).toContain('-p "127.0.0.1:$OTEL_HTTP_PORT:4318"')

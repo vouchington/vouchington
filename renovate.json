@@ -15,6 +15,20 @@
       "matchManagers": ["custom.regex"],
       "schedule": ["at any time"],
       "groupName": "CI dependency mirror digests"
+    },
+    {
+      "description": "Propose verified GHCR consumer digests after mirror publication",
+      "matchFileNames": [
+        ".github/**",
+        "backend/Dockerfile",
+        "web/Dockerfile",
+        "dev/initialize",
+        "dev/otel/compose.yaml"
+      ],
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["ghcr.io/vouchington/dependency-*"],
+      "schedule": ["at any time"],
+      "groupName": "CI dependency consumer digests"
     }
   ],
   "customManagers": [
@@ -24,6 +38,33 @@
       "managerFilePatterns": ["ci/dependency-mirror/images.json"],
       "matchStrings": [
         "\"source\": \"(?<depName>(?:docker\\.io/[^\"]+|gcr\\.io/distroless/nodejs26-debian13))\",\\s*\"tag\": \"(?<currentValue>[^\"]+)\",\\s*\"digest\": \"(?<currentDigest>sha256:[0-9a-f]{64})\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Dockerfile frontend copied to reviewed GHCR dependency package",
+      "managerFilePatterns": ["backend/Dockerfile", "web/Dockerfile"],
+      "matchStrings": [
+        "# syntax=(?<depName>ghcr\\.io/vouchington/dependency-dockerfile):(?<currentValue>[A-Za-z0-9_.-]+)@(?<currentDigest>sha256:[0-9a-f]{64})"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Secondary Alpine Node stage in the web Dockerfile",
+      "managerFilePatterns": ["web/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>ghcr\\.io/vouchington/dependency-node):(?<currentValue>[0-9]+-alpine)@(?<currentDigest>sha256:[0-9a-f]{64})"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Secondary Distroless runtime stage in the backend Dockerfile",
+      "managerFilePatterns": ["backend/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>ghcr\\.io/vouchington/dependency-distroless-nodejs):(?<currentValue>nonroot)@(?<currentDigest>sha256:[0-9a-f]{64})\\s+AS\\s+runtime-base"
       ],
       "datasourceTemplate": "docker"
     },
@@ -61,18 +102,18 @@
     },
     {
       "customType": "regex",
-      "description": "Valkey bundle image shared by CI and local initialization",
+      "description": "Reviewed GHCR dependency images used by CI and local tools",
       "managerFilePatterns": [
         ".github/workflows/*.yml",
         ".github/workflows/*.yaml",
         ".github/actions/*/action.yml",
-        "dev/initialize"
+        "dev/initialize",
+        "dev/otel/compose.yaml"
       ],
       "matchStrings": [
-        "valkey/valkey-bundle:(?<currentValue>\\d+\\.\\d+\\.\\d+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?"
+        "(?<depName>ghcr\\.io/vouchington/dependency-(?:pgvector|valkey|buildkit|otel)):(?<currentValue>[A-Za-z0-9_.-]+)@(?<currentDigest>sha256:[0-9a-f]{64})"
       ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "valkey/valkey-bundle"
+      "datasourceTemplate": "docker"
     }
   ]
 }
