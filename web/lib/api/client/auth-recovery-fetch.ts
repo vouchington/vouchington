@@ -1,6 +1,6 @@
 'use client'
 
-import { parseErrorResponseBody } from '@vouchington/api-client'
+import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
 import {
   BOT_CHALLENGE_ACTION_TAG,
   BOT_CHALLENGE_REQUIRED,
@@ -89,12 +89,7 @@ function isReloginError(error: unknown): boolean {
 }
 
 function isDefinitiveRenewalFailure(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    isReloginError({ code: error.code })
-  )
+  return error instanceof ApiError && error.status === 401 && isReloginError(error)
 }
 
 function isBotChallenge(

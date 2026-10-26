@@ -47,6 +47,7 @@ export async function rotateAuthenticatedDeviceToken(options: {
     throw sessionReloginRequired()
   const presentedDigest = hashDeviceToken(options.deviceToken)
   if (
+    device.client === 'web' &&
     presentedDigest === row.previous_device_token_digest &&
     row.previous_device_token_grace_expires_at &&
     row.previous_device_token_grace_expires_at.getTime() > Date.now() &&

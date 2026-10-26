@@ -128,7 +128,7 @@ function toTokenBody(body: SessionTokenBody): SessionTokenBody {
 }
 
 function isDefinitiveSessionFailure(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null || !('code' in error)) return false
+  if (!isHttpError(error) || error.status !== 401 || !('code' in error)) return false
   return [
     SESSION_RELOGIN_REQUIRED,
     SESSION_REFRESH_REUSED,

@@ -55,7 +55,7 @@ async function renewWithBrowserLock(): Promise<boolean> {
       if (body.session?.uid === null) return false
       if (typeof body.session?.uid === 'string') return true
       throw new ApiError('Invalid session refresh response', 502, {
-        code: 'SESSION_RELOGIN_REQUIRED',
+        code: 'SESSION_RENEWAL_INVALID_RESPONSE',
       })
     },
   )
@@ -66,7 +66,7 @@ function reportCleanupFailure(error: unknown): void {
 }
 
 function requiresSessionCleanup(error: unknown): boolean {
-  if (!(error instanceof ApiError)) return false
+  if (!(error instanceof ApiError) || error.status !== 401) return false
   return [
     'SESSION_RELOGIN_REQUIRED',
     'SESSION_REFRESH_REUSED',

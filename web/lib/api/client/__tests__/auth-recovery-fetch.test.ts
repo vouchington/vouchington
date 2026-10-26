@@ -68,22 +68,16 @@ describe('application auth recovery fetch', () => {
     expect(window.location.assign).not.toHaveBeenCalled()
   })
 
-  it('treats a malformed successful renewal as a protocol error and clears cookies', async () => {
+  it('preserves cookies and navigation after a malformed successful renewal', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(errorResponse(401, 'AUTH_REQUIRED'))
       .mockResolvedValueOnce(new Response(JSON.stringify({ session: {} })))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(createAuthRecoveryFetch()('/api/v1/posts')).rejects.toMatchObject({ status: 502 })
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      '/api/v1/posts',
-      '/api/v1/session',
-      '/api/v1/session',
-    ])
-    expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({ method: 'DELETE' })
-    expect(window.location.assign).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/posts', '/api/v1/session'])
+    expect(window.location.assign).not.toHaveBeenCalled()
   })
 
   it('preserves cookies and does not navigate when renewal fails transiently', async () => {
