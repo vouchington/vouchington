@@ -1758,7 +1758,6 @@ rules:
       - 'backend/services/moderation-analytics/moderation-transparency-rollup-lifecycle.test.mts'
       - 'backend/test-helpers/election-vote-stats.test.mts'
       - 'backend/test-helpers/polling.test.mts'
-      - 'backend/workers/memberships/processors/process-job.test.mts'
     options:
       roots:
         - vitest: true
