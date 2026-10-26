@@ -42,10 +42,18 @@ export async function processReconcileBackgroundResponses(
   // is the accounting fence, and the active worker will clear its own pending IDs. Flatten the
   // page so the OpenAI retrieve/cancel limit is five across all retained jobs.
   await pMap(
-    failed.flatMap(failedJob => failedJob.data.backgroundResponses ?? []),
-    async response => {
+    failed.flatMap(failedJob =>
+      (failedJob.data.backgroundResponses ?? []).map(response => ({
+        response,
+        mode: reconciliationMode(failedJob),
+      })),
+    ),
+    async ({ response, mode }) => {
       try {
-        await reconcileBackgroundResponse({ ...response, createdAt: new Date(response.createdAt) })
+        await reconcileBackgroundResponse(
+          { ...response, createdAt: new Date(response.createdAt) },
+          mode,
+        )
       } catch (err) {
         reportReconcileFailure(err)
       }
@@ -123,10 +131,10 @@ async function canRemoveFailedJob(entry: Job<AIAgentJobData>): Promise<boolean> 
     async response => {
       try {
         if (await hasRecordedAiUsageResponseId(response.responseId)) return true
-        const result = await reconcileBackgroundResponse({
-          ...response,
-          createdAt: new Date(response.createdAt),
-        })
+        const result = await reconcileBackgroundResponse(
+          { ...response, createdAt: new Date(response.createdAt) },
+          reconciliationMode(entry),
+        )
         return result !== 'still-active' && result !== 'accounting-uncertain'
       } catch (err) {
         reportReconcileFailure(err)
@@ -156,4 +164,8 @@ function hasReactivatableStableId(job: Job<AIAgentJobData>): boolean {
     job.name === 'appeal-resolution' ||
     job.name === 'recover-background-response'
   )
+}
+
+function reconciliationMode(job: Job<AIAgentJobData>): 'worker' | 'inline' {
+  return job.name === 'recover-background-response' ? 'inline' : 'worker'
 }

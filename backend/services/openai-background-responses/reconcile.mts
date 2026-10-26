@@ -26,6 +26,7 @@ export type ReconcileBackgroundResponseResult =
 /** Reconciles an AI job's persisted response id. */
 export async function reconcileBackgroundResponse(
   candidate: BackgroundResponseToReconcile,
+  mode: 'worker' | 'inline' = 'worker',
 ): Promise<ReconcileBackgroundResponseResult> {
   if (await hasRecordedAiUsageResponseId(candidate.responseId)) {
     return 'already-recorded'
@@ -62,12 +63,14 @@ export async function reconcileBackgroundResponse(
   } catch (err) {
     if (!isOpenAIResponseNotCompletedError(err)) throw err
     if (err.status !== 'failed' && err.status !== 'incomplete' && err.status !== 'cancelled') {
-      await cancelOpenAIResponse(candidate.responseId)
+      // A worker replay must settle a live paid call before it can dispatch another. An inline
+      // recovery job only observes its original call, which may still be serving the requester.
+      if (mode === 'worker') await cancelOpenAIResponse(candidate.responseId)
       return 'still-active'
     }
     if (!err.usage) {
-      // A terminal response cannot gain later usage. The provider may still have billed an
-      // unknown amount, so latch uncertainty before releasing its job-owned response id.
+      // Provider usage can lag a terminal state. Policy settles this ID with unknown billed
+      // usage and latches uncertainty instead of retaining it indefinitely.
       await latchAccountingUncertainty({
         requestDay: getUtcDayFromDate(candidate.createdAt),
         source: 'unknown_billed_attempt',
