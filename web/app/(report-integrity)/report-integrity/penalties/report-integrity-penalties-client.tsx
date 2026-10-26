@@ -9,16 +9,19 @@ import {
 } from '@/lib/api/client/report-integrity'
 import type {
   IntegrityPenaltyStatusFilter,
+  ReportIntegrityPenaltyReviewsDueResponse,
   ReportIntegrityPenaltiesResponse,
   ReportIntegrityPenalty,
 } from '@/types/report-integrity'
 
 export function ReportIntegrityPenaltiesClient({
   initialData,
+  initialDuePage,
   initialStatus,
   available = true,
 }: {
   available?: boolean
+  initialDuePage: ReportIntegrityPenaltyReviewsDueResponse | null
   initialData: ReportIntegrityPenaltiesResponse
   initialStatus: IntegrityPenaltyStatusFilter
 }) {
@@ -34,7 +37,15 @@ export function ReportIntegrityPenaltiesClient({
       penaltiesPath='/report-integrity/penalties'
       getById={getReportIntegrityPenaltyClient}
       revoke={revokeReportAbusePenalty}
-      annualReviews={{ getDue: getReportAbusePenaltyReviewsDue, review: reviewReportAbusePenalty }}
+      annualReviews={
+        initialDuePage
+          ? {
+              initialDuePage,
+              getDue: getReportAbusePenaltyReviewsDue,
+              review: reviewReportAbusePenalty,
+            }
+          : undefined
+      }
     />
   )
 }

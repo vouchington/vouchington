@@ -14,8 +14,18 @@ import {
 export type { AnnualPenaltyReviewsProps } from './use-annual-penalty-reviews'
 
 /** A visible, bounded staff queue for active penalties whose annual review is due. */
-export function AnnualPenaltyReviews<P extends DuePenalty>({
+export function AnnualPenaltyReviews<P extends DuePenalty>(props: AnnualPenaltyReviewsProps<P>) {
+  return (
+    <AnnualPenaltyReviewsInner
+      key={JSON.stringify(props.initialDuePage)}
+      {...props}
+    />
+  )
+}
+
+function AnnualPenaltyReviewsInner<P extends DuePenalty>({
   getDue,
+  initialDuePage,
   review,
   revoke,
   reconcile,
@@ -34,7 +44,7 @@ export function AnnualPenaltyReviews<P extends DuePenalty>({
     applyAction,
     loadMore,
     revokePenalty,
-  } = useAnnualPenaltyReviews({ getDue, review, revoke, reconcile })
+  } = useAnnualPenaltyReviews({ initialDuePage, getDue, review, revoke, reconcile })
 
   return (
     <section

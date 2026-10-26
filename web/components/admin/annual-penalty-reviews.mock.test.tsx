@@ -7,7 +7,7 @@ vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => (key: string) => key,
 }))
 
-import { AnnualPenaltyReviews } from './annual-penalty-reviews'
+import { AnnualPenaltyReviews, type AnnualPenaltyReviewsProps } from './annual-penalty-reviews'
 
 const duePenalty: ReportIntegrityPenaltyReviewDue = {
   id: '018f6763-0a71-752d-b657-a06cf00dd401',
@@ -24,254 +24,231 @@ const duePenalty: ReportIntegrityPenaltyReviewDue = {
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T00:00:00Z',
 }
+const terminalInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
 
 describe('AnnualPenaltyReviews', () => {
-  it('shows a due penalty and removes it after a confirmed review', async () => {
+  it('renders the supplied server page without a mount request and removes a confirmed review', async () => {
     const getDue = vi
-      .fn<
-        () => Promise<{
-          results: ReportIntegrityPenaltyReviewDue[]
-          page_info: {
-            has_next_page: boolean
-            start_cursor: string | null
-            end_cursor: string | null
-          }
-        }>
-      >()
-      .mockResolvedValueOnce({
-        results: [duePenalty],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      .mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
+      .fn<AnnualPenaltyReviewsProps<ReportIntegrityPenaltyReviewDue>['getDue']>()
+      .mockResolvedValue({ results: [], page_info: terminalInfo })
     const review = vi
-      .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
+      .fn<(id: string) => Promise<unknown>>()
       .mockResolvedValue({ penalty: duePenalty })
-    const revoke = vi.fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
-
-    render(
-      <AnnualPenaltyReviews
-        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
-        getDue={getDue}
-        review={review}
-        revoke={revoke}
-      />,
-    )
-    const userLink = await screen.findByRole('link', { name: 'penalty-recipient' })
-    expect(userLink).toHaveAttribute('href', '/user/penalty-recipient')
-    expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'moderation.penaltyReviews.confirm' }),
-    )
-
-    await waitFor(() => expect(review).toHaveBeenCalledWith(duePenalty.id))
-    await screen.findByText('moderation.penaltyReviews.empty')
-    expect(getDue).toHaveBeenCalledTimes(2)
-  })
-
-  it('keeps an unavailable profile unlinked without showing its UUID', async () => {
-    const getDue = vi.fn<
-      () => Promise<{
-        results: ReportIntegrityPenaltyReviewDue[]
-        page_info: {
-          has_next_page: boolean
-          start_cursor: string | null
-          end_cursor: string | null
-        }
-      }>
-    >(async () => ({
-      results: [{ ...duePenalty, user_username: null }],
-      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-    }))
-    render(
-      <AnnualPenaltyReviews
-        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
-        getDue={getDue}
-        review={vi.fn<(id: string) => Promise<unknown>>()}
-        revoke={vi.fn<(id: string) => Promise<unknown>>()}
-      />,
-    )
-    await screen.findByText('extracted.communities.communityMemberRow.unknownUser_0bca6947')
-    expect(screen.queryByRole('link')).not.toBeInTheDocument()
-    expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
-  })
-
-  it('checks the due queue after a lost confirmation response', async () => {
-    const getDue = vi
-      .fn<
-        () => Promise<{
-          results: ReportIntegrityPenaltyReviewDue[]
-          page_info: {
-            has_next_page: boolean
-            start_cursor: string | null
-            end_cursor: string | null
-          }
-        }>
-      >()
-      .mockResolvedValueOnce({
-        results: [duePenalty],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      .mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-    const review = vi
-      .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
-      .mockRejectedValue(new Error('response lost'))
-    const revoke = vi.fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
-
-    render(
-      <AnnualPenaltyReviews
-        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
-        getDue={getDue}
-        review={review}
-        revoke={revoke}
-      />,
-    )
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'moderation.penaltyReviews.confirm' }),
-    )
-
-    await screen.findByText('moderation.penaltyReviews.empty')
-    expect(review).toHaveBeenCalledTimes(1)
-    expect(
-      screen.queryByText('extracted.flags.integrityPenalties.resultUncertain_e24ec07b'),
-    ).not.toBeInTheDocument()
-  })
-
-  it('lets staff revoke due vote penalties of either reason after confirmation', async () => {
-    const ring: VoteIntegrityPenaltyReviewDue = {
-      ...duePenalty,
-      penalty_multiplier: 0.25,
-      reason: 'voting_ring',
-    }
-    const referral: VoteIntegrityPenaltyReviewDue = {
-      ...ring,
-      id: '018f6763-0a71-752d-b657-a06cf00dd403',
-      reason: 'referral_link_in_post',
-    }
-    const getDue = vi
-      .fn<
-        () => Promise<{
-          results: VoteIntegrityPenaltyReviewDue[]
-          page_info: {
-            has_next_page: boolean
-            start_cursor: string | null
-            end_cursor: string | null
-          }
-        }>
-      >()
-      .mockResolvedValueOnce({
-        results: [ring, referral],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      .mockResolvedValueOnce({
-        results: [ring],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-      .mockResolvedValueOnce({
-        results: [],
-        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
-      })
-    const review = vi.fn<(id: string) => Promise<{ penalty: VoteIntegrityPenaltyReviewDue }>>()
-    const revoke = vi
-      .fn<(id: string) => Promise<{ penalty: VoteIntegrityPenaltyReviewDue }>>()
-      .mockResolvedValueOnce({ penalty: { ...referral, revoked_at: '2026-01-02T00:00:00Z' } })
-      .mockResolvedValueOnce({ penalty: { ...ring, revoked_at: '2026-01-02T00:00:00Z' } })
-
-    render(
-      <AnnualPenaltyReviews
-        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
-        getDue={getDue}
-        review={review}
-        revoke={revoke}
-      />,
-    )
-
-    const referralRow = (await screen.findByText('referral_link_in_post')).closest('li')!
-    fireEvent.click(
-      within(referralRow).getByRole('button', {
-        name: 'extracted.flags.integrityPenalties.revoke_ec2f3e37',
-      }),
-    )
-    expect(revoke).not.toHaveBeenCalled()
-    fireEvent.click(
-      within(referralRow).getByRole('button', {
-        name: 'extracted.flags.integrityPenalties.confirmRevoke_3ec93b2c',
-      }),
-    )
-    await waitFor(() => expect(revoke).toHaveBeenCalledWith(referral.id))
-    await waitFor(() => expect(screen.queryByText('referral_link_in_post')).not.toBeInTheDocument())
-
-    const ringRow = screen.getByText('voting_ring').closest('li')!
-    fireEvent.click(
-      within(ringRow).getByRole('button', {
-        name: 'extracted.flags.integrityPenalties.revoke_ec2f3e37',
-      }),
-    )
-    fireEvent.click(
-      within(ringRow).getByRole('button', {
-        name: 'extracted.flags.integrityPenalties.confirmRevoke_3ec93b2c',
-      }),
-    )
-    await waitFor(() => expect(revoke).toHaveBeenCalledWith(ring.id))
-    await screen.findByText('moderation.penaltyReviews.empty')
-    expect(review).not.toHaveBeenCalled()
-    expect(getDue).toHaveBeenCalledTimes(3)
-  })
-  it('loads a later page without requiring a decision and preserves it after review', async () => {
-    const later = {
-      ...duePenalty,
-      id: '018f6763-0a71-752d-b657-a06cf00dd499',
-      user_username: 'later-recipient',
-    }
-    const firstPage = {
-      results: [duePenalty],
-      page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
-    }
-    const lastPage = {
-      results: [later],
-      page_info: { has_next_page: false, start_cursor: 'last', end_cursor: null },
-    }
-    const getDue = vi
-      .fn<
-        NonNullable<
-          Parameters<typeof AnnualPenaltyReviews<ReportIntegrityPenaltyReviewDue>>[0]['getDue']
-        >
-      >()
-      .mockResolvedValueOnce(firstPage)
-      .mockResolvedValueOnce(lastPage)
-      .mockResolvedValueOnce(firstPage)
-      .mockResolvedValueOnce({ ...lastPage, results: [] })
-    const review = vi.fn<(id: string) => Promise<unknown>>().mockResolvedValue({})
     const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
     render(
       <AnnualPenaltyReviews
+        initialDuePage={{ results: [duePenalty], page_info: terminalInfo }}
         getDue={getDue}
         review={review}
         revoke={review}
         reconcile={reconcile}
       />,
     )
-    await screen.findByText('penalty-recipient')
+    expect(screen.getByRole('link', { name: 'penalty-recipient' })).toHaveAttribute(
+      'href',
+      '/user/penalty-recipient',
+    )
+    expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
+    expect(getDue).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'moderation.penaltyReviews.confirm' }))
+    await screen.findByText('moderation.penaltyReviews.empty')
+    expect(review).toHaveBeenCalledWith(duePenalty.id)
+    expect(reconcile).toHaveBeenCalledWith(duePenalty.id)
+    expect(getDue).toHaveBeenCalledOnce()
+  })
+
+  it('keeps an absent public profile unlinked without rendering its UUID', () => {
+    const getDue = vi.fn<AnnualPenaltyReviewsProps<ReportIntegrityPenaltyReviewDue>['getDue']>()
+    const action = vi.fn<(id: string) => Promise<unknown>>()
+    const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
+    render(
+      <AnnualPenaltyReviews
+        initialDuePage={{
+          results: [{ ...duePenalty, user_username: null }],
+          page_info: terminalInfo,
+        }}
+        getDue={getDue}
+        review={action}
+        revoke={action}
+        reconcile={reconcile}
+      />,
+    )
+    expect(
+      screen.getByText('extracted.communities.communityMemberRow.unknownUser_0bca6947'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
+    expect(getDue).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a revoke whose response was lost after commit', async () => {
+    const getDue = vi
+      .fn<AnnualPenaltyReviewsProps<ReportIntegrityPenaltyReviewDue>['getDue']>()
+      .mockResolvedValue({ results: [], page_info: terminalInfo })
+    const revoke = vi
+      .fn<(id: string) => Promise<unknown>>()
+      .mockRejectedValue(new Error('response lost'))
+    const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
+    render(
+      <AnnualPenaltyReviews
+        initialDuePage={{ results: [duePenalty], page_info: terminalInfo }}
+        getDue={getDue}
+        review={revoke}
+        revoke={revoke}
+        reconcile={reconcile}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'extracted.flags.integrityPenalties.revoke_ec2f3e37' }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'extracted.flags.integrityPenalties.confirmRevoke_3ec93b2c',
+      }),
+    )
+    await screen.findByText('moderation.penaltyReviews.empty')
+    expect(revoke).toHaveBeenCalledOnce()
+    expect(reconcile).toHaveBeenCalledWith(duePenalty.id)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('can revoke both flag and non-flag vote penalties through the independent due queue', async () => {
+    const ring: VoteIntegrityPenaltyReviewDue = {
+      ...duePenalty,
+      reason: 'voting_ring',
+      penalty_multiplier: 0.2,
+    }
+    const referral = {
+      ...ring,
+      id: '018f6763-0a71-752d-b657-a06cf00dd499',
+      reason: 'referral_link_in_post',
+    }
+    const getDue = vi
+      .fn<AnnualPenaltyReviewsProps<VoteIntegrityPenaltyReviewDue>['getDue']>()
+      .mockResolvedValueOnce({ results: [ring], page_info: terminalInfo })
+      .mockResolvedValueOnce({ results: [], page_info: terminalInfo })
+    const revoke = vi.fn<(id: string) => Promise<unknown>>().mockResolvedValue({})
+    const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
+    render(
+      <AnnualPenaltyReviews
+        initialDuePage={{ results: [ring, referral], page_info: terminalInfo }}
+        getDue={getDue}
+        review={revoke}
+        revoke={revoke}
+        reconcile={reconcile}
+      />,
+    )
+    for (const penalty of [referral, ring]) {
+      const row = screen.getByText(penalty.reason).closest('li')!
+      fireEvent.click(
+        within(row).getByRole('button', {
+          name: 'extracted.flags.integrityPenalties.revoke_ec2f3e37',
+        }),
+      )
+      fireEvent.click(
+        within(row).getByRole('button', {
+          name: 'extracted.flags.integrityPenalties.confirmRevoke_3ec93b2c',
+        }),
+      )
+      await waitFor(() => expect(screen.queryByText(penalty.reason)).not.toBeInTheDocument())
+    }
+    expect(revoke).toHaveBeenNthCalledWith(1, referral.id)
+    expect(revoke).toHaveBeenNthCalledWith(2, ring.id)
+  })
+
+  it('loads a later page without a decision and preserves opened pages after review', async () => {
+    const later = {
+      ...duePenalty,
+      id: '018f6763-0a71-752d-b657-a06cf00dd499',
+      user_username: 'later-recipient',
+    }
+    const first = {
+      results: [duePenalty],
+      page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
+    }
+    const last = { results: [later], page_info: terminalInfo }
+    const getDue = vi
+      .fn<AnnualPenaltyReviewsProps<ReportIntegrityPenaltyReviewDue>['getDue']>()
+      .mockResolvedValueOnce(last)
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce({ results: [], page_info: terminalInfo })
+    const action = vi.fn<(id: string) => Promise<unknown>>().mockResolvedValue({})
+    const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
+    render(
+      <AnnualPenaltyReviews
+        initialDuePage={first}
+        getDue={getDue}
+        review={action}
+        revoke={action}
+        reconcile={reconcile}
+      />,
+    )
+    expect(getDue).not.toHaveBeenCalled()
     fireEvent.click(
       screen.getByRole('button', {
         name: 'extracted.communities.communityAgentPromptHistory.loadMore_ac8991ef',
       }),
     )
     await screen.findByText('later-recipient')
-    expect(getDue).toHaveBeenNthCalledWith(2, { after: 'next' })
-    expect(screen.getByText('penalty-recipient')).toBeInTheDocument()
-    const laterRow = screen.getByText('later-recipient').closest('li')!
-    fireEvent.click(
-      within(laterRow).getByRole('button', { name: 'moderation.penaltyReviews.confirm' }),
-    )
-    await waitFor(() => expect(reconcile).toHaveBeenCalledWith(later.id))
+    expect(getDue).toHaveBeenNthCalledWith(1, { after: 'next' })
+    const row = screen.getByText('later-recipient').closest('li')!
+    fireEvent.click(within(row).getByRole('button', { name: 'moderation.penaltyReviews.confirm' }))
     await waitFor(() => expect(screen.queryByText('later-recipient')).not.toBeInTheDocument())
     expect(screen.getByText('penalty-recipient')).toBeInTheDocument()
-    expect(getDue).toHaveBeenNthCalledWith(4, { after: 'next' })
+    expect(getDue).toHaveBeenNthCalledWith(3, { after: 'next' })
+  })
+  it('replaces accumulated rows on a same-active server refresh without fetching on prop changes', async () => {
+    const later = {
+      ...duePenalty,
+      id: '018f6763-0a71-752d-b657-a06cf00dd498',
+      user_username: 'old-page-two',
+    }
+    const updated = { ...duePenalty, user_username: 'fresh-server-page' }
+    const first = {
+      results: [duePenalty],
+      page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'old-next' },
+    }
+    const nextServerPage = {
+      results: [updated],
+      page_info: { has_next_page: true, start_cursor: 'fresh', end_cursor: 'fresh-next' },
+    }
+    const getDue = vi
+      .fn<AnnualPenaltyReviewsProps<ReportIntegrityPenaltyReviewDue>['getDue']>()
+      .mockResolvedValueOnce({ results: [later], page_info: terminalInfo })
+      .mockResolvedValueOnce(nextServerPage)
+    const action = vi.fn<(id: string) => Promise<unknown>>()
+    const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
+    const view = render(
+      <AnnualPenaltyReviews
+        initialDuePage={first}
+        getDue={getDue}
+        review={action}
+        revoke={action}
+        reconcile={reconcile}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'extracted.communities.communityAgentPromptHistory.loadMore_ac8991ef',
+      }),
+    )
+    await screen.findByText('old-page-two')
+    view.rerender(
+      <AnnualPenaltyReviews
+        initialDuePage={nextServerPage}
+        getDue={getDue}
+        review={action}
+        revoke={action}
+        reconcile={reconcile}
+      />,
+    )
+    expect(screen.getByText('fresh-server-page')).toBeInTheDocument()
+    expect(screen.queryByText('penalty-recipient')).not.toBeInTheDocument()
+    expect(screen.queryByText('old-page-two')).not.toBeInTheDocument()
+    expect(getDue).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'moderation.penaltyReviews.refresh' }))
+    await waitFor(() => expect(getDue).toHaveBeenCalledTimes(2))
+    expect(getDue).toHaveBeenLastCalledWith(undefined)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })

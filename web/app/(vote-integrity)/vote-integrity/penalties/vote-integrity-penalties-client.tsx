@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/client/vote-integrity'
 import type {
   IntegrityPenaltyStatusFilter,
+  VoteIntegrityPenaltyReviewsDueResponse,
   VoteIntegrityPenaltiesResponse,
   VoteIntegrityPenalty,
 } from '@/types/vote-integrity'
@@ -16,8 +17,10 @@ import { hasConfirmedFlagScope } from './vote-integrity-penalties-scope'
 
 export function VoteIntegrityPenaltiesClient({
   initialData,
+  initialDuePage,
   initialStatus,
 }: {
+  initialDuePage: VoteIntegrityPenaltyReviewsDueResponse | null
   initialData: VoteIntegrityPenaltiesResponse
   initialStatus: IntegrityPenaltyStatusFilter
 }) {
@@ -33,7 +36,15 @@ export function VoteIntegrityPenaltiesClient({
       paginationParams={{ source: 'flag' }}
       penaltiesPath='/vote-integrity/penalties'
       revoke={revokeVoteWeightPenalty}
-      annualReviews={{ getDue: getVoteWeightPenaltyReviewsDue, review: reviewVoteWeightPenalty }}
+      annualReviews={
+        initialDuePage
+          ? {
+              initialDuePage,
+              getDue: getVoteWeightPenaltyReviewsDue,
+              review: reviewVoteWeightPenalty,
+            }
+          : undefined
+      }
       scopeGuard={hasConfirmedFlagScope}
     />
   )

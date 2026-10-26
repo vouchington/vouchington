@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { PageInfo } from '@/types/api-responses'
 import { mergePageResultsById } from '@ts-shared/utils/collections'
 import type { IntegrityPenaltyRecord } from './use-integrity-penalties'
@@ -11,6 +11,7 @@ export type DuePenalty = IntegrityPenaltyRecord & {
 }
 
 export interface AnnualPenaltyReviewsProps<P extends DuePenalty> {
+  initialDuePage: { results: P[]; page_info: PageInfo }
   getDue: (options?: {
     after?: string
     limit?: number
@@ -22,13 +23,16 @@ export interface AnnualPenaltyReviewsProps<P extends DuePenalty> {
 
 export function useAnnualPenaltyReviews<P extends DuePenalty>({
   getDue,
+  initialDuePage,
   revoke,
   reconcile,
 }: AnnualPenaltyReviewsProps<P>) {
-  const [due, setDue] = useState<P[]>([])
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [due, setDue] = useState<P[]>(initialDuePage.results)
+  const [nextCursor, setNextCursor] = useState<string | null>(
+    initialDuePage.page_info.has_next_page ? initialDuePage.page_info.end_cursor : null,
+  )
   const pageCount = useRef(1)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -59,26 +63,6 @@ export function useAnnualPenaltyReviews<P extends DuePenalty>({
       return null
     } finally {
       setLoading(false)
-    }
-  }, [getDue])
-
-  useEffect(() => {
-    let active = true
-    getDue()
-      .then(result => {
-        if (!active) return
-        setDue(result.results)
-        setNextCursor(result.page_info.has_next_page ? result.page_info.end_cursor : null)
-        setError(false)
-      })
-      .catch(() => {
-        if (active) setError(true)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
     }
   }, [getDue])
 

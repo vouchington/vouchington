@@ -65,6 +65,7 @@ describe('VoteIntegrityPenaltiesClient', () => {
     }
     render(
       <VoteIntegrityPenaltiesClient
+        initialDuePage={null}
         initialData={initialData}
         initialStatus='revoked'
       />,
@@ -86,7 +87,7 @@ describe('VoteIntegrityPenaltiesClient', () => {
       penaltiesPath: '/vote-integrity/penalties',
       getById: mocks.getById,
       revoke: mocks.revoke,
-      annualReviews: { getDue: mocks.getDue, review: mocks.review },
+      annualReviews: undefined,
     })
     expect(props.multiplier(penalty)).toBe('0.25')
     expect(props.scopeGuard?.(initialData)).toBe(true)

@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest'
 import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { AnnualPenaltyReviews } from './annual-penalty-reviews'
+import { IntegrityPenaltiesClient } from './integrity-penalties-client'
 import { IntegrityPenaltyRow } from './integrity-penalty-row'
 import { useIntegrityPenalties } from './use-integrity-penalties'
 
@@ -58,6 +59,7 @@ describe('annual review reconciliation with the active table', () => {
         return (
           <>
             <AnnualPenaltyReviews
+              initialDuePage={annualInitialData}
               getDue={getDue}
               review={revoke}
               revoke={revoke}
@@ -116,6 +118,7 @@ describe('annual review reconciliation with the active table', () => {
       return (
         <>
           <AnnualPenaltyReviews
+            initialDuePage={annualInitialData}
             getDue={getDue}
             review={revoke}
             revoke={revoke}
@@ -153,5 +156,41 @@ describe('annual review reconciliation with the active table', () => {
     )
     expect(revoke).toHaveBeenCalledOnce()
     expect(getById).toHaveBeenCalledTimes(2)
+  })
+  it('uses fresh server page data when navigating from a non-active ledger to active reviews', () => {
+    const initialDuePage = {
+      ...initialData,
+      results: [
+        { ...penalty, review_due_at: '2025-01-01T00:00:00Z', user_username: 'server-first-page' },
+      ],
+    }
+    const getDue = vi.fn<() => Promise<typeof initialDuePage>>()
+    const action = vi.fn<(id: string) => Promise<{ penalty: typeof penalty }>>()
+    const props = {
+      domain: 'report' as const,
+      endpoint: '/api/v1/report-integrity/penalties',
+      initialData,
+      flagsPath: '/report-integrity/flags',
+      penaltiesPath: '/report-integrity/penalties',
+      multiplier: () => null,
+      getById: action,
+      revoke: action,
+    }
+    const view = render(
+      <IntegrityPenaltiesClient
+        {...props}
+        initialStatus='revoked'
+      />,
+    )
+    expect(screen.queryByText('server-first-page')).not.toBeInTheDocument()
+    view.rerender(
+      <IntegrityPenaltiesClient
+        {...props}
+        initialStatus='active'
+        annualReviews={{ initialDuePage, getDue, review: action }}
+      />,
+    )
+    expect(screen.getByText('server-first-page')).toBeInTheDocument()
+    expect(getDue).not.toHaveBeenCalled()
   })
 })

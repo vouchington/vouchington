@@ -1,3 +1,4 @@
+import type { PageInfo } from './api-responses'
 import type {
   IntegrityFlagStatusFilter,
   ReportIntegrityFlagType,
@@ -58,4 +59,9 @@ export interface ReportIntegrityPenaltiesResponse {
 
 export interface ReportIntegrityPenaltyReviewDue extends ReportIntegrityPenalty {
   user_username: string | null
+}
+
+export interface ReportIntegrityPenaltyReviewsDueResponse {
+  results: ReportIntegrityPenaltyReviewDue[]
+  page_info: PageInfo
 }

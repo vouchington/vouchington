@@ -62,8 +62,13 @@ describe('ReportIntegrityPenaltiesClient', () => {
       results: [penalty],
       page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
     }
+    const initialDuePage = {
+      ...initialData,
+      results: [{ ...penalty, user_username: 'server-recipient' }],
+    }
     render(
       <ReportIntegrityPenaltiesClient
+        initialDuePage={initialDuePage}
         initialData={initialData}
         initialStatus='active'
       />,
@@ -85,7 +90,7 @@ describe('ReportIntegrityPenaltiesClient', () => {
       penaltiesPath: '/report-integrity/penalties',
       getById: mocks.getById,
       revoke: mocks.revoke,
-      annualReviews: { getDue: mocks.getDue, review: mocks.review },
+      annualReviews: { initialDuePage, getDue: mocks.getDue, review: mocks.review },
     })
     expect(props.multiplier(penalty)).toBeNull()
   })

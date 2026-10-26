@@ -46,6 +46,10 @@ export const DueVotePenalties: Story = {
     <main className='min-h-screen bg-background p-6 text-foreground'>
       <AnnualPenaltyReviews
         reconcile={reconcile}
+        initialDuePage={{
+          results: [ring, referral],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }}
         getDue={getDue}
         review={review}
         revoke={revoke}
