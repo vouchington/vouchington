@@ -81,7 +81,7 @@ export async function recordModelUsage(
     onError(err instanceof Error ? err : new Error('AI usage ledger write failed', { cause: err }))
     const requestDay = getUtcDayFromDate(registration?.createdAt ?? createdAt ?? new Date())
     await latchUncertainty({ requestDay, source: 'ledger_write_failed' })
-    // A job must remain retryable while its response id is still in job data.
-    if (registration?.kind === 'job') throw err
+    // Keep a completed paid result available to its caller. A job-owned response id remains in
+    // job data for accounting recovery; the uncertainty latch blocks more spend meanwhile.
   }
 }
