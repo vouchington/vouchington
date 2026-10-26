@@ -84,7 +84,8 @@ describe('activitypub durable inbox through the production background processor'
     if (loaded.outcome === 'stale') throw new Error('Expected the signed envelope')
     const acceptedAgain = await activityPubInboxDeliveryTransitions.accept(loaded.value)
     expect(acceptedAgain).toEqual({ outcome: 'applied', value: delivered })
-    const queued = await enqueueActivityPubInboxDelivery(delivered)
+    await enqueueActivityPubInboxDelivery(delivered)
+    const queued = await background.getJob(`activitypub-inbox__${delivered.requestDigest}`)
     try {
       expect(queued?.id).toBe(`activitypub-inbox__${delivered.requestDigest}`)
       expect(await enqueueActivityPubInboxDelivery(delivered)).toBeNull()

@@ -13180,6 +13180,9 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
+      '@queues/activitypub':
+        specifier: workspace:^
+        version: link:../../queues/activitypub
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports

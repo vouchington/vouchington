@@ -58,6 +58,7 @@
     "@data-stores/valkey-core": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
     "@modules/http-signatures": "workspace:^",
+    "@queues/activitypub": "workspace:^",
     "@queues/admin-imports": "workspace:^",
     "@queues/cache-purge": "workspace:^",
     "@queues/notifications": "workspace:^",
