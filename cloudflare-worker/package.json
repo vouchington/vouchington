@@ -49,7 +49,7 @@
     "@vouchington/edge": "^0.3.0",
     "@vouchington/rate-limit": "^0.3.0",
     "@vouchington/session-jwt": "^0.0.2",
-    "@vouchington/utils": "^0.10.0",
+    "@vouchington/utils": "^0.10.2",
     "isbot": "^5.2.2"
   },
   "devDependencies": {

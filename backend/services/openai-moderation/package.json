@@ -36,7 +36,7 @@
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/users": "workspace:^",
-    "@vouchington/utils": "^0.10.0",
+    "@vouchington/utils": "^0.10.2",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.12.0"

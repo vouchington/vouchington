@@ -26,7 +26,7 @@
     "@modules/utils": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/utils": "^0.10.0"
+    "@vouchington/utils": "^0.10.2"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^",
