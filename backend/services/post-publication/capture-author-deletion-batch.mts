@@ -3,16 +3,14 @@ import { DELETED_USER_ID } from '@voucha/types/entities/user-constants'
 import {
   getAuthoredPostIds,
   getContributedSources,
+  getInitiatedStoryPostIds,
   type SourceCandidate,
 } from './capture-author-deletion-candidates.mts'
 import { retainPostPublicationImpacts } from './capture-impacts.mts'
-import { lockPostPublicationPostScopes, recordPostPublicationChanges } from './capture-posts.mts'
+import { lockPostPublicationPostScopes } from './capture-posts.mts'
 import { lockAuthorPublicationLifecycle } from './lock.mts'
 import { recordPostPublicationChange } from './capture.mts'
-import {
-  prepareAuthorDeletionPublicationIdentityBridges,
-  retainAuthorDeletionPublicationImpacts,
-} from './capture-author-deletion-work.mts'
+import { recordAuthorDeletionWork } from './capture-author-deletion-work.mts'
 
 /** Removes one mutation-backed source or authored-post page per committed transaction. */
 export async function processAuthorDeletionPublicationBatch(
@@ -30,6 +28,25 @@ export async function processAuthorDeletionPublicationBatch(
         hasMore: true,
       }),
     )
+  }
+  const initiatedStoryPostIds = await getInitiatedStoryPostIds(query, authorUserId, batchSize)
+  if (initiatedStoryPostIds.length > 0) {
+    await lockAuthoredPostScopes(query, initiatedStoryPostIds)
+    await query(
+      `/* processAuthorDeletionPublicationBatch:lockInitiatedStoryPosts */
+      SELECT post_id FROM story_posts
+      WHERE initiated_by_id = $1::uuid AND post_id = ANY($2::uuid[])
+      ORDER BY post_id FOR UPDATE`,
+      [authorUserId, initiatedStoryPostIds],
+    )
+    await recordAuthorDeletionWork(query, authorUserId, priorAuthorUsername, initiatedStoryPostIds)
+    await query(
+      `/* processAuthorDeletionPublicationBatch:reassignInitiatedStoryPosts */
+      UPDATE story_posts SET initiated_by_id = $2::uuid
+      WHERE initiated_by_id = $1::uuid AND post_id = ANY($3::uuid[])`,
+      [authorUserId, DELETED_USER_ID, initiatedStoryPostIds],
+    )
+    return { processed: initiatedStoryPostIds.length, hasMore: true }
   }
   const postIds = await getAuthoredPostIds(query, authorUserId, batchSize)
   if (postIds.length === 0) {
@@ -77,7 +94,7 @@ async function recordAndReassignAuthoredPosts(
   priorAuthorUsername: string | null,
   postIds: string[],
 ): Promise<void> {
-  await recordDeletionWork(query, authorUserId, priorAuthorUsername, postIds)
+  await recordAuthorDeletionWork(query, authorUserId, priorAuthorUsername, postIds)
   await query(
     `/* processAuthorDeletionPublicationBatch:reassignPosts */
       UPDATE posts SET created_by_id = $2::uuid
@@ -131,7 +148,7 @@ async function recordContributedSourceWork(
   postIds: string[],
   sources: SourceCandidate[],
 ) {
-  const postWork = await recordDeletionWork(query, userId, priorUsername, postIds)
+  const postWork = await recordAuthorDeletionWork(query, userId, priorUsername, postIds)
   const topicIdsByPost = new Map<string, Set<string>>()
   for (const source of sources) {
     if (!source.topic_id) continue
@@ -160,33 +177,4 @@ async function reassignContributedSources(
       WHERE id = ANY($1::uuid[])`,
     [sources.map(source => source.id), DELETED_USER_ID],
   )
-}
-
-async function recordDeletionWork(
-  query: TransactionQuery,
-  userId: string,
-  priorUsername: string | null,
-  postIds: string[],
-) {
-  await prepareAuthorDeletionPublicationIdentityBridges(query, userId, postIds)
-  return recordPreparedDeletionWork(query, userId, priorUsername, postIds)
-}
-
-async function recordPreparedDeletionWork(
-  query: TransactionQuery,
-  userId: string,
-  priorUsername: string | null,
-  postIds: string[],
-) {
-  const authorWork = await recordPostPublicationChange(query, {
-    scope: { type: 'author', authorUserId: userId },
-    reason: 'author_deleted',
-    footprint: { priorAuthorUsername: priorUsername ?? undefined },
-  })
-  const postWork = await recordPostPublicationChanges(
-    query,
-    'author_deleted',
-    postIds.map(postId => ({ postId })),
-  )
-  return retainAuthorDeletionPublicationImpacts(query, authorWork.id, postIds, postWork)
 }

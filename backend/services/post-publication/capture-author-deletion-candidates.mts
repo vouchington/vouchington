@@ -33,3 +33,20 @@ export async function getAuthoredPostIds(
     )
   ).rows.map(row => row.id)
 }
+
+/** Story-post links must survive deletion of the user who initiated them. */
+export async function getInitiatedStoryPostIds(
+  query: TransactionQuery,
+  userId: string,
+  batchSize: number,
+): Promise<string[]> {
+  return (
+    await query<{ post_id: string }>(
+      `/* processAuthorDeletionPublicationBatch:getInitiatedStoryPosts */
+      SELECT post_id FROM story_posts
+      WHERE initiated_by_id = $1::uuid
+      ORDER BY post_id LIMIT $2`,
+      [userId, batchSize],
+    )
+  ).rows.map(row => row.post_id)
+}
