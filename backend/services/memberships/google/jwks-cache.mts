@@ -1,3 +1,4 @@
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { fetchWithTimeoutSimple } from '@modules/utils'
 import type { GoogleOidcPublicJwk, GoogleOidcTrustMaterial } from './types.mts'
@@ -13,6 +14,7 @@ export type GoogleOidcTrustStore = {
 
 const GOOGLE_OIDC_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs'
 const googleOidcTrustCache = new ValkeyCache<{ key: string }>({
+  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: 'memberships-google-oidc-trust',
   ttlSeconds: 6 * 60 * 60,
   keySerializer: value => value.key,

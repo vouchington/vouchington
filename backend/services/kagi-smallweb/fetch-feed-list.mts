@@ -1,3 +1,4 @@
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { Readable, Transform, compose } from 'node:stream'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { fetch } from 'undici'
@@ -19,6 +20,7 @@ const FETCH_TIMEOUT_MS = 30_000
 const MAX_FEED_LIST_BYTES = 10 * 1024 * 1024
 
 const headerCache = new ValkeyCache({
+  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: 'kagi-smallweb-etag',
   ttlSeconds: 48 * 3600, // 48 hours — outlives the daily schedule
   mode: 'json',

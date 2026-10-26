@@ -1,3 +1,4 @@
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import type {
   FediverseProviderAdapter,
   FediverseSearchBucket,
@@ -29,6 +30,7 @@ export function createFediverseAdapters(): Record<
 // transient provider outage to every caller until the TTL expires.
 export function cacheAdapter(adapter: FediverseProviderAdapter): FediverseProviderAdapter {
   const cache = new ValkeyCache({
+    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: `fediverse-search:${adapter.provider}`,
     ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
     mode: 'json',

@@ -1,3 +1,4 @@
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { read } from '@data-stores/psql'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import sql from 'sql-template-strings'
@@ -5,6 +6,7 @@ import sql from 'sql-template-strings'
 const CACHE_TTL_SECONDS = 5 * 60
 
 const cache = new ValkeyCache({
+  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: 'contribution-gating:verified-email',
   ttlSeconds: CACHE_TTL_SECONDS,
 })

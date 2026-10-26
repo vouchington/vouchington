@@ -1,4 +1,5 @@
 import { ValkeyCache } from '@data-stores/valkey/cache'
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { entityCacheBloomFilterEnabled } from './bloom-filter-instances.mts'
 import {
   checkEntityBloomKeys,
@@ -25,7 +26,7 @@ export class EntityBloomCache extends ValkeyCache {
       enabled: entityCacheBloomFilterEnabled,
     },
   ) {
-    super(options)
+    super({ ...options, runBackgroundRefresh: runDetachedBackgroundWork })
     this.entityType = entityType
     this.dependencies = dependencies
   }

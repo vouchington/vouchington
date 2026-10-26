@@ -5,9 +5,11 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
 
 import { write } from '@data-stores/psql'
 import { ValkeyCache } from '@data-stores/valkey/cache'
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import sql from 'sql-template-strings'
 
 const robotsTxtCache = new ValkeyCache({
+  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: 'urls-domains-robots',
   ttlSeconds: 86_400,
 })

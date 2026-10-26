@@ -55,6 +55,6 @@
     "@voucha/config": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "uuid": "^14.0.3",
-    "valkyries": "^0.11.2"
+    "valkyries": "^0.12.0"
   }
 }

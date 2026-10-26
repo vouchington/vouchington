@@ -54,7 +54,7 @@
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",
-    "valkyries": "^0.11.2"
+    "valkyries": "^0.12.0"
   },
   "devDependencies": {
     "@services/ai-usage": "workspace:^",

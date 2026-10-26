@@ -1,3 +1,4 @@
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import onError from '@modules/on-error'
 import {
@@ -13,11 +14,13 @@ const RULES_TTL_SECONDS = 60 * 60 * 24
 const UNREACHABLE_TTL_SECONDS = 15 * 60
 
 const rulesCache = new ValkeyCache({
+  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: ROBOTS_RULES_CACHE_PREFIX,
   ttlSeconds: RULES_TTL_SECONDS,
 })
 
 const unreachableCache = new ValkeyCache({
+  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: ROBOTS_UNREACHABLE_CACHE_PREFIX,
   ttlSeconds: UNREACHABLE_TTL_SECONDS,
 })
