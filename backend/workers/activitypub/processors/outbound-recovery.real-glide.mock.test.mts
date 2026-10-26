@@ -1,12 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import type { Job } from 'glide-mq'
+import { Queue, Worker, type Job } from 'glide-mq'
 import { activitypub } from '@queues/activitypub/queues'
 import {
   ACTIVITYPUB_RECOVER_OUTBOUND_JOB,
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
 } from '@queues/background/enqueues/activitypub-jobs'
-import type { RecoverOutboundDistributionData } from '@queues/background/enqueues/activitypub-domain'
+import type {
+  DistributeActivityData,
+  RecoverOutboundDistributionData,
+} from '@queues/background/enqueues/activitypub-domain'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import { insertUndispatchedTestUserFollow } from '@voucha/test-helpers/activitypub-distribution-state'
 import { softDeleteUserFollowRelations } from '@services/entity-relations/soft-delete-user-follows'
@@ -15,13 +18,101 @@ import {
   markActivityDistributionComplete,
 } from '@services/activitypub-delivery'
 import { upsertPostElectionVotes } from '@services/elections-votes/post/votes-upsert'
-import { getUndoFollowActivityId } from '@queues/activitypub/enqueues/delivery'
+import {
+  distributionPageJobId,
+  getUndoFollowActivityId,
+} from '@queues/activitypub/enqueues/delivery'
 import { processRecoverOutboundDistributionJob } from './outbound-recovery.mts'
 import { assertTerminalActivityPubRootRecovery } from '@voucha/test-helpers/activitypub-terminal-root-recovery'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
+import { resumeDistributionPage } from './distribution-recovery.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('outbound ActivityPub recovery with PostgreSQL and GlideMQ', () => {
+  it('keeps a completed root receipt and resumes its missing continuation without replaying its first page', async () => {
+    expect.hasAssertions()
+    await assertTerminalActivityPubRootRecovery('completed', { withReceipt: true })
+  })
+
+  it('rearms a completed continuation with its own saved page receipt', async () => {
+    const queueName = `activitypub-child-receipt-${randomUUID()}`
+    const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+    const queue = new Queue<DistributeActivityData>(queueName, connection)
+    const sourceUserId = randomUUID()
+    const targetPostId = randomUUID()
+    const activityId = randomUUID()
+    const child: DistributeActivityData = {
+      activityType: 'Like',
+      activityId,
+      sourceUserId,
+      targetPostId,
+      cursor: randomUUID(),
+    }
+    const next: DistributeActivityData = { ...child, cursor: randomUUID() }
+    const receipt = {
+      result: { enqueued: 1, completed: false, cursor: next.cursor },
+      next,
+      nextAdmitted: true,
+    }
+    const id = distributionPageJobId(child)
+    const settled = Promise.withResolvers<void>()
+    const worker = new Worker<DistributeActivityData>(
+      queueName,
+      async (job: Job<DistributeActivityData>) => {
+        if (job.id !== id) throw new Error('Unexpected continuation')
+        const receipted = { ...job.data, dispatchReceipt: receipt }
+        await job.updateData(receipted)
+      },
+      { ...connection, blockTimeout: 1000 },
+    )
+    worker.on('error', settled.reject)
+    worker.on('completed', (job: Job | undefined) => {
+      if (job?.id === id) settled.resolve()
+    })
+    try {
+      await worker.waitUntilReady()
+      await queue.add(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name, child, {
+        jobId: id,
+        attempts: 1,
+        removeOnComplete: 100,
+      })
+      await waitForRealGlideEvent(settled.promise, 'Completed ActivityPub child receipt')
+      await worker.close()
+      const added = await enqueueBulkReactivatingFinished({
+        queue,
+        inputs: [{ ...child, recovery: true as const }],
+        jobIdOf: distributionPageJobId,
+        enqueueBulk: inputs =>
+          queue.addBulk(
+            inputs.map(data => ({
+              name: ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name,
+              data,
+              opts: { jobId: distributionPageJobId(data) },
+            })),
+          ),
+        reactivatedInput: resumeDistributionPage,
+      })
+      expect(added.map(job => job.id)).toEqual([id])
+      const resumed = await queue.getJob(id)
+      expect(resumed?.data).toMatchObject({
+        ...child,
+        recovery: true,
+        dispatchReceipt: receipt,
+      })
+      if (!resumed) throw new Error('Expected reactivated continuation')
+      expect((resumed.data as { dispatchReceipt?: typeof receipt }).dispatchReceipt?.next).toEqual(
+        next,
+      )
+    } finally {
+      await worker.close(true)
+      await queue.obliterate({ force: true })
+      await queue.close()
+    }
+  })
+
   it.each(['completed', 'failed'] as const)(
     're-admits a retained %s distribution root from the scheduled Follow sweep',
     terminalState => {

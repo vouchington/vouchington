@@ -18,6 +18,7 @@ import {
   type deliverActivityToInbox,
 } from '@services/activitypub-delivery'
 import { distributeActivity, deliverActivity } from './processors/delivery.mts'
+import { resumeDistributionPage } from './processors/distribution-recovery.mts'
 
 export async function processDistributeActivityJob(
   job: Pick<Job<DistributeActivityData>, 'data' | 'id' | 'name' | 'updateData' | 'moveToDelayed'>,
@@ -54,6 +55,7 @@ export async function processDistributeActivityJob(
       inputs: [next],
       jobIdOf: distributionPageJobId,
       enqueueBulk: enqueueBulkDistributeActivity,
+      reactivatedInput: resumeDistributionPage,
     })
   }
   if (result.completed) await markActivityDistributionComplete(job.data)

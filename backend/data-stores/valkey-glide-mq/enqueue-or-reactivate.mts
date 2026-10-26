@@ -30,6 +30,8 @@ export async function enqueueBulkReactivatingFinished<
   inputs: TInput[]
   jobIdOf: (input: TInput) => string | undefined
   enqueueBulk: (inputs: TInput[]) => Promise<TJob[]>
+  /** Rebuild an app-specific payload from the terminal record removed by this pass. */
+  reactivatedInput?: (input: TInput, retainedData: unknown) => TInput
   /** Isolated real queues in tests may override the production queue namespace. */
   prefix?: string
 }): Promise<TJob[]> {
@@ -47,8 +49,17 @@ export async function enqueueBulkReactivatingFinished<
     queue.name,
     options.prefix ?? workerQueuePrefix ?? 'glide',
     skipped.map(entry => entry.jobId),
+    options.reactivatedInput !== undefined,
   )
-  const reactivated = skipped.flatMap(entry => (released.has(entry.jobId) ? [entry.input] : []))
+  const reactivated = skipped.flatMap(entry => {
+    if (!released.has(entry.jobId)) return []
+    const retainedData = released.get(entry.jobId)
+    return [
+      retainedData === undefined || options.reactivatedInput === undefined
+        ? entry.input
+        : options.reactivatedInput(entry.input, retainedData),
+    ]
+  })
   if (reactivated.length === 0) return added
   return [...added, ...(await enqueueBulk(reactivated))]
 }
@@ -57,8 +68,9 @@ async function releaseFinishedJobIds(
   queueName: string,
   prefix: string,
   jobIds: string[],
-): Promise<Set<string>> {
-  const released = new Set<string>()
+  preserveData: boolean,
+): Promise<Map<string, unknown>> {
+  const released = new Map<string, unknown>()
   const namespace = `${prefix}:{${queueName}}`
   const dedicated = createRetryingCommandClient('terminal-job-reactivation')
   const client = dedicated.client
@@ -68,9 +80,11 @@ async function releaseFinishedJobIds(
       async jobId => {
         const claim = await acquireTerminalJobRemoval(client, namespace, jobId)
         if (claim.state === 'terminal') {
-          if (await claim.remove()) released.add(jobId)
+          const data = preserveData ? await claim.readData() : null
+          const retainedData = data === null ? undefined : (JSON.parse(data.toString()) as unknown)
+          if (await claim.remove()) released.set(jobId, retainedData)
         } else {
-          if (claim.state === 'missing') released.add(jobId)
+          if (claim.state === 'missing') released.set(jobId, undefined)
           await claim.release()
         }
       },

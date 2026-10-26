@@ -17,6 +17,7 @@ import {
   listPendingOutboundDistributionPage,
   type OutboundRecoveryRow,
 } from '@services/activitypub-delivery'
+import { resumeDistributionPage } from './distribution-recovery.mts'
 
 const enqueueRecoveryContinuation = createBackgroundEnqueue(ACTIVITYPUB_RECOVER_OUTBOUND_JOB)
 
@@ -54,6 +55,7 @@ export async function processRecoverOutboundDistributionJob(
           inputs: page.rows.map(toDistributionJob),
           jobIdOf: distributionPageJobId,
           enqueueBulk,
+          reactivatedInput: resumeDistributionPage,
         })
       }
       return {

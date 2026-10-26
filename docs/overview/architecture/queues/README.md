@@ -35,7 +35,9 @@ flowchart LR
   has a separate lane so a large audience cannot queue behind its own delivery tasks. Outbound
   recovery has its own lane so a pending-state sweep can run while fan-out pages occupy dispatch
   slots. Domain rows retain the current ActivityPub publication state; indexed reconciliation can re-admit a missed
-  distribution after a database commit or a failed continuation. Retention cleanup has its
+  distribution after a database commit or a failed continuation. Recovery carries each retained
+  follower page's dispatch receipt into its replacement job, so a completed page resumes its
+  continuation without re-admitting that page's delivery jobs. Retention cleanup has its
   own lane independent of delivery backlogs to keep inbox capacity reclaimable under sustained
   traffic. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
