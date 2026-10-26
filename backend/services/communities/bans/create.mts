@@ -108,7 +108,7 @@ export async function banUserFromCommunity(
 
   // Free agent prompt slots for banned moderators/owners
   if (targetRoleBeforeBan === 'moderator' || targetRoleBeforeBan === 'owner') {
-    void enqueueOnCommunityAgentPromptsDeactivated(currentUser.id, targetUserId, communityId)
+    await enqueueOnCommunityAgentPromptsDeactivated(currentUser.id, targetUserId, communityId)
   }
 
   await Promise.all([

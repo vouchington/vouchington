@@ -61,8 +61,7 @@ export const enqueueOnCommunityAgentPromptsDeactivated = (
   communityId: string,
   priority?: number,
 ) => {
-  return enqueueProcessCommunityAgentPromptsDeactivated(
-    { actorUserId, userId, communityId },
-    priority,
+  return awaitReportedEnqueueAdmission(() =>
+    enqueueProcessCommunityAgentPromptsDeactivated({ actorUserId, userId, communityId }, priority),
   )
 }

@@ -1,4 +1,8 @@
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  awaitReportedEnqueueAdmission,
+  createBackgroundBulkEnqueue,
+  createBackgroundEnqueue,
+} from '@queues/background/enqueues'
 import {
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
   NOTIFICATIONS_DELETE_JOB,
@@ -102,13 +106,15 @@ export function enqueueReferralSignupNotification(
 export function enqueueReferralClickNotification(
   referrerId: string,
   landingUrl: string,
-): EnqueueReturnType {
-  return enqueueReferralClickNotificationJob({ referrerId, landingUrl }, {
-    deduplication: {
-      id: `processReferralClickNotification__${referrerId}`,
-      mode: 'debounce',
-    },
-  } satisfies Partial<JobOptions>)
+): Promise<void> {
+  return awaitReportedEnqueueAdmission(() =>
+    enqueueReferralClickNotificationJob({ referrerId, landingUrl }, {
+      deduplication: {
+        id: `processReferralClickNotification__${referrerId}`,
+        mode: 'debounce',
+      },
+    } satisfies Partial<JobOptions>),
+  )
 }
 
 export function enqueueDeleteNotification(

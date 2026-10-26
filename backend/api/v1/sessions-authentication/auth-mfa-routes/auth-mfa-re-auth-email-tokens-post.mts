@@ -1,3 +1,4 @@
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import type { Context } from '@jongleberry/api-server'
 import { sanitizeEmailAddress } from '@services/email-address-validator'
 import { getPrimaryEmailAddress } from '@services/my/email-addresses'
@@ -19,6 +20,8 @@ app.route('/api/v1/auth/mfa/re-auth/email/tokens').post(async (ctx: Context) => 
 
   const emailAddress = sanitizeEmailAddress(rawEmail)
   const result = await createEmailAddressLoginToken(emailAddress)
-  void enqueueEmailAddressLoginToken(result.emailAddress, result.token, currentUser.ui_locale)
+  await awaitReportedEnqueueAdmission(() =>
+    enqueueEmailAddressLoginToken(result.emailAddress, result.token, currentUser.ui_locale),
+  )
   ctx.json({ email_address: result.emailAddress })
 })
