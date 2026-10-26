@@ -4,7 +4,7 @@ type ClassifierRetentionPolicy = {
   reason: string
 }
 
-/** Parent receipts are reclaimed after their operator-owned result partitions have been removed. */
+/** Parent receipts retire after named ranges or bounded DEFAULT pages release their references. */
 export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetentionPolicy>([
   [
     'classifier_decision_batches',
@@ -12,7 +12,7 @@ export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetention
       minimumDays: 90,
       owner: 'data-retention',
       reason:
-        'Daily capped cleanup deletes old batches only after operator-owned result partitions and their calls and candidate snapshots are gone.',
+        'Daily capped cleanup deletes old batches after named result ranges or bounded DEFAULT result pages, then candidate snapshots and calls, are gone.',
     },
   ],
   [
@@ -21,7 +21,7 @@ export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetention
       minimumDays: 90,
       owner: 'data-retention',
       reason:
-        'Daily capped cleanup deletes old calls only after their operator-owned result rows are gone.',
+        'Daily capped cleanup deletes old calls after result rows and candidate snapshots are gone.',
     },
   ],
   [
@@ -47,7 +47,7 @@ export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetention
       minimumDays: 90,
       owner: 'data-retention',
       reason:
-        'Daily capped cleanup removes old batch candidate snapshots after their result references are retired.',
+        'Daily capped cleanup removes old batch candidate snapshots after result references are retired, even while call receipts remain.',
     },
   ],
   ...['autotagger_agent_run_topics', 'post_classifier_local_outcomes'].map(
@@ -70,7 +70,7 @@ export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetention
       minimumDays: 90,
       owner: 'operator-partition-drop',
       reason:
-        'UUIDv7 batch ranges start in DEFAULT and are split on demand; the owner retires only complete ranges outside the retention window.',
+        'UUIDv7 batch ranges start in DEFAULT; bounded cleanup prunes expired DEFAULT rows, while the operator retires complete named ranges outside the retention window.',
     },
   ]),
 ])

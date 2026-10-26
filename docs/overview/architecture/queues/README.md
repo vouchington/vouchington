@@ -28,6 +28,8 @@ flowchart LR
 - The PostgreSQL queue uses the same job names for scheduled crawl partition maintenance and
   operator actions. Only an authenticated admin request carries explicit classifier batch bounds;
   scheduled payloads remain empty, so classifier ranges are never created or retired on a schedule.
+  Explicit classifier ranges share one ordered lane. A bounded retention sweep publishes its next
+  page as a distinct queued job so a backlog drains without waiting for the next schedule.
 - `backend/worker-runtime/` wires workers, and `backend/entrypoints/{worker-cpu,worker-io}/` choose
   which run in a process. Infrastructure decides the deployed split; local development runs one
   process for everything.

@@ -100,7 +100,8 @@ markers provide recovery when publication or timestamp visibility loses a trigge
 Data retention bounds pending push work by the intent's creation time, because push work can be
 created after its notification. The intent's UUIDv7 `id` carries that time. A persisted cursor
 pages by that `id` and keeps a fixed cutoff for each sweep, so a large backlog resumes on the next
-scheduled run.
+scheduled run. The worker enqueues another bounded page when work remains, so a backlog progresses
+within the same cleanup cycle.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
 

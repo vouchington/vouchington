@@ -55,10 +55,11 @@ partition-status API and `pg_total_relation_size()`.
 Classifier results use a narrower operator path. An admin selects one UTC batch range; the worker
 checks that every row in each result DEFAULT fits it under a fixed row budget and seals the existing
 physical children as aligned explicit ranges in one transaction. A new DEFAULT receives later
-results. An oversized or mixed DEFAULT refuses the operation before DDL, so operators should seal
-small ranges as they grow. Candidate snapshots join the aligned range because their batch-scoped
+results. An oversized or mixed DEFAULT refuses the operation before DDL. Expired DEFAULT results
+and candidate snapshots are pruned in bounded pages, so a missed sealing window cannot permanently
+block later range creation. Candidate snapshots join the aligned range because their batch-scoped
 configuration is part of the retained decision payload. Calls and batches remain ordinary tables;
-their bounded cleanup waits until all referenced snapshots and result rows have retired. Classifier
+their bounded cleanup follows the result and snapshot pages. Classifier
 range retirement is operator initiated and checks the configured retention window and pending work
 under the partition locks. Its batch and run checks use indexed existence probes, so a sealed range
 can grow beyond the creation row budget and still retire. If a producer holds the batch or run

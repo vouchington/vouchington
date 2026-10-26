@@ -147,7 +147,9 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
-  classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>>
+  classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
+    activeSweeps?: readonly string[]
+  }
 }
 
 type DataRetentionCleanupResult = {

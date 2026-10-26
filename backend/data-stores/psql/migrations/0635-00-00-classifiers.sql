@@ -581,10 +581,6 @@ BEGIN
         WHERE run.decision_batch_id = OLD.batch_id
       )
       AND NOT EXISTS (
-        SELECT 1 FROM classifier_decision_calls AS call
-        WHERE call.batch_id = OLD.batch_id
-      )
-      AND NOT EXISTS (
         SELECT 1 FROM topic_classifier_results AS result
         WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id
       )
@@ -1056,7 +1052,8 @@ COMMENT ON COLUMN community_prompt_classifier_results.scope_community_id IS 'Com
 -- cannot make a daily run inspect an unbounded number of rows.
 CREATE TYPE classifier_retention_sweeps AS ENUM (
   'run_candidates', 'agent_topics', 'local_outcomes', 'runs', 'calls',
-  'batches', 'identities', 'versioned_identities'
+  'batches', 'identities', 'versioned_identities', 'requests',
+  'topic_results', 'story_results', 'community_prompt_results', 'decision_candidates'
 );
 
 CREATE TABLE IF NOT EXISTS classifier_retention_cursors (

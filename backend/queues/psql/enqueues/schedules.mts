@@ -59,6 +59,7 @@ const SCHEDULE_OPTS = {
 const DATA_RETENTION_SCHEDULE_OPTS = () =>
   ({
     ...SCHEDULE_OPTS,
+    ordering: { key: 'data_retention:cleanup', concurrency: 1 },
     priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
   }) satisfies JobOptions
 

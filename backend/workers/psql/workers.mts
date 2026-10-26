@@ -5,6 +5,7 @@ import type {
   PsqlJobs,
   ModerationRetentionJobData,
   PsqlPartitionJobData,
+  PsqlRetentionJobData,
   RefreshMaterializedViewData,
 } from '@queues/psql/types'
 import { QUEUE_NAME } from '@queues/psql/config'
@@ -20,7 +21,11 @@ export const psql = createWorker(
         ? processModerationRetentionCleanup(job as Job<ModerationRetentionJobData>)
         : processPsql(
             job.name as PsqlJobs,
-            job.data as Partial<RefreshMaterializedViewData & PsqlPartitionJobData>,
+            job.data as Partial<
+              RefreshMaterializedViewData & PsqlPartitionJobData & PsqlRetentionJobData
+            >,
+            undefined,
+            job.id,
           ),
     )
   },

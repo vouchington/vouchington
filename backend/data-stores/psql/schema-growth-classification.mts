@@ -160,7 +160,7 @@ export function buildUnboundedUnpartitionedTables(
       ],
       [
         'classifier_run_requests',
-        'Minimal subject and content request identity survives run payload retirement so pending recovery and exact follow-on deduplication remain durable.',
+        'Minimal request identity survives run payload retirement for pending recovery and exact deduplication while its real subject exists; bounded cleanup removes requests whose subject is gone before retained identity roots retire.',
       ],
       [
         'notification_push_intents',

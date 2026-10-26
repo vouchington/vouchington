@@ -54,3 +54,7 @@ export type ClassifierPartitionRange = {
 export type PsqlPartitionJobData = {
   classifierRange?: ClassifierPartitionRange
 }
+
+export type PsqlRetentionJobData = {
+  continuation?: { runId: string; step: number; activeClassifierSweeps: string[] }
+}
