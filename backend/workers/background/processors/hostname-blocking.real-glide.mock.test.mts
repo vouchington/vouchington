@@ -53,7 +53,7 @@ describe('hostname block cleanup background handlers', () => {
     }
   })
 
-  it('recovers and completes every bounded stage through an owned real queue', async ({
+  it('completes every bounded cleanup stage through an owned real queue', async ({
     signal,
   }) => {
     const restore = overrideDynamicConfigFieldsForTest(hostnameBlockingWorkConfig, {
@@ -61,17 +61,13 @@ describe('hostname block cleanup background handlers', () => {
       hostname_scan_batch_size: 1,
       url_scan_batch_size: 1,
       penalty_enqueue_batch_size: 1,
-      recovery_batch_size: 1,
     })
     const [administrator, creator] = await Promise.all([
       createTestUserDirect({ administrator: true }),
       createTestUserDirect(),
     ])
     const hostname = `worker-${randomBytes(6).toString('hex')}.example.com`
-    const [cursorHostnameId, hostnameId] = await Promise.all([
-      insertTestUrlHostname({ hostname: `cursor-${randomBytes(6).toString('hex')}.example.com` }),
-      insertTestUrlHostname({ hostname }),
-    ])
+    const hostnameId = await insertTestUrlHostname({ hostname })
     const postId = await insertTestPost({
       title: `Hostname worker ${randomUUID()}`,
       slug: `hostname-worker-${randomUUID()}`,
@@ -86,9 +82,7 @@ describe('hostname block cleanup background handlers', () => {
       hostnameId,
       createdById: creator.id,
     })
-    const afterBlockId = (await createOperation(cursorHostnameId, administrator.id)).blockId
     const operation = await createOperation(hostnameId, administrator.id)
-    expect(operation.blockId.localeCompare(afterBlockId)).toBeGreaterThan(0)
 
     const queue = createQueue(`hostname-blocking-${randomUUID()}`, {
       priorityKind: 'ranked',
@@ -108,19 +102,16 @@ describe('hostname block cleanup background handlers', () => {
       },
     )
     const completed = Promise.withResolvers<void>()
-    const recoveryCompleted = Promise.withResolvers<void>()
     const unknownCompleted = Promise.withResolvers<void>()
     const jobs: Job[] = []
     const unknownBlockId = randomUUID()
     const rejectOnAbort = () => {
       const error = signal.reason ?? new Error('Hostname blocking worker test aborted')
       completed.reject(error)
-      recoveryCompleted.reject(error)
       unknownCompleted.reject(error)
     }
     signal.addEventListener('abort', rejectOnAbort, { once: true })
     void completed.promise.catch(() => {})
-    void recoveryCompleted.promise.catch(() => {})
     void unknownCompleted.promise.catch(() => {})
     worker.on('completed', job => {
       jobs.push(job)
@@ -132,31 +123,23 @@ describe('hostname block cleanup background handlers', () => {
       ) {
         completed.resolve()
       }
-      if (
-        job.name === HOSTNAME_BLOCKING_RECOVERY_JOB.name &&
-        job.data.afterBlockId === operation.blockId
-      ) {
-        recoveryCompleted.resolve()
-      }
       if (job.name === HOSTNAME_BLOCKING_PROCESS_JOB.name && job.data.blockId === unknownBlockId) {
         unknownCompleted.resolve()
       }
     })
     worker.on('failed', (_job, error) => {
       completed.reject(error)
-      recoveryCompleted.reject(error)
       unknownCompleted.reject(error)
     })
     worker.on('error', error => {
       completed.reject(error)
-      recoveryCompleted.reject(error)
       unknownCompleted.reject(error)
     })
 
     try {
       await worker.waitUntilReady()
-      await enqueues.enqueueRecovery({ afterBlockId })
-      await Promise.all([completed.promise, recoveryCompleted.promise])
+      await enqueues.enqueueCleanups([{ blockId: operation.blockId, progress: operation.progress }])
+      await completed.promise
 
       await enqueues.enqueueCleanups([{ blockId: unknownBlockId, progress: 0 }])
       await unknownCompleted.promise
