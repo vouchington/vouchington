@@ -1,5 +1,9 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { read } from '@data-stores/psql'
+import { countTestFeedSources } from '../../test-helpers/publication-test-queries.mts'
+import {
+  countTestPosts,
+  countTestPendingCategoryReconciliations,
+} from '../../test-helpers/rss-hard-delete-queries.mts'
 import {
   createRandomString,
   createTestTopic,
@@ -57,30 +61,13 @@ describe('resumable RSS feed source removal', () => {
     expect(second.hasMore).toBe(false)
     expect(second.keys.filter(key => key.kind === 'impact_post')).toHaveLength(1)
 
-    const [{ rows: remainingSources }, { rows: survivingPosts }, { rows: pendingCategories }] =
-      await Promise.all([
-        read<{ count: number }>(
-          `/* hardDeleteRssFeedSourcePageTest:sources */
-          SELECT COUNT(*)::integer AS count FROM rss_feed_item_sources WHERE rss_feed_id = $1`,
-          [feed.id],
-        ),
-        read<{ count: number }>(
-          `/* hardDeleteRssFeedSourcePageTest:posts */
-          SELECT COUNT(*)::integer AS count FROM posts WHERE id = ANY($1::uuid[])`,
-          [postIds],
-        ),
-        read<{ count: number }>(
-          `/* hardDeleteRssFeedSourcePageTest:categories */
-          SELECT COUNT(*)::integer AS count
-          FROM rss_feed_item_category_snapshot_reconciliations reconciliation
-          JOIN rss_feed_items item ON item.id = reconciliation.rss_feed_item_id
-          JOIN story_posts story_post ON story_post.story_id = item.story_id
-          WHERE story_post.post_id = ANY($1::uuid[])`,
-          [postIds],
-        ),
-      ])
-    expect(remainingSources[0]?.count).toBe(0)
-    expect(survivingPosts[0]?.count).toBe(3)
-    expect(pendingCategories[0]?.count).toBe(3)
+    const [remainingSources, survivingPosts, pendingCategories] = await Promise.all([
+      countTestFeedSources(feed.id),
+      countTestPosts(postIds),
+      countTestPendingCategoryReconciliations(postIds),
+    ])
+    expect(remainingSources).toBe(0)
+    expect(survivingPosts).toBe(3)
+    expect(pendingCategories).toBe(3)
   })
 })

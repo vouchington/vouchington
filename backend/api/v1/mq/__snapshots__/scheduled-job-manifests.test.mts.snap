@@ -328,43 +328,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Drain durable post publication reconciliation work",
-        "id": "reconcile-post-publication",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "background",
-    "registration": "sequential",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "reconcile-post-publication",
-    "template": {
-      "data": {},
-      "name": "post-publication.reconcile",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "post-publication",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Recover vote-weight recalculation dirty markers",
         "id": "voteWeightDirtyMarkers",
         "kind": "scheduled-jobs",
@@ -3072,6 +3035,45 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Resume bounded staff RSS feed hard deletes",
+        "id": "recoverRssFeedHardDeletes",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feed-maintenance",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "recoverRssFeedHardDeletes",
+    "template": {
+      "data": {
+        "afterId": null,
+      },
+      "name": "processRecoverRssFeedHardDeletes",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "hard-delete-rss-feed-recovery",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Drain durable RSS item category snapshots",
         "id": "reconcileRssFeedItemCategorySnapshots",
         "kind": "scheduled-jobs",
@@ -3572,12 +3574,12 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueReconcileRssFeedItemCategorySnapshots",
   },
   {
-    "description": "Drain durable post publication reconciliation work",
-    "id": "reconcile-post-publication",
-    "job_name": "post-publication.reconcile",
-    "queue_name": "background",
+    "description": "Resume bounded staff RSS feed hard deletes",
+    "id": "recoverRssFeedHardDeletes",
+    "job_name": "processRecoverRssFeedHardDeletes",
+    "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
-    "triggerName": "enqueueReconcilePostPublication",
+    "triggerName": "enqueueRecoverRssFeedHardDeletes",
   },
   {
     "description": "Drain durable story post related URL projections",

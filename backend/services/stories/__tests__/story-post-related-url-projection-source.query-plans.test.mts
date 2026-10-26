@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
+import { analyzeTestStoryUrlSourceRelations } from '../../../test-helpers/story-source-plan-queries.mts'
 import {
   insertTestStory,
   insertTestStoryRssFeedItemsBatch,
@@ -17,11 +17,7 @@ import { assertCustomPlanCheck } from '../../../scripts/explain-analyze/plan-cus
 import { getStoryPostRelatedUrlProjectionSourcePage } from '../story-post-related-url-projection-source.mts'
 
 let captured: CapturedTestQuery
-const analyzeStorySourcePage = definePlanStatisticsRefresh(async () => {
-  await write(
-    '/* analyzeStorySourcePage */ ANALYZE posts, story_posts, rss_feed_items, rss_feed_item_sources, urls',
-  )
-})
+const analyzeStorySourcePage = definePlanStatisticsRefresh(analyzeTestStoryUrlSourceRelations)
 
 function physicalRowsWithinBudget(plan: unknown, relation: string, budget: number): number {
   const nodes = collectPlanNodes(plan).filter(

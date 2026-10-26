@@ -1,4 +1,14 @@
-import { beginTransaction, read } from '@data-stores/psql'
+import {
+  beginTransaction,
+  createRandomString,
+  createTestUser,
+  hardDeleteTestPost,
+  insertTestPost,
+} from '@voucha/test-helpers'
+import {
+  deleteTestPostRow,
+  listExistingTestPostIds,
+} from '../../test-helpers/publication-test-queries.mts'
 import { postPublicationEffectJobId } from '../../queues/post-publication/enqueues.mts'
 import { postPublicationQueue } from '../../queues/post-publication/queues.mts'
 import {
@@ -9,12 +19,6 @@ import { recordPostPublicationChange } from '@services/post-publication/capture'
 import { retainHardDeletedPostPublication } from '@services/post-publication/capture-hard-delete'
 import type { PostPublicationChange } from '@services/post-publication/types'
 import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
-import {
-  createRandomString,
-  createTestUser,
-  hardDeleteTestPost,
-  insertTestPost,
-} from '@voucha/test-helpers'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 
@@ -51,9 +55,7 @@ describe('destructive publication capture', () => {
     const jobs = await captureAddedPublicationEffectsForScope(childId, async () => {
       await using query = await beginTransaction()
       await retainHardDeletedPostPublication(query, [childId])
-      await query('/* physicalDeleteCaptureTest:delete */ DELETE FROM posts WHERE id = $1::uuid', [
-        childId,
-      ])
+      await deleteTestPostRow(query, childId)
       await query.commit()
     })
     expect(jobs.flatMap(job => job.keys)).toEqual(
@@ -103,11 +105,7 @@ describe('destructive publication capture', () => {
     }
     await using query = await beginTransaction()
     const changeId = await recordPostPublicationChange(query, change)
-    await query(
-      `/* captureDestructiveCleanupTest:deleteComment */
-      DELETE FROM posts WHERE id = $1::uuid`,
-      [commentId],
-    )
+    await deleteTestPostRow(query, commentId)
     await query.commit()
 
     const keys = capturedPublicationKeys(change)
@@ -129,11 +127,6 @@ describe('destructive publication capture', () => {
         { kind: 'identity_post_slug', textValue: replySlug },
       ]),
     )
-    const { rows } = await read<{ id: string }>(
-      `/* captureDestructiveCleanupTest:survivors */
-      SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id`,
-      [[rootId, commentId, replyId]],
-    )
-    expect(rows).toEqual([{ id: rootId }])
+    expect(await listExistingTestPostIds([rootId, commentId, replyId])).toEqual([rootId])
   })
 })

@@ -2,7 +2,7 @@ import type { PostPublicationEffectsJobData } from '@voucha/types/post-publicati
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import {
   enqueueUpdateLandingPagesSitemapForReconciliation,
-  enqueueUpdatePostDaySitemapForReconciliation,
+  enqueueBulkUpdatePostDaySitemapsForReconciliation,
 } from '@queues/sitemaps/enqueues'
 import { enqueueBulkRefreshPostMetricsById } from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/vote-aggregation/enqueues/topic-ratings'
@@ -100,9 +100,7 @@ async function processPublicationKeys(
   })
   await enqueueBulkUpdateTopicRatingStatsForTopicId(selected.topicIds)
   await Promise.all([
-    ...selected.sitemapTargets.map(target =>
-      enqueueUpdatePostDaySitemapForReconciliation(target.postType, target.day),
-    ),
+    enqueueBulkUpdatePostDaySitemapsForReconciliation(selected.sitemapTargets),
     enqueueRefreshTopHashtags(),
     enqueueBulkRefreshPostMetricsById([...new Set([...postIds, ...currentPostIds])]),
     postIds.length > 0 ? enqueueBulkReconcilePostNotifications(postIds) : Promise.resolve(),

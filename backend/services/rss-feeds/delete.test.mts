@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { readTestRssFeedDeleteMarker } from '../../test-helpers/rss-hard-delete-queries.mts'
 import {
   createTestTopic,
   createTestUser,
@@ -46,12 +46,7 @@ describe('RSS feed deletion', () => {
     const feed = await createFeed('hard')
     expect(await hardDeleteRssFeedById(feed.id)).toBe(true)
     expect(await getRssFeedById(feed.id)).not.toBeNull()
-    const { rows } = await read<{ hard_delete_requested_at: Date | null }>(
-      `/* rssFeedDeleteTest:marker */
-      SELECT hard_delete_requested_at FROM rss_feeds WHERE id = $1::uuid`,
-      [feed.id],
-    )
-    expect(rows[0]?.hard_delete_requested_at).toBeInstanceOf(Date)
+    expect(await readTestRssFeedDeleteMarker(feed.id)).toBeInstanceOf(Date)
   })
 
   it('requires staff authorization before starting hard deletion', async () => {

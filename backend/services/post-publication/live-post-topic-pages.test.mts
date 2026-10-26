@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { insertTestPostDataTopics } from '../../test-helpers/publication-test-queries.mts'
 import {
   createTestTopic,
   createTestUser,
@@ -32,12 +32,7 @@ describe('live post topic continuation', () => {
       ),
     )
     const expected = topics.map(topic => topic.id).toSorted()
-    await write(
-      `/* seedLivePostTopicPageTest */
-      INSERT INTO post_data_point_topics (post_id, topic_id)
-      SELECT $1::uuid, input.topic_id FROM unnest($2::uuid[]) input(topic_id)`,
-      [postId, expected],
-    )
+    await insertTestPostDataTopics(postId, expected)
 
     const first = await listLivePostTopicPage(postId, 'post_data_topics', null)
     expect(first).toEqual({ topicIds: expected.slice(0, 2), cursor: expected[1] })

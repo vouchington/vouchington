@@ -1,4 +1,7 @@
-import { read } from '@data-stores/psql'
+import {
+  readTestRssCategoryAliasTopic,
+  countTestPostAliasRelations,
+} from '../../../test-helpers/publication-test-queries.mts'
 import {
   addTopicAliasCategoryToRssFeedItem,
   createActivePostTopicAliasRelationForTest,
@@ -38,14 +41,7 @@ describe('topic alias publication mutation', () => {
 
     await claimTopicAlias(topic.id, alias.alias)
 
-    const { rows } = await read<{ topic_id: string }>(
-      `/* aliasPublicationMutationTest:claimedCategory */
-      SELECT alias.topic_id FROM rss_feed_item_categories category
-      JOIN topic_aliases alias ON alias.id = category.topic_alias_id
-      WHERE category.rss_feed_item_id = $1::uuid AND category.topic_alias_id = $2::uuid`,
-      [item.id, alias.id],
-    )
-    expect(rows[0]?.topic_id).toBe(topic.id)
+    expect(await readTestRssCategoryAliasTopic(item.id, alias.id)).toBe(topic.id)
   })
 
   it('keeps ordinary unlink atomic while cascading a source-less post relation', async () => {
@@ -62,12 +58,6 @@ describe('topic alias publication mutation', () => {
 
     await unlinkTopicAlias(alias.id)
 
-    const { rows } = await read<{ count: number }>(
-      `/* aliasPublicationMutationTest:oldRelation */
-      SELECT COUNT(*)::integer AS count FROM relation__post__category__topic_alias
-      WHERE subject_id = $1::uuid AND object_id = $2::uuid`,
-      [post.id, alias.id],
-    )
-    expect(rows[0]?.count).toBe(0)
+    expect(await countTestPostAliasRelations(post.id, alias.id)).toBe(0)
   })
 })

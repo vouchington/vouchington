@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { read } from '@data-stores/psql'
+import {
+  lockTestPostRow,
+  readTestPostCreator,
+} from '../../../test-helpers/publication-test-queries.mts'
 import { DELETED_USER_ID } from '@services/users/constants'
 
 import {
@@ -46,10 +49,7 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
 
     async function holdSecondPostRowLock(): Promise<void> {
       await using query = await beginTransaction()
-      await query(
-        `/* cleanup retention transaction boundary */ SELECT id FROM posts WHERE id = $1::uuid FOR UPDATE`,
-        [secondPostId],
-      )
+      await lockTestPostRow(query, secondPostId)
       secondPostLocked.resolve()
       await releaseSecondPost.promise
 
@@ -70,12 +70,7 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     try {
       await firstCommitted.promise
       expect(await getTestUserRaw(firstUser.id)).toBeNull()
-      const { rows } = await read<{ created_by_id: string }>(
-        `/* cleanupTransactionBoundaryTest:firstPost */
-        SELECT created_by_id FROM posts WHERE id = $1::uuid`,
-        [firstPostId],
-      )
-      expect(rows[0]?.created_by_id).toBe(DELETED_USER_ID)
+      expect(await readTestPostCreator(firstPostId)).toBe(DELETED_USER_ID)
       expect(await getTestUserRaw(secondUser.id)).not.toBeNull()
     } finally {
       releaseSecondPost.resolve()

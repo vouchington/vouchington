@@ -4,7 +4,11 @@ import type { PostPublicationEffectsJobData } from '@voucha/types/post-publicati
 import { hashCapturedPublicationKeys } from '../../services/post-publication/captured-keys.mts'
 import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
 import { postPublicationHandlers } from '../../workers/post-publication/workers.mts'
-import { enqueuePostPublicationEffects, postPublicationEffectJobId } from './enqueues.mts'
+import {
+  enqueueBulkPostPublicationEffects,
+  enqueuePostPublicationEffects,
+  postPublicationEffectJobId,
+} from './enqueues.mts'
 import { postPublicationQueue } from './queues.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -51,6 +55,23 @@ describe('direct publication jobs through real GlideMQ', () => {
       await Promise.all(
         [firstId, secondId].map(async id => (await postPublicationQueue.getJob(id))?.remove()),
       )
+    }
+  })
+
+  it('keeps both stable change IDs when admitted through the bulk boundary', async () => {
+    const postId = randomUUID()
+    const first = payload(randomUUID(), postId)
+    const second = payload(randomUUID(), postId)
+    const ids = [postPublicationEffectJobId(first), postPublicationEffectJobId(second)]
+    try {
+      await enqueueBulkPostPublicationEffects([first, second])
+      expect((await postPublicationQueue.getJob(ids[0]!))?.data).toEqual(first)
+      expect((await postPublicationQueue.getJob(ids[1]!))?.data).toEqual(second)
+      await enqueueBulkPostPublicationEffects([first, second])
+      expect((await postPublicationQueue.getJob(ids[0]!))?.data).toEqual(first)
+      expect((await postPublicationQueue.getJob(ids[1]!))?.data).toEqual(second)
+    } finally {
+      await Promise.all(ids.map(async id => (await postPublicationQueue.getJob(id))?.remove()))
     }
   })
 })

@@ -1,5 +1,22 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { read, write } from '@data-stores/psql'
+import {
+  readTestRssFeedDeleteMarker,
+  deleteTestRssFeedRow,
+  readTestFirstFeedSettingChange,
+  deleteTestFeedSettingChange,
+  updateTestFeedSettingChangeReason,
+  readTestFirstPostClearanceChange,
+  deleteTestPostClearanceChange,
+  insertTestFeedCrawl,
+  insertThreeTestFeedCrawls,
+  insertCompletedTestUserImportBatch,
+  deleteTestUserImportBatch,
+  insertCompletedTestUserImportRow,
+  insertCompletedTestAdminImportBatch,
+  deleteTestAdminImportBatch,
+  insertCompletedTestAdminImportRow,
+  countTestFeedRows,
+} from '../../test-helpers/rss-hard-delete-queries.mts'
 import {
   createRandomString,
   createTestPost,
@@ -27,51 +44,23 @@ describe('resumable RSS feed child removal', () => {
       topic_id: topic.id,
       title: 'Guarded feed history',
     })
-    onTestFinished(async () => {
-      await write('/* cleanupHardDeleteHistoryGuardTest */ DELETE FROM rss_feeds WHERE id = $1', [
-        feed.id,
-      ])
-    })
-    const { rows: changes } = await read<{ id: string }>(
-      '/* readHardDeleteHistoryGuardTest */ SELECT id FROM rss_feed_setting_changes WHERE rss_feed_id = $1::uuid ORDER BY id LIMIT 1',
-      [feed.id],
-    )
-    const changeId = changes[0]?.id
+    onTestFinished(() => deleteTestRssFeedRow(feed.id))
+    const changeId = await readTestFirstFeedSettingChange(feed.id)
     if (!changeId) throw new Error('Expected feed setting history')
-    await expect(
-      write(
-        '/* rejectActiveFeedHistoryDeleteTest */ DELETE FROM rss_feed_setting_changes WHERE id = $1::uuid',
-        [changeId],
-      ),
-    ).rejects.toMatchObject({ code: '23514' })
+    await expect(deleteTestFeedSettingChange(changeId)).rejects.toMatchObject({ code: '23514' })
 
     const post = await createTestPost({ user })
-    const { rows: clearance } = await read<{ id: string }>(
-      '/* readUnrelatedLedgerTest */ SELECT id FROM post_clearance_changes WHERE post_id = $1::uuid ORDER BY id LIMIT 1',
-      [post.id],
-    )
-    if (!clearance[0]) throw new Error('Expected unrelated append-only history')
-    await expect(
-      write(
-        '/* rejectUnrelatedLedgerDeleteTest */ DELETE FROM post_clearance_changes WHERE id = $1::uuid',
-        [clearance[0].id],
-      ),
-    ).rejects.toMatchObject({ code: '23514' })
+    const clearanceId = await readTestFirstPostClearanceChange(post.id)
+    if (!clearanceId) throw new Error('Expected unrelated append-only history')
+    await expect(deleteTestPostClearanceChange(clearanceId)).rejects.toMatchObject({
+      code: '23514',
+    })
 
     await hardDeleteRssFeedById(feed.id)
-    await expect(
-      write(
-        `/* rejectPendingFeedHistoryUpdateTest */
-       UPDATE rss_feed_setting_changes SET reason = 'changed' WHERE id = $1::uuid`,
-        [changeId],
-      ),
-    ).rejects.toMatchObject({ code: '23514' })
-    await expect(
-      write(
-        '/* allowMarkedFeedHistoryDeleteTest */ DELETE FROM rss_feed_setting_changes WHERE id = $1::uuid',
-        [changeId],
-      ),
-    ).resolves.toMatchObject({ rowCount: 1 })
+    await expect(updateTestFeedSettingChangeReason(changeId)).rejects.toMatchObject({
+      code: '23514',
+    })
+    await expect(deleteTestFeedSettingChange(changeId)).resolves.toBe(1)
   })
 
   it('rejects a new crawl after the delete marker commits', async () => {
@@ -84,17 +73,9 @@ describe('resumable RSS feed child removal', () => {
       topic_id: topic.id,
       title: 'Pending feed fence',
     })
-    onTestFinished(async () => {
-      await write('/* cleanupHardDeleteFenceTest */ DELETE FROM rss_feeds WHERE id = $1', [feed.id])
-    })
+    onTestFinished(() => deleteTestRssFeedRow(feed.id))
     await expect(hardDeleteRssFeedById(feed.id)).resolves.toBe(true)
-    await expect(
-      write(
-        `/* verifyHardDeleteFenceTest */
-        INSERT INTO rss_feed_crawls (rss_feed_id, response_code) VALUES ($1::uuid, 200)`,
-        [feed.id],
-      ),
-    ).rejects.toMatchObject({ code: '23514' })
+    await expect(insertTestFeedCrawl(feed.id)).rejects.toMatchObject({ code: '23514' })
   })
 
   it('keeps a completed user import outcome when its deleted feed link is cleared', async () => {
@@ -108,30 +89,15 @@ describe('resumable RSS feed child removal', () => {
       topic_id: topic.id,
       title: 'Completed user import feed',
     })
-    const { rows: batches } = await write<{ id: string }>(
-      `/* seedHardDeleteUserImportTest:batch */
-      INSERT INTO user_rss_feed_import_batches
-        (user_id, created_via, total_rows, completed_rows, completed_at)
-      VALUES ($1::uuid, 'system', 1, 1, CURRENT_TIMESTAMP) RETURNING id`,
-      [user.id],
-    )
-    const batchId = batches[0]!.id
+    const batchId = await insertCompletedTestUserImportBatch(user.id)
     onTestFinished(async () => {
-      await write(
-        '/* cleanupHardDeleteUserImportTest:batch */ DELETE FROM user_rss_feed_import_batches WHERE id = $1',
-        [batchId],
-      )
-      await write(
-        '/* cleanupHardDeleteUserImportTest:feed */ DELETE FROM rss_feeds WHERE id = $1',
-        [feed.id],
-      )
+      await deleteTestUserImportBatch(batchId)
+      await deleteTestRssFeedRow(feed.id)
     })
-    await write(
-      `/* seedHardDeleteUserImportTest:row */
-      INSERT INTO user_rss_feed_import_rows
-        (batch_id, row_index, input_url, outcome, rss_feed_id, completed_at)
-      VALUES ($1::uuid, 0, $2, 'imported', $3::uuid, CURRENT_TIMESTAMP)`,
-      [batchId, `https://rss-import-result-${nonce}.example.com/feed.xml`, feed.id],
+    await insertCompletedTestUserImportRow(
+      batchId,
+      `https://rss-import-result-${nonce}.example.com/feed.xml`,
+      feed.id,
     )
 
     await expect(hardDeleteRssFeedById(feed.id)).resolves.toBe(true)
@@ -156,36 +122,14 @@ describe('resumable RSS feed child removal', () => {
       topic_id: topic.id,
       title: 'Retained import feed',
     })
-    const { rows: batches } = await write<{ id: string }>(
-      `/* seedHardDeleteAdminImportTest:batch */
-      INSERT INTO admin_import_batches(import_type, created_by_id, total_rows, completed_rows, completed_at)
-      VALUES ('rss_feed', $1::uuid, 1, 1, CURRENT_TIMESTAMP) RETURNING id`,
-      [user.id],
-    )
-    const batchId = batches[0]!.id
+    const batchId = await insertCompletedTestAdminImportBatch(user.id)
     onTestFinished(async () => {
-      await write(
-        '/* cleanupHardDeleteAdminImportTest:batch */ DELETE FROM admin_import_batches WHERE id = $1',
-        [batchId],
-      )
-      await write(
-        '/* cleanupHardDeleteAdminImportTest:feed */ DELETE FROM rss_feeds WHERE id = $1',
-        [feed.id],
-      )
+      await deleteTestAdminImportBatch(batchId)
+      await deleteTestRssFeedRow(feed.id)
     })
-    await write(
-      `/* seedHardDeleteAdminImportTest:row */
-      INSERT INTO admin_import_rows(batch_id, row_index, input_data, rss_feed_id, completed_at)
-      VALUES ($1::uuid, 0, '{}'::jsonb, $2::uuid, CURRENT_TIMESTAMP)`,
-      [batchId, feed.id],
-    )
+    await insertCompletedTestAdminImportRow(batchId, feed.id)
     await expect(hardDeleteRssFeedById(feed.id)).rejects.toMatchObject({ status: 409 })
-    const { rows } = await read<{ hard_delete_requested_at: Date | null }>(
-      `/* verifyHardDeleteAdminImportTest */
-      SELECT hard_delete_requested_at FROM rss_feeds WHERE id = $1::uuid`,
-      [feed.id],
-    )
-    expect(rows[0]?.hard_delete_requested_at).toBeNull()
+    expect(await readTestRssFeedDeleteMarker(feed.id)).toBeNull()
   })
 
   it('drains crawl history in bounded committed pages before parent deletion', async () => {
@@ -202,17 +146,8 @@ describe('resumable RSS feed child removal', () => {
       topic_id: topic.id,
       title: 'Bounded child deletion',
     })
-    onTestFinished(async () => {
-      await write('/* cleanupHardDeleteChildPageTest */ DELETE FROM rss_feeds WHERE id = $1', [
-        feed.id,
-      ])
-    })
-    await write(
-      `/* seedHardDeleteChildPageTest */
-      INSERT INTO rss_feed_crawls (rss_feed_id, response_code)
-      SELECT $1::uuid, 200 FROM generate_series(1, 3)`,
-      [feed.id],
-    )
+    onTestFinished(() => deleteTestRssFeedRow(feed.id))
+    await insertThreeTestFeedCrawls(feed.id)
     await expect(hardDeleteRssFeedById(feed.id)).resolves.toBe(true)
 
     await expect(finalizeHardDeleteRssFeed(feed.id)).resolves.toMatchObject({
@@ -241,10 +176,6 @@ describe('resumable RSS feed child removal', () => {
       deleted: true,
       remaining: null,
     })
-    const { rows } = await read<{ count: number }>(
-      '/* verifyHardDeleteChildPageTest */ SELECT count(*)::integer AS count FROM rss_feeds WHERE id = $1',
-      [feed.id],
-    )
-    expect(rows[0]?.count).toBe(0)
+    expect(await countTestFeedRows(feed.id)).toBe(0)
   })
 })

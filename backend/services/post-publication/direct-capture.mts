@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { registerPostCommitAction, type TransactionQuery } from '@data-stores/psql'
-import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
+import { enqueueBulkPostPublicationEffects } from '@queues/post-publication/enqueues'
 import type { PublicationCapturedKey } from '@voucha/types/post-publication'
 import { hashCapturedPublicationKeys, splitCapturedPublicationKeys } from './captured-keys.mts'
 import { postPublicationScopeIdentifier } from './lock.mts'
@@ -21,20 +21,18 @@ export function enqueueCapturedPublicationChangeAfterCommit(
   const id = postPublicationScopeIdentifier(capture.scope)
   const scope = { type: capture.scope.type, id }
   const postId = capture.scope.type === 'post' ? capture.scope.postId : null
-  for (const [chunkIndex, keys] of splitCapturedPublicationKeys(capture.keys).entries()) {
-    const payload = {
-      changeId,
-      postId,
-      scope,
-      reason: capture.reason,
-      keys,
-      keyHash: hashCapturedPublicationKeys(keys),
-      chunkIndex,
-    }
-    // Register on this query's action scope, so a rolled-back nested transaction drops its jobs.
-    registerPostCommitAction(query, async () => {
-      await enqueuePostPublicationEffects(payload)
-    })
-  }
+  const payloads = splitCapturedPublicationKeys(capture.keys).map((keys, chunkIndex) => ({
+    changeId,
+    postId,
+    scope,
+    reason: capture.reason,
+    keys,
+    keyHash: hashCapturedPublicationKeys(keys),
+    chunkIndex,
+  }))
+  // Register on this query's action scope, so a rolled-back nested transaction drops its jobs.
+  registerPostCommitAction(query, async () => {
+    await enqueueBulkPostPublicationEffects(payloads)
+  })
   return changeId
 }

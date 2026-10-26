@@ -1,4 +1,8 @@
-import { read, write } from '@data-stores/psql'
+import {
+  insertTestLiveRssFeedCategories,
+  insertTestLiveRssItemCategories,
+  countTestFeedSources,
+} from '../../test-helpers/publication-test-queries.mts'
 import {
   createRandomString,
   createTestTopic,
@@ -39,20 +43,8 @@ describe('live RSS publication identity pages', () => {
     const categoryIds = await Promise.all(
       [0, 1, 2].map(index => registerTestRssCategoryIdentity(`live-rss-${suffix}-${index}`)),
     )
-    await write(
-      `/* seedLiveRssFeedCategories */
-      INSERT INTO rss_feed_categories (rss_feed_id, category_identity_id, topic_id)
-      SELECT $1::uuid, identity_id, $2::uuid FROM unnest($3::uuid[]) AS input(identity_id)`,
-      [feed.id, topic.id, categoryIds],
-    )
-    await write(
-      `/* seedLiveRssItemCategories */
-      INSERT INTO rss_feed_item_categories
-        (rss_feed_item_id, category_identity_id, category_text, topic_id)
-      SELECT $1::uuid, identity_id, 'Live RSS identity', $2::uuid
-      FROM unnest($3::uuid[]) AS input(identity_id)`,
-      [itemIds[0], topic.id, categoryIds],
-    )
+    await insertTestLiveRssFeedCategories(feed.id, topic.id, categoryIds)
+    await insertTestLiveRssItemCategories(itemIds[0]!, topic.id, categoryIds)
 
     const sourceFirst = await listLiveFeedItemsPage(feed.id, null)
     const sourceSecond = await listLiveFeedItemsPage(feed.id, sourceFirst.cursor)
@@ -69,11 +61,6 @@ describe('live RSS publication identity pages', () => {
     const itemSecond = await listLiveItemCategoriesPage(itemIds[0]!, itemFirst.cursor)
     expect(itemFirst).toEqual({ topicIds: [topic.id], aliases: [], cursor: orderedCategories[1] })
     expect(itemSecond).toEqual({ topicIds: [topic.id], aliases: [], cursor: null })
-    const { rows } = await read<{ count: number }>(
-      `/* liveRssFeedPagesTest:sourceCount */
-      SELECT COUNT(*)::integer AS count FROM rss_feed_item_sources WHERE rss_feed_id = $1`,
-      [feed.id],
-    )
-    expect(rows[0]?.count).toBe(3)
+    expect(await countTestFeedSources(feed.id)).toBe(3)
   })
 })

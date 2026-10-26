@@ -10,12 +10,26 @@ export async function retainPublicationIdentityBridges(
     throw new TypeError('Only classifier community identities are retained')
   if (ids.length === 0) return
   const ordered = [...new Set(ids.map(id => id.toLowerCase()))].toSorted()
+  await fenceCommunityIdentities(query, ordered)
+  await insertAndShareCommunityIdentities(query, ordered)
+}
+
+async function fenceCommunityIdentities(
+  query: TransactionQuery,
+  ordered: readonly string[],
+): Promise<void> {
   await query(
     `/* fencePublicationCommunityIdentityCapture */
     SELECT pg_advisory_xact_lock_shared(hashtextextended('publication-identity:community:' || input.id::text, 0))
     FROM unnest($1::uuid[]) input(id) ORDER BY input.id`,
     [ordered],
   )
+}
+
+async function insertAndShareCommunityIdentities(
+  query: TransactionQuery,
+  ordered: readonly string[],
+): Promise<void> {
   await query(
     `/* retainPublicationCommunityIdentity */
     INSERT INTO post_publication_community_identities (id, community_id)

@@ -9,6 +9,7 @@ export const EXISTING_FINITE_VALUES_5 = {
     'rss_feed_item',
     'image',
     'membership',
+    'community_bridge',
   ],
   revision_types: ['create', 'update', 'delete'],
   user_display_name_sources: [

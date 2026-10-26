@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { readTestPostCreator } from '../../../test-helpers/publication-test-queries.mts'
 import { DELETED_USER_ID } from '@services/users/constants'
 import { deleteUser } from '@services/users/delete'
 import {
@@ -28,11 +28,6 @@ describe('deleted author publication cleanup', () => {
       hasMore: false,
     })
     expect(await getTestUserRaw(user.id)).toBeNull()
-    const { rows } = await read<{ created_by_id: string }>(
-      `/* deletedAuthorPublicationCleanupTest:survivingPost */
-      SELECT created_by_id FROM posts WHERE id = $1::uuid`,
-      [post.id],
-    )
-    expect(rows[0]?.created_by_id).toBe(DELETED_USER_ID)
+    expect(await readTestPostCreator(post.id)).toBe(DELETED_USER_ID)
   })
 })

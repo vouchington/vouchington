@@ -1,12 +1,18 @@
 import { randomUUID } from 'node:crypto'
-import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import {
+  beginTransaction,
   createActivePostTopicAliasRelationForTest,
   createTestPost,
   createTestTopic,
   createTestUser,
   insertTestPost,
+  withTransactionOptions,
 } from '@voucha/test-helpers'
+import {
+  deleteTestPostRow,
+  deleteTestTopicAlias,
+  readTestPostPreimageForUpdate,
+} from '../../test-helpers/publication-test-queries.mts'
 import { createTopicAliases } from '../topics/aliases.mts'
 import {
   enqueuePostPublicationEffects,
@@ -62,11 +68,7 @@ describe('direct post-publication capture', () => {
       topicAliasText: alias.alias,
     })
     await captureDestroyedTopicAliasPostImpacts(query, changeId, alias.id)
-    await query(
-      `/* directCaptureTest:deleteOrdinaryAlias */
-      DELETE FROM topic_aliases WHERE id = $1::uuid`,
-      [alias.id],
-    )
+    await deleteTestTopicAlias(query, alias.id)
     await query.commit()
 
     const keys = [{ kind: 'impact_post' as const, uuidValue: post.id }]
@@ -97,12 +99,7 @@ describe('direct post-publication capture', () => {
       title: 'Predelete capture',
     })
     await using query = await beginTransaction()
-    const { rows } = await query<{ created_at: Date; post_type: string }>(
-      `/* directCaptureTest:predeletePost */
-      SELECT created_at, post_type FROM posts WHERE id = $1::uuid FOR UPDATE`,
-      [postId],
-    )
-    const post = rows[0]
+    const post = await readTestPostPreimageForUpdate(query, postId)
     if (!post || !author.username) throw new Error('Expected authored post preimage')
     const change: PostPublicationChange = {
       scope: { type: 'post', postId },
@@ -120,9 +117,7 @@ describe('direct post-publication capture', () => {
       },
     }
     const changeId = await recordPostPublicationChange(query, change)
-    await query(`/* directCaptureTest:hardDeletePost */ DELETE FROM posts WHERE id = $1::uuid`, [
-      postId,
-    ])
+    await deleteTestPostRow(query, postId)
     await query.commit()
 
     const id = effectId(changeId, change)

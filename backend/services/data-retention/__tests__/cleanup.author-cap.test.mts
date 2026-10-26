@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { read } from '@data-stores/psql'
+import { listExistingTestPostIds } from '../../../test-helpers/publication-test-queries.mts'
 import {
   createTestUserDirect,
   countTestPostsCreatedBy,
@@ -41,12 +41,9 @@ describe('author deletion budget', () => {
     await cleanupSoftDeletedUsers(options)
     await cleanupSoftDeletedUsers(options)
     expect(await getTestUserRaw(user.id)).toBeNull()
-    const { rows } = await read<{ id: string }>(
-      `/* authorDeletionBudgetTest:survivingPosts */
-      SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id`,
-      [[first.id, second.id]],
+    expect(await listExistingTestPostIds([first.id, second.id])).toEqual(
+      [first.id, second.id].toSorted(),
     )
-    expect(rows.map(row => row.id)).toEqual([first.id, second.id].toSorted())
   })
   it('shares the row allowance across selected authors instead of giving each a full page', async () => {
     const first = await createTestUserDirect()

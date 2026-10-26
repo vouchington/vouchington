@@ -1,5 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { read } from '@data-stores/psql'
+import { listExistingTestPostIds } from '../../test-helpers/publication-test-queries.mts'
 import {
   createRandomString,
   createTestRetentionWindow,
@@ -178,11 +178,6 @@ describe('retention publication capture', () => {
 
     await expect(nextPage()).resolves.toEqual({ deleted: 1, hasMore: false })
     expect(await getTestUserRaw(user.id)).toBeNull()
-    const { rows } = await read<{ id: string }>(
-      `/* retentionPublicationCaptureTest:survivingPosts */
-      SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id`,
-      [postIds],
-    )
-    expect(rows.map(row => row.id)).toEqual(postIds.toSorted())
+    expect(await listExistingTestPostIds(postIds)).toEqual(postIds.toSorted())
   })
 })

@@ -81,6 +81,7 @@ function createDispatcherEnqueue(
 export {
   enqueueUpdateLandingPagesSitemapForReconciliation,
   enqueueUpdatePostDaySitemapForReconciliation,
+  enqueueBulkUpdatePostDaySitemapsForReconciliation,
 } from './enqueues/post-publication.mts'
 
 export const enqueueBulkUpdatePostDaySitemaps = (

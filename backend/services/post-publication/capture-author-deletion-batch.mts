@@ -10,7 +10,6 @@ import { lockPostPublicationPostScopes } from './capture-posts.mts'
 import { lockAuthorPublicationLifecycle } from './lock.mts'
 import { recordPostPublicationChange } from './capture.mts'
 import { recordAuthorDeletionWork } from './capture-author-deletion-work.mts'
-
 /** Removes one mutation-backed source or authored-post page per committed transaction. */
 export async function processAuthorDeletionPublicationBatch(
   query: TransactionQuery,
@@ -30,20 +29,11 @@ export async function processAuthorDeletionPublicationBatch(
   }
   const initiatedStoryPostIds = await getInitiatedStoryPostIds(query, authorUserId, batchSize)
   if (initiatedStoryPostIds.length > 0) {
-    await lockAuthoredPostScopes(query, initiatedStoryPostIds)
-    await query(
-      `/* processAuthorDeletionPublicationBatch:lockInitiatedStoryPosts */
-      SELECT post_id FROM story_posts
-      WHERE initiated_by_id = $1::uuid AND post_id = ANY($2::uuid[])
-      ORDER BY post_id FOR UPDATE`,
-      [authorUserId, initiatedStoryPostIds],
-    )
-    await recordAuthorDeletionWork(query, authorUserId, priorAuthorUsername, initiatedStoryPostIds)
-    await query(
-      `/* processAuthorDeletionPublicationBatch:reassignInitiatedStoryPosts */
-      UPDATE story_posts SET initiated_by_id = $2::uuid
-      WHERE initiated_by_id = $1::uuid AND post_id = ANY($3::uuid[])`,
-      [authorUserId, DELETED_USER_ID, initiatedStoryPostIds],
+    await processInitiatedStoryPostBatch(
+      query,
+      authorUserId,
+      priorAuthorUsername,
+      initiatedStoryPostIds,
     )
     return { processed: initiatedStoryPostIds.length, hasMore: true }
   }
@@ -58,6 +48,46 @@ export async function processAuthorDeletionPublicationBatch(
   }
   await processAuthoredPostBatch(query, authorUserId, priorAuthorUsername, postIds)
   return { processed: postIds.length, hasMore: postIds.length === batchSize }
+}
+
+async function processInitiatedStoryPostBatch(
+  query: TransactionQuery,
+  authorUserId: string,
+  priorAuthorUsername: string | null,
+  postIds: string[],
+): Promise<void> {
+  await lockInitiatedStoryPosts(query, authorUserId, postIds)
+  await recordAndReassignInitiatedStoryPosts(query, authorUserId, priorAuthorUsername, postIds)
+}
+
+async function recordAndReassignInitiatedStoryPosts(
+  query: TransactionQuery,
+  authorUserId: string,
+  priorAuthorUsername: string | null,
+  postIds: string[],
+): Promise<void> {
+  await recordAuthorDeletionWork(query, authorUserId, priorAuthorUsername, postIds)
+  await query(
+    `/* processAuthorDeletionPublicationBatch:reassignInitiatedStoryPosts */
+    UPDATE story_posts SET initiated_by_id = $2::uuid
+    WHERE initiated_by_id = $1::uuid AND post_id = ANY($3::uuid[])`,
+    [authorUserId, DELETED_USER_ID, postIds],
+  )
+}
+
+async function lockInitiatedStoryPosts(
+  query: TransactionQuery,
+  authorUserId: string,
+  postIds: string[],
+): Promise<void> {
+  await lockAuthoredPostScopes(query, postIds)
+  await query(
+    `/* processAuthorDeletionPublicationBatch:lockInitiatedStoryPosts */
+    SELECT post_id FROM story_posts
+    WHERE initiated_by_id = $1::uuid AND post_id = ANY($2::uuid[])
+    ORDER BY post_id FOR UPDATE`,
+    [authorUserId, postIds],
+  )
 }
 
 async function lockAuthorForDeletion(query: TransactionQuery, authorUserId: string): Promise<void> {

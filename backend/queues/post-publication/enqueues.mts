@@ -1,4 +1,4 @@
-import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import { createHash } from 'node:crypto'
 import {
   POST_PUBLICATION_EFFECTS_JOB,
@@ -9,6 +9,13 @@ import type { PostPublicationEffectsJobData } from '@voucha/types/post-publicati
 import { POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX } from './config.mts'
 
 const enqueueEffectsJob = createBackgroundEnqueue(POST_PUBLICATION_EFFECTS_JOB)
+export const enqueueBulkPostPublicationEffects = createBackgroundBulkEnqueue(
+  POST_PUBLICATION_EFFECTS_JOB,
+  (data: PostPublicationEffectsJobData) => ({
+    data,
+    opts: { jobId: postPublicationEffectJobId(data) },
+  }),
+)
 
 /** Stable for a retried capture, distinct for two changes with identical old keys. */
 export function enqueuePostPublicationEffects(
