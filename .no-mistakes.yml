@@ -2648,6 +2648,33 @@ rules:
         - files: [web/package.json]
           requiredKeys: [devDependencies.jsdom]
 
+  - name: Playwright diagnostics survive failed or retried runs
+    rule: structured-config-policy
+    scope: repository
+    options:
+      policies:
+        - files: [.github/workflows/tests-playwright.yml]
+          requiredKeys: [jobs.playwright-tests.steps]
+          valueAssertions:
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload JUnit test results
+                if: '${{ !cancelled() }}'
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload Playwright test-results (traces, screenshots, videos)
+                if: "${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload wrangler logs
+                if: "${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
+
   - name: workspace package dependency graph has no cycles
     rule: workspace-package-cycles
     scope: repository
