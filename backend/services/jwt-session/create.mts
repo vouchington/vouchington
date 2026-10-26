@@ -1,3 +1,4 @@
+import { markDbscRegistrationEligible } from './dbsc-eligibility.mts'
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createSessionClientBinding } from './client-binding.mts'
 import type {
@@ -23,7 +24,6 @@ import {
   getSessionIssuedAt,
   recordSessionMintEvent,
 } from './session-state-helpers.mts'
-
 export async function createDeviceAndSessionTokens({
   did,
   sid = mintUUIDv7(),
@@ -79,13 +79,11 @@ export async function createDeviceAndSessionTokens({
     recheckAfter,
     now,
   })
-
   const devicePayloadExtra = {
     ...(deviceClass !== undefined && { dc: deviceClass }),
     ...binding,
     ...(uid && { refresh_uid: uid, refresh_sid: sid }),
   }
-
   const [deviceToken, sessionToken] = await Promise.all([
     authority
       ? Promise.resolve(authority.token)
@@ -98,7 +96,6 @@ export async function createDeviceAndSessionTokens({
       { expiresIn: now + sessionExpirySecondsFor(deviceClass, binding?.client), issuedAt: now },
     ),
   ])
-
   recordSessionMintEvent({ did, sid, uid, eventType }, query)
   if (!authority)
     await registerAuthenticatedSession(
@@ -117,8 +114,7 @@ export async function createDeviceAndSessionTokens({
       },
       { query },
     )
-
-  return {
+  const result: DeviceAndSessionTokenResult = {
     deviceToken: {
       token: deviceToken,
       payload: authority?.payload ?? { did, ...devicePayloadExtra },
@@ -128,6 +124,9 @@ export async function createDeviceAndSessionTokens({
       payload: { did, sid, uid: uid ?? null, ...binding, ...sessionPayloadExtra },
     },
   }
+  if (authority?.created && authority.binding.client === 'web')
+    markDbscRegistrationEligible(result.deviceToken)
+  return result
 }
 
 export async function createSessionToken({

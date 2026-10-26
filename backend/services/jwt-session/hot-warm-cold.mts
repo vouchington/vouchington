@@ -3,6 +3,7 @@ import { clearJwtStaleIfCurrent } from './invalidation.mts'
 import { getEnrichedSessionClaims } from './enrich.mts'
 import { createRefreshedAuthenticatedSession, issueAnonSession } from './refresh-token-rotation.mts'
 import type {
+  DbscAuthorization,
   FetchUserForSession,
   RefreshedSessionState,
   VerifyDeviceAndSessionTokenResult,
@@ -21,6 +22,7 @@ export async function applyHotWarmCold(
   dt: string,
   fetchUser: FetchUserForSession,
   clock: () => number = Date.now,
+  dbscProof?: DbscAuthorization,
 ): Promise<RefreshedSessionState> {
   const uid = verified.uid!
   const now = Math.floor(clock() / 1000)
@@ -49,6 +51,7 @@ export async function applyHotWarmCold(
     const refreshed = await createRefreshedAuthenticatedSession({
       did,
       dt,
+      dbscProof,
       clock,
       sid: verified.sid,
       uid,
@@ -88,6 +91,7 @@ export async function applyHotWarmCold(
   const refreshed = await createRefreshedAuthenticatedSession({
     did,
     dt,
+    dbscProof,
     clock,
     sid: verified.sid,
     uid,

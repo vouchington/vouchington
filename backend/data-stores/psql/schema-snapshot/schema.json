@@ -133380,7 +133380,8 @@
         "user_sessions_check": "CHECK ((num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) = ANY (ARRAY[0, 4])))",
         "user_sessions_check1": "CHECK ((num_nonnulls(previous_device_token_digest, previous_device_token_grace_expires_at) = ANY (ARRAY[0, 2])))",
         "user_sessions_check2": "CHECK (((previous_device_token_digest IS NULL) OR (device_token_digest IS NOT NULL)))",
-        "user_sessions_check3": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
+        "user_sessions_check3": "CHECK (((device_bound_session_binding IS NULL) OR ((device_token_digest IS NOT NULL) AND (device_token_binding @> '{\"client\": \"web\"}'::jsonb) AND (jsonb_typeof(device_bound_session_binding) = 'object'::text))))",
+        "user_sessions_check4": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
         "user_sessions_device_name_check": "CHECK ((TRIM(BOTH FROM device_name) = device_name))",
         "user_sessions_device_name_check1": "CHECK ((char_length(device_name) <= 255))",
         "user_sessions_device_token_binding_check": "CHECK (((device_token_binding IS NULL) OR (jsonb_typeof(device_token_binding) = 'object'::text)))",
@@ -133407,8 +133408,19 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
+        },
+        "device_bound_session_binding": {
+          "collation": null,
+          "comment": "Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "jsonb"
         },
         "device_id": {
           "collation": null,
@@ -133561,7 +133573,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "user_agent_string_id": {

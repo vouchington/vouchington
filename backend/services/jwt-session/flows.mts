@@ -5,7 +5,12 @@ import { AUTH_REQUIRED } from '@modules/on-error/error-codes'
 import { createCodedError } from '@vouchington/sentry'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 import { trackAuthSessionEvent } from '@services/analytics'
-import type { FetchUserForSession, RefreshedSessionState, SessionTokenPayload } from './types.mts'
+import type {
+  DbscAuthorization,
+  FetchUserForSession,
+  RefreshedSessionState,
+  SessionTokenPayload,
+} from './types.mts'
 import { applyHotWarmCold } from './hot-warm-cold.mts'
 
 export type { FetchUserForSession } from './types.mts'
@@ -17,6 +22,7 @@ export async function refreshSessionState(options: {
   userAgent?: string
   ja4?: string
   clock?: () => number
+  dbscProof?: DbscAuthorization
 }): Promise<RefreshedSessionState> {
   if (options.deviceToken && options.sessionToken) {
     const verified = await verifyDeviceAndSessionTokens({
@@ -50,6 +56,7 @@ export async function refreshSessionState(options: {
         options.deviceToken,
         options.fetchUser,
         options.clock,
+        options.dbscProof,
       )
     }
   }
@@ -60,6 +67,7 @@ export async function refreshSessionState(options: {
       options.userAgent,
       options.fetchUser,
       options.ja4,
+      options.dbscProof,
     )
     if (refreshed) return refreshed
     const device = await verifyDeviceJwt(options.deviceToken)

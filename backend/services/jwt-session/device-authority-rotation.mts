@@ -1,3 +1,5 @@
+import { assertDeviceBoundRefreshAllowed } from './dbsc-proof.mts'
+import type { DbscAuthorization } from './types.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -20,6 +22,7 @@ export async function rotateAuthenticatedDeviceToken(options: {
   uid: string
   did: string
   sid: string
+  dbscProof?: DbscAuthorization
 }): Promise<string> {
   const device = await verifyDeviceJwt(options.deviceToken)
   if (
@@ -73,6 +76,16 @@ export async function rotateAuthenticatedDeviceToken(options: {
       currentDevice.exp !== device.exp
     )
       throw sessionReloginRequired()
+    const registrationBinding = assertDeviceBoundRefreshAllowed(
+      row,
+      presentedDigest,
+      options.dbscProof,
+    )
+    if (registrationBinding)
+      await query(sql`/* rotateAuthenticatedDeviceToken */
+        UPDATE user_sessions SET device_bound_session_binding = ${JSON.stringify(registrationBinding)}::jsonb
+        WHERE id = ${options.sid} AND user_id = ${options.uid}
+          AND revoked_at IS NULL AND device_bound_session_binding IS NULL`)
     await query.commit()
     return currentToken
   }
@@ -93,6 +106,11 @@ export async function rotateAuthenticatedDeviceToken(options: {
     device.exp !== Math.floor(row.expires_at.getTime() / 1000)
   )
     throw sessionReloginRequired()
+  const registrationBinding = assertDeviceBoundRefreshAllowed(
+    row,
+    presentedDigest,
+    options.dbscProof,
+  )
   const payload = {
     ...device,
     jti: randomUUID(),
@@ -110,6 +128,7 @@ export async function rotateAuthenticatedDeviceToken(options: {
       previous_device_token_grace_expires_at = CURRENT_TIMESTAMP + INTERVAL '60 seconds',
       device_token_digest = ${hashDeviceToken(token)},
       device_token_encrypted = ${encryptSecret(token, deviceTokenSecretPurpose(options.sid))},
+      device_bound_session_binding = COALESCE(device_bound_session_binding, ${registrationBinding ? JSON.stringify(registrationBinding) : null}::jsonb),
       last_seen_at = CURRENT_TIMESTAMP
     WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
   await query.commit()

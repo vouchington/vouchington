@@ -4,7 +4,7 @@ import { assertSessionClientBinding } from './client-binding.mts'
 import { isSessionRevoked, revokeSession } from './revocation.mts'
 import { getEnrichedSessionClaims } from './enrich.mts'
 import { createRefreshedAuthenticatedSession, issueAnonSession } from './refresh-token-rotation.mts'
-import type { FetchUserForSession, RefreshedSessionState } from './types.mts'
+import type { DbscAuthorization, FetchUserForSession, RefreshedSessionState } from './types.mts'
 
 /** A web dt authorizes refresh only. Access tokens remain subject to their short expiry. */
 export async function refreshWebSessionFromDeviceToken(
@@ -12,6 +12,7 @@ export async function refreshWebSessionFromDeviceToken(
   userAgent: string | undefined,
   fetchUser: FetchUserForSession,
   ja4?: string,
+  dbscProof?: DbscAuthorization,
 ): Promise<RefreshedSessionState | null> {
   const device = await verifyDeviceJwt(dt)
   if (
@@ -36,6 +37,7 @@ export async function refreshWebSessionFromDeviceToken(
   const refreshed = await createRefreshedAuthenticatedSession({
     did: device.did,
     dt,
+    dbscProof,
     sid: device.refresh_sid,
     uid: device.refresh_uid,
     ...claims,

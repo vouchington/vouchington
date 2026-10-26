@@ -19,6 +19,7 @@ export interface SessionDeviceAuthorityRow {
   device_token_encrypted: string | null
   device_token_issued_at: Date | null
   device_token_binding: SessionClientBinding | null
+  device_bound_session_binding: unknown
 }
 
 /** A primary, ID-scoped lookup; callers holding a transaction may lock the same authority row. */
@@ -31,7 +32,7 @@ export async function readSessionDeviceAuthority(
     SELECT s.id, s.user_id, s.device_id, s.authentication_origin, s.expires_at, s.revoked_at,
       s.device_token_digest, s.previous_device_token_digest,
       s.previous_device_token_grace_expires_at, s.device_token_encrypted,
-      s.device_token_issued_at, s.device_token_binding
+      s.device_token_issued_at, s.device_token_binding, s.device_bound_session_binding
     FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sid} AND u.deleted_at IS NULL`
   if (lock) statement.append(' FOR UPDATE OF s')
@@ -71,6 +72,18 @@ export function assertActiveDeviceAuthority(
 
 export function hashDeviceToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
+}
+
+export function isPreviousWebDeviceTokenInGrace(
+  row: SessionDeviceAuthorityRow,
+  digest: string,
+): boolean {
+  return (
+    row.device_token_binding?.client === 'web' &&
+    row.previous_device_token_digest === digest &&
+    row.previous_device_token_grace_expires_at !== null &&
+    row.previous_device_token_grace_expires_at.getTime() > Date.now()
+  )
 }
 
 export function sessionReloginRequired() {

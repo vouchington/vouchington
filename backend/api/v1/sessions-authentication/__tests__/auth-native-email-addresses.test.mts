@@ -111,19 +111,20 @@ describe('native email OTP session provenance', () => {
     }
   })
 
-  it('preserves a native provenance marker through ordinary session renewal', async () => {
+  it('preserves a native provenance marker through exact credential replay', async () => {
     const user = await createTestUser()
     const initial = await createDeviceAndSessionTokens({
       did: v7(),
       uid: user.id,
       authOrigin: 'native',
     })
-    await createDeviceAndSessionTokens({
+    const replay = await createDeviceAndSessionTokens({
       did: initial.deviceToken.payload.did,
       sid: initial.sessionToken.payload.sid,
       uid: user.id,
       credentialReplay: true,
     })
+    expect(replay.deviceToken.token).toBe(initial.deviceToken.token)
     await expect(getTestUserSessionById(initial.sessionToken.payload.sid)).resolves.toMatchObject({
       authentication_origin: 'native',
     })

@@ -68,7 +68,7 @@ describe('session renewal entry', () => {
     expect(navigate).toHaveBeenCalledExactlyOnceWith('/login?next=%2Fadmin%2Fmq-dashboard')
   })
 
-  it('continues an in-scope DBSC request without using device cookies as authority', async () => {
+  it('keeps browser proof recovery explicit even after returning from the protected target', async () => {
     const navigate = vi.fn<(href: string) => void>()
     const renewSession = vi
       .fn<() => Promise<boolean>>()
@@ -76,16 +76,32 @@ describe('session renewal entry', () => {
         new ApiError('Browser proof required', 403, { code: 'DBSC_PROOF_REQUIRED' }),
       )
 
-    await act(async () => {
-      render(
-        <SessionRenewal
-          next={DASHBOARD}
-          renewSession={renewSession}
-          navigate={navigate}
-        />,
-      )
-    })
+    const first = render(
+      <SessionRenewal
+        next={DASHBOARD}
+        renewSession={renewSession}
+        navigate={navigate}
+      />,
+    )
 
+    expect(await screen.findByRole('alert')).toBeVisible()
+    expect(navigate).not.toHaveBeenCalled()
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Try again' })))
     expect(navigate).toHaveBeenCalledExactlyOnceWith(DASHBOARD)
+
+    first.unmount()
+    navigate.mockClear()
+    render(
+      <SessionRenewal
+        next={DASHBOARD}
+        renewSession={renewSession}
+        navigate={navigate}
+      />,
+    )
+    expect(await screen.findByRole('alert')).toBeVisible()
+    expect(navigate).not.toHaveBeenCalled()
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Sign In' })))
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('/login?next=%2Fadmin%2Fmq-dashboard')
+    expect(renewSession).toHaveBeenCalledTimes(2)
   })
 })
