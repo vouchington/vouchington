@@ -28,7 +28,7 @@ import {
 } from './dsa-statement-submission-build-failure.mts'
 import { replayDsaStatementSubmission } from './dsa-statement-submission-replay.mts'
 import {
-  materializeDsaStatementSubmissions,
+  prepareDsaStatementSubmissionSweep,
   searchRecoverableDsaStatementSubmissionIds,
   type DsaStatementSweepDependencies,
 } from './dsa-statement-submission-sweep.mts'
@@ -38,9 +38,17 @@ async function newRestriction() {
   return createTestCopyrightRestrictionForImage(await createTestCopyrightImageFixture('post-image'))
 }
 
+const from = new Date('2026-07-01T00:00:00.000Z')
+const prepareOptions = {
+  isEnabled: async () => true,
+  getFrom: async () => from,
+  url: () => '',
+  token: () => '',
+  recordConfigMissing: () => undefined,
+}
+
 describe('DSA statement payload build failures', () => {
   it('records a restriction whose payload cannot be built and keeps materializing the rest', async () => {
-    const from = new Date('2026-07-01T00:00:00.000Z')
     const first = await newRestriction()
     const broken = await newRestriction()
     const last = await newRestriction()
@@ -48,14 +56,13 @@ describe('DSA statement payload build failures', () => {
     const ownedIds = [first.restrictionId, broken.restrictionId, last.restrictionId]
     const buildPayload = createTestDsaPayloadBuildFailure(broken.restrictionId, 404)
     const report = vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>()
-
-    await expect(
-      materializeDsaStatementSubmissions(from, {
-        buildPayload,
-        reportBuildFailure: report,
-        restrictionIds: ownedIds,
-      }),
-    ).resolves.toMatchObject({ inserted: 2, hasMore: false })
+    const scope = {
+      ...prepareOptions,
+      buildPayload,
+      reportBuildFailure: report,
+      restrictionIds: ownedIds,
+    }
+    await expect(prepareDsaStatementSubmissionSweep(scope)).resolves.toBeNull()
     expect(report).toHaveBeenCalledExactlyOnceWith({
       restrictionId: broken.restrictionId,
       failureCode: 'http_404',
@@ -69,13 +76,11 @@ describe('DSA statement payload build failures', () => {
     }
 
     // The next run neither retries the failed restriction nor warns again.
-    await expect(
-      materializeDsaStatementSubmissions(from, {
-        buildPayload,
-        reportBuildFailure: report,
-        restrictionIds: ownedIds,
-      }),
-    ).resolves.toMatchObject({ inserted: 0, hasMore: false })
+    await expect(prepareDsaStatementSubmissionSweep(scope)).resolves.toBeNull()
+    expect(await readTestDsaSubmissionForRestriction(broken.restrictionId)).toEqual(failed)
+    for (const sent of [first, last]) {
+      expect(await countTestDsaSubmissionsForRestriction(sent.restrictionId)).toBe(1)
+    }
     expect(report).toHaveBeenCalledOnce()
     await expect(
       recordDsaStatementBuildFailure(broken.restrictionId, from, 'http_404'),
@@ -103,7 +108,8 @@ describe('DSA statement payload build failures', () => {
     const late = await newRestriction()
     const outage = new Error('database unavailable')
     await expect(
-      materializeDsaStatementSubmissions(from, {
+      prepareDsaStatementSubmissionSweep({
+        ...prepareOptions,
         buildPayload: vi
           .fn<DsaStatementSweepDependencies['buildPayload']>()
           .mockRejectedValue(outage),
@@ -115,30 +121,33 @@ describe('DSA statement payload build failures', () => {
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
     expect(report).toHaveBeenCalledOnce()
     await expect(
-      materializeDsaStatementSubmissions(from, {
+      prepareDsaStatementSubmissionSweep({
+        ...prepareOptions,
         reportBuildFailure: report,
         restrictionIds: [late.restrictionId],
       }),
-    ).resolves.toMatchObject({ inserted: 1, hasMore: false })
+    ).resolves.toBeNull()
+    expect(await readTestDsaSubmissionForRestriction(late.restrictionId)).toMatchObject({
+      payload: { puid: late.restrictionId },
+      failed_at: null,
+    })
   })
 
   it('records a restriction whose builder rejects an invalid payload as a 422 and keeps going', async () => {
-    const from = new Date('2026-07-01T00:00:00.000Z')
     const invalid = await newRestriction()
     const valid = await newRestriction()
     const foreign = await newRestriction()
     // The real payload validator throws a 422 HttpError, so the sweep records this build failure.
     const buildPayload = createTestDsaPayloadBuildFailure(invalid.restrictionId, 422)
     const report = vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>()
-
     const ownedIds = [invalid.restrictionId, valid.restrictionId]
-    await expect(
-      materializeDsaStatementSubmissions(from, {
-        buildPayload,
-        reportBuildFailure: report,
-        restrictionIds: ownedIds,
-      }),
-    ).resolves.toMatchObject({ inserted: 1, hasMore: false })
+    const scope = {
+      ...prepareOptions,
+      buildPayload,
+      reportBuildFailure: report,
+      restrictionIds: ownedIds,
+    }
+    await expect(prepareDsaStatementSubmissionSweep(scope)).resolves.toBeNull()
     expect(report).toHaveBeenCalledExactlyOnceWith({
       restrictionId: invalid.restrictionId,
       failureCode: 'http_422',
@@ -151,29 +160,25 @@ describe('DSA statement payload build failures', () => {
       payload: { puid: valid.restrictionId },
       failed_at: null,
     })
-    await expect(
-      materializeDsaStatementSubmissions(from, {
-        buildPayload,
-        reportBuildFailure: report,
-        restrictionIds: ownedIds,
-      }),
-    ).resolves.toMatchObject({ inserted: 0, hasMore: false })
+    await expect(prepareDsaStatementSubmissionSweep(scope)).resolves.toBeNull()
+    expect(await countTestDsaSubmissionsForRestriction(invalid.restrictionId)).toBe(1)
+    expect(await countTestDsaSubmissionsForRestriction(valid.restrictionId)).toBe(1)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
     expect(report).toHaveBeenCalledOnce()
   })
 
   it('replays a failed restriction after its builder recovers, then submits the rebuilt payload', async () => {
-    const from = new Date('2026-07-01T00:00:00.000Z')
     const broken = await newRestriction()
     const foreign = await newRestriction()
     const buildPayload = createTestDsaPayloadBuildFailure(broken.restrictionId, 404)
     await expect(
-      materializeDsaStatementSubmissions(from, {
+      prepareDsaStatementSubmissionSweep({
+        ...prepareOptions,
         buildPayload,
         reportBuildFailure: vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>(),
         restrictionIds: [broken.restrictionId],
       }),
-    ).resolves.toMatchObject({ inserted: 0, hasMore: false })
+    ).resolves.toBeNull()
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
     const failed = await readTestDsaSubmissionForRestriction(broken.restrictionId)
     const administrator = await createTestUser({ extraRoles: ['administrator'] })
