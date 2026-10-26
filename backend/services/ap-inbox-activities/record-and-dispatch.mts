@@ -1,4 +1,4 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import { recordInboxActivity } from './record-activity.mts'
 import {
   dispatchInboundActivity,
@@ -43,25 +43,12 @@ export async function recordAndDispatchInboundActivity(
   let result
   try {
     await using query = await beginTransaction()
-    const rejectionFloor = await lockActivityPubReplayFloor(query, 'inbox')
-    if (rejectionFloor && activity.signedAt <= rejectionFloor) {
-      throw createHttpError(401, 'Activity signature date is retired')
-    }
-    const firstSeen = await recordInboxActivity(activity.id, activity.type, activity.actor, {
+    result = await recordAndDispatchInboundActivityInTransaction(
       query,
-    })
-    if (!firstSeen) {
-      const postCommitAction =
-        activity.type === 'Follow'
-          ? await recoverDuplicateFollow(remoteActor, activity, { query })
-          : undefined
-      await completeDurableDeliveryOrThrow(completion, query)
-      result = { duplicate: true as const, postCommitAction }
-    } else {
-      const postCommitAction = await dispatchInboundActivity(remoteActor, activity, { query })
-      await completeDurableDeliveryOrThrow(completion, query)
-      result = { duplicate: false as const, postCommitAction }
-    }
+      remoteActor,
+      activity,
+      completion,
+    )
     await query.commit()
   } catch (err) {
     if (err instanceof StaleDurableInboxCompletionError) {
@@ -76,6 +63,32 @@ export async function recordAndDispatchInboundActivity(
       ? { postCommitEnqueue: dispatchInboundPostCommitAction(result.postCommitAction) }
       : {}),
   }
+}
+
+export async function recordAndDispatchInboundActivityInTransaction(
+  query: TransactionQuery,
+  remoteActor: RemoteActorRow,
+  activity: InboundActivity & { signedAt: Date },
+  completion?: DurableInboxCompletion,
+) {
+  const rejectionFloor = await lockActivityPubReplayFloor(query, 'inbox')
+  if (rejectionFloor && activity.signedAt <= rejectionFloor) {
+    throw createHttpError(401, 'Activity signature date is retired')
+  }
+  const firstSeen = await recordInboxActivity(activity.id, activity.type, activity.actor, {
+    query,
+  })
+  if (!firstSeen) {
+    const postCommitAction =
+      activity.type === 'Follow'
+        ? await recoverDuplicateFollow(remoteActor, activity, { query })
+        : undefined
+    await completeDurableDeliveryOrThrow(completion, query)
+    return { duplicate: true as const, postCommitAction }
+  }
+  const postCommitAction = await dispatchInboundActivity(remoteActor, activity, { query })
+  await completeDurableDeliveryOrThrow(completion, query)
+  return { duplicate: false as const, postCommitAction }
 }
 
 async function completeDurableDeliveryOrThrow(

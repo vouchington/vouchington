@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import {
@@ -9,8 +9,14 @@ import {
   readAllQueueJobs,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
-import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
+import {
+  withCommittedPostgresTransactionForTest,
+  withPostgresTransactionForTest,
+} from '@voucha/test-helpers/postgres-transaction'
+import {
+  recordAndDispatchInboundActivity,
+  recordAndDispatchInboundActivityInTransaction,
+} from './record-and-dispatch.mts'
 import { recordInboxActivity } from './record-activity.mts'
 import {
   createRemoteActorFixture,
@@ -27,8 +33,7 @@ import {
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 
 registerActivityPubInboxAdmission()
-import { activityPubInboxConfig, getMaximumActivityAgeDays } from './config.mts'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { getMaximumActivityAgeDays } from './config.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -49,29 +54,22 @@ function makeUnpersistedRemoteActor(): RemoteActorRow {
 }
 
 describe('recordAndDispatchInboundActivity', () => {
-  it('rejects a retired signed date after the configured age is widened', async () => {
+  it('rejects a signed date at the permanent replay floor in a rollback transaction', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
-    const id = `https://remote.example/activities/${randomSuffix()}`
     const signedAt = new Date(Date.now() - 40 * 86_400_000)
-    await withCommittedPostgresTransactionForTest(query =>
-      advanceFederationReplayFloorForTest(query, 'inbox', signedAt),
-    )
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
-        maximum_activity_age_days: 60,
-      }),
-    )
-    await expect(
-      recordAndDispatchInboundActivity(remoteActor, {
-        id,
-        type: 'Announce',
-        actor: remoteActor.actor_uri,
-        object: 'https://voucha.test/ap/posts/some-post',
-        signedAt,
-      }),
-    ).rejects.toMatchObject({ status: 401, message: 'Activity signature date is retired' })
+    await withPostgresTransactionForTest(async query => {
+      await advanceFederationReplayFloorForTest(query, 'inbox', signedAt)
+      await expect(
+        recordAndDispatchInboundActivityInTransaction(query, remoteActor, {
+          id: `https://remote.example/activities/${randomSuffix()}`,
+          type: 'Announce',
+          actor: remoteActor.actor_uri,
+          object: 'https://voucha.test/ap/posts/some-post',
+          signedAt,
+        }),
+      ).rejects.toMatchObject({ status: 401, message: 'Activity signature date is retired' })
+    })
   })
-
   it('rejects a signed request beyond the configured age before reserving its identity', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const id = `https://remote.example/activities/${randomSuffix()}`
@@ -87,7 +85,6 @@ describe('recordAndDispatchInboundActivity', () => {
     ).rejects.toMatchObject({ status: 401 })
     expect(await recordInboxActivity(id, 'Announce', remoteActor.actor_uri)).toBe(true)
   })
-
   it('accepts and deduplicates a signed request inside the configured age', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const activity = {
@@ -136,7 +133,6 @@ describe('recordAndDispatchInboundActivity', () => {
 
     expect(replay).toEqual({ outcome: 'applied', duplicate: true })
   })
-
   it('rolls back the dedup marker atomically when the core database effect fails', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const user = await createFederatedUser()
@@ -156,7 +152,6 @@ describe('recordAndDispatchInboundActivity', () => {
     const isFirstSeenAgain = await recordInboxActivity(activityId, activity.type, activity.actor)
     expect(isFirstSeenAgain).toBe(true)
   })
-
   it('rolls back duplicate Follow recovery when durable-envelope completion loses its lease', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
@@ -239,7 +234,6 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
       followActorUri: remoteActor.actor_uri,
     })
   })
-
   it('does not resurrect a relation, or resend an Accept, for a stale duplicate Follow after Undo(Follow)', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
