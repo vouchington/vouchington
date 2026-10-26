@@ -8,11 +8,8 @@ import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getRssFeeds } from '@/lib/api/server/rss-feeds'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { createPageMetadata } from '@/lib/seo/metadata'
-import {
-  createBreadcrumbSchema,
-  createCollectionPageSchema,
-  createItemListSchema,
-} from '@/lib/seo/structured-data'
+import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
+import { createCollectionPageSchema, createItemListSchema } from '@/lib/seo/structured-data'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { PageWithAside } from '@/components/page-with-aside'
 import { PageHeader } from '@/components/shared/page-header'

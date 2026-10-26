@@ -1,3 +1,5 @@
+import { getMarkdownAlternatePath as alternatePath } from '@vouchington/utils/seo-metadata'
+
 const POST_PREFIXES = new Set([
   'article',
   'blog-post',
@@ -15,13 +17,8 @@ const TOPIC_PREFIXES = new Set([
   'topic',
 ])
 
+const MARKDOWN_PREFIXES = new Set([...POST_PREFIXES, ...TOPIC_PREFIXES, 'user'])
+
 export function getMarkdownAlternatePath(path: string): string | null {
-  const parts = path.split('/').filter(Boolean)
-  if (parts.length !== 2) return null
-  const [prefix, id] = parts
-  if (!prefix || !id) return null
-  if (POST_PREFIXES.has(prefix) || TOPIC_PREFIXES.has(prefix) || prefix === 'user') {
-    return `${path.replace(/\/$/, '')}.md`
-  }
-  return null
+  return alternatePath(path, MARKDOWN_PREFIXES)
 }

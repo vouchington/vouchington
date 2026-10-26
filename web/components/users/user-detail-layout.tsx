@@ -1,6 +1,6 @@
 import dynamic from 'next/dynamic'
 import type { User, UserMetrics, ProfileLink } from '@/types/user'
-import type { BreadcrumbNavItem } from '@/lib/seo/structured-data'
+import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { UserProfileHeader } from './user-profile-header'
 import { UserProfileTabs } from './user-profile-tabs'

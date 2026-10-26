@@ -2,6 +2,11 @@
 // declares them. ci/check-storybook-browser-optimize-deps.mts audits this catalog's completeness
 // in the static-analysis no-mistakes job.
 export const storybookBrowserOptimizeDeps = [
+  '@vouchington/localization',
+  '@vouchington/localization/react',
+  '@vouchington/utils/json-ld',
+  '@vouchington/utils/seo-metadata',
+  '@vouchington/utils/web-push-binding',
   '@ts-shared/feature-flags > @vouchington/utils/feature-flags',
   '@ts-shared/languages > @vouchington/utils/language-tags',
   '@ts-shared/ui-messages > @vouchington/utils/message-catalog',

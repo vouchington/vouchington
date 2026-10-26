@@ -1,5 +1,5 @@
 import { buildAbsoluteUrl, SITE_NAME } from './constants'
-import type { StructuredDataValue } from './structured-data'
+import type { JsonLd as StructuredDataValue } from '@vouchington/utils/json-ld'
 
 interface CommentSchema {
   authorName?: string

@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 import { PublicLandingPageView } from '@/components/landing-pages/public-landing-page'
 import { getUserLandingPage } from '@/lib/api/server'
 import { landingPageHref } from '@/lib/links/entity-href'
-import { createNoIndexMetadata, createPageMetadata, createExcerpt } from '@/lib/seo/metadata'
+import { createExcerpt } from '@vouchington/utils/seo-metadata'
+import { createNoIndexMetadata, createPageMetadata } from '@/lib/seo/metadata'
 import {
   buildLandingOgImageUrl,
   extractTopCategories,

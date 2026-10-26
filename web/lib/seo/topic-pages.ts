@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 
-import { createExcerpt, createNoIndexMetadata, createPageMetadata } from './metadata'
+import { createExcerpt } from '@vouchington/utils/seo-metadata'
+import { createNoIndexMetadata, createPageMetadata } from './metadata'
 import { buildAbsoluteUrl } from './constants'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
-import { createBreadcrumbSchema, createTopicSchema } from './structured-data'
+import { createBreadcrumbSchema } from './structured-data-breadcrumbs'
+import { createTopicSchema } from './structured-data'
 import { getSchemaOrgType } from './schema-org-types'
 import { getTopicDisplayTitle } from '@/lib/topics/display-name'
 import { buildPlacementImagePath } from '@/lib/utils/image-url'
