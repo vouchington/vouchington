@@ -53,7 +53,7 @@ Use only these non-interactive forms:
 - `gh stack merge <pr> --yes --squash` — see [Merge every ready bottom layer at once](#merge-every-ready-bottom-layer-at-once). The PR-number selector is required; bare `gh stack merge` stays banned below. Always include both flags: `--yes` skips the confirmation prompt a non-interactive command runner cannot answer, and `--squash` is the required strategy.
 - `gh stack unstack` (active stack or a stack number; removes the remote stack grouping unless `--local`) / `gh stack delete <branch>` — recovery from a mis-rooted stack.
 
-The pre-tool-use hook enforces this allowlist (see `dev/codex-hooks/policy/github-stack-workflow.mts`); do not run interactive TUIs (`gh stack submit` without `--auto`, `modify`, `switch`, bare `checkout`, bare `merge`) or `gh stack trunk`.
+The published pre-tool-use policy enforces this allowlist using the local stack configuration in `dev/codex-hooks/policy/stack-policy.mts`; do not run interactive TUIs (`gh stack submit` without `--auto`, `modify`, `switch`, bare `checkout`, bare `merge`) or `gh stack trunk`.
 
 ### Worktree and scope
 

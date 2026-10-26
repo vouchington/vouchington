@@ -55,7 +55,8 @@ flowchart LR
   claudeHooks[.claude/settings.json] --> claude
   claudeHooks --> grokCompat[Grok Claude-compat]
   claudeHooks --> cursorCompat[Cursor Claude-compat]
-  hookRunner[dev/codex-hooks] --> claudeHooks
+  hookRunner[vouchington-tooling hook runner] --> claudeHooks
+  localPolicy[dev/codex-hooks policy table and adapters] --> hookRunner
   hookRunner --> codexConfig[.codex/config.toml]
   cursorConfig[".cursor/ permissions, worktrees"] --> cursor
 ```

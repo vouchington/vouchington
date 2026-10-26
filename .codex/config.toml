@@ -6,7 +6,7 @@ matcher = "Bash|Edit|Write|apply_patch"
 
 [[hooks.PreToolUse.hooks]]
 type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/pre-tool-use.mts" codex'
+command = 'node "$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs" hook pre-tool-use --harness codex --policy "$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts" --root "$(git rev-parse --show-toplevel)"'
 timeout = 30
 statusMessage = "Checking repository command policy"
 
@@ -47,7 +47,7 @@ matcher = "ExitPlanMode|Bash"
 
 [[hooks.PostToolUse.hooks]]
 type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use-command.mts" codex 2>/dev/null || true'
+command = 'node "$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs" hook post-tool-use --harness codex --policy "$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts" --root "$(git rev-parse --show-toplevel)" 2>/dev/null || true'
 timeout = 30
 statusMessage = "Checking tmux reminder"
 
@@ -56,6 +56,6 @@ matcher = "Edit|Write|apply_patch"
 
 [[hooks.PostToolUse.hooks]]
 type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use.mts" 2>&1 || true'
+command = 'node "$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs" hook post-tool-use --harness codex --policy "$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts" --root "$(git rev-parse --show-toplevel)" 2>&1 || true'
 timeout = 30
 statusMessage = "Running post-edit checks"

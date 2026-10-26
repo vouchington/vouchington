@@ -6,9 +6,7 @@
   "workspaces": {
     ".": {
       "entry": [
-        "dev/codex-hooks/pre-tool-use.mts",
-        "dev/codex-hooks/post-tool-use.mts",
-        "dev/codex-hooks/post-tool-use-command.mts",
+        "dev/codex-hooks/policy.mts",
         "dev/agent-policy.mts",
         "dev/agent-issue-labels/**/*.mts",
         "dev/otel-register.mts",

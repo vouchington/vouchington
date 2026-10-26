@@ -1,7 +1,8 @@
 import { processDiffCommand, runGh } from 'vouchington-tooling/gh-cli'
 import { fetchIssueProjectMemberships } from 'vouchington-tooling/github-projects'
+import { findHandRolledStackBaseBlock } from 'vouchington-tooling/command-policy'
 
-import { findHandRolledStackBaseBlock } from '../codex-hooks/policy/github-configured-base.mts'
+import { stackPolicy } from '../codex-hooks/policy/stack-policy.mts'
 import { checkLargeDiff, type LargeDiffOptions } from './large-diff.mts'
 import { noSourceIssueErrors, type NoSourceIssue } from './no-source.mts'
 import { parseGitHubIssueApiResponse } from '../pr-description/closing-refs.mts'
@@ -62,7 +63,7 @@ export async function validatePullRequest(
   const automationContext = input.mode === 'autonomous'
   const stackBase =
     input.pr === undefined
-      ? findHandRolledStackBaseBlock('create', ['--base', input.base], undefined)
+      ? findHandRolledStackBaseBlock('create', ['--base', input.base], undefined, stackPolicy)
       : null
   const baseErrors = [
     ...(stackBase === null ? [] : [stackBase.reason]),

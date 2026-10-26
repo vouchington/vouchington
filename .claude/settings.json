@@ -35,8 +35,6 @@
       "Bash(./dev/status)",
       "Bash(./dev/status *)",
       "Bash(node node_modules/vouchington-tooling/bin/vouchington.mjs agent-blackboard session-start *)",
-      "Bash(node dev/codex-hooks/post-tool-use-command.mts)",
-      "Bash(node dev/codex-hooks/post-tool-use-command.mts *)",
       "Bash(./dev/reset)",
       "Bash(./dev/reset *)",
       "Bash(./dev/rebase-onto-main)",
@@ -299,7 +297,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/pre-tool-use.mts\" claude",
+            "command": "node \"$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs\" hook pre-tool-use --harness claude --policy \"$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts\" --root \"$(git rev-parse --show-toplevel)\"",
             "timeout": 30
           }
         ]
@@ -339,7 +337,7 @@
           },
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use.mts\" 2>&1 || true"
+            "command": "node \"$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs\" hook post-tool-use --harness claude --policy \"$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts\" --root \"$(git rev-parse --show-toplevel)\" 2>&1 || true"
           }
         ]
       },
@@ -348,7 +346,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/post-tool-use-command.mts\" claude 2>/dev/null || true"
+            "command": "node \"$(git rev-parse --show-toplevel)/node_modules/vouchington-tooling/bin/vouchington.mjs\" hook post-tool-use --harness claude --policy \"$(git rev-parse --show-toplevel)/dev/codex-hooks/policy.mts\" --root \"$(git rev-parse --show-toplevel)\" 2>/dev/null || true"
           }
         ]
       }
@@ -374,8 +372,6 @@
       "./dev/stop-services *",
       "./dev/status",
       "./dev/status *",
-      "node dev/codex-hooks/post-tool-use-command.mts",
-      "node dev/codex-hooks/post-tool-use-command.mts *",
       "./dev/reset",
       "./dev/reset *",
       "./dev/rebase-onto-main",

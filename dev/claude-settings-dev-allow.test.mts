@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { PLAIN_FORCE_PUSH_REASON } from './codex-hooks/policy/blocked-command-patterns.mts'
+import { PLAIN_FORCE_PUSH_REASON } from 'vouchington-tooling/command-policy'
 import { plainForcePushReason } from './plain-force-push.mts'
 
 // Claude Code matches a Bash rule against the whole command text, with `*` standing in for any

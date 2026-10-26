@@ -1,12 +1,11 @@
 import { execFileSync } from 'node:child_process'
 
-import { gitInvocations, stripGitGlobalOptionsForPolicy } from 'vouchington-tooling/shell-parse'
-
 import {
-  findBlockedGitInvocationReason,
-  findBlockedGitReason,
+  findBlockedPatternReason,
   PLAIN_FORCE_PUSH_REASON,
-} from './codex-hooks/policy/blocked-command-patterns.mts'
+  standardGitPatterns,
+} from 'vouchington-tooling/command-policy'
+import { gitInvocations, stripGitGlobalOptionsForPolicy } from 'vouchington-tooling/shell-parse'
 
 export type ProcessSnapshot = {
   args: (pid: number) => string | undefined
@@ -17,12 +16,14 @@ const MAX_ANCESTORS = 12
 
 /** Why this git argv is a plain force push, or null when the push may proceed. */
 export function plainForcePushReason(command: string): string | null {
-  const reason = findBlockedGitReason(stripGitGlobalOptionsForPolicy(command))
-  if (reason === PLAIN_FORCE_PUSH_REASON) return reason
-  const viaArgv = gitInvocations(command).some(
-    invocation => findBlockedGitInvocationReason(invocation) === PLAIN_FORCE_PUSH_REASON,
+  const forceRules = standardGitPatterns().filter(rule => rule.reason === PLAIN_FORCE_PUSH_REASON)
+  const parsedPush = gitInvocations(command).some(
+    invocation =>
+      invocation.subcommand === 'push' &&
+      findBlockedPatternReason(`git push ${invocation.args.join(' ')}`, forceRules) !== null,
   )
-  return viaArgv ? PLAIN_FORCE_PUSH_REASON : null
+  if (parsedPush) return PLAIN_FORCE_PUSH_REASON
+  return findBlockedPatternReason(stripGitGlobalOptionsForPolicy(command), forceRules)
 }
 
 /**

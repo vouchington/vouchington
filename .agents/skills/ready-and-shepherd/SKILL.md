@@ -217,8 +217,8 @@ gh pr merge <N> --auto --squash
 
 In an interactive session, the merge-authority hook lets this command proceed without a prompt —
 arming is a human decision, and the human already made it by asking for this work in their own
-message. See [merge-authority.md](../../../docs/development/merge-authority.md). Automation
-(GitHub Actions) still hard-blocks this command unconditionally.
+message. See [merge-authority.md](../../../docs/development/merge-authority.md). CI and unattended
+Claude sessions still hard-block this command unconditionally.
 
 **Conflicting-branch ordering** (unsteered path only): `gh pr merge --auto`
 succeeds even on a `CONFLICTING`/`DIRTY` branch — it queues the merge and
