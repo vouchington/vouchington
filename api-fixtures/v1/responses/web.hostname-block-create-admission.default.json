@@ -1,0 +1,7 @@
+{
+  "hostname": "blocked.example.com",
+  "id": "00000000-0000-7000-8000-000000000001",
+  "operation_id": "00000000-0000-7000-8000-000000000002",
+  "status": "pending",
+  "totals": null
+}

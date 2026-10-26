@@ -45,7 +45,7 @@ export async function advanceHostnameBlockPenaltyPage(
     RETURNING block.id AS "blockId", block.url_hostname_id AS "hostnameId",
       hostname.hostname, block.blocked_by_id AS "blockedById",
       block.blocked_source AS "blockedSource",
-      block.penalize_relation_creators AS "penalizeCreators",
+      block.should_penalize_relation_creators AS "penalizeCreators",
       block.relation_cleanup_progress AS progress,
       block.relation_cleanup_blocked_hostname_count AS "blockedHostnameCount",
       block.relation_cleanup_soft_deleted_relation_count AS "softDeletedRelationCount",

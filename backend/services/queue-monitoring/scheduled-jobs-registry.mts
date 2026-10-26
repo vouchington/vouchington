@@ -55,6 +55,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'renewalNotificationCheck',
   'blacklistDispatcher',
   'hostnameCacheInvalidationSweep',
+  'hostnameBlockingRecovery',
   'reconcileTopicAliasCategoryMappings',
   'reconcileRssFeedItemCategorySnapshots',
   'recoverRssFeedHardDeletes',

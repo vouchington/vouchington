@@ -48,7 +48,7 @@ export async function blockHostnameInTransaction(
   options: BlockHostnameOptions = {},
 ): Promise<BlockHostnameResult> {
   const { rows } = await query<{ hostname: string }>(sql`/* blockHostname_lockAndGetHostname */
-    SELECT hostname, pg_advisory_xact_lock(hashtextextended(${hostnameId}, 0))
+    SELECT hostname, pg_advisory_xact_lock(hashtextextended(${hostnameId}::text, 0))
     FROM url_hostnames WHERE id = ${hostnameId}
     FOR NO KEY UPDATE
   `)

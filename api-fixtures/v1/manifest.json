@@ -25937,6 +25937,95 @@
       "source": "backend/api/v1/admin/growth-metrics/growth-metrics.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/hostname-block-operations/:operationId": {
+      "bodyKind": "content",
+      "hash": "9482712bb43f3f37ebf1ad8bc86f135cb999a900b6b299c7c69646083f02613f",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/hostname-block-operations/:operationId",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "union",
+          "variants": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": "pending"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "type": "null"
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": "completed"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "blocked_hostname_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "penalized_user_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "soft_deleted_relation_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "source": "backend/api/v1/hostnames/hostname-block-operation-route.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/hostnames": {
       "bodyKind": "content",
       "hash": "f2a4f8752aed210fe7f8e146372a83647290f089a0883b60cd12c995c099d168",
@@ -77546,6 +77635,95 @@
       "source": "backend/api/v1/dynamic-config/dynamic-config.mts",
       "statusKnowledge": "default"
     },
+    "PATCH:/api/v1/hostnames/:id#block": {
+      "bodyKind": "content",
+      "hash": "9482712bb43f3f37ebf1ad8bc86f135cb999a900b6b299c7c69646083f02613f",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "PATCH",
+      "routeTemplate": "/api/v1/hostnames/:id",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "union",
+          "variants": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": "pending"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "type": "null"
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": "completed"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "blocked_hostname_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "penalized_user_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "soft_deleted_relation_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "source": "backend/api/v1/hostnames/hostname.mts",
+      "statusKnowledge": "default"
+    },
     "PATCH:/api/v1/my/cards/:id": {
       "bodyKind": "content",
       "hash": "c5b2f0aa6b233fdc5d29768c76bb4d30aa65009e4167c40dddd7bfcb7020013e",
@@ -87358,6 +87536,119 @@
       "source": "backend/api/v1/entity-relations/entity-relations.mts",
       "statusCodes": [201],
       "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/hostnames#block": {
+      "bodyKind": "content",
+      "hash": "f0c2e4df758655b27a561e97b808a5243de47bea9759373debd0fd78237ed151",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/hostnames",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "union",
+          "variants": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "hostname": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": "pending"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "type": "null"
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "hostname": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "operation_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "status": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": "completed"
+                  }
+                },
+                "totals": {
+                  "required": true,
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "blocked_hostname_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "penalized_user_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      },
+                      "soft_deleted_relation_count": {
+                        "required": true,
+                        "schema": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "source": "backend/api/v1/hostnames/hostnames.mts",
+      "statusKnowledge": "default"
     },
     "POST:/api/v1/households": {
       "bodyKind": "content",
@@ -99219,6 +99510,82 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/web-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/hostnames#block",
+      "bodyFile": "responses/web.hostname-block-create-admission.default.json",
+      "consumers": ["web"],
+      "id": "web.hostname-block-create-admission.default",
+      "method": "POST",
+      "migratedFrom": ["web/types/hostnames.ts"],
+      "path": "/api/v1/hostnames",
+      "requestBody": {
+        "hostname": "blocked.example.com",
+        "is_blocked": true
+      },
+      "responseSchema": {
+        "hash": "68f77dd78abbee208473f91074919a748cb1ffc75f9075e0e6c42f5bc0179b57",
+        "key": "web.hostname-block-create-admission.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/hostnames"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-hostname-blocking-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "PATCH:/api/v1/hostnames/:id#block",
+      "bodyFile": "responses/web.hostname-block-admission.default.json",
+      "consumers": ["web"],
+      "id": "web.hostname-block-admission.default",
+      "method": "PATCH",
+      "migratedFrom": ["web/types/hostnames.ts"],
+      "path": "/api/v1/hostnames/00000000-0000-7000-8000-000000000001",
+      "requestBody": {
+        "is_blocked": true
+      },
+      "responseSchema": {
+        "hash": "ac6ae51647231aff409ec31118f2ffe50059af7c76c4e93735f54ded973c63ab",
+        "key": "web.hostname-block-admission.default"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000001"
+        },
+        "routeTemplate": "/api/v1/hostnames/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-hostname-blocking-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/hostname-block-operations/:operationId",
+      "bodyFile": "responses/web.hostname-block-operation.completed.json",
+      "consumers": ["web"],
+      "id": "web.hostname-block-operation.completed",
+      "method": "GET",
+      "migratedFrom": ["web/types/hostnames.ts"],
+      "path": "/api/v1/hostname-block-operations/00000000-0000-7000-8000-000000000002",
+      "responseSchema": {
+        "hash": "ee28f41c282ce5876167cc3c183690a356a06bfa8207527332bc3f12904b854c",
+        "key": "web.hostname-block-operation.completed"
+      },
+      "route": {
+        "pathParams": {
+          "operationId": "00000000-0000-7000-8000-000000000002"
+        },
+        "routeTemplate": "/api/v1/hostname-block-operations/:operationId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/web-hostname-blocking-cases.mts"
       },
       "status": 200
     },

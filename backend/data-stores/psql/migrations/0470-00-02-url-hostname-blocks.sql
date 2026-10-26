@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS url_hostname_blocks (
   lifted_at TIMESTAMPTZ,
   lifted_by_id UUID REFERENCES users ON DELETE SET NULL,
   relation_cleanup_root_block_id UUID,
-  penalize_relation_creators BOOLEAN NOT NULL DEFAULT FALSE,
+  should_penalize_relation_creators BOOLEAN NOT NULL DEFAULT FALSE,
   relation_cleanup_progress INTEGER NOT NULL DEFAULT 0,
   relation_cleanup_blocked_hostname_count INTEGER NOT NULL DEFAULT 0,
   relation_cleanup_soft_deleted_relation_count INTEGER NOT NULL DEFAULT 0,
@@ -242,7 +242,7 @@ COMMENT ON COLUMN url_hostname_blocks.lifted_at IS 'When the block was lifted. N
 COMMENT ON COLUMN url_hostname_blocks.reason IS 'Optional reason for the block.';
 COMMENT ON COLUMN url_hostname_blocks.lifted_by_id IS 'Who lifted the block.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_root_block_id IS 'First owning staff or provider block whose bounded cleanup operation owns this hostname; self-reference marks the operation root.';
-COMMENT ON COLUMN url_hostname_blocks.penalize_relation_creators IS 'Immutable creator-penalty intent captured when the cleanup root is first created.';
+COMMENT ON COLUMN url_hostname_blocks.should_penalize_relation_creators IS 'Immutable creator-penalty intent captured when the cleanup root is first created.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_progress IS 'Monotonic generation used to fence and identify bounded cleanup continuation jobs.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_blocked_hostname_count IS 'Durable total of hostnames first assigned to this bounded cleanup operation.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_soft_deleted_relation_count IS 'Durable total of relations soft-deleted by this bounded cleanup operation.';

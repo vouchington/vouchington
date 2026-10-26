@@ -13,7 +13,10 @@ import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/met
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import { SYSTEM_PROVENANCE } from '@voucha/types/entities/content-provenance'
 import { deleteUrlRelationPage } from '@services/hostname-blocking/delete-url-relation-page'
-import { RELATED_URL_RELATION_NOISE_COUNT } from '../seed-data/related-url-relations.mts'
+import {
+  RELATED_URL_RELATION_DELETED_FANOUT_COUNT,
+  RELATED_URL_RELATION_NOISE_COUNT,
+} from '../seed-data/related-url-relations.mts'
 
 export async function runHostnameRelationPolicyScenario(): Promise<void> {
   registerScenarioContract('hostname-owner-relation-policy', {
@@ -43,12 +46,15 @@ export async function runHostnameRelationPolicyScenario(): Promise<void> {
 export async function runHostnameBlockRelationCleanupScenario(): Promise<void> {
   registerScenarioContract('hostname-block-post-url-relation-page', {
     seededRows: {
-      relation__post__related__url: RELATED_URL_RELATION_NOISE_COUNT + 2,
+      relation__post__related__url:
+        RELATED_URL_RELATION_NOISE_COUNT + RELATED_URL_RELATION_DELETED_FANOUT_COUNT + 2,
     },
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['idx_relation__post__related__url__active_reverse'],
+        // PostgreSQL plans against the attached default-partition child of
+        // idx_relation__post__related__url__active_reverse.
+        indexes: ['relation__post__related__url__default_object_id_subject_id_idx1'],
       },
       { kind: 'maxProcessedRows', relation: 'relation__post__related__url', max: 64 },
       { kind: 'queryBinds', token: 'LIMIT' },

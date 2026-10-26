@@ -4,6 +4,7 @@ import { updateEntityRelationElectionVoteStatsFromPrimaryBatch } from '@services
 import { seedRelationIdAfterPost, seedUuid } from './common.mts'
 
 export const RELATED_URL_RELATION_NOISE_COUNT = 10_000
+export const RELATED_URL_RELATION_DELETED_FANOUT_COUNT = 10_000
 
 // Related-post reads require positive scores, while hostname cleanup needs enough active rows to
 // establish an object-side index page. The unvoted noise serves the latter without changing the
@@ -25,6 +26,19 @@ export async function seedRelatedUrlPostRelations(): Promise<void> {
       creatorId: seedUuid(relationIndex % 20_000, '01'),
     }
   })
+  // Concentrate deleted history on the blocked URL used by the cleanup scenario. That makes the
+  // active reverse index materially selective instead of equivalent to the all-row FK index.
+  const deletedFanout = Array.from(
+    { length: RELATED_URL_RELATION_DELETED_FANOUT_COUNT },
+    (_, relationIndex) => {
+      const postIndex = 40_000 + relationIndex
+      return {
+        id: seedRelationIdAfterPost(postIndex, 30_000 + relationIndex),
+        postId: seedUuid(postIndex, '05'),
+        creatorId: seedUuid(relationIndex % 20_000, '01'),
+      }
+    },
+  )
   const votedRelationIds = votedRelations.map(({ postIndex, relationIndex }) =>
     seedRelationIdAfterPost(postIndex, relationIndex),
   )
@@ -43,6 +57,20 @@ export async function seedRelatedUrlPostRelations(): Promise<void> {
       noise.map(row => row.postId),
       noise.map(row => row.urlId),
       noise.map(row => row.creatorId),
+    ],
+  )
+  await query(
+    `/* seedExplainData */ INSERT INTO relation__post__related__url
+       (id, subject_id, object_id, created_by_id, deleted_at)
+     SELECT id, post_id, $4, creator_id, uuid_extract_timestamp(id)
+     FROM unnest($1::uuid[], $2::uuid[], $3::uuid[])
+       AS deleted_fanout(id, post_id, creator_id)
+     ON CONFLICT DO NOTHING`,
+    [
+      deletedFanout.map(row => row.id),
+      deletedFanout.map(row => row.postId),
+      deletedFanout.map(row => row.creatorId),
+      seedUuid(0, '03'),
     ],
   )
   await query(

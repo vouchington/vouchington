@@ -1,0 +1,9 @@
+{
+  "operation_id": "00000000-0000-7000-8000-000000000002",
+  "status": "completed",
+  "totals": {
+    "blocked_hostname_count": 3,
+    "penalized_user_count": 2,
+    "soft_deleted_relation_count": 7
+  }
+}

@@ -42,8 +42,8 @@ describe('blockHostname', () => {
     const hostname = randomHostname()
     const childHostname = `child.${hostname}`
     const [hostnameId, childId] = await Promise.all([
-      insertTestUrlHostname({ hostname, is_blocked: false }),
-      insertTestUrlHostname({ hostname: childHostname, is_blocked: false }),
+      insertTestUrlHostname({ id: uuidv7(), hostname, is_blocked: false }),
+      insertTestUrlHostname({ id: uuidv7(), hostname: childHostname, is_blocked: false }),
     ])
 
     const result = await blockHostname(administrator.id, hostnameId)

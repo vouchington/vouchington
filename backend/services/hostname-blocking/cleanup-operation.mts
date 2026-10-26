@@ -80,7 +80,7 @@ export async function ensureHostnameBlockCleanupOperation(
       sql`/* ensureHostnameBlockCleanupOperation:attachExisting */
         UPDATE url_hostname_blocks
         SET relation_cleanup_root_block_id = id,
-          penalize_relation_creators = ${penalizeCreators},
+          should_penalize_relation_creators = ${penalizeCreators},
           relation_cleanup_blocked_hostname_count = 1
         WHERE id = ${existing.id} AND relation_cleanup_root_block_id IS NULL
         RETURNING id
@@ -97,7 +97,7 @@ export async function ensureHostnameBlockCleanupOperation(
     sql`/* ensureHostnameBlockCleanupOperation:insert */
       INSERT INTO url_hostname_blocks (
         id, url_hostname_id, blocked_by_id, blocked_source,
-        relation_cleanup_root_block_id, penalize_relation_creators,
+        relation_cleanup_root_block_id, should_penalize_relation_creators,
         relation_cleanup_blocked_hostname_count
       ) VALUES (
         ${blockId}, ${hostnameId}, ${blockedById}, ${blockedSource},
@@ -113,9 +113,7 @@ export async function ensureHostnameBlockCleanupOperation(
 export async function getHostnameBlockCleanupOperation(
   blockId: string,
 ): Promise<HostnameBlockCleanupOperation | null> {
-  const { rows } = await write<HostnameBlockCleanupOperation>(
-    cleanupOperationSql('getHostnameBlockCleanupOperation', blockId),
-  )
+  const { rows } = await write<HostnameBlockCleanupOperation>(cleanupOperationSql(blockId))
   return rows[0] ?? null
 }
 
@@ -123,9 +121,7 @@ export async function getHostnameBlockCleanupOperationInTransaction(
   query: TransactionQuery,
   blockId: string,
 ): Promise<HostnameBlockCleanupOperation | null> {
-  const { rows } = await query<HostnameBlockCleanupOperation>(
-    cleanupOperationSql('getHostnameBlockCleanupOperationInTransaction', blockId),
-  )
+  const { rows } = await query<HostnameBlockCleanupOperation>(cleanupOperationSql(blockId))
   return rows[0] ?? null
 }
 
@@ -133,7 +129,7 @@ export async function lockHostnameBlockCleanupOperation(
   query: TransactionQuery,
   blockId: string,
 ): Promise<HostnameBlockCleanupOperation | null> {
-  const statement = cleanupOperationSql('lockHostnameBlockCleanupOperation', blockId)
+  const statement = cleanupOperationSql(blockId)
   statement.append(sql` FOR UPDATE OF block`)
   const { rows } = await query<HostnameBlockCleanupOperation>(statement)
   return rows[0] ?? null
@@ -167,7 +163,7 @@ export async function advanceHostnameBlockCleanupProgress(
       RETURNING block.id AS "blockId", block.url_hostname_id AS "hostnameId",
         hostname.hostname, block.blocked_by_id AS "blockedById",
         block.blocked_source AS "blockedSource",
-        block.penalize_relation_creators AS "penalizeCreators",
+        block.should_penalize_relation_creators AS "penalizeCreators",
         block.relation_cleanup_progress AS progress,
         block.relation_cleanup_blocked_hostname_count AS "blockedHostnameCount",
         block.relation_cleanup_soft_deleted_relation_count AS "softDeletedRelationCount",
@@ -178,12 +174,12 @@ export async function advanceHostnameBlockCleanupProgress(
   return rows[0] ?? null
 }
 
-function cleanupOperationSql(comment: string, blockId: string) {
-  return sql`/* ${comment} */
+function cleanupOperationSql(blockId: string) {
+  return sql`/* hostnameBlockCleanupOperation */
     SELECT block.id AS "blockId", block.url_hostname_id AS "hostnameId",
       hostname.hostname, block.blocked_by_id AS "blockedById",
       block.blocked_source AS "blockedSource",
-      block.penalize_relation_creators AS "penalizeCreators",
+      block.should_penalize_relation_creators AS "penalizeCreators",
       block.relation_cleanup_progress AS progress,
       block.relation_cleanup_blocked_hostname_count AS "blockedHostnameCount",
       block.relation_cleanup_soft_deleted_relation_count AS "softDeletedRelationCount",

@@ -73,7 +73,7 @@ describe('staff hostname policy cache invalidation', () => {
     }
   })
 
-  it('keeps a precommit policy read stale until the committed invalidation drains', async () => {
+  it('keeps a precommit policy read stale and drains the invalidation after commit', async () => {
     const moderator = await createTestUser({ administrator: true })
     const hostnameId = await insertTestUrlHostname({
       hostname: `staff-cache-commit-${crypto.randomUUID()}.example.com`,
@@ -88,8 +88,7 @@ describe('staff hostname policy cache invalidation', () => {
     expect((await getUrlHostnameByAnyCached(hostnameId))?.is_blocked).toBe(false)
     await transaction.commit()
 
-    expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).not.toBeNull()
-    expect(await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] })).toBe(1)
     expect((await getUrlHostnameByAnyCached(hostnameId))?.is_blocked).toBe(true)
+    expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).toBeNull()
   })
 })
