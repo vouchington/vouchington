@@ -22,6 +22,34 @@ export async function lockPendingAncestorHostnameBlockCleanup(
   return rows[0]?.id ?? null
 }
 
+export async function getPendingDescendantCleanupRootHostnames(
+  query: TransactionQuery,
+  blockId: string,
+  candidateReversedHostnames: string[],
+): Promise<Set<string>> {
+  const ancestorReversedHostnames = [
+    ...new Set(
+      candidateReversedHostnames.flatMap(candidate =>
+        candidate.split('.').map((_, index, labels) => labels.slice(0, index + 1).join('.')),
+      ),
+    ),
+  ]
+  if (ancestorReversedHostnames.length === 0) return new Set()
+
+  const { rows } = await query<{ reversed_hostname: string }>(
+    sql`/* getPendingDescendantCleanupRootHostnames */
+      SELECT hostname.reversed_hostname FROM url_hostnames hostname
+      JOIN url_hostname_blocks root ON root.url_hostname_id = hostname.id
+      WHERE hostname.reversed_hostname = ANY(${ancestorReversedHostnames}::text[])
+        AND root.id <> ${blockId} AND root.lifted_at IS NULL
+        AND root.domain_blocklist_source_id IS NULL
+        AND root.relation_cleanup_root_block_id = root.id
+        AND root.relation_cleanup_completed_at IS NULL
+    `,
+  )
+  return new Set(rows.map(row => row.reversed_hostname))
+}
+
 export async function attachHostnameBlockToAncestorCleanup(
   query: TransactionQuery,
   input: {

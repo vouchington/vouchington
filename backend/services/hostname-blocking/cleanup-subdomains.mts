@@ -11,6 +11,7 @@ import {
   lockHostnameBlockCleanupOperation,
   type HostnameBlockCleanupOperation,
 } from './cleanup-operation.mts'
+import { getPendingDescendantCleanupRootHostnames } from './cleanup-operation-ancestor.mts'
 import {
   lockHostnameBlockSubdomainCandidatePage,
   type HostnameCandidate,
@@ -42,6 +43,11 @@ export async function projectNextHostnameBlockSubdomainPage(
     }
   }
   const { candidates } = discovery
+  const pendingDescendantRoots = await getPendingDescendantCleanupRootHostnames(
+    query,
+    blockId,
+    candidates.map(candidate => candidate.reversed_hostname),
+  )
   const operation = await lockHostnameBlockCleanupOperation(query, blockId)
   if (!operation || operation.completedAt || operation.progress !== expectedProgress) {
     return {
@@ -50,7 +56,13 @@ export async function projectNextHostnameBlockSubdomainPage(
       projected: 0,
     }
   }
-  const hostnameIds = candidates.map(candidate => candidate.id)
+  const hostnameIds = candidates.flatMap(candidate =>
+    candidate.reversed_hostname
+      .split('.')
+      .some((_, index, labels) => pendingDescendantRoots.has(labels.slice(0, index + 1).join('.')))
+      ? []
+      : [candidate.id],
+  )
 
   if (hostnameIds.length > 0) {
     await query(sql`/* projectNextHostnameBlockSubdomainPage:introduce */
