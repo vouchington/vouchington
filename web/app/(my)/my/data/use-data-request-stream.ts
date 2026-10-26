@@ -4,6 +4,10 @@ import { useEffect, useEffectEvent } from 'react'
 import { ApiError } from '@vouchington/api-client'
 import type { DataRequest } from '@/lib/api/client/users'
 import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-download-link-retry'
+import {
+  createDataRequestStreamTransport,
+  shouldKeepStreamReconnecting,
+} from './data-request-stream-transport'
 import { loadDataRequest, type StreamPayload } from './data-request-utils'
 
 const TERMINAL_STATUSES = new Set(['ready', 'failed', 'expired'])
@@ -13,10 +17,6 @@ interface UseDataRequestStreamOptions {
   request: DataRequest | null
   applyRequest: (data: DataRequest | null) => void
   setError: (error: string | null) => void
-}
-
-function shouldKeepStreamReconnecting(request: DataRequest | null): boolean {
-  return !request || request.status === 'pending' || request.status === 'processing'
 }
 
 export function useDataRequestStream({
@@ -51,31 +51,15 @@ export function useDataRequestStream({
     })
 
     const streamUrl = `/api/v1/users/${userId}/data-request/stream?request_id=${encodeURIComponent(requestId!)}`
-    let reopenedWithoutEvent = false
-    let stream = openStream()
-
-    function openStream() {
-      const source = new EventSource(streamUrl)
-      const onError = () => onSseError(source)
-      const onOpen = () => {
-        if (isCurrent() && stream.source === source) reopenedWithoutEvent = false
-      }
-      source.addEventListener('status', onStatus as EventListener)
-      source.addEventListener('error', onError)
-      source.addEventListener('open', onOpen)
-      return { source, onError, onOpen }
-    }
-
-    function closeStream(value: ReturnType<typeof openStream>) {
-      value.source.removeEventListener('status', onStatus as EventListener)
-      value.source.removeEventListener('error', value.onError)
-      value.source.removeEventListener('open', value.onOpen)
-      value.source.close()
-    }
+    const stream = createDataRequestStreamTransport({
+      url: streamUrl,
+      isCurrent,
+      onStatus,
+      onError: onSseError,
+    })
 
     function onStatus(event: MessageEvent) {
       if (!isCurrent()) return
-      reopenedWithoutEvent = false
       let data: StreamPayload
       try {
         data = JSON.parse(event.data) as StreamPayload
@@ -148,10 +132,10 @@ export function useDataRequestStream({
     // recovered from durable state, not treated as user-facing failure. `EventSource`
     // reconnects natively as long as `close()` is not called, so a routine cycle stays warm.
     function onSseError(source: EventSource) {
-      if (!isCurrent() || stream.source !== source) return
+      if (!isCurrent() || !stream.isCurrentSource(source)) return
       loadDataRequest(userId)
         .then(updated => {
-          if (!isCurrent() || stream.source !== source) return
+          if (!isCurrent() || !stream.isCurrentSource(source)) return
           // `!updated` (e.g. a 404 — the export was deleted mid-stream) falls through to the
           // same no-op as pending/processing: EventSource keeps reconnecting with no user-visible
           // feedback. Accepted trade-off, not an oversight — pre-dates this change.
@@ -159,11 +143,7 @@ export function useDataRequestStream({
             // A 401 closes native EventSource permanently. The successful status probe above
             // has recovered authentication, so replace only a closed stream. An ordinary drop
             // stays CONNECTING and retains the browser's built-in reconnect behavior.
-            if (updated && source.readyState === EventSource.CLOSED && !reopenedWithoutEvent) {
-              reopenedWithoutEvent = true
-              closeStream(stream)
-              stream = openStream()
-            }
+            if (updated) stream.recoverClosed(source)
             return
           }
           if (needsDownloadLinkRetry(updated)) {
@@ -171,19 +151,19 @@ export function useDataRequestStream({
             return
           }
           applyCurrentRequest(updated)
-          closeStream(stream)
+          stream.close()
         })
         .catch(err => {
-          if (!isCurrent() || stream.source !== source) return
+          if (!isCurrent() || !stream.isCurrentSource(source)) return
           if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
           setCurrentError('Failed to track export status. Please refresh.')
-          closeStream(stream)
+          stream.close()
         })
     }
 
     return () => {
       active = false
-      closeStream(stream)
+      stream.close()
       downloadLinkRetry.clear()
     }
   }, [isStreamActive, requestId, userId])
