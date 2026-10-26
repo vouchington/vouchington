@@ -17,18 +17,6 @@ export {
   replayCopyrightDeliveryIntent,
   replayCopyrightMediaDelivery,
 } from './copyright-recovery'
-export {
-  decideCopyrightTerritorialNotice,
-  recordCopyrightTerritorialAcknowledgmentFailure,
-} from './copyright-territorial-decisions'
-export {
-  decideCopyrightTerritorialRedress,
-  listCopyrightEuStaffDisputeSettlements,
-  listCopyrightTerritorialComplaints,
-  recordCopyrightEuDisputeSettlementImplementation,
-  recordCopyrightEuDisputeSettlementOutcome,
-  referCopyrightEuDisputeSettlement,
-} from './copyright-territorial-redress'
 export type { CopyrightNoticeTargetInput } from './copyright-notice-input'
 export function createCopyrightNotice(
   input: {

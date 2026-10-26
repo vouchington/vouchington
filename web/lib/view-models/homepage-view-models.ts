@@ -10,7 +10,7 @@ import type {
 } from '@/types/api-responses'
 import { getTopicTypeLabel } from '@/types/topics'
 
-export interface TrendingFeedPreviewItem {
+interface TrendingFeedPreviewItem {
   id: string
   title: string
   displayName: string
@@ -19,7 +19,7 @@ export interface TrendingFeedPreviewItem {
 
 export type TrendingFeedsViewModel = TrendingFeedPreviewItem[]
 
-export interface TrendingTopicPreviewItem {
+interface TrendingTopicPreviewItem {
   id: string
   name: string
   href: string
@@ -31,7 +31,7 @@ export interface TrendingTopicPreviewItem {
 
 export type TrendingTopicsViewModel = TrendingTopicPreviewItem[]
 
-export interface CommunityPreviewItem {
+interface CommunityPreviewItem {
   id: string
   name: string
   href: string
@@ -40,7 +40,7 @@ export interface CommunityPreviewItem {
 
 export type TopCommunitiesViewModel = CommunityPreviewItem[]
 
-export interface ReferralProgramPreviewItem {
+interface ReferralProgramPreviewItem {
   id: string
   name: string
   href: string

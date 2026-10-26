@@ -9,7 +9,7 @@ export function base64UrlToUint8Array(value: string) {
   return Uint8Array.from(raw, char => char.codePointAt(0)!)
 }
 
-export function getSafeNotificationTarget(targetPath: string): string | null {
+function getSafeNotificationTarget(targetPath: string): string | null {
   try {
     const url = new URL(targetPath, window.location.origin)
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return null

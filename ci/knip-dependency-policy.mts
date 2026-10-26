@@ -1,4 +1,4 @@
-export interface KnipWorkspaceConfig {
+interface KnipWorkspaceConfig {
   ignoreDependencies?: string[]
 }
 

@@ -33,7 +33,7 @@ export interface MembershipPlansResponseBody {
   benefit_catalog: MembershipBenefitCatalog
 }
 
-export interface MembershipCatalogProviderReference {
+interface MembershipCatalogProviderReference {
   provider: MembershipPurchaseProvider
   environment: 'test' | 'production'
   application_id: string
@@ -52,7 +52,7 @@ export interface MembershipCatalogProduct {
 }
 
 export type MembershipBenefitPlan = 'free' | 'plus' | 'pro'
-export type MembershipBenefitPlacement = 'card' | 'comparison'
+type MembershipBenefitPlacement = 'card' | 'comparison'
 export type MembershipBenefitValue =
   | { kind: 'access'; access: 'after_wait' | 'immediate' }
   | { kind: 'availability'; included: boolean }
@@ -68,7 +68,7 @@ export interface MembershipBenefit {
   values: Record<MembershipBenefitPlan, MembershipBenefitValue>
 }
 
-export interface MembershipBenefitGroup {
+interface MembershipBenefitGroup {
   id: string
   benefits: MembershipBenefit[]
 }
@@ -116,7 +116,7 @@ export interface EffectiveMembership extends Omit<
   product: Pick<MembershipSku, 'id' | 'plan' | 'interval' | 'retired_at'>
 }
 
-export interface MembershipSourceSummary {
+interface MembershipSourceSummary {
   id: string
   kind: 'direct' | 'family' | 'admin_grant'
   provider: MembershipPurchaseProvider | null

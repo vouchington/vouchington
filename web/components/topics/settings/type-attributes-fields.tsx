@@ -52,7 +52,7 @@ export function TopicIdAttribute({
   )
 }
 
-export function NumberAttribute({
+function NumberAttribute({
   id,
   label,
   value,

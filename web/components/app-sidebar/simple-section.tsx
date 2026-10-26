@@ -14,7 +14,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 
-export interface SidebarSectionItem {
+interface SidebarSectionItem {
   href: string
   icon: ComponentType
   label: string

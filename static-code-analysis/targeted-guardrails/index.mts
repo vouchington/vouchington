@@ -45,7 +45,3 @@ export function checkTargetedGuardrails(ctx: SharedContext): { errors: string[] 
 
   return { errors }
 }
-
-export const targetedGuardrailChecksForTest = {
-  checkRateLimitDocBindingsSync,
-} as const

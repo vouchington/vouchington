@@ -1,7 +1,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 
-export interface TextLinkProps extends Omit<React.ComponentPropsWithoutRef<'a'>, 'href'> {
+interface TextLinkProps extends Omit<React.ComponentPropsWithoutRef<'a'>, 'href'> {
   href: string
   prefetch?: boolean
   replace?: boolean

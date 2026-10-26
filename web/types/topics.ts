@@ -132,7 +132,7 @@ export function getTopicTypeLabelFromSlug(slug: string): MessageKey {
 // Types with Date→string conversion
 export type TopicMetrics = Serialized<BackendTopicMetrics>
 
-export interface BasicUser {
+interface BasicUser {
   id: string
   username?: string | null
   display_name?: string | null

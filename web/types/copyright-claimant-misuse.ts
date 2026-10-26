@@ -1,5 +1,5 @@
 /** How many of one claimant's notices ended in each misuse outcome; evidence for a moderator only. */
-export type CopyrightClaimantMisuse = {
+type CopyrightClaimantMisuse = {
   notice_withdrawn: number
   notice_rejected: number
   restriction_reversed_by_counter_notice: number

@@ -9,7 +9,7 @@ import {
 
 const execFile = promisify(execFileCallback)
 
-export async function githubGet<T>(path: string): Promise<T> {
+async function githubGet<T>(path: string): Promise<T> {
   const token = process.env.GH_TOKEN
   if (!token) throw new Error('GH_TOKEN is required')
   const { CLICOLOR_FORCE: _forcedColor, ...env } = process.env

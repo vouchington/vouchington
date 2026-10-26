@@ -12,28 +12,13 @@ export interface RefundableChargesResponseBody {
   charges: RefundableCharge[]
 }
 
-export interface MembershipRefund {
-  id: string
-  membership_id: string
-  user_id: string
-  stripe_refund_id: string
-  stripe_charge_id: string
-  amount: Money
-  reason: string
-  has_revoked_access: boolean
-  issued_by_id: string | null
-  source: string
-  note: string | null
-  created_at: string
-}
-
-export interface CompletedMembershipRefundResponseBody {
+interface CompletedMembershipRefundResponseBody {
   outcome: 'completed'
   refund: { id: string }
   cancellation_status: 'not_requested' | 'completed' | 'pending'
 }
 
-export interface ReconcilingMembershipRefundResponseBody {
+interface ReconcilingMembershipRefundResponseBody {
   outcome: 'reconciling'
   retry_after_seconds: number
 }

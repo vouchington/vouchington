@@ -1,7 +1,7 @@
 export const FEDIVERSE_PROVIDERS = ['peertube', 'mastodon', 'lemmy', 'bluesky'] as const
 export type FediverseProvider = (typeof FEDIVERSE_PROVIDERS)[number]
 export type FediverseResultType = 'video' | 'post' | 'profile' | 'instance'
-export type FediverseProviderStatus = 'ok' | 'partial' | 'error'
+type FediverseProviderStatus = 'ok' | 'partial' | 'error'
 
 export interface FediverseSearchResult {
   provider: FediverseProvider

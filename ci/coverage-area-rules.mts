@@ -16,7 +16,7 @@ export type CoverageArea = (typeof coverageAreas)[number]
 type CoverageRule = { paths: string; patch_coverage_min: number; area?: string }
 type CoverageRules = { rules: CoverageRule[] } & Record<string, unknown>
 
-export function isCoverageArea(value: unknown): value is CoverageArea {
+function isCoverageArea(value: unknown): value is CoverageArea {
   return coverageAreas.some(area => area === value)
 }
 

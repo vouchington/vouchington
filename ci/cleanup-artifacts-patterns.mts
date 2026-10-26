@@ -13,10 +13,10 @@ export type { ArtifactClassification } from 'vouchington-tooling/gha-artifacts-c
  */
 const patterns = parseArtifactPatternsJson(artifactPatterns)
 
-export const KEEP_PATTERNS = patterns.keepPatterns
+const KEEP_PATTERNS = patterns.keepPatterns
 
 /** Deleted once the producing run is safe to clean up (see classifyArtifact). */
-export const DELETE_PATTERNS = patterns.deletePatterns
+const DELETE_PATTERNS = patterns.deletePatterns
 
 const isKeep = createArtifactPatternMatcher(KEEP_PATTERNS)
 const isDelete = createArtifactPatternMatcher(DELETE_PATTERNS)

@@ -11,7 +11,7 @@ export type BookmarkFamily =
   | 'subscribed'
   | 'import-export'
 
-export interface BookmarkBreadcrumb {
+interface BookmarkBreadcrumb {
   name: MessageKey
   path: string
 }

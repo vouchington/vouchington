@@ -44,7 +44,6 @@ export type {
   Community as BackendCommunity,
   CommunityMember as BackendCommunityMember,
   CommunityMetrics as BackendCommunityMetrics,
-  CommunityPostReview as BackendCommunityPostReview,
   CommunityApplicationQuestion as BackendCommunityApplicationQuestion,
   CommunityApplication as BackendCommunityApplication,
   CommunityBan as BackendCommunityBan,

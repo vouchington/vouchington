@@ -2,9 +2,9 @@
 // exactly one of these labels (or delegate to a reusable workflow that owns its own
 // runner choice). Widening this set is a policy change, not a routine workflow edit.
 export const ALLOWED_LABELS = ['ubuntu-slim', 'ubuntu-latest', 'ubuntu-24.04-arm'] as const
-export type AllowedLabel = (typeof ALLOWED_LABELS)[number]
+type AllowedLabel = (typeof ALLOWED_LABELS)[number]
 
-export function isAllowedLabel(value: unknown): value is AllowedLabel {
+function isAllowedLabel(value: unknown): value is AllowedLabel {
   return typeof value === 'string' && (ALLOWED_LABELS as readonly string[]).includes(value)
 }
 

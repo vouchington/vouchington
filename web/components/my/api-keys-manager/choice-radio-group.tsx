@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 
-export interface ChoiceOption<T extends string> {
+interface ChoiceOption<T extends string> {
   value: T
   label: string
   dataPw: string

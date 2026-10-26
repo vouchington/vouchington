@@ -7,7 +7,7 @@ import type {
   TopicRecommendationEditablePostWithId,
 } from './topic-recommendation-editable-state'
 
-export type TopicRecommendationDialogPost = TopicRecommendationEditablePost & Pick<Post, 'id'>
+type TopicRecommendationDialogPost = TopicRecommendationEditablePost & Pick<Post, 'id'>
 
 export interface TopicRecommendationDialogProps {
   editableState: EditableState | null

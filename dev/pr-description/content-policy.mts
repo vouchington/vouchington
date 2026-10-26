@@ -5,7 +5,7 @@ import {
   validateMarkdownSections,
 } from 'vouchington-tooling/markdown'
 
-export function extractRelatedIssuesSection(body: string): string | undefined {
+function extractRelatedIssuesSection(body: string): string | undefined {
   return relatedIssuesSection(parseMarkdownSections(body))
 }
 

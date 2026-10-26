@@ -3,7 +3,7 @@ import type { PageInfo } from '@/types/api-responses'
 import type { RssFeedCrawlSummary } from '@/types/rss-feeds'
 import { dedupeBy } from '@ts-shared/utils/collections'
 
-export interface ViewUrl {
+interface ViewUrl {
   url: string
 }
 

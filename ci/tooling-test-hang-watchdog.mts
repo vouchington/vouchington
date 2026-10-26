@@ -10,8 +10,8 @@ export const TOOLING_HANG_GRACE_MS = 10_000
 export const TOOLING_HANG_WALL_CLOCK_MS = 7 * 60_000
 const PENDING_LIMIT = 512
 
-export const WORKER_TERMINATE_PATTERN = /Timeout terminating (?:threads|forks) worker/
-export const VITEST_RUN_SUMMARY_PATTERN = /Test Files\s/
+const WORKER_TERMINATE_PATTERN = /Timeout terminating (?:threads|forks) worker/
+const VITEST_RUN_SUMMARY_PATTERN = /Test Files\s/
 
 export type ToolingHangOutputStream = 'stderr' | 'stdout'
 

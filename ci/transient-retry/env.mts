@@ -26,7 +26,7 @@ export function readDecisionEnv(): DecisionEnv {
   })
 }
 
-export function parseDecisionEnv(env: NodeJS.ProcessEnv): DecisionEnv {
+function parseDecisionEnv(env: NodeJS.ProcessEnv): DecisionEnv {
   const {
     CONCLUSION,
     GH_TOKEN,

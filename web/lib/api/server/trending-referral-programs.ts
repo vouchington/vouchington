@@ -21,7 +21,7 @@ export const getTrendingReferralPrograms = cache(
   },
 )
 
-export interface TrendingReferralProgram {
+interface TrendingReferralProgram {
   id: string
   trending_score: number
   link_count: number
@@ -32,7 +32,7 @@ export interface TrendingReferralProgram {
   referral_link_count?: number | null
 }
 
-export interface TrendingReferralProgramsEndpointResponse {
+interface TrendingReferralProgramsEndpointResponse {
   referral_programs: TrendingReferralProgram[]
   page_info: {
     has_next_page: boolean

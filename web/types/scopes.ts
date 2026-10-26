@@ -1,7 +1,7 @@
 export type ScopeAudience = 'admin' | 'api' | 'brand' | 'community_moderation' | 'legal' | 'user'
 export type McpScopeAudience = Exclude<ScopeAudience, 'api'>
 export type ScopeCredentialSurface = 'api-key' | 'oauth'
-export type ScopeAction = 'read' | 'write'
+type ScopeAction = 'read' | 'write'
 export type ScopeDescriptionKey =
   | 'mcp_admin_full_access'
   | 'mcp_user_full_access'

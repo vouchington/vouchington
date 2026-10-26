@@ -3,8 +3,6 @@ import type { CopyrightStaffTerritorialCase } from './copyright-territorial'
 import type { CopyrightEuParticipantCase } from './copyright-eu'
 import type { CopyrightStaffQueueReason } from './copyright-notice-queue'
 export { copyrightImageSurfaceLabel } from './copyright-image-surfaces'
-export type { CopyrightImageSurface } from './copyright-image-surfaces'
-
 import type { CopyrightParticipantStatement } from './copyright-statements'
 import type { CopyrightStaffClaimant } from './copyright-claimant-misuse'
 import type { CopyrightStaydownMatch } from './copyright-staydown'
@@ -19,7 +17,7 @@ export type {
   CopyrightLegalHoldGuidance,
 } from './copyright-submission-guidance'
 
-export type CopyrightNoticeSummary = {
+type CopyrightNoticeSummary = {
   id: string
   jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk'
   received_at: string

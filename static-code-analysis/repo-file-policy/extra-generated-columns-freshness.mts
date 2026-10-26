@@ -99,7 +99,7 @@ export function findGeneratedCreatedAtTables(schema: Pick<SchemaSnapshot, 'table
   return tables
 }
 
-export function findExtraGeneratedCreatedAtTables(rule: NoMistakesRule): Set<string> {
+function findExtraGeneratedCreatedAtTables(rule: NoMistakesRule): Set<string> {
   const extras = new Set<string>()
   for (const entry of rule.options?.extraGeneratedColumns ?? []) {
     if (typeof entry.table !== 'string' || entry.column !== 'created_at') continue

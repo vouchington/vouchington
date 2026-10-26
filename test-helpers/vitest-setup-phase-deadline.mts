@@ -4,7 +4,7 @@
  * stuck, and failing it names the phase instead of letting the step stall until the watchdog
  * reports only that no test file ever started (run 39552270690).
  */
-export const SETUP_PHASE_DEADLINE_MS = 120_000
+const SETUP_PHASE_DEADLINE_MS = 120_000
 
 export class SetupPhaseDeadlineError extends Error {
   constructor(phase: string, deadlineMs: number) {

@@ -1,9 +1,3 @@
-export type {
-  ReviewDisputeAction,
-  ReviewDisputeReason,
-  ReviewDisputeRecommendedAction,
-  ReviewDisputeStatus,
-} from '@ts-shared/utils/moderation-catalogs'
 import type {
   ReviewDisputeAction,
   ReviewDisputeReason,

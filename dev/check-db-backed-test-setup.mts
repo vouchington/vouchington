@@ -96,7 +96,7 @@ export function evaluateDbBackedTestSetup(input: DbBackedTestSetupInput): DbBack
   return { errors, ok: errors.length === 0 }
 }
 
-export function databaseNameFromUrl(databaseUrl: string): string | null {
+function databaseNameFromUrl(databaseUrl: string): string | null {
   try {
     const url = new URL(databaseUrl)
     return decodeURIComponent(url.pathname.replace(/^\//, '')) || null

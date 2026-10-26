@@ -31,11 +31,3 @@ export function statusFromGapState(cell: string): ClientFeatureStatus | undefine
   if (CURRENT_STATE_CLOSED_RE.test(value)) return 'full'
   return undefined
 }
-
-export function aggregateFeatureStatuses(
-  statuses: readonly ClientFeatureStatus[],
-): ClientFeatureStatus | undefined {
-  const first = statuses[0]
-  if (!first) return undefined
-  return statuses.every(status => status === first) ? first : 'partial'
-}

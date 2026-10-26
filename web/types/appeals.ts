@@ -3,7 +3,7 @@ import type {
   ModerationAppealStatus,
 } from '@ts-shared/utils/moderation-catalogs'
 
-export type { ModerationAppealAction, ModerationAppealStatus }
+export type { ModerationAppealAction }
 
 export type ModerationAppealViewerRole = 'administrator' | 'moderator' | 'member'
 

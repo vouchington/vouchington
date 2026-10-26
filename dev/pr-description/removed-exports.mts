@@ -37,7 +37,7 @@ export function parseRemovedExports(block: string, path: string): RemovedSurface
   return surfaces
 }
 
-export function addNamedExportNames(raw: string, into: Set<string>): void {
+function addNamedExportNames(raw: string, into: Set<string>): void {
   for (const part of raw.split(',')) {
     const name = part
       .trim()
@@ -48,7 +48,7 @@ export function addNamedExportNames(raw: string, into: Set<string>): void {
   }
 }
 
-export function collectExportNames(content: string, into: Set<string>): void {
+function collectExportNames(content: string, into: Set<string>): void {
   const trimmed = content.trim()
   const star = EXPORT_STAR_RE.exec(trimmed)?.groups?.spec
   if (star !== undefined) {

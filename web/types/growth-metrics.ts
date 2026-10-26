@@ -1,6 +1,6 @@
 export type GrowthRange = 'today' | '7d' | '30d' | '90d' | 'all'
 
-export interface DailyDataPoint {
+interface DailyDataPoint {
   date: string // ISO date string YYYY-MM-DD
   count: number
 }
@@ -14,7 +14,7 @@ export interface UserGrowth {
   signups_over_time: DailyDataPoint[]
 }
 
-export interface ContentByType {
+interface ContentByType {
   review: number
   data_point: number
   discussion: number
@@ -48,7 +48,7 @@ export interface NetworkEffects {
   signup_visit_ratio: number
 }
 
-export type MembershipsByTier = Record<string, number>
+type MembershipsByTier = Record<string, number>
 
 export interface Revenue {
   active_memberships: number

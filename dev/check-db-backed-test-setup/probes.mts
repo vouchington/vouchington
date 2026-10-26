@@ -30,7 +30,7 @@ export function hasDataStoreInit(mode: string | null | undefined): boolean {
   return mode === 'backend' || mode === 'web'
 }
 
-export function firstValkeyUrl(env: NodeJS.ProcessEnv): string | undefined {
+function firstValkeyUrl(env: NodeJS.ProcessEnv): string | undefined {
   for (const name of valkeyUrlEnvNames) {
     const value = env[name]
     if (value) {

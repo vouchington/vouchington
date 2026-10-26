@@ -26,7 +26,7 @@ function requireTopic(index: number) {
   return topic
 }
 
-export const openBankingTopic = requireTopic(0)
+const openBankingTopic = requireTopic(0)
 export const cardTopic = requireTopic(1)
 export const bankTopic = requireTopic(2)
 export const rewardsTopic = requireTopic(3)
@@ -85,7 +85,7 @@ export const reviewMarkdown = [
 
 export const reviewWithBody: Post = { ...reviewPost, markdown: reviewMarkdown }
 
-export const incomeRange = {
+const incomeRange = {
   minimum: { amount: 8_000_000, currency: 'usd' as const },
   maximum: { amount: 12_000_000, currency: 'usd' as const },
 }

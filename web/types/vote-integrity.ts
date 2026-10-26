@@ -4,7 +4,6 @@ import type {
   VoteIntegrityResolution,
 } from '@ts-shared/utils/moderation-catalogs'
 
-export type { VoteIntegrityFlagType }
 export type StatusFilter = IntegrityFlagStatusFilter
 export type FlagResolution = VoteIntegrityResolution
 

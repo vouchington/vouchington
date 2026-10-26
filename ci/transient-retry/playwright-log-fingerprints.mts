@@ -1,7 +1,7 @@
 // Distinguish emitted runtime log lines from GitHub Actions echoed source for
 // `run:` steps. Assumes this action emits timeout markers via `echo`; switch to
 // a tag-based marker if that changes.
-export function hasEmittedLogLine(log: string, text: string): boolean {
+function hasEmittedLogLine(log: string, text: string): boolean {
   return log.split('\n').some(line => {
     const index = line.indexOf(text)
     if (index === -1) return false

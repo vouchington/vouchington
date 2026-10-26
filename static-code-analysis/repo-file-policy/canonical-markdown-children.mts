@@ -7,7 +7,7 @@ import {
   fragmentOnlyCanonicalChildTargets,
 } from './canonical-markdown-child-links.mts'
 
-export interface MarkdownSourceLocation {
+interface MarkdownSourceLocation {
   file: string
   line: number
 }

@@ -12,7 +12,7 @@ export interface ImportProgress {
 }
 
 /** Consecutive transient poll failures tolerated while a task is replaced (Spot, deploy). */
-export const IMPORT_POLL_MAX_TRANSIENT_ERRORS = 3
+const IMPORT_POLL_MAX_TRANSIENT_ERRORS = 3
 
 function isTransientPollError(err: unknown, retryNotFound: boolean): boolean {
   if (err instanceof ApiError) {

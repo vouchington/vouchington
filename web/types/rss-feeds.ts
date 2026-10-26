@@ -29,7 +29,7 @@ export interface RssFeedTopicElection {
   votes_count_down: number
 }
 
-export interface RssFeedPublisherType {
+interface RssFeedPublisherType {
   id: string
   slug: string
   topic_type: string
@@ -47,7 +47,7 @@ export interface PodcastShow {
   description?: string | null
 }
 
-export interface RssFeedCategory {
+interface RssFeedCategory {
   category_text: string
   topic_id: string | null
   /** Slug of the resolved topic; null when topic_id is null or the topic is deleted/merged. */

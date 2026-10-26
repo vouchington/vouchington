@@ -3,11 +3,7 @@ import {
   type PrBodyValidationOptions,
   type PrBodyValidationResult,
 } from './validate-body.mts'
-export {
-  validatePrBody,
-  type PrBodyValidationOptions,
-  type PrBodyValidationResult,
-} from './validate-body.mts'
+export { validatePrBody, type PrBodyValidationResult } from './validate-body.mts'
 import { parseClosingIssueReferences, type ClosingIssueReference } from 'vouchington-tooling/gh-cli'
 
 import {
@@ -35,13 +31,13 @@ export type PullRequestIdentity = {
   state: string
 }
 
-export type PullRequestReference = Pick<PullRequestIdentity, 'number' | 'owner' | 'repo'>
+type PullRequestReference = Pick<PullRequestIdentity, 'number' | 'owner' | 'repo'>
 
 export type ClosureLookup =
   | { closer: PullRequestReference | null; ok: true }
   | { error: string; ok: false }
 
-export type IssueClosureResolver = (ref: ClosingIssueReference) => Promise<ClosureLookup>
+type IssueClosureResolver = (ref: ClosingIssueReference) => Promise<ClosureLookup>
 
 export type IssueReferenceValidationOptions = PrBodyValidationOptions & {
   closureResolver?: IssueClosureResolver

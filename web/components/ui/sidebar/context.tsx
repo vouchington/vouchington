@@ -147,11 +147,4 @@ function SidebarProvider({
 }
 SidebarProvider.displayName = 'SidebarProvider'
 
-export {
-  SIDEBAR_SKELETON_TEXT_WIDTH,
-  SIDEBAR_WIDTH,
-  SIDEBAR_WIDTH_ICON,
-  SIDEBAR_WIDTH_MOBILE,
-  SidebarProvider,
-  useSidebar,
-}
+export { SIDEBAR_SKELETON_TEXT_WIDTH, SIDEBAR_WIDTH_MOBILE, SidebarProvider, useSidebar }

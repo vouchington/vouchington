@@ -20,7 +20,7 @@ export function checkFiniteEnumRippleGuard(
 }
 
 /** Classifies the already-existing tracked inventory once for every enum ripple check. */
-export function collectFiniteEnumFiles(existingTrackedFiles: readonly string[]): FiniteEnumFiles {
+function collectFiniteEnumFiles(existingTrackedFiles: readonly string[]): FiniteEnumFiles {
   const files: FiniteEnumFiles = {
     existingFileSet: new Set(existingTrackedFiles),
     postCollectionPages: [],
@@ -63,7 +63,7 @@ export function collectFiniteEnumFiles(existingTrackedFiles: readonly string[]):
   return files
 }
 
-export function collectionSlug(
+function collectionSlug(
   file: string,
   group: 'posts' | 'topics',
 ): Omit<RoutedPage, 'file'> | undefined {

@@ -17,7 +17,7 @@ export interface ModerationTransparency {
   }[]
 }
 
-export interface DailyCountDataPoint {
+interface DailyCountDataPoint {
   date: string
   count: number
 }

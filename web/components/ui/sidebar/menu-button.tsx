@@ -113,4 +113,4 @@ function SidebarMenuButton({
 }
 SidebarMenuButton.displayName = 'SidebarMenuButton'
 
-export { SidebarMenu, SidebarMenuButton, SidebarMenuItem, sidebarMenuButtonVariants }
+export { SidebarMenu, SidebarMenuButton, SidebarMenuItem }

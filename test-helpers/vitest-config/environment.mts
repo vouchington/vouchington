@@ -46,7 +46,7 @@ const isToolingCoverage = coverageScope === 'tooling'
 const isWebStorybookBrowserCoverage = coverageScope === 'web-storybook-browser'
 const isWebStorybookCoverage = coverageScope === 'web-storybook'
 const isWebLibApiCoverage = coverageScope === 'web-lib-api'
-export const coverageFlags = {
+const coverageFlags = {
   isScopedCoverage:
     isToolingCoverage ||
     isPortabilityCoverage ||
@@ -65,7 +65,7 @@ if (coverageScope && !coverageFlags.isScopedCoverage) {
   )
 }
 export const isStorybookBrowserEnabled = process.env.VITEST_STORYBOOK_BROWSER === '1'
-export const parseWorkerCount = (
+const parseWorkerCount = (
   name: string,
   value: string | undefined,
   fallback: number | string,
@@ -111,7 +111,7 @@ export const parseStorybookBrowserMaxWorkers = (): number | string => {
   }
   return parseWorkerCount('VITEST_MAX_WORKERS', process.env.VITEST_MAX_WORKERS, 1, true)
 }
-export const parseStorybookBrowserConnectTimeout = (): number => {
+const parseStorybookBrowserConnectTimeout = (): number => {
   const value = process.env.STORYBOOK_BROWSER_HANG_MS
   if (!value) return 120_000
   const timeout = Number(value)
@@ -152,8 +152,7 @@ const hasCoverageCliFlag = process.argv.some(
 // CI supplies this explicitly from each reusable workflow's publish_coverage input. Keep an
 // explicit CLI flag authoritative so local `vitest --coverage` remains an opt-in regardless of
 // the ambient environment.
-export const isVitestCoverageEnabled =
-  hasCoverageCliFlag || process.env.VITEST_COVERAGE_ENABLED === 'true'
+const isVitestCoverageEnabled = hasCoverageCliFlag || process.env.VITEST_COVERAGE_ENABLED === 'true'
 
 export const coverageConfig = () => ({
   ...runtimeCoverageConfigForScope(coverageScope),

@@ -9,20 +9,20 @@ export type AvailabilityKind =
   | 'post-slug'
   | 'username'
 
-export interface TopicConflict {
+interface TopicConflict {
   kind: 'topic'
   id: string
   slug: string
   name: string
   topic_type: string
 }
-export interface CommunityConflict {
+interface CommunityConflict {
   kind: 'community'
   id: string
   slug: string
   name: string
 }
-export interface PostConflict {
+interface PostConflict {
   kind: 'post'
   id: string
   slug: string

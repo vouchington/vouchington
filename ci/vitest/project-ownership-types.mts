@@ -1,11 +1,7 @@
 // Type/helper scaffolding for the Vitest project ownership model — split out of
 // project-ownership.mts to keep that file's `VITEST_OWNERSHIP` data array under the line cap.
 // See project-ownership.mts for the single-source-of-truth data array and its consumers.
-export type VitestInvocationForm =
-  | 'literal'
-  | 'tooling-registry'
-  | 'portability-group'
-  | 'storybook'
+type VitestInvocationForm = 'literal' | 'tooling-registry' | 'portability-group' | 'storybook'
 
 export interface VitestProjectOwnership {
   readonly project: string

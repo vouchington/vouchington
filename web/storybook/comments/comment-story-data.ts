@@ -46,7 +46,7 @@ export const replyPost: Post = {
   can_edit_content: false,
 }
 
-export const commentElection: PostElection = {
+const commentElection: PostElection = {
   __entity_type: 'post_election',
   id: 'election-post-comment',
   votes_score_net: 4,

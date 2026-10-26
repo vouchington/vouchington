@@ -12,7 +12,7 @@ const { mockOnError, mockOnSuccess } = vi.hoisted(() => ({
   mockOnSuccess: vi.fn<VitestLooseMock>(),
 }))
 
-export { mockOnError, mockOnSuccess }
+export { mockOnError }
 
 vi.mock(
   import('next/navigation'),

@@ -1,4 +1,4 @@
-export interface IndividualCardTopicSummary {
+interface IndividualCardTopicSummary {
   id: string
   name: string
   slug: string

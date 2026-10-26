@@ -24,7 +24,7 @@ import {
   writeValidLifecycleScenarioFixture,
 } from '../repo-file-policy/lifecycle-scenario-test-fixtures.mts'
 import { writeValidLocalLlmEndpointPolicyFixture } from '../repo-file-policy/local-llm-endpoint-policy-test-fixtures.mts'
-export { mkdir, rm, writeFile } from 'node:fs/promises'
+export { rm } from 'node:fs/promises'
 export { join } from 'node:path'
 export { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
 

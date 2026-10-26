@@ -4,7 +4,7 @@
  * present + no exit-code error" is UNSAFE — every consumer supplies its own isConsumerFailure.
  */
 
-export function hasRunnerShutdownMarkers(log: string): boolean {
+function hasRunnerShutdownMarkers(log: string): boolean {
   return (
     log.includes('##[error]The runner has received a shutdown signal.') &&
     (log.includes('##[error]The operation was canceled.') ||

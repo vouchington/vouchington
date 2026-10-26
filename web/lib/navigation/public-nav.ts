@@ -11,7 +11,7 @@ type PublicNavGroup = {
   items: PublicNavItem[]
 }
 
-export const EXPLORE_NAV_GROUP: PublicNavGroup = {
+const EXPLORE_NAV_GROUP: PublicNavGroup = {
   label: 'extracted.navigation.publicNav.explore_3b73900b',
   items: [
     {
@@ -42,7 +42,7 @@ export const EXPLORE_NAV_GROUP: PublicNavGroup = {
   ],
 }
 
-export const TOPICS_NAV_GROUP: PublicNavGroup = {
+const TOPICS_NAV_GROUP: PublicNavGroup = {
   label: 'extracted.navigation.publicNav.topics_e22820fc',
   items: [
     {
@@ -63,7 +63,7 @@ export const TOPICS_NAV_GROUP: PublicNavGroup = {
   ],
 }
 
-export const TRUST_NAV_GROUP: PublicNavGroup = {
+const TRUST_NAV_GROUP: PublicNavGroup = {
   label: 'extracted.navigation.publicNav.trust_ade9248e',
   items: [
     {
@@ -74,10 +74,6 @@ export const TRUST_NAV_GROUP: PublicNavGroup = {
   ],
 }
 
-export const PUBLIC_NAV_GROUPS: PublicNavGroup[] = [
-  EXPLORE_NAV_GROUP,
-  TOPICS_NAV_GROUP,
-  TRUST_NAV_GROUP,
-]
+const PUBLIC_NAV_GROUPS: PublicNavGroup[] = [EXPLORE_NAV_GROUP, TOPICS_NAV_GROUP, TRUST_NAV_GROUP]
 
 export const PUBLIC_NAV_ITEMS: PublicNavItem[] = PUBLIC_NAV_GROUPS.flatMap(section => section.items)

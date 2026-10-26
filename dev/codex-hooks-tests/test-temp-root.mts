@@ -4,13 +4,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 // Captured at import time; codex hook tests do not mutate RUNNER_TEMP after import.
-export const TEST_TMP_ROOT = process.env.RUNNER_TEMP || tmpdir()
+const TEST_TMP_ROOT = process.env.RUNNER_TEMP || tmpdir()
 
 export function makeTestTempDirSync(prefix: string): string {
   return mkdtempSync(join(TEST_TMP_ROOT, prefix))
 }
 
-export function makeTestTempDir(prefix: string): Promise<string> {
+function makeTestTempDir(prefix: string): Promise<string> {
   return mkdtemp(join(TEST_TMP_ROOT, prefix))
 }
 

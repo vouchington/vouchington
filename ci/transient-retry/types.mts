@@ -1,5 +1,5 @@
 import type { WorkflowRetryRule } from 'vouchington-tooling/transient-retry'
-export type { WorkflowRunContext, WorkflowJobStep } from 'vouchington-tooling/transient-retry'
+export type { WorkflowRunContext } from 'vouchington-tooling/transient-retry'
 
 export type TransientRetryRule = WorkflowRetryRule & {
   id: string // stable slug used in logs/telemetry

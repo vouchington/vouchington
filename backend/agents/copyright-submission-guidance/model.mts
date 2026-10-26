@@ -15,9 +15,7 @@ import {
 } from '@ts-shared/utils/copyright-submission-guidance'
 
 export type { CopyrightSubmissionGuidanceKind }
-export type CopyrightSubmissionGuidanceOutput =
-  | CopyrightCounterNoticeGuidance
-  | CopyrightLegalHoldGuidance
+type CopyrightSubmissionGuidanceOutput = CopyrightCounterNoticeGuidance | CopyrightLegalHoldGuidance
 /** Bump when the instructions, output schemas or parser contract changes. */
 export const COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION = 'copyright-submission-guidance-v1'
 /** The kind-aware model-calling seam; the run wraps it into the shared `AgentModelCaller` shape. */

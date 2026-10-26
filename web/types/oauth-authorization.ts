@@ -1,4 +1,4 @@
-export interface OAuthAuthorizationRequest {
+interface OAuthAuthorizationRequest {
   id: string
   client_name: string
   client_hostname: string

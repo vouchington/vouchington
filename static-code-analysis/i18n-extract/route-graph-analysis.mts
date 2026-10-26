@@ -3,7 +3,7 @@ import { withI18nAnalysisBudget, type AnalysisBudgetOptions } from './analysis-b
 import type { RouteEntry } from './route-tree.mts'
 import { dependencyPaths, dependencyResult } from './route-usage.mts'
 
-export const DEPENDENCY_RELATIONSHIPS: Relationship[] = [
+const DEPENDENCY_RELATIONSHIPS: Relationship[] = [
   'import-static',
   'import-dynamic',
   'import-type',

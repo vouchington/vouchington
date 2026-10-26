@@ -21,8 +21,7 @@ const CLOSED_BY_LIST_RE = /closed by\s+((?:\[#\d+\](?:\s*(?:,|and)\s*)?)+)/gi
 const OPEN_ARROW_RE = /→\s*\[#(\d+)\]/g
 const CURRENT_STATE_CLOSED_RE = /^(closed by|closed\b)/i
 
-export type { TableKind } from './client-parity-matrix-table-kind.mts'
-export type StatusKind = ClientFeatureStatus
+type StatusKind = ClientFeatureStatus
 export type { IssueLinkDefinition }
 
 export interface ParsedMatrixRow extends MatrixSourceLocation {

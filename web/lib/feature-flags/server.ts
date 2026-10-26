@@ -34,12 +34,12 @@ export async function getEffectiveServerFeatureFlags(): Promise<FeatureFlags> {
   return mergeFeatureFlagOverrides(await getGlobalServerFeatureFlags(), overrides)
 }
 
-export interface GlobalFeatureFlagsFetchSuccess {
+interface GlobalFeatureFlagsFetchSuccess {
   ok: true
   flags: FeatureFlags
 }
 
-export interface GlobalFeatureFlagsFetchFailure {
+interface GlobalFeatureFlagsFetchFailure {
   ok: false
   error: unknown
 }

@@ -1,9 +1,5 @@
 /** Canonical provenance lines for fixture bodies — a fixed device/worktree, harness-free. */
-export const VALID_PROVENANCE_LINES = [
-  'Agent: human',
-  'Device: test@test-host',
-  'Worktree: test-worktree',
-]
+const VALID_PROVENANCE_LINES = ['Agent: human', 'Device: test@test-host', 'Worktree: test-worktree']
 
 /** Joined block for splicing into a fixture's `Workspace setup:` line via template interpolation. */
 export const VALID_PROVENANCE_BLOCK = VALID_PROVENANCE_LINES.join('\n')
