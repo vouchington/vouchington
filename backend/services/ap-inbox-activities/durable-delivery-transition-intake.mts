@@ -15,7 +15,7 @@ import type {
 import type { ActivityPubInboxAcceptResult } from './durable-delivery-capacity-contract.mts'
 import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-storage-policy'
 
-const UNVERIFIED_CAPACITY_CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity'
+const UNVERIFIED_CAPACITY_CONSTRAINT = 'activitypub_inbox_envelopes_unverified_capacity'
 
 export async function acceptActivityPubInboxDelivery(
   envelope: ActivityPubInboxEnvelope,
@@ -26,7 +26,7 @@ export async function acceptActivityPubInboxDelivery(
   const requestDigest = computeActivityPubInboxRequestDigest(envelope)
   try {
     const { rows } = await write(sql`/* acceptActivityPubInboxDelivery */
-      INSERT INTO activitypub_inbox_delivery_work_items (
+      INSERT INTO activitypub_inbox_envelopes (
         request_digest, request_method, request_target, expected_host, signature_header, digest_header, date_header,
         content_type_header, raw_body, claimed_activity_id, claimed_activity_type,
         claimed_actor_uri, sender_hostname, remote_actor_id, verified_at, sender_allowed_at
@@ -93,7 +93,7 @@ export async function loadActivityPubInboxDelivery(
            digest_header, date_header, content_type_header, raw_body, claimed_activity_id,
            claimed_activity_type, claimed_actor_uri, sender_hostname, remote_actor_id,
            received_at, verified_at, sender_allowed_at
-    FROM activitypub_inbox_delivery_work_items
+    FROM activitypub_inbox_envelopes
     WHERE id = ${deliveryId}
       AND failed_at IS NULL
       AND (retention_expires_at IS NULL OR retention_expires_at > CURRENT_TIMESTAMP)

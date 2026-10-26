@@ -53,14 +53,14 @@ export async function measureActivityPubInboxOwnedStorageCounterForTest(
       )
     }
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      UPDATE activitypub_inbox_delivery_work_items
+      UPDATE activitypub_inbox_envelopes
       SET verified_at = CURRENT_TIMESTAMP,
           remote_actor_id = ${verificationActorId}
       WHERE id = ${deliveryId}
     `)
   } else if (scenario === 'insert-delete') {
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      DELETE FROM activitypub_inbox_delivery_work_items WHERE id = ANY(${deliveryIds})
+      DELETE FROM activitypub_inbox_envelopes WHERE id = ANY(${deliveryIds})
     `)
   } else {
     await transaction(sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
@@ -114,7 +114,7 @@ async function insertUnverifiedDelivery(
   })
   const { rows } = await transaction<{ id: string }>(
     sql`/* measureActivityPubInboxOwnedStorageCounterForTest */
-      INSERT INTO activitypub_inbox_delivery_work_items (
+      INSERT INTO activitypub_inbox_envelopes (
         request_method, request_target, expected_host, signature_header, digest_header,
         date_header, raw_body, claimed_activity_id, claimed_activity_type,
         claimed_actor_uri, sender_hostname, request_digest

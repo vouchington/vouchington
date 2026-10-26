@@ -24,7 +24,7 @@ export async function insertExpiredVerifiedActivityPubInboxDeliveriesForTest(
   const { rows } = await write<{
     id: string
   }>(sql`/* insertExpiredVerifiedActivityPubInboxDeliveriesForTest */
-    INSERT INTO activitypub_inbox_delivery_work_items (
+    INSERT INTO activitypub_inbox_envelopes (
       request_method, request_target, expected_host, signature_header, digest_header, date_header,
       raw_body, claimed_activity_id, claimed_activity_type, claimed_actor_uri, sender_hostname,
       remote_actor_id, verified_at, failed_at,

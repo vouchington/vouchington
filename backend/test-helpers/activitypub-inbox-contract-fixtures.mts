@@ -28,26 +28,26 @@ export function expectActivityPubInboxVerificationConstraints(
   check(
     constraints.some(
       constraint =>
-        constraint.constraintName === 'activitypub_inbox_work_items__verified_actor_paired' &&
+        constraint.constraintName === 'activitypub_inbox_envelopes__verified_actor_paired' &&
         constraint.definition.includes('(verified_at IS NULL) = (remote_actor_id IS NULL)'),
     ),
   ).toBe(true)
   check(
     constraints.find(
       constraint =>
-        constraint.constraintName === 'activitypub_inbox_delivery_work_items_remote_actor_id_fkey',
+        constraint.constraintName === 'activitypub_inbox_envelopes_remote_actor_id_fkey',
     )?.deleteAction,
   ).toBe('RESTRICT')
   check(
     constraints.find(
       constraint =>
-        constraint.constraintName === 'activitypub_inbox_work_items__sender_requires_verification',
+        constraint.constraintName === 'activitypub_inbox_envelopes__sender_requires_verification',
     )?.definition,
   ).toContain('sender_allowed_at IS NULL')
   check(
     constraints.find(
       constraint =>
-        constraint.constraintName === 'activitypub_inbox_work_items__terminal_diagnostics_present',
+        constraint.constraintName === 'activitypub_inbox_envelopes__terminal_diagnostics_present',
     )?.definition,
   ).toContain('last_error IS NOT NULL')
 }

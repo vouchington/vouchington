@@ -7,7 +7,7 @@ export async function exhaustActivityPubInboxDelivery(
   error: unknown,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* exhaustActivityPubInboxDelivery */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET failed_at = CURRENT_TIMESTAMP,
         first_failed_at = COALESCE(first_failed_at, CURRENT_TIMESTAMP),
         retention_expires_at = LEAST(
@@ -28,7 +28,7 @@ export async function rejectActivityPubInboxDelivery(
   deliveryId: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* rejectActivityPubInboxDelivery */
-    DELETE FROM activitypub_inbox_delivery_work_items
+    DELETE FROM activitypub_inbox_envelopes
     WHERE id = ${deliveryId}
       AND failed_at IS NULL
   `)
@@ -41,7 +41,7 @@ export async function completeActivityPubInboxDelivery(
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(
     sql`/* completeActivityPubInboxDelivery */
-      DELETE FROM activitypub_inbox_delivery_work_items
+      DELETE FROM activitypub_inbox_envelopes
       WHERE id = ${deliveryId}
         AND verified_at IS NOT NULL
         AND remote_actor_id IS NOT NULL

@@ -2,10 +2,10 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 type ActivityPubInboxVerificationConstraintName =
-  | 'activitypub_inbox_work_items__sender_requires_verification'
-  | 'activitypub_inbox_work_items__terminal_diagnostics_present'
-  | 'activitypub_inbox_work_items__verified_actor_paired'
-  | 'activitypub_inbox_delivery_work_items_remote_actor_id_fkey'
+  | 'activitypub_inbox_envelopes__sender_requires_verification'
+  | 'activitypub_inbox_envelopes__terminal_diagnostics_present'
+  | 'activitypub_inbox_envelopes__verified_actor_paired'
+  | 'activitypub_inbox_envelopes_remote_actor_id_fkey'
 
 type ActivityPubInboxVerificationConstraintForTest = {
   constraintName: ActivityPubInboxVerificationConstraintName
@@ -25,12 +25,12 @@ export async function getActivityPubInboxVerificationConstraintsForTest(): Promi
            pg_get_constraintdef(c.oid) AS definition,
            CASE c.confdeltype WHEN 'r' THEN 'RESTRICT' WHEN 'a' THEN 'NO ACTION' ELSE NULL END AS delete_action
     FROM pg_constraint c
-    WHERE c.conrelid = 'activitypub_inbox_delivery_work_items'::regclass
+    WHERE c.conrelid = 'activitypub_inbox_envelopes'::regclass
       AND c.conname IN (
-        'activitypub_inbox_work_items__sender_requires_verification',
-        'activitypub_inbox_work_items__terminal_diagnostics_present',
-        'activitypub_inbox_work_items__verified_actor_paired',
-        'activitypub_inbox_delivery_work_items_remote_actor_id_fkey'
+        'activitypub_inbox_envelopes__sender_requires_verification',
+        'activitypub_inbox_envelopes__terminal_diagnostics_present',
+        'activitypub_inbox_envelopes__verified_actor_paired',
+        'activitypub_inbox_envelopes_remote_actor_id_fkey'
       )
   `)
 
@@ -45,7 +45,7 @@ export async function ageActivityPubInboxDeliveryReceivedAtForTest(
   deliveryId: string,
 ): Promise<void> {
   await write(sql`/* ageActivityPubInboxDeliveryReceivedAtForTest */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET received_at = NOW() - INTERVAL '31 minutes'
     WHERE id = ${deliveryId}
   `)
@@ -59,7 +59,7 @@ export async function activityPubInboxDeliveryExistsOnPrimaryForTest(
   }>(sql`/* activityPubInboxDeliveryExistsOnPrimaryForTest */
     SELECT EXISTS (
       SELECT 1
-      FROM activitypub_inbox_delivery_work_items
+      FROM activitypub_inbox_envelopes
       WHERE claimed_activity_id = ${claimedActivityId}
     ) AS exists
   `)
@@ -80,7 +80,7 @@ export async function getActivityPubInboxDeliveryIdentityForTest(
     request_digest: string
   }>(sql`/* getActivityPubInboxDeliveryIdentityForTest */
     SELECT id, request_digest
-    FROM activitypub_inbox_delivery_work_items
+    FROM activitypub_inbox_envelopes
     WHERE claimed_activity_id = ${claimedActivityId}
   `)
   const row = rows[0]

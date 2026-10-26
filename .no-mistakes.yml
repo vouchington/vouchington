@@ -4813,7 +4813,7 @@ rules:
           reason: 'GlideMQ report-judgement run identity; queue jobs live outside PostgreSQL, while this unique correlation key supports exact result polling and retry replay.'
         - object: 'column:activitypub_inbox_activities.actor_uri'
           reason: "Decision 13 allowed URL group: The activity's `actor` field (the sending remote actor's ActivityPub id), recorded for operational visibility."
-        - object: 'column:activitypub_inbox_delivery_work_items.claimed_actor_uri'
+        - object: 'column:activitypub_inbox_envelopes.claimed_actor_uri'
           reason: 'Decision 13 allowed URL group: Untrusted activity actor URI parsed during the network-free request preflight.'
         - object: 'column:bluesky_follow_records.record_uri'
           reason: "Decision 13 allowed URL group: The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api's Agent.deleteFollow(uri) parses it directly."
@@ -4938,7 +4938,7 @@ rules:
       allow:
         - object: 'column:activitypub_inbox_activities.activity_type'
           reason: 'ActivityPub sender-defined activity type; see decision 8.'
-        - object: 'column:activitypub_inbox_delivery_work_items.claimed_activity_type'
+        - object: 'column:activitypub_inbox_envelopes.claimed_activity_type'
           reason: 'ActivityPub sender-defined activity type; see decision 8.'
         - object: 'column:oauth_authorization_requests.client_state'
           reason: 'OAuth client opaque state is replayed exactly; see decision 8.'

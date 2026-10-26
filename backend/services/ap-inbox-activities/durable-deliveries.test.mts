@@ -18,21 +18,19 @@ describe('durable ActivityPub inbox deliveries', () => {
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName === 'activitypub_inbox_work_items__verified_actor_paired',
+          constraint.constraintName === 'activitypub_inbox_envelopes__verified_actor_paired',
       )?.definition,
     ).toContain('(verified_at IS NULL) = (remote_actor_id IS NULL)')
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName ===
-          'activitypub_inbox_delivery_work_items_remote_actor_id_fkey',
+          constraint.constraintName === 'activitypub_inbox_envelopes_remote_actor_id_fkey',
       )?.deleteAction,
     ).toBe('RESTRICT')
     expect(
       constraints.find(
         constraint =>
-          constraint.constraintName ===
-          'activitypub_inbox_work_items__sender_requires_verification',
+          constraint.constraintName === 'activitypub_inbox_envelopes__sender_requires_verification',
       )?.definition,
     ).toContain('sender_allowed_at IS NULL')
   })

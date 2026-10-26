@@ -20,7 +20,7 @@ export async function recoverActivityPubInboxDeliveries(
   const idScope = deliveryIds ? [...deliveryIds] : null
   const { rows } = await write(sql`/* recoverActivityPubInboxDeliveries */
     SELECT delivery.id, delivery.request_digest
-    FROM activitypub_inbox_delivery_work_items delivery
+    FROM activitypub_inbox_envelopes delivery
     WHERE delivery.failed_at IS NULL
       AND delivery.id > ${afterId ?? START_OF_IDS}::uuid
       AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
@@ -46,7 +46,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
   const { rows } = await write(sql`/* rearmFailedActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM activitypub_inbox_delivery_work_items delivery
+      FROM activitypub_inbox_envelopes delivery
       WHERE delivery.failed_at IS NOT NULL
         AND delivery.id > ${afterId ?? START_OF_IDS}::uuid
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
@@ -55,7 +55,7 @@ export async function rearmFailedActivityPubInboxDeliveries(
       LIMIT ${pageSize}
       FOR UPDATE SKIP LOCKED
     )
-    UPDATE activitypub_inbox_delivery_work_items delivery
+    UPDATE activitypub_inbox_envelopes delivery
     SET failed_at = NULL, last_error = NULL
     FROM candidates
     WHERE delivery.id = candidates.id

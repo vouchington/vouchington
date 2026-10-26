@@ -10,7 +10,7 @@ export async function cleanupActivityPubInboxStorageFixturesForTest(
 ): Promise<void> {
   if (claimedActivityIds.length === 0) return
   await write(sql`/* cleanupActivityPubInboxStorageFixturesForTest */
-    DELETE FROM activitypub_inbox_delivery_work_items
+    DELETE FROM activitypub_inbox_envelopes
     WHERE claimed_activity_id = ANY(${claimedActivityIds})
   `)
 }
@@ -19,7 +19,7 @@ export async function deleteActivityPubInboxDeliveriesForTest(
   deliveryIds: readonly string[],
 ): Promise<void> {
   await write(sql`/* deleteActivityPubInboxDeliveriesForTest */
-    DELETE FROM activitypub_inbox_delivery_work_items WHERE id = ANY(${deliveryIds})
+    DELETE FROM activitypub_inbox_envelopes WHERE id = ANY(${deliveryIds})
   `)
 }
 
@@ -41,7 +41,7 @@ export async function getActivityPubInboxStorageTriggerDefinitionsForTest(): Pro
 
 export async function expireActivityPubInboxDeliveryForTest(deliveryId: string): Promise<void> {
   await write(sql`/* expireActivityPubInboxDeliveryForTest */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute',
         received_at = CURRENT_TIMESTAMP - INTERVAL '2 hours'
     WHERE id = ${deliveryId}
@@ -50,7 +50,7 @@ export async function expireActivityPubInboxDeliveryForTest(deliveryId: string):
 
 export async function makeActivityPubInboxFailureExpiredForTest(deliveryId: string): Promise<void> {
   await write(sql`/* makeActivityPubInboxFailureExpiredForTest */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET failed_at = CURRENT_TIMESTAMP - INTERVAL '8 days',
         first_failed_at = CURRENT_TIMESTAMP - INTERVAL '8 days',
         retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 day',
@@ -63,7 +63,7 @@ export async function ageActivityPubInboxCleanupFixturesForTest(
   ...deliveryIds: string[]
 ): Promise<void> {
   await write(sql`/* ageActivityPubInboxCleanupFixturesForTest */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET received_at = CURRENT_TIMESTAMP - INTERVAL '2 hours',
         retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 hour'
     WHERE id = ANY(${deliveryIds}::uuid[])
@@ -76,7 +76,7 @@ export async function getExistingActivityPubInboxDeliveryIdsForTest(
   const { rows } = await read<{
     id: string
   }>(sql`/* getExistingActivityPubInboxDeliveryIdsForTest */
-    SELECT id FROM activitypub_inbox_delivery_work_items WHERE id = ANY(${deliveryIds}) ORDER BY id
+    SELECT id FROM activitypub_inbox_envelopes WHERE id = ANY(${deliveryIds}) ORDER BY id
   `)
   return rows.map(row => row.id)
 }
@@ -98,7 +98,7 @@ export async function insertActivityPubInboxDeliveryThenRollbackForTest(envelope
     const requestDigest = computeActivityPubInboxRequestDigest(envelope)
     await using transaction = await beginTransaction()
     await transaction(sql`/* insertActivityPubInboxDeliveryThenRollbackForTest */
-        INSERT INTO activitypub_inbox_delivery_work_items (
+        INSERT INTO activitypub_inbox_envelopes (
           request_method, request_target, expected_host, signature_header, digest_header,
           date_header, raw_body, claimed_activity_id, claimed_activity_type,
           claimed_actor_uri, sender_hostname, request_digest
@@ -120,7 +120,7 @@ export async function getActivityPubInboxRetentionStateForTest(deliveryId: strin
     retention_expires_at: Date | null
   }>(sql`/* getActivityPubInboxRetentionStateForTest */
     SELECT received_at, first_failed_at, retention_expires_at
-    FROM activitypub_inbox_delivery_work_items
+    FROM activitypub_inbox_envelopes
     WHERE id = ${deliveryId}
   `)
   const row = rows[0]
@@ -153,7 +153,7 @@ export async function insertActivityPubInboxCapacityDeliveriesForTest(
   const { rows } = await write<{
     id: string
   }>(sql`/* insertActivityPubInboxCapacityDeliveriesForTest */
-    INSERT INTO activitypub_inbox_delivery_work_items (
+    INSERT INTO activitypub_inbox_envelopes (
       request_method, request_target, expected_host, signature_header, digest_header, date_header,
       raw_body, claimed_activity_id, claimed_activity_type, claimed_actor_uri, sender_hostname,
       received_at, retention_expires_at, request_digest

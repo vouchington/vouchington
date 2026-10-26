@@ -7,7 +7,7 @@ export async function verifyActivityPubInboxDelivery(
   remoteActorId: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* verifyActivityPubInboxDelivery */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET verified_at = CURRENT_TIMESTAMP,
         remote_actor_id = ${remoteActorId},
         retention_expires_at = CASE WHEN first_failed_at IS NULL THEN NULL ELSE retention_expires_at END
@@ -23,7 +23,7 @@ export async function admitActivityPubInboxDeliverySender(
   deliveryId: string,
 ): Promise<ActivityPubInboxTransitionResult> {
   const result = await write(sql`/* admitActivityPubInboxDeliverySender */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET sender_allowed_at = CURRENT_TIMESTAMP
     WHERE id = ${deliveryId}
       AND verified_at IS NOT NULL

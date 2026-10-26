@@ -33,7 +33,7 @@ describe('ActivityPub inbox capacity system boundary', () => {
     expect(outcomes.find(result => result.status === 'rejected')).toMatchObject({
       reason: {
         code: '23514',
-        constraint: 'activitypub_inbox_delivery_work_items_unverified_capacity',
+        constraint: 'activitypub_inbox_envelopes_unverified_capacity',
       },
     })
     expect(await getActivityPubInboxStorageSnapshot()).toEqual({
@@ -54,7 +54,7 @@ describe('ActivityPub inbox capacity system boundary', () => {
     expect(outcomes.find(result => result.status === 'rejected')).toMatchObject({
       reason: {
         code: '23514',
-        constraint: 'activitypub_inbox_delivery_work_items_unverified_capacity',
+        constraint: 'activitypub_inbox_envelopes_unverified_capacity',
       },
     })
     expect(await getActivityPubInboxStorageSnapshot()).toEqual({
@@ -110,8 +110,8 @@ describe('ActivityPub inbox capacity system boundary', () => {
   })
 
   it.for([
-    ['unverified', 'idx_activitypub_inbox_delivery_work_items__unverified_retention'],
-    ['verified-operational', 'idx_activitypub_inbox_delivery_work_items__verified_retention'],
+    ['unverified', 'idx_activitypub_inbox_envelopes__unverified_retention'],
+    ['verified-operational', 'idx_activitypub_inbox_envelopes__verified_retention'],
   ] as const)('uses the matching partial index for %s cleanup', async ([category, indexName]) => {
     expect(
       await explainActivityPubInboxCleanupForTest(

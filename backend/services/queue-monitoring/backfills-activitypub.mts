@@ -29,7 +29,7 @@ export const ACTIVITYPUB_BACKFILLS: BackfillEntry[] = [
     queue_name: BACKGROUND_QUEUE_NAME,
     job_name: ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB.name,
     description: 'Re-arm and enqueue exhausted durable ActivityPub inbox envelopes',
-    source_table: 'activitypub_inbox_delivery_work_items',
+    source_table: 'activitypub_inbox_envelopes',
     trigger: async () => enqueueRearmFailedActivityPubInboxDeliveries(),
   },
 ]

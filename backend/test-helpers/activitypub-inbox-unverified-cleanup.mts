@@ -9,7 +9,7 @@ export async function createUnverifiedActivityPubCleanupFixture() {
   if (!idle || !stale || !failed || !active || !unexpired)
     throw new Error('Missing owned cleanup identities')
   await write(sql`/* createUnverifiedActivityPubCleanupFixture */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET failed_at = CASE WHEN id = ${failed} THEN CURRENT_TIMESTAMP - INTERVAL '1 minute' ELSE NULL END,
         first_failed_at = CASE WHEN id = ${failed} THEN CURRENT_TIMESTAMP - INTERVAL '1 minute' ELSE NULL END,
         last_error = CASE WHEN id = ${failed} THEN 'owned failure' ELSE NULL END,

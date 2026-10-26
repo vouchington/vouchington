@@ -94,7 +94,7 @@ it('runs', () => {})`,
     ])
     expect(result.exitCode).not.toBe(0)
     expect(result.output).toContain(
-      'rearmFailedActivityPubInboxDeliveries on activitypub_inbox_delivery_work_items',
+      'rearmFailedActivityPubInboxDeliveries on activitypub_inbox_envelopes',
     )
   })
 
