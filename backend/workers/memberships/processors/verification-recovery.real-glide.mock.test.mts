@@ -106,7 +106,9 @@ describe('membership verification recovery with real PostgreSQL and GlideMQ', ()
       })
       await completeMembershipVerification(verification.id)
       await (await memberships.getJob(verification.id))?.remove()
-      await expect(sweep()).resolves.toEqual({ enqueued: 0 })
+      // Other real-transport files may commit pending verifications inside this UUID window.
+      // The terminal fence is this owned verification's stable job, not the global enqueue count.
+      await sweep()
       await expect(memberships.getJob(verification.id)).resolves.toBeNull()
     } finally {
       for (const id of [...pages, boundary.id, verification.id]) {
