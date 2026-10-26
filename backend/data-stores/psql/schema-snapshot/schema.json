@@ -76680,13 +76680,13 @@
         },
         "created_at": {
           "collation": null,
-          "comment": "When this response was first registered; retained for audit, not liveness.",
+          "comment": "When this response was registered; bounds age-based recovery of inline requests.",
           "defaultExpression": null,
           "generated": "virtual",
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -76698,28 +76698,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "lease_expires_at": {
-          "collation": null,
-          "comment": "PostgreSQL-time ownership expiry; active drains renew it and the sweeper may claim only after it passes.",
-          "defaultExpression": "(CURRENT_TIMESTAMP + '00:03:00'::interval)",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "lease_token": {
-          "collation": null,
-          "comment": "Stable owner token; recovery atomically rotates it before any provider teardown so stale owners cannot renew or finalize.",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
           "type": "uuid"
         },
         "post_id": {
@@ -76735,7 +76713,7 @@
         },
         "response_id": {
           "collation": null,
-          "comment": "Unique OpenAI response id from response.created; identifies one current lease while ai_usage_provider_response_keys separately gates accounting.",
+          "comment": "Unique OpenAI response id from response.created; ai_usage_provider_response_keys separately gates accounting.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -76745,7 +76723,7 @@
           "type": "text"
         }
       },
-      "comment": "Fenced ownership registry for background OpenAI responses not yet finalized; exact-token mutations protect active creators from stale recovery workers. See backend/services/openai-background-responses.",
+      "comment": "Recovery registry for background OpenAI responses created outside a GlideMQ job; provider response keys gate exact accounting.",
       "foreignKeys": {
         "openai_background_responses_community_id_fkey": {
           "columns": ["community_id"],
@@ -76783,33 +76761,6 @@
             }
           ],
           "predicate": "(community_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_openai_background_responses__lease_expires_at_response_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_openai_background_responses__lease_expires_at_response_id ON public.openai_background_responses USING btree (lease_expires_at, response_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "lease_expires_at",
-              "descending": false,
-              "expression": "lease_expires_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "response_id",
-              "descending": false,
-              "expression": "response_id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,

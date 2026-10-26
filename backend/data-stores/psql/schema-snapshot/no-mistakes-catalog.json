@@ -80856,14 +80856,14 @@
           "ordinalPosition": 4
         },
         "created_at": {
-          "comment": "When this response was first registered; retained for audit, not liveness.",
+          "comment": "When this response was registered; bounds age-based recovery of inline requests.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": "virtual",
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 6
         },
         "id": {
           "comment": null,
@@ -80874,26 +80874,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
-        },
-        "lease_expires_at": {
-          "comment": "PostgreSQL-time ownership expiry; active drains renew it and the sweeper may claim only after it passes.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "(CURRENT_TIMESTAMP + '00:03:00'::interval)",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7
-        },
-        "lease_token": {
-          "comment": "Stable owner token; recovery atomically rotates it before any provider teardown so stale owners cannot renew or finalize.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6
         },
         "post_id": {
           "comment": "The post the call is scoped to, if any; nullable if the post has been deleted or the call was not post-scoped.",
@@ -80906,7 +80886,7 @@
           "ordinalPosition": 5
         },
         "response_id": {
-          "comment": "Unique OpenAI response id from response.created; identifies one current lease while ai_usage_provider_response_keys separately gates accounting.",
+          "comment": "Unique OpenAI response id from response.created; ai_usage_provider_response_keys separately gates accounting.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
@@ -80916,7 +80896,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Fenced ownership registry for background OpenAI responses not yet finalized; exact-token mutations protect active creators from stale recovery workers. See backend/services/openai-background-responses.",
+      "comment": "Recovery registry for background OpenAI responses created outside a GlideMQ job; provider response keys gate exact accounting.",
       "foreignKeys": {
         "openai_background_responses_community_id_fkey": {
           "columns": ["community_id"],
@@ -80954,38 +80934,6 @@
           ],
           "live": true,
           "predicate": "(community_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_openai_background_responses__lease_expires_at_response_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_openai_background_responses__lease_expires_at_response_id ON public.openai_background_responses USING btree (lease_expires_at, response_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "lease_expires_at",
-              "descending": false,
-              "expression": "lease_expires_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "response_id",
-              "descending": false,
-              "expression": "response_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
