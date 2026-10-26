@@ -49232,6 +49232,114 @@
         }
       }
     },
+    "image_deletion_post_updates": {
+      "checkConstraints": {},
+      "columns": {
+        "image_id": {
+          "comment": "Image whose deletion reset the post.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "post_identity_id": {
+          "comment": "Post requiring content-changed admission; retained identity survives concurrent deletion.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "Bounded post-updated admission receipts committed with each image deletion page; removed after admission succeeds.",
+      "foreignKeys": {
+        "image_deletion_post_updates_image_id_fkey": {
+          "columns": ["image_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "image_deletion_post_updates_post_identity_id_fkey": {
+          "columns": ["post_identity_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_image_deletion_post_updates__post_identity_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_deletion_post_updates__post_identity_id ON public.image_deletion_post_updates USING btree (post_identity_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_identity_id",
+              "descending": false,
+              "expression": "post_identity_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "image_deletion_post_updates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_deletion_post_updates_pkey ON public.image_deletion_post_updates USING btree (image_id, post_identity_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "post_identity_id",
+              "descending": false,
+              "expression": "post_identity_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["image_id", "post_identity_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "image_placements": {
       "checkConstraints": {
         "image_placements_binding_family_check": {
@@ -50175,7 +50283,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 24
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
           "comment": "When the image embedding was generated.",
@@ -50185,7 +50293,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 25
         },
         "created_at": {
           "comment": null,
@@ -50215,7 +50323,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "deleted_at": {
           "comment": null,
@@ -50237,6 +50345,26 @@
           "nullable": true,
           "ordinalPosition": 6
         },
+        "deletion_post_cursor": {
+          "comment": "Opaque post-id keyset position committed atomically with image deletion post resets; never joined.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "deletion_posts_completed_at": {
+          "comment": "All image deletion post pages and their post-updated admissions completed; storage may now be deleted.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
         "id": {
           "comment": "Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.",
           "dataType": "uuid",
@@ -50255,7 +50383,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 19
         },
         "openai_omni_moderation_created_at": {
           "comment": "When the moderation check was performed.",
@@ -50265,7 +50393,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 20
         },
         "openai_omni_moderation_results": {
           "comment": "Raw JSONB results from OpenAI omni moderation API.",
@@ -50275,7 +50403,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 18
         },
         "quarantine_pending_at": {
           "comment": "When CSAM quarantine began. Pending images are unavailable until permanent copy and deletion complete.",
@@ -50285,7 +50413,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 21
         },
         "quarantine_s3_key": {
           "comment": "S3 key in the permanent quarantine bucket. NULL until the copy succeeds.",
@@ -50295,7 +50423,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 23
         },
         "quarantined_at": {
           "comment": "When the image was copied to the CSAM quarantine bucket. NULL until the permanent copy succeeds.",
@@ -50305,7 +50433,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 22
         },
         "s3_key": {
           "comment": "S3 object key where the image is stored.",
@@ -50315,7 +50443,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "sha_256": {
           "comment": "SHA-256 hash of the original image file bytes. NULL until completion freezes and hashes the staged upload.",
@@ -50325,7 +50453,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 10
         },
         "updated_at": {
           "comment": null,
@@ -50345,7 +50473,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 13
         },
         "upload_error": {
           "comment": "Error message if upload processing failed.",
@@ -50355,7 +50483,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 15
         },
         "upload_failed_at": {
           "comment": "When upload processing failed terminally. NULL until failed.",
@@ -50365,7 +50493,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 14
         },
         "upload_source_deleted_at": {
           "comment": "Durable evidence that the browser-writable source object was deleted. NULL keeps the source eligible for bounded reconciliation.",
@@ -50375,7 +50503,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 17
         },
         "upload_staged_at": {
           "comment": "When the private browser upload staging source was created.",
@@ -50385,7 +50513,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 16
         },
         "upload_started_at": {
           "comment": "When upload processing began (S3 object received and hash calculation started). NULL = pending.",
@@ -50395,7 +50523,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 12
         }
       },
       "comment": "Uploaded images with S3 storage, metadata, and moderation results.",
@@ -50571,7 +50699,7 @@
         "idx_images__staged_source_cleanup": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NULL) OR (deletion_posts_completed_at IS NOT NULL)) AND ((quarantine_pending_at IS NULL) OR (quarantined_at IS NOT NULL)) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
           "immediate": true,
           "keys": [
             {
@@ -50594,7 +50722,30 @@
             }
           ],
           "live": true,
-          "predicate": "((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "predicate": "((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NULL) OR (deletion_posts_completed_at IS NOT NULL)) AND ((quarantine_pending_at IS NULL) OR (quarantined_at IS NOT NULL)) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_images__unfinished_deletion": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_images__unfinished_deletion ON public.images USING btree (id) WHERE ((deleted_at IS NOT NULL) AND (deletion_posts_completed_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((deleted_at IS NOT NULL) AND (deletion_posts_completed_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -81387,10 +81538,10 @@
         }
       },
       "indexes": {
-        "idx_post_images__image_id": {
+        "idx_post_images__image_id__post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_images__image_id ON public.post_images USING btree (image_id)",
+          "definition": "CREATE INDEX idx_post_images__image_id__post_id ON public.post_images USING btree (image_id, post_id)",
           "immediate": true,
           "keys": [
             {
@@ -81398,6 +81549,15 @@
               "column": "image_id",
               "descending": false,
               "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
