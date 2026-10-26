@@ -9,75 +9,60 @@ import {
 } from '@voucha/test-helpers'
 
 describe('moderation transparency test date reservations', () => {
-  it('serializes and recycles the immutable global rollup window', async () => {
+  it('holds an exclusive clean window and leaves its immutable rows untouched', async () => {
     const first = await acquireTestModerationTransparencyDateReservation()
+    const firstFloor = new Date(Date.UTC(first.now.getUTCFullYear() - 3, 0, 1))
     try {
-      expect(await isTestModerationTransparencyLockHeldByAnotherSession()).toBe(true)
+      expect(await isTestModerationTransparencyLockHeldByAnotherSession(first.now)).toBe(true)
       await insertTestReleasedModerationTransparencyRollupRow({
         occurredAt: first.now,
         metric: 'moderation_actions',
         category: 'approve',
         count: 20,
       })
-    } finally {
-      await first.release()
-    }
-
-    const reused = await acquireTestModerationTransparencyDateReservation()
-    try {
-      expect(reused.now).toEqual(first.now)
-      expect(
-        await getTestReleasedModerationTransparencyRollupCount({
-          occurredAt: reused.now,
-          metric: 'moderation_actions',
-          category: 'approve',
-        }),
-      ).toBeUndefined()
-    } finally {
-      await reused.release()
-    }
-  })
-
-  it('scrubs down to the documented 36-month reservation floor', async () => {
-    const reservation = await acquireTestModerationTransparencyDateReservation()
-    const floor = reservationWindowFloor(reservation.now)
-    try {
-      await insertTestReleasedModerationTransparencyRollupRow({
-        occurredAt: floor,
-        metric: 'moderation_actions',
-        category: 'approve',
-        count: 20,
-      })
       await insertTestModerationTransparencyRollupRow({
-        occurredAt: floor,
+        occurredAt: firstFloor,
         metric: 'moderation_actions',
         category: 'approve',
         count: 5,
       })
     } finally {
-      // release() re-scrubs the reserved window; the floor row must fall inside it.
-      await reservation.release()
+      await first.release()
     }
 
-    const [released, pending] = await Promise.all([
-      getTestReleasedModerationTransparencyRollupCount({
-        occurredAt: floor,
-        metric: 'moderation_actions',
-        category: 'approve',
-      }),
-      getTestModerationTransparencyRollupCount({
-        occurredAt: floor,
-        metric: 'moderation_actions',
-        category: 'approve',
-      }),
-    ])
-    expect(released).toBeUndefined()
-    expect(pending).toBeUndefined()
+    const second = await acquireTestModerationTransparencyDateReservation()
+    try {
+      expect(second.now).not.toEqual(first.now)
+      expect(
+        await getTestReleasedModerationTransparencyRollupCount({
+          occurredAt: second.now,
+          metric: 'moderation_actions',
+          category: 'approve',
+        }),
+      ).toBeUndefined()
+      expect(
+        await getTestModerationTransparencyRollupCount({
+          occurredAt: new Date(Date.UTC(second.now.getUTCFullYear() - 3, 0, 1)),
+          metric: 'moderation_actions',
+          category: 'approve',
+        }),
+      ).toBeUndefined()
+      expect(
+        await getTestReleasedModerationTransparencyRollupCount({
+          occurredAt: first.now,
+          metric: 'moderation_actions',
+          category: 'approve',
+        }),
+      ).toBe(20)
+      expect(
+        await getTestModerationTransparencyRollupCount({
+          occurredAt: firstFloor,
+          metric: 'moderation_actions',
+          category: 'approve',
+        }),
+      ).toBe(5)
+    } finally {
+      await second.release()
+    }
   })
 })
-
-// Mirrors the reservation helper's `date_trunc('month', now) - interval '36 months'` floor so this
-// test breaks in CI if the helper's scrub window and this regression test ever drift apart.
-function reservationWindowFloor(now: Date): Date {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 36, 1))
-}
