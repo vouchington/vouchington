@@ -78,9 +78,13 @@ export async function clearMfaLoginAttempts(
   attemptId: string,
   attempt: LoginAttempt,
 ): Promise<void> {
-  await failedMfaLoginAttemptRateLimiter.delete(
-    ...getMfaLoginAttemptRateLimitIds(attemptId, attempt),
-  )
+  try {
+    await failedMfaLoginAttemptRateLimiter.delete(
+      ...getMfaLoginAttemptRateLimitIds(attemptId, attempt),
+    )
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
+  }
 }
 
 function getMfaLoginAttemptRateLimitIds(attemptId: string, attempt: LoginAttempt): string[] {

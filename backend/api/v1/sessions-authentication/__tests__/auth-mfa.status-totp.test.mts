@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import {
@@ -10,7 +10,12 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { createTotpMfaLoginAttempt } from '@voucha/test-helpers/services/mfa/totp-login-attempt'
-import { countMfaLoginAttempt, peekLoginAttempt } from '@services/mfa/login-attempt'
+import {
+  countMfaLoginAttempt,
+  failedMfaLoginAttemptRateLimiter,
+  peekLoginAttempt,
+} from '@services/mfa/login-attempt'
+import { sentryCaptureExceptionMock } from '../../../../test-helpers/vitest.setup.sentry-mock.mts'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 import {
@@ -197,6 +202,32 @@ describe('MFA API Routes', () => {
         await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(false)
       }
       await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(true)
+    }, 20_000)
+
+    it('keeps verified login successful when clearing its attempt budget fails', async () => {
+      const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('cleanup-failure')
+      const failure = new Error('Owned MFA counter cleanup failure')
+      const spy = vi.spyOn(failedMfaLoginAttemptRateLimiter, 'delete').mockRejectedValue(failure)
+      try {
+        const res = await createRequest()
+          .post('/api/v1/auth/mfa/totp/verification')
+          .send({ login_attempt_id: attemptId, code: generateTestTotpCode() })
+          .expect(200)
+        expect(res.body.user.id).toBe(mfaUser.id)
+        const cookies = res.headers['set-cookie'] as unknown as string[]
+        const stCookie = cookies.find(cookie => cookie.startsWith('st='))
+        expect(stCookie).toBeDefined()
+        const session = await verifySessionJwt(
+          decodeURIComponent(stCookie!.slice(3).split(';', 1)[0]!),
+        )
+        expect(session).toMatchObject({ uid: mfaUser.id, sid: expect.any(String) })
+        await expect(peekLoginAttempt(attemptId)).resolves.toBeNull()
+        expect(
+          sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+        ).toHaveLength(1)
+      } finally {
+        spy.mockRestore()
+      }
     }, 20_000)
 
     it('mints a 30-day (not 2-day) st cookie when the login attempt itself carries deviceClass', async () => {
