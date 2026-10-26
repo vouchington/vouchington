@@ -146,5 +146,3 @@ async function deleteDeletedSubjectClassifierIdentities(
       )`)
   return rowCount ?? 0
 }
-
-export { deleteOldClassifierRuns } from './cleanup-classifier-runs.mts'

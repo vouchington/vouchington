@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
-import { deleteOldClassifierRuns } from '../services/data-retention/cleanup-classifier-records.mts'
+import { deleteOldClassifierRuns } from '../services/data-retention/cleanup-classifier-runs.mts'
 import { sweepClassifierVersionedIdentityPageWithQuery } from '../services/data-retention/cleanup-classifier-identity-versions.mts'
 import { insertTestAiUsageRecord } from './entities/ai-usage.mts'
 
