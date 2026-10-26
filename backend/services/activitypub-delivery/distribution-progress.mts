@@ -20,6 +20,7 @@ export async function prepareActivityDistributionPage(
     sourceUserId,
     cursorRemoteActorId,
     pageSize + 1,
+    { query: write },
   )
   const page = candidates.slice(0, pageSize)
   return {

@@ -117,6 +117,55 @@ describe('outbound ActivityPub recovery source', () => {
     ).toBe(false)
   })
 
+  it('skips an obsolete Like after a clear and resumes at a replacement Like', async () => {
+    const voter = await createTestUserDirect()
+    const postId = await insertTestPost({
+      createdById: voter.id,
+      title: 'Outbound recovery replaced ballot',
+      slug: `outbound-recovery-replaced-${randomUUID()}`,
+      markdown: 'A public post for replaced ballot recovery',
+    })
+    await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
+    const before = `${postId}__${FIRST_ID}`
+    const firstLikePage = await listPendingOutboundDistributionPage('votes', before, 10)
+    const firstLike = firstLikePage.rows.find(row => row.source === 'votes')
+    if (!firstLike || firstLike.source !== 'votes') throw new Error('Expected first Like')
+
+    await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 0 }])
+    const undoPage = await listPendingOutboundDistributionPage('votes', before, 10)
+    const undo = undoPage.rows.find(row => row.source === 'votes')
+    if (!undo || undo.source !== 'votes') throw new Error('Expected UndoLike')
+    expect(undo.originalLikeActivityId).toBe(firstLike.activityId)
+    await markActivityDistributionComplete({
+      activityType: 'UndoLike',
+      activityId: undo.activityId,
+      sourceUserId: voter.id,
+      targetPostId: postId,
+    })
+
+    await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
+    const obsoletePage = await listPendingOutboundDistributionPage('votes', before, 1)
+    expect(obsoletePage.rows).toEqual([])
+    expect(obsoletePage.next).toBe(firstLike.cursor)
+
+    const replacementPage = await listPendingOutboundDistributionPage(
+      'votes',
+      obsoletePage.next,
+      1,
+      obsoletePage.throughPostId,
+    )
+    expect(replacementPage.rows).toHaveLength(1)
+    const replacement = replacementPage.rows[0]
+    if (!replacement || replacement.source !== 'votes') throw new Error('Expected replacement Like')
+    expect(replacement).toMatchObject({
+      source: 'votes',
+      sourceUserId: voter.id,
+      targetPostId: postId,
+      originalLikeActivityId: null,
+    })
+    expect(replacement.activityId).not.toBe(firstLike.activityId)
+  })
+
   it('skips an idle post window and pages pending ballots directly by post and vote id', async () => {
     const voter = await createTestUserDirect()
     const secondVoter = await createTestUserDirect()

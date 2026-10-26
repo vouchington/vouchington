@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { getMaxUUIDv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
@@ -40,7 +40,7 @@ export async function listPendingOutboundDistributionPage(
       statement.append(sql` AND (subject_id, object_id) > (${afterSubjectId}, ${afterObjectId})`)
     }
     statement.append(sql` ORDER BY subject_id, object_id LIMIT ${limit + 1}`)
-    const { rows } = await read<{
+    const { rows } = await write<{
       subject_id: string
       object_id: string
       activity_id: string
@@ -63,31 +63,56 @@ export async function listPendingOutboundDistributionPage(
   // keyset directly, so an idle sweep does not enumerate unrelated posts.
   const fixedUpperPostId = throughPostId ?? getMaxUUIDv7ForDate(new Date())
   const statement = sql`/* listPendingOutboundDistributionPage:votes */
-    SELECT post_id, id, user_id, outbound_activitypub_original_like_activity_id AS original_id
-    FROM post_votes
-    WHERE post_id <= ${fixedUpperPostId}
-      AND outbound_activitypub_distributed_at IS NULL
-      AND (outbound_activitypub_like_activity_id = id
-        OR outbound_activitypub_original_like_activity_id IS NOT NULL)`
+    WITH pending_page AS MATERIALIZED (
+      SELECT post_id, id, user_id,
+        outbound_activitypub_like_activity_id AS like_id,
+        outbound_activitypub_original_like_activity_id AS original_id
+      FROM post_votes
+      WHERE post_id <= ${fixedUpperPostId}
+        AND outbound_activitypub_distributed_at IS NULL
+        AND (outbound_activitypub_like_activity_id = id
+          OR outbound_activitypub_original_like_activity_id IS NOT NULL)`
   if (afterPostId && afterVoteId) {
     statement.append(sql` AND post_id >= ${afterPostId}`)
     statement.append(sql` AND (post_id, id) > (${afterPostId}, ${afterVoteId})`)
   }
-  statement.append(sql` ORDER BY post_id, id LIMIT ${limit + 1}`)
-  const { rows } = await read<{
+  statement.append(sql` ORDER BY post_id, id LIMIT ${limit + 1}
+    )
+    SELECT pending.post_id, pending.id, pending.user_id,
+      pending.like_id, pending.original_id,
+      EXISTS (
+        SELECT 1 FROM post_votes newer
+        WHERE newer.post_id = pending.post_id
+          AND newer.user_id = pending.user_id
+          AND newer.id > pending.id
+        LIMIT 1
+      ) AS has_newer_vote
+    FROM pending_page pending
+    ORDER BY pending.post_id, pending.id`)
+  const { rows } = await write<{
     post_id: string
     id: string
     user_id: string
+    like_id: string | null
     original_id: string | null
+    has_newer_vote: boolean
   }>(statement)
-  const page = rows.slice(0, limit).map(row => ({
-    source: 'votes' as const,
-    sourceUserId: row.user_id,
-    targetPostId: row.post_id,
-    activityId: row.id,
-    originalLikeActivityId: row.original_id,
-    cursor: `${row.post_id}__${row.id}`,
-  }))
-  const next = rows.length > limit ? page.at(-1)!.cursor : undefined
+  const rawPage = rows.slice(0, limit)
+  const page = rawPage.flatMap(row =>
+    row.like_id === row.id && row.has_newer_vote
+      ? []
+      : [
+          {
+            source: 'votes' as const,
+            sourceUserId: row.user_id,
+            targetPostId: row.post_id,
+            activityId: row.id,
+            originalLikeActivityId: row.original_id,
+            cursor: `${row.post_id}__${row.id}`,
+          },
+        ],
+  )
+  const lastRawRow = rawPage.at(-1)
+  const next = rows.length > limit ? `${lastRawRow!.post_id}__${lastRawRow!.id}` : undefined
   return { rows: page, ...(next ? { next } : {}), throughPostId: fixedUpperPostId }
 }
