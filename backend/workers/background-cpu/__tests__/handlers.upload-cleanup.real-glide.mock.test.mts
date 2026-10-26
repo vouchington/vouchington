@@ -76,6 +76,8 @@ describe('background CPU abandoned upload cleanup', () => {
       domains: ['content-analysis'],
       prefix,
       concurrency: 1,
+      blockTimeout: 100,
+      promotionInterval: 100,
     })
     worker.on('error', () => undefined)
     const admissions: EnqueueAdmission[] = []
