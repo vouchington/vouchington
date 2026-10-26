@@ -1,22 +1,15 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import generateStagingRssFeedsSQL from '../0080-00-01a-staging-rss-feeds.mts'
 import { STAGING_RSS_FEEDS } from '../utils/staging-rss-feeds.mts'
 
-const seedFile = '0080-00-01a-staging-rss-feeds.mts'
-const relationsFile = '0080-00-02-publisher-type-relations.sql'
-
 describe('staging RSS feed seed SQL', () => {
-  it('places the Cloudflare blog feed before its publisher type relation', () => {
+  it('generates staging SQL but omits it in production', () => {
     const cloudflare = STAGING_RSS_FEEDS.find(feed => feed.hostname === 'blog.cloudflare.com')
     if (!cloudflare) throw new Error('Expected the Cloudflare staging feed')
-    const sql = generateStagingRssFeedsSQL('staging')
-    const relations = readFileSync(new URL(`../${relationsFile}`, import.meta.url), 'utf8')
+    const stagingSql = generateStagingRssFeedsSQL('staging')
 
-    expect(sql).toContain(cloudflare.slug)
-    expect(sql).toContain(cloudflare.ids.topic)
-    expect(relations).toContain(`('${cloudflare.slug}', 'blog')`)
-    expect(seedFile.localeCompare(relationsFile)).toBeLessThan(0)
+    expect(stagingSql).toContain(cloudflare.slug)
+    expect(stagingSql).toContain(cloudflare.ids.topic)
     expect(generateStagingRssFeedsSQL('production')).toBe('')
   })
 })

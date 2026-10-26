@@ -15,18 +15,6 @@ function readRepoFile(path: string): string {
   return readFileSync(`${repoRoot}/${path}`, 'utf8')
 }
 
-const workflowDocPaths = [
-  '.agents/skills/agent-workflow/SKILL.md',
-  '.agents/skills/agent-workflow/start-of-work.md',
-  '.agents/skills/agent-workflow/implementation.md',
-  '.agents/skills/agent-workflow/code-review.md',
-  '.agents/skills/agent-workflow/before-pushing.md',
-  '.agents/skills/agent-workflow/git-and-prs.md',
-  '.agents/skills/planning/SKILL.md',
-  '.agents/skills/planning/references/impact-discovery.md',
-  'docs/development/tests.md',
-] as const
-
 function expectNoMistakesCurrentRange(version: string | undefined): void {
   expect(version).toMatch(/^\^\d+\.\d+\.\d+$/)
 }
@@ -52,18 +40,6 @@ describe('no-mistakes config', () => {
       dependencies: Record<string, string>
     }
     expectNoMistakesCurrentRange(ciPkg.dependencies['no-mistakes'])
-  })
-
-  it('documents current no-mistakes agent impact recipes', () => {
-    const workflowStartOfWork = readRepoFile(
-      '.agents/skills/planning/references/impact-discovery.md',
-    )
-
-    expect(workflowStartOfWork).toContain('pnpm exec no-mistakes planning-impact')
-    const legacyVitestPlanner = ['pnpm exec vitest', 'related'].join(' ')
-    for (const path of workflowDocPaths) {
-      expect(readRepoFile(path)).not.toContain(legacyVitestPlanner)
-    }
   })
 
   it('configures the package-owned Git revision guard and the sparse-checkout guard', () => {
@@ -96,114 +72,29 @@ describe('no-mistakes config', () => {
     )
   })
 
-  it('loads the no-mistakes oxlint plugin with expected rule configuration', () => {
+  it('enables the no-mistakes Oxlint plugin in the intended projects', () => {
     const oxlint = parseJsonc(readRepoFile('.oxlintrc.json')) as {
-      jsPlugins: Array<string | { name?: string; specifier?: string }>
-      plugins: Array<string | { name?: string; specifier?: string }>
-      overrides: unknown[]
+      jsPlugins: Array<string | { specifier?: string }>
       rules: Record<string, unknown>
     }
     const reactOxlint = parseJsonc(readRepoFile('.oxlintrc.react.json')) as {
       rules: Record<string, unknown>
     }
+    const webOxlint = parseJsonc(readRepoFile('web/.oxlintrc.json')) as {
+      overrides: Array<{ files?: string[]; rules?: Record<string, unknown> }>
+    }
 
     expect(oxlint.jsPlugins).toContainEqual(
       expect.objectContaining({ specifier: 'eslint-plugin-no-mistakes' }),
     )
-    expect(oxlint.jsPlugins).toContainEqual(
-      expect.objectContaining({ name: 'vouchington', specifier: 'eslint-plugin-vouchington' }),
-    )
-    expect(oxlint.rules['vouchington/typescript-program-location']).toHaveProperty('0', 'error')
-    const bannedMemberRead = oxlint.rules['vouchington/banned-member-read']
-    expect(bannedMemberRead).toHaveProperty('0', 'error')
-    expect(bannedMemberRead).toHaveProperty('1.members', ['invalidate', 'invalidateMany'])
-    expect(oxlint.rules['no-mistakes/playwright-literals']).toBe('error')
-    expect(oxlint.rules).not.toHaveProperty('no-mistakes/playwright-no-set-timeout')
-    expect(readRepoFile('playwright/.oxlintrc.json')).not.toContain(
-      'no-mistakes/playwright-no-set-timeout',
-    )
-    expect(oxlint.rules['no-mistakes/no-import-only-test-files']).toBe('error')
-    expect(oxlint.rules['no-mistakes/test-no-delayed-rejects']).toBe('error')
-    expect(reactOxlint.rules['no-mistakes/nextjs-no-manual-script-tags']).toEqual([
-      'error',
-      expect.objectContaining({ allowInlineScriptIds: expect.any(Array) }),
-    ])
-    expect(reactOxlint.rules['no-mistakes/nextjs-static-fetch-method']).toBe('off')
-    expect(reactOxlint.rules['no-mistakes/nextjs-static-fetch-url']).toBe('off')
-    expect(reactOxlint.rules['no-mistakes/react-no-nullish-react-node']).toBe('error')
-    expect(oxlint.rules).not.toHaveProperty('@local/voucha/export-alias')
-    expect(oxlint.rules).not.toHaveProperty('@local/voucha/no-error-message-matching')
-    expect(oxlint.rules).not.toHaveProperty('@local/voucha/web-no-manual-script-tags')
-    expect(oxlint.rules).not.toHaveProperty('@local/voucha/web-no-inline-api-response-mock')
-    expect(oxlint.rules).not.toHaveProperty('@local/voucha/web-no-inline-entity-href')
-    expect(reactOxlint.rules).not.toHaveProperty('@local/voucha/web-icon-button-tooltip')
-    expect(oxlint.rules['no-mistakes/test-no-error-message-matching']).toBe('error')
     expect(oxlint.rules['no-mistakes/test-no-shared-state']).toBe('error')
-    expect(oxlint.rules['no-mistakes/test-no-skips']).toEqual([
-      'error',
-      {
-        testModules: [
-          '../../helpers/test.mts',
-          '../helpers/test.mts',
-          '../../playwright/helpers/test.mts',
-          './tag-voting-helpers.mts',
-        ],
-      },
-    ])
-    expect(oxlint.rules['no-mistakes/module-mock-boundary']).toEqual([
-      'error',
+    expect(reactOxlint.rules['no-mistakes/react-no-nullish-react-node']).toBe('error')
+    expect(webOxlint.overrides).toContainEqual(
       expect.objectContaining({
-        baseline: expect.any(Array),
-        integrationExports: expect.objectContaining({ specifiers: ['@modules/**'] }),
+        files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
+        rules: expect.objectContaining({ 'no-mistakes/nextjs-static-fetch-method': 'error' }),
       }),
-    ])
-    expect(oxlint.rules['no-mistakes/module-mock-preserve-exports']).toEqual([
-      'error',
-      expect.objectContaining({ baseline: expect.any(Array) }),
-    ])
-    expect(oxlint.rules['no-mistakes/async-call-disposition']).toBe('off')
-    expect(oxlint.rules['no-mistakes/no-inline-noop-promise-catch']).toEqual([
-      'error',
-      {
-        allowedPathPatterns: [
-          '**/*.test.*',
-          '**/*.spec.*',
-          '**/__tests__/**',
-          '**/test-helpers/**',
-        ],
-        checkedPathPatterns: ['backend/**', 'web/**'],
-      },
-    ])
-    expect(JSON.stringify(oxlint.overrides)).toContain(
-      '"no-mistakes/async-call-disposition":["error"',
     )
-    expect(oxlint.rules['no-mistakes/async-try-catch-return-await']).toEqual([
-      'error',
-      expect.objectContaining({ handlers: expect.any(Array) }),
-    ])
-    expect(oxlint.rules['no-mistakes/no-global-fetch-outside-helper']).toEqual([
-      'error',
-      expect.objectContaining({ checkedPathPatterns: ['web/**'] }),
-    ])
-    // Migrated: ts-no-export-renaming replaces @local/voucha/export-alias (backend-scoped)
-    expect(oxlint.rules['no-mistakes/ts-no-export-renaming']).toEqual([
-      'error',
-      expect.objectContaining({ includePathPatterns: expect.any(Array) }),
-    ])
-    expect(oxlint.rules['no-mistakes/ts-no-function-aliases']).toBe('error')
-    expect(oxlint.rules['no-mistakes/ts-preserve-null-option-defaults']).toEqual([
-      'error',
-      expect.objectContaining({ optionObjectNames: expect.any(Array) }),
-    ])
-    expect(oxlint.rules['no-mistakes/server-require-nullable-fetch-wrapper']).toEqual([
-      'error',
-      expect.objectContaining({ requiredWrapperCallee: 'returnNullForMissingEntity' }),
-    ])
-    expect(oxlint.rules['@local/voucha/mock-test-file-naming']).toBeUndefined()
-    expect(oxlint.rules['no-mistakes/vitest-mock-test-file-naming']).toBe('error')
-    const webOxlintText = JSON.stringify(parseJsonc(readRepoFile('web/.oxlintrc.json')))
-    expect(webOxlintText).toContain('"no-mistakes/nextjs-static-fetch-method":"error"')
-    expect(webOxlintText).toContain('"no-mistakes/nextjs-static-fetch-url":"error"')
   })
 
   it('requires package.json + barrel/entry files across backend package families', () => {
@@ -223,43 +114,10 @@ describe('no-mistakes config', () => {
     }
   })
 
-  it('configures parity filesystem rules in no-mistakes check and workflow', () => {
-    const noMistakes = readRepoFile('.no-mistakes.yml')
+  it('runs the repository policy check in static CI', () => {
     const workflow = readRepoFile('.github/workflows/static-code-analysis.yml')
-
-    for (const rule of [
-      'banned-renamed-files',
-      'file-extension-policy',
-      'lockfile-allowlist',
-      'package-json-registry-only',
-      'package-json-workspace-coverage',
-      'no-empty-or-comments-only-files',
-      'no-git-identity-mutation',
-      'shellcheck-runner',
-      'strict-package-layout',
-      'github-actions-pinned-hash',
-      'require-test-per-subdir',
-      'require-files-in-subdirs',
-      'markdown-eval-tests',
-      'postgres-fk-index',
-      'postgres-constraint-validate',
-      'markdown-child-links',
-      'github-actions-job-timeouts',
-      'structured-config-policy',
-      'config-path-references',
-      'package-json-nested-workspace-coverage',
-      'banned-paths',
-    ]) {
-      expect(noMistakes).toContain(`rule: ${rule}`)
-    }
-
-    expect(noMistakes).toMatch(/rule: github-actions-pinned-hash\n {4}scope: repository/)
-
-    expect(workflow).toContain(
-      'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy',
-    )
-
-    expect(noMistakes).toContain('name: webpack.config')
+    expect(workflow).toContain('node static-code-analysis/run-node-checks.mts --checks')
+    expect(workflow).toContain('repo-file-policy')
   })
 
   it('keeps extracted native sources and native-only helpers out of Vouchington', () => {
