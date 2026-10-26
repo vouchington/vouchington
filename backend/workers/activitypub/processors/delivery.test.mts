@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { deliverActivityToInbox, type buildActivityJson } from '@services/activitypub-delivery'
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
-import type { canDistributeActivityPubLike } from '@services/posts/activitypub-visibility'
+import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
 import { deliverActivity } from './delivery.mts'
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
-const canDistributeActivityPubLikeMock = vi.fn<typeof canDistributeActivityPubLike>()
 const buildActivityJsonMock = vi.fn<typeof buildActivityJson>()
 const deliverActivityToInboxMock = vi.fn<typeof deliverActivityToInbox>()
 const getActorPrivateKeyPemMock = vi.fn<typeof getActorPrivateKeyPem>()
@@ -71,7 +71,6 @@ function deliverDeps() {
     deliverActivityToInbox: deliverActivityToInboxMock,
     getActorPrivateKeyPem: getActorPrivateKeyPemMock,
     isFederationEnabledForUser: isFederationEnabledForUserMock,
-    canDistributeActivityPubLike: canDistributeActivityPubLikeMock,
   }
 }
 
@@ -79,7 +78,6 @@ describe('deliverActivity', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     isFederationEnabledForUserMock.mockResolvedValue(true)
-    canDistributeActivityPubLikeMock.mockResolvedValue(true)
     getActorPrivateKeyPemMock.mockResolvedValue('-----BEGIN PRIVATE KEY-----\nfake\n-----END-----')
     buildActivityJsonMock.mockReturnValue({ type: 'Follow' })
     deliverActivityToInboxMock.mockResolvedValue(undefined)
@@ -110,8 +108,18 @@ describe('deliverActivity', () => {
   })
 
   it('drops a queued Like when the post becomes private before delivery', async () => {
-    canDistributeActivityPubLikeMock.mockResolvedValueOnce(false)
-    await expect(deliverActivity(LIKE_DATA, deliverDeps())).resolves.toEqual({
+    const author = await createTestUserDirect()
+    const postId = await insertTestPost({
+      createdById: author.id,
+      title: 'Private delivery target',
+      slug: `private-delivery-${randomUUID()}`,
+      markdown: 'Only the author can read this post.',
+      broadcast: 'users',
+      privacy: 'private',
+    })
+    await expect(
+      deliverActivity({ ...LIKE_DATA, targetPostId: postId }, deliverDeps()),
+    ).resolves.toEqual({
       delivered: false,
       reason: 'post-not-public',
     })

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import type { prepareActivityDistributionPage } from '@services/activitypub-delivery'
 import type { isFederationEnabledForUser } from '@services/users'
-import type { canDistributeActivityPubLike } from '@services/posts/activitypub-visibility'
+import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import type { enqueueBulkDeliverActivity } from '@queues/activitypub/enqueues/delivery'
 import { distributeActivity } from './delivery.mts'
 import {
@@ -14,14 +15,12 @@ import {
 
 const enqueueBulkDeliverActivityMock = vi.fn<typeof enqueueBulkDeliverActivity>()
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
-const canDistributeActivityPubLikeMock = vi.fn<typeof canDistributeActivityPubLike>()
 const prepareActivityDistributionPageMock = vi.fn<typeof prepareActivityDistributionPage>()
 
 function distributeDeps() {
   return {
     enqueueBulkDeliverActivity: enqueueBulkDeliverActivityMock,
     isFederationEnabledForUser: isFederationEnabledForUserMock,
-    canDistributeActivityPubLike: canDistributeActivityPubLikeMock,
     prepareActivityDistributionPage: prepareActivityDistributionPageMock,
   }
 }
@@ -30,7 +29,6 @@ describe('distributeActivity', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     isFederationEnabledForUserMock.mockResolvedValue(true)
-    canDistributeActivityPubLikeMock.mockResolvedValue(true)
     enqueueBulkDeliverActivityMock.mockResolvedValue(undefined as never)
     prepareActivityDistributionPageMock.mockResolvedValue({
       nextRemoteActorId: 'remote-actor-1',
@@ -75,8 +73,26 @@ describe('distributeActivity', () => {
   })
 
   it('suppresses a Like when its post is no longer public before fan-out', async () => {
-    canDistributeActivityPubLikeMock.mockResolvedValueOnce(false)
-    await expect(distributeActivity(LIKE_DATA, distributeDeps())).resolves.toEqual({
+    const author = await createTestUserDirect()
+    const postId = await insertTestPost({
+      createdById: author.id,
+      title: 'Private distribution target',
+      slug: `private-distribution-${randomUUID()}`,
+      markdown: 'Only the author can read this post.',
+      broadcast: 'users',
+      privacy: 'private',
+    })
+    await expect(
+      distributeActivity(
+        {
+          activityId: LIKE_DATA.activityId,
+          activityType: 'Like',
+          sourceUserId: LIKE_DATA.sourceUserId,
+          targetPostId: postId,
+        },
+        distributeDeps(),
+      ),
+    ).resolves.toEqual({
       enqueued: 0,
       completed: true,
     })
@@ -90,15 +106,15 @@ describe('distributeActivity', () => {
       inboxUrls: ['https://a.example/inbox', 'https://b.example/inbox'],
       hasMore: true,
     })
-    await expect(distributeActivity(LIKE_DATA, distributeDeps())).resolves.toEqual({
+    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).resolves.toEqual({
       enqueued: 2,
       completed: false,
       cursor: 'remote-actor-2',
     })
     expect(prepareActivityDistributionPageMock).toHaveBeenCalledWith('user-1', null, undefined)
     expect(enqueueBulkDeliverActivityMock).toHaveBeenCalledWith([
-      { ...LIKE_DATA, inboxUrl: 'https://a.example/inbox' },
-      { ...LIKE_DATA, inboxUrl: 'https://b.example/inbox' },
+      { ...FOLLOW_DATA, inboxUrl: 'https://a.example/inbox' },
+      { ...FOLLOW_DATA, inboxUrl: 'https://b.example/inbox' },
     ])
   })
 
