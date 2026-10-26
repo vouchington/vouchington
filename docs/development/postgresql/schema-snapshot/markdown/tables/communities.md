@@ -88,7 +88,7 @@ _none_
 - `idx_communities__search`: `CREATE INDEX idx_communities__search ON public.communities USING gin (search_vector) WHERE (deleted_at IS NULL)`
 - `idx_communities__search_name`: `CREATE INDEX idx_communities__search_name ON public.communities USING btree (name, id) WHERE (deleted_at IS NULL)`
 - `idx_communities__slug`: `CREATE UNIQUE INDEX idx_communities__slug ON public.communities USING btree (slug) WHERE (deleted_at IS NULL)`
-- `idx_communities__updated_at_id_active`: `CREATE INDEX idx_communities__updated_at_id_active ON public.communities USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)`
+- `idx_communities__updated_at_id`: `CREATE INDEX idx_communities__updated_at_id ON public.communities USING btree (updated_at, ((id)::text))`
 
 **Triggers:**
 

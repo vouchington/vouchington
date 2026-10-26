@@ -16566,10 +16566,10 @@
           "unique": true,
           "valid": true
         },
-        "idx_communities__updated_at_id_active": {
+        "idx_communities__updated_at_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_communities__updated_at_id_active ON public.communities USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)",
+          "definition": "CREATE INDEX idx_communities__updated_at_id ON public.communities USING btree (updated_at, ((id)::text))",
           "immediate": true,
           "keys": [
             {
@@ -16592,7 +16592,7 @@
             }
           ],
           "live": true,
-          "predicate": "(deleted_at IS NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
