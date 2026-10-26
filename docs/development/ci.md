@@ -114,7 +114,7 @@ literal area prefix and cancels only superseded pull-request runs, and
 
 The Backend area prepares one migrated PostgreSQL baseline per workflow run for its unit shards and
 trusted provider tests. The producer verifies retained-relation bootstrap, then uploads a short-lived
-custom-format dump; each isolated PG18 service restores that artifact before running tests. This keeps
+custom-format dump; each isolated PostgreSQL service restores that artifact before running tests. This keeps
 migration and bootstrap setup out of every test shard while preserving a clean database per job.
 Schema-contract checks keep their staging bootstrap because they verify that migration path directly.
 
