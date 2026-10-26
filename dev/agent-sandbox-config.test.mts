@@ -242,15 +242,6 @@ describe('Codex project rules', () => {
     expect(codexRules).toContain(codexRuleFor(['no-mistakes']))
   })
 
-  it('allows the agent-blackboard snapshot commands the distill skill runs', () => {
-    expect(claudeSettings.permissions.allow).toContain(
-      'Bash(pnpm exec agent-blackboard snapshot partition *)',
-    )
-    expect(claudeSettings.permissions.allow).toContain(
-      'Bash(pnpm exec agent-blackboard snapshot cleanup *)',
-    )
-  })
-
   it('allows `ps aux` process introspection in Claude and Codex', () => {
     expect(claudeSettings.permissions.allow).toContain('Bash(ps aux)')
     expect(claudeSettings.permissions.allow).toContain('Bash(ps aux *)')

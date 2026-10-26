@@ -40,7 +40,12 @@ export type PullRequestPolicyInput = {
 export type PullRequestDefaultsInput = {
   title?: string
   base?: string
-  relatedIssues?: { number: number; relation: 'closes' | 'refs'; reason: string }[]
+  relatedIssues?: {
+    number: number
+    relation: 'closes' | 'refs'
+    reason: string
+    repository?: string
+  }[]
   noSourceIssue?: NoSourceIssue
 }
 
@@ -138,8 +143,12 @@ export async function pullRequestDefaults(
   try {
     const repo = await currentRepo(runGh)
     const [owner, name] = repo.split('/') as [string, string]
+    // An issue in another repository has no bearing on this repository's milestones or projects.
+    const local = ordered.filter(
+      issue => issue.repository === undefined || issue.repository === repo.toLowerCase(),
+    )
     const settled = await Promise.allSettled(
-      ordered.map(async ({ number }) => {
+      local.map(async ({ number }) => {
         const json = await runGh(['api', `repos/${repo}/issues/${number}`])
         const memberships = await fetchIssueProjectMemberships(runGh, owner, name, number)
         return {
