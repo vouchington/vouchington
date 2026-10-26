@@ -52,8 +52,8 @@ export async function reconcileJobBackgroundResponses(
   await job.moveToDelayed(Date.now() + RECHECK_DELAY_MS)
 }
 
-/** Also callable for a retained terminal failed job, which cannot move to delayed. */
-export async function settlePersistedBackgroundResponses(
+/** Reconciles response IDs already persisted on the current job. */
+async function settlePersistedBackgroundResponses(
   job: Job<AIAgentJobData>,
   context: BackgroundResponseJobContext,
 ): Promise<void> {
