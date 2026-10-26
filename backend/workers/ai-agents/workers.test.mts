@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RateLimitError } from 'openai'
 import type { Job, Worker } from 'glide-mq'
 import type { createWorker } from '@data-stores/valkey-glide-mq'
+import { PAGED_DISPATCHER_MAX_STALLED_COUNT } from '@data-stores/valkey-glide-mq/worker-stall-budget'
 import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import { AI_AGENTS_QUEUE_NAME, CLASSIFIER_RUN_BACKOFF } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
@@ -69,6 +70,7 @@ describe('ai-agents workers', () => {
           },
           lockDuration: 300_000,
           stalledInterval: 30_000,
+          maxStalledCount: PAGED_DISPATCHER_MAX_STALLED_COUNT,
           backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: classifierRunBackoffMs },
         },
       },

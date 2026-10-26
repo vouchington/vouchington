@@ -48,7 +48,7 @@ describe.each(enqueues)('$name enqueue recovery', ({ name, prefix, enqueue, reco
           backoff: AI_AGENTS_DEFAULTS.backoff,
           priority: AGENT_PRIORITY[name],
           removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-          removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+          removeOnFail: false,
           deduplication: { id: jobId, mode: 'simple' },
           ordering: { key: jobId, concurrency: 1 },
         },

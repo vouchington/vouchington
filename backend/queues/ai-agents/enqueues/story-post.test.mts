@@ -20,7 +20,7 @@ describe('enqueueStoryPostAgent', () => {
       backoff: { delay: 1000, type: 'exponential' },
       priority: 10,
       removeOnComplete: 100,
-      removeOnFail: 100,
+      removeOnFail: false,
       deduplication: { id: `story_post_agent_${postId}`, mode: 'simple' },
     })
   })

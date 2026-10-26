@@ -91,7 +91,7 @@ export async function reconcileBackgroundResponse(
       createdAt: candidate.createdAt,
     }
     if (owner === 'table') await recordAndDeleteBackgroundResponseUsage(options)
-    else await recordAiUsage(options)
+    else await recordAiUsage({ ...options, resolveLiveScopeOnInsert: true })
     return 'recorded'
   } catch (err) {
     onError(
