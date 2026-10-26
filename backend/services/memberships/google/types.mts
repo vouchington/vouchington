@@ -2,7 +2,7 @@ import type { MembershipVerificationReasonCode } from '../verification-contract.
 
 export type GooglePlayMembershipProviderEnvironment = 'test' | 'production'
 
-export type GooglePlaySubscriptionState =
+type GooglePlaySubscriptionState =
   | 'SUBSCRIPTION_STATE_PENDING'
   | 'SUBSCRIPTION_STATE_ACTIVE'
   | 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD'

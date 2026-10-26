@@ -10,7 +10,7 @@ import type { RefundReconciliationAttempt, RefundReconciliationLease } from './t
 
 import { claimMembershipOperationExecutionWork } from '../operation-execution-work.mts'
 
-export class RefundReconciliationInProgressError extends Error {
+class RefundReconciliationInProgressError extends Error {
   constructor(operationId: string) {
     super(`Refund reconciliation ${operationId} is already leased`)
     this.name = 'RefundReconciliationInProgressError'

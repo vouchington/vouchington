@@ -10,7 +10,7 @@ import {
 } from './recovery-cursor.mts'
 import type { GooglePlayMembershipProviderEnvironment } from './types.mts'
 
-export type RecoverableGooglePlayNotification = {
+type RecoverableGooglePlayNotification = {
   evidenceId: string
   purchaseToken: string
   environment: GooglePlayMembershipProviderEnvironment

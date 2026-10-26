@@ -4,7 +4,7 @@ import { decryptSecret } from '@modules/token-secrets'
 export const COPYRIGHT_ERASED_CIPHERTEXT = 'erased'
 
 /** Shown in place of text the retention sweep has erased. */
-export const COPYRIGHT_ERASED_TEXT = '[erased]'
+const COPYRIGHT_ERASED_TEXT = '[erased]'
 
 /** A ciphertext column's value, or null once the retention sweep has erased it. */
 export function liveCopyrightCiphertext(ciphertext: string | null): string | null {

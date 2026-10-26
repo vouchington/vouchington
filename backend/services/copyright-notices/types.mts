@@ -8,7 +8,7 @@ export type CopyrightHoldProceedingKind =
   FiniteValue<'copyright_notice_legal_hold_assessment_proceeding_kinds'>
 export type CopyrightHoldResolutionKind =
   FiniteValue<'copyright_notice_legal_hold_resolution_kinds'>
-export type CopyrightCorrespondenceDirection =
+type CopyrightCorrespondenceDirection =
   FiniteValue<'copyright_notice_correspondence_message_directions'>
 export type CopyrightCorrespondenceKind = FiniteValue<'copyright_notice_correspondence_kinds'>
 

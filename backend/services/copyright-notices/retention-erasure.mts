@@ -11,7 +11,7 @@ import { eraseCopyrightRetentionCase } from './retention-erasure-case.mts'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
 
 /** Cases erased per run; the rest wait for the next scheduled run. */
-export const COPYRIGHT_RETENTION_ERASURE_LIMIT = 25
+const COPYRIGHT_RETENTION_ERASURE_LIMIT = 25
 
 const DAY_MS = 24 * 60 * 60 * 1000
 

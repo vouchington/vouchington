@@ -1,6 +1,6 @@
 import type { MembershipVerificationReasonCode } from '../verification-contract.mts'
 
-export type MicrosoftStoreEnvironment = 'test' | 'production'
+type MicrosoftStoreEnvironment = 'test' | 'production'
 
 export type MicrosoftStoreServiceTickets = {
   collections_service_ticket: string

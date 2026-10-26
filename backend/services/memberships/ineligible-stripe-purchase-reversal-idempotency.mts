@@ -45,8 +45,7 @@ export function createIneligiblePurchaseReversalRetryIdempotencyKey(
   return `voucha-membership-ineligible-reversal-retry:${digest}`
 }
 
-export const WON_DISPUTE_RECOVERY_IDEMPOTENCY_PREFIX =
-  'voucha-membership-ineligible-reversal-won-dispute:'
+const WON_DISPUTE_RECOVERY_IDEMPOTENCY_PREFIX = 'voucha-membership-ineligible-reversal-won-dispute:'
 
 export function createWonDisputeRecoveryIdempotencyPrefix(originalOperationId: string): string {
   return `${WON_DISPUTE_RECOVERY_IDEMPOTENCY_PREFIX}${originalOperationId}:`

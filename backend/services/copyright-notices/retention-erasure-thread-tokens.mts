@@ -17,7 +17,7 @@ function caseThreadTokenIdsSql(noticeId: string): SQLStatement {
 }
 
 /** Candidate digests are used only to take the same ordered locks as ingestion. */
-export function caseThreadTokenDigestsSql(noticeId: string): SQLStatement {
+function caseThreadTokenDigestsSql(noticeId: string): SQLStatement {
   return sql`/* caseThreadTokenDigests */
     SELECT token.lookup_digest
     FROM copyright_notice_email_thread_tokens token

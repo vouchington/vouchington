@@ -12,7 +12,7 @@ import {
 } from './trusted-flagger-input.mts'
 export type { CreateCopyrightTrustedFlaggerInput } from './trusted-flagger-input.mts'
 
-export type CopyrightTrustedFlaggerStatus = 'active' | 'suspended' | 'revoked'
+type CopyrightTrustedFlaggerStatus = 'active' | 'suspended' | 'revoked'
 export type CopyrightTrustedFlaggerChangeType = 'suspended' | 'reinstated' | 'revoked'
 export type CopyrightTrustedFlagger = {
   id: string

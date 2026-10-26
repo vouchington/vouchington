@@ -9,7 +9,7 @@ export const COPYRIGHT_EU_OUT_OF_COURT_BODIES_URL =
 export const COPYRIGHT_COURT_REDRESS_TEXT = 'You may seek judicial redress through a court.'
 
 /** One route as `<label>: <absolute URL>.`, with an optional note on when to use it. */
-export function copyrightRouteSentence(label: string, path: string, description?: string): string {
+function copyrightRouteSentence(label: string, path: string, description?: string): string {
   return `${label}${description ? ` (${description})` : ''}: ${getSiteUrl(path)}.`
 }
 

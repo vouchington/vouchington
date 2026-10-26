@@ -12,11 +12,7 @@ import type {
   RefundMetadataPage,
   RefundMetadataScanState,
 } from './metadata-discovery-types.mts'
-export type {
-  MetadataDiscoverableRefund,
-  RefundMetadataPage,
-  RefundMetadataScanState,
-} from './metadata-discovery-types.mts'
+export type { RefundMetadataPage, RefundMetadataScanState } from './metadata-discovery-types.mts'
 
 export type RefundMetadataDiscoveryResult =
   | { outcome: 'found'; refund: MetadataDiscoverableRefund }
