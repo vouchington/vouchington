@@ -29,14 +29,10 @@ describe('getIneligiblePurchaseReversalCase', () => {
     }
     await claimTestIneligiblePurchaseReversalOperations(
       {
-        customerId: `cus_case_read_${randomUUID()}`,
         effectiveAt: undefined,
         expiresAt: undefined,
-        incomingPlan: 'pro',
-        incomingStatus: 'active',
         originatingInvoiceId,
         providerEnvironment: 'production',
-        sku,
         stripePriceId: sku.stripe_price_id,
         subscriptionId,
         userId: user.id,

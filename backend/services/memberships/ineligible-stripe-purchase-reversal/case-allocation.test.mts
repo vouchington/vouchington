@@ -126,3 +126,161 @@ function target(chargeId: string, amountMinorUnits: number) {
     qualifyingAmountMinorUnits: amountMinorUnits,
   }
 }
+
+describe('allocateReversalCaseTargets with an immutable case cap', () => {
+  it('preserves the unprorated provider observation for future reconciliation', () => {
+    expect(
+      allocateReversalCaseTargets(
+        {
+          currency: 'usd',
+          providerApplicationId: 'voucha-web',
+          providerEnvironment: 'test',
+          refundCapMinorUnits: 500,
+          subscriptionId: 'sub_family_allocation',
+        },
+        [
+          {
+            amountMinorUnits: 1_000,
+            chargeId: 'ch_family_observed',
+            currency: 'usd',
+            invoiceId: 'in_family_observed',
+            paymentIntentId: null,
+            providerObservedAmountMinorUnits: 1_000,
+            qualifyingAmountMinorUnits: 1_000,
+          },
+        ],
+        new Map(),
+      ),
+    ).toEqual([
+      expect.objectContaining({ amountMinorUnits: 500, providerObservedAmountMinorUnits: 1_000 }),
+    ])
+  })
+
+  it('does not invent a provider observation when none was supplied', () => {
+    const [target] = allocateReversalCaseTargets(
+      {
+        currency: 'usd',
+        providerApplicationId: 'voucha-web',
+        providerEnvironment: 'test',
+        refundCapMinorUnits: 500,
+        subscriptionId: 'sub_family_no_observation',
+      },
+      [
+        {
+          amountMinorUnits: 1_000,
+          chargeId: 'ch_no_observation',
+          currency: 'usd',
+          invoiceId: 'in_no_observation',
+          paymentIntentId: null,
+          qualifyingAmountMinorUnits: 1_000,
+        },
+      ],
+      new Map(),
+    )
+    expect(target).toMatchObject({ amountMinorUnits: 500, qualifyingAmountMinorUnits: 500 })
+    expect(target).not.toHaveProperty('providerObservedAmountMinorUnits')
+  })
+
+  it('subtracts succeeded external refunds from the immutable case cap', () => {
+    expect(
+      allocateReversalCaseTargets(
+        {
+          currency: 'usd',
+          providerApplicationId: 'voucha-web',
+          providerEnvironment: 'test',
+          refundCapMinorUnits: 500,
+          subscriptionId: 'sub_family_allocation',
+        },
+        [
+          {
+            amountMinorUnits: 800,
+            chargeId: 'ch_family_external_refund',
+            currency: 'usd',
+            invoiceId: 'in_family_external_refund',
+            externallySatisfiedMinorUnits: 200,
+            paymentIntentId: null,
+            providerObservedAmountMinorUnits: 800,
+            qualifyingAmountMinorUnits: 1_000,
+          },
+        ],
+        new Map(),
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        amountMinorUnits: 300,
+        externallySatisfiedMinorUnits: 200,
+        providerObservedAmountMinorUnits: 800,
+        qualifyingAmountMinorUnits: 500,
+      }),
+    ])
+  })
+
+  it('allocates one minor unit across split payments', () => {
+    const targets = allocateReversalCaseTargets(
+      {
+        currency: 'usd',
+        providerApplicationId: 'voucha-web',
+        providerEnvironment: 'test',
+        refundCapMinorUnits: 1,
+        subscriptionId: 'sub_family_allocation',
+      },
+      [
+        {
+          amountMinorUnits: 1,
+          chargeId: 'ch_family_first',
+          currency: 'usd',
+          invoiceId: 'in_family_split',
+          paymentIntentId: null,
+          qualifyingAmountMinorUnits: 1,
+        },
+        {
+          amountMinorUnits: 1,
+          chargeId: 'ch_family_second',
+          currency: 'usd',
+          invoiceId: 'in_family_split',
+          paymentIntentId: null,
+          qualifyingAmountMinorUnits: 1,
+        },
+      ],
+      new Map(),
+    )
+
+    expect(targets.map(target => target.chargeId)).toEqual(['ch_family_first'])
+    expect(targets.map(target => target.amountMinorUnits)).toEqual([1])
+    expect(targets.reduce((total, target) => total + target.amountMinorUnits, 0)).toBe(1)
+  })
+
+  it('keeps a later payment refund out of an earlier fixed allocation', () => {
+    expect(
+      allocateReversalCaseTargets(
+        {
+          currency: 'usd',
+          providerApplicationId: 'voucha-web',
+          providerEnvironment: 'test',
+          refundCapMinorUnits: 1,
+          subscriptionId: 'sub_family_allocation',
+        },
+        [
+          {
+            amountMinorUnits: 1,
+            chargeId: 'ch_family_first',
+            currency: 'usd',
+            invoiceId: 'in_family_timing',
+            paymentIntentId: null,
+            qualifyingAmountMinorUnits: 1,
+          },
+          {
+            amountMinorUnits: 0,
+            chargeId: 'ch_family_second',
+            currency: 'usd',
+            externallySatisfiedMinorUnits: 1,
+            invoiceId: 'in_family_timing',
+            paymentIntentId: null,
+            qualifyingAmountMinorUnits: 1,
+          },
+        ],
+        new Map(),
+      ),
+    ).toEqual([expect.objectContaining({ amountMinorUnits: 1, qualifyingAmountMinorUnits: 1 })])
+  })
+})

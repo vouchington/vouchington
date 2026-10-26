@@ -10,15 +10,6 @@ describe('getRefundableReversalTargets partial invoice payments', () => {
             created: 1_893_456_000,
             currency: 'usd',
             id: 'in_open_partial_payment',
-            lines: {
-              data: [
-                {
-                  amount: 1_000,
-                  currency: 'usd',
-                  pricing: { price_details: { price: 'price_partial_payment' } },
-                },
-              ],
-            },
             payments: {
               data: [
                 {

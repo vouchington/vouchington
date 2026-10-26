@@ -84,14 +84,10 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     const invoiceId = `in_invoice_payment_${randomUUID()}`
     const reversalCase = (await claimTestIneligiblePurchaseReversalOperations(
       {
-        customerId: `cus_invoice_payment_${randomUUID()}`,
         effectiveAt: undefined,
         expiresAt: undefined,
-        incomingPlan: 'pro',
-        incomingStatus: 'active',
         originatingInvoiceId: invoiceId,
         providerEnvironment: 'production',
-        sku,
         stripePriceId: sku.stripe_price_id,
         subscriptionId,
         userId: user.id,
@@ -183,14 +179,10 @@ describe('processStripeEvent InvoicePayment reversal reconciliation', () => {
     const chargeId = `ch_dispute_recovery_${randomUUID()}`
     const claim = (await claimTestIneligiblePurchaseReversalOperations(
       {
-        customerId: `cus_dispute_recovery_${randomUUID()}`,
         effectiveAt: undefined,
         expiresAt: undefined,
-        incomingPlan: 'pro',
-        incomingStatus: 'active',
         originatingInvoiceId: invoiceId,
         providerEnvironment: 'production',
-        sku,
         stripePriceId: sku.stripe_price_id,
         subscriptionId,
         userId: user.id,

@@ -25,14 +25,10 @@ describe('ineligible Stripe purchase reversal receipt recovery', () => {
     const subscriptionId = `sub_receipt_recovery_${randomUUID()}`
     const originatingInvoiceId = `in_receipt_recovery_${randomUUID()}`
     const options = {
-      customerId: `cus_receipt_recovery_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId,
       providerEnvironment: 'production' as const,
-      sku,
       stripePriceId: sku.stripe_price_id,
       subscriptionId,
       userId: user.id,

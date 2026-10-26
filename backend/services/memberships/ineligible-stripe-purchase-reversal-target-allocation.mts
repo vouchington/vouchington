@@ -10,23 +10,10 @@ type StripeInvoicePayment = {
   } | null
 }
 
-type StripeInvoiceLine = {
-  amount: number
-  currency: string
-  pricing?: {
-    price_details?: { price: string | { id: string } }
-  } | null
-  taxes?: Array<{
-    amount: number
-    tax_behavior: string
-  }> | null
-}
-
 export type StripeInvoiceForReversal = {
   created: number
   currency: string
   id: string
-  lines?: { data: StripeInvoiceLine[] }
   payments?: { data: StripeInvoicePayment[] }
   status: string | null
 }
@@ -67,31 +54,6 @@ export function getInvoicePaymentTargets(invoice: StripeInvoiceForReversal): Rev
   return [...targets.values()].toSorted((left, right) =>
     getReversalTargetId(left).localeCompare(getReversalTargetId(right)),
   )
-}
-
-export function getQualifyingInvoiceLineAmount(
-  invoice: StripeInvoiceForReversal,
-  stripePriceId: string,
-): number {
-  if (!invoice.lines)
-    throw new Error(`Stripe invoice ${invoice.id} is missing hydrated invoice lines`)
-  const total = invoice.lines.data.reduce((amount, line) => {
-    if (line.currency !== invoice.currency)
-      throw new Error(
-        `Stripe invoice line currency ${line.currency} did not match ${invoice.currency}`,
-      )
-    const price = line.pricing?.price_details?.price
-    const priceId = typeof price === 'string' ? price : price?.id
-    if (priceId !== stripePriceId) return amount
-    const exclusiveTaxAmount =
-      line.taxes?.reduce((taxAmount, tax) => {
-        if (tax.tax_behavior === 'inclusive') return taxAmount
-        if (tax.tax_behavior === 'exclusive') return taxAmount + tax.amount
-        throw new Error(`Unsupported Stripe invoice line tax behavior: ${tax.tax_behavior}`)
-      }, 0) ?? 0
-    return amount + line.amount + exclusiveTaxAmount
-  }, 0)
-  return Math.max(0, total)
 }
 
 function getReversalTargetId(target: Pick<ReversalTarget, 'chargeId' | 'paymentIntentId'>): string {

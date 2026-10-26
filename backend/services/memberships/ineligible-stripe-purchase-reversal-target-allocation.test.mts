@@ -1,74 +1,18 @@
 import { readTestStripeRefundHistory } from '@voucha/test-helpers/membership-reversal-case-fixtures'
 import { createRefundScanCase } from '@voucha/test-helpers/services/memberships/refund-scan-case'
 import { describe, expect, it } from 'vitest'
-import { getQualifyingInvoiceLineAmount } from './ineligible-stripe-purchase-reversal-target-allocation.mts'
 import { getRefundableReversalTargets } from './ineligible-stripe-purchase-reversal-targets.mts'
 
 async function getNoStripeDisputeSettlement() {
   return { lostDisputeAmountMinorUnits: 0, refundDeferred: false }
 }
 
-describe('Stripe reversal qualifying allocation', () => {
-  it('rejects missing or currency-mismatched hydrated qualifying lines', () => {
-    expect(() =>
-      getQualifyingInvoiceLineAmount(
-        { created: 1, currency: 'usd', id: 'in_no_lines', status: 'paid' },
-        'price_qualifying',
-      ),
-    ).toThrow('missing hydrated invoice lines')
-    expect(() =>
-      getQualifyingInvoiceLineAmount(
-        {
-          created: 1,
-          currency: 'usd',
-          id: 'in_wrong_currency',
-          lines: { data: [{ amount: 1, currency: 'eur' }] },
-          status: 'paid',
-        },
-        'price_qualifying',
-      ),
-    ).toThrow('line currency eur did not match usd')
-    expect(() =>
-      getQualifyingInvoiceLineAmount(
-        {
-          created: 1,
-          currency: 'usd',
-          id: 'in_unknown_tax_behavior',
-          lines: {
-            data: [
-              {
-                amount: 1,
-                currency: 'usd',
-                pricing: { price_details: { price: 'price_qualifying' } },
-                taxes: [{ amount: 1, tax_behavior: 'future_behavior' }],
-              },
-            ],
-          },
-          status: 'paid',
-        },
-        'price_qualifying',
-      ),
-    ).toThrow('Unsupported Stripe invoice line tax behavior: future_behavior')
-  })
-  it('allocates only the matching price across mixed invoice payment targets', async () => {
+describe('Stripe reversal payment targets', () => {
+  it('allocates observed amounts across mixed invoice payments', async () => {
     const invoice = {
       created: 1_893_456_000,
       currency: 'usd',
       id: 'in_mixed_prices',
-      lines: {
-        data: [
-          {
-            amount: 400,
-            currency: 'usd',
-            pricing: { price_details: { price: 'price_ineligible' } },
-          },
-          {
-            amount: 600,
-            currency: 'usd',
-            pricing: { price_details: { price: 'price_unrelated' } },
-          },
-        ],
-      },
       payments: {
         data: [
           { amount_paid: 250, payment: { type: 'charge', charge: 'ch_a' } },
@@ -77,7 +21,6 @@ describe('Stripe reversal qualifying allocation', () => {
       },
       status: 'paid',
     }
-    expect(getQualifyingInvoiceLineAmount(invoice, 'price_ineligible')).toBe(400)
     await expect(
       getRefundableReversalTargets(
         [invoice],
@@ -136,7 +79,7 @@ describe('Stripe reversal qualifying allocation', () => {
       expect.objectContaining({ chargeId: null, paymentIntentId: 'pi_payment_intent_target' }),
     ])
   })
-  it('includes only exclusive tax from the matching line in the qualifying refund allocation', async () => {
+  it('keeps the observed paid amount as the refund allocation', async () => {
     await expect(
       getRefundableReversalTargets(
         [
@@ -144,28 +87,6 @@ describe('Stripe reversal qualifying allocation', () => {
             created: 1_893_456_000,
             currency: 'usd',
             id: 'in_qualifying_tax',
-            lines: {
-              data: [
-                {
-                  amount: 1_000,
-                  currency: 'usd',
-                  pricing: { price_details: { price: 'price_ineligible' } },
-                  taxes: [
-                    { amount: 100, tax_behavior: 'exclusive' },
-                    { amount: 75, tax_behavior: 'inclusive' },
-                  ],
-                },
-                {
-                  amount: 500,
-                  currency: 'usd',
-                  pricing: { price_details: { price: 'price_unrelated' } },
-                  taxes: [
-                    { amount: 50, tax_behavior: 'exclusive' },
-                    { amount: 25, tax_behavior: 'inclusive' },
-                  ],
-                },
-              ],
-            },
             payments: {
               data: [
                 { amount_paid: 1_675, payment: { charge: 'ch_qualifying_tax', type: 'charge' } },
@@ -194,15 +115,6 @@ describe('Stripe reversal qualifying allocation', () => {
             created: 1_893_456_000,
             currency: 'usd',
             id: 'in_external_refund_capacity',
-            lines: {
-              data: [
-                {
-                  amount: 400,
-                  currency: 'usd',
-                  pricing: { price_details: { price: 'price_ineligible' } },
-                },
-              ],
-            },
             payments: {
               data: [
                 { amount_paid: 200, payment: { type: 'charge', charge: 'ch_a' } },
@@ -254,15 +166,6 @@ describe('Stripe reversal qualifying allocation', () => {
             created: 1_893_456_000,
             currency: 'usd',
             id: 'in_refund_other_target',
-            lines: {
-              data: [
-                {
-                  amount: 200,
-                  currency: 'usd',
-                  pricing: { price_details: { price: 'price_ineligible' } },
-                },
-              ],
-            },
             payments: {
               data: [
                 { amount_paid: 200, payment: { type: 'charge', charge: 'ch_first' } },

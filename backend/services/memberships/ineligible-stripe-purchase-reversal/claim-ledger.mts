@@ -1,90 +1,15 @@
 import { beginTransaction } from '@data-stores/psql'
-import { createSource } from '../create-source.mts'
 import { claimIneligiblePurchaseCancellationOperation } from '../ineligible-stripe-purchase-cancellation.mts'
-import {
-  getLockedCurrentMembership,
-  getPurchaseDisposition,
-} from '../ineligible-stripe-purchase-reversal-eligibility.mts'
 import type {
   ClaimedIneligiblePurchaseReversals,
-  IneligibleStripePurchase,
   ReversalTarget,
 } from '../ineligible-stripe-purchase-reversal-types.mts'
 import {
-  claimIneligiblePurchaseReversalCase,
   getLockedIneligiblePurchaseReversalCase,
   getReversalCaseTargetAllocations,
-  type IneligiblePurchaseReversalCase,
-  type IneligiblePurchaseReversalCaseSnapshot,
 } from './case-ledger.mts'
 import { allocateReversalCaseTargets } from './case-allocation.mts'
-import { getCollisionPeriod, getFamilyCollisionRefundAmount } from './family-proration.mts'
 import { claimIneligiblePurchaseReversalTargets } from './target-ledger.mts'
-
-export async function claimIneligiblePurchaseReversalCaseForDiscovery(
-  options: IneligibleStripePurchase,
-  caseSnapshot: IneligiblePurchaseReversalCaseSnapshot,
-): Promise<
-  | { disposition: 'converged' | 'none'; reversalCase: null }
-  | { disposition: 'ineligible'; reversalCase: IneligiblePurchaseReversalCase }
-> {
-  await using transaction = await beginTransaction()
-  const membership = await getLockedCurrentMembership(options.userId, transaction)
-  const disposition = getPurchaseDisposition(membership, options)
-  if (disposition === 'none' || disposition === 'converged') {
-    await transaction.commit()
-    return { disposition, reversalCase: null }
-  }
-  if (!membership) throw new Error('Ineligible Stripe purchase is missing its current membership')
-  const collisionAt = membership.sourceKind === 'family' ? membership.effectiveAt : new Date()
-  const period = getCollisionPeriod(membership.sourceKind, options, collisionAt)
-  const source = await createSource(
-    {
-      userId: options.userId,
-      stripeSubscriptionId: options.subscriptionId,
-      stripeOriginatingInvoiceId: options.originatingInvoiceId,
-      stripeCustomerId: options.customerId,
-      providerEnvironment: options.providerEnvironment,
-      providerApplicationId: options.providerApplicationId,
-    },
-    options.sku.id,
-    transaction,
-  )
-  if (!source.bindingId || !source.lineageId)
-    throw new Error('Stripe reversal source is missing a provider lineage binding')
-  const existingCase = await getLockedIneligiblePurchaseReversalCase(
-    {
-      originatingInvoiceId: options.originatingInvoiceId,
-      providerApplicationId: options.providerApplicationId ?? 'voucha-web',
-      providerEnvironment: options.providerEnvironment,
-      subscriptionId: options.subscriptionId,
-    },
-    transaction,
-  )
-  const reversalCase =
-    existingCase ??
-    (await claimIneligiblePurchaseReversalCase(
-      {
-        collisionAt: period.collisionAt,
-        currency: caseSnapshot.currency,
-        membershipLineageBindingId: source.bindingId,
-        membershipProviderLineageId: source.lineageId,
-        membershipSourceId: source.id,
-        periodEndsAt: period.periodEndsAt,
-        periodStartedAt: period.periodStartedAt,
-        qualifyingAmountMinorUnits: caseSnapshot.qualifyingAmountMinorUnits,
-        refundCapMinorUnits:
-          membership.sourceKind === 'family'
-            ? getFamilyCollisionRefundAmount(caseSnapshot.qualifyingAmountMinorUnits, period)
-            : caseSnapshot.qualifyingAmountMinorUnits,
-        stripePriceId: options.stripePriceId,
-        winningSourceKind: membership.sourceKind,
-      },
-      transaction,
-    ))
-  await transaction.commit()
-  return { disposition: 'ineligible', reversalCase }
-}
 export async function claimPersistedIneligiblePurchaseReversalCase(
   options: {
     originatingInvoiceId: string

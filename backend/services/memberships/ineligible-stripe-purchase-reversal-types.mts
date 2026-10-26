@@ -1,20 +1,3 @@
-import type { Membership, MembershipSku } from './types.mts'
-
-export type IneligibleStripePurchase = {
-  customerId: string
-  effectiveAt: Date | undefined
-  expiresAt: Date | undefined
-  incomingPlan: Membership['plan']
-  incomingStatus: Membership['status']
-  originatingInvoiceId: string
-  providerEnvironment: 'test' | 'production'
-  providerApplicationId?: string
-  sku: Pick<MembershipSku, 'id'>
-  stripePriceId: string
-  subscriptionId: string
-  userId: string
-}
-
 export type ReversalTarget = {
   amountMinorUnits: number
   chargeId: string | null

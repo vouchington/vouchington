@@ -11,9 +11,10 @@ export async function createRefundScanCase() {
   ])
   const invoiceId = `in_refund_scan_${randomUUID()}`
   const subscriptionId = `sub_refund_scan_${randomUUID()}`
+  const familyEffectiveAt = new Date(Date.now() - 60_000)
   await createTestFamilyMembership({
     applicationId: familySku.provider_application_id,
-    effectiveAt: new Date(Date.now() - 60_000),
+    effectiveAt: familyEffectiveAt,
     expiresAt: new Date(Date.now() + 60_000),
     membershipProductId: familySku.id,
     membershipProviderProductId: familySku.membership_provider_product_id,
@@ -27,20 +28,22 @@ export async function createRefundScanCase() {
   }
   await claimTestIneligiblePurchaseReversalOperations(
     {
-      customerId: `cus_refund_scan_${randomUUID()}`,
       effectiveAt: new Date(Date.now() - 30_000),
       expiresAt: new Date(Date.now() + 30_000),
-      incomingPlan: 'plus',
-      incomingStatus: 'active',
       originatingInvoiceId: invoiceId,
       providerEnvironment: 'test',
-      sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
       subscriptionId,
       userId: user.id,
     },
     [{ ...target, amountMinorUnits: 1_000, qualifyingAmountMinorUnits: 1_000 }],
-    { currency: 'usd', qualifyingAmountMinorUnits: 1_000 },
+    {
+      currency: 'usd',
+      qualifyingAmountMinorUnits: 1_000,
+      refundCapMinorUnits: 1_000,
+      winningSourceKind: 'family',
+      collisionAt: familyEffectiveAt,
+    },
   )
   const reversalCase = await getIneligiblePurchaseReversalCase({
     originatingInvoiceId: invoiceId,

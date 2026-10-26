@@ -263,14 +263,10 @@ async function createIneligiblePurchaseReversalFixture() {
   const originatingInvoiceId = `in_ineligible_${randomUUID()}`
   return {
     options: {
-      customerId: `cus_ineligible_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId,
       providerEnvironment: 'production' as const,
-      sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
       subscriptionId,
       userId: user.id,

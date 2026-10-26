@@ -25,14 +25,10 @@ describe('ineligible Stripe purchase reversal binding retry', () => {
     const incomingSku = await createTestSku({ plan: 'pro' })
     const originatingInvoiceId = `in_binding_retry_${randomUUID()}`
     const options = {
-      customerId: `cus_binding_retry_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId,
       providerEnvironment: 'production' as const,
-      sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
       subscriptionId: `sub_binding_retry_${randomUUID()}`,
       userId: user.id,
