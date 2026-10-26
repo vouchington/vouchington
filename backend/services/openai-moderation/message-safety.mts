@@ -31,15 +31,7 @@ export async function checkMessageSafety(
     throw createHttpError(400, 'Potential prompt injection detected', { code: 'PROMPT_INJECTION' })
   }
 
-  // The SDK's `Categories` is an interface whose values may be null; the package takes
-  // `Record<string, boolean>`.
-  const results = await deps.createTextModeration([message])
-  const violation = checkModerationResults(
-    results.map(({ flagged, categories }) => ({
-      flagged,
-      categories: Object.fromEntries(Object.entries(categories).map(([k, v]) => [k, v === true])),
-    })),
-  )
+  const violation = checkModerationResults(await deps.createTextModeration([message]))
   if (violation?.code === 'MODERATION_VIOLATION') {
     throw createHttpError(400, 'Content violates moderation policy', {
       code: 'MODERATION_VIOLATION',

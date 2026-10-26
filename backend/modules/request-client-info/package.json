@@ -26,7 +26,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/session-jwt": "^0.0.2",
-    "@vouchington/utils": "^0.10.0",
+    "@vouchington/utils": "^0.10.2",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {
