@@ -5,9 +5,17 @@ import { supersedeActivePromptVersion } from '@voucha/test-helpers/data-stores/p
 import { createSyntheticFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-classifier'
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import {
+  AUTOTAGGER_AGENT_SLUG,
+  completeTaggingRunForTest,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-agent-fixture'
+import { createAutotaggerPostFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
+import {
   deleteClassifierCacheSubjectPost,
+  deleteClassifierCacheIdentitiesForTest,
+  probeVersionedClassifierCachePageForTest,
   probeClassifierRunRemovalRollback,
   readClassifierRetentionPricedUsage,
+  retireClassifierRunPayloadForTest,
   seedClassifierCacheIdentity,
   seedClassifierCacheIdentityForSlug,
   seedClassifierRetentionPricedUsage,
@@ -22,6 +30,21 @@ import { cleanupClassifierRecords } from '../cleanup-classifier-records.mts'
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('classifier retention cleanup', () => {
+  it('retires an unreserved follow-on when its last completed first-stage payload is removed', async () => {
+    const fixture = await createAutotaggerPostFixture()
+    const { lease } = await completeTaggingRunForTest(fixture)
+    const before = (await getClassifierRunRequestFacts(fixture.post.id, AUTOTAGGER_AGENT_SLUG))[0]!
+    expect(before.stale_at).toBeNull()
+    expect(before.run_settled_at).toBeNull()
+
+    expect(await retireClassifierRunPayloadForTest(lease.runId)).toBe(1)
+
+    const after = (await getClassifierRunRequestFacts(fixture.post.id, AUTOTAGGER_AGENT_SLUG))[0]!
+    expect(after.id).toBe(before.id)
+    expect(after.stale_at).not.toBeNull()
+    expect(after.run_settled_at).toBeNull()
+  })
+
   it('retires promptless cache identities with capped terminal payload deletion without reopening requests', async () => {
     const setup = await createSyntheticFixture()
     const at = new Date(Date.now() - 100 * DAY_MS)
@@ -101,15 +124,21 @@ describe('classifier retention cleanup', () => {
       inputSha256,
     })
 
-    await cleanupClassifierRecords({
-      retentionDays: 90,
-      batchSize: 20,
-      maxBatches: 5,
-      lowerBoundDate: startedAt,
-      now: new Date(Date.now() + 60_000),
-    })
-    expect(await countClassifierRows('classifier_run_identities', [oldId])).toBe(0)
-    expect(await countClassifierRows('classifier_run_identities', [newId])).toBe(1)
+    try {
+      expect(
+        await probeVersionedClassifierCachePageForTest({
+          classifierId: fixture.classifierId,
+          oldPromptVersionId: fixture.promptVersionId,
+          oldIdentityId: oldId,
+          newIdentityId: newId,
+          startedAt,
+        }),
+      ).toEqual({ scanned: 1, deleted: 1, oldInside: false, newInside: true })
+      // The borrowed page rolled back, including the global cursor and the owned deletion.
+      expect(await countClassifierRows('classifier_run_identities', [oldId, newId])).toBe(2)
+    } finally {
+      await deleteClassifierCacheIdentitiesForTest([oldId, newId])
+    }
   })
 
   it('prunes a cache identity when its real post is deleted despite a retained subject id', async () => {

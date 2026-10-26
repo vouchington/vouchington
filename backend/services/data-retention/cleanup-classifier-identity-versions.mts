@@ -51,6 +51,23 @@ async function sweepVersionPage(
   batchSize: number,
 ): Promise<PageResult> {
   await using query = await beginTransaction()
+  const result = await sweepClassifierVersionedIdentityPageWithQuery(
+    query,
+    cutoffId,
+    lowerBoundId,
+    batchSize,
+  )
+  await query.commit()
+  return result
+}
+
+/** The caller owns the transaction; the scope page and cursor checkpoint stay atomic. */
+export async function sweepClassifierVersionedIdentityPageWithQuery(
+  query: OwnedTransaction,
+  cutoffId: string,
+  lowerBoundId: string,
+  batchSize: number,
+): Promise<PageResult> {
   await query(sql`/* ensureClassifierVersionIdentityCursor */
     INSERT INTO classifier_retention_cursors (sweep) VALUES ('versioned_identities')
     ON CONFLICT DO NOTHING`)
@@ -125,7 +142,6 @@ async function sweepVersionPage(
       sweep_start_key = ${hasMore ? lowerBoundId : null},
       sweep_end_key = ${hasMore ? sweepEnd : null}
     WHERE sweep = 'versioned_identities'`)
-  await query.commit()
   return { scanned, deleted, hasMore }
 }
 

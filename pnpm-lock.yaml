@@ -4987,6 +4987,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -4999,6 +5002,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@services/classifier-run-revival':
+        specifier: workspace:^
+        version: link:../classifier-run-revival
       '@services/classifiers':
         specifier: workspace:^
         version: link:../classifiers
@@ -6048,6 +6054,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/classifier-run-revival':
+        specifier: workspace:^
+        version: link:../classifier-run-revival
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating

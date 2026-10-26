@@ -24,6 +24,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/classifier-run-revival": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/oauth": "workspace:^",
