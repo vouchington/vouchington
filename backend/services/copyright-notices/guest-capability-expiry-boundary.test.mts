@@ -4,10 +4,7 @@ import {
   openTestGuestCopyrightNotice,
 } from '@voucha/test-helpers/services/copyright-notices/guest-capability'
 import { describe, expect, it } from 'vitest'
-import {
-  copyrightGuestCapabilityMaxLifetimeMs,
-  issueCopyrightGuestCapability,
-} from './guest-capabilities.mts'
+import { issueCopyrightGuestCapability } from './guest-capabilities.mts'
 
 describe('copyright guest capability expiry boundary', () => {
   it('accepts exactly 30 days across UTC month boundaries and rejects one millisecond more', async () => {
@@ -15,7 +12,7 @@ describe('copyright guest capability expiry boundary', () => {
     const currentUser = await createTestCopyrightStaff()
     for (const instant of ['2026-07-31T23:59:59.999Z', '2026-08-01T00:00:00.000Z']) {
       const issuedAt = new Date(instant)
-      const expiresAt = new Date(issuedAt.getTime() + copyrightGuestCapabilityMaxLifetimeMs)
+      const expiresAt = new Date(issuedAt.getTime() + 30 * 24 * 60 * 60 * 1000)
       const capability = await issueCopyrightGuestCapability({
         currentUser,
         noticeId,

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import {
+  readCopyrightStaydownEntries,
   readCopyrightStaydownMatches,
   readCopyrightStaydownMatchesForImage,
 } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
@@ -12,7 +13,6 @@ import {
   useStaydownMatching,
 } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
 import {
-  copyrightStaydownMaxHammingDistance,
   enqueueCopyrightStaydownUploadMatch,
   fillCopyrightStaydownEntryHash,
   recordCopyrightStaydownExactMatch,
@@ -173,6 +173,8 @@ describe('copyright staydown matching', () => {
     it('matches an upload within the documented distance and not beyond it', async () => {
       const registeredHash = randomHash()
       const staydownCase = await createRegisteredCase()
+      const [registeredEntry] = await readCopyrightStaydownEntries(staydownCase.noticeId)
+      if (!registeredEntry) throw new Error('registered staydown entry missing')
       await fillCopyrightStaydownEntryHash({
         imageId: staydownCase.imageId,
         perceptualHash: registeredHash,
@@ -183,59 +185,74 @@ describe('copyright staydown matching', () => {
         insertTestImage(uploader.id),
       ])
 
-      await expect(
-        recordCopyrightStaydownPerceptualMatches({
-          imageId: near,
-          perceptualHash: flipBits(registeredHash, copyrightStaydownMaxHammingDistance),
-        }),
-      ).resolves.toBe(1)
-      await expect(
-        recordCopyrightStaydownPerceptualMatches({
-          imageId: far,
-          perceptualHash: flipBits(registeredHash, copyrightStaydownMaxHammingDistance + 1),
-        }),
-      ).resolves.toBe(0)
+      await recordCopyrightStaydownPerceptualMatches({
+        imageId: near,
+        perceptualHash: flipBits(registeredHash, 8),
+      })
+      await recordCopyrightStaydownPerceptualMatches({
+        imageId: far,
+        perceptualHash: flipBits(registeredHash, 9),
+      })
 
-      expect(await readCopyrightStaydownMatchesForImage(far)).toEqual([])
-      expect(await readCopyrightStaydownMatchesForImage(near)).toEqual([
+      const ownedMatches = (await readCopyrightStaydownMatches(staydownCase.noticeId)).filter(
+        match => match.copyright_staydown_entry_id === registeredEntry.id,
+      )
+      expect(ownedMatches.filter(match => match.image_id === far)).toEqual([])
+      expect(ownedMatches.filter(match => match.image_id === near)).toEqual([
         expect.objectContaining({
           match_kind: 'perceptual',
-          hamming_distance: copyrightStaydownMaxHammingDistance,
+          hamming_distance: 8,
           uploaded_by_id: uploader.id,
           reviewed_at: null,
         }),
       ])
-      await expect(
-        recordCopyrightStaydownPerceptualMatches({
-          imageId: near,
-          perceptualHash: flipBits(registeredHash, copyrightStaydownMaxHammingDistance),
-        }),
-      ).resolves.toBe(0)
+      await recordCopyrightStaydownPerceptualMatches({
+        imageId: near,
+        perceptualHash: flipBits(registeredHash, 8),
+      })
+      expect(
+        (await readCopyrightStaydownMatches(staydownCase.noticeId)).filter(
+          match =>
+            match.copyright_staydown_entry_id === registeredEntry.id && match.image_id === near,
+        ),
+      ).toHaveLength(1)
     })
 
     it('never matches a registered image against itself or against an entry still unhashed', async () => {
       const registeredHash = randomHash()
       const hashed = await createRegisteredCase()
       const unhashed = await createRegisteredCase()
+      const [hashedEntry] = await readCopyrightStaydownEntries(hashed.noticeId)
+      const [unhashedEntry] = await readCopyrightStaydownEntries(unhashed.noticeId)
+      if (!hashedEntry || !unhashedEntry) throw new Error('registered staydown entry missing')
       await fillCopyrightStaydownEntryHash({
         imageId: hashed.imageId,
         perceptualHash: registeredHash,
       })
 
-      await expect(
-        recordCopyrightStaydownPerceptualMatches({
-          imageId: hashed.imageId,
-          perceptualHash: registeredHash,
-        }),
-      ).resolves.toBe(0)
-      await expect(
-        recordCopyrightStaydownPerceptualMatches({
-          imageId: unhashed.imageId,
-          perceptualHash: registeredHash,
-        }),
-      ).resolves.toBe(1)
-      expect(await readCopyrightStaydownMatches(unhashed.noticeId)).toEqual([])
-      expect(await readCopyrightStaydownMatches(hashed.noticeId)).toHaveLength(1)
+      await recordCopyrightStaydownPerceptualMatches({
+        imageId: hashed.imageId,
+        perceptualHash: registeredHash,
+      })
+      await recordCopyrightStaydownPerceptualMatches({
+        imageId: unhashed.imageId,
+        perceptualHash: registeredHash,
+      })
+      expect(
+        (await readCopyrightStaydownMatchesForImage(hashed.imageId)).filter(
+          match => match.copyright_staydown_entry_id === hashedEntry.id,
+        ),
+      ).toEqual([])
+      expect(
+        (await readCopyrightStaydownMatchesForImage(unhashed.imageId)).filter(
+          match => match.copyright_staydown_entry_id === hashedEntry.id,
+        ),
+      ).toHaveLength(1)
+      expect(
+        (await readCopyrightStaydownMatches(unhashed.noticeId)).filter(
+          match => match.copyright_staydown_entry_id === unhashedEntry.id,
+        ),
+      ).toEqual([])
     })
   })
 })

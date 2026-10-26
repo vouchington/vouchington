@@ -37,7 +37,6 @@ import {
 } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { rejectCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
-import { normalizeCopyrightEmailReference } from './email-thread-references.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const afterRetention = () => new Date(Date.now() + 400 * DAY_MS)
@@ -186,7 +185,7 @@ describe('copyright evidence retention sweep', () => {
       intakeId: matchedIntake.id,
       noticeId: erasedCase.noticeId,
       linkKind: 'thread',
-      matchedReference: normalizeCopyrightEmailReference(sharedMessageId),
+      matchedReference: sharedMessageId.slice(1, -1),
     })
     await rejectCopyrightEmailCorrespondence({
       currentUser: erasedCase.moderator,

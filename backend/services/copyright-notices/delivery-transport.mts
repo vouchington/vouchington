@@ -130,7 +130,7 @@ async function loadCopyrightEmailText(intent: ClaimedCopyrightDeliveryIntent): P
   return (await getCopyrightEmailCorrespondence(intent.id)).bodyText
 }
 
-export async function resolveCopyrightEmailRecipient(
+async function resolveCopyrightEmailRecipient(
   intentId: string,
   recipientUserId: string | null,
   recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent',

@@ -1,5 +1,6 @@
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
+import { beginTransaction } from '@data-stores/psql'
 import {
   createTestUser,
   createTestUserDirect,
@@ -7,14 +8,23 @@ import {
   insertTestPost,
   insertTestPostImage,
 } from '@voucha/test-helpers'
+import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
+import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
+import {
+  createTestLiftNotice,
+  readTestLiftDeliveryIntents,
+} from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { createCopyrightFormIntake, prepareCopyrightEmailDelivery } from './index.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
+import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
+import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 
 async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTestUser>>) {
   const claimant = await createTestUser()
+  const claimantEmail = `tests+claimant-${crypto.randomUUID()}@voucha.ai`
   const postId = await insertTestPost({
     title: `copyright transport ${crypto.randomUUID()}`,
     slug: `copyright-transport-${crypto.randomUUID()}`,
@@ -30,8 +40,8 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
     request: {
       jurisdiction: 'us_dmca',
       claimantDisplayName: 'Claimant',
-      claimantContact: `tests+claimant-${crypto.randomUUID()}@voucha.ai`,
-      claimantEmail: `tests+claimant-${crypto.randomUUID()}@voucha.ai`,
+      claimantContact: claimantEmail,
+      claimantEmail,
       workDescription: 'Claimed photograph',
       goodFaithBelief: true,
       accuracyAuthorityUnderPenaltyOfPerjury: true,
@@ -60,8 +70,17 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
   const intent = aggregate?.deliveryIntents.find(
     item => item.delivery_kind === 'poster_restriction_notice' && item.channel === 'email',
   )
+  const claimantReceipt = aggregate?.deliveryIntents.find(
+    item => item.delivery_kind === 'claimant_receipt' && item.channel === 'email',
+  )
   if (!intent) throw new Error('poster restriction email intent missing')
-  return { noticeId: intake.intake.copyright_notice_id, intentId: intent.id }
+  if (!claimantReceipt) throw new Error('claimant receipt email intent missing')
+  return {
+    noticeId: intake.intake.copyright_notice_id,
+    intentId: intent.id,
+    claimantReceiptIntentId: claimantReceipt.id,
+    claimantEmail,
+  }
 }
 
 describe('copyright email delivery transport', () => {
@@ -74,6 +93,86 @@ describe('copyright email delivery transport', () => {
     await expect(prepareCopyrightEmailDelivery(intentId)).resolves.toMatchObject({
       subject: 'Your image was restricted after a copyright notice',
       recipientEmail: expect.stringMatching(/@/),
+    })
+  })
+
+  it('prepares a signed-in claimant receipt with its retained address', async () => {
+    const poster = await createTestUser()
+    const { claimantReceiptIntentId, claimantEmail } = await createRestrictedNotice(poster)
+
+    await expect(prepareCopyrightEmailDelivery(claimantReceiptIntentId)).resolves.toMatchObject({
+      deliveryKind: 'claimant_receipt',
+      recipientEmail: claimantEmail,
+      text: expect.any(String),
+    })
+  })
+
+  it('fails closed for an owned claimant email intent without a retained recipient', async () => {
+    const poster = await createTestUser()
+    const { noticeId } = await createRestrictedNotice(poster)
+    const bodyText = `Claimant receipt ${crypto.randomUUID()}`
+    await using transaction = await beginTransaction()
+    const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
+      {
+        noticeId,
+        submissionId: null,
+        correspondenceKind: 'receipt',
+        bodyText,
+      },
+      transaction,
+    )
+    const intent = await createCopyrightDeliveryIntent(
+      {
+        noticeId,
+        submissionId: null,
+        correspondenceId: correspondence.id,
+        recipientUserId: null,
+        recipientRole: 'claimant',
+        deliveryKind: 'claimant_receipt',
+        channel: 'email',
+        idempotencyKey: `copyright-claimant-without-recipient-${crypto.randomUUID()}`,
+      },
+      transaction,
+    )
+    await transaction.commit()
+
+    await expect(prepareCopyrightEmailDelivery(intent.id)).rejects.toMatchObject({
+      status: 422,
+      message: 'Copyright email delivery has no private recipient',
+    })
+    const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
+    expect(aggregate?.deliveryIntents).toContainEqual(
+      expect.objectContaining({ id: intent.id, state: 'pending' }),
+    )
+  })
+
+  it('prepares an informed community owner email through their verified account address', async () => {
+    const fixture = await createTestCopyrightImageFixture('community-banner-image', {
+      actorModerator: true,
+      actorWithEmail: true,
+    })
+    const owner = await createTestUserDirect({ withEmail: true })
+    await insertTestCommunityMember({
+      communityId: fixture.ownerId,
+      userId: owner.id,
+      role: 'owner',
+    })
+    const { noticeId } = await createTestLiftNotice([fixture], {
+      claimantEmail: `claimant-${crypto.randomUUID()}@example.test`,
+    })
+    const intent = (await readTestLiftDeliveryIntents(noticeId)).find(
+      item =>
+        item.recipient_user_id === owner.id &&
+        item.recipient_role === 'informed_owner' &&
+        item.delivery_kind === 'owner_information_notice' &&
+        item.channel === 'email',
+    )
+    if (!intent) throw new Error('informed community owner email intent missing')
+    const ownerEmail = owner.email_address
+    if (!ownerEmail) throw new Error('Community owner fixture missing verified email')
+    await expect(prepareCopyrightEmailDelivery(intent.id)).resolves.toMatchObject({
+      deliveryKind: 'owner_information_notice',
+      recipientEmail: ownerEmail,
     })
   })
 
