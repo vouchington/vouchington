@@ -3,7 +3,7 @@ import { TERRITORIAL_COMPLAINT_WINDOW_MONTHS } from './territorial-fields.mts'
 import type { CopyrightStatementFields } from './statement-of-reasons-types.mts'
 
 /** The Commission's list of certified out-of-court dispute settlement bodies (DSA Article 21). */
-export const COPYRIGHT_EU_OUT_OF_COURT_BODIES_URL =
+const COPYRIGHT_EU_OUT_OF_COURT_BODIES_URL =
   'https://digital-strategy.ec.europa.eu/en/policies/dsa-out-court-dispute-settlement'
 
 export const COPYRIGHT_COURT_REDRESS_TEXT = 'You may seek judicial redress through a court.'

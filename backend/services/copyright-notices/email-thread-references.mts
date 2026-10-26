@@ -76,7 +76,7 @@ export function normalizedCopyrightEmailReplyValues(headers: CopyrightEmailReply
   return values
 }
 
-export function normalizeCopyrightEmailReference(reference: string): string {
+function normalizeCopyrightEmailReference(reference: string): string {
   const normalized = reference.trim().replace(/\s+/g, ' ')
   return normalized.startsWith('<') && normalized.endsWith('>')
     ? normalized.slice(1, -1).trim()

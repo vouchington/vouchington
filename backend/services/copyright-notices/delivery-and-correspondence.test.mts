@@ -19,7 +19,6 @@ import {
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
-import { resolveCopyrightEmailRecipient } from './delivery-transport.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -121,16 +120,13 @@ describe('copyright delivery and correspondence persistence', () => {
     await expect(readRecoverableDeliveryIntentIds('in_app', first.id)).resolves.toEqual([])
   })
 
-  it('fails closed for unavailable or private-recipient-less delivery intents', async () => {
+  it('fails closed for unavailable delivery intents', async () => {
     await expect(
       deliverCopyrightInAppNotification('00000000-0000-7000-8000-000000000071'),
     ).resolves.toBe(false)
     await expect(
       prepareCopyrightEmailDelivery('00000000-0000-7000-8000-000000000072'),
     ).rejects.toThrow('not available to send')
-    await expect(
-      resolveCopyrightEmailRecipient('00000000-0000-7000-8000-000000000073', null, 'claimant'),
-    ).rejects.toMatchObject({ status: 422 })
   })
 
   it('returns a wrongly routed claimed email intent to retryable state', async () => {

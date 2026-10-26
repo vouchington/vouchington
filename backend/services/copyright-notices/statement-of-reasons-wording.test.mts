@@ -3,7 +3,6 @@ import {
   buildCopyrightStatementOfReasons,
   type CopyrightStatementInput,
 } from './statement-of-reasons.mts'
-import { COPYRIGHT_EU_OUT_OF_COURT_BODIES_URL } from './statement-of-reasons-redress-wording.mts'
 import { copyrightNotificationCopy } from './statement-of-reasons-wording.mts'
 
 const ORIGIN = 'https://voucha.test'
@@ -222,13 +221,17 @@ describe('copyright statement wording', () => {
       'points a %s to the Commission list of certified EU dispute bodies',
       audience => {
         const { text } = statement({ jurisdiction: 'eu_dsa', audience })
+        const commissionUrl = text.match(/https:\/\/digital-strategy\.ec\.europa\.eu\/[^\s]+/)?.[0]
+        const normalizedUrl = commissionUrl?.replace(/\.$/, '')
+        if (!normalizedUrl) throw new Error('Commission redress URL missing from statement')
 
         expect(text).toContain(
-          `You can find certified out-of-court dispute settlement bodies on the European Commission's list: ${COPYRIGHT_EU_OUT_OF_COURT_BODIES_URL}.`,
+          `You can find certified out-of-court dispute settlement bodies on the European Commission's list: https://digital-strategy.ec.europa.eu/en/policies/dsa-out-court-dispute-settlement.`,
         )
-        expect(COPYRIGHT_EU_OUT_OF_COURT_BODIES_URL).toMatch(
-          /^https:\/\/digital-strategy\.ec\.europa\.eu\//,
+        expect(normalizedUrl).toBe(
+          'https://digital-strategy.ec.europa.eu/en/policies/dsa-out-court-dispute-settlement',
         )
+        expect(new URL(normalizedUrl).hostname).toBe('digital-strategy.ec.europa.eu')
       },
     )
 

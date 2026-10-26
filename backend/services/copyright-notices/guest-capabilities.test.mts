@@ -20,7 +20,6 @@ import {
   requestCopyrightGuestInformation,
   revokeCopyrightGuestCapability,
 } from './index.mts'
-import { copyrightGuestCapabilityMaxLifetimeMs } from './guest-capabilities.mts'
 
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -148,7 +147,7 @@ describe('copyright guest capabilities', () => {
         issuedAt,
         currentUser: staff,
         noticeId: notice.id,
-        expiresAt: new Date(issuedAt.getTime() + copyrightGuestCapabilityMaxLifetimeMs + 60_000),
+        expiresAt: new Date(issuedAt.getTime() + 30 * 24 * 60 * 60 * 1000 + 60_000),
       }),
     ).rejects.toMatchObject({ status: 422, message: 'Guest capabilities expire within 30 days' })
     await expect(
@@ -163,7 +162,7 @@ describe('copyright guest capabilities', () => {
       issuedAt,
       currentUser: staff,
       noticeId: notice.id,
-      expiresAt: new Date(issuedAt.getTime() + copyrightGuestCapabilityMaxLifetimeMs - 60_000),
+      expiresAt: new Date(issuedAt.getTime() + 30 * 24 * 60 * 60 * 1000 - 60_000),
     })
     await expect(
       revokeCopyrightGuestCapability({

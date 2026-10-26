@@ -2,7 +2,6 @@ import { Readable } from 'node:stream'
 import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
-import { copyrightStaydownMaxHammingDistance } from '@services/copyright-notices/staydown-matches'
 import { getImageByIdFromPrimary } from '@services/images/get'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import {
@@ -122,7 +121,7 @@ describe('staydown hash job', () => {
           reviewed_at: null,
         }),
       ])
-      expect(matches[0]!.hamming_distance).toBeLessThanOrEqual(copyrightStaydownMaxHammingDistance)
+      expect(matches[0]!.hamming_distance).toBeLessThanOrEqual(8)
     })
 
     it('matches an upload that arrived before the registered image was hashed', async () => {

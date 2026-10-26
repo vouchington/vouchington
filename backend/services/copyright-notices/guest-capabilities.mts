@@ -8,7 +8,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 
 export const copyrightGuestCapabilityPurpose = 'copyright-guest-capability'
-export const copyrightGuestCapabilityMaxLifetimeMs = 30 * 24 * 60 * 60 * 1000
+const copyrightGuestCapabilityMaxLifetimeMs = 30 * 24 * 60 * 60 * 1000
 
 export async function issueCopyrightGuestCapability(input: {
   currentUser: PrivateUser

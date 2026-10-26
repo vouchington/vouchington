@@ -9,7 +9,7 @@ import { isCopyrightStaydownMatchingEnabled } from './config.mts'
  * pictures far outside (their expected distance is about 32). A match only asks staff to look, so
  * the threshold favours precision over recall.
  */
-export const copyrightStaydownMaxHammingDistance = 8
+const copyrightStaydownMaxHammingDistance = 8
 
 /** Queues near-duplicate matching for a newly created image. Does nothing while the switch is off. */
 export async function enqueueCopyrightStaydownUploadMatch(imageId: string): Promise<void> {
