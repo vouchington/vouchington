@@ -6,10 +6,11 @@ Singleton high-water mark for completed community activity digest windows.
 
 Not partitioned — growth: bounded.
 
-| Column            | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                                                      |
-| ----------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `is_singleton`    | `boolean`                  | no       | `true`  |          |           |           | Only one community activity digest progress row may exist.                                                                                   |
-| `sent_through_at` | `timestamp with time zone` | no       |         |          |           |           | Exclusive end of the latest completed digest window; advances only after every recipient page and its durable delivery intents are admitted. |
+| Column            | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                      |
+| ----------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `is_singleton`    | `boolean`                  | no       | `true`              |          |           |           | Only one community activity digest progress row may exist.                                                                                   |
+| `sent_through_at` | `timestamp with time zone` | no       |                     |          |           |           | Exclusive end of the latest completed digest window; advances only after every recipient page and its durable delivery intents are admitted. |
+| `updated_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Time the digest progress boundary was last changed.                                                                                          |
 
 **Primary key:** `PRIMARY KEY (is_singleton)`
 
@@ -28,4 +29,5 @@ _none_
 - `community_activity_digest_cursors_pkey`: `CREATE UNIQUE INDEX community_activity_digest_cursors_pkey ON public.community_activity_digest_cursors USING btree (is_singleton)`
 
 **Triggers:**
-_none_
+
+- `trigger_community_activity_digest_cursors_updated_at`: `CREATE TRIGGER trigger_community_activity_digest_cursors_updated_at BEFORE UPDATE ON public.community_activity_digest_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

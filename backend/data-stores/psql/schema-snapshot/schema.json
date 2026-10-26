@@ -15385,6 +15385,17 @@
           "nullable": false,
           "ordinalPosition": 2,
           "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Time the digest progress boundary was last changed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         }
       },
       "comment": "Singleton high-water mark for completed community activity digest windows.",
@@ -15419,7 +15430,9 @@
         "definition": "PRIMARY KEY (is_singleton)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_community_activity_digest_cursors_updated_at": "CREATE TRIGGER trigger_community_activity_digest_cursors_updated_at BEFORE UPDATE ON public.community_activity_digest_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "community_agent_prompt_revisions": {
