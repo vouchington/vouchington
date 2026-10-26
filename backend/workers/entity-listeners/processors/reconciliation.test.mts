@@ -87,6 +87,55 @@ describe('reconcileEntityBatches', () => {
 })
 
 describe('reconcileEntity', () => {
+  it('enqueues a bounded community invalidation only when memberships exist', async () => {
+    const enqueueInvalidateCommunityMemberUserMetrics = vi.fn<VitestLooseMock>()
+    const dependencies = {
+      processImageCreated: vi.fn<VitestLooseMock>(),
+      processAutoFollowReferrer: vi.fn<VitestLooseMock>(),
+      processPostCreated: vi.fn<VitestLooseMock>(),
+      processPostDeleted: vi.fn<VitestLooseMock>(),
+      processPostUpdated: vi.fn<VitestLooseMock>(),
+      processTopicCurrentState: vi.fn<VitestLooseMock>(),
+      processUrlCreated: vi.fn<VitestLooseMock>(),
+      processUserCreated: vi.fn<VitestLooseMock>(),
+      processUserUpdated: vi.fn<VitestLooseMock>(),
+      enqueueInvalidateCommunityMemberUserMetrics,
+    }
+    const metadata = {
+      xmin: '42',
+      updatedAt: '2026-07-01 00:00:00.000001+00',
+      minimumReplayLsn: '0/16B6C50',
+      upperBoundMembershipId: '00000000-0000-7000-8000-000000000001',
+    }
+
+    await reconcileEntity(
+      {
+        entityType: 'community',
+        entityId: '00000000-0000-7000-8000-000000000001',
+        changedAtEpochUs: '1',
+        communityInvalidation: metadata,
+      },
+      dependencies,
+    )
+    await reconcileEntity(
+      {
+        entityType: 'community',
+        entityId: '00000000-0000-7000-8000-000000000002',
+        changedAtEpochUs: '2',
+        communityInvalidation: { ...metadata, upperBoundMembershipId: null },
+      },
+      dependencies,
+    )
+
+    expect(enqueueInvalidateCommunityMemberUserMetrics).toHaveBeenCalledOnce()
+    expect(enqueueInvalidateCommunityMemberUserMetrics).toHaveBeenCalledWith({
+      communityId: '00000000-0000-7000-8000-000000000001',
+      generation: expect.any(String),
+      minimumReplayLsn: metadata.minimumReplayLsn,
+      upperBoundMembershipId: metadata.upperBoundMembershipId,
+    })
+  })
+
   it('routes every entity type through its idempotent current-state processor', async () => {
     const dependencies = {
       processImageCreated: vi.fn<VitestLooseMock>(),

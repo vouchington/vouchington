@@ -55,6 +55,17 @@ describe('reconciliation continuation contract', () => {
         communityInvalidation: { ...candidate.communityInvalidation, xmin: 42 },
       }),
     ).toThrow(/xmin must be a string/)
+    const missingUpperBound = {
+      xmin: candidate.communityInvalidation.xmin,
+      updatedAt: candidate.communityInvalidation.updatedAt,
+      minimumReplayLsn: candidate.communityInvalidation.minimumReplayLsn,
+    }
+    expect(() =>
+      parseEntityJob('reconcileEntity', {
+        ...candidate,
+        communityInvalidation: missingUpperBound,
+      }),
+    ).toThrow(/upperBoundMembershipId must be a string or null/)
   })
   it.each([
     [],

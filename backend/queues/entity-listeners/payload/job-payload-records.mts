@@ -8,6 +8,7 @@ import {
   optionalNullableString,
   optionalString,
   requiredEnum,
+  requiredNullableString,
   requiredString,
 } from './job-payload-read.mts'
 
@@ -139,7 +140,7 @@ export function parseReconcileEntity(data: unknown): Record<string, unknown> {
     requiredString(invalidation, 'xmin')
     requiredString(invalidation, 'updatedAt')
     requiredString(invalidation, 'minimumReplayLsn')
-    optionalNullableString(invalidation, 'upperBoundMembershipId')
+    requiredNullableString(invalidation, 'upperBoundMembershipId')
   }
   return record
 }
