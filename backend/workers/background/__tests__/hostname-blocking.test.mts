@@ -18,7 +18,7 @@ describe('hostname blocking enqueues', () => {
       id: expectedId,
       name: 'hostname-blocking.processBlock',
       data,
-      opts: { sensitive: true, ordering: { key: 'hostname-blocking', concurrency: 2 } },
+      opts: { ordering: { key: 'hostname-blocking', concurrency: 2 } },
     })
   })
 
