@@ -11,6 +11,11 @@ export const accountAndFeedsEndpointRegistry = {
     path: '/api/v1/my/referral-clicks',
     query: { limit: '25' },
   },
+  'web.trending-referral-programs.default': {
+    method: 'GET',
+    path: '/api/v1/trending-referral-programs',
+    query: { limit: '10' },
+  },
   'swift.posts.feed.default': {
     method: 'GET',
     path: '/api/v1/feeds/posts/any',

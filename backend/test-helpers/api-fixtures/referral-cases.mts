@@ -170,7 +170,7 @@ export const referralApiFixtureCases: ApiFixtureCase[] = [
       ],
       page_info: pageInfo,
     },
-    consumers: ['web', 'swift-core', 'dotnet-core'],
+    consumers: ['swift-core', 'dotnet-core'],
     migratedFrom: ['web/lib/api/server/trending-referral-programs.ts'],
   },
   {

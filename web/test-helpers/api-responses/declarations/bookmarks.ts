@@ -19,27 +19,21 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.communities.proxy-following.default',
     nativeBookmarksCommunitiesProxyFollowingDefault,
     context =>
-      context.server.userBookmarkReferences.getUserCommunityBookmarkReferences(
-        'user-abc',
-        'proxy-following',
-        { limit: 25 },
-      ),
+      context.server.users.getUserCommunitiesCollection('user-abc', 'proxy-following', {
+        limit: 25,
+      }),
   ),
   defineWebApiFixture<ReferenceListResponseBody<{ id: string }>>()(
     'native.bookmarks.domains.blocked.default',
     nativeBookmarksDomainsBlockedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserHostnameBookmarkReferences(
-        'user-abc',
-        'blocked',
-        { limit: 25 },
-      ),
+      context.server.users.getUserHostnamesCollection('user-abc', 'blocked', { limit: 25 }),
   ),
   defineWebApiFixture<ReferenceListResponseBody<{ id: string }>>()(
     'native.bookmarks.domains.muted.default',
     nativeBookmarksDomainsMutedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserHostnameBookmarkReferences('user-abc', 'muted', {
+      context.server.users.getUserHostnamesCollection('user-abc', 'muted', {
         limit: 25,
       }),
   ),
@@ -47,7 +41,7 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.posts.saved.default',
     nativeBookmarksPostsSavedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserPostBookmarkReferences('user-abc', 'saved', {
+      context.server.users.getUserPostsCollection('user-abc', 'saved', {
         limit: 25,
       }),
   ),
@@ -55,7 +49,7 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.posts.saved.next-page',
     nativeBookmarksPostsSavedNextPage,
     context =>
-      context.server.userBookmarkReferences.getUserPostBookmarkReferences('user-abc', 'saved', {
+      context.server.users.getUserPostsCollection('user-abc', 'saved', {
         after: nativeBookmarksPostsSavedDefault.page_info.end_cursor,
         limit: 25,
       }),
@@ -73,7 +67,7 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.rss-feeds.muted.default',
     nativeBookmarksRssFeedsMutedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserRssFeedBookmarkReferences('user-abc', 'muted', {
+      context.server.users.getUserRssFeedsCollection('user-abc', 'muted', {
         feedType: 'article',
         limit: 25,
       }),
@@ -82,7 +76,7 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.rss-feeds.viewed.default',
     nativeBookmarksRssFeedsViewedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserRssFeedBookmarkReferences('user-abc', 'viewed', {
+      context.server.users.getUserRssFeedsCollection('user-abc', 'viewed', {
         feedType: 'podcast',
         limit: 25,
       }),
@@ -91,7 +85,7 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.topics.muted.default',
     nativeBookmarksTopicsMutedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserTopicBookmarkReferences('user-abc', 'muted', {
+      context.server.users.getUserTopicsCollection('user-abc', 'muted', {
         limit: 25,
       }),
   ),
@@ -99,7 +93,7 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.topics.viewed.default',
     nativeBookmarksTopicsViewedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserTopicBookmarkReferences('user-abc', 'viewed', {
+      context.server.users.getUserTopicsCollection('user-abc', 'viewed', {
         limit: 25,
       }),
   ),
@@ -107,7 +101,7 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.urls.saved.default',
     nativeBookmarksUrlsSavedDefault,
     context =>
-      context.server.userBookmarkReferences.getUserUrlBookmarkReferences('user-abc', 'saved', {
+      context.server.users.getUserUrlsCollection('user-abc', 'saved', {
         limit: 25,
       }),
   ),
@@ -119,20 +113,14 @@ export const BOOKMARKS_DECLARATIONS = [
     'native.bookmarks.users.dismissed-recommendations.default',
     nativeBookmarksUsersDismissedRecommendationsDefault,
     context =>
-      context.server.userBookmarkReferences.getUserUserBookmarkReferences(
-        'user-abc',
-        'dismissed-recommendations',
-        { limit: 25 },
-      ),
+      context.server.users.getUserUsersCollection('user-abc', 'dismissed-recommendations', {
+        limit: 25,
+      }),
   ),
   defineWebApiFixture<ReferenceListResponseBody<{ id: string }>>()(
     'native.bookmarks.users.subscribed-posts.default',
     nativeBookmarksUsersSubscribedPostsDefault,
     context =>
-      context.server.userBookmarkReferences.getUserUserBookmarkReferences(
-        'user-abc',
-        'subscribed-posts',
-        { limit: 25 },
-      ),
+      context.server.users.getUserUsersCollection('user-abc', 'subscribed-posts', { limit: 25 }),
   ),
 ] as const satisfies readonly WebApiFixtureDeclaration<string, unknown>[]

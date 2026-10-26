@@ -178,14 +178,3 @@ export interface FriendRecommendationsResponseBody {
   page_info: PageInfo
   users: Record<string, PublicUser>
 }
-
-interface TrendingReferralProgram {
-  id: string
-  trending_score: number
-  link_count: number
-}
-
-export interface TrendingReferralProgramsResponseBody {
-  referral_programs: TrendingReferralProgram[]
-  page_info: PageInfo
-}

@@ -125,22 +125,18 @@ export interface WebFixtureServerEndpointContext {
     typeof import('@/lib/api/server/topics'),
     'getPublisherTypes' | 'getTopic' | 'getTopics' | 'getUserTags'
   >
-  readonly trendingReferralPrograms: Pick<
-    typeof import('@/lib/api/server/trending-referral-programs'),
-    'getTrendingReferralProgramsEndpoint'
-  >
   readonly trendingCommunities: Pick<
     typeof import('@/lib/api/server/trending-communities'),
     'getTrendingCommunities'
   >
-  readonly userBookmarkReferences: Pick<
-    typeof import('@/lib/api/server/user-bookmark-references'),
-    | 'getUserCommunityBookmarkReferences'
-    | 'getUserHostnameBookmarkReferences'
-    | 'getUserPostBookmarkReferences'
-    | 'getUserRssFeedBookmarkReferences'
-    | 'getUserTopicBookmarkReferences'
-    | 'getUserUrlBookmarkReferences'
-    | 'getUserUserBookmarkReferences'
+  readonly users: Pick<
+    typeof import('@/lib/api/server/users'),
+    | 'getUserCommunitiesCollection'
+    | 'getUserHostnamesCollection'
+    | 'getUserPostsCollection'
+    | 'getUserRssFeedsCollection'
+    | 'getUserTopicsCollection'
+    | 'getUserUrlsCollection'
+    | 'getUserUsersCollection'
   >
 }

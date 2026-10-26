@@ -18,7 +18,6 @@ import topicsUserTagsDefault from '../../../../api-fixtures/v1/responses/native.
 import webAdminRssFeedCrawlDefault from '../../../../api-fixtures/v1/responses/web.admin.rss-feed-crawl.default.json'
 import webPaidRssFeedCrawlDefault from '../../../../api-fixtures/v1/responses/web.paid.rss-feed-crawl.default.json'
 import webPaidRssFeedCrawlsDefault from '../../../../api-fixtures/v1/responses/web.paid.rss-feed-crawls.default.json'
-import trendingReferralProgramsDefault from '../../../../api-fixtures/v1/responses/web.trending-referral-programs.default.json'
 import type { TopicsSearchResponseBody } from '@/lib/api/client/topics'
 import type { TopHashtagsResponseBody } from '@/lib/api/client/topic-recommendations'
 import type { UserTagsResponse } from '@/lib/api/server/topics'
@@ -31,7 +30,6 @@ import type {
   ReferralLinkFeedResponse,
   RssFeedItemResponseBody,
   TopicMutationResponseBody,
-  TrendingReferralProgramsResponseBody,
   UserReferralLinkWithDetails,
 } from '@/types/api-responses'
 import type { LandingPageDetailResponseBody } from '@/types/api-responses/memberships-referrals-and-admin'
@@ -180,14 +178,6 @@ export const CONTENT_REFERRALS_DECLARATIONS = [
           searchParams: { q: 'test', topic_types: 'referral_program', limit: 10 },
         }),
     ],
-  ),
-  defineWebApiFixture<TrendingReferralProgramsResponseBody>()(
-    'web.trending-referral-programs.default',
-    trendingReferralProgramsDefault,
-    context =>
-      context.server.trendingReferralPrograms.getTrendingReferralProgramsEndpoint({
-        searchParams: { limit: 10 },
-      }),
   ),
   defineWebApiFixture<PodcastEpisodeChaptersResponseBody>()(
     'swift.podcast-episode-chapters.default',

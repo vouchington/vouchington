@@ -75,8 +75,7 @@ import * as serverTopicRecommendations from '../../../lib/api/server/topic-recom
 import * as serverTopicClaims from '../../../lib/api/server/topic-claims'
 import * as serverTopics from '../../../lib/api/server/topics'
 import * as serverTrendingCommunities from '../../../lib/api/server/trending-communities'
-import * as serverTrendingReferralPrograms from '../../../lib/api/server/trending-referral-programs'
-import * as serverUserBookmarkReferences from '../../../lib/api/server/user-bookmark-references'
+import * as serverUsers from '../../../lib/api/server/users'
 import type { WebFixtureEndpointContext } from '@/test-helpers/api-responses/declarations/endpoint-context'
 
 export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
@@ -159,8 +158,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     topicClaims: serverTopicClaims,
     topics: serverTopics,
     trendingCommunities: serverTrendingCommunities,
-    trendingReferralPrograms: serverTrendingReferralPrograms,
-    userBookmarkReferences: serverUserBookmarkReferences,
+    users: serverUsers,
   },
   rawServer: serverApi,
 } as const satisfies WebFixtureEndpointContext
