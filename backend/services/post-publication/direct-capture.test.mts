@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import {
   beginTransaction,
+  captureScopedTestQueries,
+  countCapturedQueriesByAnnotation,
   createActivePostTopicAliasRelationForTest,
   createTestPost,
   createTestTopic,
@@ -25,7 +27,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { capturedPublicationKeys, hashCapturedPublicationKeys } from './captured-keys.mts'
 import { recordPostPublicationChange } from './capture.mts'
-import { recordPostPublicationChanges } from './capture-posts.mts'
+import { lockPostPublicationPostScopes, recordPostPublicationChanges } from './capture-posts.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'
 import { captureDestroyedTopicAliasPostImpacts } from './capture-topic-alias.mts'
 import type { PostPublicationChange } from './types.mts'
@@ -52,6 +54,25 @@ function effectId(changeId: string, change: PostPublicationChange): string {
 }
 
 describe('direct post-publication capture', () => {
+  it('locks each post scope once across repeated capture paths in one transaction', async () => {
+    const postId = randomUUID()
+    const queries = await captureScopedTestQueries(async () => {
+      await using query = await beginTransaction()
+      await lockPostPublicationPostScopes(query, [postId])
+      await recordPostPublicationChanges(query, 'post_topics_changed', [
+        { postId, impactedPostIds: [postId] },
+      ])
+      await recordPostPublicationChange(query, {
+        scope: { type: 'post', postId },
+        reason: 'post_topics_changed',
+        impactedPostIds: [postId],
+      })
+      await query.rollback()
+    })
+    expect(countCapturedQueriesByAnnotation(queries, 'lockPostPublicationCaptures')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(queries, 'lockPostPublicationScope')).toBe(0)
+  })
+
   it('captures every post when a producer batch exceeds the configured capture page', async () => {
     const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
       capture_batch_size: 2,

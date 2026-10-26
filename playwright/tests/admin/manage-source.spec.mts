@@ -225,7 +225,7 @@ test.describe('Admin Manage Source', () => {
     await expect(page.getByTestId('feed-hide-discovery')).toBeVisible()
   })
 
-  test('should delete an RSS feed with confirmation', async ({ page }) => {
+  test('should start RSS feed deletion with confirmation', async ({ page }) => {
     // Insert a fresh topic + RSS feed to delete
     const suffix = randomSuffix()
     const { id: deleteTopicId, urlSlug: deleteTopicSlug } = await insertTestTopic(
@@ -245,10 +245,10 @@ test.describe('Admin Manage Source', () => {
     // Confirm delete
     await clickAfterBelowFoldHydration(page, page.getByTestId('feed-delete-confirm'))
     await expect(
-      page.locator('[data-sonner-toast]').filter({ hasText: 'Source deleted' }),
+      page.locator('[data-sonner-toast]').filter({ hasText: 'Source deletion started' }),
     ).toBeVisible()
 
-    // Should return to empty state (no feed linked)
+    // The admin view releases its source while background deletion completes.
     await expect(page.getByTestId('source-heading')).toBeVisible()
   })
 
