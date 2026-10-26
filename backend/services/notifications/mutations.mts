@@ -1,5 +1,7 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getNotificationsWorkLimit } from './work-limits.mts'
+import { enqueueMarkAllNotificationsReadContinuation } from '@queues/notifications/enqueues/mark-all-read'
 
 export async function markNotificationRead(userId: string, notificationId: string) {
   const { rowCount } = await write(sql`/* markNotificationRead */
@@ -44,16 +46,67 @@ export async function getNotificationRedirectTarget(
   return (rows[0]?.target_path as string | undefined) ?? null
 }
 
-export async function markAllNotificationsRead(userId: string) {
-  const { rowCount } = await write(sql`/* markAllNotificationsRead */
-    UPDATE notifications
-    SET read_at = COALESCE(read_at, CURRENT_TIMESTAMP)
-    WHERE user_id = ${userId}
-      AND deleted_at IS NULL
-      AND read_at IS NULL
+export type MarkAllNotificationsReadPage = {
+  marked_read: number
+  has_more: boolean
+  through_id: string | null
+  last_page_id: string | null
+}
+
+/** One atomic page. The first call fixes an upper ID for background continuation. */
+export async function markAllNotificationsRead(
+  userId: string,
+  throughId: string | null = null,
+): Promise<MarkAllNotificationsReadPage> {
+  const pageSize = getNotificationsWorkLimit('mark_all_read_page_size')
+  const { rows } = await write(sql`/* markAllNotificationsRead */
+    WITH boundary AS MATERIALIZED (
+      SELECT id
+      FROM notifications
+      WHERE user_id = ${userId}
+        AND ${throughId}::uuid IS NULL
+        AND deleted_at IS NULL
+        AND read_at IS NULL
+      ORDER BY id DESC
+      LIMIT 1
+    ), candidates AS MATERIALIZED (
+      SELECT n.user_id, n.id
+      FROM notifications n
+      WHERE n.user_id = ${userId}
+        AND n.deleted_at IS NULL
+        AND n.read_at IS NULL
+        AND n.id <= COALESCE(${throughId}::uuid, (SELECT id FROM boundary))
+      ORDER BY n.id
+      LIMIT ${pageSize + 1}
+      FOR UPDATE
+    ), page AS MATERIALIZED (
+      SELECT user_id, id FROM candidates ORDER BY id LIMIT ${pageSize}
+    ), marked AS (
+      UPDATE notifications n
+      SET read_at = CURRENT_TIMESTAMP
+      FROM page
+      WHERE n.user_id = page.user_id AND n.id = page.id
+        AND n.deleted_at IS NULL AND n.read_at IS NULL
+      RETURNING n.id
+    )
+    SELECT
+      (SELECT count(*)::integer FROM marked) AS marked_read,
+      (SELECT count(*) FROM candidates) > ${pageSize} AS has_more,
+      COALESCE(${throughId}::uuid, (SELECT id FROM boundary)) AS through_id,
+      (SELECT id FROM marked ORDER BY id DESC LIMIT 1) AS last_page_id
   `)
 
-  return rowCount ?? 0
+  const result = rows[0] as MarkAllNotificationsReadPage
+  if (result.has_more) {
+    if (!result.through_id || !result.last_page_id)
+      throw new Error('Unread notification continuation is missing its page boundary')
+    await enqueueMarkAllNotificationsReadContinuation({
+      userId,
+      throughId: result.through_id,
+      lastPageId: result.last_page_id,
+    })
+  }
+  return result
 }
 
 export async function deleteNotification(userId: string, notificationId: string) {

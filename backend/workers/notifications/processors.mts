@@ -1,6 +1,6 @@
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 import { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
-import { deleteNotification } from '@services/notifications/mutations'
+import { deleteNotification, markAllNotificationsRead } from '@services/notifications/mutations'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { getFollowerInfoForNotification } from '@services/notifications/get-follower-info'
 import { createReferralSignupNotification } from '@services/notifications/create-referral-signup-notification'
@@ -121,6 +121,10 @@ export async function processReconcileNotificationPushIntents(
 
 export function processDeleteNotification(data: { userId: string; notificationId: string }) {
   return deleteNotification(data.userId, data.notificationId)
+}
+
+export function processMarkAllNotificationsRead(data: { userId: string; throughId: string }) {
+  return markAllNotificationsRead(data.userId, data.throughId)
 }
 
 export async function processFollowNotification(data: { followeeId: string; followerId: string }) {

@@ -46,6 +46,8 @@ flowchart LR
   own lane independent of delivery backlogs to keep inbox capacity reclaimable under sustained
   traffic. Inbound recovery also has a separate lane so a flood of deliveries cannot delay repair. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
+- Marking a large inbox read starts with one bounded request write. Notification continuation jobs
+  finish the older unread rows under the request's upper ID, leaving later notifications unread.
 - The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
   coordination, and content analysis. URL and referral crawls use the same hostname ordering key,
   so they respect one external host limit. Provider limits use group rate windows; database-only

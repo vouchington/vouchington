@@ -13,7 +13,7 @@ describe('profile and notification mutation output schemas', () => {
     [deleteMyProfileLinkTool, []],
     [markNotificationReadTool, []],
     [deleteNotificationTool, []],
-    [markAllNotificationsReadTool, ['marked_read']],
+    [markAllNotificationsReadTool, ['marked_read', 'has_more']],
   ])('%# reports only success and what changed', (tool, extra) => {
     expect(Object.keys(properties(tool.meta?.outputSchema)).toSorted()).toEqual(
       ['success', ...extra].toSorted(),

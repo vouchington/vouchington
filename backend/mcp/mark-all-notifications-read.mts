@@ -4,10 +4,13 @@ import type { BasicUser } from '@services/users/types'
 import { successSchema } from '@vouchington/mcp-server/schema'
 import { requireActiveToolUser } from './private-user.mts'
 
-const tool: MergedToolSource<Record<string, never>, { success: true; marked_read: number }> = {
+const tool: MergedToolSource<
+  Record<string, never>,
+  { success: true; marked_read: number; has_more: boolean }
+> = {
   schema: {
     description:
-      "Mark all of the current user's unread notifications as read, and report how many changed. Notifications that are already read or deleted are left alone.",
+      "Mark one page of the current user's unread notifications as read. marked_read counts this call's changes; has_more means eligible unread notifications remain and a background job is continuing. Call again if an immediate complete result is needed. Already read or deleted notifications are left alone.",
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {
@@ -17,11 +20,15 @@ const tool: MergedToolSource<Record<string, never>, { success: true; marked_read
     requiredScopes: ['notifications:read', 'notifications:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'POST', path: '/api/v1/my/notifications/read-all' }],
-    outputSchema: successSchema({ marked_read: { type: 'integer', minimum: 0 } }),
+    outputSchema: successSchema({
+      marked_read: { type: 'integer', minimum: 0 },
+      has_more: { type: 'boolean' },
+    }),
   },
   function: (currentUser: BasicUser) => async () => {
     const user = await requireActiveToolUser(currentUser)
-    return { success: true, marked_read: await markAllNotificationsRead(user.id) }
+    const { marked_read, has_more } = await markAllNotificationsRead(user.id)
+    return { success: true, marked_read, has_more }
   },
 }
 

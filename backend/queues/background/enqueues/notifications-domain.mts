@@ -12,6 +12,11 @@ export type FollowNotificationData = { followeeId: string; followerId: string }
 export type ReferralSignupNotificationData = { referrerId: string; newUserId: string }
 export type ReferralClickNotificationData = { referrerId: string }
 export type DeleteNotificationData = { userId: string; notificationId: string }
+export type MarkAllNotificationsReadData = {
+  userId: string
+  throughId: string
+  lastPageId: string
+}
 export type ConversationMessageNotificationData = {
   conversationId: string
   messageId: string

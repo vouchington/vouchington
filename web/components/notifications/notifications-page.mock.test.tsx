@@ -146,7 +146,11 @@ describe('notifications-page', () => {
     }
 
     it('renders notifications and marks all as read', async () => {
-      mockMarkAllMyNotificationsRead.mockResolvedValue(undefined)
+      mockMarkAllMyNotificationsRead.mockResolvedValue({
+        success: true,
+        marked_read: 1,
+        has_more: false,
+      })
       render(
         <NotificationsPage
           initialNotifications={initialNotifications}
@@ -158,6 +162,33 @@ describe('notifications-page', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
 
       await waitFor(() => expect(mockMarkAllMyNotificationsRead).toHaveBeenCalled())
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Mark all as read' })).toHaveProperty(
+          'disabled',
+          true,
+        ),
+      )
+    })
+
+    it('keeps the unread state while background pages remain', async () => {
+      mockMarkAllMyNotificationsRead.mockResolvedValue({
+        success: true,
+        marked_read: 1,
+        has_more: true,
+      })
+      render(
+        <NotificationsPage
+          initialNotifications={initialNotifications}
+          initialSubscriptions={[]}
+        />,
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
+      await waitFor(() => expect(mockMarkAllMyNotificationsRead).toHaveBeenCalled())
+      expect(screen.getByRole('button', { name: 'Mark all as read' })).toHaveProperty(
+        'disabled',
+        false,
+      )
     })
 
     it('deletes a notification from the page', async () => {

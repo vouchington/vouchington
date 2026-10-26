@@ -3,7 +3,7 @@ import {
   callRejectedMcpTool,
   callStructuredMcpTool,
 } from '@voucha/test-helpers/mcp-tool-contract'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
@@ -13,6 +13,9 @@ import {
   hasNotification,
   listNotifications,
 } from '@services/notifications'
+import { notificationsWorkConfig } from '@services/notifications/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { processMarkAllNotificationsRead } from '../../workers/notifications/processors.mts'
 import deleteNotificationTool from '../delete-notification.mts'
 import markNotificationReadTool from '../mark-notification-read.mts'
 
@@ -112,10 +115,87 @@ describe('notification tools contract — real DB', () => {
       SCOPES,
     )
 
-    expect(first).toEqual({ success: true, marked_read: 2 })
-    expect(again).toEqual({ success: true, marked_read: 0 })
+    expect(first).toEqual({ success: true, marked_read: 2, has_more: false })
+    expect(again).toEqual({ success: true, marked_read: 0, has_more: false })
     for (const id of mine) expect(await readAt(caller.id, id)).not.toBeNull()
     expect(await readAt(bystander.id, theirs)).toBeNull()
+  })
+
+  it('REST and MCP mark bounded pages and report the same remaining work', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(notificationsWorkConfig, { mark_all_read_page_size: 2 }),
+    )
+    const caller = await createCaller()
+    const mine = await Promise.all(
+      Array.from({ length: 5 }, () => createNotificationFor(caller.id)),
+    )
+    const request = createRequest()
+    await request.authenticateAs(caller)
+
+    const restFirst = await request.post('/api/v1/my/notifications/read-all').expect(200)
+    expect(restFirst.body).toEqual({ success: true, marked_read: 2, has_more: true })
+    expect(
+      (await Promise.all(mine.map(id => readAt(caller.id, id)))).filter(x => x === null),
+    ).toHaveLength(3)
+
+    const mcpNext = await callStructuredMcpTool(
+      caller,
+      'mark_notifications_read',
+      optionArgs('all', {}),
+      SCOPES,
+    )
+    expect(mcpNext).toEqual({ success: true, marked_read: 2, has_more: true })
+
+    const restLast = await request.post('/api/v1/my/notifications/read-all').expect(200)
+    expect(restLast.body).toEqual({ success: true, marked_read: 1, has_more: false })
+    expect(
+      await callStructuredMcpTool(caller, 'mark_notifications_read', optionArgs('all', {}), SCOPES),
+    ).toEqual({ success: true, marked_read: 0, has_more: false })
+    for (const id of mine) expect(await readAt(caller.id, id)).not.toBeNull()
+  })
+
+  it('background continuation advances one page per job within the original upper ID', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(notificationsWorkConfig, { mark_all_read_page_size: 2 }),
+    )
+    const caller = await createCaller()
+    const mine = await Promise.all(
+      Array.from({ length: 5 }, () => createNotificationFor(caller.id)),
+    )
+    const request = createRequest()
+    await request.authenticateAs(caller)
+
+    expect((await request.post('/api/v1/my/notifications/read-all').expect(200)).body).toEqual({
+      success: true,
+      marked_read: 2,
+      has_more: true,
+    })
+    const later = await createNotificationFor(caller.id)
+    const continuationJobs = async () =>
+      (await readAllQueueJobs(notifications)).filter(
+        job =>
+          job.name === 'notifications.processMarkAllNotificationsRead' &&
+          (job.data as { userId?: string }).userId === caller.id,
+      )
+    const [first] = await continuationJobs()
+    expect(first).toBeDefined()
+    const data = first!.data as { userId: string; throughId: string; lastPageId: string }
+    expect(await processMarkAllNotificationsRead(data)).toMatchObject({
+      marked_read: 2,
+      has_more: true,
+      through_id: data.throughId,
+    })
+    const jobs = await continuationJobs()
+    expect(jobs).toHaveLength(2)
+    const next = jobs.find(job => job.id !== first!.id)
+    expect(next).toBeDefined()
+    expect(
+      await processMarkAllNotificationsRead(
+        next!.data as { userId: string; throughId: string; lastPageId: string },
+      ),
+    ).toMatchObject({ marked_read: 1, has_more: false })
+    for (const id of mine) expect(await readAt(caller.id, id)).not.toBeNull()
+    expect(await readAt(caller.id, later)).toBeNull()
   })
 
   it('delete_notification queues the deletion the REST route queues, and repeats safely', async () => {

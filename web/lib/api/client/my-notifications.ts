@@ -3,6 +3,7 @@ import { clientApi } from './instance'
 import { authRecoveryFetch } from './auth-recovery-fetch'
 import type {
   NotificationsUnreadSummaryResponseBody,
+  MarkAllNotificationsReadResponseBody,
   WebPushSubscriptionResponseBody,
   WebPushSubscriptionsResponseBody,
 } from '@/types/api-responses'
@@ -25,8 +26,11 @@ export async function markMyNotificationReadKeepalive(notificationId: string): P
     throw new Error(`Notification read receipt failed (${response.status})`)
   }
 }
-export function markAllMyNotificationsRead(): Promise<void> {
-  return clientApi.post('/api/v1/my/notifications/read-all', {})
+export function markAllMyNotificationsRead(): Promise<MarkAllNotificationsReadResponseBody> {
+  return clientApi.post<MarkAllNotificationsReadResponseBody>(
+    '/api/v1/my/notifications/read-all',
+    {},
+  )
 }
 export function deleteMyNotification(notificationId: string): Promise<void> {
   return clientApi.delete(`/api/v1/my/notifications/${notificationId}`)

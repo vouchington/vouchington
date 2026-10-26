@@ -79,8 +79,8 @@ app.route('/api/v1/my/notifications/read-all').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/notifications/read-all')
   assertNotSuspended(currentUser)
 
-  await markAllNotificationsRead(currentUser.id)
-  ctx.setStatus(204)
+  const { marked_read, has_more } = await markAllNotificationsRead(currentUser.id)
+  ctx.json({ success: true, marked_read, has_more })
 })
 
 app

@@ -87,7 +87,8 @@ describe('notification suspension guards', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    await request.post('/api/v1/my/notifications/read-all').expect(204)
+    const response = await request.post('/api/v1/my/notifications/read-all').expect(200)
+    expect(response.body).toEqual({ success: true, marked_read: 1, has_more: false })
 
     expect((await getNotificationById(notificationId))?.read_at).toBeInstanceOf(Date)
   })

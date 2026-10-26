@@ -10144,7 +10144,7 @@
           "tool": {
             "name": "mark_notifications_read",
             "title": "Mark Notifications Read",
-            "description": "all: Mark all of the current user's unread notifications as read, and report how many changed. Notifications that are already read or deleted are left alone.\none: Mark one of the current user's notifications as read. Marking one that is already read changes nothing; a notification that is missing, deleted or another user's fails as not found.",
+            "description": "all: Mark one page of the current user's unread notifications as read. marked_read counts this call's changes; has_more means eligible unread notifications remain and a background job is continuing. Call again if an immediate complete result is needed. Already read or deleted notifications are left alone.\none: Mark one of the current user's notifications as read. Marking one that is already read changes nothing; a notification that is missing, deleted or another user's fails as not found.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -10199,9 +10199,12 @@
                     "marked_read": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "has_more": {
+                      "type": "boolean"
                     }
                   },
-                  "required": ["success", "marked_read"],
+                  "required": ["success", "marked_read", "has_more"],
                   "additionalProperties": false
                 },
                 {

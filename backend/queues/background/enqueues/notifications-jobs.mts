@@ -14,6 +14,7 @@ import {
   type DsaStatementSubmissionData,
   type EmptyNotificationsJobData as EmptyData,
   type FollowNotificationData,
+  type MarkAllNotificationsReadData,
   type ReconcileMediaDeliveryRegistryData,
   type ReconcileNotificationPushIntentsData,
   type ReconcilePostNotificationsData,
@@ -57,6 +58,15 @@ export const NOTIFICATIONS_DELETE_JOB = defineBackgroundJob<DeleteNotificationDa
   name: 'processDeleteNotification',
   ...TASK,
 })
+export const NOTIFICATIONS_MARK_ALL_READ_JOB = defineBackgroundJob<MarkAllNotificationsReadData>(
+  DOMAIN,
+  {
+    name: 'processMarkAllNotificationsRead',
+    ...DISPATCH,
+    ...RETRY,
+    sensitive: true,
+  },
+)
 export const NOTIFICATIONS_FOLLOW_JOB = defineBackgroundJob<FollowNotificationData>(DOMAIN, {
   name: 'processFollowNotification',
   ...TASK,
@@ -153,6 +163,7 @@ export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
   NOTIFICATIONS_DELETE_JOB,
+  NOTIFICATIONS_MARK_ALL_READ_JOB,
   NOTIFICATIONS_FOLLOW_JOB,
   NOTIFICATIONS_REFERRAL_SIGNUP_JOB,
   NOTIFICATIONS_REFERRAL_CLICK_JOB,

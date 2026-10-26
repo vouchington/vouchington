@@ -7,6 +7,9 @@
 - That visible badge is part of the button's accessible name, including the `9+` cap, so screen readers hear the same count the badge shows
 - The inbox dropdown previews the newest unread notifications
 - The dropdown includes `Mark all as read`
+- Mark all as read reports how many notifications the request changed and whether older unread
+  notifications remain; REST and MCP use the same count and `has_more` meaning. Background jobs
+  continue large backlogs, while notifications arriving afterward stay unread.
 - The dropdown links to `/my/notifications`
 
 ## Notification Behavior

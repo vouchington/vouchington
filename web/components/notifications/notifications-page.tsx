@@ -65,7 +65,8 @@ export function NotificationsPage({
 
   async function handleMarkAllRead() {
     try {
-      await markAllMyNotificationsRead()
+      const result = await markAllMyNotificationsRead()
+      if (result.has_more) return
       setReadAtById(() => {
         const now = new Date().toISOString()
         return Object.fromEntries(

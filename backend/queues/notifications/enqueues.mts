@@ -42,6 +42,7 @@ export {
 export * from './enqueues/community-activity-digest.mts'
 export * from './enqueues/push-intents.mts'
 export * from './enqueues/reconcile-recipients.mts'
+export * from './enqueues/mark-all-read.mts'
 
 export const enqueueBulkFollowNotification = createBackgroundBulkEnqueue(
   NOTIFICATIONS_FOLLOW_JOB,
