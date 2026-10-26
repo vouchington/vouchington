@@ -85,6 +85,7 @@ export async function confirmRemove() {
 }
 
 export async function enterOtp(code: string) {
+  fireEvent.click(await screen.findByRole('button', { name: /^Confirm$/ }))
   await screen.findByText(/Enter the 6-digit code/i)
   const otpInput =
     (document.querySelector('input[autocomplete="one-time-code"]') as HTMLInputElement | null) ??
