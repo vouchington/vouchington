@@ -1,13 +1,14 @@
 import type * as Sentry from '@sentry/nextjs'
 import { createVouchaSentryInitOptions } from '@ts-shared/utils/sentry-init-options'
 import { isExpectedApiError } from '@vouchington/api-client'
+import { withApiErrorRequestId } from './sentry-api-error-request-id'
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
 
 export function createSentryEdgeInitOptions(
   envVars: NodeJS.ProcessEnv = process.env,
 ): SentryInitOptions {
-  return {
+  return withApiErrorRequestId({
     ...createVouchaSentryInitOptions({
       dsn: envVars.SENTRY_DSN,
       environment: envVars.ENVIRONMENT,
@@ -20,5 +21,5 @@ export function createSentryEdgeInitOptions(
 
     // Enable debug mode in development
     debug: false,
-  }
+  })
 }

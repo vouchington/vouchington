@@ -17,7 +17,7 @@ describe('captureWorkerException', () => {
     const err = Object.assign(new Error('server error'), { status: 500 })
     captureWorkerException(err, { routeTarget: 'backend', requestId: 'req-1' })
     expect(captureException).toHaveBeenCalledWith(err, {
-      tags: { routeTarget: 'backend', requestId: 'req-1' },
+      tags: { routeTarget: 'backend', request_id: 'req-1' },
     })
   })
 
@@ -57,7 +57,7 @@ describe('captureWorkerException', () => {
       requestId: 'abc',
     })
     expect(captureException).toHaveBeenCalledWith(expect.any(Error), {
-      tags: { routeTarget: 'web', requestId: 'abc' },
+      tags: { routeTarget: 'web', request_id: 'abc' },
     })
   })
 
