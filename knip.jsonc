@@ -174,7 +174,7 @@
         // Invoked from the backend image build action rather than imported by another module.
         "check-deployed-worker-native-addons.mjs!",
       ],
-      "project": ["**/*.mts"],
+      "project": ["**/*.mts", "**/*.mjs"],
       "includeEntryExports": true,
       // The backend unit workflow executes ./ci/node_modules/.bin/coverage-check directly.
       "ignoreDependencies": ["coverage-check"],
