@@ -94,9 +94,11 @@ describe('Google Play RTDN reconciliation failures', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: boundToken },
     })
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: makeClient({ productId, userId: owner.id, pending: true }),
-    })
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, {
+        client: makeClient({ productId, userId: owner.id, pending: true }),
+      }),
+    ).rejects.toThrow('Google Play purchase is pending')
     const boundEvidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
       rawBody: makeRtdnBody(applicationId, {

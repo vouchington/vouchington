@@ -1,11 +1,8 @@
+import { completeMembershipVerification } from '@voucha/test-helpers/data-stores/psql/membership-verifications'
+import { getMembershipPendingState } from './membership-overview-pending.mts'
 import { describe, expect, it } from 'vitest'
+import { createTestPendingMembershipVerification, createTestUser } from '@voucha/test-helpers'
 import {
-  createTestPendingMembershipVerification,
-  createTestUser,
-  getTestMembershipVerificationProcessingState,
-} from '@voucha/test-helpers'
-import {
-  deferMembershipVerificationUntilAdapterAvailable,
   findRecoverableMembershipVerificationIds,
   createMembershipVerificationFingerprint,
   getMembershipVerificationStatus,
@@ -28,22 +25,26 @@ describe('membership verifications', () => {
     ).toBe('conflict')
   })
 
-  it('leases and defers due durable verification work without leaving a stale claim', async () => {
+  it('pages pending domain rows and preserves overview status without a queue timestamp', async () => {
     const user = await createTestUser()
-    const verificationId = await createTestPendingMembershipVerification(user.id)
-
-    await expect(deferMembershipVerificationUntilAdapterAvailable(verificationId)).resolves.toBe(
-      true,
-    )
-    const state = await getTestMembershipVerificationProcessingState(verificationId)
-
-    expect(state).toMatchObject({
-      lease_token: null,
-      leased_at: null,
-      attempt_count: 1,
-      last_error: 'provider_adapter_unavailable',
+    const first = await createTestPendingMembershipVerification(user.id)
+    const second = await createTestPendingMembershipVerification(user.id)
+    await expect(
+      findRecoverableMembershipVerificationIds({ after: first, through: second, limit: 1 }),
+    ).resolves.toEqual([second])
+    await expect(getMembershipPendingState(user.id)).resolves.toMatchObject({
+      verifications: expect.arrayContaining([
+        expect.objectContaining({ id: first, status: 'pending', next_processing_at: null }),
+      ]),
     })
-    expect(state?.available_at?.getTime()).toBeGreaterThan(Date.now())
-    await expect(findRecoverableMembershipVerificationIds()).resolves.not.toContain(verificationId)
+    await completeMembershipVerification(first)
+    await expect(
+      findRecoverableMembershipVerificationIds({ after: first, through: second, limit: 1 }),
+    ).resolves.toEqual([second])
+    await expect(getMembershipPendingState(user.id)).resolves.toMatchObject({
+      verifications: expect.arrayContaining([
+        expect.objectContaining({ id: first, status: 'verified', next_processing_at: null }),
+      ]),
+    })
   })
 })

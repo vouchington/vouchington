@@ -26,12 +26,11 @@ export function decryptAppleVerificationEvidence(
   return JSON.parse(plaintext) as { signed_transaction_info: string }
 }
 
-export async function getClaimedAppleVerification(
+export async function getPendingAppleVerification(
   verificationId: string,
-  leaseToken: string,
   query: QueryExecutor,
 ): Promise<AppleVerificationContext | null> {
-  const { rows } = await query(sql`/* getClaimedAppleVerification */
+  const { rows } = await query(sql`/* getPendingAppleVerification */
     SELECT verification.id AS "verificationId", verification.user_id AS "userId",
       verification.membership_purchase_intent_id AS "purchaseIntentId",
       verification.membership_provider_context_id AS "providerContextId",
@@ -39,16 +38,14 @@ export async function getClaimedAppleVerification(
       evidence.id AS "evidenceId",
       evidence.encrypted_evidence AS "encryptedEvidence", evidence.evidence_lookup_sha256 AS "evidenceLookupSha256"
     FROM membership_verifications verification
-    INNER JOIN membership_verification_processing_work_items work ON work.membership_verification_id = verification.id
     INNER JOIN membership_provider_evidence_records evidence
       ON evidence.id = verification.membership_provider_evidence_record_id
     INNER JOIN membership_provider_contexts provider_context
       ON provider_context.id = verification.membership_provider_context_id
     WHERE verification.id = ${verificationId} AND provider_context.provider = 'apple_app_store'
-      AND work.lease_token = ${leaseToken} AND work.lease_expires_at > clock_timestamp()
       AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL
       AND verification.rejected_at IS NULL
-    FOR UPDATE OF verification, evidence, work`)
+    FOR UPDATE OF verification, evidence`)
   return (rows[0] as AppleVerificationContext | undefined) ?? null
 }
 

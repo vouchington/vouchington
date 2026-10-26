@@ -4,14 +4,15 @@ import { processAppleMembershipVerification } from './apple/process-verification
 import { createConfiguredGooglePlaySubscriptionsV2Client } from './google/configured-client.mts'
 import { processGooglePlayMembershipVerification } from './google/process-verification.mts'
 import { processMicrosoftStoreMembershipVerification } from './microsoft/process-verification.mts'
-import { deferMembershipVerificationUntilAdapterAvailable } from './verification-recovery.mts'
 
 export async function processMembershipVerification(verificationId: string): Promise<void> {
   const { rows } = await read<{ provider: string }>(sql`/* processMembershipVerification.provider */
     SELECT context.provider
     FROM membership_verifications verification
     JOIN membership_provider_contexts context ON context.id = verification.membership_provider_context_id
-    WHERE verification.id = ${verificationId} LIMIT 1`)
+    WHERE verification.id = ${verificationId}
+      AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL
+      AND verification.rejected_at IS NULL LIMIT 1`)
   switch (rows[0]?.provider) {
     case 'apple_app_store':
       await processAppleMembershipVerification(verificationId)
@@ -25,6 +26,6 @@ export async function processMembershipVerification(verificationId: string): Pro
       await processMicrosoftStoreMembershipVerification(verificationId)
       return
     default:
-      await deferMembershipVerificationUntilAdapterAvailable(verificationId)
+      if (rows.length) throw new Error('Membership verification provider adapter unavailable')
   }
 }

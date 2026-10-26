@@ -9,6 +9,7 @@ export type PagedDispatcher =
   | 'notifications'
   | 'activitypub'
   | 'images'
+  | 'memberships'
 const defaultFields = {
   images_page_size: 100,
   images_backoff_ms: 300000,
@@ -24,6 +25,9 @@ const defaultFields = {
   notifications_backoff_ms: 300000,
   activitypub_page_size: 500,
   activitypub_backoff_ms: 300000,
+  memberships_page_size: 500,
+  memberships_backoff_ms: 300000,
+  memberships_max_depth: 10000,
   background_max_depth: 10000,
   'background-cpu_max_depth': 10000,
 }

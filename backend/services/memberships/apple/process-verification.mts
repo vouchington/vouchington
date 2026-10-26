@@ -1,8 +1,6 @@
-import { deferClaimedMembershipVerification } from '../verification-work.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DirectMembershipSourceRejectedError } from '../direct-source-authority.mts'
-import { claimPendingMembershipVerification } from '../verification-recovery.mts'
 import { createConfiguredAppleTransactionVerifier } from './configured-verifier.mts'
 import {
   AppleVerificationConflictError,
@@ -13,7 +11,7 @@ import {
   decryptAppleVerificationEvidence,
   getAppleVerificationProduct,
   getAppleVerificationPurchaseIntent,
-  getClaimedAppleVerification,
+  getPendingAppleVerification,
 } from './process-verification-context.mts'
 import {
   persistAndFinalizeAppleVerification,
@@ -29,37 +27,29 @@ export async function processAppleMembershipVerification(
   verificationId: string,
   dependencies: AppleVerificationDependencies = {},
 ): Promise<void> {
-  const claim = await claimPendingMembershipVerification(verificationId)
-  if (!claim) return
   try {
-    await processClaimedAppleVerification(claim.id, claim.leaseToken, dependencies)
+    await processPendingAppleVerification(verificationId, dependencies)
   } catch (err) {
     if (err instanceof AppleVerificationConflictError) {
-      await terminalizeAppleVerification(claim.id, claim.leaseToken, 'conflict', err.reasonCode)
+      await terminalizeAppleVerification(verificationId, 'conflict', err.reasonCode)
       return
     }
     if (err instanceof DirectMembershipSourceRejectedError) {
-      await terminalizeAppleVerification(
-        claim.id,
-        claim.leaseToken,
-        'conflict',
-        'competing_direct_source',
-      )
+      await terminalizeAppleVerification(verificationId, 'conflict', 'competing_direct_source')
       return
     }
-    await deferAppleVerification(claim.id, claim.leaseToken)
+    throw err
   }
 }
 
-async function processClaimedAppleVerification(
+async function processPendingAppleVerification(
   verificationId: string,
-  leaseToken: string,
   dependencies: AppleVerificationDependencies,
 ): Promise<void> {
   await using query = await beginTransaction()
-  const context = await getClaimedAppleVerification(verificationId, leaseToken, query)
+  const context = await getPendingAppleVerification(verificationId, query)
   if (!context) return
-  if (await finalizeAppleVerificationFromPriorAttempt(context, leaseToken, query)) {
+  if (await finalizeAppleVerificationFromPriorAttempt(context, query)) {
     await query.commit()
     return
   }
@@ -75,12 +65,12 @@ async function processClaimedAppleVerification(
   try {
     decoded = await verifier.verifyAndDecodeTransaction(evidence.signed_transaction_info)
   } catch {
-    await rejectAndCommitAppleVerification(context, leaseToken, 'invalid_evidence', query)
+    await rejectAndCommitAppleVerification(context, 'invalid_evidence', query)
     return
   }
   const mapping = await getAppleVerificationProduct(context, decoded.productId, query)
   if (!mapping) {
-    await rejectAndCommitAppleVerification(context, leaseToken, 'wrong_product', query)
+    await rejectAndCommitAppleVerification(context, 'wrong_product', query)
     return
   }
   const result = await verifyAppleSignedTransactionEvidence({
@@ -94,7 +84,7 @@ async function processClaimedAppleVerification(
     verifier,
   })
   if (!result.accepted) {
-    await rejectAndCommitAppleVerification(context, leaseToken, result.reasonCode, query)
+    await rejectAndCommitAppleVerification(context, result.reasonCode, query)
     return
   }
   if (result.observation.sourceKind === 'direct') {
@@ -106,32 +96,27 @@ async function processClaimedAppleVerification(
         query,
       ))
     ) {
-      await rejectAndCommitAppleVerification(context, leaseToken, 'wrong_account', query)
+      await rejectAndCommitAppleVerification(context, 'wrong_account', query)
       return
     }
   } else if (context.purchaseIntentId) {
-    await rejectAndCommitAppleVerification(context, leaseToken, 'wrong_account', query)
+    await rejectAndCommitAppleVerification(context, 'wrong_account', query)
     return
   }
-  await persistAndFinalizeAppleVerification(context, leaseToken, mapping, result.observation, query)
+  await persistAndFinalizeAppleVerification(context, mapping, result.observation, query)
 }
 
 async function terminalizeAppleVerification(
   verificationId: string,
-  leaseToken: string,
   disposition: 'conflict',
   reasonCode: 'competing_direct_source' | 'wrong_account',
 ): Promise<void> {
   await using query = await beginTransaction()
-  const context = await getClaimedAppleVerification(verificationId, leaseToken, query)
+  const context = await getPendingAppleVerification(verificationId, query)
   if (!context) return
   await query(sql`/* acceptConflictedAppleVerificationEvidence */
     UPDATE membership_provider_evidence_records SET verified_at = CURRENT_TIMESTAMP
     WHERE id = ${context.evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`)
-  await finalizeAppleVerification(context, leaseToken, disposition, reasonCode, query)
+  await finalizeAppleVerification(context, disposition, reasonCode, query)
   await query.commit()
-}
-
-async function deferAppleVerification(verificationId: string, leaseToken: string): Promise<void> {
-  await deferClaimedMembershipVerification(verificationId, leaseToken, 'apple_verification_retry')
 }

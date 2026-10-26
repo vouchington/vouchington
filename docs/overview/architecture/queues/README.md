@@ -184,6 +184,15 @@ Replaying an event can reactivate its retained completed or failed queue record;
 running record keeps its claim. Election replay has its own
 bounded dispatcher and does not recalculate weights or change administrator overrides.
 
+## Membership verification recovery
+
+Verification writes admit work after commit. Pending domain rows remain recoverable when admission
+or Valkey state is lost; queue retention does not authorize an outcome. Recovery fixes a sweep's
+upper UUID bound and continues by verification ID in job data, so a failing early verification cannot
+starve later rows. Repeated scheduled sweeps revisit earlier IDs to cover out-of-order commits.
+Verification tasks and recovery pages use separate concurrency lanes so externally submitted
+purchases cannot occupy the dispatcher lane. Provider throttles defer their lane for the stated wait.
+
 ## Related architecture
 
 - [Crawling](../reference-crawling-components.md) explains how URL and referral crawling share CPU

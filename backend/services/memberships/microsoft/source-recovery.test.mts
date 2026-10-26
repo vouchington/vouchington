@@ -11,7 +11,6 @@ import {
   countTestMicrosoftStoreVerifications,
   countTestPendingMicrosoftStoreVerifications,
   getTestPendingMicrosoftStoreVerification,
-  makeTestMembershipVerificationDue,
 } from '@voucha/test-helpers/microsoft-store-memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
@@ -43,7 +42,9 @@ describe('Microsoft Store source recovery', () => {
     vi.spyOn(Date, 'now').mockImplementation(() => now)
     const unavailable = unavailableClient()
 
-    await reconcileMicrosoftStoreSource({ sourceId, client: unavailable })
+    await expect(reconcileMicrosoftStoreSource({ sourceId, client: unavailable })).rejects.toThrow(
+      'Microsoft Store API request failed with 503',
+    )
     const recoveryContext = { userId: fixture.user.id, applicationId: fixture.applicationId }
     const firstPendingId = await getTestPendingMicrosoftStoreVerification(recoveryContext)
     if (!firstPendingId) throw new Error('Microsoft Store recovery verification was not deferred')
@@ -52,15 +53,19 @@ describe('Microsoft Store source recovery', () => {
     )
 
     now += 60 * 60 * 1000
-    await reconcileMicrosoftStoreSource({ sourceId, client: unavailable })
+    await expect(reconcileMicrosoftStoreSource({ sourceId, client: unavailable })).rejects.toThrow(
+      'Microsoft Store API request failed with 503',
+    )
 
     await expect(getTestPendingMicrosoftStoreVerification(recoveryContext)).resolves.toBe(
       firstPendingId,
     )
+    await expect(getMembershipVerification(fixture.user.id, firstPendingId)).resolves.toMatchObject(
+      { status: 'pending', reason_code: null },
+    )
     await expect(countTestPendingMicrosoftStoreVerifications(recoveryContext)).resolves.toBe(1)
-    expect(unavailable.queryCollections).toHaveBeenCalledOnce()
+    expect(unavailable.queryCollections).toHaveBeenCalledTimes(2)
 
-    await makeTestMembershipVerificationDue(firstPendingId)
     await processMicrosoftStoreMembershipVerification(firstPendingId, {
       client: fixture.activeClient,
     })

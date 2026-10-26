@@ -89,7 +89,7 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
 
   it('restores a lost known-source job from PostgreSQL and keeps concurrent recovery deduplicated', async () => {
     const fixture = await createActiveMicrosoftStoreFixture()
-    const verificationJobId = `membership-verification__${fixture.verificationId}`
+    const verificationJobId = fixture.verificationId
     let sourceJobId: string | undefined
 
     try {

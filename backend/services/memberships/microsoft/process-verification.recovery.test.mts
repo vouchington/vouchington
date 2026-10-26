@@ -67,7 +67,9 @@ describe('Microsoft Store membership verification recovery', () => {
     const verification = await fixture.submit(fixture.user)
     vi.stubEnv('VOUCHA_STORED_SECRET_ENCRYPTION_KEYS', undefined)
 
-    await processMicrosoftStoreMembershipVerification(verification.id, { client: fixture.client() })
+    await expect(
+      processMicrosoftStoreMembershipVerification(verification.id, { client: fixture.client() }),
+    ).rejects.toThrow('VOUCHA_STORED_SECRET_ENCRYPTION_KEYS')
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),

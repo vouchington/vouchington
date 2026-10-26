@@ -193,9 +193,8 @@ describe('configured Microsoft Store client', () => {
       .mockResolvedValueOnce(Response.json({ items: [] }))
     vi.spyOn(httpDispatchers, 'getExternalFetch').mockReturnValue(fetch)
     const client = createConfiguredMicrosoftStoreClient()
-    await expect(client.queryRecurrences({ key: 'key', environment: 'test' })).rejects.toThrow(
-      'Microsoft Store API request failed with 429',
-    )
+    const throttledQuery = client.queryRecurrences({ key: 'key', environment: 'test' })
+    await expect(throttledQuery).rejects.toMatchObject({ cause: { status: 429 } })
     await expect(client.queryRecurrences({ key: 'key', environment: 'test' })).resolves.toEqual([])
     expect(fetch).toHaveBeenCalledTimes(4)
     expect(fetch.mock.calls[3]?.[1]?.headers).toMatchObject({

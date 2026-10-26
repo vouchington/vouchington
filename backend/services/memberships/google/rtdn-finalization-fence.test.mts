@@ -53,15 +53,17 @@ describe('Google Play RTDN finalization fence', () => {
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: oldToken },
     })
-    await processGooglePlayMembershipVerification(initial.id, {
-      client: makeGooglePlayClient({
-        accountId,
-        oldProductId,
-        pending: true,
-        oldToken,
-        successorToken,
+    await expect(
+      processGooglePlayMembershipVerification(initial.id, {
+        client: makeGooglePlayClient({
+          accountId,
+          oldProductId,
+          pending: true,
+          oldToken,
+          successorToken,
+        }),
       }),
-    })
+    ).rejects.toThrow('Google Play purchase is pending')
     await expect(getMembershipVerification(owner.id, initial.id)).resolves.toMatchObject({
       status: 'pending',
     })

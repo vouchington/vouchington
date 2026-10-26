@@ -122,7 +122,7 @@ async function dispatchMembershipJob(job: Job, processors: MembershipJobProcesso
       await processors.processAppleNotification(job.data)
       return
     case 'recoverMembershipVerifications':
-      await processors.recoverMembershipVerifications()
+      await processors.recoverMembershipVerifications(job)
       return
     case 'recoverAppleNotifications':
       await processors.recoverAppleNotifications()

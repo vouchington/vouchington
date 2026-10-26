@@ -1,3 +1,4 @@
+import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { getExternalFetch } from '@modules/utils'
 import type {
@@ -122,6 +123,7 @@ async function microsoftFetch(
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15_000),
   })
+  throwIfRateLimitedResponse(response, url)
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
     throw new MicrosoftStoreResponseError(

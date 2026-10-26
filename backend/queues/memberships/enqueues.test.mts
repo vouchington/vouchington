@@ -25,16 +25,14 @@ describe('membership enqueues', () => {
     const verificationId = randomUUID()
     await enqueueProcessMembershipVerification({ verificationId })
     const jobs = (await Promise.all(QUEUE_STATES.map(state => memberships.getJobs(state)))).flat()
-    expect(jobs.find(job => job.id === `membership-verification__${verificationId}`)).toMatchObject(
-      {
-        data: { verificationId },
-        opts: {
-          removeOnComplete: true,
-          removeOnFail: true,
-          deduplication: { id: `membership-verification__${verificationId}`, mode: 'simple' },
-        },
+    expect(jobs.find(job => job.id === verificationId)).toMatchObject({
+      data: { verificationId },
+      opts: {
+        removeOnComplete: true,
+        removeOnFail: true,
+        deduplication: { id: verificationId, mode: 'simple' },
       },
-    )
+    })
   })
 
   it('bulk-enqueues recoverable verification rows with IDs that terminal retention releases', async () => {
@@ -42,12 +40,12 @@ describe('membership enqueues', () => {
     const [job] = await enqueueBulkProcessMembershipVerifications([{ verificationId }])
 
     expect(job).toMatchObject({
-      id: `membership-verification__${verificationId}`,
+      id: verificationId,
       data: { verificationId },
       opts: {
         removeOnComplete: true,
         removeOnFail: true,
-        deduplication: { id: `membership-verification__${verificationId}`, mode: 'simple' },
+        deduplication: { id: verificationId, mode: 'simple' },
       },
     })
   })

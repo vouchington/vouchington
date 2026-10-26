@@ -1,9 +1,11 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import {
+  membershipVerificationOrdering,
   APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS,
   MEMBERSHIP_ENTITLEMENT_EFFECTS_INTERVAL_MS,
   MEMBERSHIP_GRANT_EXPIRY_INTERVAL_MS,
@@ -24,7 +26,6 @@ import {
 import { googlePlaySchedules } from './google-play-schedules.mts'
 import { microsoftStoreSchedules } from './microsoft-store-schedules.mts'
 import { directBillingSchedules } from './direct-billing-schedules.mts'
-
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: 'appleNotificationRecovery',
@@ -156,8 +157,8 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
       name: 'recoverMembershipVerifications',
       data: {},
       opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+        ...pagedDispatchJobOptions('memberships'),
+        ordering: membershipVerificationOrdering(true),
         removeOnComplete: 100,
         removeOnFail: 100,
         priority: PRIORITY_DISPATCHER,

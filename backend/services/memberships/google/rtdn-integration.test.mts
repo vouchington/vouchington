@@ -62,7 +62,9 @@ describe('Google Play RTDN lifecycle integration', () => {
         throw new Error('Already acknowledged; no Play mutation expected')
       },
     }
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, { client }),
+    ).rejects.toThrow('Google Play purchase is pending')
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
       status: 'pending',
     })

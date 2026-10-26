@@ -6,7 +6,6 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
-import { getTestGooglePlayVerificationRetryState } from '@voucha/test-helpers/google-play-memberships-persistence'
 import {
   createMembershipVerification,
   getMembershipByUserId,
@@ -75,13 +74,6 @@ describe('processGooglePlayMembershipVerification terminalization failure', () =
       status: 'pending',
       reason_code: null,
     })
-    const retry = await getTestGooglePlayVerificationRetryState(verification.id)
-    expect(retry).toMatchObject({
-      lease_token: null,
-      leased_at: null,
-      last_error: error.message,
-    })
-    expect(retry?.available_at?.getTime()).toBeGreaterThan(Date.now())
     await expect(getMembershipByUserId(user.id)).resolves.toEqual(membership)
   })
 })

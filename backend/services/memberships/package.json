@@ -47,8 +47,10 @@
     "@apple/app-store-server-library": "^3.1.0",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/membership-helpers": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@modules/stripe": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
@@ -68,7 +70,6 @@
     "valkyries": "^0.13.0"
   },
   "devDependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@glidemq/speedkey": "^0.4.2",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"

@@ -300,52 +300,6 @@ CREATE TABLE IF NOT EXISTS membership_verifications (
   CONSTRAINT fk_membership_verifications__evidence_context FOREIGN KEY (membership_provider_evidence_record_id, membership_provider_context_id) REFERENCES membership_provider_evidence_records(id, membership_provider_context_id) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS membership_verification_processing_work_items (
-  membership_verification_id UUID PRIMARY KEY REFERENCES membership_verifications(id) ON DELETE CASCADE,
-  lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
-  attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
-  available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  completed_at TIMESTAMPTZ, last_error TEXT CHECK (last_error IS NULL OR char_length(last_error) BETWEEN 1 AND 1000),
-  CHECK (num_nonnulls(lease_token, leased_at, lease_expires_at) IN (0, 3)),
-  CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at),
-  CHECK (completed_at IS NULL OR lease_token IS NULL)
-);
-COMMENT ON TABLE membership_verification_processing_work_items IS 'One provider-verification task per durable verification record; terminal work remains because no verification retention currently removes its parent.';
-COMMENT ON COLUMN membership_verification_processing_work_items.membership_verification_id IS 'Durable verification whose provider adapter must run.';
-COMMENT ON COLUMN membership_verification_processing_work_items.lease_token IS 'Fencing token of the current provider verification worker.';
-COMMENT ON COLUMN membership_verification_processing_work_items.leased_at IS 'Time this processing lease was acquired.';
-COMMENT ON COLUMN membership_verification_processing_work_items.lease_expires_at IS 'Deadline after which current worker results are rejected.';
-COMMENT ON COLUMN membership_verification_processing_work_items.attempt_count IS 'Number of successful claims, including retry claims.';
-COMMENT ON COLUMN membership_verification_processing_work_items.available_at IS 'Earliest time the provider task may be claimed.';
-COMMENT ON COLUMN membership_verification_processing_work_items.completed_at IS 'When provider processing produced a final verification outcome.';
-COMMENT ON COLUMN membership_verification_processing_work_items.last_error IS 'Bounded diagnostic for the latest deferred provider attempt.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_create_membership_verification_processing_work() RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  INSERT INTO membership_verification_processing_work_items (membership_verification_id, completed_at)
-    VALUES (NEW.id, COALESCE(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at));
-  RETURN NEW;
-END;
-$$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON membership_verifications
-FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE FUNCTION fn_update_membership_verification_processing_work() RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN
-    UPDATE membership_verification_processing_work_items
-    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),
-      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL
-    WHERE membership_verification_id = NEW.id;
-  END IF;
-  RETURN NEW;
-END;
-$$;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON membership_verifications
-FOR EACH ROW EXECUTE FUNCTION fn_update_membership_verification_processing_work();
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_verifications__user_idempotency ON membership_verifications (user_id, idempotency_key);
@@ -356,9 +310,8 @@ CREATE INDEX IF NOT EXISTS idx_membership_verifications__purchase_intent_id ON m
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__evidence_id ON membership_verifications (membership_provider_evidence_record_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS uq_membership_verification_processing_work_items__lease_token ON membership_verification_processing_work_items (lease_token) WHERE lease_token IS NOT NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_membership_verification_processing_work_items__claim ON membership_verification_processing_work_items (available_at, membership_verification_id) WHERE completed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending ON membership_verifications (id)
+WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_sources (

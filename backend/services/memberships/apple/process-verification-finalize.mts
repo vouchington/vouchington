@@ -1,4 +1,4 @@
-import { finalizeClaimedMembershipVerification } from '../verification-work.mts'
+import { finalizePendingMembershipVerification } from '../verification-work.mts'
 import { getOrCreateProviderContextId } from '../provider-context.mts'
 import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -17,7 +17,6 @@ export class AppleVerificationConflictError extends Error {
 
 export async function finalizeAppleVerificationFromPriorAttempt(
   context: AppleVerificationContext,
-  leaseToken: string,
   query: QueryExecutor,
 ): Promise<boolean> {
   const { rows } = await query(sql`/* findPriorAppleVerificationAttempt */
@@ -47,7 +46,6 @@ export async function finalizeAppleVerificationFromPriorAttempt(
     const sameUser = prior.user_id === context.userId
     await finalizeAppleVerification(
       context,
-      leaseToken,
       sameUser ? 'verified' : 'conflict',
       sameUser ? 'verified' : 'wrong_account',
       query,
@@ -57,7 +55,6 @@ export async function finalizeAppleVerificationFromPriorAttempt(
   const disposition = prior.rejected_at ? 'rejected' : 'conflict'
   await finalizeAppleVerification(
     context,
-    leaseToken,
     disposition,
     prior.result_code ?? (disposition === 'rejected' ? 'invalid_evidence' : 'wrong_account'),
     query,
@@ -144,19 +141,17 @@ export async function acceptAppleVerificationObservation(
 
 export async function finalizeAppleVerification(
   context: AppleVerificationContext,
-  leaseToken: string,
   disposition: 'verified' | 'conflict' | 'rejected',
   reasonCode: string,
   query: QueryExecutor,
 ): Promise<void> {
   if (
-    !(await finalizeClaimedMembershipVerification(
+    !(await finalizePendingMembershipVerification(
       query,
       context.verificationId,
-      leaseToken,
       disposition,
       reasonCode,
     ))
   )
-    throw new Error('Apple verification claim was superseded')
+    throw new Error('Apple verification outcome was already recorded')
 }
