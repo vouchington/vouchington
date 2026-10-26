@@ -5,10 +5,12 @@ import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { deliverActivityToInbox, type buildActivityJson } from '@services/activitypub-delivery'
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
+import type { canDistributeActivityPubLike } from '@services/posts/activitypub-visibility'
 import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
 import { deliverActivity } from './delivery.mts'
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
+const canDistributeActivityPubLikeMock = vi.fn<typeof canDistributeActivityPubLike>()
 const buildActivityJsonMock = vi.fn<typeof buildActivityJson>()
 const deliverActivityToInboxMock = vi.fn<typeof deliverActivityToInbox>()
 const getActorPrivateKeyPemMock = vi.fn<typeof getActorPrivateKeyPem>()
@@ -27,6 +29,14 @@ const UNDO_FOLLOW_DATA: DeliverActivityData = {
   originalActivityId: 'activity-1',
   sourceUserId: 'user-1',
   targetUserId: 'user-2',
+  inboxUrl: 'https://a.example/inbox',
+}
+
+const LIKE_DATA: DeliverActivityData = {
+  activityId: 'activity-like',
+  activityType: 'Like',
+  sourceUserId: 'user-1',
+  targetPostId: 'post-1',
   inboxUrl: 'https://a.example/inbox',
 }
 
@@ -61,6 +71,7 @@ function deliverDeps() {
     deliverActivityToInbox: deliverActivityToInboxMock,
     getActorPrivateKeyPem: getActorPrivateKeyPemMock,
     isFederationEnabledForUser: isFederationEnabledForUserMock,
+    canDistributeActivityPubLike: canDistributeActivityPubLikeMock,
   }
 }
 
@@ -68,6 +79,7 @@ describe('deliverActivity', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     isFederationEnabledForUserMock.mockResolvedValue(true)
+    canDistributeActivityPubLikeMock.mockResolvedValue(true)
     getActorPrivateKeyPemMock.mockResolvedValue('-----BEGIN PRIVATE KEY-----\nfake\n-----END-----')
     buildActivityJsonMock.mockReturnValue({ type: 'Follow' })
     deliverActivityToInboxMock.mockResolvedValue(undefined)
@@ -93,6 +105,16 @@ describe('deliverActivity', () => {
     const result = await deliverActivity(FOLLOW_DATA, deliverDeps())
 
     expect(result).toEqual({ delivered: false, reason: 'federation-disabled' })
+    expect(getActorPrivateKeyPemMock).not.toHaveBeenCalled()
+    expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
+  })
+
+  it('drops a queued Like when the post becomes private before delivery', async () => {
+    canDistributeActivityPubLikeMock.mockResolvedValueOnce(false)
+    await expect(deliverActivity(LIKE_DATA, deliverDeps())).resolves.toEqual({
+      delivered: false,
+      reason: 'post-not-public',
+    })
     expect(getActorPrivateKeyPemMock).not.toHaveBeenCalled()
     expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
   })

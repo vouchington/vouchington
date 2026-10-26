@@ -4039,6 +4039,12 @@ importers:
         specifier: ^8.12.3
         version: 8.12.3
     devDependencies:
+      '@queues/activitypub':
+        specifier: workspace:^
+        version: link:../../queues/activitypub
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -12714,6 +12720,9 @@ importers:
       '@services/ap-inbox-activities':
         specifier: workspace:^
         version: link:../../services/ap-inbox-activities
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../../services/posts
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users

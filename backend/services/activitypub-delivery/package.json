@@ -35,6 +35,8 @@
     "undici": "^8.12.3"
   },
   "devDependencies": {
+    "@queues/activitypub": "workspace:^",
+    "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",

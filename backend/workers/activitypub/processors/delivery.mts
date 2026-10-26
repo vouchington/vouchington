@@ -2,13 +2,12 @@ import { getActorKeyId } from '@modules/activitypub-uris'
 import { wrapHttpForRetry } from '@modules/queue-errors'
 import {
   buildActivityJson,
-  commitActivityDistributionPage,
   deliverActivityToInbox,
   prepareActivityDistributionPage,
-  releaseActivityDistributionPage,
 } from '@services/activitypub-delivery'
 import { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import { isFederationEnabledForUser } from '@services/users'
+import { canDistributeActivityPubLike } from '@services/posts/activitypub-visibility'
 import {
   enqueueBulkDeliverActivity,
   type DeliverActivityData,
@@ -18,9 +17,8 @@ import {
 type DistributeActivityDependencies = {
   enqueueBulkDeliverActivity: typeof enqueueBulkDeliverActivity
   isFederationEnabledForUser: typeof isFederationEnabledForUser
+  canDistributeActivityPubLike: typeof canDistributeActivityPubLike
   prepareActivityDistributionPage: typeof prepareActivityDistributionPage
-  commitActivityDistributionPage: typeof commitActivityDistributionPage
-  releaseActivityDistributionPage: typeof releaseActivityDistributionPage
 }
 
 type DeliverActivityDependencies = {
@@ -28,6 +26,7 @@ type DeliverActivityDependencies = {
   deliverActivityToInbox: typeof deliverActivityToInbox
   getActorPrivateKeyPem: typeof getActorPrivateKeyPem
   isFederationEnabledForUser: typeof isFederationEnabledForUser
+  canDistributeActivityPubLike: typeof canDistributeActivityPubLike
 }
 
 function isUndoMissingOriginalActivityId(
@@ -38,10 +37,8 @@ function isUndoMissingOriginalActivityId(
   return typeof originalActivityId !== 'string' || originalActivityId.trim().length === 0
 }
 
-// Fans a social action out to a bounded page of the acting user's remote followers. The durable
-// cursor advances only after Valkey accepts that page's delivery jobs; continuation enqueues one
-// more ordered distribute job. An accepted Valkey enqueue followed by a failed cursor commit may
-// replay that page, so external delivery remains at-least-once.
+// Fans a social action out to a bounded page of the acting user's remote followers. The shared
+// paged dispatcher records the page admission before enqueueing the next cursor job.
 export async function distributeActivity(
   data: DistributeActivityData,
   dependencies?: Partial<DistributeActivityDependencies>,
@@ -50,17 +47,16 @@ export async function distributeActivity(
   const deps = {
     enqueueBulkDeliverActivity,
     isFederationEnabledForUser,
+    canDistributeActivityPubLike,
     prepareActivityDistributionPage,
-    commitActivityDistributionPage,
-    releaseActivityDistributionPage,
     ...dependencies,
   }
 
   if (isUndoMissingOriginalActivityId(data)) {
-    return { enqueued: 0, reason: 'missing-original-activity-id' as const }
+    return { enqueued: 0, completed: true, reason: 'missing-original-activity-id' as const }
   }
   if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
-    return { enqueued: 0 }
+    return { enqueued: 0, completed: true }
   }
   // Follow/UndoFollow name a local target user in `object` (unlike Like/UndoLike, whose target is
   // a post) — announcing "I followed/unfollowed X" to the source's remote audience discloses X's
@@ -78,41 +74,24 @@ export async function distributeActivity(
     (data.activityType === 'Follow' || data.activityType === 'UndoFollow') &&
     !(await deps.isFederationEnabledForUser(data.targetUserId))
   ) {
-    return { enqueued: 0 }
+    return { enqueued: 0, completed: true }
+  }
+  if (
+    (data.activityType === 'Like' || data.activityType === 'UndoLike') &&
+    !(await deps.canDistributeActivityPubLike(data.targetPostId))
+  ) {
+    return { enqueued: 0, completed: true }
   }
 
   const page = await deps.prepareActivityDistributionPage(
-    data.activityId,
     data.sourceUserId,
-    {},
+    data.cursor ?? null,
     pageSize,
   )
-  if (page.status === 'completed') return { enqueued: 0, completed: true }
-  if (page.status === 'busy') {
-    return { enqueued: 0, busy: true, retryAfterMs: page.retryAfterMs }
+  if (page.inboxUrls.length > 0) {
+    await deps.enqueueBulkDeliverActivity(page.inboxUrls.map(inboxUrl => ({ ...data, inboxUrl })))
   }
-
-  try {
-    if (page.inboxUrls.length > 0) {
-      await deps.enqueueBulkDeliverActivity(page.inboxUrls.map(inboxUrl => ({ ...data, inboxUrl })))
-    }
-  } catch (err) {
-    await deps.releaseActivityDistributionPage(data.activityId, page.leaseToken)
-    throw err
-  }
-
   const completed = !page.hasMore
-  const committed = await deps.commitActivityDistributionPage(
-    data.activityId,
-    data.sourceUserId,
-    page.expectedRemoteActorId,
-    page.nextRemoteActorId,
-    completed,
-    page.leaseToken,
-  )
-  if (!committed) {
-    return { enqueued: page.inboxUrls.length, completed: false, stale: true }
-  }
   return {
     enqueued: page.inboxUrls.length,
     completed,
@@ -136,6 +115,7 @@ export async function deliverActivity(
     deliverActivityToInbox,
     getActorPrivateKeyPem,
     isFederationEnabledForUser,
+    canDistributeActivityPubLike,
     ...dependencies,
   }
 
@@ -153,6 +133,12 @@ export async function deliverActivity(
     !(await deps.isFederationEnabledForUser(data.targetUserId))
   ) {
     return { delivered: false, reason: 'federation-disabled' as const }
+  }
+  if (
+    (data.activityType === 'Like' || data.activityType === 'UndoLike') &&
+    !(await deps.canDistributeActivityPubLike(data.targetPostId))
+  ) {
+    return { delivered: false, reason: 'post-not-public' as const }
   }
 
   const privateKeyPem = await deps.getActorPrivateKeyPem(data.sourceUserId)

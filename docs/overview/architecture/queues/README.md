@@ -31,7 +31,10 @@ flowchart LR
 - The shared `background` queue serves many small domains. A job is `<domain>.<name>`, a registry
   maps each to a handler, and ordering keys and concurrency are per domain or per job-family lane;
   pause remains per domain. ActivityPub reserves capacity for inbound and outbound delivery so
-  hostile inbound traffic cannot occupy outbound delivery slots, while retention cleanup has its
+  hostile inbound traffic cannot occupy outbound delivery slots. Outbound follower-page dispatch
+  has a separate lane so a large audience cannot queue behind its own delivery tasks. Domain rows
+  retain the current ActivityPub publication state; bounded reconciliation can re-admit a missed
+  distribution after a database commit or a failed continuation. Retention cleanup has its
   own lane independent of delivery backlogs to keep inbox capacity reclaimable under sustained
   traffic. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.

@@ -37,8 +37,11 @@ export const softDeleteEntityRelation = async (
     UPDATE `
   query.append(relation.table_name)
   query.append(sql`
-    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}
-    WHERE `)
+    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}`)
+  if (relation.table_name === 'relation__user__follow__user') {
+    query.append(sql`, outbound_activitypub_distributed_activity_id = NULL`)
+  }
+  query.append(sql` WHERE `)
 
   appendSingleEntityWhereClause(query, subject, 'subject')
   query.append(sql` AND `)
@@ -116,8 +119,11 @@ export const softDeleteEntityRelationsForSubjects = async (
     UPDATE `
   query.append(relation.table_name)
   query.append(sql`
-    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}
-    WHERE `)
+    SET deleted_at = NOW(), deleted_by_id = ${deleter?.id ?? null}`)
+  if (relation.table_name === 'relation__user__follow__user') {
+    query.append(sql`, outbound_activitypub_distributed_activity_id = NULL`)
+  }
+  query.append(sql` WHERE `)
 
   appendManyEntitiesWhereClause(query, subjects, 'subject')
   query.append(sql` AND `)

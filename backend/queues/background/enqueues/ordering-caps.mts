@@ -14,6 +14,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'oauth-authorization-exchange:dispatcher': 1,
   notifications: 5,
   'activitypub:outbound': 5,
+  'activitypub:outbound-dispatch': 2,
   'activitypub:inbound': 4,
   'activitypub:cleanup': 1,
   'follower-distributions': 5,

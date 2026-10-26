@@ -1,0 +1,173 @@
+import { describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
+import { getEntityRelationMetadataOrThrow, upsertEntityRelation } from '@services/entity-relations'
+import { softDeleteUserFollowRelations } from '@services/entity-relations/soft-delete-user-follows'
+import { upsertPostElectionVotes } from '@services/elections-votes/post/votes-upsert'
+import { getUndoFollowActivityId } from '@queues/activitypub/enqueues/delivery'
+import { listPendingOutboundDistributionPage } from './distribution-recovery.mts'
+import { markActivityDistributionComplete } from './distribution-progress.mts'
+
+const FIRST_ID = '00000000-0000-0000-0000-000000000000'
+const LAST_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+const FOLLOW_RELATION = getEntityRelationMetadataOrThrow({
+  subjectType: 'user',
+  predicate: 'follow',
+  objectType: 'user',
+})
+
+describe('outbound ActivityPub recovery source', () => {
+  it('recovers the current Follow and Undo generation, then converges after each final page', async () => {
+    const source = await createTestUserDirect()
+    const target = await createTestUserDirect()
+    await upsertEntityRelation(null, FOLLOW_RELATION, { id: source.id }, [{ id: target.id }])
+    const after = `${source.id}__${FIRST_ID}`
+    const followPage = await listPendingOutboundDistributionPage('follows', after, 1)
+    expect(followPage.rows).toHaveLength(1)
+    const follow = followPage.rows[0]
+    if (!follow || follow.source !== 'follows') throw new Error('Expected a Follow source row')
+    expect(follow).toMatchObject({
+      sourceUserId: source.id,
+      targetUserId: target.id,
+      deleted: false,
+    })
+    await markActivityDistributionComplete({
+      activityType: 'Follow',
+      activityId: follow.originalFollowActivityId,
+      sourceUserId: source.id,
+      targetUserId: target.id,
+    })
+    expect(
+      (await listPendingOutboundDistributionPage('follows', after, 1)).rows.some(
+        row =>
+          row.source === 'follows' &&
+          row.sourceUserId === source.id &&
+          row.targetUserId === target.id,
+      ),
+    ).toBe(false)
+
+    const [deleted] = await softDeleteUserFollowRelations(source.id, [target.id])
+    expect(deleted?.activityPubUndoIdentity?.undoActivityId).toBe(
+      getUndoFollowActivityId(follow.originalFollowActivityId),
+    )
+    const undoPage = await listPendingOutboundDistributionPage('follows', after, 1)
+    expect(undoPage.rows[0]).toMatchObject({
+      deleted: true,
+      originalFollowActivityId: follow.originalFollowActivityId,
+    })
+    await markActivityDistributionComplete({
+      activityType: 'UndoFollow',
+      activityId: getUndoFollowActivityId(follow.originalFollowActivityId),
+      originalActivityId: follow.originalFollowActivityId,
+      sourceUserId: source.id,
+      targetUserId: target.id,
+    })
+    expect(
+      (await listPendingOutboundDistributionPage('follows', after, 1)).rows.some(
+        row =>
+          row.source === 'follows' &&
+          row.sourceUserId === source.id &&
+          row.targetUserId === target.id,
+      ),
+    ).toBe(false)
+  })
+
+  it('recovers Like and UndoLike ballot events with their exact original identity', async () => {
+    const voter = await createTestUserDirect()
+    const postId = await insertTestPost({
+      createdById: voter.id,
+      title: 'Outbound recovery ballot',
+      slug: `outbound-recovery-${randomUUID()}`,
+      markdown: 'A public post for ballot recovery',
+    })
+    await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
+    const after = `${postId}__${FIRST_ID}`
+    const likePage = await listPendingOutboundDistributionPage('votes', after, 1)
+    expect(likePage.rows).toHaveLength(1)
+    const like = likePage.rows[0]
+    if (!like || like.source !== 'votes') throw new Error('Expected a Like ballot event')
+    expect(like.targetPostId).toBe(postId)
+    expect(like.originalLikeActivityId).toBeNull()
+    await markActivityDistributionComplete({
+      activityType: 'Like',
+      activityId: like.activityId,
+      sourceUserId: voter.id,
+      targetPostId: postId,
+    })
+    expect(
+      (await listPendingOutboundDistributionPage('votes', after, 1)).rows.some(
+        row => row.source === 'votes' && row.targetPostId === postId,
+      ),
+    ).toBe(false)
+
+    await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 0 }])
+    const undoPage = await listPendingOutboundDistributionPage('votes', after, 1)
+    const undo = undoPage.rows[0]
+    if (!undo || undo.source !== 'votes') throw new Error('Expected an UndoLike ballot event')
+    expect(undo.originalLikeActivityId).toBe(like.activityId)
+    await markActivityDistributionComplete({
+      activityType: 'UndoLike',
+      activityId: undo.activityId,
+      sourceUserId: voter.id,
+      targetPostId: postId,
+    })
+    expect(
+      (await listPendingOutboundDistributionPage('votes', after, 1)).rows.some(
+        row => row.source === 'votes' && row.targetPostId === postId,
+      ),
+    ).toBe(false)
+  })
+
+  it('advances across empty post pages and keeps every vote on a busy post', async () => {
+    const voter = await createTestUserDirect()
+    const secondVoter = await createTestUserDirect()
+    const emptyPostId = await insertTestPost({
+      createdById: voter.id,
+      title: 'Outbound recovery empty parent',
+      slug: `outbound-recovery-empty-${randomUUID()}`,
+      markdown: 'No pending votes',
+    })
+    const votedPostId = await insertTestPost({
+      createdById: voter.id,
+      title: 'Outbound recovery busy parent',
+      slug: `outbound-recovery-busy-${randomUUID()}`,
+      markdown: 'Two pending votes',
+    })
+    await upsertPostElectionVotes(voter.id, [{ entityId: votedPostId, score: 1 }])
+    await upsertPostElectionVotes(secondVoter.id, [{ entityId: votedPostId, score: 1 }])
+
+    const emptyPage = await listPendingOutboundDistributionPage(
+      'votes',
+      `${emptyPostId}__${FIRST_ID}`,
+      1,
+    )
+    expect(emptyPage.rows).toEqual([])
+    expect(emptyPage.next).toBe(`${emptyPostId}__${LAST_ID}`)
+    expect(emptyPage.throughPostId).toBeDefined()
+
+    const firstVotePage = await listPendingOutboundDistributionPage(
+      'votes',
+      emptyPage.next,
+      1,
+      emptyPage.throughPostId,
+    )
+    expect(firstVotePage.rows).toHaveLength(1)
+    const firstVote = firstVotePage.rows[0]
+    if (!firstVote || firstVote.source !== 'votes') throw new Error('Expected first vote')
+    expect(firstVote).toMatchObject({ targetPostId: votedPostId })
+    expect(firstVotePage.next).toBe(firstVote.cursor)
+    expect(firstVotePage.throughPostId).toBe(emptyPage.throughPostId)
+
+    const secondVotePage = await listPendingOutboundDistributionPage(
+      'votes',
+      firstVotePage.next,
+      1,
+      firstVotePage.throughPostId,
+    )
+    expect(secondVotePage.rows).toHaveLength(1)
+    const secondVote = secondVotePage.rows[0]
+    if (!secondVote || secondVote.source !== 'votes') throw new Error('Expected second vote')
+    expect(secondVote).toMatchObject({ targetPostId: votedPostId })
+    expect(secondVote.activityId).not.toBe(firstVote.activityId)
+  })
+})

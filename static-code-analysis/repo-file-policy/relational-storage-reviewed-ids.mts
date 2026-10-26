@@ -54,14 +54,8 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'oauth_authorizations.result_session_id',
     'Session id allocated before token issuance so replay reuses it; no row exists yet.',
   ],
-  [
-    'activitypub_distribution_work_items.activity_id',
-    'Stable ActivityPub activity identity used as a protocol cursor key.',
-  ],
-  [
-    'activitypub_distribution_work_items.cursor_remote_actor_id',
-    'Traversal cursor position; deleting the actor must not rewind a completed cursor.',
-  ],
+  ['Stable ActivityPub activity identity used as a protocol cursor key.'],
+  ['Traversal cursor position; deleting the actor must not rewind a completed cursor.'],
   [
     'notification_push_intent_retention_cursors.cursor_notification_push_intent_id',
     'UUIDv7 traversal position survives deletion of the scanned intent so a sweep cannot rewind.',

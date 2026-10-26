@@ -31,6 +31,7 @@
     "@services/activitypub-delivery": "workspace:^",
     "@services/ap-actor-keys": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
+    "@services/posts": "workspace:^",
     "@services/users": "workspace:^",
     "@vouchington/queue-errors": "^0.2.0",
     "glide-mq": "^0.19.0"

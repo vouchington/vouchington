@@ -56,6 +56,7 @@ export async function processPagedDispatcher<TData extends object, TResult>(
       pageSize: number,
     ) => Promise<{ result: TResult; next?: TData; afterDispatch?: () => Promise<void> }>
     enqueueNext: (data: TData, options: Partial<JobOptions>) => Promise<unknown>
+    continuationJobId?: (next: TData) => string
   },
 ): Promise<TResult> {
   if (!CURSOR_KEYS.includes(options.cursorKey))
@@ -97,7 +98,7 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     if (!page.nextAdmitted) {
       await options.enqueueNext(page.next, {
         ...pagedDispatchJobOptions(options.dispatcher),
-        jobId: `${job.name}__page__${pageId}`,
+        jobId: options.continuationJobId?.(page.next) ?? `${job.name}__page__${pageId}`,
         // Covers terminal pruning in the enqueue/checkpoint gap; released after the checkpoint.
         deduplication: { id: continuationDedupId, mode: 'throttle', ttl: Number.MAX_SAFE_INTEGER },
       })

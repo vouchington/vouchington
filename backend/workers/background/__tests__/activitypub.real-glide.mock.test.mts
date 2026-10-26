@@ -12,8 +12,6 @@ import {
 import { background } from '@queues/background/queues'
 import {
   deliverActivityToInbox,
-  prepareActivityDistributionPage,
-  releaseActivityDistributionPage,
   type DeliverActivityToInboxInput,
 } from '@services/activitypub-delivery'
 import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
@@ -186,30 +184,6 @@ describe('activitypub through the production background processor', () => {
       ).toBe(true)
     } finally {
       await child?.remove()
-    }
-  })
-
-  it('delays a distribution job while its durable page lease is held', async () => {
-    const source = await createFederatedUser()
-    const target = await createFederatedUser()
-    const activityId = randomUUID()
-    const page = await prepareActivityDistributionPage(activityId, source.id)
-    if (page.status !== 'ready') throw new Error('Expected to claim a distribution page')
-    try {
-      const started = await startWith()
-      const job = await started.add(
-        ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
-        { activityId, activityType: 'Follow', sourceUserId: source.id, targetUserId: target.id },
-        { attempts: 5 },
-      )
-      await started.activated(job, 1)
-      await processed.promise
-      await afterDeferralApplied(started)
-      const delayed = await started.queue.getJob(job.id)
-      expect(await delayed?.getState()).toBe('delayed')
-      expect(delayed?.attemptsMade).toBe(0)
-    } finally {
-      await releaseActivityDistributionPage(activityId, page.leaseToken)
     }
   })
 
