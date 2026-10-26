@@ -103450,10 +103450,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_relation__user__follow__user__ap_pending": {
+        "idx_relation__user__follow__user__activitypub_pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_relation__user__follow__user__ap_pending ON public.relation__user__follow__user USING btree (subject_id, object_id) WHERE ((outbound_activitypub_distributed_activity_id IS NULL) AND (outbound_activitypub_follow_activity_id IS NOT NULL))",
+          "definition": "CREATE INDEX idx_relation__user__follow__user__activitypub_pending ON public.relation__user__follow__user USING btree (subject_id, object_id) WHERE ((outbound_activitypub_distributed_activity_id IS NULL) AND (outbound_activitypub_follow_activity_id IS NOT NULL))",
           "includedColumns": [],
           "keys": [
             {
