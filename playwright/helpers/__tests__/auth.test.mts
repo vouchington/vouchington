@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
-import { loginAsUser, loginAsTestUser } from '../auth.mts'
+import { loginAsAdmin, loginAsUser, loginAsTestUser } from '../auth.mts'
 
 const TEST_DID = '019f0000-0000-7000-8000-000000000010'
 const TEST_UID = '019f0000-0000-7000-8000-000000000011'
