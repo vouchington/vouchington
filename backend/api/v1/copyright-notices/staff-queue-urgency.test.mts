@@ -112,14 +112,18 @@ describe('copyright staff queue urgency', () => {
       }),
     ])
     const ownedIds = [missed, due, filingCase, olderIntake]
+    const laterIntake = await createGuestNotice(decisionNow)
     await withCopyrightStaffQueueHttp(
       moderator,
       undefined,
       async ({ read, assertInterleaving }) => {
         await assertInterleaving(due, interleavingControl, filingCase, false)
-        const walked = await read(ownedIds, false, 1, true)
+        await assertInterleaving(filingCase, olderIntake, laterIntake, false)
+        const walked = await read(ownedIds, false, 1)
         const owned = walked.copyright_notices
         expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)
+        expect(walked.page_info.has_next_page).toBe(true)
+        expect(walked.page_info.end_cursor).toEqual(expect.any(String))
         expect(owned.map(notice => notice.id)).toEqual(ownedIds)
         const [missedCase, dueCase, unassessedCase, intakeCase] = owned
         expect(missedCase).toMatchObject({
