@@ -3,6 +3,10 @@ import { setTimeout } from 'node:timers/promises'
 import { vi } from 'vitest'
 import { lockDelegatedPostCommunity } from '../services/posts/delegated-write-locks.mts'
 import {
+  FAST_TEST_STATEMENT_TIMEOUT_MS,
+  TEST_STATEMENT_TIMEOUT_MS,
+} from './statement-timeout-constant.mts'
+import {
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
 } from './postgres-lock-wait.mts'
@@ -10,9 +14,11 @@ import {
 /**
  * How far ahead of "now" a restriction expiry sits when a case needs it to pass while the writer is
  * held at the fence. `withHeldDelegatedCommunityFenceForTest` really sleeps until that instant, so
- * keep it just long enough for the writer to reach the fence (a handful of queries).
+ * keep it just long enough for the writer to reach the fence (a handful of queries). Half the
+ * smaller fast-project/configured SQL deadline leaves headroom for lock-wait and scheduler overhead.
  */
-export const FENCE_HELD_EXPIRY_OFFSET_MS = 2_000
+export const FENCE_HELD_EXPIRY_OFFSET_MS =
+  Math.min(TEST_STATEMENT_TIMEOUT_MS, FAST_TEST_STATEMENT_TIMEOUT_MS) / 2
 
 /** Keep the delegated community fence until the real restriction writer is blocked on it. */
 export async function withHeldDelegatedCommunityFenceForTest<T>(
