@@ -26,9 +26,9 @@ precedence; otherwise use the current harness's own `CODEX_THREAD_ID`,
 SessionStart line. Never use another harness's id or synthesize one. An attended session uses
 `interactive` mode; Auto Harness, scheduled, and shepherd runs use `autonomous` mode.
 
-Hooks do not journal on the agent's behalf. Journal only friction as it occurs: denied or
-escalated commands, first-party tool surprises, and each CI root cause. A repeated fix push or
-plan change alone is not a trigger. The one exception is the merge-outcome note required by
+Hooks do not journal on the agent's behalf. These Vouchington triggers are additional to the
+canonical journaling triggers, not a replacement: denied or escalated commands, first-party tool
+surprises, and each CI root cause. A repeated fix push or plan change alone is not an added trigger. The one exception is the merge-outcome note required by
 [Close-out](../agent-workflow/git-and-prs.md#close-out).
 Use the canonical sandbox block in `blackboard/SKILL.md`
 and its journal grammar. For a GitHub Actions failure, include the affected check and run,

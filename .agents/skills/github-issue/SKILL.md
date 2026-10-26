@@ -29,9 +29,9 @@ repository's taxonomy independent of Vouchington's.
 Before filing in Vouchington, verify existing `## Files / areas` paths against `HEAD`; mark
 proposed paths `New` and verify their owner. Load [organize-github-issues](../organize-github-issues/SKILL.md)
 for live taxonomy classification. Apply one existing `priority:` label and every supported
-existing component label from [the labeler](../../../.github/labeler.yml). Use an existing open
-project for strategic tracking and an existing open milestone for repository sequencing when
-supported; do not create either as part of this workflow. Apply `dependencies` for
+existing component label from the live taxonomy; [the labeler](../../../.github/labeler.yml) is
+supporting evidence only. Use an existing open, described project for strategic tracking and an
+existing open, described milestone for repository sequencing when supported; do not create either as part of this workflow. Apply `dependencies` for
 dependency-owned work. A missing required priority, caller-required, or path-derived label
 blocks creation.
 
