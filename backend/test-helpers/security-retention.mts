@@ -29,9 +29,9 @@ export async function positionTestOAuthEventRetentionCursor(
 ): Promise<void> {
   await query(
     `/* positionTestOAuthEventRetentionCursor */
-     INSERT INTO security_retention_cleanup_cursors (source, cursor_id)
-     VALUES ('oauth_events', $1::uuid)
-     ON CONFLICT (source) DO UPDATE SET cursor_at = NULL, cursor_id = EXCLUDED.cursor_id`,
+     INSERT INTO security_retention_cleanup_cursors (source, cursor_at, cursor_id)
+     VALUES ('oauth_events', uuid_extract_timestamp($1::uuid), $1::uuid)
+     ON CONFLICT (source) DO UPDATE SET cursor_at = EXCLUDED.cursor_at, cursor_id = EXCLUDED.cursor_id`,
     [beforeId],
   )
 }

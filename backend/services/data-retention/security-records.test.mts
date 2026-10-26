@@ -267,7 +267,7 @@ describe('security record cleanup', () => {
   it('prepares a bounded page for every source with its own typed cursor', async () => {
     // This cutoff predates synthetic records; the query checks every source without deleting
     // fixtures owned by another parallel test.
-    const now = new Date('1974-01-02T00:00:00.000Z')
+    const now = new Date('1977-01-02T00:00:00.000Z')
     const pages = await Promise.all(
       SOURCES.map(source => cleanupSecuritySourcePage(source, 1, now)),
     )
