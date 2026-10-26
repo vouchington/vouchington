@@ -13,8 +13,7 @@ import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-// Split out of tests-playwright.test.mts to stay under the oxlint max-lines cap. Covers the
-// "Run Playwright tests" step's shard invocation and retry signal specifically.
+// Covers the "Run Playwright tests" step's shard invocation and retry signal.
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const parsedWorkflow = load(workflow) as {
   jobs?: Record<string, { steps?: Array<{ id?: string; name?: string; run?: string }> }>

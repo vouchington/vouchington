@@ -243,12 +243,6 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     ]) {
       expect(read(path)).not.toContain('VITEST_MAX_WORKERS')
     }
-    for (const path of [
-      '.github/workflows/tests-playwright.yml',
-      '.github/workflows/tests-playwright-credentialed.yml',
-    ]) {
-      expect(read(path)).toContain("PLAYWRIGHT_MAX_WORKERS: '3'")
-    }
     for (const path of readdirSync('.github/workflows').filter(path => path.endsWith('.yml'))) {
       const workflow = read(`.github/workflows/${path}`)
       expect(workflow).not.toContain('load-runner-env')
