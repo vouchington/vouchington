@@ -1,4 +1,6 @@
-import { DelayedError } from 'glide-mq'
+import { ACTIVITYPUB_PROCESS_DELIVERY_JOB } from '@queues/background/enqueues/activitypub-jobs'
+import { activitypubHandlers } from '../workers.mts'
+import { DelayedError, type Job } from 'glide-mq'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
@@ -37,8 +39,16 @@ describe('ActivityPub inbox processor sender rate limit', () => {
       .mockImplementation(async timestamp => {
         throw new DelayedError(timestamp)
       })
+    const handler = activitypubHandlers.find(
+      entry => entry.job.name === ACTIVITYPUB_PROCESS_DELIVERY_JOB.name,
+    )!
     await expect(
-      processDelivery(delivery, { isFinalAttempt: false, moveToDelayed }),
+      handler.handle({
+        data: delivery,
+        attemptsMade: 0,
+        opts: { attempts: 5 },
+        moveToDelayed,
+      } as unknown as Job),
     ).rejects.toBeInstanceOf(DelayedError)
     expect(moveToDelayed).toHaveBeenCalledOnce()
     expect(await loadTestDelivery(delivery.deliveryId)).toMatchObject({ senderAllowedAt: null })

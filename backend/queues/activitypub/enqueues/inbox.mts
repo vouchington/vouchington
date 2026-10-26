@@ -46,8 +46,9 @@ export async function enqueueActivityPubInboxDelivery(
 /** A terminal transport stall may bypass the domain processor's failure checkpoint. */
 export async function getActivityPubInboxDeliveryFailure(
   data: ActivityPubInboxDeliveryJob,
+  queue: Pick<typeof background, 'getJob'> = background,
 ): Promise<string | undefined> {
-  const job = await background.getJob(deliveryJobOptions(data).jobId!)
+  const job = await queue.getJob(deliveryJobOptions(data).jobId!)
   if (
     !job ||
     typeof job.data !== 'object' ||
