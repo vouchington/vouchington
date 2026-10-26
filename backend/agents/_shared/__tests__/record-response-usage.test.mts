@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import {
   countAiUsageRecordsForAgent,
+  countAiUsageRecordsForResponseId,
   countBackgroundResponseRegistrations,
 } from '@voucha/test-helpers'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
 import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
 import { runWithBackgroundResponseJob } from '../background-response-job-context.mts'
 import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
+import { claimRegisteredResponseUsage } from '../record-response-usage-ledger.mts'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 
 const usage = { input_tokens: 101, output_tokens: 52 }
@@ -35,6 +37,29 @@ async function callWithCreatedResponse(agentSlug: string, responseId: string): P
 }
 
 describe('background response ownership and usage', () => {
+  it('requires job context to clear a billed job response after its ledger write', async () => {
+    const responseId = `resp_${randomUUID()}`
+    await expect(
+      claimRegisteredResponseUsage({
+        registration: { responseId, kind: 'job', createdAt: new Date() },
+        agentSlug: `lost-context-${randomUUID()}`,
+        provider: 'openai',
+        transport: 'direct',
+        model: 'gpt-6-luna-2026-10-01',
+        serviceTier: 'flex',
+        usage: {
+          inputTokens: 101,
+          outputTokens: 52,
+          cacheReadTokens: 0,
+          cacheWrite5mTokens: 0,
+          cacheWrite1hTokens: 0,
+          reasoningOutputTokens: 0,
+        },
+      }),
+    ).rejects.toThrow(`Background response lost its GlideMQ job context: ${responseId}`)
+    await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
+  })
+
   it('records and deletes the inline request registration', async () => {
     const responseId = `resp_${randomUUID()}`
     const agentSlug = `inline-${randomUUID()}`
