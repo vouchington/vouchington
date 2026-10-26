@@ -15,6 +15,7 @@ backend:
   - 'backend/*.{cjs,json,md,mjs,mts,ts}'
   - 'backend/**/*.no-data.mock.test.mts'
   - 'backend/**/*.real-glide.mock.test.mts'
+  - 'backend/**/*.real-glide.test.mts'
   - 'backend/agents/**'
   - 'backend/api/**'
   - 'backend/config/**'

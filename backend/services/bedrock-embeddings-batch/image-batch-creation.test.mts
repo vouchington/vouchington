@@ -36,6 +36,7 @@ describe('minimum image capacity', () => {
                   },
                   maxSizeMB,
                 ),
+          isLeaseHeld: () => true,
           reEnqueue,
         },
         {
@@ -70,7 +71,7 @@ describe('minimum image capacity', () => {
       )
       expect(
         await processImageBatchCreation(
-          { cursor, streamPending, addImageToBatch, reEnqueue },
+          { cursor, streamPending, addImageToBatch, reEnqueue, isLeaseHeld: () => true },
           {
             getBatchCreationLimits: vi
               .fn<typeof getBatchCreationLimits>()
@@ -94,7 +95,7 @@ describe('text batch capacity and failure', () => {
       async () => {},
     )
     const result = await processBatchCreation(
-      { jobType: 'topics', cursor, streamPending, reEnqueue },
+      { jobType: 'topics', cursor, streamPending, reEnqueue, isLeaseHeld: () => true },
       {
         getBatchCreationLimits: vi.fn<typeof getBatchCreationLimits>().mockResolvedValue({
           allowed: true,
@@ -121,6 +122,7 @@ describe('text batch capacity and failure', () => {
       processBatchCreation(
         {
           jobType: 'topics',
+          isLeaseHeld: () => true,
           reEnqueue,
           streamPending: async function* (options) {
             try {

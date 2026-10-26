@@ -30,7 +30,7 @@
     "@services/pagination": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
-    "valkyries": "^0.12.1"
+    "valkyries": "^0.13.0"
   },
   "devDependencies": {
     "@services/entity-relations": "workspace:^",

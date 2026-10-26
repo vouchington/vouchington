@@ -28,6 +28,6 @@
     "@data-stores/graceful-shutdown": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@voucha/config": "workspace:^",
-    "valkyries": "^0.12.1"
+    "valkyries": "^0.13.0"
   }
 }

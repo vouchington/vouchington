@@ -32,6 +32,13 @@ export const dynamicConfigPrimaryValkeyClient = await upsertValkeyClientByUrl(
   },
 )
 
+// Creation leases share the noeviction worker-queue server, but not a queue command connection.
+// The registered client is closed by the Valkey shutdown owner after workers drain.
+export const embeddingCreationLeaseValkeyClient = await upsertValkeyClientByUrl(
+  config.worker_queue_url,
+  { name: 'embedding-creation-lease', readFrom: 'primary' },
+)
+
 // Dedicated GlideClient for all ValkeyBloomFilter operations.
 // Routes bloom-filter traffic (BF.MADD, BF.MEXISTS, atomic RENAME, ready-marker set/unlink)
 // off cacheValkeyClient so bloom rebuilds — which can issue O(rows/5k) commands per job — do

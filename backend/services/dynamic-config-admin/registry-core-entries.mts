@@ -1,8 +1,5 @@
 import { appAttestationConfig } from '@services/app-attestation/config'
-import {
-  BEDROCK_BATCH_MAX_VALUES,
-  bedrockEmbeddingsBatchConfig,
-} from '@services/bedrock-embeddings/batch/config'
+import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import { turnstileConfig } from '@services/captcha/config'
 import { moderationConfig } from '@services/moderation/config'
 import {
@@ -14,6 +11,7 @@ import {
 import { recaptchaConfig } from '@services/recaptcha/config'
 import { requestClientInfoConfig } from '@services/request-client-info/config'
 import { validateBedrockBatchConfig } from './registry-bedrock-validator.mts'
+import { bedrockField } from './registry-bedrock-field.mts'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateRequestSigningModeConfig } from './product-config-validators.mts'
 export const coreDynamicConfigRegistryEntries = [
@@ -126,6 +124,15 @@ export const coreDynamicConfigRegistryEntries = [
     config: bedrockEmbeddingsBatchConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      creation_lease_retry_delay_ms: bedrockField(
+        'creation_lease_retry_delay_ms',
+        'Base delay before retrying a creation job whose global lease is held elsewhere.',
+      ),
+      creation_lease_renewal_interval_ms: bedrockField(
+        'creation_lease_renewal_interval_ms',
+        'Interval for detecting loss of the global creation lease and renewing its ownership.',
+        100,
+      ),
       creation_retry_delay_ms: bedrockField(
         'creation_retry_delay_ms',
         'Delay before retrying a capacity-denied creation job.',
@@ -190,11 +197,3 @@ export const coreDynamicConfigRegistryEntries = [
     validate: validateBedrockBatchConfig,
   }),
 ]
-function bedrockField(key: keyof typeof BEDROCK_BATCH_MAX_VALUES, description: string) {
-  return {
-    description,
-    minValue: 1,
-    maxValue: BEDROCK_BATCH_MAX_VALUES[key],
-    integer: true,
-  }
-}

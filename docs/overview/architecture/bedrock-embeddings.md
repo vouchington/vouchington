@@ -81,9 +81,25 @@ sequenceDiagram
 | `crawl_chunk`   | No              | Yes            | Minutes to hours                     |
 | `image`         | No              | Yes            | Minutes to hours                     |
 
+## Creation Admission
+
+Creation jobs use separate ordering lanes for each entity type, allowing a quota-delayed image
+job to leave a ready text job runnable. A renewable lease on the worker-queue Valkey server caps
+actual batch creation across those lanes and worker processes. The lane limit orders each type;
+the lease is the global creation cap. Contention defers the same job briefly, preserving its
+cursor and deduplication identity. Every creation type shares the Bedrock provider cooldown.
+Quota denial releases the lease before delaying the job, so a different type can use available
+capacity. A worker that loses the lease stops new submissions. If a Bedrock submission is already
+in flight, it finishes and records the result; a successor may briefly overlap that call after
+the old lease expires. The renewal cadence is configurable, and ownership loss publishes a
+token-free diagnostic event with job identity, type, and loss reason. This is a renewable lease,
+not a receipt fence. The lease client uses primary reads and a distinct name on the persistent,
+`noeviction` worker-queue Valkey URL. Evictable cache and rate-limiter clients cannot safely hold
+this TTL lease; eviction could admit a successor before the holder observes ownership loss.
+
 ## Batch Minimum Size
 
-AWS Bedrock batches require at least `min_records_per_job` records per job(configurable in the (configurable in the `bedrock-embeddings-batch-config` Dynamic Config namespace). When a creation cycle streams fewer than the minimum, the batch **defers** — nothing is submitted, and the next `creation_dispatcher` cycle (every 5 minutes) re-streams pending entities until the minimum is met. The batch pipeline is only used for entity updates (and as the sole path for `crawl_chunk` / `image`), so waiting is correct: real-time creation flows already cover the user-visible path through the single pipeline.
+AWS Bedrock batches require at least `min_records_per_job` records per job (configurable in the `bedrock-embeddings-batch-config` Dynamic Config namespace). When a creation cycle streams fewer than the minimum, the batch **defers** — nothing is submitted, and the next `creation_dispatcher` cycle (every 5 minutes) re-streams pending entities until the minimum is met. The batch pipeline is only used for entity updates (and as the sole path for `crawl_chunk` / `image`), so waiting is correct: real-time creation flows already cover the user-visible path through the single pipeline.
 
 ## Depth-Driven Creation Trigger
 

@@ -105,6 +105,9 @@ work ahead of housekeeping.
   worker and one slow provider would stall unrelated domains.
   Bedrock Retry-After state is shared by its ordering lane and checked before provider work, so
   newly queued priority jobs observe the same cooldown while unrelated CPU domains keep running.
+  Embedding batch creation uses one ordering lane per entity type for fair admission, a shared
+  provider cooldown for 429 responses, and a renewable Valkey lease for its cross-type creation
+  cap. A quota-delayed type releases that lease before deferral, leaving other ready types eligible.
 - **Fan-out is paged.** Dispatchers and backfills enqueue one bounded page and continue through a
   cursor, so no run reads unbounded rows and priority stays meaningful.
 - **A paged import survives a lost dispatcher.** User RSS and admin topic imports share the
