@@ -9,94 +9,38 @@ description: Search, verify, create, update, classify, and link Vouchington GitH
 
 Claude Code and Codex load `vouchington-workflow:github-issue`; the Claude
 `github-issue-agent` subagent, Grok, Cursor, and OpenCode read
-`node_modules/vouchington-tooling/skills/github-issue/SKILL.md` and resolve its supporting resources
-relative to that directory. If it cannot be read, stop before any `gh` call; report the missing prerequisite and never apply this overlay alone.
-The local routing decision is recorded in
-[Public repository issue routing](../../../docs/development/public-repository-issue-routing.md).
+`node_modules/vouchington-tooling/skills/github-issue/SKILL.md`. If neither source is readable,
+report the missing prerequisite before any issue mutation; never apply this overlay alone.
 
 ## Vouchington additions
 
-Invoke this workflow through the `github-issue-agent` subagent. It may inspect GitHub and make only
-the issue mutations explicitly authorized by the caller. It must not edit local files, push code,
-create branches, close/delete/lock issues, or infer a target repository. If `gh` authentication or a
-GitHub remote is unavailable, return `NOT AVAILABLE: <reason>` and stop.
+Use the `github-issue-agent` for issue work within the caller's authorization. The interactive
+root may close a specifically identified issue only with explicit human authorization for that
+closure; it must first apply the canonical mutation gate and read back the result. The issue agent
+must not close an issue; the root cannot delegate that exception. The issue agent does not edit
+code, push, create branches, delete, or lock issues. Follow
+[public repository routing](../../../docs/development/public-repository-issue-routing.md).
 
-The interactive root agent acting as the human-facing orchestrator may close a specifically
-identified issue only when the human explicitly authorizes that exact closure. For this exception,
-the root performs the close directly and must not delegate it. Immediately before closing, the root
-must follow the canonical `Mutation authority` gate and the `Issue workflow` current-discussion and
-acceptance-evidence checks, then read back and report the final issue state. This exception does not
-authorize the root to delete or lock issues.
+Default `TARGET_REPO` to `vouchington/vouchington`; change it only on explicit human input.
+`PR_REPO` is the current repository. A denied external issue request becomes a Vouchington
+tracking issue with a copy-ready external report unless the caller opts out. Keep another
+repository's taxonomy independent of Vouchington's.
 
-Before absorbing a newly discovered blocker, require the calling main workflow to reproduce it
-against refreshed `origin/main` and provide the evidence. Then search for an existing fix or issue.
-If an existing fix resolves the blocker, report it so the calling main workflow can use and retest
-it. Otherwise, whether or not an issue exists, ask whether to widen the accepted scope or only link
-or record a follow-up. Filing an issue records work but does not amend the accepted plan or
-authorize implementation.
-
-A stop condition in an issue names a real decision for a human. Adding or changing an index, or a
-rewrite that returns the same rows, is never one: the worker makes the change and records the plan
-before and after.
-
-Resolve `CURRENT_REPO` once and use it as `PR_REPO`; PR inspection and the `pr_create`/`pr_update`
-tools always operate there. Default `TARGET_REPO` to `vouchington/vouchington`; set another repository
-only from explicit human input. Delegate every repository authorization, mutation check, duplicate search,
-relationship, batch preflight, post-write verification, and label-creation decision to the canonical
-skill. Its `Mutation authority` gate re-fetches and re-verifies the exact canonical repository
-immediately before every write; transport helpers never grant authority. A denied request to create an issue outside Vouchington becomes a Vouchington tracking issue with
-the copy-ready external report, unless the caller opts out. Pass `TARGET_REPO` to every issue call and
-`PR_REPO` to every PR call.
-
-Keep agent output bounded per the canonical
-Bounded output (`node_modules/vouchington-tooling/skills/github-issue/SKILL.md#bounded-output`)
-rules.
-
-Before filing in Vouchington, verify every existing `## Files / areas` path against `HEAD`. Mark
-proposed paths as `New` and verify their owning parent/module. Reject absolute and parent-traversal
-paths. For an authorized non-Vouchington target, verify only redacted remote metadata through the
-Contents API. Write enough context, goal, ownership,
-verified areas, approach, acceptance evidence, and out-of-scope boundary for a junior engineer to act.
-
-Before creating, load [organize-github-issues](../organize-github-issues/SKILL.md) for its live
-taxonomy rubric. Treat that organizer as read-only classification; only this separately authorized,
-gated workflow may create an issue. When filing, assign an existing, described, open org project for
-strategic, initiative-level tracking, or an existing, described, open milestone for repo-local release
-or sequencing tracking — the choice turns on the initiative's nature, not how many repositories it
-touches, so a single-repo strategic initiative can carry a project, and an initiative that needs both a
-cross-cutting strategic view and repo-local sequencing may carry both; an issue belongs to at most one
-project, and an ambiguous case stays unassigned. Use `dependencies` for
-dependency-owned work. Apply exactly one canonical `priority:` label that already exists and every
-clearly supported existing label. Derive component labels through
-[`.github/labeler.yml`](../../../.github/labeler.yml). A missing required priority, caller-required
-label, or path-derived label blocks creation. Existing labels need no separate approval; creating a
-label requires the canonical skill's exact approval. Never create milestones or projects — creating
-either, like creating a label, is a separate, explicitly authorized taxonomy operation this workflow
-does not perform.
-
-For another authorized repository, keep its taxonomy independent: do not apply the Vouchington
-labeler or require Vouchington priority/dependency policy.
-
-## New-Issue Classification
-
-The rules above are the complete Vouchington classification overlay.
+Before filing in Vouchington, verify existing `## Files / areas` paths against `HEAD`; mark
+proposed paths `New` and verify their owner. Load [organize-github-issues](../organize-github-issues/SKILL.md)
+for live taxonomy classification. Apply one existing `priority:` label and every supported
+existing component label from [the labeler](../../../.github/labeler.yml). Use an existing open
+project for strategic tracking and an existing open milestone for repository sequencing when
+supported; do not create either as part of this workflow. Apply `dependencies` for
+dependency-owned work. A missing required priority, caller-required, or path-derived label
+blocks creation.
 
 Use `## Context`, `## Problem / Goal`, `## Suggested approach`, `## Files / areas`, and
-`## Originating session`. A dependency defect or feature tracked in Vouchington must also include
-`## Upstream issue (copy-paste ready)`: either a dependency-voice title plus minimal reproduction,
-expected behavior, actual behavior, and installed version, or an
-`Existing upstream tracker: <URL> — <state>` reference. Never include Vouchington-internal paths,
-links, or jargon in that report. Omit the block for non-dependency work or an issue created directly
-in its authorized owning repository.
+`## Originating session` in new issue bodies. A dependency defect tracked here also needs
+`## Upstream issue (copy-paste ready)` with an external-facing reproduction or an existing
+upstream tracker, without Vouchington-internal paths. A `Plan:` issue uses the ordinary issue
+workflow. For PR links and body updates use the `vouchington-tooling` MCP `pr_create` or
+`pr_update` tool in `PR_REPO`.
 
-An optional `Plan:` issue uses this ordinary issue workflow and its authority gate for the exact
-`TARGET_REPO`; it has no separate template or validation helper. Prefer the existing plan record
-when one already exists. For PR links and body mutation, use the `pr_create` and `pr_update` tools of the
-`vouchington-tooling` MCP server in `PR_REPO`; same-repository closes are `Closes #N`, and cross-repository closes are
-`Closes owner/repo#N`.
-
-## Batch preflight
-
-The [batch manifest](../../../docs/development/local-development/agent-issue-labels/README.md#batch-github-issue-preflight) exposes only the read-only
-`preflight` mode. Perform every authorized write and its read-back through the canonical workflow
-one issue at a time.
+The [batch manifest](../../../docs/development/local-development/agent-issue-labels/README.md#batch-github-issue-preflight)
+provides read-only `preflight`; write and verify each authorized issue individually.

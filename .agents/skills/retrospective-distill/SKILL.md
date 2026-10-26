@@ -7,128 +7,31 @@ description: Turn verified Vouchington retrospective findings into actionable is
 
 ## Canonical skill (required)
 
-Claude Code and Codex load `vouchington-workflow:retrospective-distill`; Grok, Cursor, and OpenCode read `node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md` and resolve its supporting resources relative to that directory. If it cannot be read, stop and report the missing prerequisite; never apply this overlay alone.
+Claude Code and Codex load `vouchington-workflow:retrospective-distill`; Grok, Cursor, and
+OpenCode read `node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md` and its
+referenced issue-body procedure. If neither source is readable, report the missing prerequisite;
+never apply this overlay alone. The canonical skill owns the snapshot, eligibility, archival,
+and MCP `snapshot_cleanup` procedure.
 
 ## Vouchington additions
 
-## Workflow
+Accept optional `--retro-days <N>` (default 1) and `--session-days <N>` (default 7). Validate
+both non-negative finite values before export and compute the cutoffs once. Use the
+machine-registered `vouchington-tooling` MCP server and this checkout's
+`pnpm exec agent-blackboard snapshot partition` command to create bounded read-only partitions
+from the verified export. Only the root retains its cleanup token; follow canonical MCP
+`snapshot_cleanup` after all archive checks. Do not use a local cleanup command for the export.
 
-Use the local session, readiness, archive, and summary rules below as the consumer-specific
-implementation of the portable workflow.
+On Codex, partition inspectors use the read-only `explore` role; on Claude Code, the built-in
+read-only `Explore` subagent. Before hand-reading entries, each inspector runs
+`pnpm exec vouchington agent-blackboard distill classify <partition> --retro-cutoff <retroCutoff> --session-cutoff <sessionCutoff>`.
+The historic checkpoint discriminator is `isCheckpointEntry` in
+`dev/retrospective-distill/checkpoint-entry.mts`; retrospective storage type is checked by
+`dev/retrospective-distill/retrospective-entry.mts`. The local journal CLI `--file` convenience
+omits storage type, so unresolved entries remain quarantined under the canonical rule.
 
-Accept optional `--retro-days <N>` (default 1) and `--session-days <N>` (default 7) invocation args.
-Reject an invalid day count and compute the two cutoffs once, per the canonical
-session shapes and eligibility (`node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility`);
-pass both into every partition prompt so inspectors never read their own clock.
-
-Use the machine-registered `vouchington-tooling` MCP server. First drain every worktree's outbox:
-for each path that `git worktree list` prints, call `outbox_flush` and then `outbox_status` with
-that path as `worktree`, and stop if any of them reports a `worktreePendingCount` above 0. Use the
-worktree count, never `pendingCount` or `status`, which cover only the root's own session: the
-sessions to distill belong to other agents, and an archived session refuses later delivery, so a
-retained record would never be distilled. Then call `snapshot_export` with the root's own
-`sessionId`; it always exports only non-archived sessions and returns a private local snapshot
-path, counts, checksum, and terminal manifest, never the records. If the server is not connected,
-stop and report it rather than falling back to a CLI command or paginated session reads.
-Export unfiltered (canonical rule). Full records come only
-from the exported file's partitions, never from `journal_entries`, which reads one session at a
-time with no checksum or manifest.
-Before delegation, the root verifies the snapshot against the returned checksum, counts, and
-terminal manifest and stops on any mismatch rather than treating missing records as absent. It
-checks `manifest.schemaVersion === 1`, `manifest.status === "complete"`,
-that the generated export returned a nonempty `cleanupToken`, and that manifest counts exactly match
-the compact export counts (including the terminal manifest record). It then runs `pnpm exec
-agent-blackboard snapshot partition --path <path> --cleanup-token <cleanupToken> --checksum <sha256>
---sessions <count> --entries <count> --records <count> --bytes <count>` once, passing the returned
-cleanup capability, checksum, and all four counts. The omitted-path export is an absolute
-`agent-blackboard-snapshot-*.jsonl` file directly under the system temp directory; the partitioner
-creates read-only JSONL partitions in its own `agent-blackboard-partitions-*` temp directory,
-containing at most 25 contiguous session groups or 1 MiB each. Do not pass the original snapshot to
-subagents.
-
-Delegate partitions only to read-only inspector subagents, passing each the `retroCutoff` and
-`sessionCutoff` computed above. On Codex, dispatch inspectors through the `explore` agent
-(`gpt-5.6-luna`, `sandbox_mode = "read-only"`) — never the `implementation` agent's `gpt-5.6-terra`
-profile, which has no read-only sandbox and may edit files. On Claude Code, dispatch the built-in
-`Explore` subagent (its tool set already excludes `Edit`/`Write`/`NotebookEdit`, unlike a
-`general-purpose` subagent) on the `haiku` model, with a plain descriptive name per partition (for
-example `inspect-p01`) rather than a proper-noun identity: this role is read-only classification
-plus light summarization, exploration-tier work, not implementation-tier. Grok, Cursor, and
-OpenCode dispatch conventions are unspecified here. Before reading any entry by hand, each subagent
-runs `pnpm exec vouchington agent-blackboard distill classify <partition> --retro-cutoff
-<retroCutoff> --session-cutoff <sessionCutoff>` against its assigned partition — a read-only, pure-local classifier that needs no
-MCP call — and hand-reads only the sessions it reports as `journal-only` or `retrospective`; every
-other shape is fully determined structurally and needs no entry content inspection. Each
-subagent then returns one compact disposition summary: partition index, deduplicated evidence
-themes — each carrying the session IDs that contributed to it, a mapping the root preserves through
-every later merge and deduplication — and each session's disposition. Classify each session by the canonical
-session shapes and eligibility (`node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility`)
-(shape definitions, `retroAt`/`lastActive`, cutoff eligibility, entry-type-unresolved handling,
-deduplication by `sourceEventId`, and the zero-entry topology caveat). Vouchington sources for the
-`data.type` check: `dev/retrospective-distill/retrospective-entry.mts` (`data.type ===
-"retrospective"`), `dev/retrospective-distill/checkpoint-entry.mts` (`isCheckpointEntry` marks a
-historic hook-written journal entry via a structural `data.checkpoint` field, never the rendered
-`## Auto-append: ` heading; hooks no longer append these, so they remain only until archived), and
-[agent-blackboard.md](../../../docs/development/agent-blackboard.md) (the CLI's `--file`
-convenience omits `type` entirely). Report quarantine counts and reasons and continue clean
-unrelated sessions. A checkpoint-only session is historic hook-written journal noise (#9337). A
-delegated child's `session_ensure` handshake is in [the `blackboard` skill](../blackboard/SKILL.md).
-Leave the verified snapshot file in place until cleanup: it is the reference for the archival check
-below. Skip sessions that are not yet eligible, with a reason. The subagent must not invoke MCP,
-create issues, archive sessions, edit files, or retain a copy of the partition.
-
-The root agent merges the summaries — preserving each theme's contributing session IDs through
-merging and deduplication — performs the current-repository and duplicate checks below, then creates
-or updates issues. Journal-only, zero-entry-child, and zero-entry-root evidence get full
-issue-filing rights, subject to the same duplicate, current-state, and dependency-skip checks as
-retrospective evidence, plus the
-redaction pass in [distilling.md](distilling.md): never quote a journal entry's raw command string or
-stderr verbatim in an issue body, since a journal entry, including a historic hook-written
-checkpoint (unlike a retrospective, written under the canonical evidence-minimization boundary),
-can carry unredacted secrets. An entry-type-unresolved
-session gets no issue-filing pass this run.
-
-Immediately before each `session_archive`, read that session with `journal_entries` (its
-`sessionId`) and archive it only if its entries match the verified snapshot's entries for the same
-session by source identity (`sourceEventId`, or `createdAt` for a legacy entry that has none) and
-by content, ignoring only the server-assigned `timestamp`: the same set, with nothing added,
-nothing missing, and nothing changed (a manual `agent-blackboard append` can add different content
-under an existing id, which `journal_append` would reject); two empty entry sets match, so a
-zero-entry session is archivable. Otherwise the session changed since the snapshot (it was resumed, or a
-retrospective was saved after the export), so leave it unarchived for the next pass; so is a
-result that is not `{ sessionId, entries }`. Invoking this skill is the local archival
-authorization for eligible sessions: archive each one with a separate `session_archive` call whose
-`sessionId` is the archived session, not the root's. Before any `session_archive`, repeat the
-drain across every worktree, and never call it while any worktree's `outbox_status` reports a
-`worktreePendingCount` above 0. Archive every eligible session after all
-issue work completes, whether or not it produced a theme: no actionable content is a disposition, not
-a deferral. Two exceptions, both keyed by the theme→session-ID mapping above: skip archival for
-exactly the sessions that contributed to a theme whose issue mutation failed this run (they remain
-eligible next round), and skip archival for a session whose only themes were deferred — a
-verified-fix adoption prerequisite ([distilling.md](distilling.md) step 6) or a kept-eligible
-PR-creation-feedback theme (below) — since deferral promises re-evaluation next round and archival
-would foreclose it. In a `finally` cleanup path owned by the root, run `pnpm exec
-agent-blackboard snapshot cleanup --directory <path> --path <path> --cleanup-token <cleanupToken>`;
-or, if partitioning failed before a directory was returned, run cleanup with the validated snapshot
-path and cleanup token alone. Cleanup runs after the last `session_archive` (the archival check reads
-the snapshot), and after summary merging even when no session is eligible for archival.
-
-Cluster journal and retrospective findings by root cause. A journal item that already names an open
-issue is skipped unless a retrospective supplies genuinely new evidence; a closed or superseded
-target is eligible again. For every actionable theme, search open issues and open changes, prefer
-adding evidence to an existing open issue, and use the local issue agent for a new one. Verified fixes in adopted
-first-party releases, explicit rejections, completed work, and existing coverage receive an explicit
-disposition and reason; a version bump alone never resolves a finding.
-
-Report reviewed, fixed, duplicate, deferred, quarantined, actionable, created, updated,
-not-yet-eligible, entry-type-unresolved, and archived counts plus reasons, broken out by
-eligible-with-retro vs. eligible-stale (splitting eligible-stale into checkpoint-only, journal-only,
-zero-entry-child, and zero-entry-root). Do not ask the user for subset or style; the local summary is
-the record of the complete run.
-
-Use the `vouchington-tooling` server and hosted connection documented in
-[agent-blackboard.md](../../../docs/development/agent-blackboard.md), then follow
-[distilling.md](distilling.md) for Vouchington grouping and disposition policy. Create any issue via
-[github-issue](../github-issue/SKILL.md), not by bypassing local taxonomy and duplicate checks.
-Keep deferred PR-creation-feedback themes eligible; re-evaluate a theme that names an issue, a PR,
-or a tracking issue closed without merging instead of treating its open state alone as conclusive.
+The root uses [Vouchington distilling policy](distilling.md) for current-repository verification,
+scheduled prompts, redaction, and issue routing. File through the
+[github-issue adapter](../github-issue/SKILL.md), applying its taxonomy and authorization gate.
+Vouchington authorizes archival of eligible sessions when this skill is invoked; retain sessions
+whose themes were deferred or whose issue mutation failed, as the canonical procedure requires.

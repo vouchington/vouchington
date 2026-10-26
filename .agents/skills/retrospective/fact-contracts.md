@@ -1,96 +1,12 @@
-# Fact contracts
+# Vouchington retrospective validation
 
-Full detail for the `## Transcript Facts` and `## CI Failures` sections referenced from
-[SKILL.md](SKILL.md). `## Verifiable Facts` has no separate local content contract; prepare it under
-the canonical retrospective skill's evidence boundary.
+The canonical `vouchington-workflow:retrospective` skill owns the CI failure, assessment, and
+claim-wording guidance. Its [CI failures reference](../../../node_modules/vouchington-tooling/skills/retrospective/references/ci-failures.md)
+provides the shared block grammar.
 
-## Transcript Facts
-
-The `compose.transcript` input of `retrospective_save` resolves Codex from `CODEX_THREAD_ID` and nested
-`~/.codex/sessions/**/rollout-*<id>.jsonl` files, including recursive subagents; otherwise it
-resolves Claude Code from `CLAUDE_CODE_SESSION_ID` and `~/.claude/projects/*/<id>.jsonl`, including
-sibling subagent files. Codex takes precedence when both environment IDs exist.
-
-For Codex, `sub_agent_activity` records fire for every thread a session interacted with — its
-parent and siblings, not only its children — so recursive traversal follows an edge only when its
-`agent_path` is exactly one segment deeper than the discovering session's own path. `Subagent tool
-calls`/`Subagent tokens` therefore reflect only genuine descendants; a leaf session that
-merely ran alongside other threads (rather than spawning any) reports zero subagents.
-
-The transcript is found by `compose.transcript.harnessSessionId`, else by the call's `sessionId`
-when it is a UUID, in the default session roots; a transcript path cannot be supplied. Reads are
-bound to the harness session that launched the server, so after `/clear` or a thread switch
-reconnect the server or pass `{status, reason}`.
-
-When no matching transcript or supported, internally consistent schema can be resolved, the composer
-records `=== Transcript Facts ===` with `Status: unavailable (<reason>)`. Use that status
-instead of estimating the numbers yourself.
-
-`Push commands attempted: N` counts every `git push` invocation seen in the transcript, not
-verified remote updates — a push that fails or is rejected still increments it.
-The `compose.facts` collection (in `## Verifiable Facts`) separately derives the
-reflog-verified update count (`remote_update_count`/`push_like_update_count`). Attempts exceeding
-verified updates is expected, not a discrepancy to explain away — it means at least one push
-failed or was rejected.
-
-## CI Failures
-
-Every retrospective must contain a `## CI Failures` section immediately after
-`## Transcript Facts`. This is an **observed-failures log**, not a historical GitHub audit: build it
-from the session journal alone (via the `journal_entries` tool of the `vouchington-tooling` MCP
-server, with the `sessionId` the SessionStart hook printed), as the composer does. Transcript output cannot establish CI status. Do not
-re-mine raw or recursive transcripts: the normalized collectors own that boundary. A journal that
-cannot be read must remain unavailable. Do not crawl workflow history for failures the session never
-observed, and do not infer that no failure occurred merely because the final run passed.
-
-Use exactly one status line:
-
-- `Status: failures observed`
-- `Status: none observed` — only when the journal was available and showed no failures
-- `Status: unavailable (<reason>)` — when the journal cannot establish whether failures occurred,
-  such as an unreadable journal or a session unknown to the hosted blackboard; the reason must be
-  non-blank
-
-When failures were observed, group repeated occurrences by root signature and record each group in
-this form:
-
-```markdown
-- `recurring|one-off` — `GitHub Actions` — <workflow/job/step>
-  - Evidence: <commit/push and GitHub run URL>
-  - Root diagnostic: <first actionable error, including the affected test, file, or symbol>
-  - Disposition: no-mistakes impact: selected|missed (<gap>)|n/a (<why>); <fixed by commit SHA, unresolved with issue reference, or classified as infrastructure/pre-existing with evidence>
-```
-
-A journaled block already has this shape (see the [`blackboard` skill](../blackboard/SKILL.md)); keep
-its `no-mistakes impact` result when grouping.
-
-Preserve an earlier failure even when a later attempt passes. Report the first/root failure rather
-than downstream aggregate or fan-in failures, and state the occurrence count when the same signature
-affected multiple pushes. GitHub Actions is in scope; external PR checks
-are out of scope unless their failure was emitted inside a GitHub Actions job. Never paste complete
-logs, environment dumps, credentials, or tokens into the retrospective.
-
-This grammar is enforced programmatically by `validateRetroDoc` in
-[`dev/retrospective-validate.mts`](../../../dev/retrospective-validate.mts) — the checkout policy
-(`dev/agent-policy.mts`) runs it on the document inside `retrospective_save` before appending, and
-rejects a malformed section before any agent-blackboard call. If this doc and the validator ever disagree,
-the validator wins; treat the mismatch as a bug in this doc.
-
-## Required assessments
-
-New retrospective saves require exactly one `## Tool Findings` and `## Architecture Findings`
-section. Each has one explicit status: `findings`, or `none observed`, `not assessed`, or `unavailable`
-with a non-blank reason or inspected scope in parentheses. Every finding records an observation,
-`  - Evidence: ...`, and `  - Disposition: ...`. `validateRetroDoc` rejects missing assessments
-before delivery; historical stored records remain readable without rewriting them.
-
-## Wording rules
-
-- **"Direct-to-main"** - only use this phrase if `git branch -r --contains <sha>` returns
-  `origin/main` AND the commit appears on `git log --first-parent origin/main`. If the branch is
-  unmerged at retro time, say "committed to topic branch X, unmerged at time of retro."
-- **Fix-commit costs** - always pair a commit count with a **push count**. The expensive unit is the
-  push (triggers CI + bot reviewers), not the commit. Write "N pushes (M commits), each retriggering
-  CI/bots" not just "N fix commits."
-- **Bot review rounds** - count distinct pushes that triggered a review cycle, not the number of
-  individual comments.
+Vouchington's [`validateRetroDoc`](../../../dev/retrospective-validate.mts) enforces the local
+report shape: `## CI Failures` follows `## Transcript Facts`, and each GitHub Actions failure
+block includes the `no-mistakes impact: selected|missed (<gap>)|n/a (<why>)` disposition.
+[`retrospective-validate-ci.mts`](../../../dev/retrospective-validate-ci.mts) and
+[`retrospective-validate-assessments.mts`](../../../dev/retrospective-validate-assessments.mts)
+are authoritative if this page diverges from the validator.

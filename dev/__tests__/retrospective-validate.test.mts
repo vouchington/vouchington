@@ -284,12 +284,9 @@ Status: failures observed
     )
   })
 
-  it('keeps retrospective templates on the same CI Failures header as the validator', () => {
-    const skill = readFileSync(`${repoRoot}/.agents/skills/retrospective/SKILL.md`, 'utf8')
+  it('keeps the local document schema on the same CI Failures header as the validator', () => {
     const saving = readFileSync(`${repoRoot}/.agents/skills/retrospective/saving.md`, 'utf8')
-    for (const source of [skill, saving]) {
-      expect(source).toContain('## CI Failures')
-      expect(source).not.toContain('## CI and Pre-Push Failures')
-    }
+    expect(saving).toContain('## CI Failures')
+    expect(saving).not.toContain('## CI and Pre-Push Failures')
   })
 })
