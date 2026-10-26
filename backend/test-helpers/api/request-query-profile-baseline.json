@@ -237,7 +237,8 @@
     "code": "backend/services/entity-relations/publication-mutation.mts:51",
     "routes": [
       "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/mcp"
+      "POST /api/v1/mcp",
+      "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
     ]
   },
   {

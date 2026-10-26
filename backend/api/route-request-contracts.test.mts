@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import contracts from '../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import { routeKeyForResponseContract } from '../test-helpers/api-fixtures/response-contract-types.mts'
 import { REQUEST_CONTRACT_EXEMPTIONS as EXEMPTIONS } from './request-contract-exemptions-helpers.mts'
 
 // Other API tests can preload index.mts in this shared Vitest fork. Reload the graph so this
@@ -40,7 +41,7 @@ describe('registered route request contracts', () => {
     for (const entries of [contracts.operations, contracts.responses, contracts.adminResponses]) {
       expect(
         Object.keys(entries)
-          .filter(key => !registered.has(key))
+          .filter(key => !registered.has(routeKeyForResponseContract(key)))
           .toSorted(),
       ).toEqual([])
     }
