@@ -24,6 +24,7 @@ import {
   getHostnameBlockPenaltyPage,
 } from './cleanup-penalties.mts'
 import { projectNextHostnameBlockSubdomainPage } from './cleanup-subdomains.mts'
+import { deleteUrlRelationPage } from './delete-url-relation-page.mts'
 import { getHostnameCleanupPage } from './relation-cleanup-pages.mts'
 import { softDeleteNextBlockedHostnameRelationPage } from './soft-delete-relation-page.mts'
 
@@ -117,6 +118,59 @@ describe('bounded hostname block relation cleanup', () => {
         penalized_user_count: 1,
       },
     })
+  })
+
+  it('resumes an exact-limit post relation page without repeating the first relation', async () => {
+    const [administrator, creator] = await Promise.all([
+      createAdministrator('relation-cursor'),
+      createTestUserDirect({ username: `relation-cursor-${randomToken()}` }),
+    ])
+    const hostname = randomHostname('relation-cursor')
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const postIds = await Promise.all(
+      ['first', 'second'].map(label =>
+        insertTestPost({
+          title: `${label} relation cursor ${randomToken()}`,
+          slug: `${label}-relation-cursor-${randomToken()}`,
+          createdById: creator.id,
+          markdown: 'test',
+        }),
+      ),
+    )
+    const urlIds = [uuidv7(), uuidv7()]
+    await insertTestPostRelatedUrlBatch({
+      postIds,
+      urlIds,
+      hostname,
+      hostnameId,
+      createdById: creator.id,
+    })
+
+    await using query = await beginTransaction()
+    const first = await deleteUrlRelationPage(
+      query,
+      'relation__post__related__url',
+      urlIds,
+      undefined,
+      administrator.id,
+      1,
+    )
+    expect(first.page).toHaveLength(1)
+    const second = await deleteUrlRelationPage(
+      query,
+      'relation__post__related__url',
+      urlIds,
+      first.page[0],
+      administrator.id,
+      1,
+    )
+    await query.commit()
+
+    expect(second.page).toHaveLength(1)
+    expect(second.page[0]).not.toEqual(first.page[0])
+    await expect(
+      Promise.all(postIds.map((postId, index) => getTestRelationDeletedAt(postId, urlIds[index]!))),
+    ).resolves.toEqual([expect.any(Date), expect.any(Date)])
   })
 })
 
