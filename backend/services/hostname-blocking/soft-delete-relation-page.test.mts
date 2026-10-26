@@ -19,9 +19,9 @@ import { v7 as uuidv7 } from 'uuid'
 import {
   ensureHostnameBlockCleanupOperation,
   getHostnameBlockCleanupOperation,
-  toHostnameBlockOperationResult,
   type HostnameBlockCleanupOperation,
 } from './cleanup-operation.mts'
+import { toHostnameBlockOperationResult } from './cleanup-operation-result.mts'
 import {
   advanceHostnameBlockPenaltyPage,
   getHostnameBlockPenaltyPage,
@@ -40,8 +40,8 @@ describe('bounded hostname block relation cleanup', () => {
       insertTestUrlHostname({ hostname: rootHostname }),
       insertTestUrlHostname({ hostname: childHostname }),
     ])
-    const child = await createOperation(childId, administrator.id, false)
-    const root = await createOperation(rootId, administrator.id, true)
+    const child = await createOperation(childId, childHostname, administrator.id, false)
+    const root = await createOperation(rootId, rootHostname, administrator.id, true)
 
     const projection = await projectNextHostnameBlockSubdomainPage(
       root.blockId,
@@ -49,7 +49,7 @@ describe('bounded hostname block relation cleanup', () => {
       undefined,
       10,
     )
-    const repeatedChild = await createOperation(childId, administrator.id, true)
+    const repeatedChild = await createOperation(childId, childHostname, administrator.id, true)
     await using query = await beginTransaction()
     const ownership = await getHostnameCleanupPage(query, projection.operation!, undefined, 10)
     await query.commit()
@@ -88,7 +88,7 @@ describe('bounded hostname block relation cleanup', () => {
       createdById: creator.id,
     })
 
-    const initialOperation = await createOperation(rootId, administrator.id, true)
+    const initialOperation = await createOperation(rootId, rootHostname, administrator.id, true)
     const projection = await projectNextHostnameBlockSubdomainPage(
       initialOperation.blockId,
       initialOperation.progress,
@@ -195,7 +195,7 @@ describe('bounded hostname block relation cleanup', () => {
       createdById: creator.id,
     })
 
-    const operation = await createOperation(url.hostname.id, administrator.id, true)
+    const operation = await createOperation(url.hostname.id, hostname, administrator.id, true)
     const tableIndex = getEntityRelationUrlTables().indexOf('relation__topic__landing_page__url')
     expect(tableIndex).toBeGreaterThanOrEqual(0)
     const cursor: Extract<HostnameBlockCleanupCursor, { stage: 'relations' }> = {
@@ -244,6 +244,7 @@ describe('bounded hostname block relation cleanup', () => {
 
 async function createOperation(
   hostnameId: string,
+  hostname: string,
   administratorId: string,
   penalizeCreators: boolean,
 ) {
@@ -251,6 +252,7 @@ async function createOperation(
   const operation = await ensureHostnameBlockCleanupOperation(
     query,
     hostnameId,
+    hostname,
     administratorId,
     'admin',
     penalizeCreators,

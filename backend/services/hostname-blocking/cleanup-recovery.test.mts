@@ -34,6 +34,7 @@ describe('hostname block cleanup recovery', () => {
     const operation = await ensureHostnameBlockCleanupOperation(
       query,
       hostnameId,
+      child,
       administrator.id,
       'admin',
       false,
@@ -66,13 +67,13 @@ describe('hostname block cleanup recovery', () => {
       username: `cleanup-stale-${randomToken()}`,
       administrator: true,
     })
-    const hostnameId = await insertTestUrlHostname({
-      hostname: `cleanup-stale-${randomToken()}.example.com`,
-    })
+    const hostname = `cleanup-stale-${randomToken()}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
     await using query = await beginTransaction()
     const operation = await ensureHostnameBlockCleanupOperation(
       query,
       hostnameId,
+      hostname,
       administrator.id,
       'admin',
       true,
@@ -131,6 +132,7 @@ describe('hostname block cleanup recovery', () => {
     const operation = await ensureHostnameBlockCleanupOperation(
       query,
       rootId,
+      root,
       administrator.id,
       'admin',
       false,

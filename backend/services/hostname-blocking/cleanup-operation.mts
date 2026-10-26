@@ -2,6 +2,10 @@ import { write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import {
+  attachHostnameBlockToAncestorCleanup,
+  lockPendingAncestorHostnameBlockCleanup,
+} from './cleanup-operation-ancestor.mts'
 
 export type HostnameBlockCleanupOperation = {
   blockId: string
@@ -22,37 +26,10 @@ export type HostnameBlockCleanupPosition = Pick<
   'blockId' | 'progress'
 >
 
-type HostnameBlockOperationTotals = {
-  blocked_hostname_count: number
-  soft_deleted_relation_count: number
-  penalized_user_count: number
-}
-
-export type HostnameBlockOperationResult = { operation_id: string } & (
-  | { status: 'pending'; totals: null }
-  | { status: 'completed'; totals: HostnameBlockOperationTotals }
-)
-
-export function toHostnameBlockOperationResult(
-  operation: HostnameBlockCleanupOperation,
-): HostnameBlockOperationResult {
-  if (!operation.completedAt) {
-    return { operation_id: operation.blockId, status: 'pending', totals: null }
-  }
-  return {
-    operation_id: operation.blockId,
-    status: 'completed',
-    totals: {
-      blocked_hostname_count: operation.blockedHostnameCount,
-      soft_deleted_relation_count: operation.softDeletedRelationCount,
-      penalized_user_count: operation.penalizedUserCount,
-    },
-  }
-}
-
 export async function ensureHostnameBlockCleanupOperation(
   query: TransactionQuery,
   hostnameId: string,
+  hostname: string,
   blockedById: string,
   blockedSource: string,
   penalizeCreators: boolean,
@@ -73,6 +50,19 @@ export async function ensureHostnameBlockCleanupOperation(
       existing.relation_cleanup_root_block_id,
     )
     if (!operation) throw new Error('Hostname block cleanup root is missing')
+    return operation
+  }
+  const ancestorRootBlockId = await lockPendingAncestorHostnameBlockCleanup(query, hostname)
+  if (ancestorRootBlockId) {
+    await attachHostnameBlockToAncestorCleanup(query, {
+      existingBlockId: existing?.id ?? null,
+      hostnameId,
+      blockedById,
+      blockedSource,
+      rootBlockId: ancestorRootBlockId,
+    })
+    const operation = await lockHostnameBlockCleanupOperation(query, ancestorRootBlockId)
+    if (!operation) throw new Error('Ancestor hostname block cleanup root is missing')
     return operation
   }
   if (existing) {

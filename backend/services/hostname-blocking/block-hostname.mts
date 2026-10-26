@@ -10,11 +10,11 @@ import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostn
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
+import { ensureHostnameBlockCleanupOperation } from './cleanup-operation.mts'
 import {
-  ensureHostnameBlockCleanupOperation,
   toHostnameBlockOperationResult,
   type HostnameBlockOperationResult,
-} from './cleanup-operation.mts'
+} from './cleanup-operation-result.mts'
 
 export type BlockHostnameResult = HostnameBlockOperationResult
 
@@ -63,6 +63,7 @@ export async function blockHostnameInTransaction(
   const operation = await ensureHostnameBlockCleanupOperation(
     query,
     hostnameId,
+    rows[0].hostname,
     adminUserId,
     options.blockedSource ?? 'admin',
     options.penalizeCreators !== false,

@@ -80,7 +80,7 @@ describe('hostname block cleanup background handlers', () => {
       hostnameId,
       createdById: creator.id,
     })
-    const operation = await createOperation(hostnameId, administrator.id)
+    const operation = await createOperation(hostnameId, hostname, administrator.id)
 
     const queue = createQueue(`hostname-blocking-${randomUUID()}`, {
       priorityKind: 'ranked',
@@ -166,11 +166,12 @@ describe('hostname block cleanup background handlers', () => {
   })
 })
 
-async function createOperation(hostnameId: string, administratorId: string) {
+async function createOperation(hostnameId: string, hostname: string, administratorId: string) {
   await using query = await beginTransaction()
   const operation = await ensureHostnameBlockCleanupOperation(
     query,
     hostnameId,
+    hostname,
     administratorId,
     'admin',
     true,
