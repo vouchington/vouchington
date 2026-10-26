@@ -1,6 +1,5 @@
 import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
 import {
   createTestUser,
   createTestUserDirect,
@@ -19,7 +18,6 @@ import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mt
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 
 async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTestUser>>) {
@@ -75,10 +73,14 @@ async function createRestrictedNotice(poster: Awaited<ReturnType<typeof createTe
   )
   if (!intent) throw new Error('poster restriction email intent missing')
   if (!claimantReceipt) throw new Error('claimant receipt email intent missing')
+  const claimantReceiptCorrespondenceId = claimantReceipt.copyright_notice_correspondence_message_id
+  if (!claimantReceiptCorrespondenceId) throw new Error('claimant receipt correspondence missing')
   return {
     noticeId: intake.intake.copyright_notice_id,
     intentId: intent.id,
     claimantReceiptIntentId: claimantReceipt.id,
+    claimantReceiptCorrespondenceId,
+    submissionId: intake.intake.copyright_notice_submission_id,
     claimantEmail,
   }
 }
@@ -109,32 +111,18 @@ describe('copyright email delivery transport', () => {
 
   it('fails closed for an owned claimant email intent without a retained recipient', async () => {
     const poster = await createTestUser()
-    const { noticeId } = await createRestrictedNotice(poster)
-    const bodyText = `Claimant receipt ${crypto.randomUUID()}`
-    await using transaction = await beginTransaction()
-    const correspondence = await createDeterministicCopyrightCorrespondenceInTransaction(
-      {
-        noticeId,
-        submissionId: null,
-        correspondenceKind: 'receipt',
-        bodyText,
-      },
-      transaction,
-    )
-    const intent = await createCopyrightDeliveryIntent(
-      {
-        noticeId,
-        submissionId: null,
-        correspondenceId: correspondence.id,
-        recipientUserId: null,
-        recipientRole: 'claimant',
-        deliveryKind: 'claimant_receipt',
-        channel: 'email',
-        idempotencyKey: `copyright-claimant-without-recipient-${crypto.randomUUID()}`,
-      },
-      transaction,
-    )
-    await transaction.commit()
+    const { noticeId, submissionId, claimantReceiptCorrespondenceId } =
+      await createRestrictedNotice(poster)
+    const intent = await createCopyrightDeliveryIntent({
+      noticeId,
+      submissionId,
+      correspondenceId: claimantReceiptCorrespondenceId,
+      recipientUserId: null,
+      recipientRole: 'claimant',
+      deliveryKind: 'claimant_receipt',
+      channel: 'email',
+      idempotencyKey: `copyright-claimant-without-recipient-${crypto.randomUUID()}`,
+    })
 
     await expect(prepareCopyrightEmailDelivery(intent.id)).rejects.toMatchObject({
       status: 422,
