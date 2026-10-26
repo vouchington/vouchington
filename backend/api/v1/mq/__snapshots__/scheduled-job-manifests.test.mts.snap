@@ -2667,11 +2667,14 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
       "data": {},
       "name": "recoverMembershipVerifications",
       "opts": {
-        "attempts": 3,
+        "attempts": 2147483647,
         "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
+          "delay": 1000,
+          "type": "paged-dispatch-memberships",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "memberships:verification-dispatch",
         },
         "priority": 100,
         "removeOnComplete": 100,
