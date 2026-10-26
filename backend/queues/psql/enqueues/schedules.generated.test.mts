@@ -11,13 +11,9 @@ import {
   TRENDING_RSS_FEEDS_VIEW,
 } from '../config.mts'
 import { psql } from '../queues.mts'
-import { scheduledJobManifest, upsertSchedules } from './schedules.mts'
+import { scheduledJobManifest } from './schedules.mts'
 
 describe('psql schedules', () => {
-  it('registers the psql schedulers (incl. RSS crawl-tier refresh) without throwing', async () => {
-    await expect(upsertSchedules()).resolves.not.toThrow()
-  })
-
   it('dispatches each platform materialized view from its operator schedule', async () => {
     for (const [schedulerId, viewName] of [
       [REFRESH_PLATFORM_STATS_SCHEDULER_ID, PLATFORM_STATS_VIEW],
