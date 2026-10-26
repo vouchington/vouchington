@@ -23,6 +23,7 @@ const enqueueRecoveryContinuation = createBackgroundEnqueue(ACTIVITYPUB_RECOVER_
 type OutboundRecoveryDependencies = {
   queue: Pick<Queue, 'name' | 'getJobCounts'>
   enqueueBulk: typeof enqueueBulkDistributeActivity
+  enqueueNext: typeof enqueueRecoveryContinuation
 }
 
 export async function processRecoverOutboundDistributionJob(
@@ -34,6 +35,7 @@ export async function processRecoverOutboundDistributionJob(
 ): Promise<{ scanned: number; hasMore: boolean }> {
   const queue = dependencies.queue ?? background
   const enqueueBulk = dependencies.enqueueBulk ?? enqueueBulkDistributeActivity
+  const enqueueNext = dependencies.enqueueNext ?? enqueueRecoveryContinuation
   return processPagedDispatcher(job, {
     dispatcher: 'activitypub',
     cursorKey: 'lane,id',
@@ -67,7 +69,7 @@ export async function processRecoverOutboundDistributionJob(
           : {}),
       }
     },
-    enqueueNext: enqueueRecoveryContinuation,
+    enqueueNext,
   })
 }
 

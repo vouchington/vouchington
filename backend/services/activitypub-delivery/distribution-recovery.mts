@@ -77,20 +77,37 @@ export async function listPendingOutboundDistributionPage(
     statement.append(sql` AND (post_id, id) > (${afterPostId}, ${afterVoteId})`)
   }
   statement.append(sql` ORDER BY post_id, id LIMIT ${limit + 1}
+    ), classified_page AS MATERIALIZED (
+      SELECT pending.post_id, pending.id, pending.user_id,
+        pending.like_id, pending.original_id,
+        latest.like_id AS latest_like_id
+      FROM pending_page pending
+      LEFT JOIN LATERAL (
+        SELECT current_vote.outbound_activitypub_like_activity_id AS like_id
+        FROM post_votes current_vote
+        WHERE current_vote.post_id = pending.post_id
+          AND current_vote.user_id = pending.user_id
+        ORDER BY current_vote.id DESC
+        LIMIT 1
+      ) latest ON TRUE
+    ), retired AS (
+      -- Superseded positive roots have no ActivityPub effect. Retire only bounded page rows
+      -- after comparing with the current Like identity so they stop occupying the pending index.
+      UPDATE post_votes target
+      SET outbound_activitypub_distributed_at = clock_timestamp()
+      FROM classified_page stale
+      WHERE stale.like_id = stale.id
+        AND stale.original_id IS NULL
+        AND stale.latest_like_id IS DISTINCT FROM stale.id
+        AND target.post_id = stale.post_id
+        AND target.id = stale.id
+        AND target.outbound_activitypub_distributed_at IS NULL
+      RETURNING target.post_id, target.id
     )
-    SELECT pending.post_id, pending.id, pending.user_id,
-      pending.like_id, pending.original_id,
-      latest.like_id AS latest_like_id
-    FROM pending_page pending
-    LEFT JOIN LATERAL (
-      SELECT current_vote.outbound_activitypub_like_activity_id AS like_id
-      FROM post_votes current_vote
-      WHERE current_vote.post_id = pending.post_id
-        AND current_vote.user_id = pending.user_id
-      ORDER BY current_vote.id DESC
-      LIMIT 1
-    ) latest ON TRUE
-    ORDER BY pending.post_id, pending.id`)
+    SELECT classified.post_id, classified.id, classified.user_id,
+      classified.like_id, classified.original_id, classified.latest_like_id
+    FROM classified_page classified
+    ORDER BY classified.post_id, classified.id`)
   const { rows } = await write<{
     post_id: string
     id: string
@@ -101,7 +118,7 @@ export async function listPendingOutboundDistributionPage(
   }>(statement)
   const rawPage = rows.slice(0, limit)
   const page = rawPage.flatMap(row =>
-    row.like_id === row.id && row.latest_like_id !== row.id
+    row.original_id === null && row.like_id === row.id && row.latest_like_id !== row.id
       ? []
       : [
           {

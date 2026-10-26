@@ -15,6 +15,10 @@ const FOLLOW_RELATION = getEntityRelationMetadataOrThrow({
   objectType: 'user',
 })
 
+function pendingVotes(postId: string, after: string, limit: number) {
+  return listPendingOutboundDistributionPage('votes', after, limit, postId)
+}
+
 describe('outbound ActivityPub recovery source', () => {
   it('recovers the current Follow and Undo generation, then converges after each final page', async () => {
     const source = await createTestUserDirect()
@@ -81,7 +85,7 @@ describe('outbound ActivityPub recovery source', () => {
     })
     await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
     const after = `${postId}__${FIRST_ID}`
-    const likePage = await listPendingOutboundDistributionPage('votes', after, 1)
+    const likePage = await pendingVotes(postId, after, 1)
     expect(likePage.rows).toHaveLength(1)
     const like = likePage.rows[0]
     if (!like || like.source !== 'votes') throw new Error('Expected a Like ballot event')
@@ -94,13 +98,13 @@ describe('outbound ActivityPub recovery source', () => {
       targetPostId: postId,
     })
     expect(
-      (await listPendingOutboundDistributionPage('votes', after, 1)).rows.some(
+      (await pendingVotes(postId, after, 1)).rows.some(
         row => row.source === 'votes' && row.targetPostId === postId,
       ),
     ).toBe(false)
 
     await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 0 }])
-    const undoPage = await listPendingOutboundDistributionPage('votes', after, 1)
+    const undoPage = await pendingVotes(postId, after, 1)
     const undo = undoPage.rows[0]
     if (!undo || undo.source !== 'votes') throw new Error('Expected an UndoLike ballot event')
     expect(undo.originalLikeActivityId).toBe(like.activityId)
@@ -111,7 +115,7 @@ describe('outbound ActivityPub recovery source', () => {
       targetPostId: postId,
     })
     expect(
-      (await listPendingOutboundDistributionPage('votes', after, 1)).rows.some(
+      (await pendingVotes(postId, after, 1)).rows.some(
         row => row.source === 'votes' && row.targetPostId === postId,
       ),
     ).toBe(false)
@@ -127,14 +131,14 @@ describe('outbound ActivityPub recovery source', () => {
     })
     await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
     const after = `${postId}__${FIRST_ID}`
-    const firstPage = await listPendingOutboundDistributionPage('votes', after, 10)
+    const firstPage = await pendingVotes(postId, after, 10)
     const firstLike = firstPage.rows.find(row => row.source === 'votes')
     if (!firstLike || firstLike.source !== 'votes') throw new Error('Expected first Like')
 
     // Positive score changes append a ballot row but keep the original Like identity.
     await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 2 }])
 
-    const pendingPage = await listPendingOutboundDistributionPage('votes', after, 10)
+    const pendingPage = await pendingVotes(postId, after, 10)
     expect(pendingPage.rows).toHaveLength(1)
     expect(pendingPage.rows[0]).toMatchObject({
       source: 'votes',
@@ -149,7 +153,7 @@ describe('outbound ActivityPub recovery source', () => {
       sourceUserId: voter.id,
       targetPostId: postId,
     })
-    expect((await listPendingOutboundDistributionPage('votes', after, 10)).rows).toEqual([])
+    expect((await pendingVotes(postId, after, 10)).rows).toEqual([])
   })
 
   it('skips an obsolete Like after a clear and resumes at a replacement Like', async () => {
@@ -162,12 +166,21 @@ describe('outbound ActivityPub recovery source', () => {
     })
     await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
     const before = `${postId}__${FIRST_ID}`
-    const firstLikePage = await listPendingOutboundDistributionPage('votes', before, 10)
+    const firstLikePage = await pendingVotes(postId, before, 10)
     const firstLike = firstLikePage.rows.find(row => row.source === 'votes')
     if (!firstLike || firstLike.source !== 'votes') throw new Error('Expected first Like')
 
     await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 0 }])
-    const undoPage = await listPendingOutboundDistributionPage('votes', before, 10)
+    const obsoletePage = await pendingVotes(postId, before, 1)
+    expect(obsoletePage.rows).toEqual([])
+    expect(obsoletePage.next).toBe(firstLike.cursor)
+
+    const undoPage = await listPendingOutboundDistributionPage(
+      'votes',
+      obsoletePage.next,
+      1,
+      obsoletePage.throughPostId,
+    )
     const undo = undoPage.rows.find(row => row.source === 'votes')
     if (!undo || undo.source !== 'votes') throw new Error('Expected UndoLike')
     expect(undo.originalLikeActivityId).toBe(firstLike.activityId)
@@ -179,13 +192,9 @@ describe('outbound ActivityPub recovery source', () => {
     })
 
     await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
-    const obsoletePage = await listPendingOutboundDistributionPage('votes', before, 1)
-    expect(obsoletePage.rows).toEqual([])
-    expect(obsoletePage.next).toBe(firstLike.cursor)
-
     const replacementPage = await listPendingOutboundDistributionPage(
       'votes',
-      obsoletePage.next,
+      before,
       1,
       obsoletePage.throughPostId,
     )
@@ -199,6 +208,23 @@ describe('outbound ActivityPub recovery source', () => {
       originalLikeActivityId: null,
     })
     expect(replacement.activityId).not.toBe(firstLike.activityId)
+    // A one-row raw page proves the retired old Like no longer occupies the pending index.
+    expect(replacementPage.next).toBeUndefined()
+
+    await markActivityDistributionComplete({
+      activityType: 'Like',
+      activityId: replacement.activityId,
+      sourceUserId: voter.id,
+      targetPostId: postId,
+    })
+    const idlePage = await listPendingOutboundDistributionPage(
+      'votes',
+      before,
+      1,
+      replacementPage.throughPostId,
+    )
+    expect(idlePage.rows).toEqual([])
+    expect(idlePage.next).toBeUndefined()
   })
 
   it('skips an idle post window and pages pending ballots directly by post and vote id', async () => {
@@ -231,8 +257,9 @@ describe('outbound ActivityPub recovery source', () => {
 
     const firstVotePage = await listPendingOutboundDistributionPage(
       'votes',
-      `${emptyPostId}__${FIRST_ID}`,
+      `${votedPostId}__${FIRST_ID}`,
       1,
+      votedPostId,
     )
     expect(firstVotePage.rows).toHaveLength(1)
     const firstVote = firstVotePage.rows[0]
