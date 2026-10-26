@@ -29,49 +29,61 @@ describe('AI job replay of provider response states', () => {
   beforeEach(() => vi.stubEnv('OPENAI_API_KEY', 'owned-replay-state-provider-fixture'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('delays a job while its persisted response is still billing', async () => {
-    const name = `ai_replay_active_${randomUUID()}`
-    const queue = new Queue<AIAgentJobData>(name, connection)
-    const events = new QueueEvents(name, { ...connection, lastEventId: '0', blockTimeout: 1_000 })
-    const response = pendingResponse()
-    const retrieve = vi
-      .spyOn(Responses.prototype, 'retrieve')
-      .mockResolvedValueOnce(makeSdkResponse({ id: response.responseId, status: 'in_progress' }))
-    const cancel = vi
-      .spyOn(Responses.prototype, 'cancel')
-      .mockResolvedValueOnce(makeSdkResponse({ id: response.responseId, status: 'cancelled' }))
-    const create = vi.spyOn(Responses.prototype, 'create')
-    const worker = new Worker<AIAgentJobData>(
-      name,
-      (job: Job<AIAgentJobData>) => processAIAgentWorkerJob(job),
-      { ...connection, blockTimeout: 1_000 },
-    )
-    try {
-      await Promise.all([events.waitUntilReady(), worker.waitUntilReady()])
-      const delayed = once(events, 'delay-changed')
-      const admitted = await queue.add(
-        'story-post',
-        { post_id: randomUUID(), backgroundResponses: [response] },
-        { removeOnFail: false },
+  it.each(['active', 'provider-unavailable'] as const)(
+    'delays a replay with a persisted response when the provider is %s',
+    async providerState => {
+      const name = `ai_replay_${providerState}_${randomUUID()}`
+      const queue = new Queue<AIAgentJobData>(name, connection)
+      const events = new QueueEvents(name, { ...connection, lastEventId: '0', blockTimeout: 1_000 })
+      const response = pendingResponse()
+      const retrieve = vi.spyOn(Responses.prototype, 'retrieve')
+      if (providerState === 'active') {
+        retrieve.mockResolvedValueOnce(
+          makeSdkResponse({ id: response.responseId, status: 'in_progress' }),
+        )
+      } else {
+        retrieve.mockRejectedValueOnce(new Error('provider unavailable during replay'))
+      }
+      const cancel = vi
+        .spyOn(Responses.prototype, 'cancel')
+        .mockResolvedValueOnce(makeSdkResponse({ id: response.responseId, status: 'cancelled' }))
+      const create = vi.spyOn(Responses.prototype, 'create')
+      const worker = new Worker<AIAgentJobData>(
+        name,
+        (job: Job<AIAgentJobData>) => processAIAgentWorkerJob(job),
+        { ...connection, blockTimeout: 1_000 },
       )
-      if (!admitted) throw new Error('Expected an admitted job')
-      const [event] = await waitForRealGlideEvent(delayed, `AI active replay ${admitted.id}`)
-      expect(event).toMatchObject({ jobId: admitted.id })
-      expect(await admitted.getState()).toBe('delayed')
-      expect((await queue.getJob(admitted.id))?.data.backgroundResponses).toEqual([response])
-      expect(retrieve).toHaveBeenCalledOnce()
-      expect(cancel).toHaveBeenCalledOnce()
-      expect(create).not.toHaveBeenCalled()
-    } finally {
-      await worker.close(true)
-      await events.close()
-      await queue.obliterate({ force: true })
-      await queue.close()
-      retrieve.mockRestore()
-      cancel.mockRestore()
-      create.mockRestore()
-    }
-  })
+      try {
+        await Promise.all([events.waitUntilReady(), worker.waitUntilReady()])
+        const delayed = once(events, 'delay-changed')
+        const admitted = await queue.add(
+          'story-post',
+          { post_id: randomUUID(), backgroundResponses: [response] },
+          { removeOnFail: false },
+        )
+        if (!admitted) throw new Error('Expected an admitted job')
+        const [event] = await waitForRealGlideEvent(
+          delayed,
+          `AI ${providerState} replay ${admitted.id}`,
+        )
+        expect(event).toMatchObject({ jobId: admitted.id })
+        expect(await admitted.getState()).toBe('delayed')
+        expect((await queue.getJob(admitted.id))?.data.backgroundResponses).toEqual([response])
+        expect(retrieve).toHaveBeenCalledOnce()
+        if (providerState === 'active') expect(cancel).toHaveBeenCalledOnce()
+        else expect(cancel).not.toHaveBeenCalled()
+        expect(create).not.toHaveBeenCalled()
+      } finally {
+        await worker.close(true)
+        await events.close()
+        await queue.obliterate({ force: true })
+        await queue.close()
+        retrieve.mockRestore()
+        cancel.mockRestore()
+        create.mockRestore()
+      }
+    },
+  )
 
   it('finishes a previously completed processor after a no-usage response settles', async () => {
     const name = `ai_replay_completed_${randomUUID()}`

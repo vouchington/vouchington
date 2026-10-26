@@ -8,6 +8,7 @@ import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-
 import { retrieveOpenAIResponse } from '@modules/openai-utils/create-response'
 import { makeSdkTextResponse } from '@voucha/test-helpers/modules/openai-utils/responses'
 import type { AIAgentJobData, ReconcileBackgroundResponsesJobData } from '@queues/ai-agents/types'
+import { failedAiJobHasNoPendingResponses } from '@queues/ai-agents/enqueues/failed-job-recovery'
 import { processReconcileBackgroundResponses } from './process-reconcile-background-responses.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -145,8 +146,7 @@ describe('retained AI response sweeps with real GlideMQ', () => {
           Promise.all(
             ids.map(id => queue.add('classifier-run', {} as AIAgentJobData, { jobId: id })),
           ).then(jobs => jobs.filter((job): job is NonNullable<typeof job> => job !== null)),
-        canRemoveFailed: job =>
-          ((job.data as AIAgentJobData).backgroundResponses?.length ?? 0) === 0,
+        canRemoveFailed: failedAiJobHasNoPendingResponses,
       })
       expect(blocked).toEqual([])
       const sweep = await queue.add('reconcile-background-responses', {
@@ -172,8 +172,7 @@ describe('retained AI response sweeps with real GlideMQ', () => {
           Promise.all(
             ids.map(id => queue.add('classifier-run', {} as AIAgentJobData, { jobId: id })),
           ).then(jobs => jobs.filter((job): job is NonNullable<typeof job> => job !== null)),
-        canRemoveFailed: job =>
-          ((job.data as AIAgentJobData).backgroundResponses?.length ?? 0) === 0,
+        canRemoveFailed: failedAiJobHasNoPendingResponses,
       })
       expect(replay).toHaveLength(1)
       expect(replay[0]?.data.backgroundResponses).toBeUndefined()

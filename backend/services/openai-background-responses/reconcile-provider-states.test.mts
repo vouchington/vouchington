@@ -3,6 +3,8 @@ import { APIError } from 'openai'
 import { Responses, type Response } from 'openai/resources/responses/responses'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { countAiUsageRecordsForResponseId } from '@voucha/test-helpers'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { getAccountingUncertaintySource, hasRecordedAiUsageResponseId } from '@services/ai-usage'
 import {
   makeSdkResponse,
   makeSdkTextResponse,
@@ -75,6 +77,45 @@ describe('OpenAI background response recovery states', () => {
 
     await expect(reconcileBackgroundResponse(row)).resolves.toBe('no-usage')
     await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
+  })
+
+  it('keeps an invalid ledger write retryable until corrected provider usage records once', async () => {
+    await withReservedAiUsageDay(1_000_000, async day => {
+      const row = { ...candidate(), createdAt: new Date() }
+      const providerUsage = {
+        input_tokens: 13,
+        input_tokens_details: { cached_tokens: 2, cache_write_tokens: 0 },
+        output_tokens: 5,
+        output_tokens_details: { reasoning_tokens: 0 },
+        total_tokens: 18,
+      }
+      retrieve
+        .mockResolvedValueOnce(
+          makeSdkTextResponse('done', {
+            id: row.responseId,
+            usage: {
+              ...providerUsage,
+              // Exercise a real ledger range rejection, not the provider normalizer.
+              input_tokens: 2 ** 31,
+              total_tokens: 2 ** 31 + providerUsage.output_tokens,
+            },
+          }),
+        )
+        .mockResolvedValueOnce(
+          makeSdkTextResponse('done', { id: row.responseId, usage: providerUsage }),
+        )
+
+      await expect(reconcileBackgroundResponse(row)).resolves.toBe('accounting-uncertain')
+      await expect(getAccountingUncertaintySource(day)).resolves.toBe('ledger_write_failed')
+      await expect(hasRecordedAiUsageResponseId(row.responseId)).resolves.toBe(false)
+      await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
+
+      await expect(reconcileBackgroundResponse(row)).resolves.toBe('recorded')
+      await expect(reconcileBackgroundResponse(row)).resolves.toBe('already-recorded')
+      await expect(hasRecordedAiUsageResponseId(row.responseId)).resolves.toBe(true)
+      await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(1)
+      expect(retrieve).toHaveBeenCalledTimes(2)
+    })
   })
 
   it('expires a job-owned response without inventing a usage charge', async () => {
