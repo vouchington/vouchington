@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
-import { loginAsUser, loginAsTestUser, loginAsAdmin } from '../auth.mts'
+import { loginAsUser, loginAsTestUser } from '../auth.mts'
 
 const TEST_DID = '019f0000-0000-7000-8000-000000000010'
 const TEST_UID = '019f0000-0000-7000-8000-000000000011'
@@ -93,7 +93,7 @@ describe('loginAsUser helpers', () => {
     expect(page.waitForURL).not.toHaveBeenCalled()
   })
 
-  it('loginAsTestUser and loginAsAdmin call loginAsUser with TEST_USER_ID', async () => {
+  it('loginAsTestUser calls loginAsUser with TEST_USER_ID', async () => {
     mockCreateDeviceAndSessionTokens.mockResolvedValue(
       createMockTokenResult('device-token-2', 'session-token-2'),
     )
@@ -107,12 +107,6 @@ describe('loginAsUser helpers', () => {
     }
 
     await loginAsTestUser(page as never, dependencies)
-    expect(mockCreateDeviceAndSessionTokens).toHaveBeenLastCalledWith({
-      did: TEST_DID,
-      uid: TEST_USER_ID,
-    })
-
-    await loginAsAdmin(page as never, dependencies)
     expect(mockCreateDeviceAndSessionTokens).toHaveBeenLastCalledWith({
       did: TEST_DID,
       uid: TEST_USER_ID,

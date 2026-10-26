@@ -1,5 +1,5 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { loginAsTestUser, loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
+import { loginAsTestUser, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestPost, createTestUser } from '../../../backend/test-helpers/index.mts'
 
@@ -60,7 +60,7 @@ test.describe('Post Edit', () => {
   })
 
   test("admin sees Edit button even on another user's post", async ({ page }) => {
-    await loginAsAdmin(page)
+    await loginAsTestUser(page)
     await navigateTo(page, `/discussion/${postId}`)
 
     // Open the overflow kebab to reveal the edit link
@@ -70,7 +70,7 @@ test.describe('Post Edit', () => {
   })
 
   test('admin can navigate to the article edit page from post detail', async ({ page }) => {
-    await loginAsAdmin(page)
+    await loginAsTestUser(page)
     await navigateTo(page, `/article/${SEEDED_ARTICLE_ID}`)
 
     // Open the overflow kebab to reveal the edit link
@@ -87,7 +87,7 @@ test.describe('Post Edit', () => {
   })
 
   test('admin can navigate to the blog post edit page from post detail', async ({ page }) => {
-    await loginAsAdmin(page)
+    await loginAsTestUser(page)
     await navigateTo(page, `/blog-post/${SEEDED_BLOG_POST_ID}`)
 
     // Open the overflow kebab to reveal the edit link
@@ -104,7 +104,7 @@ test.describe('Post Edit', () => {
   })
 
   test('admin sees official account gate on review edit page', async ({ page }) => {
-    await loginAsAdmin(page)
+    await loginAsTestUser(page)
     await navigateTo(page, `/review/${SEEDED_REVIEW_ID}`)
 
     // Open the overflow kebab to reveal the edit link

@@ -1,5 +1,5 @@
 import { expect, test } from '../helpers/test.mts'
-import { loginAsAdmin, loginAsTestUser, loginAsUser } from '../helpers/auth.mts'
+import { loginAsTestUser, loginAsUser } from '../helpers/auth.mts'
 import { AUTH_STATE } from '../helpers/auth-state.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { chooseVote, voteBinaryChoice } from '../helpers/semantic-vote.mts'
@@ -45,7 +45,7 @@ test.describe('Topic Recommendations', () => {
   test('admins can reach the topic recommendation review queue from CMS navigation', async ({
     page,
   }) => {
-    await loginAsAdmin(page)
+    await loginAsTestUser(page)
     // Navigate to the topics intent so the recommendations link is visible.
     // sidebar-nav-recommendations lives in the topics intent Browse group.
     await navigateTo(page, '/topics')

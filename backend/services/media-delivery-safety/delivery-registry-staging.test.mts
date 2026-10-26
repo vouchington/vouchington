@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -9,7 +8,10 @@ import {
   scheduleTestMediaDeliveryRetry,
   setTestUserProfileImage,
 } from '@voucha/test-helpers'
-import { setTestMediaRecoveryState } from '@voucha/test-helpers/media-delivery-recovery'
+import {
+  setTestMediaRecoveryState,
+  stageTestImagePlacementDeliveryRecordsForImageIds,
+} from '@voucha/test-helpers/media-delivery-recovery'
 import { stageImagePlacementDeliveryRecord } from './index.mts'
 
 describe('media registry staging state', () => {
@@ -51,7 +53,7 @@ describe('media registry staging state', () => {
       expect(await stageImagePlacementDeliveryRecord({ ...tuple, state: 'allow' })).toEqual(
         placement,
       )
-      expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([tuple.imageId])).toBe(0)
+      expect(await stageTestImagePlacementDeliveryRecordsForImageIds([tuple.imageId])).toBe(0)
       expect(await Promise.all(keys.map(getTestMediaDeliveryRecordSnapshot))).toEqual(before)
     }
   })

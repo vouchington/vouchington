@@ -4,7 +4,7 @@
 
 import { test, expect } from '../../playwright/helpers/test.mts'
 import { TEST_PNG, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { loginAsAdmin } from '../../playwright/helpers/auth.mts'
+import { loginAsTestUser as loginAsAdmin } from '../../playwright/helpers/auth.mts'
 import { insertTestTopic } from '../../playwright/helpers/insert-test-topic.mts'
 
 const hasAwsCredentials = Boolean(process.env.S3_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID)

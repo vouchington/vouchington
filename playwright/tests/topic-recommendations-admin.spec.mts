@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '../helpers/test.mts'
-import { loginAsAdmin, loginAsUser } from '../helpers/auth.mts'
+import { loginAsTestUser as loginAsAdmin, loginAsUser } from '../helpers/auth.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import {
   CONTRIBUTING_USER_AGE_MS,
