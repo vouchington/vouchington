@@ -276,9 +276,9 @@ describe('durable browser device-bound session authority', () => {
     const sid = fixture.tokens.sessionToken.payload.sid
     expect((await readSessionDeviceAuthority(sid))!.device_bound_session_binding).toBeNull()
     await shiftTestDeviceAuthorityIssuedAt(fixture.user.id, sid)
-    await expect(
-      refreshSessionState({ ...fixture.base, dbscProof: proof }),
-    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    await expect(refreshSessionState({ ...fixture.base, dbscProof: proof })).rejects.toMatchObject({
+      code: 'SESSION_RELOGIN_REQUIRED',
+    })
     expect((await readSessionDeviceAuthority(sid))!.device_bound_session_binding).toBeNull()
   })
 

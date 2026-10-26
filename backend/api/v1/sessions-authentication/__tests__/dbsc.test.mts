@@ -265,9 +265,7 @@ describe('browser device-bound session protocol', () => {
       .send({})
       .expect(mode === 'logout' ? 204 : 200)
     expect(ended.headers['clear-site-data']).toBeUndefined()
-    expect(cookieTokens(ended.headers)).toEqual(
-      expect.arrayContaining(['dt=', 'st=']),
-    )
+    expect(cookieTokens(ended.headers)).toEqual(expect.arrayContaining(['dt=', 'st=']))
     expect((await readSessionDeviceAuthority(response.body.sid))!.revoked_at).toBeInstanceOf(Date)
   })
 })
