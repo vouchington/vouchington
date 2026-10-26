@@ -13,6 +13,7 @@ export interface VoteIntegrityFlag {
   post_id: string | null
   topic_id: string | null
   hostname_id: string | null
+  hostname: string | null
   rss_feed_item_id: string | null
   entity_relation_id: string | null
   agent_moderation_id: string | null

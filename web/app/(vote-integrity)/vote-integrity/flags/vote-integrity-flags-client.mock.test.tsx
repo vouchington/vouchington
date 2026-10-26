@@ -58,6 +58,7 @@ const initialData = {
       post_id: null,
       topic_id: null,
       hostname_id: null,
+      hostname: null,
       rss_feed_item_id: null,
       entity_relation_id: null,
       agent_moderation_id: null,
@@ -75,6 +76,26 @@ const initialData = {
 describe('VoteIntegrityFlagsClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('renders the hostname instead of its UUID in a flag row', () => {
+    render(
+      <VoteIntegrityFlagsClient
+        initialData={{
+          ...initialData,
+          results: [
+            {
+              ...initialData.results[0]!,
+              hostname_id: 'hostname-uuid',
+              hostname: 'votes.example.com',
+            },
+          ],
+        }}
+        initialStatus='pending'
+      />,
+    )
+    expect(screen.getByText('Hostname: votes.example.com')).toBeInTheDocument()
+    expect(screen.queryByText(/hostname-uuid/)).not.toBeInTheDocument()
   })
 
   it('updates the status selector immediately when changing filters', async () => {

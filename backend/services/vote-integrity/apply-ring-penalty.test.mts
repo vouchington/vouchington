@@ -10,6 +10,8 @@ import {
   insertTestPostVote,
   insertTestPost,
   getTestPenaltiesByFlagId,
+  insertTestUrlHostname,
+  insertTestVoteIntegrityFlag,
 } from '@voucha/test-helpers'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -44,6 +46,15 @@ describe('apply-ring-penalty', () => {
   }
 
   describe('applyVoteRingPenalty', () => {
+    it('keeps the hostname fact when applying a flag penalty', async () => {
+      const hostname = `vote-penalty-${randomBytes(8).toString('hex')}.example.com`
+      const hostnameId = await insertTestUrlHostname({ hostname })
+      const flagId = await insertTestVoteIntegrityFlag({ hostnameId })
+
+      const result = await applyVoteRingPenalty(flagId, adminUser.id)
+      expect(result.flag).toMatchObject({ hostname_id: hostnameId, hostname })
+    })
+
     it('creates penalties for all upvoters of the flagged entity', async () => {
       const postId = await makePost(randomSlug())
 

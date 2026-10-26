@@ -43,13 +43,13 @@ vi.mock(import('@/hooks/use-paginated-list'), () => ({
 }))
 
 import { useVoteIntegrityFlags } from '../use-vote-integrity-flags'
-
 function makeFlag(overrides: Record<string, unknown> = {}) {
   return {
     id: 'flag-1',
     post_id: 'post-1',
     topic_id: null,
     hostname_id: null,
+    hostname: null,
     rss_feed_item_id: null,
     entity_relation_id: null,
     agent_moderation_id: null,

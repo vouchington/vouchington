@@ -7,7 +7,7 @@ import {
 import { markJwtStaleBatch } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { FLAG_COLUMNS } from './flag-columns.mts'
+import { FLAG_COLUMNS_WITH_HOSTNAME } from './flag-columns.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
 
 export type AppliedReportAbusePenalty = {
@@ -16,7 +16,7 @@ export type AppliedReportAbusePenalty = {
 }
 
 export type ApplyReportAbusePenaltyResult = {
-  flag: ReportIntegrityFlag
+  flag: ReportIntegrityFlag & { hostname: string | null }
   penalized_user_count: number
   /** Created penalty rows, so callers can surface revocable penalty IDs. */
   penalties: AppliedReportAbusePenalty[]
@@ -63,7 +63,7 @@ export async function applyReportAbusePenalty(
   })
 
   async function applyPenaltyInTransaction(query: TransactionQuery): Promise<{
-    flag: ReportIntegrityFlag
+    flag: ReportIntegrityFlag & { hostname: string | null }
     penalties: AppliedReportAbusePenalty[]
   }> {
     // Atomically claim the flag as penalized. If another admin already resolved it
@@ -74,9 +74,11 @@ export async function applyReportAbusePenalty(
       SET resolved_at = NOW(), resolved_by_id = ${currentUserId}, resolution = 'penalized'
       WHERE id = ${flagId}
         AND resolved_at IS NULL
-      RETURNING`.append(FLAG_COLUMNS),
+      RETURNING`.append(FLAG_COLUMNS_WITH_HOSTNAME),
     )
-    const resolvedFlag = resolvedRows[0] as ReportIntegrityFlag | undefined
+    const resolvedFlag = resolvedRows[0] as
+      | (ReportIntegrityFlag & { hostname: string | null })
+      | undefined
     if (!resolvedFlag) {
       const { rows } = await query(sql`/* applyReportAbusePenalty_flagExists */
         SELECT EXISTS(SELECT 1 FROM report_integrity_flags WHERE id = ${flagId}) AS flag_exists

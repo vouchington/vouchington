@@ -6,7 +6,7 @@ import { read, write } from '@data-stores/psql'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
-import { FLAG_COLUMNS } from './flag-columns.mts'
+import { FLAG_COLUMNS_WITH_HOSTNAME } from './flag-columns.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
 import type { IntegrityFlagStatus } from '@ts-shared/utils/moderation-catalogs'
 
@@ -18,22 +18,22 @@ export type GetReportIntegrityFlagsOptions = {
 }
 
 export type GetReportIntegrityFlagsResult = {
-  results: ReportIntegrityFlag[]
+  results: Array<ReportIntegrityFlag & { hostname: string | null }>
   page_info: PageInfo
 }
 
 export async function getReportIntegrityFlagByIdFromPrimary(
   id: string,
-): Promise<ReportIntegrityFlag | null> {
+): Promise<(ReportIntegrityFlag & { hostname: string | null }) | null> {
   const query = sql`/* getReportIntegrityFlagByIdFromPrimary */
     SELECT`
-  query.append(FLAG_COLUMNS)
+  query.append(FLAG_COLUMNS_WITH_HOSTNAME)
   query.append(sql`
     FROM report_integrity_flags
     WHERE id = ${id}
   `)
   const { rows } = await write(query)
-  return (rows[0] as ReportIntegrityFlag) ?? null
+  return (rows[0] as ReportIntegrityFlag & { hostname: string | null }) ?? null
 }
 
 export async function getReportIntegrityFlags(
@@ -52,7 +52,7 @@ export async function getReportIntegrityFlags(
 
   const query = sql`/* getReportIntegrityFlags */
     SELECT`
-  query.append(FLAG_COLUMNS)
+  query.append(FLAG_COLUMNS_WITH_HOSTNAME)
   query.append(sql`
     FROM report_integrity_flags
     WHERE TRUE
@@ -69,7 +69,7 @@ export async function getReportIntegrityFlags(
   query.append(sql` ORDER BY id DESC LIMIT ${clampedLimit + 1}`)
 
   const { rows } = await read(query)
-  const flags = rows as ReportIntegrityFlag[]
+  const flags = rows as Array<ReportIntegrityFlag & { hostname: string | null }>
   const hasNextPage = flags.length > clampedLimit
   const results = hasNextPage ? flags.slice(0, clampedLimit) : flags
   return {

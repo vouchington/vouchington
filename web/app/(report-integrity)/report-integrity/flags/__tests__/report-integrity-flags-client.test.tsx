@@ -97,14 +97,19 @@ describe('ReportIntegrityFlagsClient — rendering', () => {
     )
   })
 
-  it('renders a hostname_id entity link', () => {
+  it('links a hostname flag by its hostname', () => {
     render(
       <ReportIntegrityFlagsClient
-        initialData={makeInitialData([makeFlag({ hostname_id: 'hostname-abcdefgh' })])}
+        initialData={makeInitialData([
+          makeFlag({ hostname_id: 'hostname-abcdefgh', hostname: 'flags.example.com' }),
+        ])}
         initialStatus='pending'
       />,
     )
-    expect(screen.getByText(/Hostname: hostname/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Hostname: flags.example.com' })).toHaveAttribute(
+      'href',
+      '/domain/flags.example.com',
+    )
   })
 
   it('renders an rss_feed_item_id entity link', () => {

@@ -4,14 +4,14 @@ import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { VoteIntegrityFlag } from './create-flag.mts'
 import type { VoteIntegrityResolution } from '@ts-shared/utils/moderation-catalogs'
-import { VOTE_INTEGRITY_FLAG_PROJECTION } from './flag-projection.mts'
+import { VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME } from './flag-projection.mts'
 
 export async function resolveVoteIntegrityFlag(
   flagId: string,
   resolvedById: string,
   resolution: VoteIntegrityResolution,
   options: { query?: TransactionQuery } = {},
-): Promise<VoteIntegrityFlag> {
+): Promise<VoteIntegrityFlag & { hostname: string | null }> {
   return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     const query = sql`/* resolveVoteIntegrityFlag */
     UPDATE vote_integrity_flags
@@ -22,10 +22,10 @@ export async function resolveVoteIntegrityFlag(
     WHERE id = ${flagId}
       AND resolved_at IS NULL
     RETURNING `
-    query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+    query.append(VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME)
     const { rows } = await transaction(query)
 
-    const flag = rows[0] as VoteIntegrityFlag | undefined
+    const flag = rows[0] as (VoteIntegrityFlag & { hostname: string | null }) | undefined
     if (!flag) throw createHttpError(404, 'Flag not found or already resolved')
     await recordModeratorAction(
       resolvedById,

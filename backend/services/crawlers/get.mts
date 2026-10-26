@@ -84,7 +84,7 @@ export const getCrawlerForHostnameId = async (
 export const getCrawlersForHostname = async (
   hostnameId: string,
   options: QueryOptions = {},
-): Promise<Crawler[]> => {
+): Promise<Array<Crawler & { hostname: string }>> => {
   if (!isUUID(hostnameId)) {
     throw createError(422, `Invalid hostname ID: ${hostnameId}`)
   }
@@ -94,6 +94,7 @@ export const getCrawlersForHostname = async (
     SELECT
       c.id,
       c.hostname_id,
+      h.hostname,
       c.description,
       c.crawler_type,
       c.priority,
@@ -106,6 +107,7 @@ export const getCrawlersForHostname = async (
       c.updated_at,
       c.deleted_at
     FROM hostname_crawler_configurations c
+    JOIN url_hostnames h ON h.id = c.hostname_id
     WHERE c.hostname_id = $1
       AND c.deleted_at IS NULL
     ORDER BY c.priority DESC, c.id ASC
@@ -114,7 +116,7 @@ export const getCrawlersForHostname = async (
     options,
   )
 
-  return rows.map(toCrawler)
+  return rows.map(row => ({ ...toCrawler(row), hostname: row.hostname as string }))
 }
 
 export function toCrawler(row: Record<string, unknown>): Crawler {

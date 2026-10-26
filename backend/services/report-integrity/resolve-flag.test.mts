@@ -1,7 +1,11 @@
 import { beforeAll, describe, expect, expectTypeOf, it } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { createTestUserDirect, insertTestReportIntegrityFlag } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  insertTestReportIntegrityFlag,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
 import { resolveReportIntegrityFlag } from './resolve-flag.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { ReportIntegrityPatchResolution } from '@ts-shared/utils/moderation-catalogs'
@@ -34,6 +38,19 @@ describe('resolveReportIntegrityFlag', () => {
     expect(resolved.resolved_at).not.toBeNull()
     expect(resolved.resolved_by_id).toBe(adminUser.id)
     expect(resolved.resolution).toBe('dismissed')
+  })
+
+  it('keeps the hostname fact in the resolution result', async () => {
+    const hostname = `report-resolution-${randomBytes(8).toString('hex')}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const flagId = await insertTestReportIntegrityFlag({ hostnameId })
+
+    await expect(
+      resolveReportIntegrityFlag(flagId, adminUser.id, 'dismissed'),
+    ).resolves.toMatchObject({
+      hostname_id: hostnameId,
+      hostname,
+    })
   })
 
   it('throws 404 when resolving an already-resolved flag', async () => {

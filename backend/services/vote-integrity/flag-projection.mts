@@ -30,3 +30,6 @@ export const VOTE_INTEGRITY_FLAG_PROJECTION = `
   resolved_by_id,
   resolution,
   created_at`
+
+export const VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME = `${VOTE_INTEGRITY_FLAG_PROJECTION},
+  (SELECT hostname FROM url_hostnames WHERE id = vote_integrity_flags.hostname_id) AS hostname`

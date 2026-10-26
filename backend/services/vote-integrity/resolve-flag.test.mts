@@ -11,6 +11,8 @@ import {
   insertTestAgentModeration,
   insertTestAgentPrompt,
   insertTestPost,
+  insertTestUrlHostname,
+  insertTestVoteIntegrityFlag,
 } from '@voucha/test-helpers'
 import { createVoteIntegrityFlag } from './create-flag.mts'
 import { getVoteIntegrityFlagByIdFromPrimary } from './get-flags.mts'
@@ -41,6 +43,19 @@ describe('resolve-flag', () => {
   }
 
   describe('resolveVoteIntegrityFlag', () => {
+    it('keeps the hostname fact in the resolution result', async () => {
+      const hostname = `vote-resolution-${randomBytes(8).toString('hex')}.example.com`
+      const hostnameId = await insertTestUrlHostname({ hostname })
+      const flagId = await insertTestVoteIntegrityFlag({ hostnameId })
+
+      await expect(
+        resolveVoteIntegrityFlag(flagId, adminUser.id, 'dismissed'),
+      ).resolves.toMatchObject({
+        hostname_id: hostnameId,
+        hostname,
+      })
+    })
+
     it('sets resolved_at, resolved_by_id, and resolution on the flag', async () => {
       const postId = await makePost(randomSlug())
       const flag = await createVoteIntegrityFlag('post', postId, 'velocity_spike', {

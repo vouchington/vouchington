@@ -24,6 +24,14 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Hostname identity in presentation
+
+On crawler and integrity screens, hostname links and labels use the hostname string. Their reads
+include that natural key alongside factual hostname IDs, so clients can show a useful identity
+without exposing a UUID in presentation. The ID remains the API and MCP reference for mutations,
+joins, and exact reads. Native clients can adopt the hostname fact when rendering these records;
+the added response field does not change their existing request contract.
+
 ## Copyright filing and staff matches
 
 The web notice form discloses whether a filing will be attributed to a signed-in user or a guest.

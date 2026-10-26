@@ -26,3 +26,6 @@ export function flagColumns(flag: string, reporters: string): string {
 
 /** Columns for `SELECT ... FROM report_integrity_flags` and `UPDATE ... RETURNING`. */
 export const FLAG_COLUMNS = flagColumns('report_integrity_flags', 'report_integrity_flag_reporters')
+
+export const FLAG_COLUMNS_WITH_HOSTNAME = `${FLAG_COLUMNS},
+  (SELECT hostname FROM url_hostnames WHERE id = report_integrity_flags.hostname_id) AS hostname`

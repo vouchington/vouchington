@@ -57,6 +57,7 @@ const flag: VoteIntegrityFlag = {
   post_id: null,
   topic_id: null,
   hostname_id: null,
+  hostname: null,
   rss_feed_item_id: null,
   entity_relation_id: null,
   agent_moderation_id: null,

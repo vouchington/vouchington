@@ -11,7 +11,7 @@ export async function searchCrawlers(
     limit?: number
     after?: string | null
   } = {},
-): Promise<{ results: Crawler[]; page_info: PageInfo }> {
+): Promise<{ results: Array<Crawler & { hostname: string }>; page_info: PageInfo }> {
   const limit = clampLimit(options.limit)
 
   let afterId: string | null = null
@@ -24,6 +24,7 @@ export async function searchCrawlers(
     SELECT
       c.id,
       c.hostname_id,
+      h.hostname,
       c.description,
       c.crawler_type,
       c.priority,
@@ -36,6 +37,7 @@ export async function searchCrawlers(
       c.updated_at,
       c.deleted_at
     FROM hostname_crawler_configurations c
+    JOIN url_hostnames h ON h.id = c.hostname_id
     WHERE c.deleted_at IS NULL`
 
   if (afterId !== null) {
@@ -46,7 +48,10 @@ export async function searchCrawlers(
 
   const { rows } = await read(query)
   const hasNextPage = rows.length > limit
-  const results = (hasNextPage ? rows.slice(0, limit) : rows).map(toCrawler)
+  const results = (hasNextPage ? rows.slice(0, limit) : rows).map(row => ({
+    ...toCrawler(row),
+    hostname: row.hostname as string,
+  }))
 
   const page_info = buildPageInfo(results, {
     hasNextPage,

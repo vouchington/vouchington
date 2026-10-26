@@ -1151,11 +1151,11 @@
       },
       "read_crawler": {
         "measured": {
-          "list": 7234,
+          "list": 5483,
           "core": 885
         },
         "max": {
-          "list": 8000,
+          "list": 6000,
           "core": 1000
         }
       },
@@ -1211,7 +1211,7 @@
       },
       "read_report_integrity": {
         "measured": {
-          "list": 3186,
+          "list": 3230,
           "core": 1020
         },
         "max": {
@@ -1221,17 +1221,17 @@
       },
       "review_integrity_flag": {
         "measured": {
-          "list": 2875,
+          "list": 2963,
           "core": 696
         },
         "max": {
-          "list": 3000,
+          "list": 4000,
           "core": 1000
         }
       },
       "apply_integrity_penalty": {
         "measured": {
-          "list": 3214,
+          "list": 3302,
           "core": 713
         },
         "max": {
@@ -1251,7 +1251,7 @@
       },
       "read_vote_integrity": {
         "measured": {
-          "list": 3449,
+          "list": 3493,
           "core": 1061
         },
         "max": {

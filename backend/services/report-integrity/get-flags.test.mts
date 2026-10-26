@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
-import { createTestUserDirect, insertTestReportIntegrityFlag } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  insertTestReportIntegrityFlag,
+  insertTestUrlHostname,
+} from '@voucha/test-helpers'
 import { getReportIntegrityFlags, getReportIntegrityFlagByIdFromPrimary } from './get-flags.mts'
 import type { PrivateUser } from '@services/users/types'
 import { decodeScopedUuidCursor, encodeCursor, encodeScopedUuidCursor } from '@modules/pagination'
@@ -61,6 +65,19 @@ describe('getReportIntegrityFlags / getReportIntegrityFlagByIdFromPrimary', () =
   })
 
   describe('getReportIntegrityFlags', () => {
+    it('returns the natural hostname alongside the factual hostname id', async () => {
+      const hostname = `report-integrity-${randomBytes(8).toString('hex')}.example.com`
+      const hostnameId = await insertTestUrlHostname({ hostname })
+      const flagId = await insertTestReportIntegrityFlag({ hostnameId })
+
+      const flags = await getReportIntegrityFlags({ ids: [flagId] })
+      expect(flags.results[0]).toMatchObject({ hostname_id: hostnameId, hostname })
+      await expect(getReportIntegrityFlagByIdFromPrimary(flagId)).resolves.toMatchObject({
+        hostname_id: hostnameId,
+        hostname,
+      })
+    })
+
     it('returns results and page_info', async () => {
       const id = await createFlag()
       const result = await getReportIntegrityFlags({ ids: [id] })
