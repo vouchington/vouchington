@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import type { prepareActivityDistributionPage } from '@services/activitypub-delivery'
+import type {
+  deliverActivityToInbox,
+  prepareActivityDistributionPage,
+} from '@services/activitypub-delivery'
 import type { isFederationEnabledForUser } from '@services/users'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
+import { observePostgresReadRoutingForTest } from '@voucha/test-helpers/postgres-read-routing'
+import { updateUserFields } from '@services/users/update-fields'
+import { getOrCreateActorKeyPair } from '@services/ap-actor-keys'
 import type { enqueueBulkDeliverActivity } from '@queues/activitypub/enqueues/delivery'
-import { distributeActivity } from './delivery.mts'
+import { deliverActivity, distributeActivity } from './delivery.mts'
 import {
   FOLLOW_DATA,
   UNDO_FOLLOW_DATA,
@@ -123,5 +129,78 @@ describe('distributeActivity', () => {
     enqueueBulkDeliverActivityMock.mockRejectedValueOnce(error)
     await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).rejects.toBe(error)
     expect(prepareActivityDistributionPageMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ActivityPub terminal eligibility reads', () => {
+  it('checks both Follow participants on primary before completing distribution', async () => {
+    const source = await createTestUserDirect()
+    const target = await createTestUserDirect()
+    await Promise.all([
+      updateUserFields(source.id, { is_fediverse_federation_enabled: true }),
+      updateUserFields(target.id, { is_fediverse_federation_enabled: true }),
+    ])
+    const data = {
+      activityId: randomUUID(),
+      activityType: 'Follow' as const,
+      sourceUserId: source.id,
+      targetUserId: target.id,
+    }
+
+    const routing = await observePostgresReadRoutingForTest()
+    try {
+      await expect(routing.run(() => distributeActivity(data))).resolves.toEqual({
+        enqueued: 0,
+        completed: true,
+      })
+      // Source opt-in, target opt-in, and the admitted follower page each acquire primary.
+      expect(routing.primaryAcquisitions()).toBe(3)
+      expect(routing.replicaAcquisitions()).toBe(0)
+
+      await updateUserFields(target.id, { is_fediverse_federation_enabled: false })
+      await expect(routing.run(() => distributeActivity(data))).resolves.toEqual({
+        enqueued: 0,
+        completed: true,
+      })
+      // The disabled target prevents the page read after the two authoritative opt-in reads.
+      expect(routing.primaryAcquisitions()).toBe(5)
+      expect(routing.replicaAcquisitions()).toBe(0)
+    } finally {
+      await routing.close()
+    }
+  })
+
+  it('checks both opt-ins and the actor key on primary before delivering', async () => {
+    const source = await createTestUserDirect()
+    const target = await createTestUserDirect()
+    await Promise.all([
+      updateUserFields(source.id, { is_fediverse_federation_enabled: true }),
+      updateUserFields(target.id, { is_fediverse_federation_enabled: true }),
+    ])
+    await getOrCreateActorKeyPair(source.id)
+    const send = vi.fn<typeof deliverActivityToInbox>().mockResolvedValue(undefined)
+    const routing = await observePostgresReadRoutingForTest()
+    try {
+      await expect(
+        routing.run(() =>
+          deliverActivity(
+            {
+              activityId: randomUUID(),
+              activityType: 'Follow',
+              sourceUserId: source.id,
+              targetUserId: target.id,
+              inboxUrl: 'https://follower.example/inbox',
+            },
+            { deliverActivityToInbox: send },
+          ),
+        ),
+      ).resolves.toEqual({ delivered: true })
+      expect(send).toHaveBeenCalledOnce()
+      // Two opt-in reads and the actor-key read must all reach the writer before HTTP delivery.
+      expect(routing.primaryAcquisitions()).toBe(3)
+      expect(routing.replicaAcquisitions()).toBe(0)
+    } finally {
+      await routing.close()
+    }
   })
 })
