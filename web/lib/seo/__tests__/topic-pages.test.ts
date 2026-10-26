@@ -84,6 +84,33 @@ describe('createTopicSectionMetadata', () => {
     expect(result).not.toEqual(createNoIndexMetadata())
     expect(result.title).toContain('Posts')
   })
+
+  it('maps the topic description language into Open Graph locale without a locale-prefixed canonical URL', () => {
+    const result = createTopicSectionMetadata(
+      {
+        ...topic,
+        lingua_rs_detected_language: 'fr',
+        markdown: 'Une carte de récompenses.',
+        html: '<p>Une carte de récompenses.</p>',
+      },
+      'card',
+      section,
+    )
+
+    expect(result.alternates?.canonical).toBe('/card/amex-gold/posts')
+    expect(result.openGraph).toMatchObject({ locale: 'fr_FR' })
+  })
+
+  it('keeps the default Open Graph locale when the detected topic language is unsupported', () => {
+    const result = createTopicSectionMetadata(
+      { ...topic, lingua_rs_detected_language: 'zz' },
+      'card',
+      section,
+    )
+
+    expect(result.alternates?.canonical).toBe('/card/amex-gold/posts')
+    expect(result.openGraph).toMatchObject({ locale: 'en_US' })
+  })
 })
 
 describe('computeRatingStats', () => {
