@@ -24,6 +24,13 @@ export async function seedUsers(count = 2000): Promise<void> {
         `/* seedExplainData */ INSERT INTO users (id, username) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
         values,
       )
+      if (i === 0) {
+        // The restored baseline has tiny-table statistics. User insert triggers look up and
+        // update these rows as the corpus grows, so settle their plans after the first batch.
+        await query(
+          '/* seedExplainUsersStats */ ANALYZE users, retained_user_identities, individuals, households',
+        )
+      }
     }
 
     await transaction.commit()

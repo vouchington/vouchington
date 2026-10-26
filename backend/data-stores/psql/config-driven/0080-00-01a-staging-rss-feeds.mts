@@ -98,6 +98,7 @@ ON CONFLICT DO NOTHING;`,
 
 export default function generateStagingRssFeedsSQL(
   environment: string | undefined = process.env.ENVIRONMENT,
+  feeds: readonly StagingRssFeed[] = STAGING_RSS_FEEDS,
 ): string {
   if (environment !== 'staging') return ''
   return [
@@ -107,6 +108,6 @@ INSERT INTO media_types (mime_type)
 SELECT ${lit(RSS_MIME_TYPE)}
 WHERE NOT EXISTS (SELECT 1 FROM media_types WHERE mime_type = ${lit(RSS_MIME_TYPE)})
 ON CONFLICT DO NOTHING;`,
-    ...STAGING_RSS_FEEDS.flatMap(feedStatements),
+    ...feeds.flatMap(feedStatements),
   ].join('\n')
 }
