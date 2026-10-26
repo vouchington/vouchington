@@ -37,11 +37,11 @@ export async function unlinkTopicAlias(
     const { rows: existingRows } = await query<TopicAlias & { active_topic_slug: string | null }>(
       `/* unlinkTopicAlias lock */
       SELECT
-        -- no-mistakes-disable-next-line postgres-required-predicates: merge moves alias ownership to destination; deleted_at remains checked
         topic_aliases.id,
         topic_aliases.topic_id,
         topic_aliases.alias,
         active_topic.slug AS active_topic_slug
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge moves alias ownership to destination; deleted_at remains checked
       FROM topic_aliases
       LEFT JOIN topics active_topic
         ON active_topic.id = topic_aliases.topic_id
