@@ -5,10 +5,6 @@ import { getTopicBySlug } from '@services/topics/get'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 
-// The Amex all-cards program is seeded via seed/referral-programs-topics.csv (slug
-// `amex-referral-program`, hostname `*.americanexpress.com`, pathname
-// `/en-us/referral/all-cards%`), not created as a per-test fixture -- only a link on that program
-// clears requestReferralLinkUnfurl's Amex-only gate, so test URLs must match its real seeded rule.
 function buildAmexReferralUrl(suffix: string) {
   return `https://www.americanexpress.com/en-us/referral/all-cards?ref=${suffix}-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
@@ -23,9 +19,9 @@ describe('unfurls', () => {
     otherUser = await createTestUserDirect()
 
     const amexProgram = await getTopicBySlug('amex-referral-program')
-    if (!amexProgram) throw new Error('Amex referral program seed topic not found')
+    if (!amexProgram) throw new Error('Amex referral program migration invariant not found')
     referralProgramId = amexProgram.id
-  }, 30_000)
+  })
 
   async function createOwnerParentLink(labelSuffix: string) {
     const link = await createUserReferralLink(owner, WEB_PROVENANCE, {
