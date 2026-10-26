@@ -38,24 +38,26 @@ describe('browser session renewal coordination', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it.each(['missing', 'rejected'] as const)(
-    'recovers through login when browser locks are %s',
-    async condition => {
-      vi.stubGlobal(
-        'navigator',
-        condition === 'missing'
-          ? {}
-          : { locks: { request: () => Promise.reject(new Error('Lock unavailable')) } },
-      )
-      const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }))
-      vi.stubGlobal('fetch', fetchMock)
-      await expect(renewBrowserSession()).rejects.toBeInstanceOf(Error)
-      expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-        '/api/v1/session',
-        expect.objectContaining({ method: 'DELETE' }),
-      )
-    },
-  )
+  it('clears credentials when browser coordination is unavailable', async () => {
+    vi.stubGlobal('navigator', {})
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(renewBrowserSession()).rejects.toMatchObject({ status: 401 })
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      '/api/v1/session',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('preserves credentials when browser coordination rejects transiently', async () => {
+    vi.stubGlobal('navigator', {
+      locks: { request: () => Promise.reject(new Error('Lock unavailable')) },
+    })
+    const fetchMock = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(renewBrowserSession()).rejects.toThrow('Lock unavailable')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 
   it('returns anonymous without deleting a valid anonymous session', async () => {
     vi.stubGlobal('navigator', {
@@ -75,7 +77,7 @@ describe('browser session renewal coordination', () => {
     )
   })
 
-  it('rejects a malformed successful refresh and clears its cookie state', async () => {
+  it('rejects a malformed successful refresh without deleting its cookie state', async () => {
     vi.stubGlobal('navigator', {
       locks: {
         request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
@@ -85,11 +87,12 @@ describe('browser session renewal coordination', () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(new Response(JSON.stringify({ session: {} })))
-      .mockResolvedValueOnce(new Response(null, { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     await expect(renewBrowserSession()).rejects.toMatchObject({ status: 502 })
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/session', '/api/v1/session'])
-    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'DELETE' })
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      '/api/v1/session',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
   })
 
   it('preserves a failed refresh response and clears the stale cookies', async () => {

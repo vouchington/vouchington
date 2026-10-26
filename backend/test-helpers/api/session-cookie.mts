@@ -11,14 +11,14 @@ export function expectSessionCookieExpiry(
   const [tokenPair, ...attributes] = cookie!.split(';')
   const token = decodeURIComponent(tokenPair!.slice(3))
   const signedExpiry = decodeSessionJwt(token)?.exp
-  const expiresAttribute = attributes.find(value => value.trimStart().startsWith('Expires='))
-  const cookieExpiry = Date.parse(expiresAttribute?.trimStart().slice('Expires='.length) ?? '')
+  const maxAgeAttribute = attributes.find(value => value.trimStart().startsWith('Max-Age='))
+  const maxAge = Number(maxAgeAttribute?.trimStart().slice('Max-Age='.length))
 
-  expect(attributes.some(value => value.trimStart().startsWith('Max-Age='))).toBe(false)
+  expect(attributes.some(value => value.trimStart().startsWith('Expires='))).toBe(false)
   expect(signedExpiry).toEqual(expect.any(Number))
-  expect(Number.isFinite(cookieExpiry)).toBe(true)
-  expect(cookieExpiry).toBeLessThanOrEqual(signedExpiry! * 1000)
-  expect(cookieExpiry).toBeGreaterThanOrEqual(signedExpiry! * 1000 - 1000)
-  expect(cookieExpiry - Date.now()).toBeGreaterThan(bounds.minRemainingSeconds * 1000)
-  expect(cookieExpiry - Date.now()).toBeLessThanOrEqual(bounds.maxRemainingSeconds * 1000)
+  expect(maxAgeAttribute).toBeDefined()
+  expect(Number.isInteger(maxAge)).toBe(true)
+  expect(maxAge).toBeGreaterThan(bounds.minRemainingSeconds)
+  expect(maxAge).toBeLessThanOrEqual(bounds.maxRemainingSeconds)
+  expect(Date.now() + maxAge * 1000).toBeLessThanOrEqual(signedExpiry! * 1000 + 1000)
 }

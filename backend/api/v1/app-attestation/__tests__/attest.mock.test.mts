@@ -25,7 +25,8 @@ import {
   refreshSessionState,
   verifyDeviceAndSessionTokens,
 } from '@services/jwt-session'
-import { decodeSessionJwt } from '@ts-shared/session-jwt'
+import { SESSION_EXPIRATION_SECONDS } from '@ts-shared/session-jwt'
+import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import { mintNativeSessionMcpToken } from '@services/oauth-authorization-server'
 
 const verifyAttestationMock = vi.hoisted(() =>
@@ -40,12 +41,6 @@ vi.mock<typeof import('node-app-attest')>(import('node-app-attest'), async impor
 function cookieValueOf(cookieHeader: string[] | undefined, name: string): string | undefined {
   const cookie = cookieHeader?.findLast(value => value.startsWith(`${name}=`))
   return cookie?.split(';')[0]?.slice(name.length + 1)
-}
-
-function expiresAtOf(cookieHeader: string[] | undefined, name: string): number | undefined {
-  const cookie = cookieHeader?.findLast(value => value.startsWith(`${name}=`))
-  const match = cookie?.match(/Expires=([^;]+)/)
-  return match ? Date.parse(match[1]!) : undefined
 }
 
 describe('POST /api/v1/app-attestation/attest', () => {
@@ -108,9 +103,10 @@ describe('POST /api/v1/app-attestation/attest', () => {
     const cookieHeader = response.headers['set-cookie'] as unknown as string[] | undefined
     const deviceToken = cookieValueOf(cookieHeader, 'dt')
     const sessionToken = cookieValueOf(cookieHeader, 'st')
-    expect(expiresAtOf(cookieHeader, 'st')).toBe(
-      (decodeSessionJwt(sessionToken ?? '')?.exp ?? 0) * 1000,
-    )
+    expectSessionCookieExpiry(cookieHeader, {
+      minRemainingSeconds: SESSION_EXPIRATION_SECONDS - 10,
+      maxRemainingSeconds: SESSION_EXPIRATION_SECONDS,
+    })
     const verified =
       deviceToken && sessionToken
         ? await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })

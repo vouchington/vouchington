@@ -1,6 +1,6 @@
 'use client'
 
-import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
+import { parseErrorResponseBody } from '@vouchington/api-client'
 import {
   BOT_CHALLENGE_ACTION_TAG,
   BOT_CHALLENGE_REQUIRED,
@@ -9,7 +9,7 @@ import {
 import { buildLoginHref } from '@/lib/auth/login-url'
 import { requestBotChallengeToken } from './bot-challenge'
 import { reportClientError } from './report-error'
-import { renewBrowserSession } from './session-renewal'
+import { isDefinitiveRenewalFailure, renewBrowserSession } from './session-renewal'
 
 type BotChallengeSolver = (action: string, signal?: AbortSignal) => Promise<string>
 
@@ -86,10 +86,6 @@ function isReloginError(error: unknown): boolean {
     'SESSION_RELOGIN_REQUIRED',
     'SESSION_REFRESH_REUSED',
   ].some(code => isErrorCode(error, code))
-}
-
-function isDefinitiveRenewalFailure(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 401 && isReloginError(error)
 }
 
 function isBotChallenge(

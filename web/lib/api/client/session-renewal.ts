@@ -8,7 +8,7 @@ let renewalInFlight: Promise<boolean> | undefined
 export function renewBrowserSession(): Promise<boolean> {
   renewalInFlight ??= renewWithBrowserLock()
     .catch(async err => {
-      if (requiresSessionCleanup(err)) {
+      if (isDefinitiveRenewalFailure(err)) {
         await fetch('/api/v1/session', {
           method: 'DELETE',
           credentials: 'include',
@@ -65,7 +65,7 @@ function reportCleanupFailure(error: unknown): void {
   console.error('Session cleanup failed', error)
 }
 
-function requiresSessionCleanup(error: unknown): boolean {
+export function isDefinitiveRenewalFailure(error: unknown): boolean {
   if (!(error instanceof ApiError) || error.status !== 401) return false
   return [
     'SESSION_RELOGIN_REQUIRED',
