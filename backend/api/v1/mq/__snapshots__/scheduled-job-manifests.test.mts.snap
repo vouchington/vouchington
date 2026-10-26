@@ -957,6 +957,78 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Recover pending outbound ActivityPub follows distribution",
+        "id": "activitypub-outbound-follows-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-outbound-follows-recovery",
+    "template": {
+      "data": {
+        "source": "follows",
+      },
+      "name": "activitypub.recoverOutboundDistribution",
+      "opts": {
+        "attempts": 2147483647,
+        "backoff": {
+          "delay": 1000,
+          "type": "paged-dispatch-activitypub",
+        },
+        "ordering": {
+          "concurrency": 2,
+          "key": "activitypub:outbound-dispatch",
+        },
+        "priority": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover pending outbound ActivityPub votes distribution",
+        "id": "activitypub-outbound-votes-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-outbound-votes-recovery",
+    "template": {
+      "data": {
+        "source": "votes",
+      },
+      "name": "activitypub.recoverOutboundDistribution",
+      "opts": {
+        "attempts": 2147483647,
+        "backoff": {
+          "delay": 1000,
+          "type": "paged-dispatch-activitypub",
+        },
+        "ordering": {
+          "concurrency": 2,
+          "key": "activitypub:outbound-dispatch",
+        },
+        "priority": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Recover abandoned durable ActivityPub inbox envelopes",
         "id": "activitypub-inbox-recovery",
         "kind": "scheduled-jobs",
@@ -3082,6 +3154,22 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "background",
     "schedule": "0 * * * *",
     "triggerName": "enqueueDispatchApiKeyExpiryReminders",
+  },
+  {
+    "description": "Recover pending outbound ActivityPub follows distribution",
+    "id": "activitypub-outbound-follows-recovery",
+    "job_name": "activitypub.recoverOutboundDistribution",
+    "queue_name": "background",
+    "schedule": "every 5m",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Recover pending outbound ActivityPub votes distribution",
+    "id": "activitypub-outbound-votes-recovery",
+    "job_name": "activitypub.recoverOutboundDistribution",
+    "queue_name": "background",
+    "schedule": "every 5m",
+    "triggerName": "trigger",
   },
   {
     "description": "Recover abandoned durable ActivityPub inbox envelopes",

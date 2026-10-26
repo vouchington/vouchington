@@ -353,6 +353,14 @@ checks:
       command: [pnpm, exec, tsc, --noEmit, --incremental, --project, tsconfig.json]
       fileArgs: none
       always: true
+    # Scheduler sources feed the operator API fixture projection.
+    - name: api-fixtures-scheduled-jobs
+      command: [pnpm, run, api-fixtures:check]
+      fileArgs: none
+      include:
+        - 'backend/queues/**/enqueues/schedules.mts'
+        - 'backend/services/queue-monitoring/scheduled-jobs-registry.mts'
+        - 'backend/services/queue-monitoring/scheduled-job-manifests.mts'
     - name: typecheck-ts-shared
       command: [pnpm, exec, tsc, --noEmit, --incremental, --project, ts-shared/tsconfig.json]
       fileArgs: none
@@ -5072,10 +5080,10 @@ rules:
           reason: 'Decision 14 external authentication id.'
         - object: 'column:mcp_call_audit_events.correlation_id'
           reason: 'Decision 14 external request correlation id.'
-        - object: 'column:activitypub_distribution_work_items.activity_id'
-          reason: 'Decision 14 pre-allocated external ActivityPub id.'
         - object: 'column:post_votes.outbound_activitypub_like_activity_id'
           reason: 'Decision 14 pre-allocated external ActivityPub id.'
+        - object: 'column:post_votes.outbound_activitypub_original_like_activity_id'
+          reason: 'Original external ActivityPub Like protocol id retained for UndoLike replay.'
         - object: 'column:follower_distribution_deliveries.delivery_id'
           reason: 'Decision 14 pre-allocated id.'
         - object: 'column:retained_image_placement_bindings.placement_id'

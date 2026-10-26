@@ -1,6 +1,6 @@
 import { getPostElectionVote, upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getPostByAnyCached } from './get-cached.mts'
-import { canViewPostsBatch } from './check-privacy-access.mts'
+import { canViewPostsBatch } from '@services/posts/check-privacy-access'
 import type { Post } from './types.mts'
 import { enqueueDistributeActivity } from '@queues/activitypub/enqueues/delivery'
 import onError from '@modules/on-error'

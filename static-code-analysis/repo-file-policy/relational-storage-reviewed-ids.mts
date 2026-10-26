@@ -54,8 +54,6 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'oauth_authorizations.result_session_id',
     'Session id allocated before token issuance so replay reuses it; no row exists yet.',
   ],
-  ['Stable ActivityPub activity identity used as a protocol cursor key.'],
-  ['Traversal cursor position; deleting the actor must not rewind a completed cursor.'],
   [
     'notification_push_intent_retention_cursors.cursor_notification_push_intent_id',
     'UUIDv7 traversal position survives deletion of the scanned intent so a sweep cannot rewind.',
@@ -69,8 +67,16 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'Identity of the outbound ActivityPub Like; no activities table exists.',
   ],
   [
+    'post_votes.outbound_activitypub_original_like_activity_id',
+    'Identity of the original outbound ActivityPub Like; no activities table exists.',
+  ],
+  [
     'relation__user__follow__user.outbound_activitypub_follow_activity_id',
     'Identity of the outbound ActivityPub Follow; no activities table exists.',
+  ],
+  [
+    'relation__user__follow__user.outbound_activitypub_distributed_activity_id',
+    'Identity of the current outbound Follow or UndoFollow generation; no activities table exists.',
   ],
   [
     'user_deletion_external_works.work_key',

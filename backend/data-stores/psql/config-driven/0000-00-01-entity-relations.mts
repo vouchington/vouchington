@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
   query += `;\n\n`
 
   const outboundIndex = storesOutboundFollowActivityId
-    ? `\n\nCREATE INDEX IF NOT EXISTS idx_relation__user__follow__user__ap_pending
+    ? `\n\nCREATE INDEX IF NOT EXISTS idx_relation__user__follow__user__activitypub_pending
 ON relation__user__follow__user (subject_id, object_id)
 WHERE outbound_activitypub_distributed_activity_id IS NULL
   AND outbound_activitypub_follow_activity_id IS NOT NULL;`
