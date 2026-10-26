@@ -60,7 +60,7 @@ async function isDurablyRevoked(
   if (deviceId) statement.append(sql` AND s.device_id = ${deviceId}`)
   if (mfaVerifiedAt !== undefined)
     statement.append(
-      sql` AND (s.device_token_binding -> 'mfa_at') IS NOT DISTINCT FROM to_jsonb(${mfaVerifiedAt}::bigint)`,
+      sql` AND s.mfa_verified_at IS NOT DISTINCT FROM ${mfaVerifiedAt === null ? null : new Date(mfaVerifiedAt * 1000)}::timestamptz`,
     )
   const { rows } = await write(statement)
   return rows.length === 0

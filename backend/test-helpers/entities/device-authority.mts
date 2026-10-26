@@ -5,7 +5,7 @@ export async function clearTestDeviceAuthority(userId: string, sessionId: string
   await write(sql`/* clearTestDeviceAuthority */
     UPDATE user_sessions SET device_token_digest = NULL, previous_device_token_digest = NULL,
       previous_device_token_grace_expires_at = NULL, device_token_encrypted = NULL,
-      device_token_issued_at = NULL, device_token_binding = NULL
+      device_token_issued_at = NULL, device_token_binding = NULL, mfa_verified_at = NULL
     WHERE id = ${sessionId} AND user_id = ${userId}`)
 }
 

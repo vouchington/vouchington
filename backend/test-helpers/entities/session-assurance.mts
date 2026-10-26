@@ -8,7 +8,8 @@ export async function setTestSessionMfaVerifiedAt(
   await write(
     `/* setTestSessionMfaVerifiedAt */ UPDATE user_sessions
     SET device_token_binding = CASE WHEN $2::bigint IS NULL THEN device_token_binding - 'mfa_at'
-      ELSE jsonb_set(device_token_binding, '{mfa_at}', to_jsonb($2::bigint), true) END
+      ELSE jsonb_set(device_token_binding, '{mfa_at}', to_jsonb($2::bigint), true) END,
+      mfa_verified_at = CASE WHEN $2::bigint IS NULL THEN NULL ELSE to_timestamp($2::double precision) END
     WHERE id = $1`,
     [sessionId, verifiedAt],
   )

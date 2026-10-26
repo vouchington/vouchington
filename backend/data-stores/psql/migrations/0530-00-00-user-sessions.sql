@@ -24,8 +24,10 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   device_token_encrypted TEXT,
   device_token_issued_at TIMESTAMPTZ,
   device_token_binding JSONB,
+  mfa_verified_at TIMESTAMPTZ,
   device_bound_session_binding JSONB,
-  account_change_proof JSONB CHECK (account_change_proof IS NULL OR jsonb_typeof(account_change_proof) = 'object'),
+  account_change_proof_hash TEXT,
+  account_change_proof_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) IN (0, 4)),
@@ -34,6 +36,9 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   CHECK (previous_device_token_digest IS NULL OR previous_device_token_digest ~ '^[a-f0-9]{64}$'),
   CHECK (previous_device_token_digest IS NULL OR device_token_digest IS NOT NULL),
   CHECK (device_token_binding IS NULL OR jsonb_typeof(device_token_binding) = 'object'),
+  CHECK (mfa_verified_at IS NULL OR device_token_binding IS NOT NULL),
+  CHECK (num_nonnulls(account_change_proof_hash, account_change_proof_expires_at) IN (0, 2)),
+  CHECK (account_change_proof_hash IS NULL OR account_change_proof_hash ~ '^[A-F0-9]{64}$'),
   CHECK (device_bound_session_binding IS NULL OR (device_token_digest IS NOT NULL AND device_token_binding @> '{"client":"web"}'::jsonb AND jsonb_typeof(device_bound_session_binding) = 'object')),
   CHECK (device_token_issued_at IS NULL OR device_token_issued_at < expires_at),
   CHECK (TRIM(device_name) = device_name),
@@ -81,6 +86,7 @@ COMMENT ON COLUMN user_sessions.previous_device_token_grace_expires_at IS 'Deadl
 COMMENT ON COLUMN user_sessions.device_token_encrypted IS 'Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.';
 COMMENT ON COLUMN user_sessions.device_token_issued_at IS 'Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.';
 COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original signed client binding document (client family, optional browser User-Agent/JA4 hashes and the original completed MFA timestamp), never joined to other rows. Verified credential replay preserves this document.';
+COMMENT ON COLUMN user_sessions.mfa_verified_at IS 'Typed original completed MFA time from the signed device binding, used for durable session assurance checks.';
 COMMENT ON COLUMN user_sessions.device_bound_session_binding IS 'Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.';
 
 -- The token creator precedes user_sessions; install the canonical cross-file relation here.
@@ -91,4 +97,5 @@ ALTER TABLE email_address_login_tokens
 ALTER TABLE email_address_login_tokens
   VALIDATE CONSTRAINT email_address_login_tokens_reauthentication_session_id_fkey;
 
-COMMENT ON COLUMN user_sessions.account_change_proof IS 'One outstanding SID-owned account-change proof, storing only its purpose hash and expiry; cleared transactionally with the mutation.';
+COMMENT ON COLUMN user_sessions.account_change_proof_hash IS 'Hash of the one outstanding SID-owned account-change proof; cleared transactionally with the mutation.';
+COMMENT ON COLUMN user_sessions.account_change_proof_expires_at IS 'Expiry of the one outstanding SID-owned account-change proof.';

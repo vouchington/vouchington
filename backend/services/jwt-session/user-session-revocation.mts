@@ -102,7 +102,8 @@ export async function revokeOtherAuthenticatedSessions(
     `/* revokeOtherAuthenticatedSessions */
      -- no-mistakes-disable-next-line postgres-required-predicates: user-wide revocation must update other sessions across all session-ID partitions
      UPDATE user_sessions
-     SET revoked_at = clock_timestamp(), account_change_proof = NULL
+     SET revoked_at = clock_timestamp(), account_change_proof_hash = NULL,
+         account_change_proof_expires_at = NULL
      WHERE user_id = $1 AND id <> $2 AND revoked_at IS NULL`,
     [currentUserId, actorSessionId],
   )

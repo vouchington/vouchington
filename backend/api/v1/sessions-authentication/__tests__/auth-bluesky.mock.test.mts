@@ -56,6 +56,15 @@ describe('DELETE /api/v1/auth/bluesky/link', () => {
     expect(response.body.message).toContain('Unauthorized')
   })
 
+  it('requires fresh account confirmation when DELETE has no body', async () => {
+    const request = createRequest()
+    const user = await createTestUser()
+    await request.authenticateAs(user)
+
+    const response = await request.delete('/api/v1/auth/bluesky/link').expect(403)
+    expect(response.body.code).toBe('MFA_REAUTH_REQUIRED')
+  })
+
   it('returns 404 when no account is linked', async () => {
     const request = createRequest()
     const user = await createTestUser()

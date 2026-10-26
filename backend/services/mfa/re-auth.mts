@@ -17,10 +17,8 @@ export async function createReAuthToken(
   const token = randomUUID()
   const { rowCount } = await query(
     `/* createReAuthToken */ UPDATE user_sessions
-     SET account_change_proof = jsonb_build_object(
-       'tokenHash', $4::text,
-       'expiresAt', clock_timestamp() + ($5 * interval '1 second')
-     )
+     SET account_change_proof_hash = $4,
+         account_change_proof_expires_at = clock_timestamp() + ($5 * interval '1 second')
      WHERE id = $1 AND user_id = $2 AND device_id = $3
        AND revoked_at IS NULL AND expires_at > clock_timestamp()`,
     [session.sid, currentUserId, session.did, proofHash(session.sid, token), REAUTH_TTL_SECONDS],
@@ -39,11 +37,11 @@ export async function verifyAndDeleteReAuthToken(
   if (!isUUID(token)) return false
   const { rowCount } = await query(
     `/* verifyAndDeleteReAuthToken */ UPDATE user_sessions
-     SET account_change_proof = NULL
+     SET account_change_proof_hash = NULL, account_change_proof_expires_at = NULL
      WHERE id = $1 AND user_id = $2 AND device_id = $3
        AND revoked_at IS NULL AND expires_at > clock_timestamp()
-       AND account_change_proof->>'tokenHash' = $4
-       AND (account_change_proof->>'expiresAt')::timestamptz > clock_timestamp()`,
+       AND account_change_proof_hash = $4
+       AND account_change_proof_expires_at > clock_timestamp()`,
     [session.sid, currentUserId, session.did, proofHash(session.sid, token)],
   )
   return rowCount === 1

@@ -20,7 +20,7 @@ import {
   reportBlueskyCallbackError,
 } from './auth-bluesky-callback-helpers.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-
+import { readOptionalReAuthBody } from './passkey-totp-route-helpers.mts'
 type BeginBlueskyLinkRequest = {
   handle: string
   callback_mode?: 'web' | 'native'
@@ -188,7 +188,7 @@ app.route('/api/v1/auth/bluesky/link').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/bluesky/link')
   assertNotSuspended(currentUser)
 
-  const body = await parseJsonBody<{ re_auth_token?: string }>(ctx)
+  const body = await readOptionalReAuthBody(ctx)
   validateRequestContract(ctx, 'DELETE:/api/v1/auth/bluesky/link', { body })
   await withReauthenticatedAccountChange(
     currentUser.id,
