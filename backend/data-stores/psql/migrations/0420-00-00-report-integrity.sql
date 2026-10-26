@@ -93,7 +93,7 @@ CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__hostname_id
 CREATE INDEX IF NOT EXISTS idx_report_integrity_flags__rss_feed_item_id
   ON report_integrity_flags (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
 
-COMMENT ON TABLE report_integrity_flags IS 'Moderation review queue for suspected mass-report campaigns. Exactly one entity FK is set per row.';
+COMMENT ON TABLE report_integrity_flags IS 'Moderation review queue for suspected mass-report campaigns. Resolved flags and their reporter rows are deleted after 180 days.';
 COMMENT ON COLUMN report_integrity_flags.post_id IS 'Flagged post or comment, if this flag targets a post or comment.';
 COMMENT ON COLUMN report_integrity_flags.reported_user_id IS 'Flagged user, if this flag targets a user.';
 COMMENT ON COLUMN report_integrity_flags.hostname_id IS 'Flagged URL hostname, if this flag targets a hostname.';
@@ -164,7 +164,7 @@ CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__flag
   ON report_abuse_penalties (source_flag_id)
   WHERE source_flag_id IS NOT NULL;
 
-COMMENT ON TABLE report_abuse_penalties IS 'Penalties applied to bad-faith reporters as a result of a confirmed mass-report campaign.';
+COMMENT ON TABLE report_abuse_penalties IS 'Penalties applied to bad-faith reporters. Revoked rows are deleted after 180 days; active rows remain until explicitly revoked.';
 COMMENT ON COLUMN report_abuse_penalties.user_id IS 'The penalized reporter.';
 COMMENT ON COLUMN report_abuse_penalties.reason IS 'Human-readable explanation of why the penalty was applied.';
 COMMENT ON COLUMN report_abuse_penalties.source_flag_id IS 'The report integrity flag that triggered this penalty.';

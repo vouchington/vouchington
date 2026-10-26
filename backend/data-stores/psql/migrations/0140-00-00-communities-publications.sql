@@ -297,7 +297,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_apps__pending ON community_applicatio
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_community_applications__user_id ON community_applications (user_id);
 
-COMMENT ON TABLE community_applications IS 'Membership applications submitted by users to join a community.';
+COMMENT ON TABLE community_applications IS 'Membership applications submitted by users to join a community. Decided applications and answers are deleted 12 months after the decision.';
 COMMENT ON COLUMN community_applications.community_id IS 'The community being applied to.';
 COMMENT ON COLUMN community_applications.user_id IS 'The user who submitted the application.';
 COMMENT ON COLUMN community_applications.reviewed_at IS 'When a moderator reviewed the application.';

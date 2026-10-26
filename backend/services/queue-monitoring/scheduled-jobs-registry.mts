@@ -35,6 +35,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'voteWeightFamilySourceChanges',
   'voteWeightDirtyMarkers',
   'data-retention-cleanup-daily',
+  'moderation-retention-cleanup-daily',
   'reconcile-vote-drift',
   'kagi-smallweb-sync',
   'imports-recover-stalled',

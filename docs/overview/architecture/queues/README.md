@@ -70,6 +70,13 @@ retains its age cutoff while committed deletions advance the remaining-work pred
 index excludes successful historical crawls from each page. A continuation keeps work eligible
 without holding a worker through the entire backlog.
 
+Moderation-history retention uses the existing PostgreSQL maintenance queue and a serial ordering
+lane. A scheduled or operator seed starts a bounded sweep; each completed job immediately admits
+a distinct continuation for only its unfinished record families. Native job receipts preserve the
+page result before child admission, so a retry of a receipted parent reuses the same child identity.
+PostgreSQL cursor progress remains authoritative; a crash before the receipt can replay bounded,
+idempotent cleanup. Daily and operator seeds recover lost queue state or terminal failures.
+
 The data-retention schedule runs in deployed environments so staging exposes retention failures
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping.

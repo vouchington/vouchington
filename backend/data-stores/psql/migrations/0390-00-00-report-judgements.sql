@@ -59,7 +59,7 @@ CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__rss_id
 CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__case_id
   ON moderation_report_judgements (case_id) WHERE case_id IS NOT NULL;
 
-COMMENT ON TABLE moderation_report_judgements IS 'AI-generated judgements on reported entities recommending a moderation action.';
+COMMENT ON TABLE moderation_report_judgements IS 'AI-generated judgements on reported entities. Superseded dispatched rows are deleted after 90 days; the latest judgement and undispatched work remain.';
 COMMENT ON COLUMN moderation_report_judgements.post_id IS 'Judged post or comment; set when entity is a post or comment.';
 COMMENT ON COLUMN moderation_report_judgements.reported_user_id IS 'Judged user; set when entity is a user.';
 COMMENT ON COLUMN moderation_report_judgements.hostname_id IS 'Judged URL hostname; set when entity is url_hostname.';

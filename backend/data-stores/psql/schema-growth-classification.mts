@@ -33,15 +33,6 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'membership_refund_operation_attempt_metadata_scans',
   'membership_refunds',
   'membership_verifications',
-  'moderation_appeal_lifecycle_changes',
-  'moderation_appeals',
-  'moderation_cases',
-  'moderation_report_judgements',
-  'moderation_reports',
-  'moderator_actions',
-  'report_integrity_flags',
-  'review_dispute_lifecycle_changes',
-  'review_disputes',
   'amazon_ses_bounce_events',
   'stripe_events',
   'user_data_requests',
@@ -116,6 +107,30 @@ export function buildUnboundedUnpartitionedTables(
       },
     ],
     entries: [
+      [
+        'moderation_reports',
+        'Unresolved reports remain available for staff action, with one pending report per reporter and target; resolved reports expire after 24 months. The open backlog has no time cap.',
+      ],
+      [
+        'moderation_report_judgements',
+        'The latest judgement per entity and undispatched work remain; only older dispatched judgements with a newer dispatched successor expire after 90 days.',
+      ],
+      [
+        'moderation_training_feedbacks',
+        'Ordinary feedback expires after 180 days, but false-positive labels for still-flagged posts remain. Repeated retained labels per live post have no enforced cardinality cap.',
+      ],
+      [
+        'report_abuse_penalties',
+        'Revoked penalties expire after 180 days; active penalties remain until explicitly revoked without automatic expiry or a unique current-row cap after source flags are deleted.',
+      ],
+      [
+        'vote_weight_penalties',
+        'Revoked penalties expire after 180 days; active penalties remain until explicitly revoked without automatic expiry or a unique current-row cap after source links are deleted.',
+      ],
+      [
+        'user_moderator_notes',
+        'Soft-deleted notes expire after 30 days, while live moderator-authored notes remain until explicitly removed; repeated live notes per user are not capped.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []

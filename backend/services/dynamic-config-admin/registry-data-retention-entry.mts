@@ -4,7 +4,7 @@ import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'data-retention-config',
   label: 'Data Retention',
-  description: 'Per-run batch bounds for the daily data retention cleanup.',
+  description: 'Per-run batch bounds for general and moderation-history retention cleanup.',
   config: dataRetentionConfig,
   access: { update_roles: ['developer'] },
   fields: {
@@ -12,6 +12,19 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       description: 'Topic import attempt rows per retention page.',
       minValue: 1,
       maxValue: 250,
+      integer: true,
+    },
+    moderation_batch_size: {
+      description: 'Moderation source rows processed per retention page, plus one lookahead row.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.moderation_batch_size,
+      integer: true,
+    },
+    moderation_max_batches_per_run: {
+      description:
+        'Maximum keyset pages each moderation record family examines per job; unfinished families immediately continue in another bounded job.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.moderation_max_batches_per_run,
       integer: true,
     },
     batch_size: {

@@ -35,3 +35,18 @@ copyright evidence follows [its own retention policy](./COPYRIGHT-NOTICES.md#evi
 The paid transparency API is an aggregate release, not a moderation queue or a community record
 feed. It applies the shared delay, cohort suppression, and rounding before data leaves
 `@services/moderation-analytics`; see [Moderation Analytics](./MODERATION-ANALYTICS.md).
+
+## Record lifecycle
+
+Operational moderation history is retained only while it can support an open decision, an appeal,
+or a staff audit. A daily queue seed walks each record family in bounded, resumable jobs;
+unfinished families continue immediately without restarting families that have finished.
+Terminal records become eligible according to their own lifecycle. Pending decisions, active
+suspensions, bans, and penalties remain available until their lifecycle ends. Warnings follow their
+own retention window.
+
+Source deletion does not erase public dispute annotations, retained false-positive training labels
+that still suppress a flagged post, or already released aggregate transparency counts. The released
+projection is immutable even after its contributing operational rows are removed; see
+[Moderation Analytics](./MODERATION-ANALYTICS.md). Member appeal history remains visible during
+the appeal record's access period, while staff can follow the surviving case history independently.

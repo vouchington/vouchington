@@ -1,4 +1,5 @@
 import type { JobOptions } from 'glide-mq'
+import { moderationRetentionSchedule } from './moderation-retention.mts'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import {
   defineScheduledJobManifest,
@@ -72,6 +73,7 @@ const MATERIALIZED_VIEW_SCHEDULE_OPTS = {
 } satisfies JobOptions
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  moderationRetentionSchedule,
   ...(
     [
       [REFRESH_PLATFORM_STATS_SCHEDULER_ID, REFRESH_PLATFORM_STATS_CRON, PLATFORM_STATS_VIEW],

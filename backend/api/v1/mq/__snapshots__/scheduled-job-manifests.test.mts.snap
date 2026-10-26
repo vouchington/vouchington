@@ -2709,6 +2709,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     },
   },
   {
+    "environment": "deployed",
+    "operatorSurfaces": [
+      {
+        "description": "Start a bounded moderation-history sweep with immediate continuation",
+        "id": "moderation-retention-cleanup-daily",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "moderation-retention-cleanup-daily",
+    "template": {
+      "data": {},
+      "name": "moderationRetentionCleanup",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "psql:moderation-retention",
+        },
+        "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
     "environment": "all",
     "operatorSurfaces": [
       {
@@ -3402,6 +3439,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "psql",
     "schedule": "0 4 * * *",
     "triggerName": "[anonymous]",
+  },
+  {
+    "description": "Start a bounded moderation-history sweep with immediate continuation",
+    "id": "moderation-retention-cleanup-daily",
+    "job_name": "moderationRetentionCleanup",
+    "queue_name": "psql",
+    "schedule": "0 4 * * *",
+    "triggerName": "enqueueModerationRetentionCleanup",
   },
   {
     "description": "Reconcile denormalized post vote counters against the post_votes source of truth",
