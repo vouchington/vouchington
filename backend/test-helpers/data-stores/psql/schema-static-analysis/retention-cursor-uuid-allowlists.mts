@@ -17,11 +17,11 @@ export const RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS = [
     'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
   ],
   [
-    'notification_email_retention_cleanup_cursors.cursor_position',
+    'notification_email_retention_cleanup_cursors.cursor_notification_id',
     'Persisted UUIDv7 keyset position survives deletion of the swept row; it is not a relationship.',
   ],
   [
-    'notification_email_retention_cleanup_cursors.cursor_partition_key',
+    'notification_email_retention_cleanup_cursors.cursor_user_id',
     'Persisted notification partition-key tie-breaker survives user deletion; it is not a relationship.',
   ],
 ] as const satisfies readonly (readonly [string, string])[]

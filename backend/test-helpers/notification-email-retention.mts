@@ -26,7 +26,7 @@ export async function resetTestNotificationEmailRetentionCursor(
     `/* resetTestNotificationEmailRetentionCursor */
      INSERT INTO notification_email_retention_cleanup_cursors (cleanup_name)
      VALUES ($1) ON CONFLICT (cleanup_name) DO UPDATE
-     SET cursor_at = NULL, cursor_position = NULL, cursor_partition_key = NULL, sweep_cutoff_at = NULL`,
+     SET cursor_at = NULL, cursor_notification_id = NULL, cursor_user_id = NULL, sweep_cutoff_at = NULL`,
     [name],
   )
 }

@@ -10,8 +10,8 @@ export type NotificationEmailCleanupName =
 export type Candidate = { id: string; user_id?: string; position_at: string | null }
 export type Cursor = {
   cursor_at: string | null
-  cursor_position: string | null
-  cursor_partition_key: string | null
+  cursor_notification_id: string | null
+  cursor_user_id: string | null
   sweep_cutoff_at: Date | null
 }
 
@@ -40,14 +40,9 @@ export async function listNotificationEmailCandidates(
       ? ` AND ${alias}.deleted_at >= $${parameters.length}::timestamptz`
       : ` AND ${alias}.id >= $${parameters.length}::uuid`
   }
-  if (cursor?.cursor_position) {
-    if (notification) {
-      parameters.push(cursor.cursor_at, cursor.cursor_position, cursor.cursor_partition_key)
-      predicate += ` AND (${alias}.deleted_at, ${alias}.id, ${alias}.user_id) > ($${parameters.length - 2}::timestamptz, $${parameters.length - 1}::uuid, $${parameters.length}::uuid)`
-    } else {
-      parameters.push(cursor.cursor_position)
-      predicate += ` AND ${alias}.id > $${parameters.length}::uuid`
-    }
+  if (cursor?.cursor_notification_id) {
+    parameters.push(cursor.cursor_at, cursor.cursor_notification_id, cursor.cursor_user_id)
+    predicate += ` AND (${alias}.deleted_at, ${alias}.id, ${alias}.user_id) > ($${parameters.length - 2}::timestamptz, $${parameters.length - 1}::uuid, $${parameters.length}::uuid)`
   }
   parameters.push(limit)
   // Notification tombstones span user partitions; the retention indexes serve this capped global keyset page.

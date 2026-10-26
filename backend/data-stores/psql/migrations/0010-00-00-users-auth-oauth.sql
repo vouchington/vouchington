@@ -374,39 +374,33 @@ CREATE TABLE IF NOT EXISTS user_moderation_email_sends (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 DO $$ BEGIN
   CREATE TYPE notification_email_retention_cleanup_names AS ENUM (
-    'ses_bounce_events', 'system_pruned_notifications',
-    'user_deleted_notifications', 'moderation_email_sends'
+    'system_pruned_notifications', 'user_deleted_notifications'
   );
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
-COMMENT ON TYPE notification_email_retention_cleanup_names IS 'Finite notification and email retention sweeps with durable positions.';
+COMMENT ON TYPE notification_email_retention_cleanup_names IS 'Finite notification tombstone sweeps that skip protected rows.';
 
 CREATE TABLE IF NOT EXISTS notification_email_retention_cleanup_cursors (
   cleanup_name notification_email_retention_cleanup_names PRIMARY KEY,
   cursor_at TIMESTAMPTZ,
-  cursor_position UUID,
-  cursor_partition_key UUID,
+  cursor_notification_id UUID,
+  cursor_user_id UUID,
   sweep_cutoff_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (cursor_at IS NULL OR cursor_position IS NOT NULL),
-  CHECK ((cursor_position IS NULL) = (sweep_cutoff_at IS NULL)),
-  CHECK (
-    (cleanup_name IN ('system_pruned_notifications', 'user_deleted_notifications')
-      AND (cursor_position IS NULL) = (cursor_partition_key IS NULL))
-    OR (cleanup_name NOT IN ('system_pruned_notifications', 'user_deleted_notifications')
-      AND cursor_partition_key IS NULL)
-  )
+  CHECK (cursor_at IS NULL OR cursor_notification_id IS NOT NULL),
+  CHECK ((cursor_notification_id IS NULL) = (sweep_cutoff_at IS NULL)),
+  CHECK ((cursor_notification_id IS NULL) = (cursor_user_id IS NULL))
 );
 
 CREATE TRIGGER trigger_notification_email_retention_cleanup_cursors_updated_at
 BEFORE UPDATE ON notification_email_retention_cleanup_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE notification_email_retention_cleanup_cursors IS 'Durable positions for bounded notification and email retention sweeps.';
+COMMENT ON TABLE notification_email_retention_cleanup_cursors IS 'Durable positions for bounded notification tombstone sweeps that skip protected rows.';
 COMMENT ON COLUMN notification_email_retention_cleanup_cursors.cleanup_name IS 'Finite sweep identity that owns this cursor row.';
 COMMENT ON COLUMN notification_email_retention_cleanup_cursors.cursor_at IS 'Last scanned deletion time in a notification sweep.';
-COMMENT ON COLUMN notification_email_retention_cleanup_cursors.cursor_position IS 'Last scanned UUIDv7 row position in the current sweep.';
-COMMENT ON COLUMN notification_email_retention_cleanup_cursors.cursor_partition_key IS 'Notification partition-key tie-breaker, not a user relationship; no foreign key preserves progress after user deletion.';
+COMMENT ON COLUMN notification_email_retention_cleanup_cursors.cursor_notification_id IS 'Last scanned UUIDv7 row position in the current sweep.';
+COMMENT ON COLUMN notification_email_retention_cleanup_cursors.cursor_user_id IS 'Notification partition-key tie-breaker, not a user relationship; no foreign key preserves progress after user deletion.';
 COMMENT ON COLUMN notification_email_retention_cleanup_cursors.sweep_cutoff_at IS 'Fixed cutoff retained while a multi-page sweep is incomplete.';
 COMMENT ON COLUMN notification_email_retention_cleanup_cursors.updated_at IS 'Time this durable sweep position last changed.';
 

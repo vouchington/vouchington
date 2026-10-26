@@ -11,6 +11,7 @@ import {
   createTestUserDirect,
   deleteTestRetentionNotificationPushIntents,
   getTestRejectedSesRetentionDelete,
+  getTestNotificationEmailRetentionCursor,
   insertTestModerationSend,
   insertTestRetentionNotificationPushIntent,
   insertTestSesRetentionEvent,
@@ -36,7 +37,6 @@ describe('notification and email retention', () => {
     const window = createTestHistoricalRetentionWindow()
     const now = new Date(window.upperBoundDate.getTime() + 90 * DAY_MS)
     await using query = await beginTransaction()
-    await resetTestNotificationEmailRetentionCursor(query, 'ses_bounce_events')
     const first = await insertTestSesRetentionEvent(query, 'transient', window.firstEligibleDate)
     const second = await insertTestSesRetentionEvent(query, 'transient', window.secondEligibleDate)
     const permanentAt = new Date(window.firstEligibleDate.getTime() + 1)
@@ -67,6 +67,7 @@ describe('notification and email retention', () => {
       hasMore: false,
       continuation: null,
     })
+    expect(await getTestNotificationEmailRetentionCursor(query, 'ses_bounce_events')).toBeNull()
     expect(
       await testNotificationEmailRetentionRowExists(query, 'amazon_ses_bounce_events', second),
     ).toBe(false)
@@ -92,7 +93,6 @@ describe('notification and email retention', () => {
     const user = await createTestUserDirect()
     if (!user) throw new Error('Expected test user')
     await using query = await beginTransaction()
-    await resetTestNotificationEmailRetentionCursor(query, 'moderation_email_sends')
     const first = await insertTestModerationSend(query, user.id, window.firstEligibleDate)
     const second = await insertTestModerationSend(query, user.id, window.secondEligibleDate)
     const recent = await insertTestModerationSend(query, user.id, window.afterUpperBoundDate)

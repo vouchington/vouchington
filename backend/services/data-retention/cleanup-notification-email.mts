@@ -109,7 +109,8 @@ async function cleanupPageInTransaction(
 ): Promise<NotificationEmailCleanupResult> {
   // A bounded test window cannot advance the production sweep past unrelated rows.
   let cursor: Cursor | undefined
-  if (trackCursor) {
+  const persistCursor = trackCursor && name.endsWith('_notifications')
+  if (persistCursor) {
     await query(
       `/* ensureNotificationEmailRetentionCursor */
        INSERT INTO notification_email_retention_cleanup_cursors (cleanup_name)
@@ -119,7 +120,7 @@ async function cleanupPageInTransaction(
     cursor = (
       await query<Cursor>(
         `/* lockNotificationEmailRetentionCursor */
-       SELECT cursor_at::text AS cursor_at, cursor_position, cursor_partition_key, sweep_cutoff_at
+       SELECT cursor_at::text AS cursor_at, cursor_notification_id, cursor_user_id, sweep_cutoff_at
        FROM notification_email_retention_cleanup_cursors
        WHERE cleanup_name = $1 FOR UPDATE`,
         [name],
@@ -149,11 +150,11 @@ async function cleanupPageInTransaction(
       ...(last.user_id ? { userId: last.user_id } : {}),
     }
   }
-  if (trackCursor) {
+  if (persistCursor) {
     await query(
       `/* checkpointNotificationEmailRetentionCursor */
        UPDATE notification_email_retention_cleanup_cursors
-       SET cursor_at = $2, cursor_position = $3, cursor_partition_key = $4, sweep_cutoff_at = $5
+       SET cursor_at = $2, cursor_notification_id = $3, cursor_user_id = $4, sweep_cutoff_at = $5
        WHERE cleanup_name = $1`,
       [
         name,

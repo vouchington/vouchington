@@ -4,6 +4,7 @@ import {
   beginTransaction,
   createTestExpiryWindow,
   createTestUserDirect,
+  getTestNotificationEmailRetentionCursor,
   deleteTestRetentionNotificationPushIntents,
   insertTestSameIdNotificationTombstones,
   listTestSameIdNotificationOwners,
@@ -40,6 +41,12 @@ describe('notification tombstone retention composite key', () => {
       deleted: 1,
       hasMore: true,
       continuation: { id: sharedId, userId: users[0] },
+    })
+    expect(
+      await getTestNotificationEmailRetentionCursor(query, 'user_deleted_notifications'),
+    ).toEqual({
+      cursor_notification_id: sharedId,
+      sweep_cutoff_at: window.upperBoundDate,
     })
     expect(await listTestSameIdNotificationOwners(query, sharedId, users)).toEqual([users[1]])
     expect(await cleanupUserDeletedNotifications(options)).toEqual({
