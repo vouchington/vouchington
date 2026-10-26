@@ -8,7 +8,7 @@ import { callJudgementModel } from './model.mts'
 // and parsing are gated by recorded responses in model.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('report judgement on Anthropic Haiku 5.5', () => {
-  // A live Anthropic response can exceed the default budget during normal network latency.
+  // no-mistakes-timeout-reason: live Anthropic network request latency
   it('returns a schema-valid judgement and a priced ledger row shape', async () => {
     const result = await callJudgementModel(
       '## Reported Content (type: post)\nBuy cheap watches at example.com now!!!\n\n## Reports (1 total)\n- Reason: spam',

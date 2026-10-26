@@ -17,7 +17,7 @@ describe('posts.openai', () => {
     return Math.random().toString(36).slice(2, 10)
   }
 
-  // A live OpenAI response can exceed the default budget during normal network latency.
+  // no-mistakes-timeout-reason: live OpenAI API request latency
   it(
     'upsertPostOpenAIModeration makes real API call and creates moderation',
     /* no-mistakes: integration=openai */

@@ -10,7 +10,7 @@ type Verdict = { capital: string }
 // gated by recorded responses in generate.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('generateJson on Anthropic Haiku 5.5', () => {
-  // A live Anthropic response can exceed the default budget during normal network latency.
+  // no-mistakes-timeout-reason: live Anthropic network request latency
   it('returns schema-valid JSON with priced provider-neutral usage', async () => {
     const result = await generateJson(
       { provider: 'anthropic', model: 'claude-haiku-5-5' },
