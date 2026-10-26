@@ -1,5 +1,6 @@
 import { beginTransaction, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { lockActivityPubLikeIdentity } from './activity-identity.mts'
 
 // The activity id owns a durable row across Undo. A fresh Like after Undo gets a new row;
 // replaying the old id cannot clear its deleted_at marker after inbox dedup expires.
@@ -29,6 +30,7 @@ async function recordLikeInTransaction(
   remoteActorId: string,
   likeApId: string,
 ): Promise<void> {
+  if (await lockActivityPubLikeIdentity(query, likeApId)) return
   // Serialize per actor/post even when no active row exists yet. An Undo of this exact id
   // races through the all-rows unique index and wins as a terminal tombstone retained beyond the replay horizon.
   await query(sql`/* lockActivityPubLikePair */
@@ -36,10 +38,22 @@ async function recordLikeInTransaction(
       'activitypub-like:' || ${postId} || ':' || ${remoteActorId}, 0
     ))
   `)
-  const { rows } = await query<{ id: string }>(sql`/* findActivityPubLikeIdentity */
-    SELECT id FROM activitypub_post_likes WHERE like_activitypub_id = ${likeApId} LIMIT 1
+  const { rows } = await query<{
+    id: string
+    post_id: string
+  }>(sql`/* findActivityPubLikeIdentity */
+    SELECT id, post_id FROM activitypub_post_likes
+    WHERE like_activitypub_id = ${likeApId} AND remote_actor_id = ${remoteActorId} LIMIT 1
   `)
-  if (rows.length > 0) return
+  if (rows[0]) {
+    if (rows[0].post_id === postId) {
+      await query(sql`/* confirmActivityPubLikeIdentity */
+        UPDATE activitypub_post_likes SET confirmed_at = clock_timestamp()
+        WHERE id = ${rows[0].id} AND confirmed_at IS NULL
+      `)
+    }
+    return
+  }
 
   // A different live Like id replaces the actor's prior cycle without overwriting its identity.
   await query(sql`/* retireReplacedActivityPubLike */
@@ -50,6 +64,6 @@ async function recordLikeInTransaction(
   await query(sql`/* insertActivityPubLikeCycle */
     INSERT INTO activitypub_post_likes (post_id, remote_actor_id, like_activitypub_id)
     VALUES (${postId}, ${remoteActorId}, ${likeApId})
-    ON CONFLICT (like_activitypub_id) DO NOTHING
+    ON CONFLICT (remote_actor_id, like_activitypub_id) DO NOTHING
   `)
 }

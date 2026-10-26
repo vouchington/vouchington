@@ -1,6 +1,12 @@
 import { assertRemoteActivityHost } from '@modules/activitypub-uris'
-import { write, type QueryOptions, type QueryExecutor } from '@data-stores/psql'
+import {
+  write,
+  withTransactionOptions,
+  type QueryOptions,
+  type QueryExecutor,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { lockRemoteFollowActivityIdentity } from './follow-activity-identity.mts'
 
 type FollowCycle = {
   id: string
@@ -17,29 +23,41 @@ export async function reserveRemoteFollowCycle(
   targetUserId: string,
   options: QueryOptions,
 ): Promise<{ id: string; isNew: boolean; isUndone: boolean }> {
-  const run = options.query ?? write
-  await lockRemoteFollowPair(run, remoteActorId, targetUserId)
-  const { rows: inserted } = await run<
-    Pick<FollowCycle, 'id' | 'undone_at'>
-  >(sql`/* reserveRemoteFollowCycle */
+  return withTransactionOptions(options, async run => {
+    if (!(await lockRemoteFollowActivityIdentity(run, activityId, remoteActorId, targetUserId))) {
+      throw new Error('ActivityPub Follow id belongs to another actor or target')
+    }
+    await lockRemoteFollowPair(run, remoteActorId, targetUserId)
+    const { rows: inserted } = await run<
+      Pick<FollowCycle, 'id' | 'undone_at'>
+    >(sql`/* reserveRemoteFollowCycle */
     INSERT INTO activitypub_remote_follow_activities (activity_id, remote_actor_id, target_user_id)
     VALUES (${activityId}, ${remoteActorId}, ${targetUserId})
-    ON CONFLICT (activity_id) DO NOTHING
+    ON CONFLICT (remote_actor_id, activity_id) DO NOTHING
     RETURNING id, undone_at
   `)
-  if (inserted[0]) return { id: inserted[0].id, isNew: true, isUndone: false }
-  const { rows } = await run<FollowCycle>(sql`/* readRemoteFollowCycle */
+    if (inserted[0]) return { id: inserted[0].id, isNew: true, isUndone: false }
+    const { rows } = await run<FollowCycle>(sql`/* readRemoteFollowCycle */
     SELECT id, undone_at, remote_actor_id, target_user_id
     FROM activitypub_remote_follow_activities
-    WHERE activity_id = ${activityId}
+    WHERE activity_id = ${activityId} AND remote_actor_id = ${remoteActorId}
     LIMIT 1
     FOR UPDATE
   `)
-  const cycle = rows[0]
-  if (!cycle || cycle.remote_actor_id !== remoteActorId || cycle.target_user_id !== targetUserId) {
-    throw new Error('ActivityPub Follow id belongs to another actor or target')
-  }
-  return { id: cycle.id, isNew: false, isUndone: cycle.undone_at !== null }
+    const cycle = rows[0]
+    if (
+      !cycle ||
+      cycle.remote_actor_id !== remoteActorId ||
+      cycle.target_user_id !== targetUserId
+    ) {
+      throw new Error('ActivityPub Follow id belongs to another actor or target')
+    }
+    await run(sql`/* confirmRemoteFollowActivity */
+    UPDATE activitypub_remote_follow_activities SET confirmed_at = clock_timestamp()
+    WHERE id = ${cycle.id} AND confirmed_at IS NULL
+  `)
+    return { id: cycle.id, isNew: false, isUndone: cycle.undone_at !== null }
+  })
 }
 
 export async function markRemoteFollowUndone(
@@ -50,19 +68,22 @@ export async function markRemoteFollowUndone(
 ): Promise<string | null> {
   assertRemoteActivityHost(activityId, remoteActor.actor_uri)
   const remoteActorId = remoteActor.id
-  const run = options.query ?? write
-  await lockRemoteFollowPair(run, remoteActorId, targetUserId)
-  const { rows } = await run<{ id: string }>(sql`/* markRemoteFollowUndone */
+  return withTransactionOptions(options, async run => {
+    if (!(await lockRemoteFollowActivityIdentity(run, activityId, remoteActorId, targetUserId)))
+      return null
+    await lockRemoteFollowPair(run, remoteActorId, targetUserId)
+    const { rows } = await run<{ id: string }>(sql`/* markRemoteFollowUndone */
     INSERT INTO activitypub_remote_follow_activities
-      (activity_id, remote_actor_id, target_user_id, undone_at)
-    VALUES (${activityId}, ${remoteActorId}, ${targetUserId}, clock_timestamp())
-    ON CONFLICT (activity_id) DO UPDATE
+      (activity_id, remote_actor_id, target_user_id, undone_at, confirmed_at)
+    VALUES (${activityId}, ${remoteActorId}, ${targetUserId}, clock_timestamp(), NULL)
+    ON CONFLICT (remote_actor_id, activity_id) DO UPDATE
       SET undone_at = COALESCE(activitypub_remote_follow_activities.undone_at, EXCLUDED.undone_at)
       WHERE activitypub_remote_follow_activities.remote_actor_id = EXCLUDED.remote_actor_id
         AND activitypub_remote_follow_activities.target_user_id = EXCLUDED.target_user_id
     RETURNING id
   `)
-  return rows[0]?.id ?? null
+    return rows[0]?.id ?? null
+  })
 }
 
 export async function setCurrentRemoteFollowCycle(
