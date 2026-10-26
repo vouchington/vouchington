@@ -27,50 +27,16 @@ describe('PostgreSQL Schema Tests workflow', () => {
     )
   })
 
-  it('runs Squawk after setup and before migrations and schema tests', () => {
-    const setup = workflow.indexOf('actions/setup-backend')
-    const squawk = workflow.indexOf('      - name: Check PostgreSQL SQL safety')
-    const migrate = workflow.indexOf('node data-stores/psql/migrate.mts')
-    const tests = workflow.indexOf(
-      'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
-    )
-
-    expect(setup).toBeGreaterThanOrEqual(0)
-    expect(squawk).toBeGreaterThan(setup)
-    expect(migrate).toBeGreaterThan(squawk)
-    expect(tests).toBeGreaterThan(migrate)
-    expect(workflow).toContain(
-      'pnpm exec squawk backend/data-stores/psql/migrations/*.sql backend/data-stores/psql/config-driven/*.sql backend/data-stores/psql/views/*.sql',
-    )
-  })
-
-  it('checks the staging RSS seed after one staging migration and before schema tests', () => {
-    const migrateStep = workflow.indexOf(
-      '      - working-directory: backend\n        env:\n          ENVIRONMENT: staging\n        run: node data-stores/psql/migrate.mts',
-    )
-    const check = workflow.indexOf('node data-stores/psql/check-staging-rss-bootstrap.mts')
+  it('checks platform stats after restoring the prepared baseline and before Vitest', () => {
+    const restore = workflow.indexOf('      - name: Restore prepared PostgreSQL database')
+    const platformStatsCheck = workflow.indexOf('node scripts/check-platform-stats-snapshot.mts')
     const schemaTests = workflow.indexOf('      - name: Run PostgreSQL schema tests')
 
-    expect(migrateStep).toBeGreaterThanOrEqual(0)
-    expect(check).toBeGreaterThan(migrateStep)
-    expect(schemaTests).toBeGreaterThan(check)
-    expect(workflow.match(/node data-stores\/psql\/migrate\.mts/gu)).toHaveLength(1)
-  })
-
-  it('checks the refreshed platform-stats snapshot before running Vitest', () => {
-    const migrateStep = workflow.indexOf('node data-stores/psql/migrate.mts')
-    const rssBootstrapCheck = workflow.indexOf(
-      'node data-stores/psql/check-staging-rss-bootstrap.mts',
-    )
-    const platformStatsCheck = workflow.indexOf('node scripts/check-platform-stats-snapshot.mts')
-    const schemaTests = workflow.indexOf(
-      'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
-    )
-
-    expect(migrateStep).toBeGreaterThanOrEqual(0)
-    expect(rssBootstrapCheck).toBeGreaterThan(migrateStep)
-    expect(platformStatsCheck).toBeGreaterThan(rssBootstrapCheck)
+    expect(restore).toBeGreaterThanOrEqual(0)
+    expect(platformStatsCheck).toBeGreaterThan(restore)
     expect(schemaTests).toBeGreaterThan(platformStatsCheck)
+    expect(workflow).not.toContain('node data-stores/psql/migrate.mts')
+    expect(workflow).not.toContain('check-staging-rss-bootstrap.mts')
   })
 
   it('checks the schema snapshot after schema tests, even when Vitest is skipped', () => {

@@ -3,6 +3,11 @@ name: EXPLAIN ANALYZE
 on:
   workflow_call:
     inputs:
+      prepared_database:
+        description: 'Use the prepared backend PostgreSQL artifact from the caller'
+        required: false
+        type: boolean
+        default: false
       publish_coverage:
         description: Collect and publish native EXPLAIN and migration LCOV for backend coverage
         required: false
@@ -15,7 +20,16 @@ permissions:
   actions: read
 
 jobs:
+  prepare-postgres:
+    if: ${{ !inputs.prepared_database }}
+    uses: ./.github/workflows/prepare-postgres.yml
+    permissions:
+      actions: read
+      contents: read
+
   explain-analyze:
+    needs: [prepare-postgres]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     # Setup plus the 10-minute run step no longer fits in 10 minutes (run 39276118528).
     timeout-minutes: 20
@@ -93,9 +107,21 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
-      - working-directory: backend
-        run: node data-stores/psql/migrate.mts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 2
+        with:
+          name: backend-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Restore prepared PostgreSQL database
         timeout-minutes: 3
+        run: |
+          docker run --rm --network host -i \
+            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
+            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
+            < "$RUNNER_TEMP/backend-postgres.dump"
       - name: Check native RSS crawl tier snapshot and dispatch
         timeout-minutes: 2
         env:

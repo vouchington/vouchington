@@ -112,11 +112,12 @@ job sends it under a carryforward flag without gating. Each concurrency group st
 literal area prefix and cancels only superseded pull-request runs, and
 [`nightly.yml`](../../.github/workflows/nightly.yml) calls every area daily.
 
-The Backend area prepares one migrated PostgreSQL baseline per workflow run for its unit shards and
-trusted provider tests. The producer verifies retained-relation bootstrap, then uploads a short-lived
-custom-format dump; each isolated PostgreSQL service restores that artifact before running tests. This keeps
-migration and bootstrap setup out of every test shard while preserving a clean database per job.
-Schema-contract checks keep their staging bootstrap because they verify that migration path directly.
+The Backend area prepares one migrated PostgreSQL baseline per workflow run for every backend database
+consumer: unit shards, trusted provider tests, schema contracts, smoke tests, and EXPLAIN scenarios.
+The producer checks SQL safety and staging RSS and retained-relation bootstrap, then uploads a
+short-lived custom-format dump. Each consumer restores that artifact into its isolated PostgreSQL
+service before running its checks. Standalone suite dispatches prepare the same baseline themselves.
+Dedicated native migration-control scenarios still execute migrations as the behavior under test.
 
 <a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job and the Web
 area's `test-playwright-credentialed` job call live providers as informational smoke checks: their

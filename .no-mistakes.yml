@@ -4446,7 +4446,7 @@ rules:
         # Existing backend-credentialed budget; no #2260 change.
         - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
           maxMinutes: 20
-        # Steps sum to 16m; cap 15m is below their combined deadlines.
+        # Preparation owns SQL safety and fresh staging bootstrap; retain the 15m job cap.
         - job: '.github/workflows/prepare-postgres.yml#prepare-postgres'
           maxMinutes: 15
         # Steps sum to 26m; cap 25m is below it; healthy maximum was 134 seconds across 65
@@ -4578,7 +4578,7 @@ rules:
         .github/workflows/cancel-dequeued-merge-group-runs.yml: [cancel]
         .github/workflows/cancel-replaced-merge-group-runs.yml: [cancel]
         .github/workflows/dependency-mirror.yml: [mirror]
-        .github/workflows/checks-backend-smoke.yml: [smoke]
+        .github/workflows/checks-backend-smoke.yml: [prepare-postgres, smoke]
         .github/workflows/checks-static.yml:
           [static-backend, static-cloudflare, static-lambdas, static-web]
         .github/workflows/ci-area-coverage.yml: [coverage]
@@ -4596,7 +4596,7 @@ rules:
           ]
         .github/workflows/dispatch-completed-deploy.yml: [dispatch]
         .github/workflows/docs-publish.yml: [publish]
-        .github/workflows/explain-analyze.yml: [explain-analyze]
+        .github/workflows/explain-analyze.yml: [explain-analyze, prepare-postgres]
         .github/workflows/fix-dependabot.yml:
           [
             check-duplicates,
@@ -4658,7 +4658,7 @@ rules:
         .github/workflows/tests-playwright-credentialed.yml: [playwright-credentialed-tests]
         .github/workflows/tests-playwright.yml: [playwright-tests, shards]
         .github/workflows/tests-portability.yml: [portability-linux]
-        .github/workflows/tests-postgres-schema.yml: [postgres-schema-tests]
+        .github/workflows/tests-postgres-schema.yml: [postgres-schema-tests, prepare-postgres]
         .github/workflows/tests-tooling.yml: [i18n-route-bounds, tooling]
         .github/workflows/tests-ts-shared.yml: [ts-shared]
         .github/workflows/tests-web-api.yml: [prep, web-api-tests]
@@ -4701,10 +4701,22 @@ rules:
         - '.github/workflows/tooling.yml#tooling'
         - '.github/workflows/gitleaks.yml#gitleaks'
       requiredDirectEdges:
+        - - '.github/workflows/explain-analyze.yml#prepare-postgres'
+          - '.github/workflows/explain-analyze.yml#explain-analyze'
+        - - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
+          - '.github/workflows/checks-backend-smoke.yml#smoke'
+        - - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
+          - '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
         - - '.github/workflows/backend.yml#static-backend'
           - '.github/workflows/backend.yml#prepare-postgres'
         - - '.github/workflows/backend.yml#prepare-postgres'
           - '.github/workflows/backend.yml#test-backend-unit'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-explain-analyze'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#backend-smoke'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-postgres-schema'
         - - '.github/workflows/backend.yml#prepare-postgres'
           - '.github/workflows/backend.yml#test-backend-credentialed'
         - - '.github/workflows/backend.yml#prepare-postgres'
@@ -4728,6 +4740,9 @@ rules:
           - '.github/workflows/backend.yml#prepare-postgres'
           - '.github/workflows/tests-backend-credentialed.yml#prepare-postgres'
           - '.github/workflows/tests-backend-unit.yml#prepare-postgres'
+          - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
+          - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
+          - '.github/workflows/explain-analyze.yml#prepare-postgres'
         .github/workflows/checks-backend-smoke.yml:
           - '.github/workflows/backend.yml#backend-smoke'
         .github/workflows/checks-static.yml:

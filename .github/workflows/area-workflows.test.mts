@@ -149,7 +149,16 @@ describe('area workflows', () => {
       .map(([id]) => id)
     const expectedSetupConsumers =
       area === 'backend'
-        ? ['test-backend-unit', 'test-backend-credentialed', 'backend', 'coverage', 'codecov']
+        ? [
+            'test-backend-unit',
+            'test-backend-credentialed',
+            'test-postgres-schema',
+            'backend-smoke',
+            'test-explain-analyze',
+            'backend',
+            'coverage',
+            'codecov',
+          ]
         : []
     expect(setupConsumers.toSorted()).toEqual(expectedSetupConsumers.toSorted())
   })

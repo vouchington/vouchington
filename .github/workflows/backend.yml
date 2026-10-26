@@ -93,25 +93,29 @@ jobs:
       id-token: write
 
   test-postgres-schema:
-    needs: [static-backend]
+    needs: [static-backend, prepare-postgres]
     uses: ./.github/workflows/tests-postgres-schema.yml
     with:
+      prepared_database: true
       publish_coverage: true
     permissions:
       actions: read
       contents: read
 
   backend-smoke:
-    needs: [static-backend]
+    needs: [static-backend, prepare-postgres]
     uses: ./.github/workflows/checks-backend-smoke.yml
+    with:
+      prepared_database: true
     permissions:
       actions: read
       contents: read
 
   test-explain-analyze:
-    needs: [static-backend]
+    needs: [static-backend, prepare-postgres]
     uses: ./.github/workflows/explain-analyze.yml
     with:
+      prepared_database: true
       publish_coverage: true
     permissions:
       actions: read
