@@ -31,7 +31,7 @@ _none_
 **Indexes:**
 
 - `idx_rss_feed_categories__category_identity_id`: `CREATE INDEX idx_rss_feed_categories__category_identity_id ON public.rss_feed_categories USING btree (category_identity_id, rss_feed_id)`
-- `idx_rss_feed_categories__topic_id`: `CREATE INDEX idx_rss_feed_categories__topic_id ON public.rss_feed_categories USING btree (topic_id, rss_feed_id DESC) WHERE (topic_id IS NOT NULL)`
+- `idx_rss_feed_categories__topic_id`: `CREATE INDEX idx_rss_feed_categories__topic_id ON public.rss_feed_categories USING btree (topic_id, rss_feed_id DESC, category_identity_id DESC) WHERE (topic_id IS NOT NULL)`
 - `rss_feed_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_categories_pkey ON public.rss_feed_categories USING btree (rss_feed_id, category_identity_id)`
 
 **Triggers:**

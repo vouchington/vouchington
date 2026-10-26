@@ -36,7 +36,7 @@ _none_
 - `idx_rss_feed_item_categories__category_identity_id`: `CREATE INDEX idx_rss_feed_item_categories__category_identity_id ON public.rss_feed_item_categories USING btree (category_identity_id, rss_feed_item_id)`
 - `idx_rss_feed_item_categories__rss_feed_item_id__mapped`: `CREATE INDEX idx_rss_feed_item_categories__rss_feed_item_id__mapped ON public.rss_feed_item_categories USING btree (rss_feed_item_id) INCLUDE (topic_alias_id, category_text) WHERE (topic_alias_id IS NOT NULL)`
 - `idx_rss_feed_item_categories__topic_alias_id`: `CREATE INDEX idx_rss_feed_item_categories__topic_alias_id ON public.rss_feed_item_categories USING btree (topic_alias_id, rss_feed_item_id DESC) WHERE (topic_alias_id IS NOT NULL)`
-- `idx_rss_feed_item_categories__topic_id`: `CREATE INDEX idx_rss_feed_item_categories__topic_id ON public.rss_feed_item_categories USING btree (topic_id, rss_feed_item_id DESC) WHERE (topic_id IS NOT NULL)`
+- `idx_rss_feed_item_categories__topic_id`: `CREATE INDEX idx_rss_feed_item_categories__topic_id ON public.rss_feed_item_categories USING btree (topic_id, rss_feed_item_id DESC, category_identity_id DESC) WHERE (topic_id IS NOT NULL)`
 - `rss_feed_item_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_item_categories_pkey ON public.rss_feed_item_categories USING btree (rss_feed_item_id, category_identity_id)`
 
 **Triggers:**

@@ -129,8 +129,8 @@ _none_
 - `idx_posts__bedrock_nova_multimodal_v1_to_update`: `CREATE INDEX idx_posts__bedrock_nova_multimodal_v1_to_update ON ONLY public.posts USING btree (id) WHERE ((bedrock_nova_multimodal_v1_input_sha256 IS NULL) OR (bedrock_nova_multimodal_v1_input_sha256 <> bedrock_nova_multimodal_v1_content_sha256))`
 - `idx_posts__broadcast__users`: `CREATE INDEX idx_posts__broadcast__users ON ONLY public.posts USING btree (id DESC) WHERE ((deleted_at IS NULL) AND (broadcast = 'users'::broadcast_types))`
 - `idx_posts__clearance_review_queue`: `CREATE INDEX idx_posts__clearance_review_queue ON ONLY public.posts USING btree (id DESC) WHERE ((deleted_at IS NULL) AND ((rejected_at IS NOT NULL) OR (in_review_at IS NOT NULL)))`
-- `idx_posts__community_id`: `CREATE INDEX idx_posts__community_id ON ONLY public.posts USING btree (community_id) WHERE (community_id IS NOT NULL)`
-- `idx_posts__created_by_id`: `CREATE INDEX idx_posts__created_by_id ON ONLY public.posts USING btree (created_by_id)`
+- `idx_posts__community_id`: `CREATE INDEX idx_posts__community_id ON ONLY public.posts USING btree (community_id, id) WHERE (community_id IS NOT NULL)`
+- `idx_posts__created_by_id`: `CREATE INDEX idx_posts__created_by_id ON ONLY public.posts USING btree (created_by_id, id)`
 - `idx_posts__created_by_id__community_id__id`: `CREATE INDEX idx_posts__created_by_id__community_id__id ON ONLY public.posts USING btree (created_by_id, community_id, id) WHERE (deleted_at IS NULL)`
 - `idx_posts__created_by_id__is_anonymous`: `CREATE INDEX idx_posts__created_by_id__is_anonymous ON ONLY public.posts USING btree (created_by_id, is_anonymous) WHERE (deleted_at IS NULL)`
 - `idx_posts__created_by_rejected_at_id`: `CREATE INDEX idx_posts__created_by_rejected_at_id ON ONLY public.posts USING btree (created_by_id, rejected_at DESC, id DESC) WHERE ((rejected_at IS NOT NULL) AND (deleted_at IS NULL))`

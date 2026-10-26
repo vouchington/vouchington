@@ -83622,7 +83622,7 @@
         "idx_post_topic_alias_sources__topic_alias_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_topic_alias_sources__topic_alias_id ON public.post_topic_alias_sources USING btree (topic_alias_id, post_id DESC)",
+          "definition": "CREATE INDEX idx_post_topic_alias_sources__topic_alias_id ON public.post_topic_alias_sources USING btree (topic_alias_id, post_id DESC, id DESC)",
           "immediate": true,
           "keys": [
             {
@@ -83639,6 +83639,15 @@
               "column": "post_id",
               "descending": true,
               "expression": "post_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
               "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -85782,7 +85791,7 @@
         "idx_posts__community_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__community_id ON ONLY public.posts USING btree (community_id) WHERE (community_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_posts__community_id ON ONLY public.posts USING btree (community_id, id) WHERE (community_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -85790,6 +85799,15 @@
               "column": "community_id",
               "descending": false,
               "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -85805,7 +85823,7 @@
         "idx_posts__created_by_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_posts__created_by_id ON ONLY public.posts USING btree (created_by_id)",
+          "definition": "CREATE INDEX idx_posts__created_by_id ON ONLY public.posts USING btree (created_by_id, id)",
           "immediate": true,
           "keys": [
             {
@@ -85813,6 +85831,15 @@
               "column": "created_by_id",
               "descending": false,
               "expression": "created_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -115508,7 +115535,7 @@
         "idx_rss_feed_categories__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_categories__topic_id ON public.rss_feed_categories USING btree (topic_id, rss_feed_id DESC) WHERE (topic_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_rss_feed_categories__topic_id ON public.rss_feed_categories USING btree (topic_id, rss_feed_id DESC, category_identity_id DESC) WHERE (topic_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -115525,6 +115552,15 @@
               "column": "rss_feed_id",
               "descending": true,
               "expression": "rss_feed_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "category_identity_id",
+              "descending": true,
+              "expression": "category_identity_id",
               "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -116410,7 +116446,7 @@
         "idx_rss_feed_item_categories__topic_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_categories__topic_id ON public.rss_feed_item_categories USING btree (topic_id, rss_feed_item_id DESC) WHERE (topic_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_rss_feed_item_categories__topic_id ON public.rss_feed_item_categories USING btree (topic_id, rss_feed_item_id DESC, category_identity_id DESC) WHERE (topic_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -116427,6 +116463,15 @@
               "column": "rss_feed_item_id",
               "descending": true,
               "expression": "rss_feed_item_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "category_identity_id",
+              "descending": true,
+              "expression": "category_identity_id",
               "nullsFirst": true,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
