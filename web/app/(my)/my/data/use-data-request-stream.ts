@@ -50,12 +50,32 @@ export function useDataRequestStream({
       setError: message => setCurrentError(message),
     })
 
-    const es = new EventSource(
-      `/api/v1/users/${userId}/data-request/stream?request_id=${encodeURIComponent(requestId!)}`,
-    )
+    const streamUrl = `/api/v1/users/${userId}/data-request/stream?request_id=${encodeURIComponent(requestId!)}`
+    let reopenedWithoutEvent = false
+    let stream = openStream()
+
+    function openStream() {
+      const source = new EventSource(streamUrl)
+      const onError = () => onSseError(source)
+      const onOpen = () => {
+        if (isCurrent() && stream.source === source) reopenedWithoutEvent = false
+      }
+      source.addEventListener('status', onStatus as EventListener)
+      source.addEventListener('error', onError)
+      source.addEventListener('open', onOpen)
+      return { source, onError, onOpen }
+    }
+
+    function closeStream(value: ReturnType<typeof openStream>) {
+      value.source.removeEventListener('status', onStatus as EventListener)
+      value.source.removeEventListener('error', value.onError)
+      value.source.removeEventListener('open', value.onOpen)
+      value.source.close()
+    }
 
     function onStatus(event: MessageEvent) {
       if (!isCurrent()) return
+      reopenedWithoutEvent = false
       let data: StreamPayload
       try {
         data = JSON.parse(event.data) as StreamPayload
@@ -127,38 +147,43 @@ export function useDataRequestStream({
     // (the stream cycles on a short cap; see docs/development/runtime-timeouts.md) — is
     // recovered from durable state, not treated as user-facing failure. `EventSource`
     // reconnects natively as long as `close()` is not called, so a routine cycle stays warm.
-    function onSseError() {
-      if (!isCurrent()) return
+    function onSseError(source: EventSource) {
+      if (!isCurrent() || stream.source !== source) return
       loadDataRequest(userId)
         .then(updated => {
-          if (!isCurrent()) return
+          if (!isCurrent() || stream.source !== source) return
           // `!updated` (e.g. a 404 — the export was deleted mid-stream) falls through to the
           // same no-op as pending/processing: EventSource keeps reconnecting with no user-visible
           // feedback. Accepted trade-off, not an oversight — pre-dates this change.
-          if (shouldKeepStreamReconnecting(updated)) return
+          if (shouldKeepStreamReconnecting(updated)) {
+            // A 401 closes native EventSource permanently. The successful status probe above
+            // has recovered authentication, so replace only a closed stream. An ordinary drop
+            // stays CONNECTING and retains the browser's built-in reconnect behavior.
+            if (updated && source.readyState === EventSource.CLOSED && !reopenedWithoutEvent) {
+              reopenedWithoutEvent = true
+              closeStream(stream)
+              stream = openStream()
+            }
+            return
+          }
           if (needsDownloadLinkRetry(updated)) {
             downloadLinkRetry.schedule()
             return
           }
           applyCurrentRequest(updated)
-          es.close()
+          closeStream(stream)
         })
         .catch(err => {
-          if (!isCurrent()) return
+          if (!isCurrent() || stream.source !== source) return
           if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
           setCurrentError('Failed to track export status. Please refresh.')
-          es.close()
+          closeStream(stream)
         })
     }
 
-    es.addEventListener('status', onStatus)
-    es.addEventListener('error', onSseError as EventListener)
-
     return () => {
       active = false
-      es.removeEventListener('status', onStatus)
-      es.removeEventListener('error', onSseError as EventListener)
-      es.close()
+      closeStream(stream)
       downloadLinkRetry.clear()
     }
   }, [isStreamActive, requestId, userId])

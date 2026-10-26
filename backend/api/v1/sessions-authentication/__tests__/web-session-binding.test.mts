@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
   createDeviceAndSessionTokens,
@@ -147,9 +148,9 @@ describe('web session request boundary', () => {
     expect(Object.hasOwn(response.body, 'st')).toBe(client === 'native')
     expect(typeof response.body.dt?.token === 'string').toBe(client === 'native')
     expect(typeof response.body.st?.token === 'string').toBe(client === 'native')
-    const accessCookie = (response.headers['set-cookie'] as unknown as string[]).find(
-      (cookie: string) => cookie.startsWith('st='),
-    )
-    expect(accessCookie).toContain(`Max-Age=600`)
+    expectSessionCookieExpiry(response.headers['set-cookie'] as unknown as string[], {
+      minRemainingSeconds: 590,
+      maxRemainingSeconds: 600,
+    })
   })
 })

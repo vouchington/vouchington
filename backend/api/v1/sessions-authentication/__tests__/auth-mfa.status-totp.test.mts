@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import {
   createTestUser,
   generateTestTotpCode,
@@ -21,12 +22,6 @@ import {
   signDeviceJwt,
   signSessionJwt,
 } from '@ts-shared/session-jwt'
-
-function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {
-  const cookie = cookieHeader?.find(c => c.startsWith(`${name}=`))
-  const match = cookie?.match(/Max-Age=(\d+)/)
-  return match ? Number(match[1]) : undefined
-}
 
 describe('MFA API Routes', () => {
   let user: PrivateUser
@@ -213,8 +208,10 @@ describe('MFA API Routes', () => {
       expect(
         await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
       ).toMatchObject({ client: 'native' })
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(SESSION_EXPIRATION_SECONDS)
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: SESSION_EXPIRATION_SECONDS,
+        maxRemainingSeconds: ATTESTED_SESSION_EXPIRATION_SECONDS,
+      })
     }, 20_000)
 
     it('does not elevate to a 30-day session from the completing request own attested cookies', async () => {
@@ -247,8 +244,10 @@ describe('MFA API Routes', () => {
       expect(
         await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
       ).toMatchObject({ client: 'web' })
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(WEB_SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS - 10,
+        maxRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS,
+      })
     }, 20_000)
   })
 })

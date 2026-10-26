@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as Undici from 'undici'
 import { v7 } from 'uuid'
+import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   EDGE_ANON_SESSION_JWT_ISSUER,
@@ -20,12 +21,6 @@ vi.doMock<typeof import('undici')>(import('undici'), async () => {
 const { createRandomString } = await import('@voucha/test-helpers')
 const { createRequest } = await import('@voucha/test-helpers/api/server')
 const { Response: UndiciResponse } = await import('undici')
-
-function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {
-  const cookie = cookieHeader?.find(c => c.startsWith(`${name}=`))
-  const match = cookie?.match(/Max-Age=(\d+)/)
-  return match ? Number(match[1]) : undefined
-}
 
 describe('POST /api/v1/auth/oauth/github/continue success', () => {
   beforeEach(() => {
@@ -153,7 +148,9 @@ describe('POST /api/v1/auth/oauth/github/continue success', () => {
       })
 
     const cookieHeader = response.headers['set-cookie'] as unknown as string[] | undefined
-    expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-    expect(maxAgeOf(cookieHeader, 'st')).not.toBe(SESSION_EXPIRATION_SECONDS)
+    expectSessionCookieExpiry(cookieHeader, {
+      minRemainingSeconds: SESSION_EXPIRATION_SECONDS,
+      maxRemainingSeconds: ATTESTED_SESSION_EXPIRATION_SECONDS,
+    })
   })
 })

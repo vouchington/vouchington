@@ -119,8 +119,12 @@ describe('server request context', () => {
 
     const replacement = await verifyOnlyCookiePair(cookieWrites)
     expect(replacement.dc).toBe('attested')
-    expect(getOnlyCookieWrite(cookieWrites, 'st').options?.maxAge).toBe(
-      ATTESTED_SESSION_EXPIRATION_SECONDS,
+    if (replacement.exp === undefined) throw new Error('Replacement session expiry missing')
+    expect(getOnlyCookieWrite(cookieWrites, 'st').options?.expires).toEqual(
+      new Date(replacement.exp * 1000),
+    )
+    expect(replacement.exp * 1000).toBeGreaterThan(
+      Date.now() + (ATTESTED_SESSION_EXPIRATION_SECONDS - 10) * 1000,
     )
   })
 
