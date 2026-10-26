@@ -211,8 +211,9 @@ still marked, so the queue is not a second source of truth and there is no dead-
   response id in their GlideMQ job before draining it. A replay retrieves or cancels unsettled
   responses before it can dispatch another paid call; terminal failed jobs retain those ids for a
   bounded recovery sweep. The response-id ledger key prevents duplicate accounting. Conversation
-  titles generated inline from an API request have no job, so an age-scanned PostgreSQL registry
-  carries their response ids until usage settles. A job can outlive a post or community, so recovery
+  titles generated inline from an API request admit a delayed settlement job after the provider
+  reports its response id. Normal completion and delayed recovery share the same accounting fence;
+  recovery never generates another title. A job can outlive a post or community, so recovery
   records the provider charge with deleted scopes nulled. An unknown billing outcome closes the
   spend gate for that request day.
 - **Deletion and money paths recover from durable rows.** Account deletion, membership refunds and

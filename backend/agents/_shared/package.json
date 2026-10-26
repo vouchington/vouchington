@@ -28,8 +28,9 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
     "@services/ai-usage": "workspace:^",
-    "@services/openai-background-responses": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@vouchington/ai": "^0.3.0"
   },

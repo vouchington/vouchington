@@ -2,10 +2,6 @@ import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import { aiAgentsQueueConfig, aiAgentsQueueMaxValues } from '@queues/ai-agents/config'
 import { imagesWorkConfig, imagesWorkMaxValues } from '@services/images/work-limits'
 import {
-  openaiBackgroundResponsesWorkConfig,
-  openaiBackgroundResponsesWorkMaxValues,
-} from '@services/openai-background-responses/work-limits'
-import {
   openaiModerationWorkConfig,
   openaiModerationWorkMaxValues,
 } from '@services/openai-moderation/work-limits'
@@ -22,6 +18,9 @@ export const backgroundWorkEntries2 = [
     label: 'AI Agents Queue',
     maxValues: aiAgentsQueueMaxValues,
     descriptions: {
+      background_response_reconcile_page_size: 'Retained failed AI jobs read per recovery page.',
+      background_response_recovery_concurrency:
+        'Global concurrency for individual inline response settlement jobs.',
       background_response_reconcile_concurrency:
         'Global concurrency for background response recovery pages.',
     },
@@ -36,15 +35,6 @@ export const backgroundWorkEntries2 = [
       deletion_page_size: 'Posts reset or updates admitted per image deletion page.',
       recovery_threshold_hours: 'Recovery threshold hours for images processing.',
       abandoned_threshold_hours: 'Abandoned threshold hours for images processing.',
-    },
-  }),
-  defineBoundedWorkNamespace({
-    namespace: 'openai-background-responses-work-config',
-    config: openaiBackgroundResponsesWorkConfig,
-    label: 'Openai Background Responses',
-    maxValues: openaiBackgroundResponsesWorkMaxValues,
-    descriptions: {
-      reconcile_batch_size: 'Reconcile batch size for openai background responses processing.',
     },
   }),
   defineBoundedWorkNamespace({

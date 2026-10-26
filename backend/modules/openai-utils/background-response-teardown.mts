@@ -2,7 +2,7 @@ import type { Response } from 'openai/resources/responses/responses'
 import openai from './client.mts'
 
 // Background responses keep billing after this process stops caring if nobody stops them — see
-// job-data or inline registry recovery in backend/services/openai-background-responses. Both teardown
+// owning-job or delayed recovery-job settlement in backend/services/openai-background-responses. Both teardown
 // seams below use maxRetries: 0 and a short timeout because they run on abort/shutdown paths and
 // must never retry-storm; retrying a cancel/retrieve that's already failing only delays shutdown.
 const BACKGROUND_TEARDOWN_TIMEOUT_MS = 10_000

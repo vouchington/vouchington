@@ -1,10 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  countAiUsageRecordsForAgent,
-  countAiUsageRecordsForResponseId,
-  countBackgroundResponseRegistrations,
-} from '@voucha/test-helpers'
+import { countAiUsageRecordsForAgent, countAiUsageRecordsForResponseId } from '@voucha/test-helpers'
+import { ai_agents } from '@queues/ai-agents/queues'
+import { backgroundResponseRecoveryJobId } from '@queues/ai-agents/enqueues/recover-background-response'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
 import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
 import { runWithBackgroundResponseJob } from '../background-response-job-context.mts'
@@ -60,15 +58,24 @@ describe('background response ownership and usage', () => {
     await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
   })
 
-  it('records and deletes the inline request registration', async () => {
+  it('records inline usage and retains its delayed recovery admission', async () => {
     const responseId = `resp_${randomUUID()}`
     const agentSlug = `inline-${randomUUID()}`
-    await callWithCreatedResponse(agentSlug, responseId)
-    await expect(countAiUsageRecordsForAgent(agentSlug, tokens)).resolves.toBe(1)
-    await expect(countBackgroundResponseRegistrations(responseId)).resolves.toBe(0)
+    try {
+      await callWithCreatedResponse(agentSlug, responseId)
+      await expect(countAiUsageRecordsForAgent(agentSlug, tokens)).resolves.toBe(1)
+      const recovery = await ai_agents.getJob(backgroundResponseRecoveryJobId(responseId))
+      expect(recovery?.data.backgroundResponses).toEqual([
+        expect.objectContaining({ responseId, agentSlug }),
+      ])
+      expect(recovery?.data.backgroundResponseProcessorCompleted).toBe(true)
+    } finally {
+      const recovery = await ai_agents.getJob(backgroundResponseRecoveryJobId(responseId))
+      if (recovery) await recovery.remove()
+    }
   })
 
-  it('records each job-owned response once and never inserts the inline table', async () => {
+  it('records each job-owned response once', async () => {
     const responseId = `resp_${randomUUID()}`
     const agentSlug = `job-${randomUUID()}`
     const created: string[] = []
@@ -86,7 +93,6 @@ describe('background response ownership and usage', () => {
     expect(created).toEqual([responseId, responseId])
     expect(settled).toEqual([responseId, responseId])
     await expect(countAiUsageRecordsForAgent(agentSlug, tokens)).resolves.toBe(1)
-    await expect(countBackgroundResponseRegistrations(responseId)).resolves.toBe(0)
   })
 
   it('keeps a successful paid result when clearing its already billed job ID fails', async () => {
@@ -103,7 +109,6 @@ describe('background response ownership and usage', () => {
       runWithBackgroundResponseJob(job, () => callWithCreatedResponse(agentSlug, responseId)),
     ).resolves.toBeUndefined()
     await expect(countAiUsageRecordsForAgent(agentSlug, tokens)).resolves.toBe(1)
-    await expect(countBackgroundResponseRegistrations(responseId)).resolves.toBe(0)
     expect(job.settle).toHaveBeenCalledExactlyOnceWith(responseId)
     expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
   })

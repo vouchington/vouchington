@@ -16,6 +16,8 @@ import {
 } from '@services/ai-usage'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { recordAgentResponseUsage } from '../record-response-usage.mts'
+import { ai_agents } from '@queues/ai-agents/queues'
+import { backgroundResponseRecoveryJobId } from '@queues/ai-agents/enqueues/recover-background-response'
 import { createBackgroundResponseRegistrationHooks } from '../record-response-background-hooks.mts'
 
 const usage = { input_tokens: 100, output_tokens: 50 }
@@ -104,7 +106,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
         transport: 'direct' as const,
         registration: {
           responseId: registrationId,
-          kind: 'table' as const,
+          kind: 'recovery-job' as const,
           createdAt: createdAt(day),
         },
         createdAt: createdAt(day),
@@ -124,7 +126,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
     })
   })
 
-  it('preserves the inline registration and response-ID fence with an invalid completed ID', async () => {
+  it('preserves the delayed recovery identity and response-ID fence with an invalid completed ID', async () => {
     await withReservedDay(async day => {
       const slug = agentSlug()
       const registrationId = `resp_inline_${slug}`
@@ -135,8 +137,10 @@ describe('recordAgentResponseUsage response ID storage', () => {
       sentryCaptureExceptionMock.mockClear()
 
       await background.hooks.onResponseCreated(registrationId)
+      const recoveryJob = await ai_agents.getJob(backgroundResponseRecoveryJobId(registrationId))
+      if (recoveryJob) await recoveryJob.remove()
       const registration = background.getRegistration()
-      if (!registration || registration.kind !== 'table')
+      if (!registration || registration.kind !== 'recovery-job')
         throw new Error('Expected an inline registration')
       await recordAgentResponseUsage({
         response: response(' invalid'),

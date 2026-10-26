@@ -38,10 +38,6 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ],
   ['migrations', 'The migration ledger has exactly one row per checked-in migration.'],
   [
-    'openai_background_responses',
-    'Inline conversation-title registrations are deleted with recorded usage or after age-based recovery; the bounded keyset sweep reaches later pending responses even when older responses stay active.',
-  ],
-  [
     'post_admission_claims',
     'One short-lived lease per in-flight admission reservation; release deletes the lease and reservation deletion cascades to it, bounding cardinality to concurrent admission work.',
   ],

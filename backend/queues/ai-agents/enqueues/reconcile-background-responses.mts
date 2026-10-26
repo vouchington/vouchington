@@ -35,7 +35,7 @@ export function enqueueReconcileBackgroundResponses(): ReturnType<typeof enqueue
 /** One bounded page of retained failed AI jobs, or a bounded cleanup page. */
 export function enqueueReconcileBackgroundResponsesPage(
   data: ReconcileBackgroundResponsesJobData & {
-    phase: 'inline' | 'failed' | 'cleanup'
+    phase: 'failed' | 'cleanup'
     sweepId: string
     page: number
   },

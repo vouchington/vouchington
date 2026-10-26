@@ -1,4 +1,4 @@
-import { registerBackgroundResponseWithBoundedTransaction } from '@services/openai-background-responses'
+import { enqueueRecoverBackgroundResponse } from '@queues/ai-agents/enqueues/recover-background-response'
 import { latchAccountingUncertainty } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import { getBackgroundResponseJobContext } from './background-response-job-context.mts'
@@ -35,13 +35,14 @@ export function createBackgroundResponseRegistrationHooks(
             registration = { responseId, kind: 'job', createdAt: params.createdAt }
             return
           }
-          const createdAt = await registerBackgroundResponseWithBoundedTransaction({
+          await enqueueRecoverBackgroundResponse({
             responseId,
             agentSlug: params.agentSlug,
-            communityId: params.communityId,
-            postId: params.postId,
+            communityId: params.communityId ?? null,
+            postId: params.postId ?? null,
+            createdAt: params.createdAt.toISOString(),
           })
-          registration = { responseId, kind: 'table', createdAt }
+          registration = { responseId, kind: 'recovery-job', createdAt: params.createdAt }
         } catch (err) {
           await latchAccountingUncertainty({
             requestDay: getUtcDayFromDate(params.createdAt),

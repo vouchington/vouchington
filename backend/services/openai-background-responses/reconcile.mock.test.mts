@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  findAiUsageRecordForAgent,
-  countBackgroundResponseRegistrations,
-} from '@voucha/test-helpers'
+import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
 import type { Response } from 'openai/resources/responses/responses'
 import {
   makeSdkResponse,
@@ -11,7 +8,6 @@ import {
 } from '@voucha/test-helpers/modules/openai-utils/responses'
 import { retrieveOpenAIResponse, cancelOpenAIResponse } from '@modules/openai-utils/create-response'
 import { reconcileBackgroundResponse } from './reconcile.mts'
-import { registerBackgroundResponse } from './register.mts'
 
 function makeUsage(): NonNullable<Response['usage']> {
   return {
@@ -58,41 +54,23 @@ describe('background response reconciliation', () => {
         usage: makeUsage(),
       }),
     )
-    await expect(reconcileBackgroundResponse(row, 'job')).resolves.toBe('recorded')
-    await expect(reconcileBackgroundResponse(row, 'job')).resolves.toBe('already-recorded')
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('recorded')
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('already-recorded')
     await expect(
       findAiUsageRecordForAgent(row.agentSlug, { inputTokens: 11, outputTokens: 7 }),
     ).resolves.not.toBeNull()
-    await expect(countBackgroundResponseRegistrations(row.responseId)).resolves.toBe(0)
     expect(retrieveOpenAIResponse).toHaveBeenCalledTimes(1)
   })
 
-  it('settles and deletes an inline response registration', async () => {
+  it('cancels an active response for later usage settlement', async () => {
     const row = candidate()
-    await registerBackgroundResponse(row)
-    vi.mocked(retrieveOpenAIResponse).mockResolvedValueOnce(
-      makeSdkTextResponse('done', {
-        id: row.responseId,
-        model: 'gpt-6-luna-2026-10-01',
-        service_tier: 'flex',
-        usage: makeUsage(),
-      }),
-    )
-    await expect(reconcileBackgroundResponse(row, 'table')).resolves.toBe('recorded')
-    await expect(countBackgroundResponseRegistrations(row.responseId)).resolves.toBe(0)
-  })
-
-  it('cancels an active response and keeps its inline registration for later usage', async () => {
-    const row = candidate()
-    await registerBackgroundResponse(row)
     vi.mocked(retrieveOpenAIResponse).mockResolvedValueOnce(
       makeSdkResponse({ id: row.responseId, status: 'in_progress' }),
     )
     vi.mocked(cancelOpenAIResponse).mockResolvedValueOnce(
       makeSdkResponse({ id: row.responseId, status: 'cancelled' }),
     )
-    await expect(reconcileBackgroundResponse(row, 'table')).resolves.toBe('still-active')
-    await expect(countBackgroundResponseRegistrations(row.responseId)).resolves.toBe(1)
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('still-active')
     expect(cancelOpenAIResponse).toHaveBeenCalledExactlyOnceWith(row.responseId)
   })
 })

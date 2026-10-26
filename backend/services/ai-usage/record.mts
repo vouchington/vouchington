@@ -30,7 +30,7 @@ export interface RecordAiUsageOptions {
   /** The service tier the provider actually served, not the requested tier. */
   serviceTier: string
   usage: ModelUsage
-  /** Use the caller's transaction to pair a ledger write with inline registry deletion. */
+  /** Use the caller's transaction for atomic domain and accounting writes. */
   query?: QueryExecutor
   /** Original creation time for UUIDv7 day bucketing after delayed response recovery. */
   createdAt?: Date

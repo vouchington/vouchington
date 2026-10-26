@@ -1,9 +1,17 @@
 import type { JobOptions } from 'glide-mq'
+import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import onError from '@modules/on-error'
-import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { AppealResolutionJobData } from '../types.mts'
+import { failedAiJobHasNoPendingResponses } from './failed-job-recovery.mts'
+
+type AppealResolutionInput = {
+  appealId: string
+  requestToken: string
+  rerunById?: string | null
+}
 
 function buildAppealResolutionJob(
   appealId: string,
@@ -44,6 +52,24 @@ function buildAppealResolutionJob(
   }
 }
 
+const enqueueAppealResolutionBatch = createBulkEnqueueFunction({
+  queue: ai_agents,
+  queueName: AI_AGENTS_QUEUE_NAME,
+  jobName: 'appeal-resolution',
+  buildJob: (input: AppealResolutionInput) =>
+    buildAppealResolutionJob(input.appealId, input.requestToken, input.rerunById),
+})
+
+function enqueueRecoverableAppealResolution(input: AppealResolutionInput) {
+  return enqueueBulkReactivatingFinished({
+    queue: ai_agents,
+    inputs: [input],
+    jobIdOf: item => `appeal_resolution_${item.requestToken}`,
+    enqueueBulk: enqueueAppealResolutionBatch,
+    canRemoveFailed: failedAiJobHasNoPendingResponses,
+  })
+}
+
 /**
  * Enqueues an appeal-resolution agent run for the given appeal.
  * Fire-and-forget — errors are swallowed via onError.
@@ -53,9 +79,7 @@ export function enqueueAppealResolution(
   requestToken: string,
   rerunById?: string | null,
 ): void {
-  const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
-  ai_agents.add('appeal-resolution', data, opts).catch(onError)
-  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
+  enqueueRecoverableAppealResolution({ appealId, requestToken, rerunById }).catch(onError)
 }
 
 /**
@@ -67,9 +91,7 @@ export async function enqueueAppealResolutionQueued(
   requestToken: string,
   rerunById?: string | null,
 ): Promise<string> {
-  const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
-  const job = await ai_agents.add('appeal-resolution', data, opts)
+  const [job] = await enqueueRecoverableAppealResolution({ appealId, requestToken, rerunById })
   if (!job) throw new Error('Appeal resolution rerun was not admitted to the queue')
-  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
   return job.id
 }

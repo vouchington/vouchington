@@ -63,10 +63,10 @@ async function settlePersistedBackgroundResponses(
     responses,
     async response => {
       try {
-        const result = await reconcileBackgroundResponse(
-          { ...response, createdAt: new Date(response.createdAt) },
-          'job',
-        )
+        const result = await reconcileBackgroundResponse({
+          ...response,
+          createdAt: new Date(response.createdAt),
+        })
         if (result !== 'still-active' && result !== 'accounting-uncertain') {
           await context.settle(response.responseId)
         }

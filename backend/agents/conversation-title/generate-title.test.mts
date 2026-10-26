@@ -54,7 +54,7 @@ describe('conversation title input and model owners', () => {
 
   beforeEach(async () => {
     // Only the external SDK credential boundary is controlled; the application client stays real.
-    // The direct transport keeps background mode and the inline recovery registry in play.
+    // The direct transport keeps background mode and the delayed recovery job in play.
     await modelRoutingConfig.waitForInitialization()
     restoreRouting = overrideDynamicConfigFieldsForTest(modelRoutingConfig, {
       openai_transport: 'direct',
@@ -124,7 +124,10 @@ describe('conversation title input and model owners', () => {
       response_id: responseId,
       agent_slug: 'chat-generate-title',
     })
-    await expect(readTitleResponseRegistration(responseId)).resolves.toBeNull()
+    await expect(readTitleResponseRegistration(responseId)).resolves.toMatchObject({
+      response_id: responseId,
+      agent_slug: 'chat-generate-title',
+    })
     await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
     expect(cancel).not.toHaveBeenCalled()
     expect(retrieve).not.toHaveBeenCalled()
@@ -164,7 +167,7 @@ describe('conversation title input and model owners', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('generates a trimmed title through the real model, registry and billing owners', async () => {
+  it('generates a trimmed title through the real model, recovery and billing owners', async () => {
     await withReservedAiUsageDay(1_000_000, async () => {
       const input = await makeInput()
       const { responseId, fixture } = prepareResponse(' "Great Chat Title" ')

@@ -12,9 +12,7 @@ import {
 } from '@vouchington/ai/openai'
 import { retrieveOpenAIResponse, cancelOpenAIResponse } from '@modules/openai-utils/create-response'
 import { openAIUsageToModelUsage, type OpenAIUsageLike } from '@vouchington/ai/providers'
-import { deleteBackgroundResponseRegistration } from './claim.mts'
-import { recordAndDeleteBackgroundResponseUsage } from './claim-and-record.mts'
-import type { BackgroundResponseToReconcile } from './expired.mts'
+import type { BackgroundResponseToReconcile } from './types.mts'
 
 export type ReconcileBackgroundResponseResult =
   | 'still-active'
@@ -23,14 +21,13 @@ export type ReconcileBackgroundResponseResult =
   | 'already-recorded'
   | 'accounting-uncertain'
   | 'no-usage'
+  | 'terminal-no-usage'
 
-/** Reconciles either a retained inline registration or an AI job's persisted response id. */
+/** Reconciles an AI job's persisted response id. */
 export async function reconcileBackgroundResponse(
   candidate: BackgroundResponseToReconcile,
-  owner: 'table' | 'job',
 ): Promise<ReconcileBackgroundResponseResult> {
   if (await hasRecordedAiUsageResponseId(candidate.responseId)) {
-    if (owner === 'table') await deleteBackgroundResponseRegistration(candidate.responseId)
     return 'already-recorded'
   }
 
@@ -43,7 +40,6 @@ export async function reconcileBackgroundResponse(
       requestDay: getUtcDayFromDate(candidate.createdAt),
       source: 'unknown_billed_attempt',
     })
-    if (owner === 'table') await deleteBackgroundResponseRegistration(candidate.responseId)
     onError(
       new Error(`Background OpenAI response passed retrieval retention: ${candidate.responseId}`, {
         cause: err,
@@ -61,7 +57,6 @@ export async function reconcileBackgroundResponse(
     model = completed.model
     serviceTier = completed.service_tier ?? undefined
     if (!usage) {
-      if (owner === 'table') await deleteBackgroundResponseRegistration(candidate.responseId)
       return 'no-usage'
     }
   } catch (err) {
@@ -70,7 +65,15 @@ export async function reconcileBackgroundResponse(
       await cancelOpenAIResponse(candidate.responseId)
       return 'still-active'
     }
-    if (!err.usage) return 'still-active'
+    if (!err.usage) {
+      // A terminal response cannot gain later usage. The provider may still have billed an
+      // unknown amount, so latch uncertainty before releasing its job-owned response id.
+      await latchAccountingUncertainty({
+        requestDay: getUtcDayFromDate(candidate.createdAt),
+        source: 'unknown_billed_attempt',
+      })
+      return 'terminal-no-usage'
+    }
     usage = err.usage
     model = err.model
     serviceTier = err.service_tier ?? undefined
@@ -90,8 +93,7 @@ export async function reconcileBackgroundResponse(
       usage: openAIUsageToModelUsage(usage),
       createdAt: candidate.createdAt,
     }
-    if (owner === 'table') await recordAndDeleteBackgroundResponseUsage(options)
-    else await recordAiUsage({ ...options, resolveLiveScopeOnInsert: true })
+    await recordAiUsage({ ...options, resolveLiveScopeOnInsert: true })
     return 'recorded'
   } catch (err) {
     onError(
@@ -105,10 +107,4 @@ export async function reconcileBackgroundResponse(
     })
     return 'accounting-uncertain'
   }
-}
-
-export function reconcileAgedBackgroundResponse(
-  candidate: BackgroundResponseToReconcile,
-): Promise<ReconcileBackgroundResponseResult> {
-  return reconcileBackgroundResponse(candidate, 'table')
 }

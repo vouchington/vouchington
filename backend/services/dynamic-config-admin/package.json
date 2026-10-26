@@ -80,7 +80,6 @@
     "@services/oauth-facebook": "workspace:^",
     "@services/oauth-github": "workspace:^",
     "@services/oauth-x": "workspace:^",
-    "@services/openai-background-responses": "workspace:^",
     "@services/openai-moderation": "workspace:^",
     "@services/pagination": "workspace:^",
     "@services/post-clearance": "workspace:^",

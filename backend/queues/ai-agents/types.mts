@@ -31,8 +31,7 @@ export type ReconcileClassifierRunsJobData = {
 }
 
 export type ReconcileBackgroundResponsesJobData = {
-  phase?: 'inline' | 'failed' | 'cleanup'
-  inlineAfter?: string
+  phase?: 'failed' | 'cleanup'
   failedOffset?: number
   sweepId?: string
   page?: number

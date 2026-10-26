@@ -5,11 +5,45 @@ export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
 
 export const aiAgentsQueueConfig = new DynamicConfig({
   key: 'ai-agents-queue-config',
-  fieldTypes: { background_response_reconcile_concurrency: 'number' },
-  defaultFields: { background_response_reconcile_concurrency: 1 },
+  fieldTypes: {
+    background_response_reconcile_concurrency: 'number',
+    background_response_recovery_concurrency: 'number',
+    background_response_reconcile_page_size: 'number',
+  },
+  defaultFields: {
+    background_response_reconcile_concurrency: 1,
+    background_response_recovery_concurrency: 2,
+    background_response_reconcile_page_size: 100,
+  },
 })
 
-export const aiAgentsQueueMaxValues = { background_response_reconcile_concurrency: 5 }
+export const aiAgentsQueueMaxValues = {
+  background_response_reconcile_concurrency: 5,
+  background_response_recovery_concurrency: 10,
+  background_response_reconcile_page_size: 1000,
+}
+
+export function getBackgroundResponseReconcilePageSize(): number {
+  return getBoundedPositiveIntegerField(
+    aiAgentsQueueConfig,
+    'background_response_reconcile_page_size',
+    {
+      defaultValue: 100,
+      maxValue: aiAgentsQueueMaxValues.background_response_reconcile_page_size,
+    },
+  )
+}
+
+export function getBackgroundResponseRecoveryConcurrency(): number {
+  return getBoundedPositiveIntegerField(
+    aiAgentsQueueConfig,
+    'background_response_recovery_concurrency',
+    {
+      defaultValue: 2,
+      maxValue: aiAgentsQueueMaxValues.background_response_recovery_concurrency,
+    },
+  )
+}
 
 export function getBackgroundResponseReconcileConcurrency(): number {
   return getBoundedPositiveIntegerField(
@@ -64,6 +98,7 @@ export type AIAgentJobName =
   | 'backfill_report_judgements'
   | 'auto-dispatch-judgement'
   | 'reconcile-auto-dispatch-judgements'
+  | 'recover-background-response'
   | 'reconcile-background-responses'
   | 'reconcile-copyright-agent-dispatches'
 
@@ -83,6 +118,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   backfill_report_judgements: 100,
   'auto-dispatch-judgement': 10,
   'reconcile-auto-dispatch-judgements': 100,
+  'recover-background-response': 100,
   'reconcile-background-responses': 100,
   'reconcile-copyright-agent-dispatches': 100,
 }
@@ -125,6 +161,7 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   backfill_report_judgements: true,
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,
+  'recover-background-response': false,
   'reconcile-background-responses': false,
   'reconcile-copyright-agent-dispatches': false,
 }

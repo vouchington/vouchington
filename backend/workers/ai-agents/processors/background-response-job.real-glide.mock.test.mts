@@ -1,7 +1,12 @@
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { Stream } from 'openai/core/streaming'
-import { Responses, type ResponseStreamEvent } from 'openai/resources/responses/responses'
+import {
+  Responses,
+  type Response,
+  type ResponseStreamEvent,
+} from 'openai/resources/responses/responses'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
@@ -20,7 +25,11 @@ import {
   makeStreamEvent,
 } from '@voucha/test-helpers/modules/openai-utils/responses'
 import type { AIAgentJobData, ReconcileBackgroundResponsesJobData } from '@queues/ai-agents/types'
-import { modelRoutingConfig, spendCapConfig } from '@services/ai-usage'
+import {
+  modelRoutingConfig,
+  spendCapConfig,
+  getAccountingUncertaintySource,
+} from '@services/ai-usage'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { processReconcileBackgroundResponses } from './process-reconcile-background-responses.mts'
 import { processAIAgentWorkerJob } from '../workers/core.mts'
@@ -62,6 +71,47 @@ describe('AI background response recovery with real GlideMQ', () => {
     )
   })
   afterEach(() => vi.unstubAllEnvs())
+
+  it('drops a terminal response ID with unknown usage before a completed processor exits', async () => {
+    await withReservedAiUsageDay(1_000_000, async day => {
+      const name = `ai_terminal_no_usage_${randomUUID()}`
+      const queue = new Queue<AIAgentJobData>(name, connection)
+      const response = {
+        ...pendingResponse(),
+        createdAt: new Date(`${day}T12:00:00Z`).toISOString(),
+      }
+      const job = await queue.add(
+        'story-post',
+        {
+          post_id: randomUUID(),
+          backgroundResponses: [response],
+          backgroundResponseProcessorCompleted: true,
+        },
+        { removeOnFail: false },
+      )
+      if (!job) throw new Error('Expected a recovery job')
+      const retrieve = vi.spyOn(Responses.prototype, 'retrieve').mockResolvedValueOnce(
+        makeSdkResponse({
+          id: response.responseId,
+          status: 'failed',
+          usage: null as unknown as Response['usage'],
+        }),
+      )
+      const create = vi.spyOn(Responses.prototype, 'create')
+      try {
+        await expect(getAccountingUncertaintySource(day)).resolves.toBeNull()
+        await expect(processAIAgentWorkerJob(job)).resolves.toBeUndefined()
+        await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
+        expect((await queue.getJob(job.id))?.data.backgroundResponses).toEqual([])
+        expect(create).not.toHaveBeenCalled()
+      } finally {
+        retrieve.mockRestore()
+        create.mockRestore()
+        await queue.obliterate({ force: true })
+        await queue.close()
+      }
+    })
+  })
 
   it('settles a persisted response before a replayed processor and deduplicates the job id', async () => {
     await Promise.all([

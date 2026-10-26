@@ -2,16 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { APIError } from 'openai'
 import { Responses, type Response } from 'openai/resources/responses/responses'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  countAiUsageRecordsForResponseId,
-  countBackgroundResponseRegistrations,
-} from '@voucha/test-helpers'
+import { countAiUsageRecordsForResponseId } from '@voucha/test-helpers'
 import {
   makeSdkResponse,
   makeSdkTextResponse,
 } from '@voucha/test-helpers/modules/openai-utils/responses'
 import { reconcileBackgroundResponse } from './reconcile.mts'
-import { registerBackgroundResponse } from './register.mts'
 
 const retrieve = vi.spyOn(Responses.prototype, 'retrieve')
 const cancel = vi.spyOn(Responses.prototype, 'cancel')
@@ -43,55 +39,41 @@ describe('OpenAI background response recovery states', () => {
       )
     cancel.mockResolvedValueOnce(makeSdkResponse({ id: row.responseId, status: 'cancelled' }))
 
-    await expect(reconcileBackgroundResponse(row, 'job')).resolves.toBe('still-active')
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('still-active')
     expect(cancel).toHaveBeenCalledExactlyOnceWith(row.responseId, {
       maxRetries: 0,
       timeout: 10_000,
     })
-    await expect(reconcileBackgroundResponse(row, 'job')).resolves.toBe('recorded')
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('recorded')
     await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(1)
-    await expect(reconcileBackgroundResponse(row, 'table')).resolves.toBe('already-recorded')
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('already-recorded')
   })
 
-  it('leaves a failed response pending until its usage appears', async () => {
-    const row = candidate()
-    retrieve
-      .mockResolvedValueOnce(
+  it.each(['failed', 'incomplete', 'cancelled'] as const)(
+    'settles a %s response with unknown billed usage',
+    async status => {
+      const row = candidate()
+      retrieve.mockResolvedValueOnce(
         makeSdkResponse({
           id: row.responseId,
-          status: 'failed',
+          status,
           usage: null as unknown as Response['usage'],
         }),
       )
-      .mockResolvedValueOnce(makeSdkResponse({ id: row.responseId, status: 'failed' }))
 
-    await expect(reconcileBackgroundResponse(row, 'job')).resolves.toBe('still-active')
-    await expect(reconcileBackgroundResponse(row, 'job')).resolves.toBe('recorded')
-    expect(cancel).not.toHaveBeenCalled()
-    await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(1)
-  })
+      await expect(reconcileBackgroundResponse(row)).resolves.toBe('terminal-no-usage')
+      expect(cancel).not.toHaveBeenCalled()
+      await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
+    },
+  )
 
   it('settles a completed response without usage without recording a bill', async () => {
     const row = candidate()
-    await registerBackgroundResponse(row)
     retrieve.mockResolvedValueOnce(
       makeSdkTextResponse('done', { id: row.responseId, usage: undefined }),
     )
 
-    await expect(reconcileBackgroundResponse(row, 'table')).resolves.toBe('no-usage')
-    await expect(countBackgroundResponseRegistrations(row.responseId)).resolves.toBe(0)
-    await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
-  })
-
-  it('expires an unretrievable inline response after its provider retention window', async () => {
-    const row = candidate()
-    await registerBackgroundResponse(row)
-    retrieve.mockRejectedValueOnce(
-      APIError.generate(404, { error: { code: 'not_found' } }, 'not found', new Headers()),
-    )
-
-    await expect(reconcileBackgroundResponse(row, 'table')).resolves.toBe('expired')
-    await expect(countBackgroundResponseRegistrations(row.responseId)).resolves.toBe(0)
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('no-usage')
     await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
   })
 
@@ -101,7 +83,7 @@ describe('OpenAI background response recovery states', () => {
       APIError.generate(404, { error: { code: 'not_found' } }, 'not found', new Headers()),
     )
 
-    await expect(reconcileBackgroundResponse(row, 'job')).resolves.toBe('expired')
+    await expect(reconcileBackgroundResponse(row)).resolves.toBe('expired')
     await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
   })
 })

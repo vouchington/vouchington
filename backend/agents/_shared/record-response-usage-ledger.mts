@@ -1,12 +1,11 @@
 import { recordAiUsage } from '@services/ai-usage'
 import onError from '@modules/on-error'
-import { recordAndDeleteBackgroundResponseUsage } from '@services/openai-background-responses'
 import type { ModelUsage } from '@vouchington/ai/providers'
 import { getBackgroundResponseJobContext } from './background-response-job-context.mts'
 
 export interface BackgroundResponseRegistration {
   responseId: string
-  kind: 'job' | 'table'
+  kind: 'job' | 'recovery-job'
   createdAt: Date
 }
 
@@ -46,13 +45,6 @@ export async function claimRegisteredResponseUsage({
     classifierRunId: classifier?.runId,
     latencyMs: classifier?.latencyMs,
     ...usage,
-  }
-  if (registration?.kind === 'table') {
-    await recordAndDeleteBackgroundResponseUsage({
-      ...options,
-      responseId: registration.responseId,
-    })
-    return
   }
   await recordAiUsage(options)
   if (registration?.kind === 'job') {
