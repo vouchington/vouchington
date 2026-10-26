@@ -140262,6 +140262,10 @@
           "validated": true
         },
         "user_sessions_check3": {
+          "definition": "CHECK (((device_bound_session_binding IS NULL) OR ((device_token_digest IS NOT NULL) AND (device_token_binding @> '{\"client\": \"web\"}'::jsonb) AND (jsonb_typeof(device_bound_session_binding) = 'object'::text))))",
+          "validated": true
+        },
+        "user_sessions_check4": {
           "definition": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
           "validated": true
         },
@@ -140303,6 +140307,16 @@
           "defaultExpression": null,
           "generated": "virtual",
           "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18
+        },
+        "device_bound_session_binding": {
+          "comment": "Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.",
+          "dataType": "jsonb",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
           "identity": null,
           "nullable": true,
           "ordinalPosition": 17
@@ -140445,7 +140459,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "user_agent_string_id": {
           "comment": "Normalized user-agent row for the raw browser user-agent captured for this session.",

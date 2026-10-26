@@ -24,6 +24,7 @@ RANGE partitioned on `id` (children: default, retention owner `runDataRetentionC
 | `device_token_encrypted`                 | `text`                                | yes      |                              |          |           |           | Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.                    |
 | `device_token_issued_at`                 | `timestamp with time zone`            | yes      |                              |          |           |           | Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.                                                                          |
 | `device_token_binding`                   | `jsonb`                               | yes      |                              |          |           |           | Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document. |
+| `device_bound_session_binding`           | `jsonb`                               | yes      |                              |          |           |           | Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.  |
 | `created_at`                             | `timestamp with time zone`            | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                     |
 | `updated_at`                             | `timestamp with time zone`            | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                                     |
 
@@ -37,7 +38,8 @@ _none_
 - `user_sessions_check`: `CHECK ((num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) = ANY (ARRAY[0, 4])))`
 - `user_sessions_check1`: `CHECK ((num_nonnulls(previous_device_token_digest, previous_device_token_grace_expires_at) = ANY (ARRAY[0, 2])))`
 - `user_sessions_check2`: `CHECK (((previous_device_token_digest IS NULL) OR (device_token_digest IS NOT NULL)))`
-- `user_sessions_check3`: `CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))`
+- `user_sessions_check3`: `CHECK (((device_bound_session_binding IS NULL) OR ((device_token_digest IS NOT NULL) AND (device_token_binding @> '{"client": "web"}'::jsonb) AND (jsonb_typeof(device_bound_session_binding) = 'object'::text))))`
+- `user_sessions_check4`: `CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))`
 - `user_sessions_device_name_check`: `CHECK ((TRIM(BOTH FROM device_name) = device_name))`
 - `user_sessions_device_name_check1`: `CHECK ((char_length(device_name) <= 255))`
 - `user_sessions_device_token_binding_check`: `CHECK (((device_token_binding IS NULL) OR (jsonb_typeof(device_token_binding) = 'object'::text)))`
