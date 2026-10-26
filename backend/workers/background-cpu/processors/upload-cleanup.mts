@@ -4,7 +4,7 @@ import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uplo
 import { initializeAbandonedUploadSweep } from '@services/images/cleanup-upload-sweep'
 import type { Job } from 'glide-mq'
 
-/** The shared scheduler lease skips overlapping active ticks; retained pages keep this job ID. */
+/** The scheduler lease covers one active pass; row locks, idempotent deletes and extraction deduplication make overlapping sweeps replayable. */
 export async function processUploadCleanupJob(job: Job) {
   const data = parseCleanupAbandonedUploadsData(job.data)
   const sweep = data.sweep ?? (await initializeAbandonedUploadSweep())
