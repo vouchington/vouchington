@@ -1,24 +1,19 @@
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { parseCleanupAbandonedUploadsData } from '@queues/content-analysis/payload/upload-cleanup'
 import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
-import {
-  captureStagedUploadCleanupSweep,
-  cleanupStagedUploadSweepPage,
-} from '@services/images/cleanup-staged-upload-sweep'
+import { initializeAbandonedUploadSweep } from '@services/images/cleanup-upload-sweep'
 import type { Job } from 'glide-mq'
 
-/** Keep the current recovery and abandonment phases ahead of each retained staged page. */
+/** The scheduler lease covers one active pass; row locks, idempotent deletes and extraction deduplication make overlapping sweeps replayable. */
 export async function processUploadCleanupJob(job: Job) {
-  return processRetainedSweep(job, async save => {
-    const data = parseCleanupAbandonedUploadsData(job.data)
-    const staged = data.staged ?? (await captureStagedUploadCleanupSweep())
-    if (!data.staged) await save({ staged })
-    const otherPhases = await cleanupAbandonedUploads()
-    const page = await cleanupStagedUploadSweepPage(staged, next => save({ staged: next }))
-    return {
-      ...otherPhases,
-      stagedSourcesDeleted: page.stagedSourcesDeleted,
-      hasMore: page.hasMore,
-    }
-  })
+  const data = parseCleanupAbandonedUploadsData(job.data)
+  const sweep = data.sweep ?? (await initializeAbandonedUploadSweep())
+  if (!data.sweep) await job.updateData({ sweep })
+  const pass = await cleanupAbandonedUploads(sweep, next => job.updateData({ sweep: next }))
+  const result = await processRetainedSweep(job, async () => pass)
+  return {
+    cleaned: result.cleaned,
+    recovered: result.recovered,
+    stagedSourcesDeleted: result.stagedSourcesDeleted,
+  }
 }

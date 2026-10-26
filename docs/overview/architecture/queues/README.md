@@ -159,3 +159,16 @@ RSS alias category recovery resumes from mismatched category rows. An alias dirt
 acknowledged only after both item and feed mappings finish; capped pages chain through the existing
 maintenance queue. Community digest catch-up likewise chains bounded weekly-window pages while
 retaining the original closed-window target.
+
+### Upload maintenance continuation
+
+Upload cleanup retains phase progress on the actual maintenance job so a bounded page can yield
+without spending a failure attempt. Snapshot persistence precedes side effects and subsequent
+progress follows them. Retries can repeat an admission or object deletion if a worker stops
+between an effect and its checkpoint; existing image storage lifecycle locks, extraction admission
+deduplication and idempotent provider deletion remain the replay boundaries. A resumed snapshot
+never recaptures a moving global range. The shared scheduler lease skips fresh ticks that overlap
+an active pass. Separate retained sweeps can revisit a row between passes: locking selectors,
+image lifecycle locks, and idempotent storage deletion keep those effects replayable, while
+extraction admission deduplicates in-flight work. Recovery advances only after its bounded page
+is admitted.

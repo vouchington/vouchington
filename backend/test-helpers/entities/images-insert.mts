@@ -36,3 +36,19 @@ export async function insertTestImageWithSha256(
   )
   return { id: rows[0].id, sha256 }
 }
+
+/** An explicit owned UUID lets native cursor fixtures reserve a closed adjacent key interval. */
+export async function insertTestStagedImage(
+  userId: string,
+  options: { id: string; stagedAt: Date },
+): Promise<string> {
+  const { rows } = await write<{ id: string }>(
+    allowUnannotatedQuery(sql`
+    INSERT INTO images (id, created_by_id, sha_256, data, s3_key, upload_staged_at)
+    VALUES (${options.id}, ${userId}, NULL, '{}', ${options.id}, ${options.stagedAt})
+    RETURNING id
+  `),
+  )
+  if (!rows[0]) throw new Error('Staged image fixture was not inserted')
+  return rows[0].id
+}

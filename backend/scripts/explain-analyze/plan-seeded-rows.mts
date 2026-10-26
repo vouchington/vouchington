@@ -1,3 +1,4 @@
+import { UPLOAD_CLEANUP_TOTAL_ROWS } from './seed-data/upload-cleanup-cohort.mts'
 import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
 import { REPORT_CONTEXT_SEED_ROW_COUNT } from './seed-data/moderation-report-context-counts.mts'
 
@@ -112,7 +113,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   household_members: 101,
   image_placements: 5_000,
   image_surface_placements: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  images: 5_000,
+  images: UPLOAD_CLEANUP_TOTAL_ROWS + 5_000,
   individuals: 100,
   linkedin_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   media_placements: 5_000,

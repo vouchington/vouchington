@@ -4,11 +4,18 @@ import type { JobOptions } from 'glide-mq'
 import { IMAGE_UPLOADS_QUEUE_NAME } from './config.mts'
 import { imageUploadsQueue } from './queues.mts'
 
-const enqueueExtractImageMetadataJob = createEnqueueFunction<{ id: string }, 'extract-metadata'>({
-  queue: imageUploadsQueue,
-  queueName: IMAGE_UPLOADS_QUEUE_NAME,
-  jobName: 'extract-metadata',
-})
+/** Bind recovery admission to its real destination queue. */
+export function createExtractImageMetadataEnqueue(queue: typeof imageUploadsQueue) {
+  const enqueue = createEnqueueFunction<{ id: string }, 'extract-metadata'>({
+    queue,
+    queueName: IMAGE_UPLOADS_QUEUE_NAME,
+    jobName: 'extract-metadata',
+  })
+  return (imageId: string): EnqueueReturnType =>
+    enqueue({ id: imageId }, getExtractImageMetadataJobOptions(imageId))
+}
+
+export const enqueueExtractImageMetadata = createExtractImageMetadataEnqueue(imageUploadsQueue)
 
 /**
  * One in-flight extraction per image, with no custom `jobId`. A stable `jobId` is a hard uniqueness
@@ -21,8 +28,4 @@ export function getExtractImageMetadataJobOptions(imageId: string) {
   return {
     deduplication: { id: `extract-image-metadata-${imageId}`, mode: 'simple' },
   } satisfies Partial<JobOptions>
-}
-
-export function enqueueExtractImageMetadata(imageId: string): EnqueueReturnType {
-  return enqueueExtractImageMetadataJob({ id: imageId }, getExtractImageMetadataJobOptions(imageId))
 }
