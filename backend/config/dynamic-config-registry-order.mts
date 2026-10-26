@@ -6,6 +6,7 @@ export const REGISTRY_ORDER = [
   'vote-weight-config',
   'recaptcha-config',
   'turnstile-config',
+  'bot-challenge-config',
   'post-content-limits-config',
   'post-related-url-display-config',
   'story-related-items-config',

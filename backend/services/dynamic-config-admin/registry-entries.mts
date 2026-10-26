@@ -14,6 +14,7 @@ import { streamDynamicConfigRegistryEntries } from './registry-stream-entries.mt
 import { workDynamicConfigRegistryEntries } from './registry-work-entries.mts'
 import { aiUsageDynamicConfigRegistryEntries } from './registry-ai-usage-entries.mts'
 import { coreDynamicConfigRegistryEntries } from './registry-core-entries.mts'
+import { botChallengeRegistryEntry } from './registry-bot-challenge-entry.mts'
 import { externalProxyDynamicConfigRegistryEntries } from './registry-external-proxy-entries.mts'
 import { featureFlagDynamicConfigRegistryEntries } from './registry-feature-flag-entries.mts'
 import { operationalDynamicConfigRegistryEntries } from './registry-operational-entries.mts'
@@ -38,6 +39,7 @@ const unorderedRegistryEntries = [
   ...streamDynamicConfigRegistryEntries,
   ...featureFlagDynamicConfigRegistryEntries,
   ...coreDynamicConfigRegistryEntries,
+  botChallengeRegistryEntry,
   ...policyDynamicConfigRegistryEntries,
   ...operationalDynamicConfigRegistryEntries,
   ...externalProxyDynamicConfigRegistryEntries,

@@ -30,6 +30,8 @@ describe('election vote bot challenge admission', () => {
     } as unknown as Context['req']
     markAuthenticatedOriginRequest(req)
     markVerifiedSessionCredential(req)
+    const sessionId = crypto.randomUUID()
+    const deviceId = crypto.randomUUID()
     const ctx = {
       req,
       params: { id: crypto.randomUUID() },
@@ -37,6 +39,7 @@ describe('election vote bot challenge admission', () => {
         if (!condition) throw new Error('assertion failed')
       },
       getCurrentUser: async () => user,
+      getSessionTokenData: async () => ({ did: deviceId, sid: sessionId, uid: user.id }),
       hasVerifiedRequestSignature: () => false,
       verifyAttestedRequestSignature: async () => {},
       applyRouteRateLimit: async () => {
