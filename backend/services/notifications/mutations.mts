@@ -46,12 +46,14 @@ export async function getNotificationRedirectTarget(
   return (rows[0]?.target_path as string | undefined) ?? null
 }
 
-export type MarkAllNotificationsReadPage = {
-  marked_read: number
-  has_more: boolean
-  through_id: string | null
-  last_page_id: string | null
-}
+export type MarkAllNotificationsReadPage =
+  | { marked_read: number; has_more: true; through_id: string; last_page_id: string }
+  | {
+      marked_read: number
+      has_more: false
+      through_id: string | null
+      last_page_id: string | null
+    }
 
 /** One atomic page. The first call fixes an upper ID for background continuation. */
 export async function markAllNotificationsRead(
@@ -98,8 +100,7 @@ export async function markAllNotificationsRead(
 
   const result = rows[0] as MarkAllNotificationsReadPage
   if (result.has_more) {
-    if (!result.through_id || !result.last_page_id)
-      throw new Error('Unread notification continuation is missing its page boundary')
+    // The extra locked candidate implies a nonempty marked page and an upper ID.
     await enqueueMarkAllNotificationsReadContinuation({
       userId,
       throughId: result.through_id,
