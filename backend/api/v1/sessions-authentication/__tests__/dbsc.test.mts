@@ -4,12 +4,27 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createNativeRequest } from '@voucha/test-helpers/native-api-request'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
-import { verifySessionJwt } from '@ts-shared/session-jwt'
+import { signSessionJwt, verifySessionJwt } from '@ts-shared/session-jwt'
 import { COOKIE_OPTIONS } from '@modules/api-utils'
 import { readSessionDeviceAuthority } from '@services/jwt-session/device-authority'
+import { RuntimeRequestValidatorRegistry } from '@services/runtime-request-validation'
+import requestContracts from '../../../../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
 
 const origin = 'https://dbsc.example'
 const userAgent = 'Synthetic browser/1.0'
+const dbscResponseContracts = new RuntimeRequestValidatorRegistry({
+  version: 1,
+  source: 'checked-in-request-contracts',
+  components: requestContracts.components,
+  operations: {
+    'POST:/api/v1/auth/device-bound-sessions': {
+      body: requestContracts.responses['POST:/api/v1/auth/device-bound-sessions'],
+    },
+    'POST:/api/v1/auth/device-bound-sessions/refreshes': {
+      body: requestContracts.responses['POST:/api/v1/auth/device-bound-sessions/refreshes'],
+    },
+  },
+})
 
 function browser() {
   return createRequest()
@@ -25,7 +40,7 @@ async function login(request = browser()) {
     .post('/api/v1/auth/email-address/login')
     .send({ email_address: user.email_address, token })
     .expect(200)
-  return { request, response }
+  return { request, response, user }
 }
 async function signProof(nonce: string, registration = false) {
   const key = await generateKeyPair('ES256')
@@ -61,6 +76,11 @@ describe('browser device-bound session protocol', () => {
       .set('Cookie', cookies.join('; '))
       .set('Secure-Session-Response', proof.initial)
       .expect(200)
+    expect(
+      dbscResponseContracts.validateAuthenticated('POST:/api/v1/auth/device-bound-sessions', {
+        body: registered.body,
+      }),
+    ).toBeNull()
     expect(registered.body).toMatchObject({
       session_identifier: response.body.sid,
       refresh_url: `${origin}/api/v1/auth/device-bound-sessions/refreshes`,
@@ -100,6 +120,12 @@ describe('browser device-bound session protocol', () => {
       .set('Sec-Secure-Session-Id', response.body.sid)
       .set('Secure-Session-Response', refreshProof)
       .expect(200)
+    expect(
+      dbscResponseContracts.validateAuthenticated(
+        'POST:/api/v1/auth/device-bound-sessions/refreshes',
+        { body: refreshed.body },
+      ),
+    ).toBeNull()
     expect(refreshed.headers['set-cookie']).toHaveLength(2)
     expect(refreshed.body.session_identifier).toBe(response.body.sid)
     expect(refreshed.body).not.toHaveProperty('session')
@@ -132,7 +158,7 @@ describe('browser device-bound session protocol', () => {
   })
 
   it('rejects ordinary bound refresh without key proof and preserves durable authority', async () => {
-    const { request, response } = await login()
+    const { request, response, user } = await login()
     const nonce = /challenge="([A-Za-z0-9_-]+)"/u.exec(
       response.headers['secure-session-registration'],
     )![1]!
@@ -149,6 +175,18 @@ describe('browser device-bound session protocol', () => {
       .send({})
       .expect(403)
     expect(rejected.body.code).toBe('DBSC_PROOF_REQUIRED')
+    const now = Math.floor(Date.now() / 1000)
+    const expiredSession = await signSessionJwt(
+      { did: response.body.did, sid: response.body.sid, uid: user.id },
+      { issuedAt: now - 601, expiresIn: now - 1 },
+    )
+    const boundDt = cookieTokens(registered.headers).find(cookie => cookie.startsWith('dt='))!
+    const expired = await browser()
+      .patch('/api/v1/session')
+      .set('Cookie', `${boundDt}; st=${expiredSession}`)
+      .send({})
+      .expect(403)
+    expect(expired.body.code).toBe('DBSC_PROOF_REQUIRED')
     expect(await readSessionDeviceAuthority(response.body.sid)).toMatchObject({
       device_token_digest: before!.device_token_digest,
       device_bound_session_binding: before!.device_bound_session_binding,

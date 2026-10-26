@@ -19206,7 +19206,7 @@
         "scope": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["origin", "include_site"],
+          "required": ["origin", "include_site", "scope_specification"],
           "properties": {
             "origin": {
               "type": "string",
@@ -19214,6 +19214,19 @@
             },
             "include_site": {
               "const": false
+            },
+            "scope_specification": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type", "path"],
+                "properties": {
+                  "type": { "const": "exclude" },
+                  "path": { "type": "string" }
+                }
+              }
             }
           }
         },
@@ -19233,7 +19246,7 @@
                 "const": "st"
               },
               "attributes": {
-                "const": "Path=/; Secure; HttpOnly; SameSite=Lax"
+                "enum": ["Path=/; Secure; HttpOnly; SameSite=Lax", "Path=/; HttpOnly; SameSite=Lax"]
               }
             }
           }
