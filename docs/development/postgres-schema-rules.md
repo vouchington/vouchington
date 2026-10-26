@@ -97,8 +97,14 @@ recovery follow [One current contract](../../AGENTS.md).
   `id`, not copied timestamps. A change row does not copy its parent; data a reader joins on becomes
   a typed column, and unjoined data stays in `metadata jsonb`. A change made by the system has a
   NULL actor.
-- Durable work queue: one vocabulary (`lease_token`, `leased_at`, `lease_expires_at`,
-  `attempt_count`, `available_at`, `generation` only when a re-enqueue can race a worker). Every
+- Durable work queue: default to a GlideMQ job whose job id is the durable row id, enqueued after
+  commit, plus a bounded sweep that re-enqueues rows with no recorded outcome; GlideMQ supplies
+  attempts, backoff, locking, stall recovery and unique ids. A lease or outbox table needs a stated
+  reason: legal or payment (Stripe) records, old values that vanish at commit, or an outcome that
+  must commit with domain rows. A unique job id stops duplicate enqueues, not duplicate runs, so
+  idempotent DB-only work needs no fence. When a table is justified, prefer one compare-and-set
+  fence on the outcome or a generation over the full lease columns. The lease shape: one vocabulary (`lease_token`, `leased_at`,
+  `lease_expires_at`, `attempt_count`, `available_at`, `generation` only when a re-enqueue can race a worker). Every
   renew, complete or fail writes `WHERE lease_token = $mine`, so a worker that lost its lease
   changes nothing. If the row exists only because of the work, the lease lives on it; if the record
   outlives the job, the lease moves to `<entity>_<job>_work_items` keyed by the entity id with a
