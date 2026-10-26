@@ -39,7 +39,7 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ['migrations', 'The migration ledger has exactly one row per checked-in migration.'],
   [
     'openai_background_responses',
-    'Rows are deleted by the compare-and-set claim as soon as usage is recorded, or by the sweeper reconciler once reconciled, bounding cardinality to recently in-flight background responses.',
+    'Inline conversation-title registrations are deleted with recorded usage or after age-based recovery; the bounded keyset sweep reaches later pending responses even when older responses stay active.',
   ],
   [
     'post_admission_claims',
