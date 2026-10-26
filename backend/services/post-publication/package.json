@@ -24,7 +24,6 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
-    "@modules/utils": "workspace:^",
     "@queues/post-publication": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",

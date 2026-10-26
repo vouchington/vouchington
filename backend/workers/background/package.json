@@ -23,7 +23,6 @@
     "@queues/background": "workspace:^",
     "@queues/oauth-authorization-exchange": "workspace:^",
     "@queues/post-mentions": "workspace:^",
-    "@queues/post-publication": "workspace:^",
     "@queues/ses-inbound": "workspace:^",
     "@services/fediverse-instances": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",

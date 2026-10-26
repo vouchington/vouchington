@@ -861,9 +861,6 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../queues/openai-moderation
-      '@queues/post-publication':
-        specifier: workspace:^
-        version: link:../queues/post-publication
       '@queues/psql':
         specifier: workspace:^
         version: link:../queues/psql
@@ -1857,9 +1854,6 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../../queues/openai-moderation
-      '@queues/post-publication':
-        specifier: workspace:^
-        version: link:../../queues/post-publication
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
@@ -3368,21 +3362,12 @@ importers:
 
   backend/queues/post-publication:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
       '@queues/background':
         specifier: workspace:^
         version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      '@vouchington/worker-runtime':
-        specifier: ^0.2.1
-        version: 0.2.1(@aws-sdk/client-sqs@3.1156.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/queues/psql:
     dependencies:
@@ -3786,9 +3771,6 @@ importers:
       '@services/platform-stats':
         specifier: workspace:^
         version: link:../services/platform-stats
-      '@services/post-publication':
-        specifier: workspace:^
-        version: link:../services/post-publication
       '@services/posts':
         specifier: workspace:^
         version: link:../services/posts
@@ -9431,9 +9413,6 @@ importers:
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
-      '@modules/utils':
-        specifier: workspace:^
-        version: link:../../modules/utils
       '@queues/post-publication':
         specifier: workspace:^
         version: link:../../queues/post-publication
@@ -12176,9 +12155,6 @@ importers:
       '@modules/csv':
         specifier: workspace:^
         version: link:../../modules/csv
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@services/bluesky-accounts':
         specifier: workspace:^
         version: link:../bluesky-accounts
@@ -12493,12 +12469,6 @@ importers:
       '@queues/post-publication':
         specifier: workspace:^
         version: link:../queues/post-publication
-      '@queues/psql':
-        specifier: workspace:^
-        version: link:../queues/psql
-      '@queues/sitemaps':
-        specifier: workspace:^
-        version: link:../queues/sitemaps
       '@sentry/node':
         specifier: ^11.9.0
         version: 11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))
@@ -13024,9 +12994,6 @@ importers:
       '@queues/post-mentions':
         specifier: workspace:^
         version: link:../../queues/post-mentions
-      '@queues/post-publication':
-        specifier: workspace:^
-        version: link:../../queues/post-publication
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
@@ -14270,9 +14237,6 @@ importers:
 
   backend/workers/post-publication:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
@@ -14300,15 +14264,9 @@ importers:
       '@services/posts':
         specifier: workspace:^
         version: link:../../services/posts
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../../services/topics
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      glide-mq:
-        specifier: ^0.19.0
-        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
