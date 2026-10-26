@@ -53,6 +53,27 @@ export async function readCompleteClassifierDecisionIfExistsFromPrimary(
   return assembleCompleteClassifierDecision(write, batch, candidateKind)
 }
 
+/** An unfinished run retains its committed decision beyond the public replay window. */
+export async function readCompleteClassifierDecisionForActiveRun(
+  query: QueryExecutor,
+  runId: string,
+  batchId: string,
+  candidateKind: ClassifierCandidateKind,
+): Promise<PersistedClassifierDecision> {
+  const { rows } = await query<{ id: string }>(sql`
+    /* readCompleteClassifierDecisionActiveRun */
+    SELECT id FROM classifier_runs
+    WHERE id = ${runId} AND decision_batch_id = ${batchId}
+      AND outcomes_persisted_at IS NOT NULL
+      AND completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL
+    FOR SHARE
+  `)
+  if (!rows[0]) throw new RangeError('Classifier decision batch is outside the retention window')
+  const batch = await readBatchRow(query, batchId)
+  if (!batch?.completed_at) throw new Error('Active classifier run lost its committed decision')
+  return assembleCompleteClassifierDecision(query, batch, candidateKind)
+}
+
 async function assembleCompleteClassifierDecision(
   query: QueryExecutor,
   batch: BatchRow,

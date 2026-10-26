@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { retainPublicationIdentityBridges } from '../../../../services/post-publication/identity-bridges.mts'
 import { insertTestCommunity } from '../../../entities/communities.mts'
 import { createTestPost } from '../../../entities/create-test-entities.mts'
@@ -35,6 +36,24 @@ export type ClassifierRunInsert = {
   configurationSha256?: Buffer | null
   decisionBatchId?: string | null
   classifierId?: string
+}
+
+export async function createCompletedClassifierDecisionBatchAt(input: {
+  classifierId: string
+  promptVersionId: string
+  postId: string
+  at: Date
+}): Promise<string> {
+  const id = uuidv7({ msecs: input.at.getTime() })
+  await write(sql`/* createCompletedClassifierDecisionBatchAt */
+    INSERT INTO classifier_decision_batches (
+      id, classifier_id, prompt_version_id, post_id, scope_category,
+      input_sha256, completed_at
+    ) VALUES (
+      ${id}, ${input.classifierId}, ${input.promptVersionId}, ${input.postId}, 'global',
+      ${Buffer.alloc(32, 1)}, ${input.at}
+    )`)
+  return id
 }
 
 /**
