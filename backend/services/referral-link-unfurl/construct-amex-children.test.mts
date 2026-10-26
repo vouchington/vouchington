@@ -1,4 +1,5 @@
-import { describe, it } from 'vitest'
+import { beforeAll, describe, it } from 'vitest'
+import { createReferralProgramFixture, createTestUser } from '@voucha/test-helpers'
 import assert from 'node:assert/strict'
 import { isUrlReferralLink } from '@services/referral-program-link-validations'
 import {
@@ -41,37 +42,61 @@ describe('constructChildUrls', () => {
 })
 
 describe('getAmexCardSlugCatalog', () => {
-  it('returns only the seeded per-card personal/business slugs, excluding the all-cards parent', async () => {
-    const catalog = await getAmexCardSlugCatalog()
+  const suffix = crypto.randomUUID()
+  const personalSlug = `test-personal-${suffix}`
+  const businessSlug = `test-business-${suffix}`
+  const parentSlug = `all-cards-${suffix}`
+  const expectedCatalog: AmexCardSlug[] = [
+    { kind: 'personal', slug: personalSlug },
+    { kind: 'business', slug: businessSlug },
+  ]
+  let programIds: string[]
 
-    assert.equal(catalog.length, 22, 'expected 14 personal + 8 business seeded card rows')
-    assert.ok(
-      catalog.every(({ kind }) => kind === 'personal' || kind === 'business'),
-      'every catalog entry must be personal or business',
-    )
-    assert.ok(
-      !catalog.some(({ slug }) => slug === 'all-cards'),
-      'the all-cards parent program must not appear in the per-card catalog',
-    )
-    assert.ok(catalog.some(({ kind, slug }) => kind === 'personal' && slug === 'gold-card'))
-    assert.ok(catalog.some(({ kind, slug }) => kind === 'business' && slug === 'businessgold-card'))
+  beforeAll(async () => {
+    const user = await createTestUser()
+    programIds = []
+    for (const pathname of [
+      `/en-us/referral/personal/${personalSlug}%`,
+      `/en-us/referral/business/${businessSlug}%`,
+      `/en-us/referral/${parentSlug}%`,
+    ]) {
+      const program = await createReferralProgramFixture({
+        createdById: user.id,
+        hostname: '*.americanexpress.com',
+        pathname,
+      })
+      programIds.push(program.referralProgramId)
+    }
   })
 
-  it('every catalog slug constructs a URL that resolves via isUrlReferralLink', async () => {
+  it('returns personal/business slugs without pathname wildcards, excluding the all-cards parent', async () => {
     const catalog = await getAmexCardSlugCatalog()
+    const owned = catalog.filter(({ slug }) => slug.includes(suffix))
+
+    assert.deepEqual(
+      owned.toSorted((a, b) => a.kind.localeCompare(b.kind)),
+      expectedCatalog.toSorted((a, b) => a.kind.localeCompare(b.kind)),
+    )
+    assert.ok(!owned.some(({ slug }) => slug === parentSlug))
+  })
+
+  it('each owned catalog slug constructs a URL that resolves to its referral program', async () => {
+    const catalog = await getAmexCardSlugCatalog()
+    const owned = catalog.filter(({ slug }) => slug.includes(suffix))
     const finalUrl =
       'https://www.americanexpress.com/en-us/credit-cards/referral/prospect/all-cards/personal?CORID=abc123&GENCODE=def456&ref=JONATOycVU'
 
-    const childUrls = constructChildUrls(finalUrl, catalog)
-    assert.equal(childUrls.length, catalog.length)
+    const childUrls = constructChildUrls(finalUrl, owned)
+    assert.equal(childUrls.length, expectedCatalog.length)
 
     for (const [index, url] of childUrls.entries()) {
       const result = await isUrlReferralLink(url)
-      assert.equal(
-        result.is_valid,
-        true,
-        `expected constructed URL for catalog entry ${JSON.stringify(catalog[index])} (${url}) to resolve`,
+      assert.equal(result.is_valid, true)
+      const programIndex = expectedCatalog.findIndex(
+        ({ kind, slug }) => kind === owned[index]!.kind && slug === owned[index]!.slug,
       )
+      assert.notEqual(programIndex, -1)
+      assert.equal(result.referral_program_id, programIds[programIndex])
     }
   })
 })

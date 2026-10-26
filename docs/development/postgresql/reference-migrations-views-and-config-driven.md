@@ -15,6 +15,10 @@
   views with `RESTRICT`, never `CASCADE`, so an unmanaged dependent blocks the rebuild instead of
   being silently removed.
 
+The Amex all-cards parent and its URL validation rule are invariant application data because
+referral unfurling identifies that parent by its canonical slug. Bootstrap provisions them without
+the optional sample CSV import; per-card program catalogs remain import-managed data.
+
 Refreshed materialized-view contracts run in native CI preflights against the migrated database.
 They exercise real PostgreSQL refreshes together with their HTTP, service, and queue consumers;
 the database unit suite keeps DML and non-DDL validation checks. This preserves snapshot behavior
