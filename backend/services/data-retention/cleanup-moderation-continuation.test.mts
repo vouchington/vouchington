@@ -44,7 +44,7 @@ describe('moderation cleanup continuation', () => {
       lowerBoundDate: window.lowerBoundDate,
       upperBoundDate: window.upperBoundDate,
     }
-    const first = await cleanupModerationRecords({ ...options, kinds: ['reports', 'actions'] })
+    const first = await cleanupModerationRecords(options)
     expect(first).toEqual({ deleted: 0, hasMore: true, remainingKinds: ['reports'] })
     await insertTestModeratorAction({
       actorId: staff.id,
