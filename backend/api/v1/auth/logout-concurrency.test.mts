@@ -52,8 +52,14 @@ describe('POST /api/v1/auth/logout concurrent replay', () => {
         .set('Cookie', [`dt=${tokens.deviceToken.token}`, `st=${tokens.sessionToken.token}`])
         .set('Sec-Fetch-Site', 'same-origin')
 
-    const blocked = await request().expect(500)
-    expect(blocked.headers['set-cookie']).toBeUndefined()
+    try {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      vi.setTimerTickMode('nextTimerAsync')
+      const blocked = await request().expect(500)
+      expect(blocked.headers['set-cookie']).toBeUndefined()
+    } finally {
+      vi.useRealTimers()
+    }
     await expect(isSessionRevoked(sid)).resolves.toBe(false)
 
     await logoutCleanupLease.release(sid, 'stalled-owner')
