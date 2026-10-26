@@ -1,10 +1,10 @@
 import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
-import { beforeEach, describe, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/components/my/use-fresh-authentication'), () => ({
   useFreshAuthentication: useFreshAuthenticationMock,
 }))
-import { render } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import {
   clickSubmit,
   confirmRemove,
@@ -97,6 +97,31 @@ describe('TotpManager error handling', () => {
     clickSubmit(/add authenticator/i)
     await enterOtp('123456')
     await assertions.expect(() => expectToast(toastMock, 'error', 'Failed to verify code'))
+  })
+
+  it('can confirm again after its setup proof expires without losing the authenticator secret', async () => {
+    mockSetupTotp.mockResolvedValueOnce({
+      authenticator: makeAuth('totp-new'),
+      secret: 'ABCDEF',
+      uri: 'otpauth://totp/test',
+    } as never)
+    mockVerifyTotpSetup.mockRejectedValueOnce(await mfaReauthRequiredError())
+    render(
+      <TotpManager
+        initialData={page([])}
+        mfaStatus={mfaManagerStatus}
+      />,
+    )
+
+    clickSubmit(/add authenticator/i)
+    await enterOtp('123456')
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Confirm$/ })).toBeVisible())
+    expect(screen.getByText('ABCDEF')).toBeVisible()
+    expect(mockSetupTotp).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('button', { name: /^Confirm$/ }))
+    await screen.findByText(/Enter the 6-digit code/i)
+    expect(mockSetupTotp).toHaveBeenCalledTimes(1)
   })
 
   it('reports rename failures via onError fallback', async () => {

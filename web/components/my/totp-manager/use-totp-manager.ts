@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ApiError } from '@vouchington/api-client'
 import onError, { onSuccess } from '@/lib/on-error'
 import {
   setupTotp,
@@ -84,6 +85,8 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
       setSetupName('')
       onSuccess(t('extracted.my.totpManager.authenticatorAddedSuccessfully_960de9d4'))
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'MFA_REAUTH_REQUIRED')
+        setSetupVerificationProof(null)
       onError(err, {
         fallback: t('extracted.my.totpManager.failedToVerifyCode_eff1b93c'),
         tags: { form: 'my-totp-setup' },
