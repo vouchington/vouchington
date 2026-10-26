@@ -1,7 +1,12 @@
 import { createCodedError } from '@vouchington/sentry'
 import { ENTITY_RELATION_BLOCKED_HOSTNAME_GUARD_UNREGISTERED } from '@modules/on-error/error-codes'
+import type { QueryOptions } from '@data-stores/psql'
 
-export type BlockedHostnameGuard = (urlIds: string[], userId?: string | null) => Promise<void>
+export type BlockedHostnameGuard = (
+  urlIds: string[],
+  userId?: string | null,
+  options?: QueryOptions,
+) => Promise<void>
 
 const blockedHostnameGuardRegistry = createBlockedHostnameGuardRegistry()
 

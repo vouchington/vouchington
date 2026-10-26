@@ -11,15 +11,18 @@ import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-jo
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 // Shared queue packages own combined registrations, not domain manifests of their own.
-const schedulePaths = globSync('backend/queues/*/enqueues/schedules.mts', {
-  cwd: repoRoot,
-})
-  .filter(
+const schedulePaths = [
+  ...globSync('backend/queues/*/enqueues/schedules.mts', {
+    cwd: repoRoot,
+  }).filter(
     path =>
       !path.startsWith('backend/queues/background/') &&
       !path.startsWith('backend/queues/background-cpu/'),
-  )
-  .toSorted()
+  ),
+  ...globSync('backend/queues/{background,background-cpu}/enqueues/*-schedules.mts', {
+    cwd: repoRoot,
+  }),
+].toSorted()
 
 // Shared-queue domains contribute manifests to one combined registration, so they have no
 // `upsertSchedules` of their own: registering a domain's manifest alone would prune the others.

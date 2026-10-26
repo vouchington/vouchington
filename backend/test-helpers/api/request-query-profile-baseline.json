@@ -230,6 +230,17 @@
     ]
   },
   {
+    "annotation": "getLocalHostnamePolicies",
+    "maxCount": 2,
+    "reason": "URL-relation admission reads local policy before provider assessment, then rereads it after hostname ownership locks so a block committed during the lock wait rejects the write.",
+    "permanent": true,
+    "code": "backend/services/entity-relations/publication-mutation.mts:51",
+    "routes": [
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/mcp"
+    ]
+  },
+  {
     "annotation": "getLandingPageRowForUser",
     "maxCount": null,
     "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",

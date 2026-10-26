@@ -30,6 +30,25 @@ export async function getHostnamePolicies(
   })
 }
 
+/** Adds domain-blocklist policy to an already-read local hostname policy map. */
+export async function getHostnamePoliciesFromLocal(
+  hostnames: string[],
+  localPolicies: ReadonlyMap<string, HostnamePolicy>,
+  options: QueryOptions = {},
+): Promise<Map<string, HostnamePolicy>> {
+  const groups = getHostnamePolicyGroups(hostnames)
+  if (groups.length === 0) return new Map()
+  const completeLocalPolicies = new Map(
+    groups.map(({ key }) => [key, localPolicies.get(key) ?? EMPTY_HOSTNAME_POLICY]),
+  )
+  return resolveBlocklist({
+    groups,
+    options,
+    readLocal: async () => completeLocalPolicies,
+    readFull: pending => getFullHostnamePolicies(pending, options),
+  })
+}
+
 export async function getHostnamePolicy(
   hostname: string,
   options: QueryOptions = {},

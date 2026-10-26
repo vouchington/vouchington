@@ -1,7 +1,10 @@
 import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import { getDomain } from 'tldts'
-import { getHostnamePolicies } from '@services/urls-domains-blacklist/domains'
+import {
+  getHostnamePolicies,
+  getHostnamePoliciesFromLocal,
+} from '@services/urls-domains-blacklist/domains'
 import {
   EMPTY_HOSTNAME_POLICY,
   getLocalHostnamePolicy,
@@ -25,6 +28,7 @@ import {
 type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
 
 type WebRiskCheckOptions = {
+  localPolicies?: PrecomputedHostnamePolicies
   policies?: PrecomputedHostnamePolicies
   signal?: AbortSignal
 }
@@ -101,7 +105,12 @@ export async function assertUrlsAllowedByWebRiskWithState(
     return value ? [value] : []
   })
   if (parsed.length === 0) return
-  const policies = options.policies ?? (await getHostnamePolicies(parsed.map(url => url.hostname)))
+  const hostnames = parsed.map(url => url.hostname)
+  const policies =
+    options.policies ??
+    (options.localPolicies
+      ? await getHostnamePoliciesFromLocal(hostnames, options.localPolicies)
+      : await getHostnamePolicies(hostnames))
   const providerActive = isWebRiskEnabled() && hasWebRiskApiKey()
   const decided = parsed.map(url => {
     const policy = policies.get(normalizeHostnameForPolicy(url.hostname)) ?? EMPTY_HOSTNAME_POLICY

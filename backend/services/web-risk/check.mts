@@ -17,6 +17,7 @@ export { parseWebRiskUrl }
 type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
 
 type WebRiskCheckOptions = {
+  localPolicies?: PrecomputedHostnamePolicies
   policies?: PrecomputedHostnamePolicies
   /** Aborts the provider lookup. An abort is thrown, never treated as a provider failure. */
   signal?: AbortSignal

@@ -25,6 +25,7 @@ import * as clientFeatureFlags from '../../../lib/api/client/feature-flags'
 import * as clientFriendRecommendations from '../../../lib/api/client/friend-recommendations'
 import * as clientHouseholds from '../../../lib/api/client/households'
 import * as clientHouseholdInvitations from '../../../lib/api/client/household-invitations'
+import * as clientHostnames from '../../../lib/api/client/hostnames'
 import * as clientImportExport from '../../../lib/api/client/import-export'
 import * as clientMemberships from '../../../lib/api/client/memberships'
 import * as clientModmail from '../../../lib/api/client/modmail'
@@ -106,6 +107,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     friendRecommendations: clientFriendRecommendations,
     households: clientHouseholds,
     householdInvitations: clientHouseholdInvitations,
+    hostnames: clientHostnames,
     importExport: clientImportExport,
     memberships: clientMemberships,
     modmail: clientModmail,
