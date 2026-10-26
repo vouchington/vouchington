@@ -54,7 +54,10 @@ An unlisted repeated annotation within one API request fails the test that made 
 records exceptions against their exact HTTP route and/or worker queue and job name. Worker scopes
 are diagnostic only; they do not exempt or fail an HTTP request. An entry is either temporary,
 owned by an open issue that removes the repeat, or permanent, for a repeat the code needs on purpose
-(a re-read after a lock that rejects a concurrent change); its reason names the mechanism.
+(a re-read after a lock that rejects a concurrent change); its reason names the mechanism and
+points at the code that needs it: a re-read that must see a write, a load-bearing per-item lock
+order, or a deliberate per-item transaction. "Would need merged statements" is a fold, not a reason
+to keep. A transaction start is not a per-item lookup.
 `parseRepeatBaseline` from `vouchington-tooling/request-query-profile` owns the exact fields,
 and the test setup rejects an entry that fits neither.
 

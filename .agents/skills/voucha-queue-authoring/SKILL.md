@@ -27,7 +27,8 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
 6. Give every shared-queue job a domain-prefixed `ordering` key. Its `concurrency` is a global
    cap across workers, read from DynamicConfig; it is not a split of `workerConcurrency`. Put
    floodable families in their own lane and dispatchers in a lane separate from tasks, because
-   groups release jobs FIFO, not by priority.
+   groups release jobs FIFO, not by priority. A delayed job keeps its slot, so a cap that must
+   survive deferral is a lease, not more concurrency; see the checklist.
 7. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
    queues, workers, services, or data stores.
 8. Update the domain README and queue inventory with the implementation.

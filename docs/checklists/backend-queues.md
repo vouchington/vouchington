@@ -38,7 +38,15 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   - Read each cap from DynamicConfig. Give work that outside input can flood its own small lane,
     and give batched work low caps.
   - Keep dispatchers and tasks in separate lanes. GlideMQ releases a group's waiting jobs in FIFO
-    order, not by priority.
+    order, not by priority. Ordering keys are the whole orchestration layer; add no other.
+  - A job moved to delayed keeps its ordering slot until it completes. A cap that must survive
+    deferral is a token-owned Valkey lease released before `moveToDelayed`
+    ([#3598](https://github.com/vouchington/vouchington/issues/3598)), never a higher ordering
+    concurrency.
+- **Judge by cost, not job count.** More, smaller jobs are fine. Measure model calls and spend per
+  item and lifecycle simplicity.
+- **A queue contract change resets staging.** Voucha is unlaunched: no drain, compatibility path,
+  or migration for old jobs.
 - **Operate per domain.** A shared queue needs pause, retry, and stats per domain, with pausing as a
   domain-control database field, not `Queue.pause()`. The [background queue](../overview/architecture/queues/README.md)
   has them ([#2855](https://github.com/vouchington/vouchington/issues/2855)): register the domain in its
