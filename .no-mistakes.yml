@@ -1689,6 +1689,20 @@ rules:
             module: uuid
             export: v4
 
+  - name: Tests use the shared database
+    rule: forbidden-calls
+    scope: repository
+    message: >-
+      Tests must use the shared dirty database and scope fixtures to their own rows; isolated database cases are forbidden.
+    options:
+      roots:
+        - vitest: true
+        - playwright: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - terminal: runIsolatedDatabaseCase
+
   - name: Vitest tests do not invoke real timers
     rule: forbidden-calls
     scope: repository
