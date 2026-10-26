@@ -91,7 +91,7 @@ describe('createImageUploadUrl', () => {
   })
 
   it('should support all allowed image formats', async () => {
-    const formats = ['jpeg', 'png', 'webp', 'gif', 'tiff', 'avif', 'heif', 'heic']
+    const formats = ['jpeg', 'jpg', 'png', 'webp', 'gif', 'tiff', 'avif', 'heif', 'heic']
 
     for (const format of formats) {
       const result = await createImageUploadUrl(user, {
