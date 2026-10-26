@@ -30,7 +30,7 @@ Hooks do not journal on the agent's behalf. Journal only friction as it occurs: 
 escalated commands, first-party tool surprises, and each CI root cause. A repeated fix push or
 plan change alone is not a trigger. The one exception is the merge-outcome note required by
 [Close-out](../agent-workflow/git-and-prs.md#close-out).
-Use the canonical [sandbox block](../../../node_modules/vouchington-tooling/skills/blackboard/SKILL.md#sandbox-and-permission-blocks)
+Use the canonical sandbox block in `blackboard/SKILL.md`
 and its journal grammar. For a GitHub Actions failure, include the affected check and run,
 root diagnostic, disposition, and whether `no-mistakes` impact selected the failing test or
 check. Retrospectives use `retrospective_check` and `retrospective_save` through the

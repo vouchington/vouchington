@@ -1,7 +1,7 @@
 # Vouchington retrospective validation
 
 The canonical `vouchington-workflow:retrospective` skill owns the CI failure, assessment, and
-claim-wording guidance. Its [CI failures reference](../../../node_modules/vouchington-tooling/skills/retrospective/references/ci-failures.md)
+claim-wording guidance. Its `retrospective/references/ci-failures.md`
 provides the shared block grammar.
 
 Vouchington's [`validateRetroDoc`](../../../dev/retrospective-validate.mts) enforces the local
