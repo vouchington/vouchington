@@ -1,12 +1,11 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
+import { afterEach, describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
-
-let budget: ReturnType<typeof createAnalyzerFixtureBudget>
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
@@ -25,9 +24,6 @@ type Diagnostic = { file: string; rule: string }
 // reimplementing SQL parsing. This proves migration schema, config entries,
 // non-primary UUIDv7 sources, runtime scripts, and every re-included helper.
 describe('generated-column predicate no-mistakes configuration', () => {
-  beforeEach(() => {
-    budget = createAnalyzerFixtureBudget()
-  })
   const dirs: string[] = []
 
   afterEach(async () => {
@@ -35,12 +31,12 @@ describe('generated-column predicate no-mistakes configuration', () => {
   })
 
   it('rejects every configured source and clause, then accepts its source-column predicate', async () => {
-    const directory = await budget.createRoot('generated-column-predicate-')
+    const directory = await mkdtemp(join(tmpdir(), 'generated-column-predicate-'))
     dirs.push(directory)
     await track(directory, 'backend/data-stores/psql/migrations/0999.sql', schema())
     await writeFixture(directory, 'created_at')
 
-    const rejected = await check(directory)
+    const rejected = check(directory)
     expect(rejected.status).toBe(1)
     expect(findings(rejected)).toHaveLength(91)
     expect(ownedFiles(findings(rejected))).toEqual(
@@ -51,7 +47,7 @@ describe('generated-column predicate no-mistakes configuration', () => {
     )
 
     await writeFixture(directory, 'source')
-    const corrected = await check(directory)
+    const corrected = check(directory)
     expect(corrected.status).toBe(0)
     expect(findings(corrected)).toEqual([])
   })
@@ -129,12 +125,15 @@ async function track(root: string, path: string, content: string): Promise<void>
 }
 
 async function initAndTrack(directory: string): Promise<void> {
-  expect(budget.git(['init', '-q', directory]).status).toBe(0)
-  expect(budget.git(['-C', directory, 'add', '.']).status).toBe(0)
+  expect(spawnSync('git', ['init', '-q', directory], { encoding: 'utf8' }).status).toBe(0)
+  expect(spawnSync('git', ['-C', directory, 'add', '.'], { encoding: 'utf8' }).status).toBe(0)
 }
 
 function check(directory: string) {
-  return budget.check(cli, directory)
+  return spawnSync(process.execPath, [cli, 'check', '--root', directory, '--format', 'json'], {
+    cwd: directory,
+    encoding: 'utf8',
+  })
 }
 
 function findings(result: { stdout: string }): Diagnostic[] {

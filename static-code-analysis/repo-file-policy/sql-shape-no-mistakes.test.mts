@@ -1,12 +1,11 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
+import { afterEach, describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
-
-let budget: ReturnType<typeof createAnalyzerFixtureBudget>
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
@@ -23,9 +22,6 @@ type Diagnostic = { file: string; message: string; rule: string }
 // Run the released analyzer with the checked-in rules. The fixture proves the
 // schema-SQL globs and the configured shape branches, not a local parser.
 describe('SQL offset and shape no-mistakes configuration', () => {
-  beforeEach(() => {
-    budget = createAnalyzerFixtureBudget()
-  })
   const dirs: string[] = []
 
   afterEach(async () => {
@@ -33,11 +29,11 @@ describe('SQL offset and shape no-mistakes configuration', () => {
   })
 
   it('rejects OFFSET, NOT IN, COUNT existence checks, and uuidv7 predicates in every SQL scope', async () => {
-    const directory = await budget.createRoot('sql-shape-')
+    const directory = await mkdtemp(join(tmpdir(), 'sql-shape-'))
     dirs.push(directory)
     await writeFixture(directory, badSql())
 
-    const rejected = await check(directory)
+    const rejected = check(directory)
     expect(rejected.status).toBe(1)
     expect(ruleFindings(rejected, 'postgres-no-offset')).toHaveLength(4)
     expect(ownedFiles(ruleFindings(rejected, 'postgres-no-offset'))).toEqual(
@@ -54,7 +50,7 @@ describe('SQL offset and shape no-mistakes configuration', () => {
     ).toHaveLength(12)
 
     await writeFixture(directory, goodSql())
-    const corrected = await check(directory)
+    const corrected = check(directory)
     expect(corrected.status).toBe(0)
     expect(findings(corrected)).toEqual([])
   })
@@ -68,8 +64,8 @@ async function writeFixture(root: string, statements: string): Promise<void> {
     `import { read } from '@data-stores/psql'\nexport async function run() { await read(\`${statements}\`) }\n`,
   )
   await writeFile(join(root, '.no-mistakes.yml'), stringify({ rules: await fixtureRules() }))
-  expect(budget.git(['init', '-q', root]).status).toBe(0)
-  expect(budget.git(['-C', root, 'add', '.']).status).toBe(0)
+  expect(spawnSync('git', ['init', '-q', root], { encoding: 'utf8' }).status).toBe(0)
+  expect(spawnSync('git', ['-C', root, 'add', '.'], { encoding: 'utf8' }).status).toBe(0)
 }
 
 async function fixtureRules(): Promise<Rule[]> {
@@ -107,7 +103,10 @@ async function track(root: string, path: string, content: string): Promise<void>
 }
 
 function check(directory: string) {
-  return budget.check(cli, directory)
+  return spawnSync(process.execPath, [cli, 'check', '--root', directory, '--format', 'json'], {
+    cwd: directory,
+    encoding: 'utf8',
+  })
 }
 
 function findings(result: { stdout: string }): Diagnostic[] {

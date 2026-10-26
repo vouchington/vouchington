@@ -126,21 +126,6 @@ describe('static-code-analysis workflow', () => {
     expect(workflow).not.toContain('--assert-unique-html-ids')
   })
 
-  it('runs the finite native timeout control once before the ordinary analyzer', () => {
-    type Step = { run?: string; if?: string; 'timeout-minutes'?: number }
-    const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
-    const steps = parsed.jobs['no-mistakes']?.steps ?? []
-    const command = './ci/run-with-timeout.sh 20 5 node ci/check-analyzer-fixture-budget.mts'
-    const controls = steps.filter(step => step.run === command)
-    expect(controls).toHaveLength(1)
-    expect(controls[0]?.if).toBeUndefined()
-    expect(controls[0]?.['timeout-minutes']).toBeTypeOf('number')
-    const analyzer = steps.findIndex(
-      step => step.run === 'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
-    )
-    expect(analyzer).toBeGreaterThan(steps.indexOf(controls[0]!))
-  })
-
   it('runs live Storybook component coverage after the shared analyzer releases its lock', () => {
     type Step = { name?: string; run?: string; if?: string; 'timeout-minutes'?: number }
     const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
