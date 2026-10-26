@@ -1,4 +1,3 @@
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { createHash } from 'node:crypto'
 import { getDomainBlacklistSourceTypeVersion } from '@voucha/types/entities/domain-blacklist-source'
 import { ValkeyCache } from '@data-stores/valkey/cache'
@@ -22,12 +21,10 @@ export const caches = {
     ttlSeconds: CACHE_TTLS_SECONDS.users_public,
   }),
   users_lookup: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'users_lookup',
     ttlSeconds: CACHE_TTLS_SECONDS.users_lookup,
   }),
   user_metrics: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'user_metrics',
     ttlSeconds: CACHE_TTLS_SECONDS.user_metrics,
   }),
@@ -40,27 +37,22 @@ export const caches = {
     ttlSeconds: CACHE_TTLS_SECONDS.topics_with_redirect,
   }),
   topics_lookup: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'topics_lookup',
     ttlSeconds: CACHE_TTLS_SECONDS.topics_lookup,
   }),
   topic_metrics: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'topic_metrics',
     ttlSeconds: CACHE_TTLS_SECONDS.topic_metrics,
   }),
   topic_elections: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'topic_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.topic_elections,
   }),
   agent_moderation_elections: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'agent_moderation_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.agent_moderation_elections,
   }),
   entity_relation_elections: new ValkeyCache<EntityRelationElectionCacheKey>({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'entity_relation_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.entity_relation_elections,
     keySerializer: serializeEntityRelationElectionCacheKey,
@@ -70,22 +62,18 @@ export const caches = {
     ttlSeconds: CACHE_TTLS_SECONDS.posts,
   }),
   posts_lookup: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'posts_lookup',
     ttlSeconds: CACHE_TTLS_SECONDS.posts_lookup,
   }),
   post_metrics: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'post_metrics',
     ttlSeconds: CACHE_TTLS_SECONDS.post_metrics,
   }),
   post_elections: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'post_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.post_elections,
   }),
   rss_feeds: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'rss_feeds',
     ttlSeconds: CACHE_TTLS_SECONDS.rss_feeds,
   }),
@@ -94,12 +82,10 @@ export const caches = {
     ttlSeconds: CACHE_TTLS_SECONDS.rss_feed_items,
   }),
   rss_feed_item_elections: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'rss_feed_item_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.rss_feed_item_elections,
   }),
   urls: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'urls',
     ttlSeconds: CACHE_TTLS_SECONDS.urls,
     // URL paths are case-sensitive; SHA-256 hashing prevents collisions from ValkeyCache's
@@ -107,7 +93,6 @@ export const caches = {
     keySerializer: (key: string) => createHash('sha256').update(key.trim()).digest('hex'),
   }),
   urls_lookup: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'urls_lookup',
     ttlSeconds: CACHE_TTLS_SECONDS.urls_lookup,
     // URL paths are case-sensitive. normalizeUrlForCache preserves path case, and SHA-256
@@ -115,19 +100,16 @@ export const caches = {
     keySerializer: (key: string) => createHash('sha256').update(key.trim()).digest('hex'),
   }),
   url_hostnames: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     // Config-driven source-type changes can replay before runtime invalidation is available.
     // A new source classification must not reuse the prior hostname policy cache namespace.
     prefix: `url_hostnames:${getDomainBlacklistSourceTypeVersion()}`,
     ttlSeconds: CACHE_TTLS_SECONDS.url_hostnames,
   }),
   email_domain_validation: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: `email-domain-validation:${getDomainBlacklistSourceTypeVersion()}`,
     ttlSeconds: CACHE_TTLS_SECONDS.email_domain_validation,
   }),
   hostname_elections: new ValkeyCache({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'hostname_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.hostname_elections,
   }),

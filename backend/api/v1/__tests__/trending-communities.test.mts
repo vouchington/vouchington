@@ -6,7 +6,6 @@ import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { TRENDING_COMMUNITIES_ANON_CACHE } from '@services/entity-cache/anonymous-search-prefixes'
 import { stableSerialize } from '@services/entity-cache/search-cache'
 import { encodeCursor } from '@modules/pagination'
@@ -18,7 +17,6 @@ const trendingCache = new ValkeyCache<CacheOptions>({
   prefix: TRENDING_COMMUNITIES_ANON_CACHE,
   ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
   keySerializer: stableSerialize,
-  runBackgroundRefresh: runDetachedBackgroundWork,
 })
 
 describe('GET /api/v1/trending-communities', () => {

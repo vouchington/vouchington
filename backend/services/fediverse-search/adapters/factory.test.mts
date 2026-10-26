@@ -2,7 +2,6 @@ import type { FediverseProviderAdapter, FediverseSearchBucket } from '../types.m
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { stableSerialize } from '@services/entity-cache'
 import { cacheAdapter, createFediverseAdapters } from './factory.mts'
@@ -57,7 +56,6 @@ describe('cacheAdapter', () => {
     const probe = new ValkeyCache({
       prefix: 'fediverse-search:mastodon',
       ttlSeconds: 60,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     })
     await expect(probe.get(key)).resolves.toEqual(first)
     const second = await wrapped.search(options)
@@ -110,7 +108,6 @@ describe('cacheAdapter', () => {
     const probe = new ValkeyCache({
       prefix: 'fediverse-search:mastodon',
       ttlSeconds: 60,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     })
     await cacheValkeyClient.set(probe.getKey(stableSerialize(options)), 'not-json{')
 

@@ -1,13 +1,11 @@
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '../config/index.mts'
 import { stableSerialize } from '../services/entity-cache/search-cache.mts'
 
 /** Own conditional cache commands for the isolated Stats Valkey instance. */
 export function observePlatformStatsCache() {
   const cache = new ValkeyCache<Record<string, never>>({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix: 'platform_stats_anon',
     ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
     keySerializer: stableSerialize,

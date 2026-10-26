@@ -1,4 +1,3 @@
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { getUserActiveMembership } from '@services/memberships/get'
 import type { TrustTierContext } from './types.mts'
@@ -6,7 +5,6 @@ import type { TrustTierContext } from './types.mts'
 const FIVE_MINUTES_IN_SECONDS = 5 * 60
 
 const rateLimitContextCache = new ValkeyCache({
-  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: 'user-rl-ctx',
   ttlSeconds: FIVE_MINUTES_IN_SECONDS,
   mode: 'text',

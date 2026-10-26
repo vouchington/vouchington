@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { EMBEDDINGS_TABLE } from '../config.mts'
 import * as bedrockRequest from '../single/request.mts'
 import { getCachedSearchEmbedding } from './get-cached.mts'
@@ -11,7 +10,6 @@ const cacheProbe = new ValkeyCache({
   ttlSeconds: 60 * 60 * 24,
   mode: 'json',
   staleRefresh: false,
-  runBackgroundRefresh: runDetachedBackgroundWork,
   keySerializer: query => createHash('sha256').update(query).digest('hex'),
 })
 

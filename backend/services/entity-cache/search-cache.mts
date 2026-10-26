@@ -1,4 +1,3 @@
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { createHash } from 'node:crypto'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import type { ValkeyCacheOptions } from '@data-stores/valkey/types'
@@ -14,7 +13,6 @@ export function createSearchCache<O extends object, R>(
   fn: (options: O) => Promise<R>,
 ): (options: O) => Promise<R> {
   const cache = new ValkeyCache<O>({
-    runBackgroundRefresh: runDetachedBackgroundWork,
     prefix,
     ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
     keySerializer: stableSerialize,

@@ -1,4 +1,3 @@
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { createHash } from 'node:crypto'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { EMBEDDINGS_TABLE } from '../config.mts'
@@ -8,7 +7,6 @@ const ONE_DAY_SECONDS = 60 * 60 * 24
 const SEARCH_EMBEDDING_TIMEOUT_MS = 6_000
 
 const cache = new ValkeyCache({
-  runBackgroundRefresh: runDetachedBackgroundWork,
   prefix: `${EMBEDDINGS_TABLE}_search_embeddings`,
   ttlSeconds: ONE_DAY_SECONDS,
   mode: 'json',

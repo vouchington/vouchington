@@ -2,7 +2,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { GlideClient } from '@valkey/valkey-glide'
 import { ValkeyCache } from './cache.mts'
-import { runDetachedBackgroundWork } from '../../modules/utils/detached-background-work.mts'
 import { sentryCaptureExceptionMock as captureException } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 // [value, ttlSecondsRemaining, bloomMiss] for a full cache miss with no bloom filter configured.
@@ -39,7 +38,6 @@ describe('ValkeyCache inflight-saturation handling', () => {
       client: fakeClient(invokeScript),
       inflightRetryAttempts: 2,
       inflightRetryDelayMs: 1,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     })
 
     await expect(cache.get('key')).resolves.toBeNull()
@@ -54,7 +52,6 @@ describe('ValkeyCache inflight-saturation handling', () => {
       client: fakeClient(invokeScript),
       inflightRetryAttempts: 2,
       inflightRetryDelayMs: 1,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     })
 
     await expect(cache.get('key')).rejects.toThrow('Reached maximum inflight requests')
@@ -72,7 +69,6 @@ describe('ValkeyCache inflight-saturation handling', () => {
       prefix: `inflight-saturation-write-${crypto.randomUUID()}`,
       ttlSeconds: 60,
       client: fakeClient(invokeScript),
-      runBackgroundRefresh: runDetachedBackgroundWork,
     })
     const getByAny = cache.cacheGetByAny((key: string) => Promise.resolve(`fresh-${key}`))
 

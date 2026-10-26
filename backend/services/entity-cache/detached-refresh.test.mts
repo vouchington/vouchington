@@ -6,6 +6,7 @@ import {
   runWithSessionRequestContext,
 } from '../../modules/request-client-info/index.mts'
 import { isDetachedBackgroundWork } from '@modules/utils/detached-background-work'
+import { ValkeyCache } from '@data-stores/valkey/cache'
 import { getTopicMetricsByAnyBatch } from '../topics/metrics-batch.mts'
 import { createRequestQueryProfile } from '../../test-helpers/query-profiles.mts'
 import { readTestSentryScope, withTestSentryScope } from '../../test-helpers/sentry-scope.mts'
@@ -13,6 +14,23 @@ import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sent
 import { caches } from './caches.mts'
 
 describe('detached cache refresh', () => {
+  it('uses the detached runner by default for an app cache', async () => {
+    const key = randomUUID()
+    const cache = new ValkeyCache({ prefix: 'detached-default-test', ttlSeconds: 60 * 60 })
+    const refreshed = Promise.withResolvers<boolean>()
+    try {
+      await cache.set(key, { id: key }, 60)
+      const cached = cache.cacheGetByAny(async () => {
+        refreshed.resolve(isDetachedBackgroundWork())
+        return { id: key }
+      })
+      await expect(cached(key)).resolves.toEqual({ id: key })
+      await expect(refreshed.promise).resolves.toBe(true)
+    } finally {
+      await cache.delete(key)
+    }
+  })
+
   it('counts the cold SQL while excluding the stale refresh from repeats and serial depth', async () => {
     const staleKey = randomUUID()
     const coldKey = randomUUID()

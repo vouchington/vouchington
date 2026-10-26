@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { checkRssFeedCrawlable } from '../fetch-robots-check.mts'
 
 describe('checkRssFeedCrawlable', () => {
@@ -17,7 +16,6 @@ describe('checkRssFeedCrawlable', () => {
     const cache = new ValkeyCache({
       prefix: 'urls-domains-robots',
       ttlSeconds: 60 * 60 * 24,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     })
     await cache.set(domain, 'User-agent: *\nAllow: /')
 

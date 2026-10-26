@@ -1515,6 +1515,9 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../valkey-core
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@ts-shared/session-jwt':
         specifier: workspace:^
         version: link:../../../ts-shared/session-jwt

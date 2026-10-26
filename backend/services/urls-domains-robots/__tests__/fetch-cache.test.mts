@@ -1,6 +1,5 @@
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { describe, expect, it, vi } from 'vitest'
 import { fetchRobotsTxtCached } from '../index.mts'
 import {
@@ -22,12 +21,10 @@ function robotsCachePair() {
     rules: new ValkeyCache({
       prefix: ROBOTS_RULES_CACHE_PREFIX,
       ttlSeconds: 60 * 60 * 24,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     }),
     unreachable: new ValkeyCache({
       prefix: ROBOTS_UNREACHABLE_CACHE_PREFIX,
       ttlSeconds: UNREACHABLE_TTL_SECONDS,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     }),
   }
 }

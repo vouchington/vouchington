@@ -25,6 +25,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-core": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "valkyries": "^0.12.0"

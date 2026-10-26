@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { valkeyEvents } from 'valkyries'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { COMMUNITIES_ANON_CACHE } from '@services/entity-cache/anonymous-search-prefixes'
 import { stableSerialize } from '@services/entity-cache/search-cache'
 import { searchCommunitiesCached } from './search-caches.mts'
@@ -17,7 +16,6 @@ describe('anonymous community search cache', () => {
       prefix: COMMUNITIES_ANON_CACHE,
       ttlSeconds: HTTP_CACHE_SHORT_MAX_AGE_SECONDS,
       keySerializer: stableSerialize,
-      runBackgroundRefresh: runDetachedBackgroundWork,
     })
     let stored = Promise.withResolvers<void>()
     const onSet = (event: { cacheName: string; keys: string[] }) => {
