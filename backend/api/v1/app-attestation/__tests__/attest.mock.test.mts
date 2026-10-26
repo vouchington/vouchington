@@ -25,7 +25,8 @@ import {
   refreshSessionState,
   verifyDeviceAndSessionTokens,
 } from '@services/jwt-session'
-import { ATTESTED_SESSION_EXPIRATION_SECONDS } from '@ts-shared/session-jwt'
+import { decodeSessionJwt } from '@ts-shared/session-jwt'
+import { mintNativeSessionMcpToken } from '@services/oauth-authorization-server'
 
 const verifyAttestationMock = vi.hoisted(() =>
   vi.fn<typeof import('node-app-attest').verifyAttestation>(),
@@ -41,10 +42,10 @@ function cookieValueOf(cookieHeader: string[] | undefined, name: string): string
   return cookie?.split(';')[0]?.slice(name.length + 1)
 }
 
-function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {
+function expiresAtOf(cookieHeader: string[] | undefined, name: string): number | undefined {
   const cookie = cookieHeader?.findLast(value => value.startsWith(`${name}=`))
-  const match = cookie?.match(/Max-Age=(\d+)/)
-  return match ? Number(match[1]) : undefined
+  const match = cookie?.match(/Expires=([^;]+)/)
+  return match ? Date.parse(match[1]!) : undefined
 }
 
 describe('POST /api/v1/app-attestation/attest', () => {
@@ -105,9 +106,11 @@ describe('POST /api/v1/app-attestation/attest', () => {
     })
 
     const cookieHeader = response.headers['set-cookie'] as unknown as string[] | undefined
-    expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
     const deviceToken = cookieValueOf(cookieHeader, 'dt')
     const sessionToken = cookieValueOf(cookieHeader, 'st')
+    expect(expiresAtOf(cookieHeader, 'st')).toBe(
+      (decodeSessionJwt(sessionToken ?? '')?.exp ?? 0) * 1000,
+    )
     const verified =
       deviceToken && sessionToken
         ? await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })
@@ -154,38 +157,68 @@ describe('POST /api/v1/app-attestation/attest', () => {
     expect(refreshed.uid).toBe(user.id)
   })
 
-  it('atomically replaces an active browser session after verified hardware proof', async () => {
-    const user = await createTestUserDirect()
-    const tokens = await createDeviceAndSessionTokens({ did: v7(), uid: user.id })
-    const proof = createTestAttestationProof()
-    verifyAttestationMock.mockReturnValue(proof.result)
-    const challengeId = randomUUID()
-    await storeAppAttestChallenge('attestation', challengeId, randomBytes(32).toString('base64url'))
-    const response = await createRequest()
-      .post('/api/v1/app-attestation/attest')
-      .set('Cookie', `dt=${tokens.deviceToken.token}; st=${tokens.sessionToken.token}`)
-      .send({
-        keyId: proof.result.keyId,
-        attestation: Buffer.from('verified-proof').toString('base64'),
-        challengeId,
+  it.each(['web', 'native'] as const)(
+    'preserves %s authentication origin when hardware proof replaces the session',
+    async authOrigin => {
+      const user = await createTestUserDirect()
+      const tokens = await createDeviceAndSessionTokens({
+        did: v7(),
+        uid: user.id,
+        authOrigin,
       })
-      .expect(200)
-    const cookies = response.headers['set-cookie'] as unknown as string[]
-    const verified = await verifyDeviceAndSessionTokens({
-      deviceToken: cookieValueOf(cookies, 'dt')!,
-      sessionToken: cookieValueOf(cookies, 'st')!,
-    })
-    expect(verified).toMatchObject({
-      uid: user.id,
-      did: tokens.deviceToken.payload.did,
-      dc: 'attested',
-      client: 'native',
-    })
-    expect(verified).not.toMatchObject({ sid: tokens.sessionToken.payload.sid })
-    expect(
-      (await readSessionDeviceAuthority(tokens.sessionToken.payload.sid))!.revoked_at,
-    ).toBeInstanceOf(Date)
-  })
+      const proof = createTestAttestationProof()
+      verifyAttestationMock.mockReturnValue(proof.result)
+      const challengeId = randomUUID()
+      await storeAppAttestChallenge(
+        'attestation',
+        challengeId,
+        randomBytes(32).toString('base64url'),
+      )
+      const response = await createRequest()
+        .post('/api/v1/app-attestation/attest')
+        .set('Cookie', `dt=${tokens.deviceToken.token}; st=${tokens.sessionToken.token}`)
+        .send({
+          keyId: proof.result.keyId,
+          attestation: Buffer.from('verified-proof').toString('base64'),
+          challengeId,
+        })
+        .expect(200)
+      const cookies = response.headers['set-cookie'] as unknown as string[]
+      const verified = await verifyDeviceAndSessionTokens({
+        deviceToken: cookieValueOf(cookies, 'dt')!,
+        sessionToken: cookieValueOf(cookies, 'st')!,
+      })
+      expect(verified).toMatchObject({
+        uid: user.id,
+        did: tokens.deviceToken.payload.did,
+        dc: 'attested',
+        client: 'native',
+      })
+      expect(verified).not.toMatchObject({ sid: tokens.sessionToken.payload.sid })
+      if (!verified) throw new Error('Verified attestation did not create a session')
+      expect((await readSessionDeviceAuthority(verified.sid))?.authentication_origin).toBe(
+        authOrigin,
+      )
+      const mint = mintNativeSessionMcpToken(user.id, {
+        did: verified.did,
+        sid: verified.sid,
+        clientApp: 'ios',
+        attestationStatus: 'attested',
+      })
+      const mintResult = await mint.then(
+        value => ({ allowed: true, tokenType: value.token_type, code: null }),
+        (err: { code?: string }) => ({ allowed: false, tokenType: null, code: err.code }),
+      )
+      expect(mintResult).toEqual(
+        authOrigin === 'native'
+          ? { allowed: true, tokenType: 'Bearer', code: null }
+          : { allowed: false, tokenType: null, code: 'NATIVE_MCP_MINT_DENIED' },
+      )
+      expect(
+        (await readSessionDeviceAuthority(tokens.sessionToken.payload.sid))!.revoked_at,
+      ).toBeInstanceOf(Date)
+    },
+  )
 
   it('does not resurrect a signed-in session when logout wins during hardware verification', async () => {
     const user = await createTestUserDirect()

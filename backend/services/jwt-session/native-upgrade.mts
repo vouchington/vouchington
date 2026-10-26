@@ -60,6 +60,7 @@ export async function upgradeVerifiedNativeSession(options: {
       did: options.did,
       uid: options.uid,
       ...claims,
+      authOrigin: row.authentication_origin,
       deviceClass: 'attested',
     })
   })
