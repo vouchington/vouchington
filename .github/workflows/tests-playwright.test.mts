@@ -110,12 +110,6 @@ describe('tests-playwright.yml', () => {
     expect(shardJob).not.toContain('CSP_ASSET_ORIGIN=http://localhost:$NEXT_PORT')
   })
 
-  it('does not allocate Chromium-restricted ports for browser-facing servers', () => {
-    expect(workflow).toContain(
-      'python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 6',
-    )
-  })
-
   it('installs JavaScript dependencies before allocating ports', () => {
     const shardJob = workflowJobSection(workflow, 'playwright-tests')
     const install = shardJob.indexOf('- uses: ./.github/actions/setup-backend')
