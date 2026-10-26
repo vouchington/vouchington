@@ -80,14 +80,16 @@ export async function listPendingOutboundDistributionPage(
     )
     SELECT pending.post_id, pending.id, pending.user_id,
       pending.like_id, pending.original_id,
-      EXISTS (
-        SELECT 1 FROM post_votes newer
-        WHERE newer.post_id = pending.post_id
-          AND newer.user_id = pending.user_id
-          AND newer.id > pending.id
-        LIMIT 1
-      ) AS has_newer_vote
+      latest.like_id AS latest_like_id
     FROM pending_page pending
+    LEFT JOIN LATERAL (
+      SELECT current_vote.outbound_activitypub_like_activity_id AS like_id
+      FROM post_votes current_vote
+      WHERE current_vote.post_id = pending.post_id
+        AND current_vote.user_id = pending.user_id
+      ORDER BY current_vote.id DESC
+      LIMIT 1
+    ) latest ON TRUE
     ORDER BY pending.post_id, pending.id`)
   const { rows } = await write<{
     post_id: string
@@ -95,11 +97,11 @@ export async function listPendingOutboundDistributionPage(
     user_id: string
     like_id: string | null
     original_id: string | null
-    has_newer_vote: boolean
+    latest_like_id: string | null
   }>(statement)
   const rawPage = rows.slice(0, limit)
   const page = rawPage.flatMap(row =>
-    row.like_id === row.id && row.has_newer_vote
+    row.like_id === row.id && row.latest_like_id !== row.id
       ? []
       : [
           {

@@ -117,6 +117,41 @@ describe('outbound ActivityPub recovery source', () => {
     ).toBe(false)
   })
 
+  it('retains the canonical Like after a positive-strength change', async () => {
+    const voter = await createTestUserDirect()
+    const postId = await insertTestPost({
+      createdById: voter.id,
+      title: 'Outbound recovery Like strength',
+      slug: `outbound-recovery-strength-${randomUUID()}`,
+      markdown: 'A public post with a positive-strength change',
+    })
+    await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 1 }])
+    const after = `${postId}__${FIRST_ID}`
+    const firstPage = await listPendingOutboundDistributionPage('votes', after, 10)
+    const firstLike = firstPage.rows.find(row => row.source === 'votes')
+    if (!firstLike || firstLike.source !== 'votes') throw new Error('Expected first Like')
+
+    // Positive score changes append a ballot row but keep the original Like identity.
+    await upsertPostElectionVotes(voter.id, [{ entityId: postId, score: 2 }])
+
+    const pendingPage = await listPendingOutboundDistributionPage('votes', after, 10)
+    expect(pendingPage.rows).toHaveLength(1)
+    expect(pendingPage.rows[0]).toMatchObject({
+      source: 'votes',
+      sourceUserId: voter.id,
+      targetPostId: postId,
+      activityId: firstLike.activityId,
+      originalLikeActivityId: null,
+    })
+    await markActivityDistributionComplete({
+      activityType: 'Like',
+      activityId: firstLike.activityId,
+      sourceUserId: voter.id,
+      targetPostId: postId,
+    })
+    expect((await listPendingOutboundDistributionPage('votes', after, 10)).rows).toEqual([])
+  })
+
   it('skips an obsolete Like after a clear and resumes at a replacement Like', async () => {
     const voter = await createTestUserDirect()
     const postId = await insertTestPost({
