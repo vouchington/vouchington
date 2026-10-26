@@ -5,7 +5,7 @@ import sql from 'sql-template-strings'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 
-export type CopyrightAppealRecommendationInput = {
+type CopyrightAppealRecommendationInput = {
   appeal: {
     reason: string
     targetIds: string[]

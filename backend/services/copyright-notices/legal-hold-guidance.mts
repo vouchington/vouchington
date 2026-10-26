@@ -5,7 +5,6 @@ import {
 } from '@ts-shared/utils/copyright-submission-guidance'
 import { isCopyrightSubmissionGuidance } from '@services/copyright-notices/submission-guidance-validation'
 
-export { COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA, COPYRIGHT_LEGAL_HOLD_RISK_KINDS }
 export type { CopyrightLegalHoldGuidance }
 
 /** No recommendation or decision field is accepted in this advisory result. */

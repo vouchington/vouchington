@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
-export type DsaStatementSubmissionOutcome =
+type DsaStatementSubmissionOutcome =
   | 'submitted'
   | 'retryable_failure'
   | 'permanent_failure'
@@ -47,7 +47,7 @@ export async function readDsaStatementSubmissionRound(
 }
 
 /** The global attempt number remains monotonic across replayed rounds. */
-export async function nextDsaStatementAttemptNumber(
+async function nextDsaStatementAttemptNumber(
   submissionId: string,
   query: TransactionQuery,
 ): Promise<number> {

@@ -31,7 +31,6 @@ import type {
 } from './read-models-notice-types.mts'
 export type {
   CopyrightParticipantNoticeDetail,
-  CopyrightPublicNotice,
   CopyrightPublicNoticeDetail,
 } from './read-models-notice-types.mts'
 

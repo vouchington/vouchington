@@ -6,7 +6,7 @@ import sql from 'sql-template-strings'
 import type { MembershipBillingInterval, MembershipPlanSlug } from './types.mts'
 import type { MembershipPurchaseProvider } from './purchase-intents.mts'
 
-export type MembershipCatalogProviderReference = {
+type MembershipCatalogProviderReference = {
   provider: MembershipPurchaseProvider
   environment: 'test' | 'production'
   application_id: string

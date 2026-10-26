@@ -10,11 +10,11 @@ import type { MediaType } from './filters.mts'
 /**
  * Cursor types for different pagination modes
  */
-export type SimpleCursor = {
+type SimpleCursor = {
   id: string
 }
 
-export type ScopedSimpleCursor = {
+type ScopedSimpleCursor = {
   id: string
   scope: string
 }
@@ -24,27 +24,27 @@ export type ScoreCursor = {
   id: string
 }
 
-export type ScopedScoreCursor = ScoreCursor & {
+type ScopedScoreCursor = ScoreCursor & {
   scope: string
 }
 
-export type RankingCursor = {
+type RankingCursor = {
   ranking: number
   id: string
 }
 
-export type TimestampCursor = {
+type TimestampCursor = {
   timestamp: number
   id: string
 }
 
-export type ScopedTimestampCursor = {
+type ScopedTimestampCursor = {
   timestamp: number
   id: string
   scope: string
 }
 
-export type PreciseTimestampCursor = {
+type PreciseTimestampCursor = {
   timestamp: string
   id: string
 }
@@ -53,7 +53,7 @@ export type ScopedPreciseTimestampCursor = PreciseTimestampCursor & {
   scope: string
 }
 
-export type ScopedTierPreciseNameCursor = {
+type ScopedTierPreciseNameCursor = {
   tier: number
   timestamp: string
   name: string
@@ -72,12 +72,12 @@ export type NameCursor = {
   id: string
 }
 
-export type TierCursor = {
+type TierCursor = {
   tier: number
   id: string
 }
 
-export type ScopedTierCursor = TierCursor & {
+type ScopedTierCursor = TierCursor & {
   scope: string
 }
 
@@ -85,7 +85,7 @@ export type ScopedTierCursor = TierCursor & {
  * Scoped cursor for lists keyed by a globally-unique text column with no surrogate id
  * (e.g. `topic_aliases.alias`). The text value itself is the sort/tiebreaker key.
  */
-export type ScopedAliasCursor = {
+type ScopedAliasCursor = {
   alias: string
   scope: string
 }
@@ -110,7 +110,7 @@ export type Cursor =
 /**
  * Cursor configuration types
  */
-export type CursorType =
+type CursorType =
   | 'simple'
   | 'score'
   | 'ranking'
@@ -126,7 +126,7 @@ export type CursorType =
  * Services are responsible for decoding and validating cursor format using
  * type guards (isSimpleCursor, isTimestampCursor, etc.) from cursors.mts
  */
-export type CursorConfig = {
+type CursorConfig = {
   type: CursorType | readonly CursorType[] // Informational only - documents expected cursor shape(s) but not validated by parser
   paramName?: string // Default: 'after'
 }
@@ -134,7 +134,7 @@ export type CursorConfig = {
 /**
  * Limit configuration
  */
-export type LimitConfig = {
+type LimitConfig = {
   min?: number // Default: 1
   max?: number // Default: 100
   default?: number // Default: 25

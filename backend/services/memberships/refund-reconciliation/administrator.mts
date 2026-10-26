@@ -97,7 +97,7 @@ async function reconcileAdministratorRefundOperation(
   return { id: operationId, result }
 }
 
-export async function getAdministratorRefundReconciliationResult(
+async function getAdministratorRefundReconciliationResult(
   operationId: string,
 ): Promise<RefundReconciliationResult> {
   const { rows } = await write(sql`/* getAdministratorRefundReconciliationResult */

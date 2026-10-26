@@ -10,7 +10,7 @@ import { exclusiveCaseThreadTokenScopeSql } from './retention-erasure-thread-tok
  * - `hex64`: a 64-character lookup token becomes a per-row digest, NULL stays NULL.
  * - `digest`: a 32-byte identity digest becomes a per-row digest.
  */
-export type CopyrightRetentionErasureKind = 'redact' | 'null' | 'hex64' | 'digest'
+type CopyrightRetentionErasureKind = 'redact' | 'null' | 'hex64' | 'digest'
 
 export type CopyrightRetentionErasureTable = {
   table: string

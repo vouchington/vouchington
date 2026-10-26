@@ -7,7 +7,7 @@ import {
   readDsaStatementSubmissionRound,
 } from './dsa-statement-submission-ledger.mts'
 
-export type ClaimedDsaStatementSubmission = {
+type ClaimedDsaStatementSubmission = {
   submissionId: string
   leaseToken: string
   payload: DsaStatementPayload

@@ -2,7 +2,7 @@ import { decryptSecret, encryptSecret, hashToken } from '@modules/token-secrets'
 
 export const COPYRIGHT_EMAIL_THREAD_REFERENCE_PURPOSE = 'copyright-email-thread-reference'
 
-export type CopyrightEmailThreadReferenceKind = 'message_id' | 'in_reply_to' | 'references'
+type CopyrightEmailThreadReferenceKind = 'message_id' | 'in_reply_to' | 'references'
 
 export type CopyrightEmailThreadReferenceRow = {
   lookup_digest: string

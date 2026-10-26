@@ -12,7 +12,7 @@ import type {
  * at is not withheld behind their back. The submission stays in the staff queue and is never
  * dropped.
  */
-export async function recordAutomaticWithholdingRefusal(
+async function recordAutomaticWithholdingRefusal(
   transaction: TransactionQuery,
   submissionId: string,
   reason: AutomaticWithholdingRefusalReason,

@@ -31,7 +31,7 @@ export type AppleSignedTransactionVerifierConfig = {
   enableOnlineChecks?: boolean
 }
 
-export type AppleMembershipExpectedProduct = {
+type AppleMembershipExpectedProduct = {
   membershipProductId: string
   providerProductId: string
 }

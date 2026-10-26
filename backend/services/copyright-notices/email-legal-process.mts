@@ -7,7 +7,7 @@ import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { assertNoInitialIntakeThreadBarrier } from './email-rejection.mts'
 
-export const COPYRIGHT_EMAIL_LEGAL_PROCESS_REASON_MAX_LENGTH = 1_000
+const COPYRIGHT_EMAIL_LEGAL_PROCESS_REASON_MAX_LENGTH = 1_000
 
 /**
  * Records that a separate-case email intake is legal process, such as a §512(h) subpoena, and closes it

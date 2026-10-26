@@ -5,7 +5,6 @@ import {
 } from '@ts-shared/utils/copyright-submission-guidance'
 import { isCopyrightSubmissionGuidance } from '@services/copyright-notices/submission-guidance-validation'
 
-export { COPYRIGHT_COUNTER_NOTICE_GUIDANCE_ELEMENTS, COPYRIGHT_COUNTER_NOTICE_RISK_KINDS }
 export type { CopyrightCounterNoticeGuidance }
 
 /** No recommendation or decision field is accepted in this advisory result. */

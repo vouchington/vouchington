@@ -38,9 +38,9 @@ export type MembershipSku = {
 
 export type MembershipRefundReason = 'goodwill' | 'requested' | 'dispute' | 'other'
 
-export type MembershipRefundSource = 'admin' | 'stripe_dashboard'
+type MembershipRefundSource = 'admin' | 'stripe_dashboard'
 
-export type StripeMoney = {
+type StripeMoney = {
   amount: number
   currency: string
 }

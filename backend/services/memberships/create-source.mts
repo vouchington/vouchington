@@ -49,7 +49,7 @@ export async function getMembershipProductIdForCreation(
   )
 }
 
-export async function getMembershipProductIdForProviderSourceCreation(
+async function getMembershipProductIdForProviderSourceCreation(
   options: {
     userId: string
     plan: MembershipPlanSlug

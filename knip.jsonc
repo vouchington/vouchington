@@ -64,7 +64,7 @@
     },
     "backend/entrypoints/worker-io": {
       "entry": ["**/*.mts"],
-      "ignoreExportsUsedInFile": true,
+      "ignoreExportsUsedInFile": false,
     },
     "backend/worker-runtime": {
       "entry": ["**/*.mts"],
@@ -217,19 +217,19 @@
     },
     "backend/agents/copyright-appeal-recommendation": {
       // Keep the package's manifest entry so production consumers reach its run module.
-      "ignoreExportsUsedInFile": true,
+      "ignoreExportsUsedInFile": false,
     },
     "backend/agents/copyright-email-intake": {
       // Keep the package's manifest entry so production consumers reach its run module.
-      "ignoreExportsUsedInFile": true,
+      "ignoreExportsUsedInFile": false,
     },
     "backend/agents/copyright-form-screening": {
       // Keep the package's manifest entry so production consumers reach its run module.
-      "ignoreExportsUsedInFile": true,
+      "ignoreExportsUsedInFile": false,
     },
     "backend/agents/copyright-submission-guidance": {
       // Keep the package's manifest entry so production consumers reach its run module.
-      "ignoreExportsUsedInFile": true,
+      "ignoreExportsUsedInFile": false,
     },
     "web": {
       "entry": [
