@@ -1,9 +1,15 @@
-import { describe, expect, it, vi, afterEach, beforeAll } from 'vitest'
+import { describe, expect, it, vi, afterEach, beforeAll, beforeEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { TimeAgo } from '../time-ago'
 import { formatAbsolute, formatRelative } from '../time-ago-format'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
+
+const boundaryInstants = [
+  { boundary: 'UTC midnight', instant: '2026-04-10T23:59:59.999Z' },
+  { boundary: 'UTC month end', instant: '2026-04-30T23:59:59.999Z' },
+  { boundary: 'just after UTC month end', instant: '2026-05-01T00:00:00.000Z' },
+]
 
 // ── formatAbsolute ──────────────────────────────────────────────────────────
 
@@ -17,10 +23,14 @@ describe('formatAbsolute', () => {
     expect(formatAbsolute(Date.UTC(2026, 0, 1))).toBe('Jan 1, 2026')
   })
 
-  it('uses UTC methods so a UTC midnight date is not shifted to the previous day', () => {
-    // 2026-01-01T00:00:00.000Z — UTC methods must return Jan 1, not Dec 31
-    const ms = Date.UTC(2026, 0, 1, 0, 0, 0)
-    expect(formatAbsolute(ms)).toBe('Jan 1, 2026')
+  it.each([
+    { instant: '2026-01-01T00:00:00.000Z', label: 'Jan 1, 2026' },
+    { instant: '2026-04-10T23:59:59.999Z', label: 'Apr 10, 2026' },
+    { instant: '2026-04-11T00:00:00.000Z', label: 'Apr 11, 2026' },
+    { instant: '2026-04-30T23:59:59.999Z', label: 'Apr 30, 2026' },
+    { instant: '2026-05-01T00:00:00.000Z', label: 'May 1, 2026' },
+  ])('uses UTC date for $instant', ({ instant, label }) => {
+    expect(formatAbsolute(Date.parse(instant))).toBe(label)
   })
 
   it('covers all 12 month abbreviations', () => {
@@ -46,8 +56,8 @@ describe('formatAbsolute', () => {
 
 // ── formatRelative ──────────────────────────────────────────────────────────
 
-describe('formatRelative', () => {
-  const now = Date.UTC(2026, 3, 10, 12, 0, 0) // noon UTC Apr 10 2026
+describe.each(boundaryInstants)('formatRelative at $boundary', ({ instant }) => {
+  const now = Date.parse(instant)
 
   const ago = (seconds: number) => now - seconds * 1000
 
@@ -149,7 +159,14 @@ describe('formatRelative', () => {
 
 // ── TimeAgo component ───────────────────────────────────────────────────────
 
-describe('TimeAgo', () => {
+describe.each(boundaryInstants)('TimeAgo at $boundary', ({ instant }) => {
+  const now = Date.parse(instant)
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(now)
+  })
+
   afterEach(() => {
     vi.useRealTimers()
   })
@@ -170,9 +187,7 @@ describe('TimeAgo', () => {
   })
 
   it('renders the relative label for Unix epoch (timestamp 0)', () => {
-    vi.useFakeTimers()
     // epoch is a valid date; we should not render "—" for it
-    vi.setSystemTime(new Date('2026-04-10T00:00:00.000Z'))
     render(<TimeAgo date='1970-01-01T00:00:00.000Z' />)
     act(() => {
       vi.advanceTimersByTime(1)
@@ -182,10 +197,7 @@ describe('TimeAgo', () => {
   })
 
   it('renders the relative label after mount', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-10T12:00:30.000Z')) // 30s after the post
-
-    const isoDate = '2026-04-10T12:00:00.000Z'
+    const isoDate = new Date(now - 30_000).toISOString()
     render(<TimeAgo date={isoDate} />)
 
     act(() => {
@@ -197,9 +209,7 @@ describe('TimeAgo', () => {
   })
 
   it('renders <time> with correct dateTime and title attributes', () => {
-    vi.useFakeTimers()
     const isoDate = '2026-01-01T00:00:00.000Z'
-    vi.setSystemTime(new Date('2026-04-10T00:00:00.000Z')) // ~99 days later
 
     render(<TimeAgo date={isoDate} />)
     act(() => {
@@ -212,9 +222,7 @@ describe('TimeAgo', () => {
   })
 
   it('shows minutes-ago label 65 seconds after the post', () => {
-    vi.useFakeTimers()
-    const isoDate = '2026-04-10T12:00:00.000Z'
-    vi.setSystemTime(new Date('2026-04-10T12:01:05.000Z')) // 65s after
+    const isoDate = new Date(now - 65_000).toISOString()
 
     render(<TimeAgo date={isoDate} />)
     act(() => {
@@ -225,10 +233,7 @@ describe('TimeAgo', () => {
   })
 
   it('ticks the label after 30s interval fires', () => {
-    vi.useFakeTimers()
-    // Start at 1 minute after post
-    const isoDate = '2026-04-10T12:00:00.000Z'
-    vi.setSystemTime(new Date('2026-04-10T12:01:00.000Z'))
+    const isoDate = new Date(now - 60_000).toISOString()
 
     render(<TimeAgo date={isoDate} />)
     act(() => {
