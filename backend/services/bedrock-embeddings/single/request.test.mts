@@ -1,6 +1,6 @@
 import { BedrockEmbeddingsClient } from '@modules/aws/bedrock-runtime'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { MAX_EMBEDDING_TEXT_LENGTH } from '../config.mts'
+import { NOVA_EMBEDDING_DEFAULTS } from '@vouchington/utils/bedrock-embeddings'
 import { createBedrockEmbedding } from './request.mts'
 
 describe('createBedrockEmbedding', () => {
@@ -65,13 +65,13 @@ describe('createBedrockEmbedding', () => {
       configurable: true,
     })
 
-    const longText = 'word '.repeat(MAX_EMBEDDING_TEXT_LENGTH)
+    const longText = 'word '.repeat(NOVA_EMBEDDING_DEFAULTS.maxTextLength)
     await createBedrockEmbedding(longText, { entityType: 'rss_feed_item' })
 
     const command = send.mock.calls[0][0] as { input: { body: string } }
     const body = JSON.parse(command.input.body)
     expect(body.singleEmbeddingParams.text.value.length).toBeLessThanOrEqual(
-      MAX_EMBEDDING_TEXT_LENGTH,
+      NOVA_EMBEDDING_DEFAULTS.maxTextLength,
     )
   })
 })

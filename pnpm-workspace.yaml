@@ -134,9 +134,6 @@ packageExtensions:
     peerDependenciesMeta:
       playwright:
         optional: true
-overrides:
-  'engine.io>ws': 8.22.0
-  'socket.io-adapter>ws': 8.22.0
 preferFrozenLockfile: true
 strictDepBuilds: true
 updateNotifier: false

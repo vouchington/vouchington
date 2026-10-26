@@ -7,7 +7,7 @@ import { finished, pipeline } from 'node:stream/promises'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import type { read, QueryExecutor } from '@data-stores/psql'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
-import type { BatchResultItem } from './shared.mts'
+import type { BatchResultLine } from '@vouchington/utils/bedrock-embedding-batches'
 
 interface DownloadBatchResultsDeps {
   read?: typeof read
@@ -129,7 +129,7 @@ async function getOutputObject(key: string) {
 
 export async function* streamBatchResults(
   filePath: string,
-): AsyncGenerator<BatchResultItem, void, unknown> {
+): AsyncGenerator<BatchResultLine, void, unknown> {
   const fileStream = createReadStream(filePath, { encoding: 'utf8' })
   const rl = createInterface({
     input: fileStream,
@@ -141,7 +141,7 @@ export async function* streamBatchResults(
       if (!line.trim()) continue
 
       try {
-        const item = JSON.parse(line) as BatchResultItem
+        const item = JSON.parse(line) as BatchResultLine
         yield item
       } catch {
         continue

@@ -1,9 +1,11 @@
 import type { OpenAI } from '@modules/openai-utils'
+import { checkModerationResults, checkPromptInjection } from '@vouchington/utils/ai-moderation'
 import createHttpError from 'http-errors'
 
 export type CreateTextModeration = (texts: string[]) => Promise<OpenAI.Moderations.Moderation[]>
 
-// Prompt injection patterns to detect
+// The API-message policy is deliberately broader than the package defaults: `system:` and
+// `new instructions` match anywhere in the message, not only at the start of a line.
 const PROMPT_INJECTION_PATTERNS = [
   /ignore\s+(all\s+)?(previous|prior|earlier)\s+(instructions?|prompts?|rules?)/i,
   /disregard\s+(all\s+)?(previous|prior|earlier)\s+(instructions?|prompts?|rules?)/i,
@@ -25,35 +27,23 @@ export async function checkMessageSafety(
   message: string,
   deps: { createTextModeration: CreateTextModeration },
 ): Promise<void> {
-  // Pattern-based detection
-  for (const pattern of PROMPT_INJECTION_PATTERNS) {
-    if (pattern.test(message)) {
-      throw createHttpError(400, 'Potential prompt injection detected', {
-        code: 'PROMPT_INJECTION',
-      })
-    }
+  if (checkPromptInjection(message, PROMPT_INJECTION_PATTERNS)) {
+    throw createHttpError(400, 'Potential prompt injection detected', { code: 'PROMPT_INJECTION' })
   }
 
-  // OpenAI moderation check
-  const moderationResults = await deps.createTextModeration([message])
-
-  if (moderationResults.length === 0) {
-    return
-  }
-
-  const result = moderationResults[0]
-  if (!result) {
-    return
-  }
-
-  if (result.flagged) {
-    const flaggedCategories = Object.entries(result.categories).flatMap(([category, flagged]) =>
-      flagged ? [category] : [],
-    )
-
+  // The SDK's `Categories` is an interface whose values may be null; the package takes
+  // `Record<string, boolean>`.
+  const results = await deps.createTextModeration([message])
+  const violation = checkModerationResults(
+    results.map(({ flagged, categories }) => ({
+      flagged,
+      categories: Object.fromEntries(Object.entries(categories).map(([k, v]) => [k, v === true])),
+    })),
+  )
+  if (violation?.code === 'MODERATION_VIOLATION') {
     throw createHttpError(400, 'Content violates moderation policy', {
       code: 'MODERATION_VIOLATION',
-      categories: flaggedCategories,
+      categories: violation.categories,
     })
   }
 }

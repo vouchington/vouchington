@@ -1,13 +1,15 @@
 import { unrecoverable } from '@vouchington/queue-errors'
+import {
+  InvalidEmbeddingError,
+  requireDenseEmbedding as requireDense,
+} from '@vouchington/utils/bedrock-embeddings'
 import { EMBEDDING_DIMENSION } from '../config.mts'
 
 export function requireDenseEmbedding(value: unknown): number[] {
-  if (
-    !Array.isArray(value) ||
-    value.length !== EMBEDDING_DIMENSION ||
-    value.some(element => typeof element !== 'number' || !Number.isFinite(element))
-  ) {
-    unrecoverable(new Error('Bedrock embedding is not a dense vector'))
+  try {
+    return requireDense(value, EMBEDDING_DIMENSION)
+  } catch (err) {
+    if (err instanceof InvalidEmbeddingError) unrecoverable(err)
+    throw err
   }
-  return value as number[]
 }

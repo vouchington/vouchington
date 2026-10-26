@@ -1,4 +1,4 @@
-import type { BatchResultItem } from '@services/bedrock-embeddings-batch/orchestrator/shared'
+import { parseBatchResult } from '@vouchington/utils/bedrock-embedding-batches'
 import { streamBatchResults } from '@services/bedrock-embeddings-batch/orchestrator/results'
 import { applyCrawlChunkBatchUpdates } from '@services/bedrock-embeddings-batch/entities/crawl-chunks'
 import { parseCrawlChunkEntityId } from '@services/bedrock-embeddings-batch/entities/crawl-chunk-entity-id'
@@ -16,20 +16,19 @@ export const processBatchResultsInBatches = async (
   let updates: BatchUpdateItem[] = []
 
   for await (const result of streamBatchResults(filePath)) {
-    if (result.error) continue
-    const embedding = extractBatchEmbedding(result)
-    if (!embedding) continue
+    const parsed = parseBatchResult(result)
+    if (!parsed) continue
 
     try {
-      const metadata = JSON.parse(result.recordId) as {
+      const metadata = JSON.parse(parsed.recordId) as {
         entity_id: string
         content_sha256: string
       }
       updates.push({
         entity_id: metadata.entity_id,
         content_sha256: Buffer.from(metadata.content_sha256, 'hex'),
-        embedding,
-        input_token_count: result.modelOutput?.inputTokenCount ?? null,
+        embedding: parsed.embedding,
+        input_token_count: parsed.inputTokenCount,
       })
       if (updates.length >= batchSize) {
         await applyUpdates(updates)
@@ -51,19 +50,18 @@ export const processImageBatchResultsInBatches = async (
   let updates: ImageBatchUpdateItem[] = []
 
   for await (const result of streamBatchResults(filePath)) {
-    if (result.error) continue
-    const embedding = extractBatchEmbedding(result)
-    if (!embedding) continue
+    const parsed = parseBatchResult(result)
+    if (!parsed) continue
 
     try {
-      const metadata = JSON.parse(result.recordId) as {
+      const metadata = JSON.parse(parsed.recordId) as {
         entity_id: string
         image_sha_256: string
       }
       updates.push({
         entity_id: metadata.entity_id,
         image_sha_256: Buffer.from(metadata.image_sha_256, 'hex'),
-        embedding,
+        embedding: parsed.embedding,
       })
       if (updates.length >= batchSize) {
         await applyUpdates(updates)
@@ -75,14 +73,6 @@ export const processImageBatchResultsInBatches = async (
   }
 
   if (updates.length > 0) await applyUpdates(updates)
-}
-
-function extractBatchEmbedding(result: BatchResultItem): number[] | undefined {
-  if (result.modelOutput?.embedding) return result.modelOutput.embedding
-
-  const embedding = result.modelOutput?.embeddings?.[0]
-  if (Array.isArray(embedding)) return embedding
-  return embedding?.embedding
 }
 
 export const processCrawlChunkBatchResults = async (updates: BatchUpdateItem[]): Promise<void> => {

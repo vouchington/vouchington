@@ -4,10 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  engine.io>ws: 8.22.0
-  socket.io-adapter>ws: 8.22.0
-
 packageExtensionsChecksum: sha256-bbmVVRGKsBKLHaY0nkyFIslfKkPA9e0ePZh1EFdkZzU=
 
 importers:
@@ -4594,6 +4590,9 @@ importers:
       '@vouchington/queue-errors':
         specifier: ^0.2.0
         version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+      '@vouchington/utils':
+        specifier: ^0.10.0
+        version: 0.10.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -4670,6 +4669,9 @@ importers:
       '@vouchington/image-resize':
         specifier: ^0.2.0
         version: 0.2.0(@types/node@26.6.5)
+      '@vouchington/utils':
+        specifier: ^0.10.0
+        version: 0.10.0
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -9146,6 +9148,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@vouchington/utils':
+        specifier: ^0.10.0
+        version: 0.10.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -30078,7 +30083,7 @@ snapshots:
       cors: 2.8.6
       debug: 4.4.3(supports-color@10.2.2)
       engine.io-parser: 5.2.3
-      ws: 8.22.0
+      ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -32740,7 +32745,7 @@ snapshots:
   socket.io-adapter@2.5.8(supports-color@10.2.2):
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
-      ws: 8.22.0
+      ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
