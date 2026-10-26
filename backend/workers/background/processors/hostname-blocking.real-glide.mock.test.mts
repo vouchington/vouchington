@@ -53,9 +53,7 @@ describe('hostname block cleanup background handlers', () => {
     }
   })
 
-  it('completes every bounded cleanup stage through an owned real queue', async ({
-    signal,
-  }) => {
+  it('completes every bounded cleanup stage through an owned real queue', async ({ signal }) => {
     const restore = overrideDynamicConfigFieldsForTest(hostnameBlockingWorkConfig, {
       relation_delete_batch_size: 1,
       hostname_scan_batch_size: 1,
