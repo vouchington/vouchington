@@ -8,6 +8,7 @@ import type {
   ReconcileEntityData,
   EntityReconciliationDispatchData,
 } from '@queues/entity-listeners/types'
+import { reconcileEntityBatches } from './reconciliation-batches.mts'
 import { processImageCreated } from './images.mts'
 import { processPostCreated, processPostDeleted, processPostUpdated } from './posts.mts'
 import { processTopicCreated } from './topics.mts'
@@ -63,50 +64,11 @@ export async function reconcileEntities(
       hasMore = result.hasMore
     },
   })
-  return reconcileEntityBatches(batches, undefined, {
+  return reconcileEntityBatches(batches, reconcileEntity, {
     hasMore: () => hasMore,
     initialAfter: data.after,
     onMore: after => saveProgress({ window: fixedWindow, ...(after && { after }) }),
   })
-}
-
-type ReconcileEntityBatchDependencies = {
-  reconcileEntity: (data: ReconcileEntityData) => Promise<void>
-}
-
-/** @internal Exported for the reconciliation tests. */
-export async function reconcileEntityBatches(
-  batches: AsyncIterable<ReconcileEntityData[]>,
-  dependencies: ReconcileEntityBatchDependencies = {
-    reconcileEntity,
-  },
-  options: {
-    hasMore: () => boolean
-    initialAfter?: ReconcileEntityData
-    onMore: (after?: ReconcileEntityData) => Promise<unknown>
-  } = {
-    hasMore: () => false,
-    onMore: async () => {},
-  },
-): Promise<{ reconciled: number; hasMore: boolean }> {
-  let reconciled = 0
-  let after = options.initialAfter
-  try {
-    for await (const batch of batches) {
-      for (const candidate of batch) {
-        // oxlint-disable-next-line no-await-in-loop -- the checkpoint must not outrun any entity side effect
-        await dependencies.reconcileEntity(candidate)
-        after = candidate
-        reconciled += 1
-      }
-    }
-  } catch (err) {
-    if (after) await options.onMore(after)
-    throw err
-  }
-  const hasMore = options.hasMore()
-  if (hasMore) await options.onMore(after)
-  return { reconciled, hasMore }
 }
 
 export async function reconcileEntity(

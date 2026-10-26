@@ -3,7 +3,7 @@ import type {
   EntityReconciliationDispatchData,
   ReconcileEntityData,
 } from '@queues/entity-listeners/types'
-import { reconcileEntityBatches } from './reconciliation.mts'
+import { reconcileEntityBatches } from './reconciliation-batches.mts'
 import { processReconciliationJob } from './process-reconciliation-job.mts'
 
 describe('reconciliation sweep ownership', () => {
@@ -29,10 +29,8 @@ describe('reconciliation sweep ownership', () => {
         await save({ window })
         return reconcileEntityBatches(
           twoBatches(first),
-          {
-            reconcileEntity: async candidate => {
-              if (candidate.entityId === 'b') throw failure
-            },
+          async candidate => {
+            if (candidate.entityId === 'b') throw failure
           },
           {
             hasMore: () => false,

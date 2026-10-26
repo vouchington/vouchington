@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ReconcileEntityData } from '@queues/entity-listeners/types'
-import { reconcileEntities, reconcileEntity, reconcileEntityBatches } from './reconciliation.mts'
+import { reconcileEntityBatches } from './reconciliation-batches.mts'
+import { reconcileEntities, reconcileEntity } from './reconciliation.mts'
 
 describe('reconcileEntities', () => {
   it('reconciles the current entity window', async () => {
@@ -26,14 +27,17 @@ describe('reconcileEntityBatches', () => {
       changedAtEpochUs: '2',
     }
     const reconcile = vi.fn<(data: ReconcileEntityData) => Promise<void>>(async () => {})
+    const onMore = vi.fn<(after?: ReconcileEntityData) => Promise<void>>(async () => {})
 
     await expect(
-      reconcileEntityBatches(toAsyncBatches([[first], [second]]), {
-        reconcileEntity: reconcile,
+      reconcileEntityBatches(toAsyncBatches([[first], [second]]), reconcile, {
+        hasMore: () => false,
+        onMore,
       }),
     ).resolves.toEqual({ reconciled: 2, hasMore: false })
 
     expect(reconcile.mock.calls).toEqual([[first], [second]])
+    expect(onMore).not.toHaveBeenCalled()
   })
 
   it('keeps the fixed window pending at its cap and emits the last successful cursor', async () => {
@@ -44,13 +48,10 @@ describe('reconcileEntityBatches', () => {
     }
     const onMore = vi.fn<(after?: ReconcileEntityData) => Promise<void>>(async () => {})
     expect(
-      await reconcileEntityBatches(
-        toAsyncBatches([[candidate]]),
-        {
-          reconcileEntity: async () => {},
-        },
-        { hasMore: () => true, onMore },
-      ),
+      await reconcileEntityBatches(toAsyncBatches([[candidate]]), async () => {}, {
+        hasMore: () => true,
+        onMore,
+      }),
     ).toEqual({ reconciled: 1, hasMore: true })
     expect(onMore).toHaveBeenCalledExactlyOnceWith(candidate)
   })
@@ -70,10 +71,8 @@ describe('reconcileEntityBatches', () => {
     await expect(
       reconcileEntityBatches(
         toAsyncBatches([[first, second]]),
-        {
-          reconcileEntity: async data => {
-            if (data.entityId === second.entityId) throw new Error('side effect failed')
-          },
+        async data => {
+          if (data.entityId === second.entityId) throw new Error('side effect failed')
         },
         { hasMore: () => false, onMore },
       ),
@@ -81,19 +80,20 @@ describe('reconcileEntityBatches', () => {
     expect(onMore).toHaveBeenCalledExactlyOnceWith(first)
   })
 
-  it('propagates an entity failure', async () => {
+  it('propagates the first entity failure without checkpointing it', async () => {
     const failure = new Error('entity reconciliation failed')
+    const onMore = vi.fn<(after?: ReconcileEntityData) => Promise<void>>(async () => {})
 
     await expect(
       reconcileEntityBatches(
         toAsyncBatches([[{ entityType: 'user', entityId: 'user-1', changedAtEpochUs: '1' }]]),
-        {
-          reconcileEntity: vi.fn<(data: ReconcileEntityData) => Promise<void>>(async () => {
-            throw failure
-          }),
+        async () => {
+          throw failure
         },
+        { hasMore: () => false, onMore },
       ),
-    ).rejects.toThrow(failure)
+    ).rejects.toBe(failure)
+    expect(onMore).not.toHaveBeenCalled()
   })
 })
 
