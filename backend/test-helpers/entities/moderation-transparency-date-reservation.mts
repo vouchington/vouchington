@@ -4,6 +4,8 @@ import { writePool, type PoolClient } from '@data-stores/psql'
 const FIRST_YEAR = 3003
 const SLOT_YEARS = 4
 const SLOT_COUNT = 1749 // Last slot is in 9995, below the ISO year and UUIDv7 limits.
+const GLOBAL_LOCK = 'moderation-transparency-global-test-window'
+const GLOBAL_LOCK_TIMEOUT = '4s'
 const initialSlotOffset = randomInt(SLOT_COUNT)
 let nextSlotOffset = 0
 
@@ -14,19 +16,24 @@ export type TestModerationTransparencyDateReservation = {
 
 /**
  * Gives each test an empty 37-month projection window without deleting immutable disclosures.
- * A per-slot session lock makes the empty-window check atomic across parallel test processes.
+ * A shared session lock protects global all-time continuation releases across the entire test.
  * Four-year slots cannot overlap, and occupied slots are never reused.
  */
 export async function acquireTestModerationTransparencyDateReservation(): Promise<TestModerationTransparencyDateReservation> {
   const client = await writePool.connect()
   try {
+    await client.query('BEGIN')
+    await client.query('SELECT set_config($1, $2, true)', [
+      'statement_timeout',
+      GLOBAL_LOCK_TIMEOUT,
+    ])
+    await client.query(
+      '/* acquireTestModerationTransparencyDateReservation */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
+      [GLOBAL_LOCK],
+    )
+    await client.query('COMMIT')
     while (nextSlotOffset < SLOT_COUNT) {
       const slot = (initialSlotOffset + nextSlotOffset++) % SLOT_COUNT
-      const { rows: lockRows } = await client.query<{ acquired: boolean }>(
-        '/* acquireTestModerationTransparencyDateReservation */ SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired',
-        [lockName(slot)],
-      )
-      if (!lockRows[0]?.acquired) continue
       const { rows } = await client.query<{ occupied: boolean }>(
         `/* checkTestModerationTransparencyDateSlot */
         SELECT EXISTS (
@@ -41,10 +48,6 @@ export async function acquireTestModerationTransparencyDateReservation(): Promis
         [FIRST_YEAR, SLOT_YEARS, slot],
       )
       if (!rows[0]?.occupied) return createReservation(client, slot)
-      await client.query(
-        '/* releaseOccupiedTestModerationTransparencyDateSlot */ SELECT pg_advisory_unlock(hashtextextended($1, 0))',
-        [lockName(slot)],
-      )
     }
     throw new Error('No unused moderation transparency test date slot remains')
   } catch (err) {
@@ -53,23 +56,19 @@ export async function acquireTestModerationTransparencyDateReservation(): Promis
   }
 }
 
-/** Proves mutual exclusion: fails to acquire the reservation's advisory lock from a second session. */
-export async function isTestModerationTransparencyLockHeldByAnotherSession(
-  now: Date,
-): Promise<boolean> {
+/** Proves mutual exclusion: fails to acquire the shared advisory lock from a second session. */
+export async function isTestModerationTransparencyLockHeldByAnotherSession(): Promise<boolean> {
   const observer = await writePool.connect()
-  const slot = (now.getUTCFullYear() - FIRST_YEAR) / SLOT_YEARS
-  const key = lockName(slot)
   try {
     const { rows } = await observer.query<{ acquired: boolean }>(
       '/* isTestModerationTransparencyLockHeldByAnotherSession */ SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired',
-      [key],
+      [GLOBAL_LOCK],
     )
     const acquired = rows[0]?.acquired ?? false
     if (acquired) {
       await observer.query(
         '/* isTestModerationTransparencyLockHeldByAnotherSession release */ SELECT pg_advisory_unlock(hashtextextended($1, 0))',
-        [key],
+        [GLOBAL_LOCK],
       )
     }
     return !acquired
@@ -86,17 +85,17 @@ function createReservation(
   return {
     now: new Date(Date.UTC(FIRST_YEAR + SLOT_YEARS * slot, 0, 15, 12)),
     release(): Promise<void> {
-      releasePromise ??= releaseReservation(client, slot)
+      releasePromise ??= releaseReservation(client)
       return releasePromise
     },
   }
 }
 
-async function releaseReservation(client: PoolClient, slot: number): Promise<void> {
+async function releaseReservation(client: PoolClient): Promise<void> {
   try {
     const { rows } = await client.query<{ unlocked: boolean }>(
       '/* releaseTestModerationTransparencyDateReservation */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
-      [lockName(slot)],
+      [GLOBAL_LOCK],
     )
     if (!rows[0]?.unlocked) throw new Error('PostgreSQL did not release the reserved test window')
     client.release()
@@ -104,10 +103,6 @@ async function releaseReservation(client: PoolClient, slot: number): Promise<voi
     client.release(toError(err))
     throw err
   }
-}
-
-function lockName(slot: number): string {
-  return `moderation-transparency-test-date-slot-${slot}`
 }
 
 function toError(error: unknown): Error {

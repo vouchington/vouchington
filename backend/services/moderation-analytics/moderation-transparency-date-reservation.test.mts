@@ -13,7 +13,7 @@ describe('moderation transparency test date reservations', () => {
     const first = await acquireTestModerationTransparencyDateReservation()
     const firstFloor = new Date(Date.UTC(first.now.getUTCFullYear() - 3, 0, 1))
     try {
-      expect(await isTestModerationTransparencyLockHeldByAnotherSession(first.now)).toBe(true)
+      expect(await isTestModerationTransparencyLockHeldByAnotherSession()).toBe(true)
       await insertTestReleasedModerationTransparencyRollupRow({
         occurredAt: first.now,
         metric: 'moderation_actions',
@@ -33,6 +33,7 @@ describe('moderation transparency test date reservations', () => {
     const second = await acquireTestModerationTransparencyDateReservation()
     try {
       expect(second.now).not.toEqual(first.now)
+      expect(await isTestModerationTransparencyLockHeldByAnotherSession()).toBe(true)
       expect(
         await getTestReleasedModerationTransparencyRollupCount({
           occurredAt: second.now,
