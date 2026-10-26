@@ -44,18 +44,42 @@ describe('fix-main issue authorization', () => {
   })
 
   it.each([
+    { user: { login: 'github-actions[bot]', type: 'Bot' }, allowed: true },
+    { user: { login: 'other[bot]', type: 'Bot' }, allowed: false },
+    { user: { login: 'github-actions[bot]', type: 'User' }, allowed: false },
+    { user: { login: 'github-actions[bot]' }, allowed: false },
+    { user: { type: 'Bot' }, allowed: false },
+    { user: undefined, allowed: false },
+    { user: null, allowed: false },
+  ])('revalidates the exact automation author %j', async ({ user, allowed }) => {
+    const result = await authorizedFixMainCandidates({
+      json: JSON.stringify([{ ...candidate, user: { login: 'github-actions[bot]', type: 'Bot' } }]),
+      repository,
+      read: async () => ({ ...liveIssue, author_association: 'NONE', user }),
+    })
+    expect(result).toEqual(
+      allowed ? [{ ...candidate, user: { login: 'github-actions[bot]', type: 'Bot' } }] : [],
+    )
+  })
+
+  it.each([
     { number: 2 },
     { html_url: 'https://github.com/other/repo/issues/1' },
     { state: 'closed' },
     { pull_request: {} },
   ])('drops changed issue identity or state %j', async changed => {
-    expect(
-      await authorizedFixMainCandidates({
-        json: JSON.stringify([candidate]),
-        repository,
-        read: async () => ({ ...liveIssue, ...changed }),
-      }),
-    ).toEqual([])
+    for (const author of [
+      { author_association: 'MEMBER' },
+      { author_association: 'NONE', user: { login: 'github-actions[bot]', type: 'Bot' } },
+    ]) {
+      expect(
+        await authorizedFixMainCandidates({
+          json: JSON.stringify([candidate]),
+          repository,
+          read: async () => ({ ...liveIssue, ...author, ...changed }),
+        }),
+      ).toEqual([])
+    }
   })
 
   it('preserves PR candidates without broadening issue policy and fails on incomplete API reads', async () => {
