@@ -1,3 +1,5 @@
+import { runPublicationNativePageScenarios } from './run-scenarios/publication-native-pages.mts'
+import { runPublicationSnapshotPageScenarios } from './run-scenarios/publication-snapshot-pages.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
 import { runDispatchWorkPlanScenarios } from './run-scenarios/dispatch-work-plans.mts'
 import { runMediaDeliveryReplayScenarios } from './run-scenarios/media-delivery-replay.mts'
@@ -92,6 +94,8 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runModerationReportContextScenarios,
   runRssFeedStateChangeScenarios,
   runHardDeletedPostPublicationScenarios,
+  runPublicationNativePageScenarios,
+  runPublicationSnapshotPageScenarios,
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
