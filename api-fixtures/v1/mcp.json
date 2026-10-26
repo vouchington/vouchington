@@ -32748,88 +32748,7 @@
                           "type": "object"
                         },
                         "results": {
-                          "items": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "__entity_type": {
-                                "const": "crawler"
-                              },
-                              "content_selectors": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "crawler_type": {
-                                "enum": ["automation", "fetch"],
-                                "type": "string"
-                              },
-                              "created_at": {
-                                "type": "string"
-                              },
-                              "created_by": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "css_selectors_to_remove": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "deleted_at": {
-                                "$ref": "#/$defs/S4"
-                              },
-                              "deleted_by": {
-                                "$ref": "#/$defs/S1"
-                              },
-                              "description": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "hostname": {
-                                "type": "string"
-                              },
-                              "hostname_id": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              },
-                              "link_hrefs_to_remove": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "link_text_content_to_remove": {
-                                "$ref": "#/$defs/S3"
-                              },
-                              "priority": {
-                                "type": "number"
-                              },
-                              "referral_program_id": {
-                                "$ref": "#/$defs/S4"
-                              },
-                              "updated_at": {
-                                "type": "string"
-                              },
-                              "updated_by": {
-                                "$ref": "#/$defs/S1"
-                              }
-                            },
-                            "required": [
-                              "__entity_type",
-                              "content_selectors",
-                              "crawler_type",
-                              "created_at",
-                              "created_by",
-                              "css_selectors_to_remove",
-                              "deleted_at",
-                              "deleted_by",
-                              "description",
-                              "hostname",
-                              "hostname_id",
-                              "id",
-                              "link_hrefs_to_remove",
-                              "link_text_content_to_remove",
-                              "priority",
-                              "referral_program_id",
-                              "updated_at",
-                              "updated_by"
-                            ],
-                            "type": "object"
-                          },
-                          "type": "array"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["page_info", "results"],
@@ -32839,10 +32758,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "results": {
-                          "items": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "type": "array"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["results"],
@@ -32855,7 +32771,81 @@
                   "additionalProperties": false,
                   "properties": {
                     "crawler": {
-                      "$ref": "#/$defs/S2"
+                      "additionalProperties": false,
+                      "properties": {
+                        "__entity_type": {
+                          "const": "crawler"
+                        },
+                        "content_selectors": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "crawler_type": {
+                          "enum": ["automation", "fetch"],
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "created_by": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "css_selectors_to_remove": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "deleted_at": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "deleted_by": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "description": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "hostname_id": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "link_hrefs_to_remove": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "link_text_content_to_remove": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "priority": {
+                          "type": "number"
+                        },
+                        "referral_program_id": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "updated_by": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": [
+                        "__entity_type",
+                        "content_selectors",
+                        "crawler_type",
+                        "created_at",
+                        "created_by",
+                        "css_selectors_to_remove",
+                        "deleted_at",
+                        "deleted_by",
+                        "description",
+                        "hostname_id",
+                        "id",
+                        "link_hrefs_to_remove",
+                        "link_text_content_to_remove",
+                        "priority",
+                        "referral_program_id",
+                        "updated_at",
+                        "updated_by"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": ["crawler"],
@@ -33048,130 +33038,137 @@
                   ]
                 },
                 "S2": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "__entity_type": {
-                      "const": "crawler"
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "__entity_type": {
+                        "const": "crawler"
+                      },
+                      "content_selectors": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "crawler_type": {
+                        "enum": ["automation", "fetch"],
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "created_by": {
+                        "$ref": "#/$defs/S1"
+                      },
+                      "css_selectors_to_remove": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "deleted_at": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "deleted_by": {
+                        "$ref": "#/$defs/S1"
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "hostname": {
+                        "type": "string"
+                      },
+                      "hostname_id": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "link_hrefs_to_remove": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "link_text_content_to_remove": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "priority": {
+                        "type": "number"
+                      },
+                      "referral_program_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "updated_at": {
+                        "type": "string"
+                      },
+                      "updated_by": {
+                        "$ref": "#/$defs/S1"
+                      }
                     },
-                    "content_selectors": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "crawler_type": {
-                      "enum": ["automation", "fetch"],
-                      "type": "string"
-                    },
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "created_by": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "css_selectors_to_remove": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "deleted_at": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "deleted_by": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "description": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "hostname_id": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "link_hrefs_to_remove": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "link_text_content_to_remove": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "priority": {
-                      "type": "number"
-                    },
-                    "referral_program_id": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "updated_at": {
-                      "type": "string"
-                    },
-                    "updated_by": {
-                      "$ref": "#/$defs/S1"
-                    }
+                    "required": [
+                      "__entity_type",
+                      "content_selectors",
+                      "crawler_type",
+                      "created_at",
+                      "created_by",
+                      "css_selectors_to_remove",
+                      "deleted_at",
+                      "deleted_by",
+                      "description",
+                      "hostname",
+                      "hostname_id",
+                      "id",
+                      "link_hrefs_to_remove",
+                      "link_text_content_to_remove",
+                      "priority",
+                      "referral_program_id",
+                      "updated_at",
+                      "updated_by"
+                    ],
+                    "type": "object"
                   },
-                  "required": [
-                    "__entity_type",
-                    "content_selectors",
-                    "crawler_type",
-                    "created_at",
-                    "created_by",
-                    "css_selectors_to_remove",
-                    "deleted_at",
-                    "deleted_by",
-                    "description",
-                    "hostname_id",
-                    "id",
-                    "link_hrefs_to_remove",
-                    "link_text_content_to_remove",
-                    "priority",
-                    "referral_program_id",
-                    "updated_at",
-                    "updated_by"
-                  ],
-                  "type": "object"
+                  "type": "array"
                 },
                 "S3": {
                   "anyOf": [

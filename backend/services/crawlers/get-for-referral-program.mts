@@ -41,7 +41,7 @@ export async function getCrawlerForReferralProgram(
 export async function getCrawlersByReferralProgramId(
   referralProgramId: string,
   options: QueryOptions = {},
-): Promise<Crawler[]> {
+): Promise<Array<Crawler & { hostname: string }>> {
   if (!isUUID(referralProgramId)) {
     throw createError(422, `Invalid referral program ID: ${referralProgramId}`)
   }
@@ -51,6 +51,7 @@ export async function getCrawlersByReferralProgramId(
     SELECT
       c.id,
       c.hostname_id,
+      h.hostname,
       c.description,
       c.crawler_type,
       c.priority,
@@ -63,6 +64,7 @@ export async function getCrawlersByReferralProgramId(
       c.updated_at,
       c.deleted_at
     FROM hostname_crawler_configurations c
+    JOIN url_hostnames h ON h.id = c.hostname_id
     WHERE c.referral_program_topic_id = $1
       AND c.deleted_at IS NULL
     ORDER BY c.priority DESC, c.id ASC
@@ -71,5 +73,5 @@ export async function getCrawlersByReferralProgramId(
     options,
   )
 
-  return rows.map(toCrawler)
+  return rows.map(row => ({ ...toCrawler(row), hostname: row.hostname as string }))
 }

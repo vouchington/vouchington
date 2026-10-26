@@ -1151,7 +1151,7 @@
       },
       "read_crawler": {
         "measured": {
-          "list": 5508,
+          "list": 5483,
           "core": 885
         },
         "max": {

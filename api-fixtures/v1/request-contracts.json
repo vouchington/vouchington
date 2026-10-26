@@ -4270,6 +4270,9 @@
                   "description": {
                     "type": "string"
                   },
+                  "hostname": {
+                    "type": "string"
+                  },
                   "hostname_id": {
                     "type": "string"
                   },
@@ -4325,6 +4328,7 @@
                   "deleted_at",
                   "deleted_by",
                   "description",
+                  "hostname",
                   "hostname_id",
                   "id",
                   "link_hrefs_to_remove",
