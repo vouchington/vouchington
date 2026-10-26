@@ -7,10 +7,10 @@ import {
   CrawlerResponseSizeExceededError,
   CrawlerServerError,
   CrawlerTimeoutError,
-  HttpNoBodyError,
   isCrawlerNetworkDnsError,
   isCrawlerNetworkTlsHostnameError,
 } from '@modules/on-error/errors'
+import { HttpNoBodyError } from '@vouchington/sentry'
 import { trackNetworkBackoffClosed, trackNetworkBackoffOpened } from '@services/analytics'
 
 /** Consecutive counted failures that open the backoff; one URL's retry budget is 3. */
