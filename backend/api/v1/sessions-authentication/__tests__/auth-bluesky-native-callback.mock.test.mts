@@ -37,10 +37,13 @@ describe('native Bluesky callback', () => {
     const flowId = v7()
     const stateKey = v7()
     const did = `did:plc:${createRandomString(24)}`
+    const request = createRequest()
+    await request.authenticateAs(user)
     await ensureTestBlueskyLinkAuthorization({
       authorizationId: flowId,
       userId: user.id,
       callbackMode: 'native',
+      initiatingSessionId: request.sid,
     })
     const appState = JSON.stringify({ authorizationId: flowId })
     await new BlueskyStateStore().set(stateKey, fakeState(appState))
@@ -48,7 +51,6 @@ describe('native Bluesky callback', () => {
       await new BlueskySessionStore().set(did, fakeSession(did))
       return { session: { did } as OAuthSession, state: appState }
     })
-    const request = createRequest()
     const callback = await request
       .get(`/api/v1/auth/bluesky/callback?code=abc&state=${stateKey}`)
       .expect(302)
@@ -56,7 +58,6 @@ describe('native Bluesky callback', () => {
     const token = location.searchParams.get('completion_token')
     expect(location.protocol).toBe('voucha:')
     expect(token).toBeTruthy()
-    await request.authenticateAs(user)
     await request
       .post('/api/v1/auth/bluesky/link-completions')
       .send({

@@ -40,18 +40,6 @@ export function MfaReauthDialogMock({
 }
 
 // oxlint-disable-next-line react/only-export-components -- test double, never fast-refreshed
-export class ApiError extends Error {
-  status: number
-  code?: string
-  constructor(message: string, status: number, code?: string) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.code = code
-  }
-}
-
-// oxlint-disable-next-line react/only-export-components -- test double, never fast-refreshed
 export function mfaReauthOnErrorModule() {
   return {
     default: vi.fn<VitestLooseMock>(),
