@@ -27,7 +27,6 @@ ignores:
   - 'backend/modules/feed-query-builders/**'
   - 'backend/data-stores/psql/config-driven/**'
   - 'backend/data-stores/psql/schema-snapshot/**'
-  - 'backend/data-stores/psql/__tests__/schema-notification-push-intents-migration.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-post-admission-reservation-index.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-static-analysis.test.mts'
   - 'backend/scripts/explain-analyze/pruning/database-lifecycle.test.mts'
@@ -39,19 +38,11 @@ ignores:
   # Reads pg_indexes.indexdef. The pattern quotes CREATE INDEX and does not execute it.
   - 'backend/test-helpers/entities/membership-refund-reconciliation-schema.mts'
   - 'backend/test-helpers/entities/topics/core.mts'
-  # Frozen baseline of executed SQL. Cleanup PRs do not edit it. #2145 deletes it.
-  # #2136 pg_sleep
-  - 'backend/scripts/explain-analyze/seed-data/post-diagnostics.test.mts'
-  - 'backend/test-helpers/entities/contribution-admission-claims.mts'
-  # #2143
-  - 'backend/data-stores/psql/__tests__/schema-uuidv7-range-pruning.test.mts'
-  - 'backend/data-stores/psql/explain-analyze.test.mts'
+  # Migration-tool SQL fixtures require sink-aware analysis; tracked by #2145.
   - 'backend/data-stores/psql/migrate.test.mts'
   - 'backend/data-stores/psql/migration-runner/config-driven-statements.test.mts'
   - 'backend/data-stores/psql/migration-runner/migrations.test.mts'
   - 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts'
-  - 'backend/test-helpers/data-stores/psql/shared-mutation-trigger.mts'
-  - 'backend/test-helpers/entities/moderation-transparency-date-reservation.mts'
 rule:
   any:
     - kind: string
