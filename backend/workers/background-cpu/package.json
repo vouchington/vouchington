@@ -48,6 +48,7 @@
     "@queues/image-uploads": "workspace:^",
     "@services/language-detection": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "uuid": "^14.0.3"
+    "uuid": "^14.0.3",
+    "valkyries": "^0.13.0"
   }
 }

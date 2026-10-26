@@ -63,11 +63,7 @@ export async function processEmbeddingCreationJob(
   void lease.lost.then(loss => {
     // Diagnostic subscribers can distinguish expiry, a successor, and transport errors without
     // exposing the private owner token. This never races or cancels external provider work.
-    try {
-      leaseLossChannel.publish({ jobId: job.id, jobType, reason: loss.reason })
-    } catch (err) {
-      onError(err instanceof Error ? err : new Error(String(err)))
-    }
+    leaseLossChannel.publish({ jobId: job.id, jobType, reason: loss.reason })
     if (loss.reason === 'renewal-error')
       onError(new Error('Embedding creation lease renewal failed', { cause: loss.error }))
   })

@@ -13290,6 +13290,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.13.0
+        version: 0.13.0
 
   backend/workers/bedrock-batch-sqs:
     dependencies:
