@@ -57,6 +57,8 @@ describe('deliverActivityToInbox', () => {
     expect(options.body).toBe(JSON.stringify({ type: 'Follow' }))
     expect(options.headers['Content-Type']).toBe('application/activity+json')
     expect(options.headers.signature).toContain(`keyId="${KEY_ID}"`)
+    expect(options.headers.signature).toContain('algorithm="rsa-sha256"')
+    expect(options.headers.signature).toContain('headers="(request-target) host date digest"')
     expect(options.headers.digest).toBeTruthy()
     expect(options.headers.date).toBeTruthy()
   })
