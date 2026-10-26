@@ -1,5 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
-import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
+import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
+import { valkeyEvents } from 'valkyries'
+import { USAGE_QUOTA_WINDOW_SECONDS } from '../services/route-rate-limits/usage-policy.mts'
 import { routeRateLimitConfig } from '../services/route-rate-limits/index.mts'
 import app from '../api/app.mts'
 import { startLocalAnalyticsForTest } from './api-usage-analytics.mts'
@@ -7,6 +9,11 @@ import {
   closeScopedDynamicConfigContext,
   overrideDynamicConfigFieldsForTest,
 } from './dynamic-config.mts'
+
+const usageKeyBuilder = new RateLimiter({
+  prefix: 'usage-quota',
+  ttlSeconds: USAGE_QUOTA_WINDOW_SECONDS,
+})
 
 /**
  * Registers the REST routes the usage-metering suites call, under their own `base` so two suites
@@ -51,10 +58,15 @@ export function registerRestUsageRoutes(base: string) {
 /**
  * Hooks for a suite that needs route rate limiting on (it is off by default under test) and a
  * local analytics directory to read `api_usage` rows back from. Call it inside a `describe`.
+ * Its getter reports this process's actual completed quota writes for the current case.
  */
 export function useRestUsageMetering(analyticsPrefix: string) {
   let stopLocalAnalytics: () => Promise<void>
   let originalConfig: ReturnType<typeof routeRateLimitConfig.getFields>
+  const observedKeys = new Set<string>()
+  const observeAdd = ({ prefix, ids }: { prefix: string; ids: string[] }) => {
+    if (prefix === 'usage-quota') for (const id of ids) observedKeys.add(usageKeyBuilder.getKey(id))
+  }
 
   beforeAll(async () => {
     stopLocalAnalytics = await startLocalAnalyticsForTest(analyticsPrefix)
@@ -62,9 +74,11 @@ export function useRestUsageMetering(analyticsPrefix: string) {
     // Keep local overrides from being replaced by cross-fork DynamicConfig pub/sub messages.
     routeRateLimitConfig.unsubscribe()
     originalConfig = routeRateLimitConfig.getFields()
+    valkeyEvents.on('rate-limiter:add', observeAdd)
   })
 
   beforeEach(() => {
+    observedKeys.clear()
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true })
   })
 
@@ -73,22 +87,20 @@ export function useRestUsageMetering(analyticsPrefix: string) {
   })
 
   afterAll(async () => {
+    valkeyEvents.off('rate-limiter:add', observeAdd)
     await stopLocalAnalytics()
     await closeScopedDynamicConfigContext([routeRateLimitConfig])
   })
+  return () => [...observedKeys]
 }
 
-/** Every Valkey key the usage quota holds, across all callers. */
-export async function usageQuotaKeys(): Promise<string[]> {
-  const keys: string[] = []
-  let cursor = '0'
-  do {
-    const [next, page] = await rateLimiterValkeyClient.scan(cursor, {
-      match: 'rate-limiter:usage-quota:*',
-      count: 1000,
-    })
-    cursor = String(next)
-    keys.push(...page.map(String))
-  } while (cursor !== '0')
-  return keys
+/** Read only explicitly owned quota identities through the SDK's canonical key builder. */
+export async function usageQuotaKeys(ids: readonly string[]): Promise<string[]> {
+  const existing = await Promise.all(
+    ids.map(async id => {
+      const key = usageKeyBuilder.getKey(id)
+      return (await rateLimiterValkeyClient.exists([key])) ? key : null
+    }),
+  )
+  return existing.filter((key): key is string => key !== null)
 }

@@ -4,11 +4,10 @@ import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits'
 import { readAnonymousApiUsageRows } from '@voucha/test-helpers/api-usage-analytics'
 import { withResponseUsageSettlements } from '@voucha/test-helpers/usage-settlement'
-import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
+import { nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   registerRestUsageRoutes,
-  usageQuotaKeys,
   useRestUsageMetering,
 } from '@voucha/test-helpers/rest-usage-meter'
 
@@ -16,7 +15,7 @@ const BASE = `/api/v1/__tests__/rest-usage-anonymous-${crypto.randomUUID()}`
 registerRestUsageRoutes(BASE)
 
 describe('REST usage metering for an anonymous caller', () => {
-  useRestUsageMetering('rest-usage-anonymous-test-')
+  const observedQuotaKeys = useRestUsageMetering('rest-usage-anonymous-test-')
 
   // Anonymous rows carry no user to filter on, so this first test owns every row it counts and the
   // second counts relative to what it finds.
@@ -24,11 +23,9 @@ describe('REST usage metering for an anonymous caller', () => {
     const ip = nextTestRequestIp()
     const did = v7()
     const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({ did })
-    const request = createRequest()
-    request.set('x-forwarded-for', ip)
-    request.set('Cookie', `dt=${deviceToken.token}; st=${sessionToken.token}`)
-
-    await withResponseUsageSettlements(BASE, async () => {
+    await withResponseUsageSettlements([], async request => {
+      request.set('x-forwarded-for', ip)
+      request.set('Cookie', `dt=${deviceToken.token}; st=${sessionToken.token}`)
       await request.get(`${BASE}/ok`).expect(200)
       await request.get(`${BASE}/missing`).expect(404)
       await request.get(`${BASE}/boom`).expect(500)
@@ -55,7 +52,7 @@ describe('REST usage metering for an anonymous caller', () => {
       expect(row.oauth_client_id ?? null).toBeNull()
     }
     const serialized = JSON.stringify(rows)
-    const keys = await usageQuotaKeys()
+    const keys = observedQuotaKeys()
     for (const identifier of [ip, did, sessionToken.payload.sid, deviceToken.token]) {
       expect(serialized).not.toContain(identifier)
       expect(keys.filter(key => key.includes(identifier))).toEqual([])
@@ -68,8 +65,7 @@ describe('REST usage metering for an anonymous caller', () => {
     const before = statuses(await readAnonymousApiUsageRows())
     // The attempt that reaches the threshold is the first one refused.
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { anon_write: 2 })
-    const request = createRequest()
-    await withResponseUsageSettlements(BASE, async () => {
+    await withResponseUsageSettlements([], async request => {
       await request.post(`${BASE}/write`).send({}).expect(202)
       await request.post(`${BASE}/write`).send({}).expect(429)
       await request.get(`${BASE}/ok`).expect(200)
