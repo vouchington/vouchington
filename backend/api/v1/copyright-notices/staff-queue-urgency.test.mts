@@ -113,6 +113,9 @@ describe('copyright staff queue urgency', () => {
       now: new Date(decisionNow.getTime() + 1),
     })
     const ownedIds = [missed, due, filingCase, olderIntake]
+    // Newer plain intake. It sorts after the owned window, so a walk that
+    // scans the shared queue tail reaches the global end instead of stopping.
+    await createGuestNotice(decisionNow)
     await withCopyrightStaffQueueHttp(
       moderator,
       undefined,
@@ -123,7 +126,8 @@ describe('copyright staff queue urgency', () => {
         const walked = await read(ownedIds, false, 1)
         const owned = walked.copyright_notices
         expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)
-        expect(walked.page_info.end_cursor).toBeNull()
+        expect(walked.page_info.has_next_page).toBe(true)
+        expect(walked.page_info.end_cursor).toEqual(expect.any(String))
         expect(owned.map(notice => notice.id)).toEqual(ownedIds)
         const [missedCase, dueCase, unassessedCase, intakeCase] = owned
         expect(missedCase).toMatchObject({
