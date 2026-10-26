@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { paginationConfig } from '@services/pagination'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   encodeScopedPreciseTimestampCursor,
   decodeScopedPreciseTimestampCursor,
@@ -11,6 +13,40 @@ import {
 import { getVoteWeightPenaltyReviewsDue, reviewVoteWeightPenalty } from './review-penalty.mts'
 
 describe('vote weight penalty annual review', () => {
+  it('uses the configured default and maximum for direct due-review reads', async () => {
+    const target = await createTestUser()
+    const prefix = new Date(946684800000 + Number.parseInt(target.id.slice(-8), 16))
+      .toISOString()
+      .slice(0, -1)
+    const ids: string[] = []
+    for (let index = 1; index <= 10; index++) {
+      const id = await insertTestVoteWeightPenaltyRecord({
+        userId: target.id,
+        createdById: target.id,
+      })
+      await setTestVoteWeightPenaltyReviewDueAt(id, `${prefix}${String(index).padStart(3, '0')}Z`)
+      ids.push(id)
+    }
+    const after = encodeScopedPreciseTimestampCursor(
+      `${prefix}000Z`,
+      ids[0]!,
+      'vote-integrity:penalty-reviews:due:asc',
+    )
+    const restore = overrideDynamicConfigFieldsForTest(paginationConfig, {
+      default_limit: 7,
+      small_max_limit: 9,
+    })
+    try {
+      const first = await getVoteWeightPenaltyReviewsDue({ after })
+      expect(first.results).toHaveLength(7)
+      expect(first.page_info.has_next_page).toBe(true)
+      expect((await getVoteWeightPenaltyReviewsDue({ after, limit: 9 })).results).toHaveLength(9)
+      expect((await getVoteWeightPenaltyReviewsDue({ after, limit: 10 })).results).toHaveLength(9)
+    } finally {
+      restore()
+    }
+  })
+
   it('surfaces a due active penalty and advances its deadline exactly once', async () => {
     const staff = await createTestUser()
     const target = await createTestUser()

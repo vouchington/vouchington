@@ -26,6 +26,7 @@
     "@queues/vote-aggregation": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/moderator-actions": "workspace:^",
+    "@services/pagination": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",

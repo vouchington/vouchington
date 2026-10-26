@@ -1,6 +1,8 @@
 import { write } from '@data-stores/psql'
+import { getPaginationLimits } from '@services/pagination'
 import {
   decodeScopedPreciseTimestampCursor,
+  parseBoundedIntegerLimit,
   encodeScopedPreciseTimestampCursor,
 } from '@modules/pagination'
 import createHttpError from 'http-errors'
@@ -13,9 +15,7 @@ type ReportAbusePenaltyReviewDue = ReportAbusePenalty & { user_username: string 
 export async function getReportAbusePenaltyReviewsDue(
   options: { after?: string; limit?: number } = {},
 ) {
-  const limit = options.limit ?? 25
-  if (!Number.isInteger(limit) || limit < 1 || limit > 25)
-    throw createHttpError(422, 'Invalid limit')
+  const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 25) })
   const scope = 'report-integrity:penalty-reviews:due:asc'
   const after = options.after
     ? decodeScopedPreciseTimestampCursor(options.after, scope, 'Invalid penalty review cursor')

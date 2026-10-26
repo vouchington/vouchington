@@ -10254,6 +10254,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -12305,6 +12308,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/users':
         specifier: workspace:^
         version: link:../users

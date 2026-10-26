@@ -1,5 +1,7 @@
 import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
+import { paginationConfig } from '@services/pagination'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { v7 as uuidv7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
@@ -13,6 +15,47 @@ import {
 const path = '/api/v1/vote-integrity/penalties'
 
 describe('vote weight penalty review API', () => {
+  it('uses runtime default and maximum bounds for the review-due route', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const prefix = new Date(946684800000 + Number.parseInt(admin.id.slice(-8), 16))
+      .toISOString()
+      .slice(0, -1)
+    const ids: string[] = []
+    for (let index = 1; index <= 10; index++) {
+      const id = await insertTestVoteWeightPenaltyRecord({
+        userId: admin.id,
+        createdById: admin.id,
+      })
+      await setTestVoteWeightPenaltyReviewDueAt(id, `${prefix}${String(index).padStart(3, '0')}Z`)
+      ids.push(id)
+    }
+    const after = encodeScopedPreciseTimestampCursor(
+      `${prefix}000Z`,
+      ids[0]!,
+      'vote-integrity:penalty-reviews:due:asc',
+    )
+    const request = createRequest()
+    await request.authenticateAs(admin)
+    const restore = overrideDynamicConfigFieldsForTest(paginationConfig, {
+      default_limit: 7,
+      small_max_limit: 9,
+    })
+    try {
+      const first = await request.get(`${path}/review-due`).query({ after }).expect(200)
+      expect(first.body.results).toHaveLength(7)
+      expect(first.body.page_info.has_next_page).toBe(true)
+      const maximum = await request.get(`${path}/review-due`).query({ after, limit: 9 }).expect(200)
+      expect(maximum.body.results).toHaveLength(9)
+      const clamped = await request
+        .get(`${path}/review-due`)
+        .query({ after, limit: 10 })
+        .expect(200)
+      expect(clamped.body.results).toHaveLength(9)
+    } finally {
+      restore()
+    }
+  })
+
   it('rejects a suspended administrator before recording a review', async () => {
     const admin = await createTestUser({ administrator: true })
     const target = await createTestUser()

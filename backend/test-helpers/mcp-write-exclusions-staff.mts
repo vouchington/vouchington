@@ -1,9 +1,29 @@
-import { exclusions } from './mcp-write-exclusions-builder.mts'
+import { exclusions, type WriteExclusion } from './mcp-write-exclusions-builder.mts'
 
 // Each reason names the REST guard in backend/api/v1 and backend/services/*/authorization.mts.
 // A guard that admits only `administrator` (or the system topic seed actor) is not a user write.
+const adminReason = (guard: string) => `REST guard requires the administrator role (${guard})`
 const admin = (guard: string, routes: string[]) =>
-  exclusions('staff-only', `REST guard requires the administrator role (${guard})`, routes)
+  exclusions('staff-only', adminReason(guard), routes)
+
+type StaffReadExclusion = Omit<WriteExclusion, 'method'> & { method: 'GET' }
+
+// The administrator review queues have the same MCP exclusion as their review writes below.
+// Keep GET records separate from the write inventory, which rejects ordinary GET exclusions.
+export const directStaffReadExclusions: readonly StaffReadExclusion[] = [
+  {
+    method: 'GET',
+    path: '/api/v1/report-integrity/penalties/review-due',
+    category: 'staff-only',
+    reason: adminReason('currentUserCanApplyReportAbusePenalty'),
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/vote-integrity/penalties/review-due',
+    category: 'staff-only',
+    reason: adminReason('currentUserCanApplyVoteRingPenalty'),
+  },
+]
 
 export const directStaffExclusions = [
   ...admin('isAdminUser', [

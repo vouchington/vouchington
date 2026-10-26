@@ -14,6 +14,7 @@ import {
   communityOwnerAiExclusions,
   writeExclusions,
 } from '@voucha/test-helpers/mcp-write-exclusions'
+import { directStaffReadExclusions } from '@voucha/test-helpers/mcp-write-exclusions-staff'
 import { REQUEST_CONTRACT_EXEMPTIONS } from '../../api/request-contract-exemptions-helpers.mts'
 import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 
@@ -118,6 +119,41 @@ describe('all-audience MCP write inventory', () => {
     expect(keys.filter((key, index) => keys.indexOf(key) !== index)).toEqual([])
     for (const entry of exclusions) {
       expect(EXCLUSION_CATEGORIES).toContain(entry.category)
+      expect(entry.reason.trim()).not.toBe('')
+    }
+  })
+})
+
+describe('administrator penalty review MCP read exclusions', () => {
+  it.each(['report', 'vote'])(
+    'records the live %s review queue with its review-write reason',
+    domain => {
+      const path = `/api/v1/${domain}-integrity/penalties/review-due`
+      const key = `GET:${path}`
+      const readExclusions = directStaffReadExclusions.filter(entry => keyOf(entry) === key)
+      const writeExclusion = writeExclusions.find(
+        entry =>
+          entry.method === 'POST' &&
+          entry.path === `/api/v1/${domain}-integrity/penalties/:id/reviews`,
+      )
+      expect(writeExclusion).toBeDefined()
+      expect(requestContracts.operations).toHaveProperty(key)
+      expect(mappedOperations.has(key)).toBe(false)
+      expect(readExclusions).toEqual([
+        { method: 'GET', path, category: 'staff-only', reason: writeExclusion!.reason },
+      ])
+    },
+  )
+
+  it('keeps every recorded read exclusion live, unique, and outside the write inventory', () => {
+    const keys = directStaffReadExclusions.map(keyOf)
+    expect(keys.filter((key, index) => keys.indexOf(key) !== index)).toEqual([])
+    for (const entry of directStaffReadExclusions) {
+      const key = keyOf(entry)
+      expect(entry.method).toBe('GET')
+      expect(requestContracts.operations).toHaveProperty(key)
+      expect(mappedOperations.has(key)).toBe(false)
+      expect(excludedKeys.has(key)).toBe(false)
       expect(entry.reason.trim()).not.toBe('')
     }
   })
