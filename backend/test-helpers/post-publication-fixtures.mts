@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { recordStoryTopicPublicationChanges } from '../services/post-publication/capture-story-topics.mts'
-import { createTestPost, createTestUser } from '@voucha/test-helpers'
+import { createTestPost } from './entities/create-test-entities.mts'
+import { createTestUser } from './entities/users.mts'
 import { recordPostPublicationChange } from '../services/post-publication/capture.mts'
 import { claimPostPublicationDirtyWork } from '../services/post-publication/dirty-work.mts'
 import { listPublicationCandidates } from '../services/post-publication/publication-candidates.mts'

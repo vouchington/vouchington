@@ -60,8 +60,6 @@ export async function hardDeleteTestCommunity(communityId: string): Promise<void
 }
 export {
   insertTestCommunityMember,
-  insertTestCommunityMembershipsForUser,
-  analyzeCommunityMembershipsForTest,
   removeTestCommunityMember,
   setTestCommunityDigestVacationSuppression,
 } from './community-members.mts'

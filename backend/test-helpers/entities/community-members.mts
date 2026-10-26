@@ -3,7 +3,6 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import type { CommunityMember, CommunityMemberRole } from '@voucha/types/entities/community'
-import { definePlanStatisticsRefresh, type PlanStatisticsRefresh } from '../query-plans.mts'
 
 type InsertTestCommunityMemberOptions = {
   communityId: string
@@ -49,35 +48,6 @@ export async function insertTestCommunityMember(
       )
   return rows[0] as CommunityMember
 }
-
-export async function insertTestCommunityMembershipsForUser(
-  createdById: string,
-  userId: string,
-  count: number,
-): Promise<void> {
-  await write(sql`/* insertTestCommunityMembershipsForUser */
-    WITH inserted_communities AS (
-      INSERT INTO communities (name, slug, created_by_id, created_via)
-      SELECT
-        'Membership plan ' || uuidv7()::text,
-        'membership-plan-' || uuidv7()::text,
-        ${createdById},
-        'system'
-      FROM generate_series(1, ${count})
-      RETURNING id
-    )
-    INSERT INTO community_members (community_id, user_id, role)
-    SELECT id, ${userId}, 'member'
-    FROM inserted_communities
-  `)
-}
-
-export const analyzeCommunityMembershipsForTest: PlanStatisticsRefresh =
-  definePlanStatisticsRefresh(async () => {
-    await write(
-      sql`/* analyzeCommunityMembershipsForTest */ ANALYZE community_members, communities`,
-    )
-  })
 
 export async function getTestCommunityMember(
   communityId: string,
