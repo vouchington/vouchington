@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as httpDispatchers from '../../../modules/utils/http.mts'
-import {
-  createConfiguredMicrosoftStoreClient,
-  getMicrosoftStoreServiceConfig,
-} from './configured-client.mts'
+import { createConfiguredMicrosoftStoreClient } from './configured-client.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 type ExternalFetch = ReturnType<typeof httpDispatchers.getExternalFetch>
@@ -148,16 +145,15 @@ describe('configured Microsoft Store client', () => {
   })
 
   it('requires all service credentials before creating a client', () => {
+    const createClient = createConfiguredMicrosoftStoreClient
     vi.stubEnv('MICROSOFT_STORE_TENANT_ID', '')
-    expect(() => getMicrosoftStoreServiceConfig()).toThrow('MICROSOFT_STORE_TENANT_ID is required')
+    expect(() => createClient()).toThrow('MICROSOFT_STORE_TENANT_ID is required')
     vi.stubEnv('MICROSOFT_STORE_TENANT_ID', 'tenant')
     vi.stubEnv('MICROSOFT_STORE_CLIENT_ID', '')
-    expect(() => getMicrosoftStoreServiceConfig()).toThrow('MICROSOFT_STORE_CLIENT_ID is required')
+    expect(() => createClient()).toThrow('MICROSOFT_STORE_CLIENT_ID is required')
     vi.stubEnv('MICROSOFT_STORE_CLIENT_ID', 'client')
     vi.stubEnv('MICROSOFT_STORE_CLIENT_SECRET', '')
-    expect(() => getMicrosoftStoreServiceConfig()).toThrow(
-      'MICROSOFT_STORE_CLIENT_SECRET is required',
-    )
+    expect(() => createClient()).toThrow('MICROSOFT_STORE_CLIENT_SECRET is required')
   })
 
   it('rejects failed or malformed OAuth tokens before querying Store APIs', async () => {

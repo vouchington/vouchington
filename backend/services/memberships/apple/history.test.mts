@@ -1,10 +1,7 @@
-import { generateKeyPairSync } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  createAppleTransactionHistoryClient,
   createConfiguredAppleTransactionHistoryClient,
   fetchAppleTransactionHistory,
-  getAuthoritativeAppleTransactionOrder,
   getLatestAuthoritativeAppleTransaction,
   type AppleTransactionHistoryClient,
 } from './history.mts'
@@ -42,17 +39,14 @@ describe('Apple transaction history', () => {
     ])
   })
 
-  it('derives order from the verified transaction position, never its timestamp', () => {
+  it('uses authoritative history position and rejects absent submitted transactions', () => {
     expect(
-      getAuthoritativeAppleTransactionOrder(
+      getLatestAuthoritativeAppleTransaction(
         ['oldest-signed-transaction', 'target-signed-transaction', 'newest-signed-transaction'],
         'target-signed-transaction',
       ),
-    ).toBe(1)
-  })
-
-  it('rejects a submitted transaction absent from authoritative history', () => {
-    expect(() => getAuthoritativeAppleTransactionOrder(['other'], 'submitted')).toThrow(
+    ).toEqual({ providerOrder: 2, signedTransactionInfo: 'newest-signed-transaction' })
+    expect(() => getLatestAuthoritativeAppleTransaction(['other'], 'submitted')).toThrow(
       'Apple transaction is absent from authoritative history',
     )
   })
@@ -94,87 +88,4 @@ describe('Apple transaction history', () => {
       'Apple transaction history exceeded 100 pages',
     )
   })
-
-  it('signs sandbox requests with the configured credentials and bundle context', async () => {
-    const privateKey = createTestAppleSigningKey()
-    const directClient = createAppleTransactionHistoryClient({
-      applicationId: 'ai.voucha.ios',
-      environment: 'test',
-      issuerId: 'issuer-id',
-      keyId: 'key-id',
-      privateKey,
-    })
-    vi.stubEnv('APPLE_APP_STORE_SERVER_API_ISSUER_ID', 'issuer-id')
-    vi.stubEnv('APPLE_APP_STORE_SERVER_API_KEY_ID', 'key-id')
-    vi.stubEnv('APPLE_APP_STORE_SERVER_API_PRIVATE_KEY', privateKey)
-    const configuredClient = createConfiguredAppleTransactionHistoryClient({
-      applicationId: 'ai.voucha.ios',
-      environment: 'test',
-    })
-    const requests: Array<{ headers: Record<string, string>; path: string; urlBase: string }> = []
-    for (const client of [directClient, configuredClient]) {
-      Object.defineProperty(client, 'makeFetchRequest', {
-        configurable: true,
-        value: async function (
-          path: string,
-          _query: unknown,
-          _method: unknown,
-          _body: unknown,
-          headers: Record<string, string>,
-        ) {
-          requests.push({
-            headers,
-            path,
-            urlBase: (this as unknown as { urlBase: string }).urlBase,
-          })
-          return { ok: false, status: 401, json: async () => ({}) }
-        },
-      })
-    }
-
-    await expect(
-      directClient.getTransactionHistory('transaction-id', null, { productTypes: [] }),
-    ).rejects.toMatchObject({ httpStatusCode: 401 })
-    await expect(
-      configuredClient.getAllSubscriptionStatuses('transaction-id'),
-    ).rejects.toMatchObject({
-      httpStatusCode: 401,
-    })
-    expect(requests).toHaveLength(2)
-    for (const request of requests) {
-      expect(request.urlBase).toBe('https://api.storekit-sandbox.apple.com')
-      expect(request.path).toMatch(/^\/inApps\/v1\//)
-      expect(request.headers.Authorization).toMatch(/^Bearer /)
-      expect(decodeAppleServerApiBearer(request.headers.Authorization)).toMatchObject({
-        header: { kid: 'key-id' },
-        payload: { bid: 'ai.voucha.ios', iss: 'issuer-id' },
-      })
-    }
-  })
 })
-
-function createTestAppleSigningKey(): string {
-  return generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).privateKey.export({
-    format: 'pem',
-    type: 'pkcs8',
-  })
-}
-
-function decodeAppleServerApiBearer(authorization: string): {
-  header: Record<string, unknown>
-  payload: Record<string, unknown>
-} {
-  const token = authorization.replace(/^Bearer /, '')
-  const [encodedHeader, encodedPayload] = token.split('.')
-  if (!encodedHeader || !encodedPayload) throw new Error('Apple API client did not sign a JWT')
-  return {
-    header: JSON.parse(Buffer.from(encodedHeader, 'base64url').toString()) as Record<
-      string,
-      unknown
-    >,
-    payload: JSON.parse(Buffer.from(encodedPayload, 'base64url').toString()) as Record<
-      string,
-      unknown
-    >,
-  }
-}

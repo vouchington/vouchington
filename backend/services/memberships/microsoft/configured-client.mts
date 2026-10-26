@@ -24,13 +24,13 @@ export function createConfiguredMicrosoftStoreClient(): MicrosoftStoreClient {
   }
 }
 
-export type MicrosoftStoreServiceConfig = {
+type MicrosoftStoreServiceConfig = {
   tenantId: string
   clientId: string
   clientSecret: string
 }
 
-export function getMicrosoftStoreServiceConfig(): MicrosoftStoreServiceConfig {
+function getMicrosoftStoreServiceConfig(): MicrosoftStoreServiceConfig {
   return {
     tenantId: requiredEnv('MICROSOFT_STORE_TENANT_ID'),
     clientId: requiredEnv('MICROSOFT_STORE_CLIENT_ID'),
