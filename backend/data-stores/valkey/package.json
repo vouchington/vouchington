@@ -28,7 +28,7 @@
     "@modules/utils": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
-    "valkyries": "^0.12.0"
+    "valkyries": "^0.12.1"
   },
   "devDependencies": {
     "uuid": "^14.0.3"

@@ -108,7 +108,7 @@
     "@vouchington/dynamic-config": "^0.3.0",
     "@workers/ses-inbound": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.12.0"
+    "valkyries": "^0.12.1"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

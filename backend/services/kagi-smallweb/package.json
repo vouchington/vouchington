@@ -33,7 +33,7 @@
     "@vouchington/sentry": "^0.4.0",
     "pg-copy-streams": "^7.0.0",
     "undici": "^8.12.3",
-    "valkyries": "^0.12.0"
+    "valkyries": "^0.12.1"
   },
   "devDependencies": {
     "@services/topics": "workspace:^",

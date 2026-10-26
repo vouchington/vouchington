@@ -32,7 +32,7 @@
     "@services/users": "workspace:^",
     "p-map": "^7.1.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.12.0"
+    "valkyries": "^0.12.1"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^",

@@ -62,8 +62,8 @@
     "@voucha/types": "workspace:^",
     "@vouchington/ai": "^0.3.0",
     "@vouchington/http-transport": "^0.1.0",
-    "@vouchington/localization": "^0.2.1",
-    "@vouchington/localization-compiler": "^0.2.2",
+    "@vouchington/localization": "^0.3.0",
+    "@vouchington/localization-compiler": "^0.3.0",
     "@vouchington/mcp-server": "^0.2.0",
     "@vouchington/postgres": "^0.1.0",
     "@vouchington/rate-limit": "^0.3.0",
@@ -80,8 +80,8 @@
     "supertest": "^7.3.1",
     "undici": "^8.12.3",
     "uuid": "^14.0.3",
-    "valkyries": "^0.12.0",
-    "vouchington-tooling": "^0.72.2"
+    "valkyries": "^0.12.1",
+    "vouchington-tooling": "^0.72.3"
   },
   "devDependencies": {
     "@jongleberry/api-server": "^3.1.0",
