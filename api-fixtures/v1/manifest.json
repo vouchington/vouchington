@@ -99001,7 +99001,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/trending-referral-programs",
       "bodyFile": "responses/web.trending-referral-programs.default.json",
-      "consumers": ["web", "swift-core", "dotnet-core"],
+      "consumers": ["swift-core", "dotnet-core"],
       "id": "web.trending-referral-programs.default",
       "method": "GET",
       "migratedFrom": ["web/lib/api/server/trending-referral-programs.ts"],

@@ -20,32 +20,3 @@ export const getTrendingReferralPrograms = cache(
     })
   },
 )
-
-interface TrendingReferralProgram {
-  id: string
-  trending_score: number
-  link_count: number
-  slug?: string
-  name?: string
-  label?: string | null
-  url?: string | null
-  referral_link_count?: number | null
-}
-
-interface TrendingReferralProgramsEndpointResponse {
-  referral_programs: TrendingReferralProgram[]
-  page_info: {
-    has_next_page: boolean
-    start_cursor: string | null
-    end_cursor: string | null
-  }
-}
-
-export const getTrendingReferralProgramsEndpoint = cache(
-  async (options: GetOptions = {}): Promise<TrendingReferralProgramsEndpointResponse> => {
-    return serverApi.get<TrendingReferralProgramsEndpointResponse>(
-      '/api/v1/trending-referral-programs',
-      options,
-    )
-  },
-)
