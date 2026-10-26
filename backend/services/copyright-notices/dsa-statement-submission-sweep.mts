@@ -55,33 +55,6 @@ export async function prepareDsaStatementSubmissionSweep(
     return null
   }
 
-  const materialized = await materializeDsaStatementSubmissions(from, {
-    buildPayload: dependencies.buildPayload,
-    reportBuildFailure: dependencies.reportBuildFailure,
-    restrictionIds,
-  })
-  if (
-    !dependencies.isConfigured({ url: dependencies.url() ?? '', token: dependencies.token() ?? '' })
-  ) {
-    dependencies.recordConfigMissing(RECONCILE_JOB_NAME, DATABASE_CREDENTIAL_NAMES)
-    return null
-  }
-  return { from, hasMore: materialized.hasMore }
-}
-
-/**
- * Pages immutable restriction ids so work is recorded even if the restriction is lifted later.
- * A restriction whose payload cannot be built becomes a terminal failed row, so it leaves the
- * work predicate and cannot stall the restrictions after it. Returns the payload rows inserted.
- */
-export async function materializeDsaStatementSubmissions(
-  from: Date,
-  overrides: Partial<Pick<DsaStatementSweepDependencies, 'buildPayload' | 'reportBuildFailure'>> & {
-    restrictionIds?: readonly string[]
-  } = {},
-): Promise<{ inserted: number; hasMore: boolean }> {
-  const { restrictionIds, ...dependencyOverrides } = overrides
-  const dependencies = { ...defaultDependencies, ...dependencyOverrides }
   // One bounded page per scheduled run. Inserted rows disappear from the next run's
   // NOT EXISTS work predicate, so the table itself is the durable resume marker.
   const page = await queryCopyrightSweepIdPage(
@@ -101,12 +74,17 @@ export async function materializeDsaStatementSubmissions(
       ) candidates WHERE TRUE`,
     statement => read(statement),
   )
-  let inserted = 0
   for (const restrictionId of page.results) {
     // oxlint-disable-next-line no-await-in-loop -- each payload and insert is one transaction.
-    if (await materializeDsaStatementSubmission(restrictionId, from, dependencies)) inserted += 1
+    await materializeDsaStatementSubmission(restrictionId, from, dependencies)
   }
-  return { inserted, hasMore: page.page_info.has_next_page }
+  if (
+    !dependencies.isConfigured({ url: dependencies.url() ?? '', token: dependencies.token() ?? '' })
+  ) {
+    dependencies.recordConfigMissing(RECONCILE_JOB_NAME, DATABASE_CREDENTIAL_NAMES)
+    return null
+  }
+  return { from, hasMore: page.page_info.has_next_page }
 }
 
 /** Returns true when a payload row was inserted. Only a builder HttpError is recorded and skipped. */
