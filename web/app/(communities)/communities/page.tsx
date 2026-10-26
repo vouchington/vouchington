@@ -10,11 +10,8 @@ import { CommunityList } from '@/components/communities/community-list'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { createPageMetadata } from '@/lib/seo/metadata'
-import {
-  createBreadcrumbSchema,
-  createCollectionPageSchema,
-  createItemListSchema,
-} from '@/lib/seo/structured-data'
+import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
+import { createCollectionPageSchema, createItemListSchema } from '@/lib/seo/structured-data'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { AboutVouchaAside } from '@/components/asides/about-voucha-aside'
 import { PageWithAside } from '@/components/page-with-aside'

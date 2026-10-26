@@ -22,7 +22,7 @@ vi.mock(import('@/lib/navigation/intents'), () => ({
 vi.mock(import('@/lib/navigation/breadcrumbs'), () => ({ buildBreadcrumbs: mockBuildBreadcrumbs }))
 
 import { useResolvedBreadcrumbs } from '@/lib/navigation/use-resolved-breadcrumbs'
-import type { BreadcrumbNavItem } from '@/lib/seo/structured-data'
+import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
 
 const MOCK_INTENT = { id: 'posts', label: 'Posts' }
 

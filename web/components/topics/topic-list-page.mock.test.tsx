@@ -109,6 +109,8 @@ vi.mock(
 
 vi.mock(import('@/lib/seo/structured-data'), () => ({
   createCollectionPageSchema: vi.fn<VitestLooseMock>().mockReturnValue({}),
+}))
+vi.mock(import('@/lib/seo/structured-data-breadcrumbs'), () => ({
   createBreadcrumbSchema: vi.fn<VitestLooseMock>().mockReturnValue({}),
 }))
 

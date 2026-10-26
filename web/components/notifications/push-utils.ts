@@ -1,5 +1,5 @@
 import type { NotificationPushSubscription } from './notification-push-subscription'
-import type { WebPushBinding } from '@/lib/push-service-worker'
+import type { WebPushBinding } from '@vouchington/utils/web-push-binding'
 
 export const PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS = 5000
 

@@ -1,3 +1,5 @@
+import { resolveSchemaOrgType } from '@vouchington/utils/json-ld'
+
 /**
  * Schema.org type mapping for topic categories
  * Maps category slugs to their corresponding schema.org @type values
@@ -34,9 +36,5 @@ const CATEGORY_SCHEMA_ORG_TYPES: Record<string, string> = {
  * @returns schema.org @type string
  */
 export function getSchemaOrgType(categorySlugs: string[]): string {
-  for (const slug of categorySlugs) {
-    const type = CATEGORY_SCHEMA_ORG_TYPES[slug]
-    if (type) return type
-  }
-  return 'Thing'
+  return resolveSchemaOrgType(categorySlugs, CATEGORY_SCHEMA_ORG_TYPES)
 }

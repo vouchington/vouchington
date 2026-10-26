@@ -26,12 +26,11 @@ vi.mock(import('@/lib/auth/get-current-user'), () => ({
 vi.mock(import('@/lib/seo/metadata'), () => ({
   createNoIndexMetadata: vi.fn<VitestLooseMock>(() => ({ noIndex: true })),
   createPageMetadata: vi.fn<VitestLooseMock>(() => ({})),
-  createExcerpt: vi.fn<VitestLooseMock>((s: string) => s?.slice(0, 20) ?? ''),
 }))
 vi.mock(import('@/lib/seo/post-schema'), () => ({
   createPostSchema: vi.fn<VitestLooseMock>(() => ({})),
 }))
-vi.mock(import('@/lib/seo/structured-data'), () => ({
+vi.mock(import('@/lib/seo/structured-data-breadcrumbs'), () => ({
   createBreadcrumbSchema: vi.fn<VitestLooseMock>(() => ({})),
 }))
 vi.mock(import('@/lib/seo/post-schema-helpers'), () => ({

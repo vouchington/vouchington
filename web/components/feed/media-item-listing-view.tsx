@@ -5,7 +5,7 @@ import { NewsFilters } from '@/components/news/news-filters'
 import { PageWithAside } from '@/components/page-with-aside'
 import { BrowsePageHeader, type BrowseRouteKey } from '@/components/shared/browse-page-header'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
-import type { StructuredDataValue } from '@/lib/seo/structured-data'
+import type { JsonLd as StructuredDataValue } from '@vouchington/utils/json-ld'
 import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
 
 export type MediaItemListingPath = '/news' | '/videos' | '/podcast-episodes'

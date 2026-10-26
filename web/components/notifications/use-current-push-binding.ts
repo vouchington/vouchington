@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { WebPushBinding } from '@/lib/push-service-worker'
+import type { WebPushBinding } from '@vouchington/utils/web-push-binding'
 
 let currentBinding: WebPushBinding | null = null
 const listeners = new Set<() => void>()

@@ -1,4 +1,4 @@
-import type { BreadcrumbNavItem } from '@/lib/seo/structured-data'
+import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
 import type { NavIntentId, NavIntent } from '@/lib/navigation/intents/types'
 import { findIntentLandingHref, getIntentById } from '@/lib/navigation/intents'
 import { getActiveIntent } from '@/lib/navigation/intents/resolver'

@@ -11,7 +11,10 @@ import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getHostname } from '@/lib/api/server/hostnames'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { createNoIndexMetadata, createPageMetadata } from '@/lib/seo/metadata'
-import { createBreadcrumbSchema, type BreadcrumbNavItem } from '@/lib/seo/structured-data'
+import {
+  createBreadcrumbSchema,
+  type BreadcrumbNavItem,
+} from '@/lib/seo/structured-data-breadcrumbs'
 import { PageWithAside } from '@/components/page-with-aside'
 import { DomainOverview } from './domain-overview'
 import { TopicLabel } from '@/components/topics/topic-label'
