@@ -23,7 +23,10 @@ export function TopCommunities({ data }: TopCommunitiesProps) {
 
   if (data.length === 0) {
     return (
-      <p className='text-sm text-muted-foreground'>
+      <p
+        className='text-sm text-muted-foreground'
+        data-pw='top-communities-empty'
+      >
         {t('extracted.home.topCommunities.noCommunitiesYet_c35deb19')}
       </p>
     )

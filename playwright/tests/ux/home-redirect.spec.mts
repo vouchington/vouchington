@@ -30,18 +30,12 @@ test.describe('Home Page Redirect', () => {
       page.getByRole('heading', { level: 2, name: /top referral programs/i }),
     ).toBeVisible()
 
-    const communitiesSection = page.getByTestId('top-communities')
-    const referralProgramsSection = page.getByTestId('top-referral-programs')
-
+    // A null payload renders neither id, so a failed load cannot satisfy this assertion.
     await expect(
-      communitiesSection
-        .or(page.getByText('No communities yet.'))
-        .or(page.getByText('Unable to load communities.')),
+      page.getByTestId('top-communities').or(page.getByTestId('top-communities-empty')),
     ).toBeVisible()
     await expect(
-      referralProgramsSection
-        .or(page.getByText('No referral programs yet.'))
-        .or(page.getByText('Unable to load referral programs.')),
+      page.getByTestId('top-referral-programs').or(page.getByTestId('top-referral-programs-empty')),
     ).toBeVisible()
   })
 })

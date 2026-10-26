@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
 import { TopCommunities } from '../top-communities'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import {
@@ -11,6 +11,8 @@ import {
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
 import { projectTopCommunities } from '@/lib/view-models/homepage-view-models'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(
   import('next/link'),
@@ -46,6 +48,8 @@ describe('TopCommunities', () => {
     render(<TopCommunities data={null} />)
 
     expect(screen.getByText('Unable to load communities.')).toBeDefined()
+    expect(screen.queryByTestId('top-communities')).toBeNull()
+    expect(screen.queryByTestId('top-communities-empty')).toBeNull()
   })
 
   it('renders empty fallback when results are empty', () => {
@@ -53,7 +57,8 @@ describe('TopCommunities', () => {
 
     render(<TopCommunities data={projectTopCommunities(data)} />)
 
-    expect(screen.getByText('No communities yet.')).toBeDefined()
+    expect(screen.getByTestId('top-communities-empty')).toBeDefined()
+    expect(screen.queryByTestId('top-communities')).toBeNull()
   })
 
   it('renders community links with names', () => {
@@ -62,6 +67,8 @@ describe('TopCommunities', () => {
 
     render(<TopCommunities data={projectTopCommunities(data)} />)
 
+    expect(screen.getByTestId('top-communities')).toBeDefined()
+    expect(screen.queryByTestId('top-communities-empty')).toBeNull()
     const link = screen.getByRole('link', { name: /Credit Card Fans/ })
     expect(link.getAttribute('href')).toBe('/communities/credit-card-fans')
     expect(screen.getByRole('link', { name: 'Browse all communities →' })).toBeDefined()
