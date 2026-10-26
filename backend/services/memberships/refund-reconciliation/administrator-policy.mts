@@ -19,7 +19,6 @@ export const administratorRefundPolicy: RefundReconciliationPolicy<RefundContext
   createLookup: paymentCreateLookup,
   getContext: getAdministratorRefundContext,
   lookup: paymentLookup,
-  providerFailuresAreDurable: true,
   providerIdempotencyKey(lease) {
     return `voucha-membership-refund-reconciliation:${lease.id}:${lease.attemptOrdinal}`
   },

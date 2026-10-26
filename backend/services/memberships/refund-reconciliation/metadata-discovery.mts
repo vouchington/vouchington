@@ -12,7 +12,7 @@ import type {
   RefundMetadataPage,
   RefundMetadataScanState,
 } from './metadata-discovery-types.mts'
-export type { RefundMetadataPage, RefundMetadataScanState } from './metadata-discovery-types.mts'
+export type { RefundMetadataPage } from './metadata-discovery-types.mts'
 
 export type RefundMetadataDiscoveryResult =
   | { outcome: 'found'; refund: MetadataDiscoverableRefund }
@@ -134,7 +134,7 @@ async function verifyRefundMetadataScanHead(
   )
 }
 
-export async function getRefundMetadataScanState(
+async function getRefundMetadataScanState(
   attemptId: string,
 ): Promise<RefundMetadataScanState | null> {
   const { rows } = await write(sql`/* getRefundMetadataScanState */

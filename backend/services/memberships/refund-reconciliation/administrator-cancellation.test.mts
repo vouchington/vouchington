@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { createTestMembership, createTestUser } from '@voucha/test-helpers'
 import {
   getRefundCancellationConvergenceForTest,
@@ -11,18 +11,22 @@ import {
   leaseDueRefundReconciliation,
   reconcileMembershipRefundOperation,
   scheduleRefundReconciliationRetry,
-  type RefundProviderOperations,
 } from './index.mts'
+import * as stripeRefunds from '@modules/stripe/refunds'
 import * as stripeSubscriptions from '@modules/stripe/subscriptions'
 
 describe('administrator refund cancellation reconciliation', () => {
-  const mockCancelSubscription = vi.spyOn(
-    stripeSubscriptions,
-    'cancelStripeSubscriptionImmediately',
-  )
+  let mockCancelSubscription: MockInstance<
+    typeof stripeSubscriptions.cancelStripeSubscriptionImmediately
+  >
 
   beforeEach(() => {
+    mockCancelSubscription = vi.spyOn(stripeSubscriptions, 'cancelStripeSubscriptionImmediately')
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('persists the receipt before cancellation, then converges projection and audit once on replay', async () => {
@@ -30,14 +34,14 @@ describe('administrator refund cancellation reconciliation', () => {
     const operation = await claimAdministratorRefundRequest(request)
     const lease = await leaseDueRefundReconciliation(operation.id)
     if (!lease) throw new Error('Expected administrator reconciliation lease')
-    const providerOperations = successfulRefundOperations(request.providerPaymentReference)
+    const providerOperations = stubSuccessfulStripeRefund(request.providerPaymentReference)
     let receiptCountDuringCancellation = 0
     mockCancelSubscription.mockImplementation(async () => {
       receiptCountDuringCancellation = await getRefundReceiptCountForTest(operation.id)
       return {} as never
     })
 
-    await reconcileMembershipRefundOperation(lease, providerOperations)
+    await reconcileMembershipRefundOperation(lease)
 
     expect(receiptCountDuringCancellation).toBe(1)
     await expect(
@@ -50,7 +54,7 @@ describe('administrator refund cancellation reconciliation', () => {
       status: 'cancelled',
     })
 
-    await reconcileMembershipRefundOperation(lease, providerOperations)
+    await reconcileMembershipRefundOperation(lease)
     const replay = await claimAdministratorRefundRequest(request)
     expect(replay).toEqual({ completed: true, id: operation.id })
     expect(providerOperations.createRefund).toHaveBeenCalledOnce()
@@ -68,10 +72,10 @@ describe('administrator refund cancellation reconciliation', () => {
     const operation = await claimAdministratorRefundRequest(request)
     const firstLease = await leaseDueRefundReconciliation(operation.id)
     if (!firstLease) throw new Error('Expected first administrator reconciliation lease')
-    const providerOperations = successfulRefundOperations(request.providerPaymentReference)
+    const providerOperations = stubSuccessfulStripeRefund(request.providerPaymentReference)
     mockCancelSubscription.mockRejectedValueOnce(new Error('Stripe DELETE response was lost'))
 
-    await reconcileMembershipRefundOperation(firstLease, providerOperations)
+    await reconcileMembershipRefundOperation(firstLease)
 
     await expect(
       getRefundCancellationConvergenceForTest(operation.id, request.membershipId),
@@ -87,7 +91,7 @@ describe('administrator refund cancellation reconciliation', () => {
     if (!retryLease) throw new Error('Expected retry reconciliation lease')
     mockCancelSubscription.mockResolvedValueOnce({} as never)
 
-    await reconcileMembershipRefundOperation(retryLease, providerOperations)
+    await reconcileMembershipRefundOperation(retryLease)
 
     expect(providerOperations.createRefund).toHaveBeenCalledOnce()
     expect(providerOperations.getRefund).toHaveBeenCalledWith(expect.stringMatching(/^re_/))
@@ -111,9 +115,9 @@ describe('administrator refund cancellation reconciliation', () => {
     await scheduleRefundReconciliationRetry(firstLease, new Date(Date.now() - 1), 'rotate lease')
     const secondLease = await leaseDueRefundReconciliation(operation.id)
     if (!secondLease) throw new Error('Expected rotated administrator reconciliation lease')
-    const providerOperations = successfulRefundOperations(request.providerPaymentReference)
+    const providerOperations = stubSuccessfulStripeRefund(request.providerPaymentReference)
 
-    await reconcileMembershipRefundOperation(firstLease, providerOperations)
+    await reconcileMembershipRefundOperation(firstLease)
 
     expect(providerOperations.createRefund).not.toHaveBeenCalled()
     expect(mockCancelSubscription).not.toHaveBeenCalled()
@@ -121,7 +125,7 @@ describe('administrator refund cancellation reconciliation', () => {
   })
 })
 
-function successfulRefundOperations(paymentReference: string): RefundProviderOperations {
+function stubSuccessfulStripeRefund(paymentReference: string) {
   const refund = {
     amount: 700,
     charge: paymentReference,
@@ -131,11 +135,8 @@ function successfulRefundOperations(paymentReference: string): RefundProviderOpe
     status: 'succeeded',
   }
   return {
-    createRefund: vi
-      .fn<RefundProviderOperations['createRefund']>()
-      .mockResolvedValue(refund as never),
-    getRefund: vi.fn<RefundProviderOperations['getRefund']>().mockResolvedValue(refund as never),
-    listRefundPage: vi.fn<RefundProviderOperations['listRefundPage']>(),
+    createRefund: vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue(refund as never),
+    getRefund: vi.spyOn(stripeRefunds, 'getStripeRefund').mockResolvedValue(refund as never),
   }
 }
 

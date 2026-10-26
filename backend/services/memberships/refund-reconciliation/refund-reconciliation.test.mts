@@ -11,7 +11,6 @@ import {
   completeRefundReconciliation,
   discoverRefundByOperationMetadata,
   enrichRefundReconciliationAttemptProviderRefund,
-  getRefundMetadataScanState,
   leaseDueRefundReconciliation,
   recordRefundReconciliationAttempt,
   scheduleRefundReconciliationRetry,
@@ -22,10 +21,8 @@ describe('refund reconciliation ledger', () => {
     const request = await createRequest()
     const first = await claimAdministratorRefundRequest(request)
     const replay = await claimAdministratorRefundRequest(request)
-
     expect(replay).toEqual(first)
     expect(first.completed).toBe(false)
-
     const lease = await leaseDueRefundReconciliation(first.id)
     expect(lease).toMatchObject({
       amount: { amount: 700, currency: 'usd' },
@@ -36,7 +33,6 @@ describe('refund reconciliation ledger', () => {
     })
     expect(lease?.leaseToken).toMatch(/^[0-9a-f-]{36}$/)
     await expect(leaseDueRefundReconciliation(first.id)).resolves.toBeNull()
-
     const sharedIdempotencyKey = `administrator-refund-${randomUUID()}`
     const [firstApplicationRequest, secondApplicationRequest] = await Promise.all([
       createRequest({
@@ -54,11 +50,9 @@ describe('refund reconciliation ledger', () => {
     ])
     expect(firstApplication.id).not.toBe(secondApplication.id)
   })
-
   it('rejects a reused administrator idempotency key when the request changes', async () => {
     const original = await createRequest()
     await claimAdministratorRefundRequest(original)
-
     await expect(
       claimAdministratorRefundRequest({
         ...original,
@@ -66,7 +60,6 @@ describe('refund reconciliation ledger', () => {
       }),
     ).rejects.toMatchObject({ statusCode: 409 })
   })
-
   it('records attempts append-only, enriches provider identity, and schedules durable retries', async () => {
     const operation = await claimAdministratorRefundRequest(await createRequest())
     const firstLease = await leaseDueRefundReconciliation(operation.id)
@@ -87,7 +80,6 @@ describe('refund reconciliation ledger', () => {
       `provider-refund-${randomUUID()}`,
     )
     expect(enriched.providerRefundId).toMatch(/^provider-refund-/)
-
     await scheduleRefundReconciliationRetry(
       firstLease!,
       new Date(Date.now() - 1_000),
@@ -101,7 +93,6 @@ describe('refund reconciliation ledger', () => {
     await completeRefundReconciliation(secondLease!)
     await expect(leaseDueRefundReconciliation(operation.id)).resolves.toBeNull()
   })
-
   it('wakes a known pending administrator refund when its event receipt arrives', async () => {
     const request = await createRequest()
     const operation = await claimAdministratorRefundRequest(request)
@@ -119,7 +110,6 @@ describe('refund reconciliation ledger', () => {
     )
     const fixture = await getMembershipRefundEventFixtureForTest(request.membershipId)
     expect(lease.providerEnvironment).toBe('test')
-
     await expect(
       recordMembershipRefundEvent({
         amount: request.amount,
@@ -152,7 +142,6 @@ describe('refund reconciliation ledger', () => {
         ? { hasMore: false, nextCursor: null, refunds: [{ id: 're_oldest' }] }
         : { hasMore: true, nextCursor: 're_newest', refunds: [{ id: 're_newest' }] }
     }
-
     await expect(
       discoverRefundByOperationMetadata(
         attempt,
@@ -162,13 +151,17 @@ describe('refund reconciliation ledger', () => {
       ),
     ).resolves.toEqual({ outcome: 'not_found' })
     expect(cursors).toEqual([undefined, 're_newest', undefined])
-    await expect(getRefundMetadataScanState(attempt.id)).resolves.toMatchObject({
-      completedAt: expect.any(Date),
-      nextProviderRefundId: null,
-      stableHeadProviderRefundId: 're_newest',
-    })
+    await expect(
+      discoverRefundByOperationMetadata(
+        attempt,
+        await getRefundOperationLeaseTokenForTest(attempt.membershipOperationId),
+        { chargeId: 'ch_metadata', paymentIntentId: null },
+        async () => {
+          throw new Error('Completed metadata scan must not call Stripe again')
+        },
+      ),
+    ).resolves.toEqual({ outcome: 'not_found' })
   })
-
   it('restarts metadata discovery when a fresh head proves the scan moved', async () => {
     const attempt = await createUnacknowledgedAttempt()
     let call = 0
@@ -188,12 +181,17 @@ describe('refund reconciliation ledger', () => {
       ),
     ).resolves.toEqual({ outcome: 'not_found' })
     expect(call).toBe(3)
-    await expect(getRefundMetadataScanState(attempt.id)).resolves.toMatchObject({
-      completedAt: expect.any(Date),
-      stableHeadProviderRefundId: 're_after',
-    })
+    await expect(
+      discoverRefundByOperationMetadata(
+        attempt,
+        await getRefundOperationLeaseTokenForTest(attempt.membershipOperationId),
+        { chargeId: 'ch_metadata', paymentIntentId: null },
+        async () => {
+          throw new Error('Completed moved-head scan must not call Stripe again')
+        },
+      ),
+    ).resolves.toEqual({ outcome: 'not_found' })
   })
-
   it('persists discovery progress when the provider page budget is exhausted', async () => {
     const attempt = await createUnacknowledgedAttempt()
     const cursors: Array<string | undefined> = []
@@ -212,11 +210,21 @@ describe('refund reconciliation ledger', () => {
       ),
     ).resolves.toEqual({ outcome: 'pending' })
     expect(cursors).toEqual([undefined, 're_1', 're_2'])
-    await expect(getRefundMetadataScanState(attempt.id)).resolves.toMatchObject({
-      completedAt: null,
-      nextProviderRefundId: 're_3',
-      stableHeadProviderRefundId: 're_1',
-    })
+    const resumedCursors: Array<string | undefined> = []
+    await expect(
+      discoverRefundByOperationMetadata(
+        attempt,
+        await getRefundOperationLeaseTokenForTest(attempt.membershipOperationId),
+        { chargeId: 'ch_metadata', paymentIntentId: null },
+        async ({ startingAfter }) => {
+          resumedCursors.push(startingAfter)
+          return startingAfter
+            ? { hasMore: false, nextCursor: null, refunds: [{ id: 're_older' }] }
+            : { hasMore: true, nextCursor: 're_1', refunds: [{ id: 're_1' }] }
+        },
+      ),
+    ).resolves.toEqual({ outcome: 'not_found' })
+    expect(resumedCursors).toEqual(['re_3', undefined])
   })
 
   it('returns a metadata match before a new provider refund is created', async () => {
@@ -259,7 +267,6 @@ async function createUnacknowledgedAttempt() {
   if (!lease) throw new Error('Expected a due administrator refund reconciliation lease')
   return recordRefundReconciliationAttempt(lease, `provider-idempotency-${randomUUID()}`)
 }
-
 async function createRequest(
   options: {
     cancelRequested?: boolean

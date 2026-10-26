@@ -13,7 +13,6 @@ import { applyStripeRefundScanPage } from './refund-scan-ledger.mts'
 import {
   createStripeRefundScanCallBudget,
   getDurableStripeRefundHistory,
-  StripeRefundScanContinuationError,
   withStripeRefundScanCycle,
 } from './refund-scan.mts'
 
@@ -135,8 +134,12 @@ describe('durable Stripe refund scan hardening', () => {
         )
       })
 
-    await expect(reconcile(10)).rejects.toBeInstanceOf(StripeRefundScanContinuationError)
-    await expect(reconcile(10)).rejects.toBeInstanceOf(StripeRefundScanContinuationError)
+    await expect(reconcile(10)).rejects.toThrow(
+      'Stripe refund scan requires another bounded reconciliation call',
+    )
+    await expect(reconcile(10)).rejects.toThrow(
+      'Stripe refund scan requires another bounded reconciliation call',
+    )
     await expect(reconcile(10)).resolves.toHaveLength(11)
     expect(new Set(calls)).toHaveLength(11)
     expect(calls).toHaveLength(22)

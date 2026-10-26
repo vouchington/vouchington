@@ -236,6 +236,7 @@ describe('ineligible Stripe purchase reversal ledger', () => {
           failed: true,
           hasReceipt: false,
           id: `operation_missing_amount_${randomUUID()}`,
+          qualifyingAllocationMinorUnits: '100',
           remainingRefundableMinorUnits: null,
         },
         100,

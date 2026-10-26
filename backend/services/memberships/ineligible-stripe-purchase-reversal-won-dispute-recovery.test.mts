@@ -10,6 +10,7 @@ import {
   createWonDisputeRecoveryFixture,
 } from '../../test-helpers/services/memberships/won-dispute-recovery-fixtures.mts'
 import { getIneligiblePurchaseReversalCase } from './ineligible-stripe-purchase-reversal/case-read.mts'
+import { failIneligiblePurchaseReversal } from './ineligible-stripe-purchase-reversal-execution.mts'
 import { claimWonStripeDisputeRecovery } from './ineligible-stripe-purchase-reversal/won-dispute-recovery-ledger.mts'
 import { reconcileWonStripeDispute } from './reconcile-won-stripe-dispute.mts'
 
@@ -104,6 +105,26 @@ describe('won Stripe dispute reversal recovery', () => {
         paymentIntentId: fixture.paymentIntentIds[0],
       }),
     )
+  })
+
+  it('retries a failed recovery at the newly observed provider remainder', async () => {
+    const fixture = await createWonDisputeRecoveryFixture()
+    const reversalCase = await getReversalCase(fixture)
+    const target = getTarget(fixture, fixture.paymentIntentIds[0]!)
+    const initial = await claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, target)
+    if (!initial) throw new Error('Expected won-dispute recovery claim')
+    await failIneligiblePurchaseReversal(initial, new Error('provider response was lost'))
+
+    const retried = await claimWonStripeDisputeRecovery(reversalCase, fixture.disputeId, {
+      ...target,
+      providerObservedAmountMinorUnits: 800,
+    })
+
+    expect(retried).toMatchObject({
+      id: initial.id,
+      idempotencyKey: initial.idempotencyKey,
+      target: { amountMinorUnits: 800 },
+    })
   })
 
   it('keeps recovery caps independent across payment targets in one invoice', async () => {
