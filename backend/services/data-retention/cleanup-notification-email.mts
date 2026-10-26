@@ -120,7 +120,7 @@ async function cleanupPageInTransaction(
     cursor = (
       await query<Cursor>(
         `/* lockNotificationEmailRetentionCursor */
-       SELECT cursor_at::text AS cursor_at, cursor_notification_id, cursor_user_id, sweep_cutoff_at
+       SELECT cursor_at::text AS cursor_at, cursor_notification_id, cursor_notification_partition_id, sweep_cutoff_at
        FROM notification_email_retention_cleanup_cursors
        WHERE cleanup_name = $1 FOR UPDATE`,
         [name],
@@ -154,7 +154,7 @@ async function cleanupPageInTransaction(
     await query(
       `/* checkpointNotificationEmailRetentionCursor */
        UPDATE notification_email_retention_cleanup_cursors
-       SET cursor_at = $2, cursor_notification_id = $3, cursor_user_id = $4, sweep_cutoff_at = $5
+       SET cursor_at = $2, cursor_notification_id = $3, cursor_notification_partition_id = $4, sweep_cutoff_at = $5
        WHERE cleanup_name = $1`,
       [
         name,

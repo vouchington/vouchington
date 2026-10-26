@@ -11,7 +11,7 @@ export type Candidate = { id: string; user_id?: string; position_at: string | nu
 export type Cursor = {
   cursor_at: string | null
   cursor_notification_id: string | null
-  cursor_user_id: string | null
+  cursor_notification_partition_id: string | null
   sweep_cutoff_at: Date | null
 }
 
@@ -41,7 +41,11 @@ export async function listNotificationEmailCandidates(
       : ` AND ${alias}.id >= $${parameters.length}::uuid`
   }
   if (cursor?.cursor_notification_id) {
-    parameters.push(cursor.cursor_at, cursor.cursor_notification_id, cursor.cursor_user_id)
+    parameters.push(
+      cursor.cursor_at,
+      cursor.cursor_notification_id,
+      cursor.cursor_notification_partition_id,
+    )
     predicate += ` AND (${alias}.deleted_at, ${alias}.id, ${alias}.user_id) > ($${parameters.length - 2}::timestamptz, $${parameters.length - 1}::uuid, $${parameters.length}::uuid)`
   }
   parameters.push(limit)

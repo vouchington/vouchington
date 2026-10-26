@@ -21,7 +21,7 @@ export const RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS = [
     'Persisted UUIDv7 keyset position survives deletion of the swept row; it is not a relationship.',
   ],
   [
-    'notification_email_retention_cleanup_cursors.cursor_user_id',
+    'notification_email_retention_cleanup_cursors.cursor_notification_partition_id',
     'Persisted notification partition-key tie-breaker survives user deletion; it is not a relationship.',
   ],
 ] as const satisfies readonly (readonly [string, string])[]
