@@ -32735,27 +32735,13 @@
                           "additionalProperties": false,
                           "properties": {
                             "end_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
+                              "$ref": "#/$defs/S4"
                             },
                             "has_next_page": {
                               "type": "boolean"
                             },
                             "start_cursor": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
+                              "$ref": "#/$defs/S4"
                             }
                           },
                           "required": ["end_cursor", "has_next_page", "start_cursor"],
@@ -32763,7 +32749,85 @@
                         },
                         "results": {
                           "items": {
-                            "$ref": "#/$defs/S1"
+                            "additionalProperties": false,
+                            "properties": {
+                              "__entity_type": {
+                                "const": "crawler"
+                              },
+                              "content_selectors": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "crawler_type": {
+                                "enum": ["automation", "fetch"],
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "created_by": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "css_selectors_to_remove": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "deleted_at": {
+                                "$ref": "#/$defs/S4"
+                              },
+                              "deleted_by": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "description": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "hostname": {
+                                "type": "string"
+                              },
+                              "hostname_id": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "link_hrefs_to_remove": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "link_text_content_to_remove": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "priority": {
+                                "type": "number"
+                              },
+                              "referral_program_id": {
+                                "$ref": "#/$defs/S4"
+                              },
+                              "updated_at": {
+                                "type": "string"
+                              },
+                              "updated_by": {
+                                "$ref": "#/$defs/S1"
+                              }
+                            },
+                            "required": [
+                              "__entity_type",
+                              "content_selectors",
+                              "crawler_type",
+                              "created_at",
+                              "created_by",
+                              "css_selectors_to_remove",
+                              "deleted_at",
+                              "deleted_by",
+                              "description",
+                              "hostname",
+                              "hostname_id",
+                              "id",
+                              "link_hrefs_to_remove",
+                              "link_text_content_to_remove",
+                              "priority",
+                              "referral_program_id",
+                              "updated_at",
+                              "updated_by"
+                            ],
+                            "type": "object"
                           },
                           "type": "array"
                         }
@@ -32776,7 +32840,7 @@
                       "properties": {
                         "results": {
                           "items": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S2"
                           },
                           "type": "array"
                         }
@@ -32791,7 +32855,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "crawler": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["crawler"],
@@ -32800,6 +32864,190 @@
               ],
               "$defs": {
                 "S1": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "__entity_type": {
+                          "const": "user"
+                        },
+                        "account_type": {
+                          "anyOf": [
+                            {
+                              "const": "ai_agent"
+                            },
+                            {
+                              "const": "official"
+                            },
+                            {
+                              "const": "system"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "individual_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "is_verified_badge_visible": {
+                          "anyOf": [
+                            {
+                              "const": false
+                            },
+                            {
+                              "const": true
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "markdown": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "profile_image_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "profile_image_placement": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "image_id": {
+                                  "type": "string"
+                                },
+                                "placement_id": {
+                                  "type": "string"
+                                },
+                                "placement_revision": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": ["image_id", "placement_id", "placement_revision"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "roles": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "use_display_name_from": {
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "username": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "verification_status": {
+                          "anyOf": [
+                            {
+                              "const": "duplicate_id"
+                            },
+                            {
+                              "const": "failed"
+                            },
+                            {
+                              "const": "identity_pending"
+                            },
+                            {
+                              "const": "payment_pending"
+                            },
+                            {
+                              "const": "unverified"
+                            },
+                            {
+                              "const": "verified"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "verified_display_name": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["__entity_type", "account_type", "id", "roles"],
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "S2": {
                   "additionalProperties": false,
                   "properties": {
                     "__entity_type": {
@@ -32823,188 +33071,7 @@
                       "type": "string"
                     },
                     "created_by": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "properties": {
-                            "__entity_type": {
-                              "const": "user"
-                            },
-                            "account_type": {
-                              "anyOf": [
-                                {
-                                  "const": "ai_agent"
-                                },
-                                {
-                                  "const": "official"
-                                },
-                                {
-                                  "const": "system"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "id": {
-                              "type": "string"
-                            },
-                            "individual_id": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "is_verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "markdown": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "profile_image_id": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "profile_image_placement": {
-                              "anyOf": [
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "image_id": {
-                                      "type": "string"
-                                    },
-                                    "placement_id": {
-                                      "type": "string"
-                                    },
-                                    "placement_revision": {
-                                      "type": "number"
-                                    }
-                                  },
-                                  "required": ["image_id", "placement_id", "placement_revision"],
-                                  "type": "object"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "roles": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            },
-                            "use_display_name_from": {
-                              "anyOf": [
-                                {
-                                  "const": "apple"
-                                },
-                                {
-                                  "const": "facebook"
-                                },
-                                {
-                                  "const": "github"
-                                },
-                                {
-                                  "const": "google"
-                                },
-                                {
-                                  "const": "linkedin"
-                                },
-                                {
-                                  "const": "microsoft"
-                                },
-                                {
-                                  "const": "username"
-                                },
-                                {
-                                  "const": "x"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "username": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verification_status": {
-                              "anyOf": [
-                                {
-                                  "const": "duplicate_id"
-                                },
-                                {
-                                  "const": "failed"
-                                },
-                                {
-                                  "const": "identity_pending"
-                                },
-                                {
-                                  "const": "payment_pending"
-                                },
-                                {
-                                  "const": "unverified"
-                                },
-                                {
-                                  "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_display_name": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["__entity_type", "account_type", "id", "roles"],
-                          "type": "object"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "$ref": "#/$defs/S1"
                     },
                     "css_selectors_to_remove": {
                       "anyOf": [
@@ -33027,188 +33094,7 @@
                       ]
                     },
                     "deleted_by": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "properties": {
-                            "__entity_type": {
-                              "const": "user"
-                            },
-                            "account_type": {
-                              "anyOf": [
-                                {
-                                  "const": "ai_agent"
-                                },
-                                {
-                                  "const": "official"
-                                },
-                                {
-                                  "const": "system"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "id": {
-                              "type": "string"
-                            },
-                            "individual_id": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "is_verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "markdown": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "profile_image_id": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "profile_image_placement": {
-                              "anyOf": [
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "image_id": {
-                                      "type": "string"
-                                    },
-                                    "placement_id": {
-                                      "type": "string"
-                                    },
-                                    "placement_revision": {
-                                      "type": "number"
-                                    }
-                                  },
-                                  "required": ["image_id", "placement_id", "placement_revision"],
-                                  "type": "object"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "roles": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            },
-                            "use_display_name_from": {
-                              "anyOf": [
-                                {
-                                  "const": "apple"
-                                },
-                                {
-                                  "const": "facebook"
-                                },
-                                {
-                                  "const": "github"
-                                },
-                                {
-                                  "const": "google"
-                                },
-                                {
-                                  "const": "linkedin"
-                                },
-                                {
-                                  "const": "microsoft"
-                                },
-                                {
-                                  "const": "username"
-                                },
-                                {
-                                  "const": "x"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "username": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verification_status": {
-                              "anyOf": [
-                                {
-                                  "const": "duplicate_id"
-                                },
-                                {
-                                  "const": "failed"
-                                },
-                                {
-                                  "const": "identity_pending"
-                                },
-                                {
-                                  "const": "payment_pending"
-                                },
-                                {
-                                  "const": "unverified"
-                                },
-                                {
-                                  "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_display_name": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["__entity_type", "account_type", "id", "roles"],
-                          "type": "object"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "$ref": "#/$defs/S1"
                     },
                     "description": {
                       "anyOf": [
@@ -33263,188 +33149,7 @@
                       "type": "string"
                     },
                     "updated_by": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "properties": {
-                            "__entity_type": {
-                              "const": "user"
-                            },
-                            "account_type": {
-                              "anyOf": [
-                                {
-                                  "const": "ai_agent"
-                                },
-                                {
-                                  "const": "official"
-                                },
-                                {
-                                  "const": "system"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "id": {
-                              "type": "string"
-                            },
-                            "individual_id": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "is_verified_badge_visible": {
-                              "anyOf": [
-                                {
-                                  "const": false
-                                },
-                                {
-                                  "const": true
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "markdown": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "profile_image_id": {
-                              "anyOf": [
-                                {
-                                  "type": "null"
-                                },
-                                {
-                                  "type": "string"
-                                }
-                              ]
-                            },
-                            "profile_image_placement": {
-                              "anyOf": [
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "image_id": {
-                                      "type": "string"
-                                    },
-                                    "placement_id": {
-                                      "type": "string"
-                                    },
-                                    "placement_revision": {
-                                      "type": "number"
-                                    }
-                                  },
-                                  "required": ["image_id", "placement_id", "placement_revision"],
-                                  "type": "object"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "roles": {
-                              "items": {
-                                "type": "string"
-                              },
-                              "type": "array"
-                            },
-                            "use_display_name_from": {
-                              "anyOf": [
-                                {
-                                  "const": "apple"
-                                },
-                                {
-                                  "const": "facebook"
-                                },
-                                {
-                                  "const": "github"
-                                },
-                                {
-                                  "const": "google"
-                                },
-                                {
-                                  "const": "linkedin"
-                                },
-                                {
-                                  "const": "microsoft"
-                                },
-                                {
-                                  "const": "username"
-                                },
-                                {
-                                  "const": "x"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "username": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verification_status": {
-                              "anyOf": [
-                                {
-                                  "const": "duplicate_id"
-                                },
-                                {
-                                  "const": "failed"
-                                },
-                                {
-                                  "const": "identity_pending"
-                                },
-                                {
-                                  "const": "payment_pending"
-                                },
-                                {
-                                  "const": "unverified"
-                                },
-                                {
-                                  "const": "verified"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "verified_display_name": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            }
-                          },
-                          "required": ["__entity_type", "account_type", "id", "roles"],
-                          "type": "object"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": [
@@ -33467,6 +33172,26 @@
                     "updated_by"
                   ],
                   "type": "object"
+                },
+                "S3": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "S4": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -35076,6 +34801,9 @@
                           "flag_type": {
                             "const": "mass_report_suspected"
                           },
+                          "hostname": {
+                            "$ref": "#/$defs/S1"
+                          },
                           "hostname_id": {
                             "$ref": "#/$defs/S1"
                           },
@@ -35121,6 +34849,7 @@
                           "created_at",
                           "details",
                           "flag_type",
+                          "hostname",
                           "hostname_id",
                           "id",
                           "new_account_reporter_percent",
@@ -35333,6 +35062,9 @@
                         "flag_type": {
                           "const": "mass_report_suspected"
                         },
+                        "hostname": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "hostname_id": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35378,6 +35110,7 @@
                         "created_at",
                         "details",
                         "flag_type",
+                        "hostname",
                         "hostname_id",
                         "id",
                         "new_account_reporter_percent",
@@ -35424,6 +35157,9 @@
                           "enum": ["ip_correlation", "velocity_spike"],
                           "type": "string"
                         },
+                        "hostname": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "hostname_id": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35468,6 +35204,7 @@
                         "details",
                         "entity_relation_id",
                         "flag_type",
+                        "hostname",
                         "hostname_id",
                         "id",
                         "post_id",
@@ -35593,6 +35330,9 @@
                         "flag_type": {
                           "const": "mass_report_suspected"
                         },
+                        "hostname": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "hostname_id": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35638,6 +35378,7 @@
                         "created_at",
                         "details",
                         "flag_type",
+                        "hostname",
                         "hostname_id",
                         "id",
                         "new_account_reporter_percent",
@@ -35703,6 +35444,9 @@
                           "enum": ["ip_correlation", "velocity_spike"],
                           "type": "string"
                         },
+                        "hostname": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "hostname_id": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35747,6 +35491,7 @@
                         "details",
                         "entity_relation_id",
                         "flag_type",
+                        "hostname",
                         "hostname_id",
                         "id",
                         "post_id",
@@ -36128,6 +35873,9 @@
                             "enum": ["ip_correlation", "velocity_spike"],
                             "type": "string"
                           },
+                          "hostname": {
+                            "$ref": "#/$defs/S1"
+                          },
                           "hostname_id": {
                             "$ref": "#/$defs/S1"
                           },
@@ -36172,6 +35920,7 @@
                           "details",
                           "entity_relation_id",
                           "flag_type",
+                          "hostname",
                           "hostname_id",
                           "id",
                           "post_id",
