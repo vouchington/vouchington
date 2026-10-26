@@ -38,20 +38,21 @@ export type ClassifierRunInsert = {
   classifierId?: string
 }
 
-export async function createCompletedClassifierDecisionBatchAt(input: {
+export async function createClassifierDecisionBatchAt(input: {
   classifierId: string
   promptVersionId: string
   postId: string
   at: Date
+  completed: boolean
 }): Promise<string> {
   const id = uuidv7({ msecs: input.at.getTime() })
-  await write(sql`/* createCompletedClassifierDecisionBatchAt */
+  await write(sql`/* createClassifierDecisionBatchAt */
     INSERT INTO classifier_decision_batches (
       id, classifier_id, prompt_version_id, post_id, scope_category,
       input_sha256, completed_at
     ) VALUES (
       ${id}, ${input.classifierId}, ${input.promptVersionId}, ${input.postId}, 'global',
-      ${Buffer.alloc(32, 1)}, ${input.at}
+      ${input.completed ? Buffer.alloc(32, 1) : null}, ${input.completed ? input.at : null}
     )`)
   return id
 }

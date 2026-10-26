@@ -3,7 +3,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import {
   createClassifierRunSchemaFixture,
-  createCompletedClassifierDecisionBatchAt,
+  createClassifierDecisionBatchAt,
 } from '../../test-helpers/data-stores/psql/classifier-runs/schema-fixture.mts'
 import { runClassifierBorrowedTestTransaction } from '../../test-helpers/data-stores/psql/classifier-borrowed-transactions.mts'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
@@ -93,11 +93,12 @@ describe('readCompleteClassifierDecisionIfExistsFromPrimary', () => {
   it('allows an unfinished run to settle its retained decision after the public replay cutoff', async () => {
     const fixture = await createClassifierFixture()
     const at = new Date(Date.now() - 91 * 24 * 60 * 60 * 1000)
-    const batchId = await createCompletedClassifierDecisionBatchAt({
+    const batchId = await createClassifierDecisionBatchAt({
       classifierId: fixture.classifierId,
       promptVersionId: fixture.promptVersionId,
       postId: fixture.postId,
       at,
+      completed: true,
     })
     const run = await createClassifierRunSchemaFixture({
       classifierId: fixture.classifierId,
