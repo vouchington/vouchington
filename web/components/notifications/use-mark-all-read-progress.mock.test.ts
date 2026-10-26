@@ -27,11 +27,15 @@ const summary = (unread_count: number): NotificationsUnreadSummaryResponseBody =
 })
 
 describe('useMarkAllReadProgress', () => {
-  it('revalidates one page on request and focus, then stops when unread count reaches zero', async () => {
+  it('revalidates one page on request, visibility, and focus until unread count reaches zero', async () => {
     const resetToFirstPage = vi.fn<(page: NotificationsResponseBody) => void>()
     const refreshedPage = { ...page, page_info: { ...page.page_info, end_cursor: 'fresh' } }
-    vi.mocked(getPaginatedPage).mockResolvedValueOnce(page).mockResolvedValueOnce(refreshedPage)
+    vi.mocked(getPaginatedPage)
+      .mockResolvedValueOnce(page)
+      .mockResolvedValueOnce(refreshedPage)
+      .mockResolvedValueOnce(refreshedPage)
     vi.mocked(getMyUnreadNotificationsSummaryClient)
+      .mockResolvedValueOnce(summary(1))
       .mockResolvedValueOnce(summary(1))
       .mockResolvedValueOnce(summary(0))
 
@@ -45,14 +49,19 @@ describe('useMarkAllReadProgress', () => {
     expect(resetToFirstPage).toHaveBeenCalledWith(page)
 
     await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(result.current.readAllPending).toBe(true)
+
+    await act(async () => {
       window.dispatchEvent(new Event('focus'))
     })
     expect(result.current.readAllPending).toBe(false)
     expect(resetToFirstPage).toHaveBeenLastCalledWith(refreshedPage)
-    expect(getPaginatedPage).toHaveBeenCalledTimes(2)
+    expect(getPaginatedPage).toHaveBeenCalledTimes(3)
     expect(getPaginatedPage).toHaveBeenCalledWith('/api/v1/my/notifications', {})
-    expect(getMyUnreadNotificationsSummaryClient).toHaveBeenCalledTimes(2)
+    expect(getMyUnreadNotificationsSummaryClient).toHaveBeenCalledTimes(3)
     window.dispatchEvent(new Event('focus'))
-    expect(getPaginatedPage).toHaveBeenCalledTimes(2)
+    expect(getPaginatedPage).toHaveBeenCalledTimes(3)
   })
 })
