@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   approveTestPost,
   countPostImageRevisions,
+  getImageModerationState,
+  markImageDeleted,
   markImageQuarantinePending,
   markTestImageUploadStaged,
   getPostModerationResetState,
@@ -14,6 +16,7 @@ import {
   failingImageDeletionAcknowledgement,
   failingImageDeletionTransaction,
   readImageDeletionPostOutcome,
+  quarantineBeforeImageDeletionTransaction,
 } from '@voucha/test-helpers/image-deletion'
 import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
@@ -28,7 +31,29 @@ import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 describe('paged image deletion', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('retains source storage and post state while a quarantine copy is unconfirmed', async () => {
+  it('preserves quarantine reconciliation when a stale lookup races quarantine admission', async () => {
+    const fixture = await createImageDeletionFixture(1)
+    const before = await getPostModerationResetState(fixture.postIds[0]!)
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    const storage = installOwnedUploadCleanupStorage([
+      image!.id,
+      image!.s3_key,
+      image!.sha_256!.toString('hex'),
+    ])
+    await deleteImageById(fixture.imageId, {
+      beginTransaction: quarantineBeforeImageDeletionTransaction(fixture.imageId),
+    })
+    await expect(getImageModerationState(fixture.imageId)).resolves.toMatchObject({
+      deleted_at: null,
+      quarantine_pending_at: expect.any(Date),
+    })
+    await expect(getImageByAny(fixture.imageId)).resolves.toBeNull()
+    await expect(getPostModerationResetState(fixture.postIds[0]!)).resolves.toEqual(before)
+    await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(0)
+    expect(storage.calls).toEqual([])
+  })
+
+  it('retains source storage and post state for a soft-deleted unconfirmed quarantine', async () => {
     const fixture = await createImageDeletionFixture(1)
     const before = await getPostModerationResetState(fixture.postIds[0]!)
     const image = await getImageByIdFromPrimary(fixture.imageId)
@@ -38,9 +63,10 @@ describe('paged image deletion', () => {
       image!.sha_256!.toString('hex'),
     ])
     await markImageQuarantinePending(fixture.imageId)
-    await expect(
-      deleteImageById(fixture.imageId, { includeQuarantinePending: true }),
-    ).rejects.toThrow('Image quarantine copy is not confirmed')
+    await markImageDeleted(fixture.imageId)
+    await expect(processImageDeletionPage(fixture.imageId)).rejects.toThrow(
+      'Image quarantine copy is not confirmed',
+    )
     await expect(getImageByAny(fixture.imageId)).resolves.toBeNull()
     await expect(getPostModerationResetState(fixture.postIds[0]!)).resolves.toEqual(before)
     await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(0)

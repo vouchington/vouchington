@@ -6,6 +6,7 @@ import { getPostModerationResetState } from './entities/post-moderation.mts'
 import { insertTestImage } from './entities/images-insert.mts'
 import { insertTestPost } from './entities/posts.mts'
 import { insertTestPostImage } from './entities/images-post-placements.mts'
+import { markImageQuarantinePending } from './entities/image-safety.mts'
 import { rejectQuery } from './injected-failures.mts'
 
 /** Identical post content makes paged and single-page deletion outcomes comparable. */
@@ -46,6 +47,18 @@ export function failingImageDeletionAcknowledgement() {
       statement => statement.includes('DELETE FROM image_deletion_post_updates'),
       'injected deletion admission acknowledgement failure',
     )
+}
+
+/** Quarantine wins after entry lookup but before the deletion fence acquires its asset lock. */
+export function quarantineBeforeImageDeletionTransaction(imageId: string) {
+  let marked = false
+  return async (...args: Parameters<typeof beginTransaction>) => {
+    if (!marked) {
+      await markImageQuarantinePending(imageId)
+      marked = true
+    }
+    return beginTransaction(...args)
+  }
 }
 
 /** Capture statements by transaction while preserving real commit and disposal behavior. */

@@ -17,10 +17,20 @@ export async function deleteImageByIdWhileStorageLocked(
   async function fence() {
     await using transaction = await (options.beginTransaction ?? beginTransaction)()
     await lockImageAssetMutation(transaction, { imageIds: [imageId], imageOnly: true })
-    const { rows } = await transaction<{ deleted_at: Date | null }>(
-      `/* deleteImageById:fence */ SELECT deleted_at FROM images WHERE id = $1 FOR UPDATE`,
+    const { rows } = await transaction<{
+      deleted_at: Date | null
+      quarantine_pending_at: Date | null
+      quarantined_at: Date | null
+    }>(
+      `/* deleteImageById:fence */ SELECT deleted_at, quarantine_pending_at, quarantined_at
+      FROM images WHERE id = $1 FOR UPDATE`,
       [imageId],
     )
+    if (rows[0]?.quarantine_pending_at && !rows[0].quarantined_at) {
+      // Keep the row eligible for quarantine-copy reconciliation if admission won the lookup race.
+      await transaction.commit()
+      return false
+    }
     if (rows[0] && !rows[0].deleted_at) {
       await runSequentially([
         () => prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true }),
@@ -34,10 +44,11 @@ export async function deleteImageByIdWhileStorageLocked(
       ])
     }
     await transaction.commit()
+    return true
   }
-  await fence().catch(async (err: unknown) => {
+  const fenced = await fence().catch(async (err: unknown) => {
     await repairFailedImageDeliveryMutation({ imageIds: [imageId] }).catch(onError)
     throw err
   })
-  await processImageDeletionPageWhileLocked(imageId, options)
+  if (fenced) await processImageDeletionPageWhileLocked(imageId, options)
 }
