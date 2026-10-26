@@ -76,7 +76,9 @@ async function getRssFeedsTiered(
   const isDueExpr = `(rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= $7::timestamptz - (${slaCaseExpr}))`
 
   const enabledWhere = `rss_feeds.deleted_at IS NULL
-      AND rss_feeds.is_enabled = TRUE`
+      AND rss_feeds.is_enabled = TRUE
+      AND (url_hostnames.network_backoff_ends_at IS NULL
+        OR url_hostnames.network_backoff_ends_at <= CURRENT_TIMESTAMP)`
 
   const query = `/* getRssFeedsTiered */
     WITH candidates AS (

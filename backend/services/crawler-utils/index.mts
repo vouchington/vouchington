@@ -135,11 +135,11 @@ export const readBodyAsBuffer = async (options: ReadBodyOptions): Promise<Buffer
     }
     if (isTimeoutError(err)) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'CrawlerTimeoutError')
-      throw new CrawlerTimeoutError(url, timeoutMs, duration, err)
+      throw new CrawlerTimeoutError(url, timeoutMs, duration, err, response.status)
     }
     if (err instanceof Error) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'CrawlerNetworkError')
-      throw new CrawlerNetworkError(url, duration, err)
+      throw new CrawlerNetworkError(url, duration, err, response.status)
     }
     trackCrawlerFailure(crawlerType, domain, response.status, duration, 'ReadError')
     throw err

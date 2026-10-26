@@ -272,6 +272,7 @@ describe('crawl-url.errors', () => {
         crawlStatusRecorded: false,
         error: new Error('chunk write failed'),
         hostname: (await getUrlHostnameCrawlerDetailsById(url!.hostname.id))!,
+        requestUrl: url!.url,
         urlId: url!.id,
       })
 

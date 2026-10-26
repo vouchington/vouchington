@@ -1,9 +1,10 @@
 export * from './table-records.mts'
 export * from './table-records-pg.mts'
+export * from './table-records-crawler.mts'
 
 import type { McpToolCallRecord } from './table-records-mcp.mts'
+import type { CrawlerRequestRecord } from './table-records-crawler.mts'
 import type {
-  CrawlerRequestRecord,
   ValkeyCacheCallRecord,
   QueueJobRecord,
   QueueWorkerRecord,

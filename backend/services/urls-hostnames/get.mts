@@ -40,6 +40,8 @@ type UrlHostnameCrawlerDetails = {
   age_threshold_days: number
   requests_per_second_limit: number | null
   attempt_threshold_hours: number | null
+  network_backoff_step: number
+  network_backoff_ends_at: Date | null
 }
 
 export const getUrlHostnameCrawlerDetailsById = async (
@@ -56,7 +58,9 @@ export const getUrlHostnameCrawlerDetailsById = async (
       is_crawlable,
       age_threshold_days,
       requests_per_second_limit,
-      attempt_threshold_hours
+      attempt_threshold_hours,
+      network_backoff_step,
+      network_backoff_ends_at
     FROM url_hostnames
     WHERE id = ${id}
     LIMIT 1

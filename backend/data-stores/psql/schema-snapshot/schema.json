@@ -123557,7 +123557,8 @@
         "chk_url_hostnames_votes_snapshot_complete": "CHECK ((((votes_snapshot_xmax IS NULL) AND (votes_snapshot_xip_count IS NULL)) OR ((votes_snapshot_xmax IS NOT NULL) AND (votes_snapshot_xip_count IS NOT NULL) AND (votes_snapshot_xip_count >= 0))))",
         "url_hostnames_hostname_check": "CHECK ((char_length(hostname) <= 255))",
         "url_hostnames_hostname_check1": "CHECK ((hostname = lower(hostname)))",
-        "url_hostnames_hostname_check2": "CHECK ((hostname = TRIM(BOTH FROM hostname)))"
+        "url_hostnames_hostname_check2": "CHECK ((hostname = TRIM(BOTH FROM hostname)))",
+        "url_hostnames_network_backoff_step_check": "CHECK ((network_backoff_step >= 0))"
       },
       "columns": {
         "age_threshold_days": {
@@ -123593,6 +123594,17 @@
           "ordinalPosition": 16,
           "type": "smallint"
         },
+        "consecutive_network_failures": {
+          "collation": null,
+          "comment": "Consecutive non-DNS network failures (connection refused/reset, TLS, socket closed) with no HTTP response in between. Resets to 0 when the hostname answers or the backoff opens.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 19,
+          "type": "smallint"
+        },
         "crawl_policy_changed_at": {
           "collation": null,
           "comment": "Most recent change to crawlability, block status, age threshold, rate limit, or attempt threshold; unrelated hostname updates leave it unchanged.",
@@ -123623,7 +123635,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "created_by_id": {
@@ -123634,7 +123646,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 38,
           "type": "uuid"
         },
         "dns_disabled_at": {
@@ -123714,6 +123726,39 @@
           "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
+        "network_backoff_ends_at": {
+          "collation": null,
+          "comment": "Crawls and feed fetches of this hostname are skipped until this time. After it passes with network_backoff_step > 0, one probe is claimed. NULL when closed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 21,
+          "type": "timestamp with time zone"
+        },
+        "network_backoff_probe_claimed_at": {
+          "collation": null,
+          "comment": "When the in-flight probe was claimed after the backoff expired. A failure while set reopens the backoff at the next step; NULL when no probe is in flight.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        },
+        "network_backoff_step": {
+          "collation": null,
+          "comment": "Current network backoff step; 0 when closed. Each failed probe raises it (capped), doubling the backoff duration. Resets to 0 when the hostname answers.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 20,
+          "type": "smallint"
+        },
         "publicly_introduced_at": {
           "collation": null,
           "comment": "First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.",
@@ -123777,7 +123822,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20,
+          "ordinalPosition": 24,
           "type": "boolean"
         },
         "topic_id": {
@@ -123788,7 +123833,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "unreliable_status_codes": {
@@ -123810,7 +123855,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 36,
+          "ordinalPosition": 40,
           "type": "timestamp with time zone"
         },
         "votes_count_down": {
@@ -123821,7 +123866,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30,
+          "ordinalPosition": 34,
           "type": "integer"
         },
         "votes_count_none": {
@@ -123832,7 +123877,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29,
+          "ordinalPosition": 33,
           "type": "integer"
         },
         "votes_count_up": {
@@ -123843,7 +123888,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28,
+          "ordinalPosition": 32,
           "type": "integer"
         },
         "votes_score_down": {
@@ -123854,7 +123899,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27,
+          "ordinalPosition": 31,
           "type": "double precision"
         },
         "votes_score_net": {
@@ -123865,7 +123910,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 36,
           "type": "double precision"
         },
         "votes_score_none": {
@@ -123876,7 +123921,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26,
+          "ordinalPosition": 30,
           "type": "double precision"
         },
         "votes_score_sort": {
@@ -123887,7 +123932,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 35,
           "type": "double precision"
         },
         "votes_score_up": {
@@ -123898,7 +123943,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25,
+          "ordinalPosition": 29,
           "type": "double precision"
         },
         "votes_snapshot_xip_count": {
@@ -123909,7 +123954,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 37,
           "type": "integer"
         },
         "votes_snapshot_xmax": {
@@ -123920,7 +123965,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 28,
           "type": "xid8"
         },
         "web_risk_checked_url": {
@@ -123931,7 +123976,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 25,
           "type": "text"
         },
         "web_risk_expire_at": {
@@ -123942,7 +123987,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "web_risk_threat_types": {
@@ -123953,7 +123998,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 26,
           "type": "text[]"
         }
       },

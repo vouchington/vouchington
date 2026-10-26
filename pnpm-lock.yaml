@@ -11657,6 +11657,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/analytics':
+        specifier: workspace:^
+        version: link:../analytics
       '@services/batch-lookup':
         specifier: workspace:^
         version: link:../batch-lookup
@@ -11672,6 +11675,9 @@ importers:
       '@vouchington/postgres':
         specifier: ^0.0.18
         version: 0.0.18
+      '@vouchington/sentry':
+        specifier: ^0.4.0
+        version: 0.4.0(@sentry/browser@11.9.0)(@sentry/core@11.9.0)(@sentry/node@11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -11679,6 +11685,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@data-stores/analytics':
+        specifier: workspace:^
+        version: link:../../data-stores/analytics
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

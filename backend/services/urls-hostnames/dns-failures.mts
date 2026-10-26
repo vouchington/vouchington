@@ -80,19 +80,3 @@ export async function recordHostnameConfigurationFailure(hostnameId: string): Pr
     [hostnameId, MAX_CONSECUTIVE_DNS_FAILURES],
   )
 }
-
-/**
- * Resets the DNS failure counter for the given hostname after a successful crawl.
- * Uses a conditional update so no write is issued when the counter is already zero.
- */
-export async function resetHostnameDnsFailures(hostnameId: string): Promise<void> {
-  await write(
-    `/* resetHostnameDnsFailures */
-    UPDATE url_hostnames
-    SET consecutive_dns_failures = 0
-    WHERE id = $1
-      AND consecutive_dns_failures > 0
-  `,
-    [hostnameId],
-  )
-}

@@ -50,18 +50,10 @@ export function useCrawlUrlRedirectHarness(): CrawlUrlRedirectHarness {
     const scope: CrawlScope = { crawls: [], writes: [], cleaning: false }
     currentScope = scope
     const recordFailure = dnsFailures.recordHostnameDnsFailure
-    const resetFailures = dnsFailures.resetHostnameDnsFailures
     const failureSpy = vi
       .spyOn(dnsFailures, 'recordHostnameDnsFailure')
       .mockImplementation((...args) => {
         const result = recordFailure(...args)
-        ownedCrawls.getStore()?.writes.push(result)
-        return result
-      })
-    const resetSpy = vi
-      .spyOn(dnsFailures, 'resetHostnameDnsFailures')
-      .mockImplementation((...args) => {
-        const result = resetFailures(...args)
         ownedCrawls.getStore()?.writes.push(result)
         return result
       })
@@ -73,7 +65,6 @@ export function useCrawlUrlRedirectHarness(): CrawlUrlRedirectHarness {
       const writes = await Promise.allSettled(scope.writes)
       const restored = await Promise.allSettled([
         Promise.resolve().then(() => failureSpy.mockRestore()),
-        Promise.resolve().then(() => resetSpy.mockRestore()),
       ])
       const failures = [...writes, ...restored].flatMap(result =>
         result.status === 'rejected' ? [result.reason] : [],

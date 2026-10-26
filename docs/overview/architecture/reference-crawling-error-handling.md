@@ -19,6 +19,17 @@ All errors are recorded in the `crawls` row:
 
 The crawler system retries with exponential backoff. 429 errors re-enqueue with the `Retry-After` delay. Fetch/host crawl failures may enqueue alternate same-hostname retry candidates; local persistence and S3 upload failures use only the original job's bounded retry budget. DNS lookup failures and RSS TLS certificate hostname mismatches count toward the shared hostname auto-disable counter; stale failures older than 7 days do not compound, and 3 counted failures mark the hostname non-crawlable until an admin re-enables it.
 
+### Network backoff
+
+Some publishers reject every connection from our egress (bot/WAF blocking). They never answer, so without a backoff each URL spends its whole retry budget on every dispatch run, which wastes most crawl jobs and risks wider blocking. Non-DNS, non-TLS-hostname `CrawlerNetworkError`s raised before any response headers arrive are counted per hostname in `url_hostnames` (HTML crawls and RSS fetches share the count). Enough consecutive failures, with no HTTP response in between, open a backoff:
+
+- While it is open, the dispatchers leave the hostname out and preflight skips jobs already queued. The jobs are skipped, not deferred.
+- When it expires, one job claims a single probe, after robots.txt and Web Risk have cleared that URL, so a skipped URL never takes the probe.
+  - A failed probe reopens the backoff at the next step, which doubles the duration up to a cap.
+  - Any HTTP response (even an error status, a redirect, or a body that fails or times out mid-read) closes the backoff and resets the count.
+
+Unlike the DNS latch, the backoff never sets `is_crawlable = FALSE` and never needs an admin. The state lives in Postgres so the doubling step survives cache loss. Each open and close emits a `crawler_requests` event (`network_backoff_opened` / `network_backoff_closed`). Its `retry_after_ms` carries the backoff duration, from which the step can be derived.
+
 Expected crawler operational failures are not reported to Sentry or stderr. They are recorded through the crawler persistence path (`crawls`, referral link health state, hostname DNS/configuration counters) and `crawler_requests` analytics, which can land in S3 Tables when the analytics Firehose backend is enabled.
 
 ## Domain Blacklist

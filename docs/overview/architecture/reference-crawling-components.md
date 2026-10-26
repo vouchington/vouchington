@@ -23,7 +23,7 @@
 
 For each URL crawl:
 
-1. **Guard checks** — skip if `hostname.is_blocked = true` or `hostname.is_crawlable = false`
+1. **Guard checks** — skip if `hostname.is_blocked = true` or `hostname.is_crawlable = false`, or while the hostname's [network backoff](reference-crawling-error-handling.md#network-backoff) is open (after it expires only the claimed probe proceeds)
 2. **Domain rate limit check** — skip (throw `CrawlerRateLimitError`) if domain has an active 429 lock in Valkey
 3. **robots.txt check** — skip if `isUrlCrawlable()` returns false. HTTP 4xx from robots.txt is ALLOW (RFC 9309 unavailable). Exhausted HTTP 5xx and network errors are complete disallow for a short period (RFC 9309 unreachable) unless a cached robots.txt body is still valid. SSRF-rejected robots.txt targets are disallowed before the request. Unexpected runtime exceptions (for example parsing bugs) are disallowed.
 4. **Crawler rule lookup** — fetch per-hostname rules (`css_selectors_to_remove`, `link_*_to_remove`)
