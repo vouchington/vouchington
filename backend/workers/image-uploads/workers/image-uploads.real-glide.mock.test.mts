@@ -43,7 +43,7 @@ describe('image upload worker', () => {
     const subscription = await imageStatePubSub.subscribe(imageId)
     const published = Promise.withResolvers<{ upload_status: string; id: string }>()
     subscription.setHandler(state => published.resolve(state))
-    const concurrency = 10
+    const concurrency = 1
     const allStarted = Promise.withResolvers<void>()
     const releaseAnalysis = Promise.withResolvers<void>()
     let started = 0
@@ -58,7 +58,7 @@ describe('image upload worker', () => {
           await releaseAnalysis.promise
           return { success: true }
         },
-        { connection: workerQueueConnection, prefix, concurrency, blockTimeout: 1_000 },
+        { connection: workerQueueConnection, prefix, concurrency, blockTimeout: 100 },
       )
       await analysisWorker.waitUntilReady()
       await analysis.addBulk(
@@ -83,7 +83,7 @@ describe('image upload worker', () => {
             Body: Readable.from([jpeg]) as never,
           }),
         },
-        { blockTimeout: 1_000 },
+        { blockTimeout: 100 },
       )
       await uploadWorker.waitUntilReady()
       const completed = Promise.withResolvers<{ job: Job; result: unknown }>()

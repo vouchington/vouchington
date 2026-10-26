@@ -1,7 +1,7 @@
 import type { TestProjectConfiguration } from 'vitest/config'
 import { isolatedSetupFile, worktreeDbSetupFile } from './tooling-project-policies.mts'
 
-export const toolingTestBudget = {
+const toolingTestBudget = {
   // Child-process fixtures retain bounded cleanup within the standard project budget.
   hookTimeout: 5_000,
   isolate: true,
