@@ -1,10 +1,6 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
 import { describe, expect, it } from 'vitest'
-import {
-  createTestUser,
-  getModeratorActionRowsForTest,
-  getTestPostPublicationDirtyWorkForScope,
-} from '@voucha/test-helpers'
+import { createTestUser, getModeratorActionRowsForTest } from '@voucha/test-helpers'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
 import { getTestCopyrightRepeatInfringerReview } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { deleteUser } from '@services/users/delete'
@@ -130,12 +126,7 @@ describe('copyright repeat-infringer review outcomes', () => {
     await confirmTestRepeatInfringerNotice(poster.id, moderator)
     await suspendUser(admin, poster.id, 'allow', 'already suspended')
     const before = await getPrivateUserByAny(poster.id)
-    const dirtyBefore = await getTestPostPublicationDirtyWorkForScope({
-      type: 'author',
-      id: poster.id,
-    })
-    if (!before?.suspended_at || !dirtyBefore)
-      throw new Error('initial suspension state disappeared')
+    if (!before?.suspended_at) throw new Error('initial suspension state disappeared')
     const reopened = await listCopyrightRepeatInfringerAccountsForNotice(moderator, thirdNoticeId)
     const reopenedReviewId = reopened[0]?.open_review_id
     if (!reopenedReviewId) throw new Error('second review disappeared')
@@ -153,11 +144,6 @@ describe('copyright repeat-infringer review outcomes', () => {
     ])
     await expect(getPrivateUserByAny(poster.id)).resolves.toEqual(
       expect.objectContaining({ suspended_at: before.suspended_at }),
-    )
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'author', id: poster.id }),
-    ).resolves.toEqual(
-      expect.objectContaining({ id: dirtyBefore.id, generation: dirtyBefore.generation }),
     )
     await expect(
       recordCopyrightRepeatInfringerReviewOutcome({

@@ -6,7 +6,6 @@ import {
   getInitiatedStoryPostIds,
   type SourceCandidate,
 } from './capture-author-deletion-candidates.mts'
-import { retainPostPublicationImpacts } from './capture-impacts.mts'
 import { lockPostPublicationPostScopes } from './capture-posts.mts'
 import { lockAuthorPublicationLifecycle } from './lock.mts'
 import { recordPostPublicationChange } from './capture.mts'
@@ -148,7 +147,6 @@ async function recordContributedSourceWork(
   postIds: string[],
   sources: SourceCandidate[],
 ) {
-  const postWork = await recordAuthorDeletionWork(query, userId, priorUsername, postIds)
   const topicIdsByPost = new Map<string, Set<string>>()
   for (const source of sources) {
     if (!source.topic_id) continue
@@ -156,15 +154,7 @@ async function recordContributedSourceWork(
     topicIds.add(source.topic_id)
     topicIdsByPost.set(source.post_id, topicIds)
   }
-  await retainPostPublicationImpacts(
-    query,
-    new Map(postWork.map(work => [work.post_identity_id!, work.id])),
-    [...topicIdsByPost].map(([scopeId, topicIds]) => ({
-      scopeId,
-      impacts: { postIds: new Set<string>(), topicIds },
-    })),
-  )
-  return postWork
+  await recordAuthorDeletionWork(query, userId, priorUsername, postIds, topicIdsByPost)
 }
 
 async function reassignContributedSources(

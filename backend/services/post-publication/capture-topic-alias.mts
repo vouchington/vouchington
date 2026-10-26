@@ -1,8 +1,8 @@
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { retainPostPublicationImpactKeys } from './capture-keys.mts'
+import { impactPublicationKeys } from './captured-keys.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
-import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
+import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
 
 export async function recordTopicAliasPublicationWork(
   query: TransactionQuery,
@@ -14,8 +14,13 @@ export async function recordTopicAliasPublicationWork(
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
     // oxlint-disable-next-line no-await-in-loop -- ascending bounded batches preserve publication lock order.
     await lockTopicAliasPublicationScopes(query, batch)
-    // oxlint-disable-next-line no-await-in-loop -- each dirty-work upsert is bounded to the capture batch size.
-    await upsertPostPublicationDirtyWork(query, 'topic_alias', batch, ['post_topics_changed'])
+    for (const topicAliasId of batch) {
+      enqueueCapturedPublicationChangeAfterCommit(query, {
+        scope: { type: 'topic_alias', topicAliasId },
+        reason: 'post_topics_changed',
+        keys: [],
+      })
+    }
   }
 }
 
@@ -38,17 +43,16 @@ export async function lockTopicAliasPublicationScopes(
   }
 }
 
-export async function retainTopicAliasPublicationPostImpacts(
+/** Captures pre-delete relation-only posts before an atomic ordinary-alias unlink. */
+export async function captureDestroyedTopicAliasPostImpacts(
   query: TransactionQuery,
-  dirtyWorkId: string,
+  changeId: string,
   topicAliasId: string,
 ): Promise<void> {
-  const POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE = getPostPublicationWorkLimit(
-    'dirty_work_key_batch_size',
-  )
+  const pageSize = getPostPublicationWorkLimit('effect_payload_key_batch_size')
   let afterPostId: string | null = null
   while (true) {
-    // oxlint-disable-next-line no-await-in-loop -- each ownership page and retained-key write is bounded.
+    // oxlint-disable-next-line no-await-in-loop -- each pre-delete ownership read is one configured page.
     const result = await query<{ post_id: string }>(
       `/* listTopicAliasPublicationPostImpacts */
       SELECT ownership.post_id
@@ -70,13 +74,15 @@ export async function retainTopicAliasPublicationPostImpacts(
       ) ownership
       ORDER BY ownership.post_id
       LIMIT $3`,
-      [topicAliasId, afterPostId, POST_PUBLICATION_DIRTY_WORK_KEY_BATCH_SIZE],
+      [topicAliasId, afterPostId, pageSize],
     )
     const rows: Array<{ post_id: string }> = result.rows
     if (rows.length === 0) return
-    // oxlint-disable-next-line no-await-in-loop -- the retained-key helper bounds each insert batch.
-    await retainPostPublicationImpactKeys(query, dirtyWorkId, {
-      postIds: rows.map(row => row.post_id),
+    enqueueCapturedPublicationChangeAfterCommit(query, {
+      scope: { type: 'topic_alias', topicAliasId },
+      reason: 'post_topics_changed',
+      keys: impactPublicationKeys({ postIds: rows.map(row => row.post_id) }),
+      changeId,
     })
     afterPostId = rows.at(-1)!.post_id
   }

@@ -158,7 +158,7 @@ describe('useSourceActions error handling', () => {
       await result.current.handleDelete()
     })
 
-    expect(toastMock.success).toHaveBeenCalledWith('Source deleted')
+    expect(toastMock.success).toHaveBeenCalledWith('Source deletion started')
   })
 
   it('emits onSuccess and refetches crawls and feed metadata on a successful refresh', async () => {

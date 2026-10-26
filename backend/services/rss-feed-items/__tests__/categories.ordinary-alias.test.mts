@@ -1,14 +1,13 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 
 import { createTopicAliases } from '@services/topics/aliases'
 import {
   clearTestRssFeedItemCategoryTopicAlias,
   createTestTopic,
-  getTestPostPublicationDirtyWorkForScope,
   getTopicAliasIdForTest,
   insertTestRssFeedDirect,
-  listTestPostPublicationImpactTopicIds,
 } from '@voucha/test-helpers'
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { getRssFeedItemMappedTopics } from '../category-relations.mts'
@@ -37,14 +36,13 @@ describe('RSS feed item ordinary category aliases', () => {
       },
     ])
     const category = alias.toUpperCase()
-    const before = await getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: feed.id })
-
-    await upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: [category] }])
-
-    const after = await getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: feed.id })
-    expect(Number(after!.generation)).toBeGreaterThan(Number(before!.generation))
-    expect(after!.reasons).toContain('post_topics_changed')
-    await expect(listTestPostPublicationImpactTopicIds(after!.id)).resolves.toContain(topic.id)
+    const jobs = await captureAddedPublicationEffectsForScope(feed.id, () =>
+      upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: [category] }]),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: topic.id,
+    })
 
     await expect(getTestRssFeedItemCategories(item.id)).resolves.toEqual(
       expect.arrayContaining([
@@ -81,18 +79,9 @@ describe('RSS feed item ordinary category aliases', () => {
     await clearTestRssFeedItemCategoryTopicAlias(item.id, category)
     await createTopicAliases(topic.id, alias)
     const aliasId = (await getTopicAliasIdForTest(alias))!
-    const before = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: aliasId,
-    })
-
-    await upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: [category] }])
-
-    const after = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: aliasId,
-    })
-    expect(Number(after!.generation)).toBeGreaterThan(Number(before!.generation))
-    expect(after!.reasons).toContain('post_topics_changed')
+    const jobs = await captureAddedPublicationEffectsForScope(aliasId, () =>
+      upsertRssFeedItemCategories([{ rss_feed_item_id: item.id, categories: [category] }]),
+    )
+    expect(jobs.map(job => job.reason)).toContain('post_topics_changed')
   })
 })

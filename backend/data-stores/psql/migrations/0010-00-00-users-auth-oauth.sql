@@ -1221,7 +1221,7 @@ WHERE topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_curated_aside_items__rss_feed_id
-ON curated_aside_items (rss_feed_id)
+ON curated_aside_items (rss_feed_id, id)
 WHERE rss_feed_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

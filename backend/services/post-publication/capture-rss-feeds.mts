@@ -1,10 +1,9 @@
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { retainPostPublicationImpacts } from './capture-impacts.mts'
+import { impactPublicationKeys } from './captured-keys.mts'
+import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { lockTopicRssFeedAttachmentLifecycle } from './lock.mts'
-import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
-import type { PostPublicationDirtyWork } from './types.mts'
 
 const RSS_FEED_PUBLICATION_REASON = 'rss_feed_discoverability_changed' as const
 const rssFeedScopesLockedInQuery = new WeakMap<TransactionQuery, Set<string>>()
@@ -14,34 +13,31 @@ type RssFeedTopicPublicationChange = {
   impactedTopicIds: readonly string[]
 }
 
-/** Captures many RSS-feed scopes with bounded locking, upsert, and identity-key batches. */
+/** Captures many RSS-feed scopes before their discoverability mutation commits. */
 export async function recordRssFeedDiscoverabilityChanges(
   query: TransactionQuery,
   rssFeedIds: readonly string[],
-): Promise<PostPublicationDirtyWork[]> {
+): Promise<void> {
   const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const ids = normalizePostPublicationIdentifiers(rssFeedIds)
-  const work: PostPublicationDirtyWork[] = []
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- sorted batches preserve the global feed lock order.
+    // oxlint-disable-next-line no-await-in-loop -- sorted batches preserve feed lock order.
     await lockPostPublicationRssFeedScopes(query, batch)
-    // oxlint-disable-next-line no-await-in-loop -- each dirty-work upsert is bounded.
-    const batchWork = await upsertPostPublicationDirtyWork(query, 'rss_feed', batch, [
-      RSS_FEED_PUBLICATION_REASON,
-    ])
-    // oxlint-disable-next-line no-await-in-loop -- each retained identity-key insert is bounded.
-    await retainCurrentRssFeedPublicationKeys(query, batchWork)
-    work.push(...batchWork)
+    for (const rssFeedId of batch)
+      enqueueCapturedPublicationChangeAfterCommit(query, {
+        scope: { type: 'rss_feed', rssFeedId },
+        reason: RSS_FEED_PUBLICATION_REASON,
+        keys: [{ kind: 'identity_rss_feed', uuidValue: rssFeedId }],
+      })
   }
-  return work
 }
 
 /** Retains topic impacts for RSS items that have not been assigned to a story yet. */
 export async function recordRssFeedTopicPublicationChanges(
   query: TransactionQuery,
   changes: readonly RssFeedTopicPublicationChange[],
-): Promise<PostPublicationDirtyWork[]> {
+): Promise<void> {
   const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   const topicIdsByFeedId = new Map<string, Set<string>>()
   for (const change of changes) {
@@ -53,34 +49,20 @@ export async function recordRssFeedTopicPublicationChanges(
     topicIdsByFeedId.set(rssFeedId, topicIds)
   }
   const feedIds = normalizePostPublicationIdentifiers(topicIdsByFeedId.keys())
-  const work: PostPublicationDirtyWork[] = []
   for (let offset = 0; offset < feedIds.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = feedIds.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
     // oxlint-disable-next-line no-await-in-loop -- sorted batches preserve the global feed lock order.
     await lockPostPublicationRssFeedScopes(query, batch)
-    // oxlint-disable-next-line no-await-in-loop -- each dirty-work upsert is bounded.
-    const batchWork = await upsertPostPublicationDirtyWork(query, 'rss_feed', batch, [
-      'post_topics_changed',
-    ])
-    const workByFeedId = new Map(
-      batchWork.flatMap(row =>
-        row.rss_feed_identity_id ? [[row.rss_feed_identity_id, row.id] as const] : [],
-      ),
-    )
-    // oxlint-disable-next-line no-await-in-loop -- retained topic impacts are bounded with the feed batch.
-    await retainPostPublicationImpacts(
-      query,
-      workByFeedId,
-      batch.map(scopeId => ({
-        scopeId,
-        impacts: { postIds: new Set<string>(), topicIds: topicIdsByFeedId.get(scopeId)! },
-      })),
-    )
-    // oxlint-disable-next-line no-await-in-loop -- retained feed identities are bounded with the feed batch.
-    await retainCurrentRssFeedPublicationKeys(query, batchWork)
-    work.push(...batchWork)
+    for (const rssFeedId of batch)
+      enqueueCapturedPublicationChangeAfterCommit(query, {
+        scope: { type: 'rss_feed', rssFeedId },
+        reason: 'post_topics_changed',
+        keys: [
+          { kind: 'identity_rss_feed', uuidValue: rssFeedId },
+          ...impactPublicationKeys({ topicIds: [...topicIdsByFeedId.get(rssFeedId)!] }),
+        ],
+      })
   }
-  return work
 }
 
 /** Pre-locks RSS-feed scopes in one global order before a set-based dirty-work capture. */
@@ -146,49 +128,4 @@ export async function lockTopicRssFeedPublicationScopes(
   }
   await lockPostPublicationRssFeedScopes(query, rssFeedIds)
   return rssFeedIds
-}
-
-export async function retainCurrentRssFeedPublicationKeys(
-  query: TransactionQuery,
-  work: ReadonlyArray<Pick<PostPublicationDirtyWork, 'id' | 'rss_feed_identity_id'>>,
-): Promise<void> {
-  const rows = work.flatMap(row =>
-    row.rss_feed_identity_id ? [{ dirtyWorkId: row.id, rssFeedId: row.rss_feed_identity_id }] : [],
-  )
-  if (rows.length === 0) return
-  await query(
-    `/* retainCurrentRssFeedPublicationKeys */
-    INSERT INTO post_publication_dirty_work_keys
-      (dirty_work_id, topic_key, rss_feed_key)
-    WITH input AS (
-      SELECT *
-      FROM UNNEST($1::uuid[], $2::uuid[]) AS row(dirty_work_id, rss_feed_id)
-    ), keys AS (
-    SELECT input.dirty_work_id, 'identity_rss_feed'::text AS kind, input.rss_feed_id AS uuid_value
-    FROM input
-    UNION
-    SELECT input.dirty_work_id, 'impact_topic', feed.topic_id
-    FROM input
-    JOIN post_publication_rss_feed_identities identity ON identity.id = input.rss_feed_id
-    JOIN rss_feeds feed ON feed.id = identity.rss_feed_id
-    WHERE feed.topic_id IS NOT NULL
-    UNION
-    SELECT input.dirty_work_id, 'impact_topic', category.topic_id
-    FROM input
-    JOIN post_publication_rss_feed_identities identity ON identity.id = input.rss_feed_id
-    JOIN rss_feed_item_sources source ON source.rss_feed_id = identity.rss_feed_id
-    JOIN rss_feed_item_categories category
-      ON category.rss_feed_item_id = source.rss_feed_item_id
-    WHERE category.topic_id IS NOT NULL
-    )
-    SELECT DISTINCT dirty_work_id, CASE WHEN kind = 'impact_topic' THEN uuid_value END AS topic_key,
-      CASE WHEN kind = 'identity_rss_feed' THEN uuid_value END AS rss_feed_key FROM keys
-    ORDER BY dirty_work_id, topic_key, rss_feed_key
-    ON CONFLICT (
-      dirty_work_id, impact_post_identity_id, impact_community_identity_id,
-      impact_rss_feed_item_identity_id, topic_key, author_key, community_key, rss_feed_key,
-      author_username, post_slug, community_slug, topic_alias, post_type, day
-    ) DO NOTHING`,
-    [rows.map(row => row.dirtyWorkId), rows.map(row => row.rssFeedId)],
-  )
 }

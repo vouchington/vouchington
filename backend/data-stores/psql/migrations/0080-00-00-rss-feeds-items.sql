@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   deleted_at TIMESTAMPTZ,
+  hard_delete_requested_at TIMESTAMPTZ,
+  CONSTRAINT rss_feeds_hard_delete_requires_hidden
+    CHECK (hard_delete_requested_at IS NULL OR deleted_at IS NOT NULL),
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
   feed_type rss_feed_content_types NOT NULL DEFAULT 'article',
@@ -56,6 +59,7 @@ CREATE TABLE IF NOT EXISTS rss_feeds (
   should_ignore_robots_txt BOOLEAN, -- whether robots.txt allow/disallow rules are ignored for this specific feed. NULL = inherit from hostname or global config
   unreliable_status_codes SMALLINT[] -- RSS fetch HTTP status codes that should retry instead of soft-deleting this feed. NULL = inherit from hostname; empty array = no override statuses
 );
+COMMENT ON COLUMN rss_feeds.hard_delete_requested_at IS 'Accepted asynchronous hard deletion marker; workers drain bounded child pages and recover unfinished feeds.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rss_feeds_updated_at
@@ -68,6 +72,11 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rss_feeds__rss_feed_url_id
 ON rss_feeds (rss_feed_url_id)
 WHERE deleted_at IS NULL;
+
+-- Recovery scans only feeds whose asynchronous hard delete is still in progress.
+CREATE INDEX IF NOT EXISTS idx_rss_feeds__hard_delete_pending_id
+ON rss_feeds (id)
+WHERE hard_delete_requested_at IS NOT NULL;
 
 -- RI-usable index for the rss_feed_url_id FK (the unique index above is partial, so it isn't RI-usable)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -106,7 +115,7 @@ WHERE deleted_at IS NULL;
 -- for walking canonical redirect chains
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__canonical_rss_feed_id
-ON rss_feeds (canonical_rss_feed_id)
+ON rss_feeds (canonical_rss_feed_id, id)
 WHERE canonical_rss_feed_id IS NOT NULL;
 
 -- for fast feed-enabled checks without joining enablement_changes
@@ -145,6 +154,28 @@ COMMENT ON COLUMN rss_feeds.declared_language IS 'Feed-declared language from <l
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TYPE rss_feed_setting_change_types AS ENUM ('enablement', 'discoverability');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- A hard-delete marker fences new references while bounded child pages drain. The row
+-- lock serializes with the transaction setting hard_delete_requested_at.
+CREATE OR REPLACE FUNCTION fn_reject_rss_feed_child_reference()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  target_id UUID := (to_jsonb(NEW) ->> TG_ARGV[0])::uuid;
+BEGIN
+  IF target_id IS NULL THEN RETURN NEW; END IF;
+  PERFORM 1 FROM rss_feeds
+  WHERE id = target_id AND hard_delete_requested_at IS NULL
+  FOR SHARE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'RSS feed is pending hard deletion'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_curated_aside_items_guard_rss_feed_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON curated_aside_items
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
+
 CREATE TABLE IF NOT EXISTS rss_feed_setting_changes (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   rss_feed_id UUID NOT NULL REFERENCES rss_feeds(id) ON DELETE CASCADE,
@@ -159,6 +190,10 @@ CREATE INDEX idx_rss_feed_setting_changes__feed_type_id ON rss_feed_setting_chan
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_rss_feed_setting_changes__changed_by_id ON rss_feed_setting_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
 COMMENT ON TYPE rss_feed_setting_change_types IS 'Independent fetch enablement and public discoverability decisions.';
+CREATE TRIGGER trigger_rss_feed_setting_changes_guard_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON rss_feed_setting_changes
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
+
 COMMENT ON TABLE rss_feed_setting_changes IS 'Append-only feed setting decisions; current values are the latest row per feed and change type.';
 COMMENT ON COLUMN rss_feed_setting_changes.rss_feed_id IS 'RSS feed whose setting changed.';
 COMMENT ON COLUMN rss_feed_setting_changes.change_type IS 'Setting whose value this decision changes.';
@@ -633,6 +668,10 @@ ON rss_feed_crawls (rss_feed_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_rss_feed_crawls__redirect_url_id
 ON rss_feed_crawls (redirect_url_id)
 WHERE redirect_url_id IS NOT NULL;
+
+CREATE TRIGGER trigger_rss_feed_crawls_guard_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON rss_feed_crawls
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 
 COMMENT ON TABLE rss_feed_crawls IS 'Append-only crawl history per RSS feed. Monthly RANGE-partitioned by id for retention.';
 COMMENT ON COLUMN rss_feed_crawls.rss_feed_id IS 'The feed that was crawled.';

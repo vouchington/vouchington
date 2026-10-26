@@ -108,18 +108,6 @@ describe('schema growth registry', () => {
     expect(registry[2]).not.toHaveProperty('noPartitionRationale')
   })
 
-  it('keeps transient high-fanout work bounded even when target-partitioned', () => {
-    const [entry] = buildSchemaGrowthRegistry(
-      new Map([['post_publication_dirty_work_keys', uuidv7Identity]]),
-    )
-
-    expect(entry).toMatchObject({
-      growth: 'bounded',
-      partition: PARTITION_POLICIES.get('post_publication_dirty_work_keys'),
-    })
-    expect(entry).not.toHaveProperty('noPartitionRationale')
-  })
-
   it('keeps global response-id uniqueness as the partitioning gate for usage keys', () => {
     const [entry] = buildSchemaGrowthRegistry(
       new Map([

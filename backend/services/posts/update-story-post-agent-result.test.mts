@@ -11,7 +11,6 @@ import {
   insertTestPost,
   updatePostTitleMarkdown,
   updatePostModerationData,
-  getTestPostPublicationDirtyWorkForScope,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { updateStoryPostAgentResult } from './update-story-post-agent-result.mts'
@@ -78,25 +77,6 @@ describe('updateStoryPostAgentResult', () => {
       is_flagged_by_openai_omni_moderation: null,
       openai_omni_moderation_results: null,
     })
-  })
-
-  it('records durable publication work for the asynchronous story summary update', async () => {
-    const suffix = randomUUID()
-    const creator = await createTestUser()
-    const postId = await insertTestPost({
-      title: `Story publication ${suffix}`,
-      slug: `story-publication-${suffix}`,
-      createdById: creator.id,
-      markdown: '',
-      postType: 'story',
-      clearanceStatus: 'pending',
-    })
-
-    await updateStoryPostAgentResult(postId, `Story publication ${suffix}`, `Summary ${suffix}`)
-
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toMatchObject({ post_identity_id: postId, reasons: ['post_content_reset'] })
   })
 
   it('hashes story agent results with the current locked story title', async () => {

@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { write } from '@data-stores/psql'
 import {
   insertTestStory,
   insertTestStoryRssFeedItemsBatch,
@@ -9,13 +10,38 @@ import {
   type CapturedTestQuery,
 } from '@voucha/test-helpers'
 import {
-  analyzePublicationFeedItemPageForTest,
-  publicationPhysicalRowsWithinBudget,
-} from '@voucha/test-helpers/entities/post-publication-query-plans'
+  collectPlanNodes,
+  definePlanStatisticsRefresh,
+} from '../../../test-helpers/query-plans.mts'
 import { assertCustomPlanCheck } from '../../../scripts/explain-analyze/plan-custom-checks.mts'
 import { getStoryPostRelatedUrlProjectionSourcePage } from '../story-post-related-url-projection-source.mts'
 
 let captured: CapturedTestQuery
+const analyzeStorySourcePage = definePlanStatisticsRefresh(async () => {
+  await write(
+    '/* analyzeStorySourcePage */ ANALYZE posts, story_posts, rss_feed_items, rss_feed_item_sources, urls',
+  )
+})
+
+function physicalRowsWithinBudget(plan: unknown, relation: string, budget: number): number {
+  const nodes = collectPlanNodes(plan).filter(
+    node =>
+      node['Relation Name'] === relation ||
+      String(node['Relation Name']).startsWith(`${relation}_`),
+  )
+  const rows = nodes.reduce(
+    (total, node) =>
+      total +
+      (Number(node['Actual Rows'] ?? 0) +
+        Number(node['Rows Removed by Filter'] ?? 0) +
+        Number(node['Rows Removed by Index Recheck'] ?? 0)) *
+        Number(node['Actual Loops'] ?? 1),
+    0,
+  )
+  if (rows > budget)
+    throw new Error(`${relation} scanned ${rows} physical rows: ${JSON.stringify(nodes)}`)
+  return rows
+}
 describe('story URL source ordered index consolidation', () => {
   beforeAll(async () => {
     const story = await insertTestStory()
@@ -47,9 +73,9 @@ describe('story URL source ordered index consolidation', () => {
         'story-source-index-consolidation',
         captured,
         mode,
-        analyzePublicationFeedItemPageForTest,
+        analyzeStorySourcePage,
       )
-      expect(publicationPhysicalRowsWithinBudget(plan, 'rss_feed_items')).toBe(100)
+      expect(physicalRowsWithinBudget(plan, 'rss_feed_items', 100)).toBe(100)
       assertCustomPlanCheck('paginationSpecial', {
         name: 'story-source-index-consolidation',
         scenario_id: 'story-post-related-url-projection-source-page',

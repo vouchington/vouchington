@@ -53,17 +53,6 @@ export const RSS_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 ]
 
 /**
- * Durable publication projection receipts partition by their post UUID, aligned with `posts`.
- * Retained dirty-work keys partition by their owning work UUID. Both start with default children;
- * explicit UUIDv7 ranges are added only after measured pressure.
- */
-export const POST_PUBLICATION_PARTITION_TABLES: string[] = [
-  'post_publication_post_identities',
-  'post_publication_projection_receipts',
-  'post_publication_dirty_work_keys',
-]
-
-/**
  * Session tables - partitioned by UUIDv7 JWT sid/id
  * Default partition only; explicit range partitions are added manually when needed
  */
@@ -141,7 +130,6 @@ export const PARTITION_DROP_POLICIES: Record<string, PartitionDropPolicy> = Obje
   [
     ...POST_PARTITION_TABLES,
     ...CLASSIFIER_RESULT_PARTITION_TABLES,
-    ...POST_PUBLICATION_PARTITION_TABLES,
     ...USER_SESSION_PARTITION_TABLES,
     ...USER_KEY_PARTITION_TABLES,
     ...REVISION_PARTITION_TABLES,

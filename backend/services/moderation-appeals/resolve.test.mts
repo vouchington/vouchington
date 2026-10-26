@@ -10,8 +10,6 @@ import {
   insertTestCommunityPostReview,
   updateTestCommunityPostReviewState,
   getCommunityPostReviewStatus,
-  getTestPostPublicationDirtyWorkForScope,
-  listTestPostPublicationImpactCommunityIds,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -19,6 +17,7 @@ import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 import { resolveModerationAppealAccept } from './resolve.mts'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 
 describe('resolve moderation appeals', () => {
   let staff: PrivateUser
@@ -179,16 +178,18 @@ describe('resolve moderation appeals', () => {
 
     it('clears community unpublish when accepting a community-removal post appeal', async () => {
       const { appeal, postId, communityId } = await openCommunityRemovedPostAppeal()
-      const resolved = await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
+      let resolved: Awaited<ReturnType<typeof resolveModerationAppealAccept>> | undefined
+      const jobs = await captureAddedPublicationEffectsForScope(postId, async () => {
+        resolved = await resolveModerationAppealAccept(staff.id, appeal.id, 'staff_or_user')
+      })
       const status = await getCommunityPostReviewStatus(communityId, postId)
       expect(status?.unpublished_at).toBeNull()
-      const dirtyWork = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
-      expect(dirtyWork).toMatchObject({ post_identity_id: postId })
-      await expect(listTestPostPublicationImpactCommunityIds(dirtyWork!.id)).resolves.toContain(
-        communityId,
-      )
-      expect(resolved.target_context).toEqual(appeal.target_context)
-      expect(resolved.staff_context?.original_decision).toEqual(
+      expect(jobs.flatMap(job => job.keys)).toContainEqual({
+        kind: 'impact_community',
+        uuidValue: communityId,
+      })
+      expect(resolved?.target_context).toEqual(appeal.target_context)
+      expect(resolved?.staff_context?.original_decision).toEqual(
         appeal.staff_context?.original_decision,
       )
     })

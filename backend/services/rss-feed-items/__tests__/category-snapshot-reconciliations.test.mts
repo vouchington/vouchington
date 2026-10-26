@@ -3,9 +3,7 @@ import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { describe, expect, it } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
 import {
-  createTestTopicAliasForCategoryMapping,
   getTestRssFeedItemCategorySnapshotReconciliation,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestRssFeedDirect,
   listTestRssFeedItemCategorySnapshotReconciliations,
   replaceTestRssFeedItemCategorySnapshotReconciliation,
@@ -75,32 +73,6 @@ describe('RSS feed item category snapshot reconciliation', () => {
 
     await reconcileOwned([item!.id])
     await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([])
-  })
-
-  it('captures an alias scope when removing an alias-only stale category', async () => {
-    const suffix = Math.random().toString(36).slice(2, 12)
-    const feed = await insertTestRssFeedDirect({})
-    const alias = `alias-only-stale-${suffix}`
-    const aliasId = await createTestTopicAliasForCategoryMapping({ alias })
-    const [item] = await upsertRssFeedItems(feed.id, [itemInput(suffix, [alias])])
-
-    await reconcileOwned([item!.id])
-    const before = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: aliasId,
-    })
-    expect(before).toBeDefined()
-
-    await upsertRssFeedItems(feed.id, [itemInput(suffix, [], 'Removed alias category')])
-    await reconcileOwned([item!.id])
-
-    const after = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: aliasId,
-    })
-    expect(after).toBeDefined()
-    expect(Number(after!.generation)).toBeGreaterThan(Number(before!.generation))
-    expect(after!.reasons).toContain('post_topics_changed')
   })
 
   it('persists categories when an unchanged item gains another feed source', async () => {

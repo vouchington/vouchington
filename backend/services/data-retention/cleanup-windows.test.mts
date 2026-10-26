@@ -1,12 +1,12 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { read } from '@data-stores/psql'
 import {
   createRandomString,
   createTestRetentionWindow,
   createTestUserDirect,
+  countTestPostsCreatedBy,
   hardDeleteTestPosts,
   insertTestPostBatch,
-  getTestPostPublicationDirtyWorkForScope,
-  listTestPostPublicationImpactPostIds,
   getTestUserRaw,
   insertReferralAttributionAt,
   insertTestOAuthAccount,
@@ -170,26 +170,19 @@ describe('retention publication capture', () => {
 
     await expect(nextPage()).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
-    const authorWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'author',
-      id: user.id,
-    })
-    expect(authorWork).toMatchObject({ author_identity_id: user.id })
-    const firstPageIds = await listTestPostPublicationImpactPostIds(authorWork!.id)
-    expect(firstPageIds).toHaveLength(1)
-    expect(postIds).toContain(firstPageIds[0])
+    expect(await countTestPostsCreatedBy(user.id)).toBe(1)
 
     await expect(nextPage()).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
-    const allImpactIds = postIds.toSorted()
-    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toEqual(
-      allImpactIds,
-    )
+    expect(await countTestPostsCreatedBy(user.id)).toBe(0)
 
     await expect(nextPage()).resolves.toEqual({ deleted: 1, hasMore: false })
     expect(await getTestUserRaw(user.id)).toBeNull()
-    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toEqual(
-      allImpactIds,
+    const { rows } = await read<{ id: string }>(
+      `/* retentionPublicationCaptureTest:survivingPosts */
+      SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id`,
+      [postIds],
     )
+    expect(rows.map(row => row.id)).toEqual(postIds.toSorted())
   })
 })

@@ -1,18 +1,17 @@
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanDeleteRssFeed } from './authorization.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { markRssFeedCategorySnapshotsForReconciliation } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-maintenance/enqueues/item-categories'
+import { enqueueHardDeleteRssFeedSourcePage } from '@queues/rss-feed-maintenance/enqueues/hard-delete'
 import {
   lockPostPublicationRssFeedScopes,
   recordPostPublicationChange,
-  recordRssFeedHardDeletePublicationChange,
 } from '@services/post-publication'
-import { lockRssFeedHardDeleteTopicAliasPublicationScopes } from '@services/post-publication/capture-rss-feed-hard-delete-aliases'
 
 /**
  * Soft-deletes an RSS feed by setting deleted_at. Internal use only — no auth check.
@@ -52,41 +51,56 @@ export async function softDeleteRssFeedById(id: string): Promise<boolean> {
 }
 
 /**
- * Hard-deletes an RSS feed. Internal use only — no auth check.
+ * Starts a resumable RSS feed hard delete. Internal use only — no auth check.
  * Prefer softDeleteRssFeedById for programmatic removal.
  */
 export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
   await using query = await beginTransaction()
-  const { rowCount } = await hardDeleteInTransaction()
-  await query.commit()
-  await invalidate.rss_feeds(id)
+  await lockPostPublicationRssFeedScopes(query, [id])
+  await query(
+    `/* hardDeleteRssFeedById:lockSources */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+    [id],
+  )
+  const { rows: feedRows } = await query<{ id: string; topic_id: string }>(
+    `/* hardDeleteRssFeedById:lockFeed */
+    SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid FOR UPDATE`,
+    [id],
+  )
+  if (feedRows.length === 0) {
+    await query.commit()
+    return false
+  }
+  // An admin import row is retained history with an ON DELETE RESTRICT FK.
+  // Reject before hiding the feed; the FK remains intact and the import is preserved.
+  const { rows: referencedImports } = await query<{ id: string }>(
+    `/* hardDeleteRssFeedById:adminImportReference */
+    SELECT id FROM admin_import_rows WHERE rss_feed_id = $1::uuid LIMIT 1`,
+    [id],
+  )
+  assert(referencedImports.length === 0, 409, 'Feed is referenced by admin import history')
+  await recordPostPublicationChange(query, {
+    scope: { type: 'rss_feed', rssFeedId: id },
+    reason: 'rss_feed_discoverability_changed',
+    impactedTopicIds: [feedRows[0]!.topic_id],
+  })
+  const { rowCount } = await query(sql`/* hardDeleteRssFeedById:start */
+    UPDATE rss_feeds
+    SET deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP),
+        hard_delete_requested_at = COALESCE(hard_delete_requested_at, CURRENT_TIMESTAMP)
+    WHERE id = ${id}
+  `)
   const affected = (rowCount ?? 0) > 0
   if (affected) {
-    void enqueueReconcileRssFeedItemCategorySnapshots()
-    void enqueueRefreshTopHashtags()
+    registerPostCommitAction(query, async () => {
+      await Promise.all([
+        invalidate.rss_feeds(id),
+        enqueueHardDeleteRssFeedSourcePage(id),
+        enqueueRefreshTopHashtags(),
+      ])
+    })
   }
+  await query.commit()
   return affected
-
-  async function hardDeleteInTransaction() {
-    // ast-grep-ignore: no-three-sequential-awaits -- category aliases must precede the feed lifecycle, source, and row locks.
-    await lockRssFeedHardDeleteTopicAliasPublicationScopes(query, id)
-    await lockPostPublicationRssFeedScopes(query, [id])
-    await query(
-      `/* hardDeleteRssFeedById:lockSources */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-      [id],
-    )
-    const locked = await query(sql`/* hardDeleteRssFeedById:lock */
-      SELECT id FROM rss_feeds WHERE id = ${id} FOR UPDATE
-    `)
-    if ((locked.rowCount ?? 0) === 0) return locked
-    // ast-grep-ignore: no-three-sequential-awaits -- capture and reconciliation marks must retain pre-delete rows before the feed cascade.
-    await recordRssFeedHardDeletePublicationChange(query, id)
-    await markRssFeedCategorySnapshotsForReconciliation(query, id)
-    const result = await query(
-      sql`/* hardDeleteRssFeedById */ DELETE FROM rss_feeds WHERE id = ${id}`,
-    )
-    return result
-  }
 }
 
 /**

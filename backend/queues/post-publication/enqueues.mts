@@ -1,49 +1,43 @@
 import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import { createHash } from 'node:crypto'
 import {
-  POST_PUBLICATION_RECONCILE_JOB,
+  POST_PUBLICATION_EFFECTS_JOB,
   POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
-  POST_PUBLICATION_SHADOW_AUDIT_JOB,
 } from '@queues/background/enqueues/post-publication-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
-import { RECONCILIATION_DEDUPLICATION_ID, RECONCILIATION_DEDUPLICATION_TTL_MS } from './config.mts'
+import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
+import { POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX } from './config.mts'
 
-const enqueueReconciliationJob = createBackgroundEnqueue(POST_PUBLICATION_RECONCILE_JOB)
+const enqueueEffectsJob = createBackgroundEnqueue(POST_PUBLICATION_EFFECTS_JOB)
 
-/** Throttled durable-work dispatcher used by the scheduler and an operator backfill. */
-export function enqueueReconcilePostPublication(
-  options: { deduplicationId?: string } = {},
+/** Stable for a retried capture, distinct for two changes with identical old keys. */
+export function enqueuePostPublicationEffects(
+  data: PostPublicationEffectsJobData,
 ): EnqueueReturnType {
-  const deduplicationId = options.deduplicationId ?? RECONCILIATION_DEDUPLICATION_ID
-  return enqueueReconciliationJob(
-    {},
-    {
-      deduplication: {
-        id: deduplicationId,
-        mode: 'throttle',
-        ttl: RECONCILIATION_DEDUPLICATION_TTL_MS,
-      },
-    },
-  )
+  return enqueueEffectsJob(data, {
+    jobId: postPublicationEffectJobId(data),
+  })
 }
 
-/** Chains the next bounded page without throttle deduplication; the domain group stays serial. */
-export function enqueueContinuePostPublicationReconciliation(): EnqueueReturnType {
-  return enqueueReconciliationJob({})
-}
-
-const enqueueShadowAuditJob = createBackgroundEnqueue(POST_PUBLICATION_SHADOW_AUDIT_JOB)
-
-/** Operator-triggered bounded shadow audit. Dry runs are read-only. */
-export function enqueuePostPublicationShadowAudit(dryRun: boolean): EnqueueReturnType {
-  return enqueueShadowAuditJob({ dryRun, cursor: null })
-}
-
-/** Continues a multi-page audit without throttle deduplication. */
-export function enqueueContinuePostPublicationShadowAudit(
-  dryRun: boolean,
-  cursor: string,
-): EnqueueReturnType {
-  return enqueueShadowAuditJob({ dryRun, cursor })
+export function postPublicationEffectJobId(data: PostPublicationEffectsJobData): string {
+  const owner = data.postId ?? `${data.scope.type}__${data.scope.id}`
+  const continuation = data.continuation
+  const subjectId = continuation?.subjectIds[continuation.subjectIndex] ?? null
+  if (continuation && !subjectId)
+    throw new TypeError('Publication continuation requires a current subject')
+  const descriptorHash = createHash('sha256')
+    .update(
+      JSON.stringify([
+        data.keyHash,
+        data.chunkIndex,
+        continuation?.kind ?? null,
+        subjectId,
+        continuation?.subjectIndex ?? null,
+        continuation?.after ?? null,
+      ]),
+    )
+    .digest('hex')
+  return `${POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX}__${owner}__${data.changeId}__${descriptorHash}`
 }
 
 const enqueueReviewSuccessionHistoryAuditJob = createBackgroundEnqueue(

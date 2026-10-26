@@ -2,16 +2,21 @@ import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
-
 function retainedRelationReferences(subjectType: string): [string, string][] {
   return electedRelationMetadata.flatMap(metadata =>
     metadata.subject_type === subjectType
-      ? [[`retained_${metadata.table_name}`, 'subject_id']]
+      ? [[`retained_${metadata.table_name}`, 'subject_id'] as [string, string]]
       : [],
   )
 }
-
 export const ROOT_FAMILIES = {
+  community_bridge: {
+    table: 'post_publication_community_identities',
+    references: [
+      ['communities', 'id'],
+      ['classifier_runs', 'community_identity_id'],
+    ],
+  },
   user: {
     table: 'retained_user_identities',
     references: [
@@ -22,7 +27,6 @@ export const ROOT_FAMILIES = {
       ['image_surface_placement_activations', 'uploaded_by_id'],
       ['user_deletion_requests', 'user_id'],
       ['user_deletion_requests', 'requested_by_id'],
-      ['post_publication_author_identities', 'id'],
       ['membership_changes', 'user_id'],
       ['membership_changes', 'changed_by_id'],
       ['membership_grants', 'granted_by_id'],
@@ -86,7 +90,6 @@ export const ROOT_FAMILIES = {
     table: 'retained_post_identities',
     references: [
       ['posts', 'id'],
-      ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
       ...retainedRelationReferences('post'),
@@ -96,7 +99,6 @@ export const ROOT_FAMILIES = {
     table: 'retained_rss_feed_item_identities',
     references: [
       ['rss_feed_items', 'id'],
-      ['post_publication_rss_feed_item_identities', 'id'],
       ['notifications', 'publication_rss_feed_item_id'],
       ...retainedRelationReferences('rss_feed_item'),
     ],
@@ -112,7 +114,6 @@ export const ROOT_FAMILIES = {
     ],
   },
 } as const
-
 export type RetainedIdentityFamily = keyof typeof ROOT_FAMILIES
 export type RetainedIdentityCleanupPage = {
   family: RetainedIdentityFamily
@@ -140,7 +141,6 @@ export async function cleanupRetainedIdentityRoots(
   }
   return results
 }
-
 async function cleanupRetainedIdentityFamily(
   family: RetainedIdentityFamily,
   pageSize: number,

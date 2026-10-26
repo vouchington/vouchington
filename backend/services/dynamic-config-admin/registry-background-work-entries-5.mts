@@ -22,14 +22,10 @@ export const backgroundWorkRegistryEntries5 = {
     maxValues: postPublicationWorkMaxValues,
     descriptions: {
       capture_batch_size: 'Capture batch size for post publication processing.',
-      dirty_work_key_batch_size: 'Dirty work key batch size for post publication processing.',
-      identity_snapshot_page_size: 'Identity snapshot page size for post publication processing.',
-      reconciliation_page_size: 'Reconciliation page size for post publication processing.',
-      shadow_audit_page_size: 'Shadow audit page size for post publication processing.',
+      effect_payload_key_batch_size: 'Maximum captured keys in one direct publication job.',
       story_lifecycle_lock_batch_size:
         'Story lifecycle lock batch size for post publication processing.',
-      rss_feed_hard_delete_capture_batch_size:
-        'Rss feed hard delete capture batch size for post publication processing.',
+      rss_feed_hard_delete_capture_batch_size: 'RSS feed hard delete page size.',
     },
   }),
   'rss-feed-items-work-config': defineBoundedWorkNamespace({

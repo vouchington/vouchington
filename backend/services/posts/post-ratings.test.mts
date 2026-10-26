@@ -6,7 +6,6 @@ import { getPostByAny } from './get.mts'
 import {
   countPostReviewTopicRatingsForTest,
   createTestUser,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestTopic,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -81,7 +80,6 @@ describe('post-ratings', () => {
       ],
     })
 
-    const before = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     await withEntityListenerCompletion([{ jobName: 'processPostUpdated', entityId: post.id }], () =>
       updatePostRating(user, post, topicIds[0]!, { order_index: 2 }),
     )
@@ -93,9 +91,6 @@ describe('post-ratings', () => {
     ])
     expect(updated!.review_topic_ratings?.map(rating => rating.order_index)).toEqual([1, 2])
     expect(updated!.review_topic_ratings?.map(rating => rating.rating)).toEqual([3, 5])
-    const after = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
-    expect(Number(after!.generation)).toBeGreaterThan(Number(before!.generation))
-    expect(after!.reasons).toContain('post_ratings_changed')
   })
 
   it('deletePostRating rejects on non-review post', async () => {

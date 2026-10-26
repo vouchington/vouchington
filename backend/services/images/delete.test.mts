@@ -11,14 +11,12 @@ import {
   countPostImageRevisions,
   createTestUserDirect,
   getImageModerationState,
-  getTestPostPublicationDirtyWorkForScope,
   getPostLLMModerationContentSha256,
   getPostModerationResetState,
   insertTestImage,
   insertTestCommunity,
   insertTestPost,
   insertTestPostImage,
-  listTestPostPublicationImpactCommunityIds,
   markTestImageUploadStaged,
   readAllQueueJobs,
   setImageOpenAIModerationResults,
@@ -69,9 +67,6 @@ describe('deleteImageById rollback', () => {
       },
     })
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toMatchObject({ reasons: expect.arrayContaining(['post_content_reset']) })
   })
 
   it('restores shared image and post moderation state when bulk post update enqueue fails', async () => {
@@ -150,18 +145,6 @@ describe('deleteImageById rollback', () => {
       expect(afterPost!.latest_clearance_change_id).not.toBe(beforePost!.latest_clearance_change_id)
     }
     await expect(Promise.all(postIds.map(countPostImageRevisions))).resolves.toEqual([2, 2])
-    const afterDirtyWork = await Promise.all(
-      postIds.map(postId => getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })),
-    )
-    for (const [index, postId] of postIds.entries()) {
-      const afterWork = afterDirtyWork[index]!
-      expect(Number(afterWork!.generation)).toBe(2)
-      expect(afterWork!.reasons).toEqual(['post_clearance_changed'])
-      await expect(listTestPostPublicationImpactCommunityIds(afterWork!.id)).resolves.toContain(
-        community.id,
-      )
-      expect(afterWork!.post_identity_id).toBe(postId)
-    }
     const waiting = await readAllQueueJobs(entitiesListeners)
     expect(
       waiting.filter(

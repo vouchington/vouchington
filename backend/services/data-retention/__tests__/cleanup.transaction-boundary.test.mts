@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
+import { read } from '@data-stores/psql'
+import { DELETED_USER_ID } from '@services/users/constants'
 
 import {
   beginTransaction,
   createTestRetentionWindow,
   createTestUserDirect,
-  getTestPostPublicationDirtyWorkForScope,
   getTestUserRaw,
   insertTestPost,
   softDeleteUserAt,
@@ -69,9 +70,12 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     try {
       await firstCommitted.promise
       expect(await getTestUserRaw(firstUser.id)).toBeNull()
-      expect(
-        await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: firstUser.id }),
-      ).toMatchObject({ reasons: expect.arrayContaining(['author_deleted']) })
+      const { rows } = await read<{ created_by_id: string }>(
+        `/* cleanupTransactionBoundaryTest:firstPost */
+        SELECT created_by_id FROM posts WHERE id = $1::uuid`,
+        [firstPostId],
+      )
+      expect(rows[0]?.created_by_id).toBe(DELETED_USER_ID)
       expect(await getTestUserRaw(secondUser.id)).not.toBeNull()
     } finally {
       releaseSecondPost.resolve()
@@ -80,8 +84,5 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     await holder
     await expect(cleanup).resolves.toEqual({ deleted: 2, hasMore: false })
     expect(await getTestUserRaw(secondUser.id)).toBeNull()
-    expect(
-      await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: firstPostId }),
-    ).toMatchObject({ reasons: expect.arrayContaining(['author_deleted']) })
   })
 })

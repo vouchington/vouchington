@@ -9,7 +9,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/ses-inbound/enqueues/schedules'),
         import('@queues/openai-moderation/enqueues/schedules'),
         import('@queues/story-post-related-url-projections/enqueues/schedules'),
-        import('@queues/post-publication/enqueues/schedules'),
         import('@queues/vote-aggregation/enqueues/schedules'),
         import('@queues/entity-listeners/enqueues/schedules'),
         import('@queues/account-lifecycle/enqueues/schedules'),

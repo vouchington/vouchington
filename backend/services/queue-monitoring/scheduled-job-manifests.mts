@@ -18,7 +18,6 @@ import { scheduledJobManifest as memberships } from '@queues/memberships/enqueue
 import { scheduledJobManifest as notifications } from '@queues/notifications/enqueues/schedules'
 import { scheduledJobManifest as openaiModeration } from '@queues/openai-moderation/enqueues/schedules'
 import { scheduledJobManifest as oauthAuthorizationExchange } from '@queues/oauth-authorization-exchange/enqueues/schedules'
-import { scheduledJobManifest as postPublication } from '@queues/post-publication/enqueues/schedules'
 import { scheduledJobManifest as psql } from '@queues/psql/enqueues/schedules'
 import { scheduledJobManifest as rssFeeds } from '@queues/rss-feeds/enqueues/schedules'
 import { scheduledJobManifest as rssFeedMaintenance } from '@queues/rss-feed-maintenance/enqueues/schedules'
@@ -36,7 +35,6 @@ const background = combineBackgroundManifests([
   openaiModeration,
   entityListeners,
   storyPostRelatedUrlProjections,
-  postPublication,
   voteWeight,
   accountLifecycle,
   oauthAuthorizationExchange,

@@ -7,7 +7,7 @@ import { ROOT_FAMILIES } from '../cleanup-retained-identities.mts'
 
 type Registry = Record<string, { table: string; references: readonly (readonly string[])[] }>
 
-/** Root cleanup deletes a root only when every registered reference is absent. */
+/** Identity cleanup deletes a row only when every registered reference is absent. */
 function unregisteredRetainedForeignKeys(
   foreignKeys: readonly RetainedIdentityForeignKey[],
   registry: Registry,
@@ -23,14 +23,19 @@ function unregisteredRetainedForeignKeys(
     .map(({ target, owner, column }) => `${owner}.${column} -> ${target}`)
 }
 
-describe('retained identity root registry', () => {
-  it('lists every foreign key that targets a retained identity root', async () => {
+describe('retained identity cleanup registry', () => {
+  it('lists every foreign key that targets a retained identity or classifier bridge', async () => {
     const foreignKeys = await readTestRetainedIdentityForeignKeys()
     expect(foreignKeys.length).toBeGreaterThan(0)
     expect(foreignKeys).toContainEqual({
       target: 'retained_user_identities',
       owner: 'post_clearance_changes',
       column: 'changed_by_id',
+    })
+    expect(foreignKeys).toContainEqual({
+      target: 'post_publication_community_identities',
+      owner: 'classifier_runs',
+      column: 'community_identity_id',
     })
     expect(unregisteredRetainedForeignKeys(foreignKeys, ROOT_FAMILIES)).toEqual([])
   })

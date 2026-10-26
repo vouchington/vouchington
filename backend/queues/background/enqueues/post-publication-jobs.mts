@@ -1,29 +1,29 @@
-import { PRIORITY_DISPATCH } from '../config.mts'
+import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
-
-export type PostPublicationShadowAuditJobData = { dryRun: boolean; cursor: string | null }
+import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
+import { POST_PUBLICATION_EFFECTS_ORDERING_KEY } from './ordering-caps.mts'
 
 export type ReviewSuccessionHistoryAuditJobData = {
   cursor: string | null
   cutoffArchivedAt: string | null
 }
 
-// Reconciliation and audits stay serial across every worker process.
 export const POST_PUBLICATION_DOMAIN = defineBackgroundDomain({
   domain: 'post-publication',
-  workerConcurrency: 1,
+  workerConcurrency: 5,
 })
 
-export const POST_PUBLICATION_RECONCILE_JOB = defineBackgroundJob(POST_PUBLICATION_DOMAIN, {
-  name: 'reconcile',
-  priority: PRIORITY_DISPATCH,
-})
-
-export const POST_PUBLICATION_SHADOW_AUDIT_JOB =
-  defineBackgroundJob<PostPublicationShadowAuditJobData>(POST_PUBLICATION_DOMAIN, {
-    name: 'shadow-audit',
-    priority: PRIORITY_DISPATCH,
-  })
+export const POST_PUBLICATION_EFFECTS_JOB = defineBackgroundJob<PostPublicationEffectsJobData>(
+  POST_PUBLICATION_DOMAIN,
+  {
+    name: 'apply-effects',
+    priority: PRIORITY_TASK,
+    sensitive: true,
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+    ordering: { key: POST_PUBLICATION_EFFECTS_ORDERING_KEY },
+  },
+)
 
 export const POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB =
   defineBackgroundJob<ReviewSuccessionHistoryAuditJobData>(POST_PUBLICATION_DOMAIN, {
@@ -32,7 +32,6 @@ export const POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB =
   })
 
 export const POST_PUBLICATION_JOBS = [
-  POST_PUBLICATION_RECONCILE_JOB,
-  POST_PUBLICATION_SHADOW_AUDIT_JOB,
+  POST_PUBLICATION_EFFECTS_JOB,
   POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
 ] as const

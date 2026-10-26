@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { read } from '@data-stores/psql'
 import {
   createTestUserDirect,
   countTestPostsCreatedBy,
@@ -6,7 +7,6 @@ import {
   getTestUserRaw,
   createTestRetentionWindow,
   softDeleteUserAt,
-  readTestPublicationIdentityBridge,
   insertTestPostsForUser,
   insertTestPostSourcesForContributor,
   countTestPostSourcesForContributor,
@@ -41,8 +41,12 @@ describe('author deletion budget', () => {
     await cleanupSoftDeletedUsers(options)
     await cleanupSoftDeletedUsers(options)
     expect(await getTestUserRaw(user.id)).toBeNull()
-    expect(await readTestPublicationIdentityBridge('post', first.id)).not.toBeNull()
-    expect(await readTestPublicationIdentityBridge('post', second.id)).not.toBeNull()
+    const { rows } = await read<{ id: string }>(
+      `/* authorDeletionBudgetTest:survivingPosts */
+      SELECT id FROM posts WHERE id = ANY($1::uuid[]) ORDER BY id`,
+      [[first.id, second.id]],
+    )
+    expect(rows.map(row => row.id)).toEqual([first.id, second.id].toSorted())
   })
   it('shares the row allowance across selected authors instead of giving each a full page', async () => {
     const first = await createTestUserDirect()

@@ -12,11 +12,9 @@ import {
   getPostCategoryTopicIds,
   createTestUserDirect,
   createReferralProgramFixture,
-  getTestPostPublicationDirtyWorkForScope,
   getTestPenaltiesByUserId,
   insertTestUrl,
   insertTestUrlHostname,
-  listTestPostPublicationImpactTopicIds,
   readAllQueueJobs,
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
@@ -250,12 +248,6 @@ describe('story-posts', () => {
 
     const linkedTopicIds = await getPostCategoryTopicIds(result.post.id)
     expect(linkedTopicIds).toContain(topic.id)
-    const dirtyWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: result.post.id,
-    })
-    expect(dirtyWork).toBeDefined()
-    await expect(listTestPostPublicationImpactTopicIds(dirtyWork!.id)).resolves.toContain(topic.id)
   })
 
   it('prepareStoryPost — throws 422 for story with fewer than 2 items', async () => {

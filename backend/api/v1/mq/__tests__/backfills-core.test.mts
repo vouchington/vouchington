@@ -37,24 +37,6 @@ describe('CORE_BACKFILLS', () => {
     expect(typeof backfill?.trigger).toBe('function')
   })
 
-  it('registers a separate read-only post-publication shadow-audit trigger', () => {
-    const backfill = CORE_BACKFILLS.find(entry => entry.id === 'post-publication-shadow-dry-run')
-
-    expect(backfill).toMatchObject({
-      queue_name: 'background',
-      job_name: 'post-publication.shadow-audit',
-      description: expect.stringContaining('dry run'),
-      source_table: 'posts,post_publication_reconciliation_audit_cursors',
-    })
-    expect(typeof backfill?.trigger).toBe('function')
-  })
-
-  it('triggers post-publication shadow repair mode explicitly', async () => {
-    const backfill = CORE_BACKFILLS.find(entry => entry.id === 'post-publication-shadow-repair')
-
-    await expect(backfill?.trigger()).resolves.toBeDefined()
-  })
-
   it('registers the review succession history audit as a read-only operator backfill', () => {
     const backfill = CORE_BACKFILLS.find(entry => entry.id === 'review-succession-history-dry-run')
 

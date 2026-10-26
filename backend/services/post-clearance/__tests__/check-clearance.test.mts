@@ -8,7 +8,6 @@ import {
   getPostClearanceChanges,
   getLatestPostClearanceTransparencyCategories,
   getModeratorActionRowsForTest,
-  getTestPostPublicationDirtyWorkForScope,
   setPostModerationComplete,
   setPostSpamDetectionComplete,
   safeUsername,
@@ -47,9 +46,6 @@ describe('checkPostClearance', () => {
 
     const status = await getPostClearanceStatus(postId)
     expect(status).toBe('approved')
-    const after = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
-    expect(after).toBeDefined()
-    expect(after!.reasons).toContain('post_clearance_changed')
     await expect(getPostClearanceChanges(postId)).resolves.toContainEqual({
       change_type: 'approve',
       changed_by_id: moderationSystemUserId,

@@ -5,18 +5,16 @@ import {
   createTestTopic,
   createTestUser,
   getEntityRelation,
-  getTestPostPublicationDirtyWorkForScope,
   getTopicAliasIdForTest,
   insertEntityRelation,
   insertTestEntityRelationVote,
   insertTestUrlDirect,
   insertTopicAliasForTest,
-  listTestPostPublicationImpactPostIds,
-  listTestPostPublicationImpactTopicIds,
   setTestEntityRelationIdAndScore,
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 
 const cleanupDeps = {
   deleteExportsFromS3: async () => undefined,
@@ -45,20 +43,15 @@ describe('deleteUser entity-relation vote publication capture', () => {
         userId: voter.id,
         score: 1,
       })
-      await expect(
-        getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }),
-      ).resolves.toBeUndefined()
-
-      await deleteUserAndDrainForTest(voter, voter, cleanupDeps)
-
-      const exited = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
-      expect(exited).toBeDefined()
-      await expect(listTestPostPublicationImpactTopicIds(exited!.id)).resolves.toEqual(
-        fixture.impactedTopicIds,
+      const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
+        deleteUserAndDrainForTest(voter, voter, cleanupDeps),
       )
-      await expect(listTestPostPublicationImpactPostIds(exited!.id)).resolves.toEqual(
-        fixture.impactedPostIds,
-      )
+      expect(jobs.length).toBeGreaterThan(0)
+      const keys = jobs.flatMap(job => job.keys)
+      for (const topicId of fixture.impactedTopicIds)
+        expect(keys).toContainEqual({ kind: 'impact_topic', uuidValue: topicId })
+      for (const postId of fixture.impactedPostIds)
+        expect(keys).toContainEqual({ kind: 'impact_post', uuidValue: postId })
     },
   )
 })

@@ -4075,10 +4075,6 @@ rules:
       doubleUnderscore:
         allowPattern: '^(retained_relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*|relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*(__votes)?)$'
       allow:
-        - {
-            object: table:post_publication_dirty_work,
-            reason: 'Collective dirty work for publication projections; the row is the work, per decision 16.',
-          }
         - { object: table:agents, reason: 'Core one-word entity.' }
         - { object: table:classifiers, reason: 'Core one-word entity.' }
         - { object: table:communities, reason: 'Core one-word entity.' }

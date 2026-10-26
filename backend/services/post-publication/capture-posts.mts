@@ -1,17 +1,9 @@
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import {
-  POST_PUBLICATION_REASONS,
-  type PostPublicationDirtyWork,
-  type PostPublicationReason,
-} from './types.mts'
-import {
-  retainPostPublicationImpacts,
-  type PostPublicationImpactsByScope,
-} from './capture-impacts.mts'
+import { POST_PUBLICATION_REASONS, type PostPublicationReason } from './types.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
-import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
-import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
+import { impactPublicationKeys } from './captured-keys.mts'
+import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
 
 const reasons = new Set<string>(POST_PUBLICATION_REASONS)
 
@@ -21,12 +13,12 @@ type PostPublicationBatchChange = {
   impactedTopicIds?: readonly string[]
 }
 
-/** Records one reason for bounded, de-duplicated post scopes without per-post round trips. */
+/** Captures one reason for a bounded set of post scopes without per-post SQL writes. */
 export async function recordPostPublicationChanges(
   query: TransactionQuery,
   reason: PostPublicationReason,
   changes: readonly PostPublicationBatchChange[],
-): Promise<PostPublicationDirtyWork[]> {
+): Promise<void> {
   const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
   if (!reasons.has(reason)) throw new TypeError(`Unsupported post publication reason: ${reason}`)
   const impactsByPost = new Map<string, { postIds: Set<string>; topicIds: Set<string> }>()
@@ -46,44 +38,22 @@ export async function recordPostPublicationChanges(
     scopeId,
     impacts: impactsByPost.get(scopeId)!,
   }))
-  const work: PostPublicationDirtyWork[] = []
-  await preparePostPublicationIdentityBridges(
+  if (normalized.length > POST_PUBLICATION_CAPTURE_BATCH_SIZE)
+    throw new RangeError('Post publication change exceeds its capture page limit')
+  await lockPostPublicationPostScopes(
     query,
-    normalized.map(change => ({
-      scope: { type: 'post' as const, postId: change.scopeId },
+    normalized.map(change => change.scopeId),
+  )
+  for (const change of normalized) {
+    enqueueCapturedPublicationChangeAfterCommit(query, {
+      scope: { type: 'post', postId: change.scopeId },
       reason,
-      impactedPostIds: [...change.impacts.postIds],
-    })),
-  )
-  for (let offset = 0; offset < normalized.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
-    const batch = normalized.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- globally sorted, bounded batches preserve publication lock order.
-    work.push(...(await recordPostPublicationChangeBatch(query, reason, batch)))
+      keys: impactPublicationKeys({
+        postIds: [...change.impacts.postIds],
+        topicIds: [...change.impacts.topicIds],
+      }),
+    })
   }
-  return work
-}
-
-async function recordPostPublicationChangeBatch(
-  query: TransactionQuery,
-  reason: PostPublicationReason,
-  batch: readonly PostPublicationImpactsByScope[],
-): Promise<PostPublicationDirtyWork[]> {
-  const postIds = batch.map(change => change.scopeId)
-  const work = await lockAndUpsertPostPublicationBatch(query, reason, postIds)
-  const workByPostId = new Map(
-    work.flatMap(row => (row.post_identity_id ? [[row.post_identity_id, row.id] as const] : [])),
-  )
-  await retainPostPublicationImpacts(query, workByPostId, batch)
-  return work
-}
-
-async function lockAndUpsertPostPublicationBatch(
-  query: TransactionQuery,
-  reason: PostPublicationReason,
-  postIds: readonly string[],
-): Promise<PostPublicationDirtyWork[]> {
-  await lockPostPublicationPostScopes(query, postIds)
-  return upsertPostPublicationDirtyWork(query, 'post', postIds, [reason])
 }
 
 /** Pre-locks a set of post scopes in one global order before split capture paths run. */

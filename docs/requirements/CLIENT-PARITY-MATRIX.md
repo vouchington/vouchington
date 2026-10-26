@@ -53,6 +53,17 @@ copy. Native client adoption is tracked in
 [clients #368](https://github.com/vouchington/vouchington-clients/issues/368); the producer lands
 first.
 
+## Staff RSS feed deletion
+
+The staff REST `DELETE /api/v1/rss-feeds/:id` accepts an asynchronous hard delete with HTTP 202
+and `{ "rss_feed_id": id, "status": "deleting" }`. The feed is hidden when accepted. Its source
+associations are then removed in bounded committed pages, followed by the feed row; HTTP 202 does
+not mean physical deletion has finished. Staff can revisit `GET /api/v1/rss-feeds/:id` to observe
+the pending feed and eventual 404. The web source manager reports that deletion has started. There
+is no MCP feed-delete tool or existing native staff-source-management parity row; this REST change
+does not claim native UI coverage. Completed user feed-import results keep their successful status
+after the feed is removed, with no linked feed ID in the result.
+
 ## Community moderation MCP handoff
 
 The four community moderation tools use exact `community-moderation:read` and

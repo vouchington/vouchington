@@ -14,10 +14,8 @@ import {
   getTestHostnameRow,
   getTestRelationDeletedAt,
   createEntityRelationWithElection,
-  getTestPostPublicationDirtyWorkForScope,
-  listTestPostPublicationImpactPostIds,
-  countTestPostPublicationDirtyWorkForPostsWithReason,
 } from '@voucha/test-helpers'
+import { captureAddedPublicationEffectsForScopes } from '@voucha/test-helpers/publication-effect-jobs'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 import '@voucha/test-helpers/entity-url-guard-registrations'
@@ -181,23 +179,19 @@ describe('block-hostname', () => {
         createEntityRelationWithElection(postIds[0]!, targetUrl!.id, creator.id, 1),
         createEntityRelationWithElection(postIds[1]!, subdomainUrl!.id, creator.id, 1),
       ])
-      await expect(
-        Promise.all(
-          postIds.map(id => getTestPostPublicationDirtyWorkForScope({ type: 'post', id })),
-        ),
-      ).resolves.toEqual([undefined, undefined])
-
-      await blockHostname(admin.id, hostnameId)
-
-      for (const postId of postIds) {
-        const dirtyWork = await getTestPostPublicationDirtyWorkForScope({
-          type: 'post',
-          id: postId,
-        })
-        expect(dirtyWork).toBeDefined()
-        expect(dirtyWork!.reasons).toContain('post_related_urls_changed')
-        await expect(listTestPostPublicationImpactPostIds(dirtyWork!.id)).resolves.toEqual([postId])
-      }
+      const jobs = await captureAddedPublicationEffectsForScopes(postIds, () =>
+        blockHostname(admin.id, hostnameId),
+      )
+      for (const postId of postIds)
+        expect(jobs).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              postId,
+              reason: 'post_related_urls_changed',
+              keys: expect.arrayContaining([{ kind: 'impact_post', uuidValue: postId }]),
+            }),
+          ]),
+        )
     })
 
     it('captures every affected post across bounded hostname relation batches', async () => {
@@ -220,12 +214,17 @@ describe('block-hostname', () => {
         createdById: creator.id,
       })
 
-      const result = await blockHostname(admin.id, hostnameId)
+      let result: Awaited<ReturnType<typeof blockHostname>> | undefined
+      const jobs = await captureAddedPublicationEffectsForScopes(postIds, async () => {
+        result = await blockHostname(admin.id, hostnameId)
+      })
 
-      expect(result.soft_deleted_relation_count).toBe(4)
-      await expect(
-        countTestPostPublicationDirtyWorkForPostsWithReason(postIds, 'post_related_urls_changed'),
-      ).resolves.toBe(4)
+      expect(result?.soft_deleted_relation_count).toBe(4)
+      expect(
+        new Set(
+          jobs.filter(job => job.reason === 'post_related_urls_changed').map(job => job.postId),
+        ),
+      ).toEqual(new Set(postIds))
     })
 
     it('applies a 20% vote weight penalty to users who created the relations', async () => {

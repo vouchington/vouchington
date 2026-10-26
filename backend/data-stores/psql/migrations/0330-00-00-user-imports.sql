@@ -49,6 +49,9 @@ CREATE TABLE IF NOT EXISTS user_import_requests (
   )
 );
 
+CREATE TRIGGER trigger_user_import_requests_guard_rss_feed_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON user_import_requests
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 CREATE OR REPLACE TRIGGER trigger_user_import_requests_updated_at
 BEFORE UPDATE ON user_import_requests
 FOR EACH ROW
@@ -161,12 +164,14 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_rows (
       outcome <> 'error'
       AND completed_at IS NOT NULL
       AND failed_at IS NULL
-      AND rss_feed_id IS NOT NULL
     )
   ),
   CONSTRAINT user_rss_feed_import_rows__batch_row_index UNIQUE (batch_id, row_index)
 );
 
+CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON user_rss_feed_import_rows
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 CREATE OR REPLACE TRIGGER trigger_user_rss_feed_import_rows_updated_at
 BEFORE UPDATE ON user_rss_feed_import_rows
 FOR EACH ROW
@@ -176,6 +181,28 @@ CREATE OR REPLACE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifec
 BEFORE UPDATE ON user_rss_feed_import_rows
 FOR EACH ROW
 EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
+
+-- A successful import keeps its outcome/input URL after its feed is hard-deleted. Only the
+-- feed FK's ON DELETE SET NULL or a pending-delete page may clear that live reference.
+CREATE OR REPLACE FUNCTION fn_reject_user_rss_feed_import_result()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.outcome IS NOT NULL AND NEW.outcome <> 'error' AND NEW.rss_feed_id IS NULL THEN
+    IF TG_OP = 'UPDATE' AND OLD.rss_feed_id IS NOT NULL AND (
+      pg_trigger_depth() > 1 OR EXISTS (
+        SELECT 1 FROM rss_feeds
+        WHERE id = OLD.rss_feed_id AND hard_delete_requested_at IS NOT NULL
+      )
+    ) THEN RETURN NEW; END IF;
+    RAISE EXCEPTION 'completed RSS feed import requires a live feed target'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_result
+BEFORE INSERT OR UPDATE OF outcome, completed_at, rss_feed_id ON user_rss_feed_import_rows
+FOR EACH ROW EXECUTE FUNCTION fn_reject_user_rss_feed_import_result();
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__batch_id__row_index
 ON user_rss_feed_import_rows (batch_id, row_index);
@@ -239,7 +266,7 @@ COMMENT ON COLUMN user_rss_feed_import_rows.error_message IS 'Most recent row pr
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_user_import_requests__rss_feed_id
-  ON user_import_requests (rss_feed_id)
+  ON user_import_requests (rss_feed_id, id)
   WHERE rss_feed_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_import_requests__topic_id
@@ -251,5 +278,5 @@ CREATE INDEX IF NOT EXISTS idx_user_import_requests__topic_recommendation_post_i
   WHERE topic_recommendation_post_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__rss_feed_id
-  ON user_rss_feed_import_rows (rss_feed_id)
+  ON user_rss_feed_import_rows (rss_feed_id, id)
   WHERE rss_feed_id IS NOT NULL;

@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import {
   recordPostPublicationChange,
-  retainTopicAliasPublicationPostImpacts,
+  captureDestroyedTopicAliasPostImpacts,
 } from '@services/post-publication'
 
 type TopicAliasOwnershipChange = {
@@ -33,17 +33,20 @@ export async function recordTopicAliasPublicationChanges(
 
   const aliasIds = [...changesByAliasId.keys()].toSorted()
   if (aliasIds.length === 0) return
+  if (options.retainDestroyedPostImpacts && aliasIds.length !== 1)
+    throw new RangeError('Ordinary alias unlink captures one alias scope at a time')
+  let destroyedChangeId: string | undefined
   for (const aliasId of aliasIds) {
     const retained = changesByAliasId.get(aliasId)!
-    // oxlint-disable-next-line no-await-in-loop -- one coalesced durable alias scope per mutation.
-    const work = await recordPostPublicationChange(query, {
+    // oxlint-disable-next-line no-await-in-loop -- one captured alias scope per mutation.
+    const changeId = await recordPostPublicationChange(query, {
       scope: { type: 'topic_alias', topicAliasId: aliasId },
       reason: 'post_topics_changed',
       impactedTopicIds: [...retained.topicIds].toSorted(),
       topicAliasText: retained.alias,
     })
-    if (!options.retainDestroyedPostImpacts) continue
-    // oxlint-disable-next-line no-await-in-loop -- each destroyed alias's post impacts are retained in bounded pages.
-    await retainTopicAliasPublicationPostImpacts(query, work.id, aliasId)
+    if (options.retainDestroyedPostImpacts) destroyedChangeId = changeId
   }
+  if (destroyedChangeId)
+    await captureDestroyedTopicAliasPostImpacts(query, destroyedChangeId, aliasIds[0]!)
 }

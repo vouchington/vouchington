@@ -10,11 +10,35 @@ import {
   TOPIC_ALIAS_ORDERING,
 } from '../config.mts'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from './item-categories.mts'
+import { enqueueRecoverRssFeedHardDeletes } from './hard-delete.mts'
 import { enqueueReconcileTopicAliasCategoryMappings } from './topic-aliases.mts'
 import { rssFeedMaintenance } from '../queues.mts'
-import type { RssFeedItemCategoriesJobs } from '../types.mts'
+import type { RssFeedHardDeleteJobs, RssFeedItemCategoriesJobs } from '../types.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  {
+    schedulerId: 'recoverRssFeedHardDeletes',
+    registration: 'sequential',
+    repeat: { every: 300_000 },
+    template: {
+      name: 'processRecoverRssFeedHardDeletes' as RssFeedHardDeleteJobs,
+      data: { afterId: null },
+      opts: {
+        ...ENQUEUE_BASE_DEFAULTS,
+        priority: PRIORITY_RECOVERY,
+        ordering: { key: 'hard-delete-rss-feed-recovery', concurrency: 1 },
+      },
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'recoverRssFeedHardDeletes',
+        schedule: 'every 5m',
+        description: 'Resume bounded staff RSS feed hard deletes',
+        trigger: enqueueRecoverRssFeedHardDeletes,
+      },
+    ],
+  },
   {
     schedulerId: 'reconcileRssFeedItemCategorySnapshots',
     registration: 'sequential',

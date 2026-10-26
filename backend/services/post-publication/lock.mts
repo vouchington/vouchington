@@ -22,20 +22,23 @@ export function postPublicationScopeIdentifier(scope: PostPublicationScope): str
       return scope.topicAliasId
     case 'story':
       return scope.storyId
+    case 'topic':
+      return scope.topicId
   }
 }
 
 export function postPublicationScopeLockKey(scope: PostPublicationScope): string {
   return `${scope.type}:${postPublicationScopeIdentifier(scope).toLowerCase()}`
 }
+const postPublicationScopeLocks = createTransactionLockOnce({
+  namespace: '',
+  annotation: 'lockPostPublicationScope',
+})
 export async function lockPostPublicationScope(
   query: TransactionQuery,
   scope: PostPublicationScope,
 ): Promise<void> {
-  await query(
-    `/* lockPostPublicationScope */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
-    [postPublicationScopeLockKey(scope)],
-  )
+  await postPublicationScopeLocks.lock(query, [postPublicationScopeLockKey(scope)])
 }
 export async function lockAuthorPublicationLifecycle(
   query: TransactionQuery,

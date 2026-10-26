@@ -1,10 +1,8 @@
-import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import type { PostPublicationDirtyWork } from './types.mts'
-import { retainPostPublicationImpacts } from './capture-impacts.mts'
+import { getPostPublicationWorkLimit } from './work-limits.mts'
+import { impactPublicationKeys } from './captured-keys.mts'
+import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
-import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
-import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
 
 type StoryTopicPublicationChange = {
   storyId: string
@@ -12,72 +10,40 @@ type StoryTopicPublicationChange = {
   impactedPostIds: readonly string[]
 }
 
-/** Records bounded batches of story topic changes without per-story capture round trips. */
+/** Captures the old story impact while the story mutation still holds its transaction. */
 export async function recordStoryTopicPublicationChanges(
   query: TransactionQuery,
   changes: readonly StoryTopicPublicationChange[],
-): Promise<PostPublicationDirtyWork[]> {
-  const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
-  const impactsByStory = new Map<string, { postIds: Set<string>; topicIds: Set<string> }>()
+): Promise<void> {
+  const limit = getPostPublicationWorkLimit('capture_batch_size')
+  if (changes.length > limit)
+    throw new RangeError('Story publication changes exceed the capture page limit')
+  const byStory = new Map<string, { postIds: Set<string>; topicIds: Set<string> }>()
   for (const change of changes) {
     if (!change.storyId) throw new TypeError('Story publication change requires an identifier')
-    const impacts = impactsByStory.get(change.storyId) ?? {
-      postIds: new Set<string>(),
-      topicIds: new Set<string>(),
-    }
-    for (const topicId of normalizePostPublicationIdentifiers(change.impactedTopicIds))
-      impacts.topicIds.add(topicId)
-    for (const postId of normalizePostPublicationIdentifiers(change.impactedPostIds))
-      impacts.postIds.add(postId)
-    impactsByStory.set(change.storyId, impacts)
+    const impacts = byStory.get(change.storyId) ?? { postIds: new Set(), topicIds: new Set() }
+    for (const id of normalizePostPublicationIdentifiers(change.impactedPostIds))
+      impacts.postIds.add(id)
+    for (const id of normalizePostPublicationIdentifiers(change.impactedTopicIds))
+      impacts.topicIds.add(id)
+    byStory.set(change.storyId, impacts)
   }
-  const changesByStory = normalizePostPublicationIdentifiers(impactsByStory.keys()).map(
-    scopeId => ({
-      scopeId,
-      impacts: impactsByStory.get(scopeId)!,
-    }),
-  )
-  const work: PostPublicationDirtyWork[] = []
-  await preparePostPublicationIdentityBridges(
-    query,
-    changesByStory.map(change => ({
-      scope: { type: 'story' as const, storyId: change.scopeId },
-      reason: 'post_topics_changed',
-      impactedPostIds: [...change.impacts.postIds],
-    })),
-  )
-  for (
-    let offset = 0;
-    offset < changesByStory.length;
-    offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE
-  ) {
-    const batch = changesByStory.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- sorted bounded batches preserve global publication lock order.
-    work.push(...(await recordStoryTopicPublicationChangeBatch(query, batch)))
-  }
-  return work
-}
-
-async function recordStoryTopicPublicationChangeBatch(
-  query: TransactionQuery,
-  batch: ReadonlyArray<{
-    scopeId: string
-    impacts: { postIds: Set<string>; topicIds: Set<string> }
-  }>,
-): Promise<PostPublicationDirtyWork[]> {
-  const storyIds = batch.map(change => change.scopeId)
+  const storyIds = normalizePostPublicationIdentifiers(byStory.keys())
   await query(
     `/* lockStoryTopicPublicationCaptures */
     SELECT pg_advisory_xact_lock(hashtextextended('story:' || story_id::text, 0))
     FROM unnest($1::uuid[]) AS input(story_id) ORDER BY story_id`,
     [storyIds],
   )
-  const work = await upsertPostPublicationDirtyWork(query, 'story', storyIds, [
-    'post_topics_changed',
-  ])
-  const workByStoryId = new Map(
-    work.flatMap(row => (row.story_identity_id ? [[row.story_identity_id, row.id] as const] : [])),
-  )
-  await retainPostPublicationImpacts(query, workByStoryId, batch)
-  return work
+  for (const storyId of storyIds) {
+    const impacts = byStory.get(storyId)!
+    enqueueCapturedPublicationChangeAfterCommit(query, {
+      scope: { type: 'story', storyId },
+      reason: 'post_topics_changed',
+      keys: impactPublicationKeys({
+        postIds: [...impacts.postIds],
+        topicIds: [...impacts.topicIds],
+      }),
+    })
+  }
 }

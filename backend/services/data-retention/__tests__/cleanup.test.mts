@@ -14,8 +14,6 @@ import {
   hardDeleteTestUser,
   hasTestRetainedIdentityRoot,
   insertTestRetainedIdentityRoot,
-  beginTransaction,
-  readTestPublicationIdentityBridge,
   countUserDeletionRequestsForTest,
   createTestPost,
   createTestTopic,
@@ -47,7 +45,6 @@ import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 import { grantMembership } from '../../memberships/create.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
-import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
 
 describe('retained user identity cleanup', () => {
   it('reclaims an unreferenced owner only after its live user is gone', async () => {
@@ -98,17 +95,6 @@ describe('retained publication identity cleanup', () => {
     await insertTestRetainedIdentityRoot('post', id)
     await cleanupRetainedIdentityRoots(1_000, { post: [id] })
     expect(await hasTestRetainedIdentityRoot('post', id)).toBe(false)
-  })
-
-  it('does not delete a root pinned by a concurrent historical bridge capture', async () => {
-    const id = v7()
-    await insertTestRetainedIdentityRoot('post', id)
-    await using capture = await beginTransaction()
-    await retainPublicationIdentityBridges(capture, 'post', [id])
-    await cleanupRetainedIdentityRoots(1_000, { post: [id] })
-    expect(await hasTestRetainedIdentityRoot('post', id)).toBe(true)
-    await capture.commit()
-    expect(await readTestPublicationIdentityBridge('post', id)).toEqual({ id, live_id: null })
   })
 
   it('keeps a post root while a committed admission replay references it', async () => {

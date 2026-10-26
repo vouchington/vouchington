@@ -26,6 +26,7 @@
     "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/topics": "workspace:^",
+    "@voucha/types": "workspace:^",
     "glide-mq": "^0.19.0"
   },
   "devDependencies": {

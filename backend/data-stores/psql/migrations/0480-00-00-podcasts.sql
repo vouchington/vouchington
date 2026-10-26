@@ -31,6 +31,9 @@ ALTER TABLE rss_feed_categories
   FOREIGN KEY (category_identity_id) REFERENCES rss_category_identities(id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE rss_feed_categories VALIDATE CONSTRAINT fk_rss_feed_categories__category_identity_id;
 
+CREATE TRIGGER trigger_rss_feed_categories_guard_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON rss_feed_categories
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 CREATE OR REPLACE TRIGGER trigger_rss_feed_categories_updated_at
 BEFORE UPDATE ON rss_feed_categories
 FOR EACH ROW
@@ -87,6 +90,9 @@ CREATE TABLE IF NOT EXISTS podcast_shows (
 
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TRIGGER trigger_podcast_shows_guard_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON podcast_shows
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 
 CREATE OR REPLACE TRIGGER trigger_podcast_shows_updated_at
 BEFORE UPDATE ON podcast_shows

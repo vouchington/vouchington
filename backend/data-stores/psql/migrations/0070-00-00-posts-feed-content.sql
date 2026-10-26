@@ -219,8 +219,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_explicit_topic_categories__topic_id
-ON post_explicit_topic_categories (topic_id)
-INCLUDE (post_id);
+ON post_explicit_topic_categories (topic_id, post_id);
 
 COMMENT ON TABLE post_explicit_topic_categories IS 'Explicit topic categories authored for a post, independent of relation votes and structured data-point topics.';
 COMMENT ON COLUMN post_explicit_topic_categories.post_id IS 'The post with the explicit topic category.';
@@ -490,8 +489,8 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_review_topic_ratings__topic_id
-ON post_review_topic_ratings (topic_id)
-INCLUDE (post_id, rating);
+ON post_review_topic_ratings (topic_id, post_id)
+INCLUDE (rating);
 
 COMMENT ON TABLE post_review_topic_ratings IS 'Individual topic ratings within review posts. A review can rate multiple topics.';
 COMMENT ON COLUMN post_review_topic_ratings.post_id IS 'The review post this rating belongs to.';
@@ -883,8 +882,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_data_point_topics__topic_id
-ON post_data_point_topics (topic_id)
-INCLUDE (post_id);
+ON post_data_point_topics (topic_id, post_id);
 
 COMMENT ON TABLE post_data_point_topics IS 'Subject topics for data point posts. A data point can be about multiple topics (e.g., approved for a specific credit card).';
 COMMENT ON COLUMN post_data_point_topics.post_id IS 'The data point post this topic belongs to.';

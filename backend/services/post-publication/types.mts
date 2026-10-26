@@ -29,6 +29,7 @@ export type PostPublicationScope =
   | { type: 'rss_feed'; rssFeedId: string }
   | { type: 'topic_alias'; topicAliasId: string }
   | { type: 'story'; storyId: string }
+  | { type: 'topic'; topicId: string }
 export type PostPublicationChange = {
   scope: PostPublicationScope
   reason: PostPublicationReason
@@ -36,7 +37,7 @@ export type PostPublicationChange = {
   impactedPostIds?: readonly string[]
   impactedCommunityIds?: readonly string[]
   impactedRssFeedItemIds?: readonly string[]
-  /** Alias text retained with the alias scope's impact keys in one insert. */
+  /** Previous alias text captured with this transaction's impact keys. */
   topicAliasText?: string
   footprint?: PostPublicationFootprint
 }
@@ -45,31 +46,11 @@ export type PostPublicationFootprint = {
   /** Public author identity retained before the user is scrubbed or hard-deleted. */
   priorAuthorUsername?: string
   priorCommunityId?: string
+  priorRssFeedIds?: readonly string[]
   priorRootId?: string
   /** Previous slug for a post scope. */
   priorPostSlug?: string
   /** Previous slug for a community scope. */
   priorCommunitySlug?: string
-}
-export type PostPublicationDirtyWork = {
-  id: string
-  post_identity_id: string | null
-  author_identity_id: string | null
-  community_identity_id: string | null
-  rss_feed_identity_id: string | null
-  topic_alias_identity_id: string | null
-  story_identity_id: string | null
-  reasons: PostPublicationReason[]
-  generation: string
-  cursor_post_id: string | null
-  cursor_topic_id: string | null
-  cursor_key_id: string | null
-  lease_token: string | null
-  leased_at: Date | null
-  lease_expires_at: Date | null
-}
-export type ClaimedPostPublicationDirtyWork = PostPublicationDirtyWork & {
-  lease_token: string
-  leased_at: Date
-  lease_expires_at: Date
+  priorSitemapTarget?: { postType: string; day: string }
 }

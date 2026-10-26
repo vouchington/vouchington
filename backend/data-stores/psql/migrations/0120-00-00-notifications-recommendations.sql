@@ -666,7 +666,7 @@ WHERE reviewed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_recommendations__created_topic_id
-ON post_topic_recommendations (created_topic_id)
+ON post_topic_recommendations (created_topic_id, post_id)
 WHERE created_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

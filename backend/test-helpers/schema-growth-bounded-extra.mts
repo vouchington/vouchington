@@ -48,39 +48,11 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ],
   [
     'post_publication_community_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_rss_feed_item_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_author_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_rss_feed_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_topic_alias_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_story_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_identity_bridge_cleanup_cursors',
-    'A finite family primary key permits one independently advanced cursor per concrete identity bridge family.',
+    'Classifier run history can retain a community identity after live deletion; the generic retained-identity cleanup removes unreferenced rows in bounded pages.',
   ],
   [
     'media_delivery_repair_markers',
     'One coalesced marker per immutable delivery key; successful exact-token reconciliation deletes it, bounding cardinality to outstanding repair work.',
-  ],
-  [
-    'post_publication_identity_snapshot_cleanup_cursors',
-    'A checked true primary key permits exactly one bounded sweep cursor.',
   ],
   [
     'oauth_access_tokens',
@@ -145,17 +117,5 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
     'rss_feed_item_source_category_snapshots',
     'One current snapshot per RSS feed-to-item source row; the source primary key bounds cardinality to live RSS feed item sources.',
-  ],
-  [
-    'post_publication_dirty_work',
-    'One coalesced row per exact publication dependency scope; successful exact-generation acknowledgement deletes the row, bounding cardinality to the active backlog.',
-  ],
-  [
-    'post_publication_dirty_work_keys',
-    'Retained keys cannot outlive their cascade-deleted dirty-work parent, so cardinality is bounded by the active backlog. The table remains partitioned by dirty_work_id because one active high-fanout scope can still contain enough keys to benefit from target-scoped pruning.',
-  ],
-  [
-    'post_publication_reconciliation_audit_cursors',
-    'One checkpoint per named operator scan bounds the audit state independently of post cardinality.',
   ],
 ])

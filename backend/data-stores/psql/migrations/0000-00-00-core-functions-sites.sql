@@ -21,6 +21,14 @@ DECLARE
   new_row JSONB;
 BEGIN
   IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;
+  -- An accepted feed deletion drains this append-only child in bounded committed pages.
+  IF TG_OP = 'DELETE' AND TG_TABLE_SCHEMA = 'public'
+    AND TG_TABLE_NAME = 'rss_feed_setting_changes'
+    AND EXISTS (
+      SELECT 1 FROM public.rss_feeds
+      WHERE id = (to_jsonb(OLD) ->> 'rss_feed_id')::uuid
+        AND hard_delete_requested_at IS NOT NULL
+    ) THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' THEN
     old_row := to_jsonb(OLD);
     new_row := to_jsonb(NEW);

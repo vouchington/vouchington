@@ -3,7 +3,6 @@ import {
   createRandomString,
   createTestUser,
   getTestPostClearanceState,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestCommunity,
   insertTestCommunityAgentPrompt,
   insertTestCommunityMember,
@@ -121,9 +120,6 @@ describe('moderation-training feedback', () => {
       label: 'false_positive',
       human_action: 'reinstate',
     })
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: promptPostId }),
-    ).resolves.toMatchObject({ post_identity_id: promptPostId })
 
     const keepPromptPostId = await insertTestPost({
       title: `Prompt keep removed ${random}`,

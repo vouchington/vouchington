@@ -1,5 +1,4 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
-import * as postPublication from './post-publication-allowlists.mts'
 import * as postModeration from './moderation-ledger-allowlists.mts'
 import { CLASSIFIER_RUN_TABLES_WITHOUT_CREATED_AT } from './classifier-run-allowlists.mts'
 import { SOCIAL_GRAPH_TABLES_WITHOUT_CREATED_AT } from './social-graph-timestamp-allowlists.mts'
@@ -11,7 +10,6 @@ export const ALLOWED_MISSING_CREATED_AT = new Map<string, string>([
     'retained_image_placement_bindings',
     'Immutable placement identity allocated as UUIDv7; its creation time is derivable from placement_id.',
   ],
-  ...postPublication.POST_PUBLICATION_TABLES_WITHOUT_CREATED_AT,
   ...AUTHORIZATION_TABLES_WITHOUT_CREATED_AT,
   [
     'rss_feed_item_guids',

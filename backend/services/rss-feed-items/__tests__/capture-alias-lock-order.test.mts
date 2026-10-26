@@ -3,9 +3,8 @@ import {
   lockTopicAliasPublicationScopes,
   lockTopicRssFeedAttachmentLifecycle,
 } from '@services/post-publication'
-import { recordRssFeedHardDeletePublicationChange } from '@services/post-publication/capture-deletions'
 import { recordTopicMergePublicationChanges } from '@services/post-publication/capture-topic-merge'
-import type { QueryInput, TransactionQuery } from '@data-stores/psql'
+import { withTransactionOptions, type QueryInput, type TransactionQuery } from '@data-stores/psql'
 import { beginTransaction, createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { createUnlinkedTopicAlias, linkTopicAlias } from '@services/topics/aliases'
@@ -14,19 +13,6 @@ import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories
 import { lockTopicMergeAliasPublicationScopes } from '@services/topics/alias-publication-locks'
 
 describe('alias capture lock order', () => {
-  it('hard deletion locks retained aliases before feed item rows', async () => {
-    expect.hasAssertions()
-    const { feed, item, alias } = await createCategoryFixture()
-    await expectAliasBeforeBlockedCapture(
-      alias.id,
-      query =>
-        query(
-          `/* testCaptureAliasLockOrder */ SELECT id FROM rss_feed_items WHERE id = $1::uuid FOR UPDATE`,
-          [item.id],
-        ).then(() => undefined),
-      query => recordRssFeedHardDeletePublicationChange(query, feed.id),
-    )
-  })
   it('topic merge locks retained aliases before feed publication scopes', async () => {
     expect.hasAssertions()
     const { feed, alias, topic } = await createCategoryFixture()
@@ -79,7 +65,9 @@ async function expectAliasBeforeBlockedCapture(
   await locked.promise
   async function capturePublicationChanges(locked: PromiseWithResolvers<void>): Promise<void> {
     await using query = await beginTransaction()
-    await capture(gateWhenSqlReturns(query, 'lockTopicAliasPublicationCaptures', locked))
+    await withTransactionOptions({ query }, async scoped =>
+      capture(gateWhenSqlReturns(scoped, 'lockTopicAliasPublicationCaptures', locked)),
+    )
     await query.commit()
   }
   const aliasLocked = Promise.withResolvers<void>()

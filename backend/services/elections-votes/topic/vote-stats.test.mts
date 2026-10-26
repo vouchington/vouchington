@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   beginTransaction,
   createTestTopic,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestRssFeedDirect,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
@@ -13,59 +12,6 @@ import { updateElectionStatsIfChanged } from '../shared/vote-stats-update.mts'
 import { TOPIC_ELECTION_CONFIG } from './config.mts'
 
 describe('topic vote stats side effects', () => {
-  it('captures attached feed work transactionally across discoverability threshold transitions', async () => {
-    const topic = await createTestTopic({
-      hostname: `topic-vote-capture-${Date.now()}.example.com`,
-    })
-    const rssFeed = await insertTestRssFeedDirect({ topicId: topic.id })
-    const discoverableThreshold = 5
-    const baseline = discoverableThreshold - 1
-
-    await updateElectionStatsIfChanged(TOPIC_ELECTION_CONFIG, topic.id, statsForNetScore(baseline))
-    const baselineWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'rss_feed',
-      id: rssFeed.id,
-    })
-    expect(baselineWork?.reasons).toContain('rss_feed_discoverability_changed')
-
-    async function rejectTopicDiscoverabilityThresholdCapture(): Promise<void> {
-      await using query = await beginTransaction()
-      await updateElectionStatsIfChanged(
-        TOPIC_ELECTION_CONFIG,
-        topic.id,
-        statsForNetScore(discoverableThreshold),
-        query,
-      )
-      throw new Error('rollback topic discoverability threshold capture')
-    }
-    await expect(rejectTopicDiscoverabilityThresholdCapture()).rejects.toThrow(
-      'rollback topic discoverability threshold capture',
-    )
-    const rolledBackWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'rss_feed',
-      id: rssFeed.id,
-    })
-    expect(rolledBackWork?.generation).toBe(baselineWork?.generation)
-
-    await updateElectionStatsIfChanged(
-      TOPIC_ELECTION_CONFIG,
-      topic.id,
-      statsForNetScore(discoverableThreshold),
-    )
-    const entered = await getTestPostPublicationDirtyWorkForScope({
-      type: 'rss_feed',
-      id: rssFeed.id,
-    })
-    expect(Number(entered?.generation)).toBeGreaterThan(Number(baselineWork?.generation))
-
-    await updateElectionStatsIfChanged(TOPIC_ELECTION_CONFIG, topic.id, statsForNetScore(baseline))
-    const recovered = await getTestPostPublicationDirtyWorkForScope({
-      type: 'rss_feed',
-      id: rssFeed.id,
-    })
-    expect(Number(recovered?.generation)).toBeGreaterThan(Number(entered?.generation))
-  })
-
   it('enqueues RSS feed discoverability evaluation for feeds attached to the topic', async () => {
     const topic = await createTestTopic({ hostname: `vote-stats-${Date.now()}.example.com` })
     const rssFeed = await insertTestRssFeedDirect({ topicId: topic.id })
