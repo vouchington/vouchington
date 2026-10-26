@@ -63,13 +63,13 @@ describe('processGooglePlayMembershipVerification terminalization failure', () =
     expect(membership).toMatchObject({ status: 'active' })
     const verification = await submit()
 
-    const { error } = await withPostgresQueryFailureForTest(
-      '/* findKnownGooglePlayCurrentSource */',
-      () => processGooglePlayMembershipVerification(verification.id, { client }),
-      { command: 'SELECT' },
-    )
-
-    expect(error).toMatchObject({ code: '25P02' })
+    await expect(
+      withPostgresQueryFailureForTest(
+        '/* findKnownGooglePlayCurrentSource */',
+        () => processGooglePlayMembershipVerification(verification.id, { client }),
+        { command: 'SELECT' },
+      ),
+    ).rejects.toMatchObject({ code: '25P02' })
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
       status: 'pending',
       reason_code: null,
