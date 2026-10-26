@@ -25,28 +25,11 @@ describe('PostgreSQL Schema Tests workflow', () => {
     )
   })
 
-  it('checks platform stats after restoring the prepared baseline and before Vitest', () => {
-    const restore = workflow.indexOf('      - name: Restore prepared PostgreSQL database')
+  it('checks the refreshed platform-stats snapshot before running Vitest', () => {
     const platformStatsCheck = workflow.indexOf('node scripts/check-platform-stats-snapshot.mts')
     const schemaTests = workflow.indexOf('      - name: Run PostgreSQL schema tests')
 
-    expect(restore).toBeGreaterThanOrEqual(0)
-    expect(platformStatsCheck).toBeGreaterThan(restore)
     expect(schemaTests).toBeGreaterThan(platformStatsCheck)
-    expect(workflow).not.toContain('node data-stores/psql/migrate.mts')
-    expect(workflow).not.toContain('check-staging-rss-bootstrap.mts')
-  })
-
-  it('checks the canonical migration snapshot in preparation before dumping the baseline', () => {
-    const producer = readFileSync('.github/workflows/prepare-postgres.yml', 'utf8')
-    const migrate = producer.indexOf('node data-stores/psql/migrate.mts')
-    const snapshot = producer.indexOf('node data-stores/psql/schema-snapshot/generate.mts --check')
-    const dump = producer.indexOf('      - name: Dump prepared PostgreSQL database')
-
-    expect(migrate).toBeGreaterThanOrEqual(0)
-    expect(snapshot).toBeGreaterThan(migrate)
-    expect(dump).toBeGreaterThan(snapshot)
-    expect(workflow).not.toContain('node data-stores/psql/schema-snapshot/generate.mts --check')
   })
 
   it('runs the bounded native MV owner between bootstrap checks and Vitest on the same database', () => {

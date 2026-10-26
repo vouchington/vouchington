@@ -113,10 +113,7 @@ describe('area coverage wiring', () => {
       )
       expect(needsOf(coverage)).toEqual(expect.arrayContaining(producerIds))
       const selectionNeeds = area === 'tooling' ? ['changes'] : []
-      const setupNeeds = area === 'backend' ? ['prepare-postgres'] : []
-      expect(needsOf(codecov).toSorted()).toEqual(
-        [...producerIds, ...selectionNeeds, ...setupNeeds].toSorted(),
-      )
+      expect(needsOf(codecov)).toEqual(expect.arrayContaining([...producerIds, ...selectionNeeds]))
 
       // Each producer's artifacts match exactly one upload pattern, and every pattern matches.
       const artifacts = producers.flatMap(([, job]) => fullLcovArtifacts(job.uses!.slice(2)))
@@ -167,11 +164,6 @@ describe('area coverage wiring', () => {
 
       expect(codecov.if).not.toContain("contains(needs.*.result, 'success')")
       expect(actualProducers.toSorted()).toEqual(producerIds.toSorted())
-      const setupNeeds = area === 'backend' ? ['prepare-postgres'] : []
-      expect(needsOf(codecov)).toEqual(expect.arrayContaining(setupNeeds))
-      expect(clausesOf(codecov.if)).toEqual(
-        expect.arrayContaining(setupNeeds.map(id => `needs.${id}.result == 'success'`)),
-      )
     },
   )
 

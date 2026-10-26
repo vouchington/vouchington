@@ -137,30 +137,9 @@ describe('area workflows', () => {
     expect(staticJobs.map(id => ({ id, needs: needsOf(jobs[id]!), if: jobs[id]!.if }))).toEqual(
       staticJobs.map(id => ({ id, needs: ['changes'], if: selected })),
     )
-    expect(
-      preparationJobs.map(id => ({ id, needs: needsOf(jobs[id]!), if: jobs[id]!.if })),
-    ).toEqual(preparationJobs.map(id => ({ id, needs: staticJobs, if: undefined })))
     expect(suites.map(suiteShape)).toEqual(
       suites.map(id => ({ id, waitsOnSelectionAndSetupOnly: true, gated: true })),
     )
-
-    const setupConsumers = Object.entries(jobs)
-      .filter(([, job]) => needsOf(job).some(need => preparationJobs.includes(need)))
-      .map(([id]) => id)
-    const expectedSetupConsumers =
-      area === 'backend'
-        ? [
-            'test-backend-unit',
-            'test-backend-credentialed',
-            'test-postgres-schema',
-            'backend-smoke',
-            'test-explain-analyze',
-            'backend',
-            'coverage',
-            'codecov',
-          ]
-        : []
-    expect(setupConsumers.toSorted()).toEqual(expectedSetupConsumers.toSorted())
   })
 
   // no-mistakes' tsconfig-gate-coverage counts the repository typechecks only through a root that

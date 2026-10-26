@@ -42,16 +42,6 @@ function jobSection(jobName: string): string {
   return next === -1 ? rest : rest.slice(0, next)
 }
 describe('backend uncredentialed Docker test workflow', () => {
-  it('wires one area-level database producer to every backend database suite', () => {
-    const caller = load(readFileSync('.github/workflows/backend.yml', 'utf8')) as {
-      jobs: Record<string, { needs?: string[]; with?: Record<string, unknown> }>
-    }
-
-    expect(caller.jobs['prepare-postgres']?.needs).toEqual(['static-backend'])
-    expect(caller.jobs['test-backend-unit']?.needs).toContain('prepare-postgres')
-    expect(caller.jobs['test-backend-unit']?.with?.prepared_database).toBe(true)
-  })
-
   it('leaves Docker-free static checks to the backend module workflow', () => {
     const backendJob = jobSection('backend-tests')
     expect(workflow).toContain('name: Backend Uncredentialed Docker Tests')
@@ -117,20 +107,10 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')
   })
 
-  it('restores the shared prepared database before backend tests', () => {
+  it('builds email templates without owning backend smoke', () => {
     const setupBackend = workflow.indexOf('actions/setup-backend')
-    const restore = workflow.indexOf('Restore prepared PostgreSQL database')
 
     expect(setupBackend).toBeGreaterThanOrEqual(0)
-    expect(restore).toBeGreaterThanOrEqual(0)
-    expect(restore).toBeLessThan(workflow.indexOf('name: Run backend tests'))
-    expect(workflow).toContain('prepared_database:')
-    expect(workflow).toContain('uses: ./.github/workflows/prepare-postgres.yml')
-    expect(workflow).not.toContain('node data-stores/psql/migrate.mts')
-    expect(workflow).not.toContain('check-retained-relation-bootstrap.mts')
-    expect(workflow).toContain(
-      'pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges',
-    )
     expect(workflow).not.toContain('Allocate backend port')
     expect(workflow).not.toContain('./scripts/tests/smoke-test-server.sh')
     expect(workflow).not.toContain('./scripts/tests/smoke-test-worker.sh')
@@ -281,20 +261,5 @@ describe('backend uncredentialed Docker test workflow', () => {
   it('does not restore or save a remote Vite transform cache', () => {
     // A remote Vite cache round-trip once consumed a job's entire timeout budget.
     expect(workflow).not.toMatch(/actions\/cache\/(?:restore|save)|\.cache\/vite\/vitest/u)
-  })
-
-  it('keeps database setup in the single prepared PostgreSQL producer', () => {
-    const producer = readFileSync('.github/workflows/prepare-postgres.yml', 'utf8')
-    const migrate = producer.indexOf('node data-stores/psql/migrate.mts')
-    const acceptance = producer.indexOf(
-      'node scripts/data-retention/check-retained-relation-bootstrap.mts',
-    )
-    const dump = producer.indexOf('Dump prepared PostgreSQL database')
-
-    expect(migrate).toBeGreaterThanOrEqual(0)
-    expect(acceptance).toBeGreaterThan(migrate)
-    expect(dump).toBeGreaterThan(acceptance)
-    expect(producer).toContain('pg_dump --format=custom --no-owner --no-privileges')
-    expect(producer).toContain('backend-postgres-${{ github.run_id }}')
   })
 })

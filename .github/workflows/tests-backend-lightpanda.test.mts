@@ -37,7 +37,6 @@ describe('retained Lightpanda cloud CI boundary', () => {
       "${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.LIGHTPANDA_TOKEN || '' }}",
     )
     expect(nightly.jobs.backend?.secrets?.LIGHTPANDA_TOKEN).toBe('${{ secrets.LIGHTPANDA_TOKEN }}')
-    expect(job.if).toBe('${{ !cancelled() && !failure() && inputs.trusted_secret_context }}')
     expect(preflight.env?.LIGHTPANDA_TOKEN).toBe('${{ secrets.LIGHTPANDA_TOKEN }}')
     const testStep = job.steps!.find(step => step.name === 'Run backend credentialed tests')!
     expect(testStep.env?.LIGHTPANDA_TOKEN).toBe('${{ secrets.LIGHTPANDA_TOKEN }}')

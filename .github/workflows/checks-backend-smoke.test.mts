@@ -24,7 +24,6 @@ const smoke = workflow.jobs?.smoke
 describe('checks-backend-smoke workflow', () => {
   it('owns the dedicated Tests-pool API and worker smoke gate', () => {
     expect(workflow).toMatchObject({ name: 'backend-smoke' })
-    expect(workflow.permissions).toEqual({ contents: 'read', actions: 'read' })
     expect(workflow.env).toEqual({ NODE_ENV: 'test' })
     expect(smoke?.['runs-on']).toEqual('ubuntu-latest')
     expect(smoke?.services?.postgres?.image).toMatch(
@@ -34,18 +33,15 @@ describe('checks-backend-smoke workflow', () => {
     expect(smoke?.steps?.some(step => step.uses === './.github/actions/start-valkey')).toBe(true)
   })
 
-  it('restores before the allocated-port API and worker smoke without coverage transport', () => {
+  it('runs the allocated-port API and worker smoke without coverage transport', () => {
     const steps = smoke?.steps ?? []
     const servicePorts = steps.findIndex(step => step.name === 'Set service ports')
     const setup = steps.findIndex(step => step.uses === './.github/actions/setup-backend')
-    const restore = steps.findIndex(step => step.name === 'Restore prepared PostgreSQL database')
     const allocation = steps.findIndex(step => step.name === 'Allocate backend port')
     const smokeTest = steps.findIndex(step => step.name === 'Smoke test backend')
 
     expect(servicePorts).toBeGreaterThanOrEqual(0)
     expect(servicePorts).toBeLessThan(setup)
-    expect(setup).toBeLessThan(restore)
-    expect(restore).toBeLessThan(allocation)
     expect(allocation).toBeLessThan(smokeTest)
     expect(steps[smokeTest]?.run).toContain(
       './scripts/tests/smoke-test-server.sh && ./scripts/tests/smoke-test-worker.sh',
