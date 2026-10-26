@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
-import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
+import { PSQL_RETRY_OPTS, PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
 import { psql } from './queues.mts'
 import type { PsqlJobs, RefreshMaterializedViewData } from './types.mts'
 
@@ -37,6 +37,7 @@ const enqueueBulkRetentionContinuations = createBulkEnqueueFunction({
   buildJob: (parentJobId: string, _index: number) => ({
     data: {},
     opts: {
+      ...PSQL_RETRY_OPTS,
       jobId: retentionContinuationId(parentJobId),
       removeOnComplete: true,
       removeOnFail: true,

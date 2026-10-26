@@ -86,7 +86,16 @@ describe('processPsql', () => {
         { dataRetentionCleanup: async () => result as never },
         parentJobId,
       )
-      expect((await psqlQueue.getJob(childJobId)) !== null).toBe(expected)
+      const child = await psqlQueue.getJob(childJobId)
+      expect(child !== null).toBe(expected)
+      const retryOptions = child?.opts
+        ? { attempts: child.opts.attempts, backoff: child.opts.backoff }
+        : null
+      expect(retryOptions).toEqual(
+        expected
+          ? { attempts: 3, backoff: { type: 'exponential', delay: 1000, jitter: 0.5 } }
+          : null,
+      )
     },
   )
 

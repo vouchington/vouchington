@@ -5,6 +5,11 @@ import type { JobOptions } from 'glide-mq'
 export const QUEUE_NAME = 'psql'
 export const PRIORITY_DEFAULT = 10
 
+export const PSQL_RETRY_OPTS = {
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+}
+
 // Job names
 export const CREATE_PARTITIONS_JOB_NAME = 'createPartitions'
 export const CLEANUP_PARTITIONS_JOB_NAME = 'cleanupPartitions'
