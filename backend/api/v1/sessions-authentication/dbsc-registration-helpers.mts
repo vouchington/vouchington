@@ -3,7 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import { COOKIE_OPTIONS, getExpectedOrigin } from '@modules/api-utils'
 import { getTrustedClientJa4 } from '@modules/request-client-info/cloudflare-signals'
 import { getSiteOrigin } from '@modules/utils/site-origin'
-import { decodeDeviceJwt } from '@ts-shared/session-jwt'
+import { decodeDeviceJwt, verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { createDbscRegistrationOffer } from '@services/jwt-session/dbsc-registration'
 import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import onError from '@modules/on-error'
@@ -37,6 +37,24 @@ export function getDbscOrigin(ctx: Context): string | null {
   } catch {
     return null
   }
+}
+
+/** A signed web device identifies its own finite DBSC budget; invalid callers keep the IP cap. */
+export async function applyDbscRouteRateLimit(ctx: Context, routeKey: string): Promise<void> {
+  const token = ctx.cookies.get('dt')
+  const device = token ? await verifyDeviceJwt(token) : null
+  if (device?.client === 'web' && device.refresh_uid && device.refresh_sid && device.did) {
+    await ctx.applyRouteRateLimit(routeKey, {
+      identityMode: 'verified-dbsc',
+      verifiedDbscIdentity: {
+        deviceId: device.did,
+        sessionId: device.refresh_sid,
+        userId: device.refresh_uid,
+      },
+    })
+    return
+  }
+  await ctx.applyRouteRateLimit(routeKey, { identityMode: 'ip-only' })
 }
 
 /** Only successful credential completion can offer a new registration. */

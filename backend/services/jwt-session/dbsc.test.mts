@@ -10,6 +10,10 @@ import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { refreshSessionState } from './flows.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
 import { getDbscChallengeKey } from './dbsc-state.mts'
+import {
+  expireTestPreviousDeviceTokenGrace,
+  shiftTestDeviceAuthorityIssuedAt,
+} from '@voucha/test-helpers/entities/device-authority'
 
 describe('durable browser device-bound session authority', () => {
   it('accepts Chromium registration without iat/sub/aud and preserves original lifetime', async () => {
@@ -54,6 +58,30 @@ describe('durable browser device-bound session authority', () => {
       verifyDeviceJwt(refreshed.dt),
     ])
     expect(after).toMatchObject({ iat: before!.iat, exp: before!.exp })
+  })
+
+  it('requires fresh key proof to recover the immediately prior device token', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    const firstNonce = await fixture.challenge(registered.dt)
+    const firstProof = await fixture.authorizeRefresh(registered.dt, firstNonce)
+    const refreshed = await refreshSessionState({
+      ...fixture.base,
+      deviceToken: registered.dt,
+      dbscProof: firstProof,
+    })
+    await expect(
+      refreshSessionState({ ...fixture.base, deviceToken: registered.dt }),
+    ).rejects.toMatchObject({ code: 'DBSC_PROOF_REQUIRED' })
+    const secondNonce = await fixture.challenge(registered.dt)
+    const secondProof = await fixture.authorizeRefresh(registered.dt, secondNonce)
+    const replay = await refreshSessionState({
+      ...fixture.base,
+      deviceToken: registered.dt,
+      dbscProof: secondProof,
+    })
+    expect(replay.dt).toBe(refreshed.dt)
+    expect((await readSessionDeviceAuthority(registered.sid))!.revoked_at).toBeNull()
   })
 
   it('retains binding through challenge eviction and accepts a fresh challenge', async () => {
@@ -188,7 +216,11 @@ describe('durable browser device-bound session authority', () => {
       refreshSessionState({
         ...fixture.base,
         deviceToken: registered.dt,
-        dbscProof: { sid: registered.sid, deviceTokenDigest: row!.device_token_digest! },
+        dbscProof: {
+          sid: registered.sid,
+          deviceTokenDigest: row!.device_token_digest!,
+          purpose: 'refresh',
+        },
       }),
     ).rejects.toMatchObject({ status: 403, code: 'DBSC_PROOF_REQUIRED' })
   })
@@ -208,7 +240,7 @@ describe('durable browser device-bound session authority', () => {
     ).resolves.toMatchObject({ uid: fixture.user.id })
   })
 
-  it('rejects and revokes when ordinary rotation wins after the registration authority read', async () => {
+  it('rejects a changed authority snapshot without binding or revoking the session', async () => {
     const fixture = await createDbscTestSession()
     let rotated: Awaited<ReturnType<typeof refreshSessionState>> | undefined
     const proofHeader = await fixture.sign(fixture.nonce, true)
@@ -225,22 +257,35 @@ describe('durable browser device-bound session authority', () => {
           return user
         },
       }),
-    ).rejects.toMatchObject({ status: 401, code: 'SESSION_REFRESH_REUSED' })
+    ).rejects.toMatchObject({ status: 400, code: 'DBSC_PROOF_INVALID' })
     expect(rotated).toBeDefined()
     expect(await readSessionDeviceAuthority(fixture.tokens.sessionToken.payload.sid)).toMatchObject(
       {
-        revoked_at: expect.any(Date),
+        revoked_at: null,
         device_bound_session_binding: null,
       },
     )
     await expect(
       refreshSessionState({ ...fixture.base, deviceToken: rotated!.dt }),
-    ).resolves.toMatchObject({ uid: null })
+    ).resolves.toMatchObject({ uid: fixture.user.id })
   })
 
-  it('durably revokes a rotated device credential reused after registration', async () => {
+  it('leaves registration unbound when rotation fails after proof consumption', async () => {
+    const fixture = await createDbscTestSession()
+    const proof = await fixture.authorizeRegistration()
+    const sid = fixture.tokens.sessionToken.payload.sid
+    expect((await readSessionDeviceAuthority(sid))!.device_bound_session_binding).toBeNull()
+    await shiftTestDeviceAuthorityIssuedAt(fixture.user.id, sid)
+    await expect(
+      refreshSessionState({ ...fixture.base, dbscProof: proof }),
+    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    expect((await readSessionDeviceAuthority(sid))!.device_bound_session_binding).toBeNull()
+  })
+
+  it('durably revokes the prior device credential outside the grace window', async () => {
     const fixture = await createDbscTestSession()
     const registered = await fixture.register()
+    await expireTestPreviousDeviceTokenGrace(fixture.user.id, registered.sid)
     await expect(refreshSessionState(fixture.base)).rejects.toMatchObject({
       status: 401,
       code: 'SESSION_REFRESH_REUSED',

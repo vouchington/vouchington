@@ -125,7 +125,6 @@ export async function authorizeDbscProof(options: {
     challenge,
     expectedState: raw,
     expected,
-    nextBinding,
   })
   if (consumed === 'changed') throw invalidProof()
   if (consumed === 'missing') {
@@ -137,6 +136,8 @@ export async function authorizeDbscProof(options: {
   const authorization = Object.freeze({
     sid: authority.sid,
     deviceTokenDigest: expected.deviceTokenDigest,
+    purpose: options.purpose,
+    ...(nextBinding && { registrationBinding: nextBinding }),
   })
   authorizations.add(authorization)
   return authorization
@@ -145,19 +146,23 @@ export async function authorizeDbscProof(options: {
 /** Call while holding the same authority row lock used for device credential rotation. */
 export function assertDeviceBoundRefreshAllowed(
   row: SessionDeviceAuthorityRow,
+  presentedDigest: string,
   proof?: DbscAuthorization,
-): boolean {
-  if (row.device_bound_session_binding === null) return false
+): DeviceBoundSessionBinding | null {
+  if (row.device_bound_session_binding === null && !proof) return null
   if (row.device_token_binding?.client !== 'web') throw sessionAuthorityRequired()
   if (
     !proof ||
     !authorizations.has(proof) ||
     proof.sid !== row.id ||
-    proof.deviceTokenDigest !== row.device_token_digest
+    proof.deviceTokenDigest !== presentedDigest ||
+    (row.device_bound_session_binding === null && proof.purpose !== 'registration') ||
+    (row.device_bound_session_binding !== null && proof.purpose !== 'refresh') ||
+    (proof.purpose === 'registration') !== (proof.registrationBinding !== undefined)
   )
     throw proofRequired()
   authorizations.delete(proof)
-  return true
+  return proof.registrationBinding ?? null
 }
 
 /** Chrome sends a raw opaque session ID here, not an RFC structured string. */

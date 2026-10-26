@@ -28,6 +28,8 @@ export type { DeviceClass, DeviceTokenPayload, SessionTokenPayload }
 export interface DbscAuthorization {
   readonly sid: string
   readonly deviceTokenDigest: string
+  readonly purpose: 'registration' | 'refresh'
+  readonly registrationBinding?: import('./dbsc-state-schema.mts').DeviceBoundSessionBinding
 }
 
 export interface DeviceTokenResult {

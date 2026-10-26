@@ -8,12 +8,16 @@ import { DBSC_PROOF_REQUIRED } from '@modules/on-error/error-codes'
 import { getPrivateUserByAny } from '@services/users/get'
 import { setAuthenticationCookies } from '@modules/api-utils'
 import { getTrustedClientJa4 } from '@modules/request-client-info/cloudflare-signals'
-import { dbscSessionInstructions, getDbscOrigin } from './dbsc-registration-helpers.mts'
+import {
+  applyDbscRouteRateLimit,
+  dbscSessionInstructions,
+  getDbscOrigin,
+} from './dbsc-registration-helpers.mts'
 
 app.route('/api/v1/auth/device-bound-sessions').post(async (ctx: Context) => {
   // Credential completion issued the one-time nonce. DT plus nonce/key proof authorizes
   // registration without an access cookie or a not-yet-created browser session-ID header.
-  await ctx.applyRouteRateLimit('POST:/api/v1/auth/device-bound-sessions')
+  await applyDbscRouteRateLimit(ctx, 'POST:/api/v1/auth/device-bound-sessions')
   validateRequestContract(ctx, 'POST:/api/v1/auth/device-bound-sessions', {})
   const origin = getDbscOrigin(ctx)
   ctx.assert(origin, 401, 'Device session registration unavailable')
@@ -44,7 +48,7 @@ app.route('/api/v1/auth/device-bound-sessions').post(async (ctx: Context) => {
 })
 
 app.route('/api/v1/auth/device-bound-sessions/refreshes').post(async (ctx: Context) => {
-  await ctx.applyRouteRateLimit('POST:/api/v1/auth/device-bound-sessions/refreshes')
+  await applyDbscRouteRateLimit(ctx, 'POST:/api/v1/auth/device-bound-sessions/refreshes')
   validateRequestContract(ctx, 'POST:/api/v1/auth/device-bound-sessions/refreshes', {})
   const origin = getDbscOrigin(ctx)
   ctx.assert(origin, 401, 'Device session refresh unavailable')

@@ -25,7 +25,6 @@ app.route('/api/v1/auth/logout').post(async ctx => {
   apiRequestContract<'POST:/api/v1/auth/logout', LogoutRequest>('POST:/api/v1/auth/logout')
   const dt = ctx.cookies.get('dt')
   const st = ctx.cookies.get('st')
-  ctx.set('Clear-Site-Data', '"cookies"')
   clearAuthenticationCookies(ctx)
   let fallbackRevoked = false
   try {

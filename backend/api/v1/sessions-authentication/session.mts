@@ -68,7 +68,6 @@ app
     ctx.json({ session: body })
   })
   .delete(async (ctx: Context) => {
-    ctx.set('Clear-Site-Data', '"cookies"')
     // Clear cookies even when parsing, rate limiting, or durable cleanup rejects.
     clearAuthenticationCookies(ctx)
     const cookieDt = ctx.cookies.get('dt')

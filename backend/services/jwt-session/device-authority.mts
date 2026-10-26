@@ -74,6 +74,18 @@ export function hashDeviceToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
+export function isPreviousWebDeviceTokenInGrace(
+  row: SessionDeviceAuthorityRow,
+  digest: string,
+): boolean {
+  return (
+    row.device_token_binding?.client === 'web' &&
+    row.previous_device_token_digest === digest &&
+    row.previous_device_token_grace_expires_at !== null &&
+    row.previous_device_token_grace_expires_at.getTime() > Date.now()
+  )
+}
+
 export function sessionReloginRequired() {
   return createCodedError(
     401,

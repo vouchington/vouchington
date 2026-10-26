@@ -10,13 +10,13 @@ import { revokeAuthenticatedSession } from './user-session-revocation.mts'
 import { revokeSessionKey } from './session-revocation-keys.mts'
 import {
   assertActiveDeviceAuthority,
+  isPreviousWebDeviceTokenInGrace,
   lockSessionDeviceAuthority,
   readSessionDeviceAuthority,
   type SessionDeviceAuthorityRow,
 } from './device-authority.mts'
 import {
   parseDeviceBoundSessionBinding,
-  type DeviceBoundSessionBinding,
   type WebSessionAuthority,
   type DbscChallenge,
 } from './dbsc-state-schema.mts'
@@ -44,7 +44,10 @@ export async function readWebSessionAuthority(
 ): Promise<{ authority: WebSessionAuthority; raw: string }> {
   const row = await readSessionDeviceAuthority(expected.sid)
   const authority = authorityForRow(row, expected)
-  if (row!.device_token_digest !== expected.deviceTokenDigest) {
+  if (
+    row!.device_token_digest !== expected.deviceTokenDigest &&
+    !isPreviousWebDeviceTokenInGrace(row!, expected.deviceTokenDigest)
+  ) {
     await revokeAuthenticatedSession(expected.uid, expected.sid)
     throw reusedDeviceCredential()
   }
@@ -65,14 +68,16 @@ export async function consumeDbscChallenge(options: {
   challenge: DbscChallenge
   expectedState: string
   expected: WebSessionAuthorityIdentity
-  nextBinding?: DeviceBoundSessionBinding
 }): Promise<'consumed' | 'missing' | 'changed'> {
   if (!/^[A-Za-z0-9_-]{43}$/u.test(options.nonce)) return 'missing'
   await using query = await beginTransaction()
   await lockSessionDeviceAuthority(query, options.expected.uid, options.expected.sid)
   const row = await readSessionDeviceAuthority(options.expected.sid, query, true)
   const authority = authorityForRow(row, options.expected)
-  if (row!.device_token_digest !== options.expected.deviceTokenDigest) {
+  if (
+    row!.device_token_digest !== options.expected.deviceTokenDigest &&
+    !isPreviousWebDeviceTokenInGrace(row!, options.expected.deviceTokenDigest)
+  ) {
     await query(sql`/* consumeDbscChallenge */
       UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP
       WHERE id = ${options.expected.sid} AND revoked_at IS NULL`)
@@ -85,13 +90,6 @@ export async function consumeDbscChallenge(options: {
     client: sessionValkeyClient,
   })
   if (value === null || value !== JSON.stringify(options.challenge)) return 'missing'
-  if (options.nextBinding) {
-    await query(sql`/* consumeDbscChallenge */
-      UPDATE user_sessions
-      SET device_bound_session_binding = ${JSON.stringify(options.nextBinding)}::jsonb
-      WHERE id = ${options.expected.sid} AND user_id = ${options.expected.uid}
-        AND revoked_at IS NULL AND device_bound_session_binding IS NULL`)
-  }
   await query.commit()
   return 'consumed'
 }

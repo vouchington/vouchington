@@ -175,6 +175,7 @@ describe('browser device-bound session protocol', () => {
       .send({})
       .expect(403)
     expect(rejected.body.code).toBe('DBSC_PROOF_REQUIRED')
+    expect(rejected.headers['set-cookie']).toBeUndefined()
     const now = Math.floor(Date.now() / 1000)
     const expiredSession = await signSessionJwt(
       { did: response.body.did, sid: response.body.sid, uid: user.id },
@@ -263,7 +264,10 @@ describe('browser device-bound session protocol', () => {
       .set('Cookie', cookieTokens(registered.headers).join('; '))
       .send({})
       .expect(mode === 'logout' ? 204 : 200)
-    expect(ended.headers['clear-site-data']).toBe('"cookies"')
+    expect(ended.headers['clear-site-data']).toBeUndefined()
+    expect(cookieTokens(ended.headers)).toEqual(
+      expect.arrayContaining(['dt=', 'st=']),
+    )
     expect((await readSessionDeviceAuthority(response.body.sid))!.revoked_at).toBeInstanceOf(Date)
   })
 })
