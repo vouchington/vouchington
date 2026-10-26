@@ -50,12 +50,12 @@ describe('OAuth broker popup', () => {
       expect.stringMatching(/^voucha-oauth-broker-github-/),
       'width=600,height=700',
     )
+    await assigned.promise
     expect(lockManager.request).toHaveBeenCalledWith(
       'voucha-oauth-broker-authorization',
       { mode: 'exclusive', ifAvailable: true },
       expect.any(Function),
     )
-    await assigned.promise
     expect(popup.location.assign).toHaveBeenCalledWith(
       'https://github.com/login/oauth/authorize?opaque=1',
     )
@@ -75,6 +75,63 @@ describe('OAuth broker popup', () => {
     await expect(authorization).resolves.toBeUndefined()
     expect(replaceState).toHaveBeenCalledWith(window.history.state, '', '/my/identity#social')
     expect(reloadPage).toHaveBeenCalledOnce()
+  })
+
+  it('obtains broker-provider confirmation before holding the connection lock', async () => {
+    const popup = makePopup()
+    const assigned = Promise.withResolvers<void>()
+    popup.location.assign.mockImplementation(() => {
+      assigned.resolve()
+    })
+    vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window)
+    let held = false
+    const lockManager = {
+      request: vi.fn<VitestLooseMock>(async (_name, _options, callback) => {
+        if (held) return callback(null)
+        held = true
+        try {
+          return await callback({} as Lock)
+        } finally {
+          held = false
+        }
+      }),
+    } as Pick<LockManager, 'request'>
+    let reAuthCalls = 0
+    const requestReAuth = async () => {
+      reAuthCalls++
+      expect(held).toBe(false)
+      const token = await lockManager.request(
+        'voucha-oauth-broker-authorization',
+        { mode: 'exclusive', ifAvailable: true },
+        async lock => (lock ? 'reauth-token' : null),
+      )
+      return token
+    }
+    mockBeginOAuthAuthorization.mockResolvedValue({
+      flow_id: '0198-lock-order',
+      redirect_url: 'https://github.com/login/oauth/authorize?opaque=1',
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+    })
+
+    const authorization = startOAuthBrokerAuthorization(
+      { provider: 'github', purpose: 'connect', requestReAuth, returnTo: '/my/identity' },
+      { lockManager, reloadPage: vi.fn<VitestLooseMock>() },
+    )
+    await assigned.promise
+    expect(reAuthCalls).toBe(1)
+    expect(mockBeginOAuthAuthorization).toHaveBeenCalledWith('github', 'connect', 'reauth-token')
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          type: 'voucha:oauth-broker:complete',
+          flowId: '0198-lock-order',
+          status: 'connected',
+        },
+        origin: window.location.origin,
+        source: popup as unknown as MessageEventSource,
+      }),
+    )
+    await expect(authorization).resolves.toBeUndefined()
   })
 
   it('fails closed when the browser blocks the synchronously opened popup', async () => {

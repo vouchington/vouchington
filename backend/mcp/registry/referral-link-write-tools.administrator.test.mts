@@ -16,21 +16,20 @@ type LinkResult = { referral_link: UserReferralLink }
 describe('referral link administrator policy — real DB', () => {
   it('keeps an official account from creating or editing while allowing activation and deletion', async () => {
     const admin = { ...(await createTestUser()), membership_plan: 'plus' as const }
-    await insertTestTotpAuthenticator(admin.id, 'official-referral-link')
-    await addUserRole(admin.id, 'administrator')
-    const owner = { ...(await createTestUser()), membership_plan: 'plus' as const }
-    const fixture = await createReferralProgramFixture({ createdById: owner.id })
+    const fixture = await createReferralProgramFixture({ createdById: admin.id })
     const createArgs = {
       referral_program_id: fixture.referralProgramId,
       url: `https://${fixture.hostname}/ref/${crypto.randomUUID().slice(0, 8)}`,
     }
     const created = await callStructuredMcpTool(
-      owner,
+      admin,
       'create_referral_link',
-      { ...createArgs, label: 'Owner link' },
+      { ...createArgs, label: 'Member link' },
       SCOPES,
     )
     const { id } = (created as LinkResult).referral_link
+    await insertTestTotpAuthenticator(admin.id, 'official-referral-link')
+    await addUserRole(admin.id, 'administrator')
     const official = { status: 403, code: OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN }
 
     await expectMcpToolFunctionThrows(admin, 'create_referral_link', createArgs, official)
@@ -53,7 +52,7 @@ describe('referral link administrator policy — real DB', () => {
     const off = (await call('remove_referral_link')) as LinkResult
     const on = (await call('activate_referral_link')) as LinkResult
     expect(off.referral_link.deactivated_at).toEqual(expect.any(String))
-    expect(on.referral_link).toMatchObject({ id, label: 'Owner link', deactivated_at: null })
+    expect(on.referral_link).toMatchObject({ id, label: 'Member link', deactivated_at: null })
 
     expect(await call('remove_referral_link', 'link')).toEqual({ success: true })
     expect(await getUserReferralLink(id)).toBeNull()
