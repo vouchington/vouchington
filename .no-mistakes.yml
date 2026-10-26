@@ -2135,18 +2135,6 @@ rules:
   - name: Vitest tests do not assert benchmarks
     rule: forbidden-calls
     scope: repository
-    # Frozen baseline. Cleanup PRs do not edit it. #2137 owns it. #2145 deletes it.
-    exclude:
-      - 'backend/api/v1/platform-stats/platform-stats.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/categories.limits.test.mts'
-      - 'backend/test-helpers/api-fixtures/check.mts'
-      - 'backend/test-helpers/classifier-golden-set.mts'
-      - 'dev/test-helpers/run-process.mts'
-      - 'test-helpers/vitest.setup.data-stores.mts'
-      - 'ts-shared/utils/urls.test.mts'
-      - 'web/components/shared/__tests__/infinite-scroll.part-2.test.tsx'
-      - 'web/components/shared/__tests__/infinite-scroll.part-3.test.tsx'
-      - 'web/components/shared/__tests__/infinite-scroll.test.tsx'
     options:
       roots:
         - vitest: true

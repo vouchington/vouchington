@@ -75,7 +75,6 @@ describe('no-mistakes forbidden-calls config', () => {
       'Only canonical API routes may start an SSE response',
       'Vitest tests do not poll or wait on timers',
       'Test helpers and vitest setup do not invoke real timers or polls',
-      'Vitest tests do not assert benchmarks',
     ])
     for (const candidate of rules) {
       if (candidate.exclude === undefined) continue
