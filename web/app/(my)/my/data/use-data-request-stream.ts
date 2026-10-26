@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useEffectEvent } from 'react'
-import { ApiError } from '@vouchington/api-client'
 import type { DataRequest } from '@/lib/api/client/users'
 import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-download-link-retry'
+import { createClosedStatusProbeRetry } from './data-request-stream-probe-retry'
 import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
 import { shouldKeepStreamReconnecting } from './data-request-stream-transport'
 import { loadDataRequest, type StreamPayload } from './data-request-utils'
@@ -41,6 +41,8 @@ export function useDataRequestStream({
 
     let active = true
     const isCurrent = () => active && matchesCurrentIdentity(userId, requestId!)
+    let probeInFlight = false
+    const probeRetry = createClosedStatusProbeRetry()
     const downloadLinkRetry = createDownloadLinkRetry({
       isCurrent,
       load: () => loadDataRequest(userId),
@@ -131,10 +133,13 @@ export function useDataRequestStream({
     // recovered from durable state, not treated as user-facing failure. `EventSource`
     // reconnects natively as long as `close()` is not called, so a routine cycle stays warm.
     function onSseError(source: EventSource) {
-      if (!isCurrent() || !stream.isCurrentSource(source)) return
+      if (!isCurrent() || !stream.isCurrentSource(source) || probeInFlight || probeRetry.pending)
+        return
+      probeInFlight = true
       loadDataRequest(userId)
         .then(updated => {
           if (!isCurrent() || !stream.isCurrentSource(source)) return
+          probeRetry.reset()
           // `!updated` (e.g. a 404 — the export was deleted mid-stream) falls through to the
           // same no-op as pending/processing: EventSource keeps reconnecting with no user-visible
           // feedback. Accepted trade-off, not an oversight — pre-dates this change.
@@ -154,14 +159,23 @@ export function useDataRequestStream({
         })
         .catch(err => {
           if (!isCurrent() || !stream.isCurrentSource(source)) return
-          if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
+          if (
+            probeRetry.handleFailure(err, source, () => {
+              if (isCurrent() && stream.isCurrentSource(source)) onSseError(source)
+            })
+          )
+            return
           setCurrentError('Failed to track export status. Please refresh.')
           stream.close()
+        })
+        .finally(() => {
+          probeInFlight = false
         })
     }
 
     return () => {
       active = false
+      probeRetry.clear()
       stream.close()
       downloadLinkRetry.clear()
     }
