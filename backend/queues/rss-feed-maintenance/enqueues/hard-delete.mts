@@ -1,6 +1,6 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
-import { PRIORITY_DEFAULT, PRIORITY_RECOVERY, QUEUE_NAME } from '../config.mts'
+import { PRIORITY_HARD_DELETE, PRIORITY_RECOVERY, QUEUE_NAME } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
 import type { RssFeedHardDeleteChildPhase } from '../types.mts'
 
@@ -45,7 +45,7 @@ export function enqueueHardDeleteRssFeedSourcePage(rssFeedId: string): EnqueueRe
   return enqueueSourcePageJob(
     { rssFeedId },
     {
-      priority: PRIORITY_DEFAULT,
+      priority: PRIORITY_HARD_DELETE,
       ordering: { key: `hard-delete-rss-feed:${rssFeedId}`, concurrency: 1 },
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
@@ -74,7 +74,7 @@ export function enqueueHardDeleteRssFeedChildPage(
   return enqueueChildPageJob(
     { rssFeedId, phase },
     {
-      priority: PRIORITY_DEFAULT,
+      priority: PRIORITY_HARD_DELETE,
       ordering: { key: `hard-delete-rss-feed:${rssFeedId}`, concurrency: 1 },
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
@@ -88,7 +88,7 @@ export function enqueueFinalizeHardDeleteRssFeed(rssFeedId: string): EnqueueRetu
   return enqueueFinalizerJob(
     { rssFeedId },
     {
-      priority: PRIORITY_DEFAULT,
+      priority: PRIORITY_HARD_DELETE,
       ordering: { key: `hard-delete-rss-feed:${rssFeedId}`, concurrency: 1 },
       attempts: 3,
       backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },

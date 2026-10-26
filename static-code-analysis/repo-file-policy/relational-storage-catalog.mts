@@ -62,12 +62,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   // Keyset position in deleted operational rows; the target may no longer exist.
   'payment_operational_cleanup_cursors.cursor_id',
   'follower_distributions.cursor_recipient_id',
-  'post_publication_dirty_work.cursor_key_id',
-  'post_publication_dirty_work.cursor_post_id',
-  'post_publication_dirty_work.cursor_topic_id',
-  'post_publication_identity_bridge_cleanup_cursors.cursor_identity_id',
-  'post_publication_identity_snapshot_cleanup_cursors.cursor_snapshot_id',
-  'post_publication_reconciliation_audit_cursors.cursor_post_id',
   'retained_identity_cleanup_cursors.cursor_identity_id',
   'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
   // This is the retained binding's primary key, not a pointer to the deletable live placement.
@@ -88,9 +82,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
 // Extension tables such as user_metrics.id must keep the target FK instead of joining this set.
 export const ALLOWED_OWN_PRIMARY_UUID = new Set([
   'post_publication_community_identities.id',
-  'post_publication_rss_feed_identities.id',
-  'post_publication_story_identities.id',
-  'post_publication_topic_alias_identities.id',
   'retained_api_key_identities.id',
   'retained_image_identities.id',
   'retained_membership_identities.id',

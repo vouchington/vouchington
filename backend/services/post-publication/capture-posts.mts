@@ -38,21 +38,21 @@ export async function recordPostPublicationChanges(
     scopeId,
     impacts: impactsByPost.get(scopeId)!,
   }))
-  if (normalized.length > POST_PUBLICATION_CAPTURE_BATCH_SIZE)
-    throw new RangeError('Post publication change exceeds its capture page limit')
   await lockPostPublicationPostScopes(
     query,
     normalized.map(change => change.scopeId),
   )
-  for (const change of normalized) {
-    enqueueCapturedPublicationChangeAfterCommit(query, {
-      scope: { type: 'post', postId: change.scopeId },
-      reason,
-      keys: impactPublicationKeys({
-        postIds: [...change.impacts.postIds],
-        topicIds: [...change.impacts.topicIds],
-      }),
-    })
+  for (let offset = 0; offset < normalized.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
+    for (const change of normalized.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)) {
+      enqueueCapturedPublicationChangeAfterCommit(query, {
+        scope: { type: 'post', postId: change.scopeId },
+        reason,
+        keys: impactPublicationKeys({
+          postIds: [...change.impacts.postIds],
+          topicIds: [...change.impacts.topicIds],
+        }),
+      })
+    }
   }
 }
 

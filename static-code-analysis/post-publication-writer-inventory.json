@@ -28,6 +28,8 @@
     "backend/services/communities/publications/platform-override.mts",
     "backend/services/communities/publications/unpublish.mts",
     "backend/services/rss-feeds/delete.mts",
+    "backend/services/rss-feeds/hard-delete-finalize.mts",
+    "backend/services/rss-feeds/hard-delete-source-page.mts",
     "backend/services/rss-feeds/discoverability.mts",
     "backend/services/rss-feeds/update.mts",
     "backend/services/rss-feeds/disable-and-hide-source.mts",

@@ -3,6 +3,9 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { impactPublicationKeys } from './captured-keys.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { enqueueCapturedPublicationChangeAfterCommit } from './direct-capture.mts'
+import { markPostPublicationScopeLocksHeld } from './lock.mts'
+
+const heldAliasIdsByQuery = new WeakMap<TransactionQuery, Set<string>>()
 
 export async function recordTopicAliasPublicationWork(
   query: TransactionQuery,
@@ -30,7 +33,9 @@ export async function lockTopicAliasPublicationScopes(
   topicAliasIds: readonly string[],
 ): Promise<void> {
   const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
-  const ids = normalizePostPublicationIdentifiers(topicAliasIds)
+  const held = heldAliasIdsByQuery.get(query) ?? new Set<string>()
+  const ids = normalizePostPublicationIdentifiers(topicAliasIds).filter(id => !held.has(id))
+  heldAliasIdsByQuery.set(query, held)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
     // oxlint-disable-next-line no-await-in-loop -- ascending bounded batches preserve publication lock order.
@@ -39,6 +44,11 @@ export async function lockTopicAliasPublicationScopes(
       SELECT pg_advisory_xact_lock(hashtextextended('topic_alias:' || topic_alias_id::text, 0))
       FROM unnest($1::uuid[]) AS input(topic_alias_id) ORDER BY topic_alias_id`,
       [batch],
+    )
+    for (const topicAliasId of batch) held.add(topicAliasId)
+    markPostPublicationScopeLocksHeld(
+      query,
+      batch.map(topicAliasId => ({ type: 'topic_alias', topicAliasId })),
     )
   }
 }

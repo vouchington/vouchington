@@ -7,7 +7,9 @@ import {
   createTestUser,
   insertTestPost,
   withTransactionOptions,
+  overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
+import { captureAddedPublicationEffectsForScopes } from '@voucha/test-helpers/publication-effect-jobs'
 import {
   deleteTestPostRow,
   deleteTestTopicAlias,
@@ -23,6 +25,8 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { capturedPublicationKeys, hashCapturedPublicationKeys } from './captured-keys.mts'
 import { recordPostPublicationChange } from './capture.mts'
+import { recordPostPublicationChanges } from './capture-posts.mts'
+import { postPublicationWorkConfig } from './work-limits.mts'
 import { captureDestroyedTopicAliasPostImpacts } from './capture-topic-alias.mts'
 import type { PostPublicationChange } from './types.mts'
 
@@ -48,6 +52,28 @@ function effectId(changeId: string, change: PostPublicationChange): string {
 }
 
 describe('direct post-publication capture', () => {
+  it('captures every post when a producer batch exceeds the configured capture page', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      capture_batch_size: 2,
+    })
+    onTestFinished(restore)
+    const postIds = Array.from({ length: 3 }, () => randomUUID())
+    const jobs = await captureAddedPublicationEffectsForScopes(postIds, async () => {
+      await using query = await beginTransaction()
+      await recordPostPublicationChanges(
+        query,
+        'post_topics_changed',
+        postIds.map(postId => ({ postId, impactedPostIds: [postId] })),
+      )
+      await query.commit()
+    })
+    expect(jobs).toHaveLength(postIds.length)
+    for (const postId of postIds) {
+      const job = jobs.find(job => job.scope.id === postId)
+      expect(job?.keys).toContainEqual({ kind: 'impact_post', uuidValue: postId })
+    }
+  })
+
   it('retains a source-less alias relation before its delete cascade', async () => {
     const user = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user, name: `Alias preimage ${randomUUID()}` })

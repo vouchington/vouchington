@@ -184,48 +184,6 @@
     "routes": ["POST /api/v1/my/import/topics"]
   },
   {
-    "annotation": "fencePublicationIdentityBridgeCapture",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:72",
-    "routes": [
-      "DELETE /api/v1/communities/:idOrSlug",
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/rss-feeds/:id",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/rss-feeds/:id",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/fediverse/instances",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "POST /api/v1/topics",
-      "POST /api/v1/topics/:idOrSlug/aliases",
-      "POST /api/v1/topics/:sourceIdOrSlug/merges",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
-  },
-  {
     "annotation": "fetchElectionVoteRowsByUser",
     "maxCount": null,
     "reason": "The caller's own vote is re-read under the election request lock after the pre-lock ballot admission. Visibility changes do not take that lock.",
@@ -514,19 +472,6 @@
     "routes": ["POST /api/v1/fediverse/instances"]
   },
   {
-    "annotation": "lockPostPublicationCaptures",
-    "maxCount": null,
-    "reason": "Post-scope advisory locks stay in one sorted order when the id set is split across capture-batch pages.",
-    "permanent": true,
-    "code": "backend/services/post-publication/capture-posts.mts:100",
-    "routes": [
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts"
-    ]
-  },
-  {
     "annotation": "lockPostPublicationScope",
     "maxCount": null,
     "reason": "Distinct scope families take separate advisory locks, and a nested author or feed change re-locks its own scope as its entry point.",
@@ -546,30 +491,12 @@
     ]
   },
   {
-    "annotation": "lockPreparedPublicationScopes",
-    "maxCount": null,
-    "reason": "A multi-scope capture takes the sorted advisory locks for its whole declared set before the first dirty-work write.",
+    "annotation": "lockTopicAliasPublicationCaptures",
+    "maxCount": 2,
+    "reason": "Approval captures the requested alias set in one ordered page and the canonical slug alias in a second page; per-alias capture reuses those held scope locks.",
     "permanent": true,
-    "code": "backend/services/post-publication/prepare-identity-bridges.mts:21",
-    "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/rss-feeds/:id",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "PUT /api/v1/posts/:idOrSlug/images"
-    ]
-  },
-  {
-    "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
-    "maxCount": null,
-    "reason": "The hard-delete capture re-reads category aliases after the feed row lock so it sees aliases committed by the previous lock holder.",
-    "permanent": true,
-    "code": "backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts:13",
-    "routes": ["DELETE /api/v1/rss-feeds/:id"]
+    "code": "backend/services/post-publication/capture-topic-alias.mts:39",
+    "routes": ["POST /api/v1/topic-recommendations/:id/approvals"]
   },
   {
     "annotation": "lockSessionDeviceAuthority:sessionFence",
@@ -642,21 +569,6 @@
     "permanent": true,
     "code": "backend/services/user-warnings/issue-warning.mts:26-34",
     "routes": ["POST /api/v1/admin/warnings", "POST /api/v1/communities/:idOrSlug/warnings"]
-  },
-  {
-    "annotation": "orderPostPublicationRetainedKeyInput",
-    "maxCount": null,
-    "reason": "Each scope orders its retained keys only after that scope's advisory lock and dirty-work row exist.",
-    "permanent": true,
-    "code": "backend/services/post-publication/retained-key-writes.mts:107",
-    "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/topic-recommendations/:id/approvals"
-    ]
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
@@ -864,102 +776,6 @@
     ]
   },
   {
-    "annotation": "retainCurrentRssFeedPublicationKeys",
-    "maxCount": null,
-    "reason": "The topic-change capture reads the feed after the topic update, so it sees the topic the earlier state-change capture did not.",
-    "permanent": true,
-    "code": "backend/services/post-publication/capture-rss-feeds.mts:153",
-    "routes": ["PATCH /api/v1/rss-feeds/:id"]
-  },
-  {
-    "annotation": "retainPostPublicationDirtyWorkKeys",
-    "maxCount": null,
-    "reason": "Each scope inserts its retained keys only after that scope's advisory lock and dirty-work row exist.",
-    "permanent": true,
-    "code": "backend/services/post-publication/retained-key-writes.mts:92",
-    "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/topic-recommendations/:id/approvals"
-    ]
-  },
-  {
-    "annotation": "retainPublicationIdentityBridges",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:98",
-    "routes": [
-      "DELETE /api/v1/communities/:idOrSlug",
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/rss-feeds/:id",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/rss-feeds/:id",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/fediverse/instances",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "POST /api/v1/topics",
-      "POST /api/v1/topics/:idOrSlug/aliases",
-      "POST /api/v1/topics/:sourceIdOrSlug/merges",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
-  },
-  {
-    "annotation": "retainPublicationIdentityRoots",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:80",
-    "routes": [
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
-  },
-  {
     "annotation": "revokeAllAuthenticatedSessions",
     "maxCount": null,
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
@@ -1006,48 +822,6 @@
     "permanent": true,
     "code": "backend/services/my/email-addresses.mts:21",
     "routes": ["PATCH /api/v1/my/email-addresses/:email"]
-  },
-  {
-    "annotation": "sharePublicationIdentityBridgeOwnership",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:106",
-    "routes": [
-      "DELETE /api/v1/communities/:idOrSlug",
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/rss-feeds/:id",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/rss-feeds/:id",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/fediverse/instances",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "POST /api/v1/topics",
-      "POST /api/v1/topics/:idOrSlug/aliases",
-      "POST /api/v1/topics/:sourceIdOrSlug/merges",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
   },
   {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
@@ -1133,25 +907,6 @@
     "routes": [
       "POST /api/v1/auth/device-bound-sessions",
       "POST /api/v1/auth/native/email-address/login"
-    ]
-  },
-  {
-    "annotation": "upsertPostPublicationDirtyWork",
-    "maxCount": null,
-    "reason": "Each scope family upserts through its own conflict column, after that family's identity lock and before its keys.",
-    "permanent": true,
-    "code": "backend/services/post-publication/upsert-dirty-work.mts:30",
-    "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/rss-feeds/:id",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "PUT /api/v1/posts/:idOrSlug/images"
     ]
   },
   {

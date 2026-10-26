@@ -8,6 +8,7 @@ import { lockPostPublicationRssFeedScopes } from '@services/post-publication/cap
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
 import { lockHardDeleteRssFeedChildRows } from './hard-delete-child-rows.mts'
+import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 // Closed allowlist: no table or column name comes from queue data.
 const CHILD_TABLES: Record<
@@ -71,17 +72,63 @@ export async function hardDeleteRssFeedChildPage(
   if (!target) throw new TypeError(`Unsupported RSS feed hard-delete phase ${phase}`)
   const limit = getPostPublicationWorkLimit('rss_feed_hard_delete_capture_batch_size')
   await using query = await beginTransaction()
+  const { rows: parentFootprint } =
+    phase === 'feed_categories'
+      ? await query<{ topic_id: string }>(
+          `/* hardDeleteRssFeedChildPage:parentTopicFootprint */
+          SELECT topic_id FROM rss_feeds
+          WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL`,
+          [rssFeedId],
+        )
+      : { rows: [] }
+  const categoryFootprint =
+    phase === 'feed_categories'
+      ? (
+          await query<{ category_identity_id: string; topic_id: string | null }>(
+            `/* hardDeleteRssFeedChildPage:categoryFootprint */
+            SELECT category_identity_id, topic_id FROM rss_feed_categories
+            WHERE rss_feed_id = $1::uuid ORDER BY category_identity_id LIMIT $2`,
+            [rssFeedId, limit],
+          )
+        ).rows
+      : null
+  if (categoryFootprint) {
+    await withTopicReferenceAttachmentFences(
+      [
+        ...parentFootprint.map(row => row.topic_id),
+        ...categoryFootprint.flatMap(row => (row.topic_id ? [row.topic_id] : [])),
+      ],
+      { query },
+      async () => {},
+    )
+  }
   await lockPostPublicationRssFeedScopes(query, [rssFeedId])
-  const feed = await query<{ id: string }>(
+  const feed = await query<{ id: string; topic_id: string }>(
     `/* hardDeleteRssFeedChildPage:feed */
-    SELECT id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,
+    SELECT id, topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL FOR UPDATE`,
     [rssFeedId],
   )
   if (feed.rows.length === 0) {
     await query.commit()
     return { removed: 0, hasMore: false }
   }
+  if (categoryFootprint && feed.rows[0]!.topic_id !== parentFootprint[0]?.topic_id) {
+    await query.commit()
+    return { removed: 0, hasMore: true }
+  }
   const rows = await lockHardDeleteRssFeedChildRows(query, rssFeedId, phase, limit)
+  if (
+    categoryFootprint &&
+    (rows.length !== categoryFootprint.length ||
+      rows.some(
+        (row, index) =>
+          row.id !== categoryFootprint[index]?.category_identity_id ||
+          row.topic_id !== categoryFootprint[index]?.topic_id,
+      ))
+  ) {
+    await query.commit()
+    return { removed: 0, hasMore: true }
+  }
   if (rows.length > 0) {
     const ids = rows.map(row => row.id)
     const keys: PublicationCapturedKey[] = uniquePublicationKeys([

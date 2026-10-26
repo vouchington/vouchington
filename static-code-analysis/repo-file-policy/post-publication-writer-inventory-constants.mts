@@ -1,6 +1,7 @@
 export const CAPTURE_SYMBOLS = new Set([
   'recordPostPublicationChange',
   'recordPostPublicationChanges',
+  'enqueueCapturedPublicationChangeAfterCommit',
   'processAuthorDeletionPublicationBatch',
   'recordRssFeedHardDeletePublicationChange',
   'recordCreatedPostPublicationChange',
@@ -22,6 +23,7 @@ export const CAPTURE_IMPORT_MODULE_SPECIFIERS = new Set([
   '@services/entity-relations',
   '@services/entity-relations/post-topic-publication',
   '@services/post-publication',
+  '@services/post-publication/direct-capture',
   './create/publication-change.mts',
   './capture.mts',
   './delete-entity-relation-votes.mts',

@@ -40,6 +40,14 @@ export async function lockPostPublicationScope(
 ): Promise<void> {
   await postPublicationScopeLocks.lock(query, [postPublicationScopeLockKey(scope)])
 }
+
+/** Records keys acquired by an ordered SQL batch on this same transaction query. */
+export function markPostPublicationScopeLocksHeld(
+  query: TransactionQuery,
+  scopes: readonly PostPublicationScope[],
+): void {
+  postPublicationScopeLocks.markHeld(query, scopes.map(postPublicationScopeLockKey))
+}
 export async function lockAuthorPublicationLifecycle(
   query: TransactionQuery,
   authorUserId: string,

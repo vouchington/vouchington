@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
 import type { RssFeedHardDeleteChildPhase } from '@queues/rss-feed-maintenance/types'
+import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 type RemainingPhase = RssFeedHardDeleteChildPhase | 'sources' | 'admin_import_history'
 
@@ -10,6 +11,14 @@ export async function finalizeHardDeleteRssFeed(
   rssFeedId: string,
 ): Promise<{ deleted: boolean; remaining: RemainingPhase | null }> {
   await using query = await beginTransaction()
+  const { rows: footprint } = await query<{ topic_id: string }>(
+    `/* finalizeHardDeleteRssFeed:topicFootprint */
+    SELECT topic_id FROM rss_feeds WHERE id = $1::uuid AND hard_delete_requested_at IS NOT NULL`,
+    [rssFeedId],
+  )
+  if (footprint[0]) {
+    await withTopicReferenceAttachmentFences([footprint[0].topic_id], { query }, async () => {})
+  }
   await lockPostPublicationRssFeedScopes(query, [rssFeedId])
   const { rows: feeds } = await query<{ topic_id: string }>(
     `/* finalizeHardDeleteRssFeed:feed */
@@ -19,6 +28,10 @@ export async function finalizeHardDeleteRssFeed(
   if (feeds.length === 0) {
     await query.commit()
     return { deleted: false, remaining: null }
+  }
+  if (feeds[0]!.topic_id !== footprint[0]?.topic_id) {
+    await query.commit()
+    return { deleted: false, remaining: 'feed_categories' }
   }
   // Each EXISTS uses the feed FK's existing index and stops at one row.
   const { rows: pending } = await query<{ phase: RemainingPhase }>(

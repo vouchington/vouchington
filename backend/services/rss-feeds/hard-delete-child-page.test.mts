@@ -31,6 +31,7 @@ import { createRssFeed } from './create.mts'
 import { hardDeleteRssFeedById } from './delete.mts'
 import { hardDeleteRssFeedChildPage } from './hard-delete-child-page.mts'
 import { finalizeHardDeleteRssFeed } from './hard-delete-finalize.mts'
+import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 
 describe('resumable RSS feed child removal', () => {
   it('allows only marked feed history deletion while other ledger mutations stay rejected', async () => {
@@ -57,6 +58,17 @@ describe('resumable RSS feed child removal', () => {
     })
 
     await hardDeleteRssFeedById(feed.id)
+    const categoryPage = await runWithCapturedQueries(() =>
+      hardDeleteRssFeedChildPage(feed.id, 'feed_categories'),
+    )
+    expect(categoryPage.result).toEqual({ removed: 0, hasMore: false })
+    expectQueryOrder(categoryPage.queries, [
+      'hardDeleteRssFeedChildPage:parentTopicFootprint',
+      'hardDeleteRssFeedChildPage:categoryFootprint',
+      'lockTopicRssFeedAttachmentLifecycles',
+      'lockPostPublicationRssFeedScopes',
+      'hardDeleteRssFeedChildPage:feed',
+    ])
     await expect(updateTestFeedSettingChangeReason(changeId)).rejects.toMatchObject({
       code: '23514',
     })
@@ -172,10 +184,22 @@ describe('resumable RSS feed child removal', () => {
       removed: 1,
       hasMore: false,
     })
-    await expect(finalizeHardDeleteRssFeed(feed.id)).resolves.toMatchObject({
-      deleted: true,
-      remaining: null,
-    })
+    const final = await runWithCapturedQueries(() => finalizeHardDeleteRssFeed(feed.id))
+    expect(final.result).toMatchObject({ deleted: true, remaining: null })
+    expectQueryOrder(final.queries, [
+      'finalizeHardDeleteRssFeed:topicFootprint',
+      'lockTopicRssFeedAttachmentLifecycles',
+      'lockPostPublicationRssFeedScopes',
+      'finalizeHardDeleteRssFeed:feed',
+    ])
     expect(await countTestFeedRows(feed.id)).toBe(0)
   })
 })
+
+function expectQueryOrder(queries: Array<{ text: string }>, annotations: string[]): void {
+  const positions = annotations.map(annotation =>
+    queries.findIndex(query => query.text.includes(`/* ${annotation} */`)),
+  )
+  expect(positions.every(position => position >= 0)).toBe(true)
+  expect(positions).toEqual([...positions].toSorted((a, b) => a - b))
+}

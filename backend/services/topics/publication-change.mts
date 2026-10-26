@@ -2,6 +2,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 import {
   recordPostPublicationChange,
   captureDestroyedTopicAliasPostImpacts,
+  lockTopicAliasPublicationScopes,
 } from '@services/post-publication'
 
 type TopicAliasOwnershipChange = {
@@ -35,6 +36,7 @@ export async function recordTopicAliasPublicationChanges(
   if (aliasIds.length === 0) return
   if (options.retainDestroyedPostImpacts && aliasIds.length !== 1)
     throw new RangeError('Ordinary alias unlink captures one alias scope at a time')
+  await lockTopicAliasPublicationScopes(query, aliasIds)
   let destroyedChangeId: string | undefined
   for (const aliasId of aliasIds) {
     const retained = changesByAliasId.get(aliasId)!
