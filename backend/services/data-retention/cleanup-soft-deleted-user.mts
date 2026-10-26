@@ -4,7 +4,6 @@ import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@da
 import {
   lockAuthorPublicationLifecycle,
   processAuthorDeletionPublicationBatch,
-  retainUserCascadeHardDeletedPosts,
 } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
@@ -28,8 +27,8 @@ export async function cleanupSoftDeletedUser(
     await query.commit()
     return { deleted: 0, hasMore: false }
   }
-  // The deletion drain captures the old username before completion clears it. The reconciler
-  // retains the published author keys from the last receipt when final purge has only the user id.
+  // The deletion drain captures the old username before completion clears it. Final purge
+  // captures every remaining post identity before the user-row cascade removes those posts.
   const publication = await processAuthorDeletionPublicationBatch(
     query,
     targetId,
@@ -52,7 +51,23 @@ export async function cleanupSoftDeletedUser(
 }
 
 async function deletePurgedUser(query: TransactionQuery, targetId: string): Promise<number> {
-  await retainUserCascadeHardDeletedPosts(query, targetId)
+  // The committed publication drain must have reassigned every authored post.
+  // A remaining row would be silently cascaded by the user FK without a bounded
+  // pre-delete capture, so retry its page instead of deleting the user.
+  const { rows: remainingPosts } = await query<{ id: string }>(
+    `/* cleanupSoftDeletedUserBatch:remainingAuthoredPost */
+    SELECT id FROM posts WHERE created_by_id = $1::uuid LIMIT 1`,
+    [targetId],
+  )
+  if (remainingPosts.length > 0)
+    throw new Error('Final user purge still has authored posts after publication drain')
+  const { rows: initiatedStories } = await query<{ post_id: string }>(
+    `/* cleanupSoftDeletedUserBatch:remainingInitiatedStoryPost */
+    SELECT post_id FROM story_posts WHERE initiated_by_id = $1::uuid LIMIT 1`,
+    [targetId],
+  )
+  if (initiatedStories.length > 0)
+    throw new Error('Final user purge still has initiated story posts after publication drain')
   const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch:delete */
       DELETE FROM users WHERE id = ${targetId}`)
   return rowCount ?? 0
