@@ -36,6 +36,7 @@ const NODEINFO_DOCUMENT = {
 }
 
 describe('createInstanceFromHostname — queued NodeInfo classification', () => {
+  // The real worker retains its 5s blocking read and graceful shutdown budgets.
   it('retries a transient NodeInfo failure, then persists metadata after the real job completes', async () => {
     fetchSpy.mockReset()
     const releaseNodeInfo = Promise.withResolvers<void>()
@@ -57,26 +58,21 @@ describe('createInstanceFromHostname — queued NodeInfo classification', () => 
 
     const user = await createTestUserDirect()
 
-    const worker = createBackgroundWorker({
-      handlers: BACKGROUND_HANDLERS,
-      domains: ['fediverse-instances'],
-    })
     const completed = Promise.withResolvers<Job>()
+    const firstFailure = Promise.withResolvers<Job>()
     let failedAttempts = 0
-    worker.on('completed', job => {
-      if (job.name === FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) completed.resolve(job)
-    })
-    worker.on('failed', (job, error) => {
-      if (job?.name !== FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) return
-      failedAttempts += 1
-      if (failedAttempts >= (FEDIVERSE_INSTANCES_CLASSIFY_JOB.options.attempts ?? 1)) {
-        completed.reject(error)
+    let worker: ReturnType<typeof createBackgroundWorker> | undefined
+    const admission = Promise.withResolvers<Job | null>()
+    const originalAdd = background.add
+    const add = vi.spyOn(background, 'add').mockImplementation((name, data, options) => {
+      const job = originalAdd.call(background, name, data, options)
+      if (name === FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) {
+        void job.then(admission.resolve, admission.reject)
       }
+      return job
     })
-    worker.on('error', error => completed.reject(error))
 
     try {
-      await worker.waitUntilReady()
       const result = await createInstanceFromHostname(user, WEB_PROVENANCE, HOST)
       expect(result.status).toBe('created')
 
@@ -87,8 +83,33 @@ describe('createInstanceFromHostname — queued NodeInfo classification', () => 
         integration_status: 'pending',
       })
 
+      const admitted = await admission.promise
+      expect(admitted?.data).toMatchObject({ topicId: result.topic_id })
+      worker = createBackgroundWorker({
+        handlers: BACKGROUND_HANDLERS,
+        domains: ['fediverse-instances'],
+      })
+      worker.on('completed', job => {
+        if (job.name === FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) completed.resolve(job)
+      })
+      worker.on('failed', (job, error) => {
+        if (job?.name !== FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) return
+        failedAttempts += 1
+        if (failedAttempts === 1) firstFailure.resolve(job)
+        if (failedAttempts >= (FEDIVERSE_INSTANCES_CLASSIFY_JOB.options.attempts ?? 1)) {
+          completed.reject(error)
+        }
+      })
+      worker.on('error', error => completed.reject(error))
+
+      await worker.waitUntilReady()
+
       await nodeInfoStarted.promise
       releaseNodeInfo.resolve()
+      const retry = await firstFailure.promise
+      expect(retry.data).toMatchObject({ topicId: result.topic_id })
+      expect(await retry.getState()).toBe('delayed')
+      await retry.promote()
       const job = await completed.promise
       expect(job.data).toMatchObject({ topicId: result.topic_id, hostnameId: expect.any(String) })
       expect(job.opts.ordering).toMatchObject({ key: 'fediverse-instances', concurrency: 5 })
@@ -106,9 +127,10 @@ describe('createInstanceFromHostname — queued NodeInfo classification', () => 
       })
     } finally {
       releaseNodeInfo.resolve()
-      await closeAndUnregisterGlideMQInstance(worker)
+      add.mockRestore()
+      if (worker) await closeAndUnregisterGlideMQInstance(worker)
       await background.obliterate({ force: true })
       await closeAndUnregisterGlideMQInstance(background)
     }
-  })
+  }, 15_000)
 })

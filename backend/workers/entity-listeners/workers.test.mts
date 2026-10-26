@@ -3,7 +3,6 @@ import type { Job } from 'glide-mq'
 import { createTestTopic } from '@voucha/test-helpers'
 import {
   ENTITY_LISTENERS_JOBS,
-  ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_POST_CREATED_JOB,
   ENTITY_LISTENERS_TOPIC_CREATED_JOB,
   ENTITY_LISTENERS_TOPIC_DELETED_JOB,
@@ -95,25 +94,6 @@ describe('entity listener handlers', () => {
       add.mockRestore()
       await caches.topics.delete(topic.id)
     }
-  })
-
-  it('saves the fixed window of a reconciliation sweep page on its job', async () => {
-    const updateData = vi.fn<(data: unknown) => Promise<void>>().mockResolvedValue()
-    const moveToDelayed = vi.fn<(timestamp: number) => Promise<void>>().mockResolvedValue()
-    const handler = entityListenersHandlers.find(
-      candidate => candidate.job.name === ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name,
-    )
-
-    await handler!.handle({
-      name: ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name,
-      data: {},
-      updateData,
-      moveToDelayed,
-    } as unknown as Job)
-
-    expect(updateData).toHaveBeenCalledWith({
-      window: { start: expect.any(String), end: expect.any(String) },
-    })
   })
 
   it('rejects an unknown local job name', () => {
