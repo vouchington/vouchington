@@ -143,7 +143,7 @@ describe('backend Vitest project config', () => {
     expect(realGlideProject()).toMatchObject({
       pool: 'forks',
       isolate: true,
-      include: ['backend/**/*.real-glide.mock.test.mts'],
+      include: ['backend/**/*.real-glide.mock.test.mts', 'backend/**/*.real-glide.test.mts'],
     })
     expect(realGlideProject()?.globalSetup).toBeUndefined()
     expect(realGlideProject()?.setupFiles).toEqual([
