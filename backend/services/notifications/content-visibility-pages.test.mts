@@ -3,6 +3,7 @@ import {
   reconcilePostContentNotificationVisibility,
   reconcileRssFeedItemContentNotificationVisibility,
 } from './content-visibility-writes.mts'
+import { deleteNotification } from './mutations.mts'
 import { notificationsWorkConfig } from './work-limits.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -20,6 +21,49 @@ import {
 } from '@voucha/test-helpers'
 
 describe('bounded content visibility pages', () => {
+  it('advances past an unchanged raw target page before changing the next post recipient', async () => {
+    const restoreLimit = overrideDynamicConfigFieldsForTest(notificationsWorkConfig, {
+      content_visibility_page_size: 1,
+    })
+    try {
+      const sender = await createTestUser()
+      const author = await createTestUser()
+      const post = await createTestPost({ user: author, privacy: 'public' })
+      const recipients = (await Promise.all([createTestUser(), createTestUser()])).toSorted(
+        (a, b) => a.id.localeCompare(b.id),
+      )
+      const firstId = await createTestManualPostNotification({
+        userId: recipients[0]!.id,
+        sentByUserId: sender.id,
+        postId: post.id,
+      })
+      const secondId = await createTestManualPostNotification({
+        userId: recipients[1]!.id,
+        sentByUserId: sender.id,
+        postId: post.id,
+      })
+      await deleteNotification(recipients[0]!.id, firstId)
+      await setPostModerationFlaggedForTest({ postId: post.id, flagged: true })
+
+      const unchanged = await reconcilePostContentNotificationVisibility(post.id)
+      expect(unchanged).toEqual({
+        updated: 0,
+        pruned: 0,
+        nextCursor: { userId: recipients[0]!.id, notificationId: firstId },
+      })
+      const changed = await reconcilePostContentNotificationVisibility(
+        post.id,
+        unchanged.nextCursor,
+      )
+      expect(changed).toMatchObject({ updated: 1, pruned: 1 })
+      expect(await getNotificationById(secondId)).toMatchObject({
+        delete_reason: 'system_pruned',
+      })
+    } finally {
+      restoreLimit()
+    }
+  })
+
   it('bounds post pages and restarts at the first recipient after a mid-run edit', async () => {
     const restoreLimit = overrideDynamicConfigFieldsForTest(notificationsWorkConfig, {
       content_visibility_page_size: 1,

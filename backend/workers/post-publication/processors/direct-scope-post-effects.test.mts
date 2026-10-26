@@ -219,9 +219,12 @@ describe('bounded live publication scope effects', () => {
       const notifications = admitted
         .filter(item => item.name === NOTIFICATIONS_RECONCILE_POST_JOB.name)
         .map(item => item.data)
-      expect(notifications).toEqual(expect.arrayContaining(ids.map(postId => ({ postId }))))
-      expect(notifications).not.toContainEqual({ postId: root })
-      for (const postId of inactive) expect(notifications).not.toContainEqual({ postId })
+      expect(notifications).toEqual(
+        expect.arrayContaining(ids.map(postId => ({ postId, changeId: job.changeId }))),
+      )
+      expect(notifications).not.toContainEqual({ postId: root, changeId: job.changeId })
+      for (const postId of inactive)
+        expect(notifications).not.toContainEqual({ postId, changeId: job.changeId })
       expect(await Promise.all(slugs.map(slug => caches.posts_lookup.get(slug)))).toEqual([
         null,
         null,

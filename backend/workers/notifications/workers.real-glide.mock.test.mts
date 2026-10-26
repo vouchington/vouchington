@@ -105,22 +105,20 @@ describe('notification worker paged dispatch', () => {
     if (!firstPageB) throw new Error('Expected change B to enqueue a visibility continuation')
     expect(firstPageB).toEqual(firstPageA)
 
-    const pageA = await (
-      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
-    )(pendingPageA)
-    const pageB = await (
-      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
-    )(await getJob(pageId(changeB, firstPageB)))
-    if (!pageA.nextCursor || !pageB.nextCursor)
-      throw new Error('Expected both change chains to continue after the edit')
-    const finishA = await (
-      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
-    )(await getJob(pageId(changeA, pageA.nextCursor)))
-    const finishB = await (
-      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
-    )(await getJob(pageId(changeB, pageB.nextCursor)))
-    expect(finishA.nextCursor).toBeUndefined()
-    expect(finishB.nextCursor).toBeUndefined()
+    const handlePage = pageHandler.handle as (job: Job) => Promise<{
+      nextCursor?: typeof firstPageA
+    }>
+    let nextA: typeof firstPageA | undefined = firstPageA
+    let nextB: typeof firstPageA | undefined = firstPageB
+    for (let page = 0; page <= notificationIds.length; page += 1) {
+      if (nextA) {
+        const job: Job = page === 0 ? pendingPageA : await getJob(pageId(changeA, nextA))
+        nextA = (await handlePage(job)).nextCursor
+      }
+      if (nextB) nextB = (await handlePage(await getJob(pageId(changeB, nextB)))).nextCursor
+    }
+    expect(nextA).toBeUndefined()
+    expect(nextB).toBeUndefined()
     for (const id of notificationIds)
       expect(await getNotificationById(id)).toMatchObject({ deleted_at: null })
   })

@@ -40,6 +40,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
 
   it('enqueues embedding, autotagger, notification, and language detection jobs', async () => {
     const itemId = randomUUID()
+    const notificationChangeId = randomUUID()
     const guid = `guid-${randomUUID()}`
     const item = {
       content_sha256: Buffer.from(randomUUID().replaceAll('-', ''), 'hex'),
@@ -65,6 +66,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
             url_id: item.url_id,
           },
         ],
+        notificationChangeId,
       )
 
     expect(result).toEqual([{ has_embedding: false, id: itemId }])
@@ -95,6 +97,10 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
       languageDetection: languageDetectionJobs.length > 0,
       notification: notificationJobs.length > 0,
     }).toEqual({ aiAgent: true, embedding: true, languageDetection: true, notification: true })
+    expect(notificationJobs[0]?.data).toMatchObject({
+      rssFeedItemId: itemId,
+      changeId: notificationChangeId,
+    })
   })
 
   it('enqueues notification and language detection jobs for source-linked existing rows', async () => {
@@ -102,7 +108,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     const guid = `guid-${randomUUID()}`
     const row = { guid, has_embedding: true, id: itemId }
     const { rows: result, languageDetectionEnqueue } =
-      await enqueueRssFeedItemPostUpsertJobsWithCompletion([], [row], [], {
+      await enqueueRssFeedItemPostUpsertJobsWithCompletion([], [row], [], randomUUID(), {
         languageDetectionRows: [row],
       })
 
@@ -138,6 +144,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
         [],
         rows,
         [],
+        randomUUID(),
         { languageDetectionRows: rows },
       )
       await languageDetectionEnqueue
@@ -167,10 +174,16 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     const fanoutRow = { guid: `guid-${randomUUID()}`, has_embedding: true, id: fanoutItemId }
     const skippedRow = { guid: `guid-${randomUUID()}`, has_embedding: true, id: skippedItemId }
     const { rows: result, languageDetectionEnqueue } =
-      await enqueueRssFeedItemPostUpsertJobsWithCompletion([], [fanoutRow, skippedRow], [], {
-        existingRowsForFanout: [fanoutRow],
-        languageDetectionRows: [fanoutRow],
-      })
+      await enqueueRssFeedItemPostUpsertJobsWithCompletion(
+        [],
+        [fanoutRow, skippedRow],
+        [],
+        randomUUID(),
+        {
+          existingRowsForFanout: [fanoutRow],
+          languageDetectionRows: [fanoutRow],
+        },
+      )
 
     expect(result).toEqual([
       { has_embedding: true, id: fanoutItemId },

@@ -1,5 +1,4 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
-import { randomUUID } from 'node:crypto'
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
 import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
@@ -47,6 +46,7 @@ export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
   itemsToUpsert: RssFeedItemWithHash[],
   existingRows: RssFeedItemEnqueueRow[],
   upsertedRows: UpsertedRssFeedItemRow[],
+  notificationChangeId: string,
   options: PostUpsertEnqueueOptions = {},
 ) => {
   const allRowsWithGuids = mergeRssFeedItemRows(itemsToUpsert, existingRows, upsertedRows)
@@ -62,7 +62,10 @@ export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
   await Promise.all([
     enqueueEmbeddingsAndAutotagger(fanoutRowsWithGuids),
     invalidateRssFeedItemsInChunks(fanoutRowsWithGuids.map(row => row.id)),
-    enqueueRssFeedItemNotificationReconciliationInChunks(fanoutRowsWithGuids.map(row => row.id)),
+    enqueueRssFeedItemNotificationReconciliationInChunks(
+      fanoutRowsWithGuids.map(row => row.id),
+      notificationChangeId,
+    ),
   ])
   const languageDetectionEnqueue = enqueueRssFeedItemLanguageDetection(
     options.languageDetectionRows ?? upsertedRows,
@@ -78,12 +81,14 @@ export const enqueueRssFeedItemPostUpsertJobs = async (
   itemsToUpsert: RssFeedItemWithHash[],
   existingRows: RssFeedItemEnqueueRow[],
   upsertedRows: UpsertedRssFeedItemRow[],
+  notificationChangeId: string,
   options: PostUpsertEnqueueOptions = {},
 ) => {
   const { rows } = await enqueueRssFeedItemPostUpsertJobsWithCompletion(
     itemsToUpsert,
     existingRows,
     upsertedRows,
+    notificationChangeId,
     options,
   )
   return rows
@@ -127,9 +132,12 @@ async function enqueueBulkAutotaggerRssFeedItemsInChunks(
   await enqueueChunks(jobs, enqueueBulkAutotaggerRssFeedItems)
 }
 
-async function enqueueRssFeedItemNotificationReconciliationInChunks(rssFeedItemIds: string[]) {
+async function enqueueRssFeedItemNotificationReconciliationInChunks(
+  rssFeedItemIds: string[],
+  notificationChangeId: string,
+) {
   await enqueueChunks(rssFeedItemIds, async chunk => {
-    await enqueueBulkReconcileRssFeedItemNotifications(chunk, randomUUID())
+    await enqueueBulkReconcileRssFeedItemNotifications(chunk, notificationChangeId)
   })
 }
 
