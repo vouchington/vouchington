@@ -44,6 +44,12 @@
       "digest": "sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797"
     },
     {
+      "package": "dependency-distroless-nodejs",
+      "source": "gcr.io/distroless/nodejs26-debian13",
+      "tag": "nonroot",
+      "digest": "sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6"
+    },
+    {
       "package": "dependency-otel",
       "source": "docker.io/otel/opentelemetry-collector-contrib",
       "tag": "0.153.0",
