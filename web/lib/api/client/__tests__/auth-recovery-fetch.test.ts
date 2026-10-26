@@ -127,6 +127,16 @@ describe('application auth recovery fetch', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('sends a revoked refresh credential to login without attempting renewal', async () => {
+    const response = errorResponse(401, 'SESSION_REFRESH_REUSED')
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createAuthRecoveryFetch()('/api/v1/posts')).resolves.toBe(response)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(window.location.assign).toHaveBeenCalledTimes(1)
+  })
+
   it('allows one challenge after one authenticated renewal, preserving the request body', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()

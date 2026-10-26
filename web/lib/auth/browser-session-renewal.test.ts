@@ -92,6 +92,26 @@ describe('browser session renewal coordination', () => {
     expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'DELETE' })
   })
 
+  it('preserves a failed refresh response and clears the stale cookies', async () => {
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
+          callback(),
+      },
+    })
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 'SESSION_RELOGIN_REQUIRED' }), { status: 401 }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(renewBrowserSession()).rejects.toMatchObject({ status: 401 })
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/session', '/api/v1/session'])
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'DELETE' })
+  })
+
   it('reports cleanup failure without hiding the original renewal failure', async () => {
     vi.stubGlobal('navigator', {})
     const cleanupError = new Error('origin unavailable')
