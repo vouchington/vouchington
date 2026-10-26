@@ -1,10 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { createTestPersistedReversalCaseFixture } from './data-stores/psql/membership-reversal-cases.mts'
 import { getLockedIneligiblePurchaseReversalCase } from '../services/memberships/ineligible-stripe-purchase-reversal/case-ledger.mts'
-import {
-  claimIneligiblePurchaseReversalCaseForDiscovery,
-  claimPersistedIneligiblePurchaseReversalCase,
-} from '../services/memberships/ineligible-stripe-purchase-reversal/claim-ledger.mts'
+import { claimPersistedIneligiblePurchaseReversalCase } from '../services/memberships/ineligible-stripe-purchase-reversal/claim-ledger.mts'
 import type { StripeRefund } from '../services/memberships/ineligible-stripe-purchase-reversal/refund-history.mts'
 import {
   createStripeRefundScanCallBudget,
@@ -12,21 +10,53 @@ import {
   type StripeRefundScanTarget,
 } from '../services/memberships/ineligible-stripe-purchase-reversal/refund-scan.mts'
 
+type TestReversalCaseIdentity = {
+  userId: string
+  originatingInvoiceId: string
+  providerApplicationId?: string
+  providerEnvironment: 'test' | 'production'
+  subscriptionId: string
+  stripePriceId: string
+  effectiveAt?: Date
+  expiresAt?: Date
+}
+
 export async function claimTestIneligiblePurchaseReversalOperations(
-  options: Parameters<typeof claimIneligiblePurchaseReversalCaseForDiscovery>[0],
+  options: TestReversalCaseIdentity,
   targets: Parameters<typeof claimPersistedIneligiblePurchaseReversalCase>[1],
-  snapshot: Parameters<typeof claimIneligiblePurchaseReversalCaseForDiscovery>[1],
+  snapshot: {
+    currency: string
+    qualifyingAmountMinorUnits: number
+    refundCapMinorUnits?: number
+    winningSourceKind?: 'admin_grant' | 'direct' | 'family'
+    periodStartedAt?: Date
+    periodEndsAt?: Date
+    collisionAt?: Date
+  },
 ) {
-  const discovery = await claimIneligiblePurchaseReversalCaseForDiscovery(options, snapshot)
-  if (discovery.disposition !== 'ineligible')
-    throw new Error('Expected an ineligible purchase reversal fixture')
-  const reversalCase = discovery.reversalCase
+  const now = new Date()
+  const periodStartedAt = snapshot.periodStartedAt ?? options.effectiveAt ?? now
+  await createTestPersistedReversalCaseFixture({
+    userId: options.userId,
+    originatingInvoiceId: options.originatingInvoiceId,
+    providerApplicationId: options.providerApplicationId ?? 'voucha-web',
+    providerEnvironment: options.providerEnvironment,
+    subscriptionId: options.subscriptionId,
+    stripePriceId: options.stripePriceId,
+    currency: snapshot.currency,
+    qualifyingAmountMinorUnits: snapshot.qualifyingAmountMinorUnits,
+    refundCapMinorUnits: snapshot.refundCapMinorUnits ?? snapshot.qualifyingAmountMinorUnits,
+    winningSourceKind: snapshot.winningSourceKind ?? 'direct',
+    periodStartedAt,
+    periodEndsAt: snapshot.periodEndsAt ?? options.expiresAt ?? periodStartedAt,
+    collisionAt: snapshot.collisionAt ?? now,
+  })
   const claim = await claimPersistedIneligiblePurchaseReversalCase(
     {
-      originatingInvoiceId: reversalCase.originatingInvoiceId,
-      providerApplicationId: reversalCase.providerApplicationId,
-      providerEnvironment: reversalCase.providerEnvironment,
-      subscriptionId: reversalCase.subscriptionId,
+      originatingInvoiceId: options.originatingInvoiceId,
+      providerApplicationId: options.providerApplicationId ?? 'voucha-web',
+      providerEnvironment: options.providerEnvironment,
+      subscriptionId: options.subscriptionId,
     },
     targets,
   )

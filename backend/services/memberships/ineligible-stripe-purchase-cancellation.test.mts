@@ -19,14 +19,10 @@ describe('claimIneligiblePurchaseCancellationOperation', () => {
     const incomingSku = await createTestSku({ plan: 'pro' })
     const subscriptionId = `sub_cancellation_${randomUUID()}`
     const options = {
-      customerId: `cus_cancellation_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId: `in_cancellation_${randomUUID()}`,
       providerEnvironment: 'production' as const,
-      sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
       subscriptionId,
       userId: user.id,

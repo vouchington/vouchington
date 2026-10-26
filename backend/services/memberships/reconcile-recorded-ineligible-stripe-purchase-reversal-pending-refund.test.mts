@@ -35,14 +35,10 @@ describe('recorded ineligible Stripe purchase pending-refund reconciliation', ()
     }
     const initial = (await claimTestIneligiblePurchaseReversalOperations(
       {
-        customerId: `cus_reconcile_observed_${member.id}`,
         effectiveAt: undefined,
         expiresAt: undefined,
-        incomingPlan: 'pro',
-        incomingStatus: 'active',
         originatingInvoiceId: invoiceId,
         providerEnvironment: 'production',
-        sku: incomingSku,
         stripePriceId: incomingSku.stripe_price_id,
         subscriptionId,
         userId: member.id,
@@ -124,98 +120,111 @@ describe('recorded ineligible Stripe purchase pending-refund reconciliation', ()
     })
   })
 
-  it('releases incomplete claims when Stripe returns a non-succeeded refund', async () => {
-    const member = await createTestUser()
-    const currentSku = await createTestSku({ plan: 'plus' })
-    await createMembership({
-      userId: member.id,
-      plan: 'plus',
-      skuId: currentSku.id,
-      stripeSubscriptionId: `sub_current_reconcile_invalid_${member.id}`,
-      providerEnvironment: 'production',
-    })
-    const incomingSku = await createTestSku({ plan: 'pro' })
-    const subscriptionId = `sub_reconcile_invalid_${member.id}`
-    const invoiceId = `in_reconcile_invalid_${member.id}`
-    const target = {
-      amountMinorUnits: 100,
-      chargeId: `ch_reconcile_invalid_${member.id}`,
-      currency: 'usd',
-      invoiceId,
-      paymentIntentId: null,
-      qualifyingAmountMinorUnits: 100,
-    }
-    const initial = (await claimTestIneligiblePurchaseReversalOperations(
-      {
-        customerId: `cus_reconcile_invalid_${member.id}`,
-        effectiveAt: undefined,
-        expiresAt: undefined,
-        incomingPlan: 'pro',
-        incomingStatus: 'active',
-        originatingInvoiceId: invoiceId,
-        providerEnvironment: 'production',
-        sku: incomingSku,
-        stripePriceId: incomingSku.stripe_price_id,
-        subscriptionId,
+  it.each([
+    {
+      name: 'a non-succeeded refund',
+      refundDeferred: false,
+      error: 'refund is pending',
+      refundCalls: 1,
+    },
+    { name: 'an open dispute', refundDeferred: true, error: 'refund is deferred', refundCalls: 0 },
+  ])(
+    'releases incomplete claims when Stripe reports $name',
+    async ({ refundDeferred, error, refundCalls }) => {
+      const member = await createTestUser()
+      const currentSku = await createTestSku({ plan: 'plus' })
+      await createMembership({
         userId: member.id,
-      },
-      [target],
-      { currency: target.currency, qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits },
-    ))!
-    await Promise.all(
-      [initial.cancellation!, initial.reversals[0]!].map(operation =>
-        failIneligiblePurchaseReversal(operation, new Error('simulate interrupted reversal')),
-      ),
-    )
-    const listSubscriptionInvoices = vi
-      .fn<IneligibleStripePurchaseOperations['listSubscriptionInvoices']>()
-      .mockResolvedValue([
-        {
-          id: invoiceId,
-          status: 'paid',
-          amount_paid: target.amountMinorUnits,
-          currency: target.currency,
-          created: 1_893_369_600,
-          description: null,
-          payments: {
-            data: [
-              {
-                amount_paid: target.amountMinorUnits,
-                payment: { type: 'charge', charge: target.chargeId },
-              },
-            ],
-          },
-        },
-      ] as never)
-    const createRefund = vi
-      .fn<IneligibleStripePurchaseOperations['createRefund']>()
-      .mockResolvedValue({
-        amount: target.amountMinorUnits,
-        currency: target.currency,
-        id: `re_reconcile_invalid_${member.id}`,
-        status: 'pending',
-      } as never)
-
-    await expect(
-      reconcileRecordedIneligibleStripePurchaseReversal({
-        originatingInvoiceId: invoiceId,
+        plan: 'plus',
+        skuId: currentSku.id,
+        stripeSubscriptionId: `sub_current_reconcile_invalid_${member.id}`,
         providerEnvironment: 'production',
-        operations: {
-          cancelSubscriptionImmediately:
-            vi.fn<IneligibleStripePurchaseOperations['cancelSubscriptionImmediately']>(),
-          createRefund,
-          getDisputeSettlementForPayment: vi
-            .fn<NonNullable<IneligibleStripePurchaseOperations['getDisputeSettlementForPayment']>>()
-            .mockResolvedValue({ lostDisputeAmountMinorUnits: 0, refundDeferred: false }),
-          listRefundsForPaymentPage: vi
-            .fn<IneligibleStripePurchaseOperations['listRefundsForPaymentPage']>()
-            .mockResolvedValue({ hasMore: false, nextCursor: undefined, refunds: [] }),
-          listSubscriptionInvoices,
+      })
+      const incomingSku = await createTestSku({ plan: 'pro' })
+      const subscriptionId = `sub_reconcile_invalid_${member.id}`
+      const invoiceId = `in_reconcile_invalid_${member.id}`
+      const target = {
+        amountMinorUnits: 100,
+        chargeId: `ch_reconcile_invalid_${member.id}`,
+        currency: 'usd',
+        invoiceId,
+        paymentIntentId: null,
+        qualifyingAmountMinorUnits: 100,
+      }
+      const initial = (await claimTestIneligiblePurchaseReversalOperations(
+        {
+          effectiveAt: undefined,
+          expiresAt: undefined,
+          originatingInvoiceId: invoiceId,
+          providerEnvironment: 'production',
+          stripePriceId: incomingSku.stripe_price_id,
+          subscriptionId,
+          userId: member.id,
         },
-      }),
-    ).rejects.toThrow('refund is pending')
-    await expect(
-      getTestIneligiblePurchaseReversalExecutionClaimCount(subscriptionId, 'production'),
-    ).resolves.toBe(0)
-  })
+        [target],
+        {
+          currency: target.currency,
+          qualifyingAmountMinorUnits: target.qualifyingAmountMinorUnits,
+        },
+      ))!
+      await Promise.all(
+        [initial.cancellation!, initial.reversals[0]!].map(operation =>
+          failIneligiblePurchaseReversal(operation, new Error('simulate interrupted reversal')),
+        ),
+      )
+      const listSubscriptionInvoices = vi
+        .fn<IneligibleStripePurchaseOperations['listSubscriptionInvoices']>()
+        .mockResolvedValue([
+          {
+            id: invoiceId,
+            status: 'paid',
+            amount_paid: target.amountMinorUnits,
+            currency: target.currency,
+            created: 1_893_369_600,
+            description: null,
+            payments: {
+              data: [
+                {
+                  amount_paid: target.amountMinorUnits,
+                  payment: { type: 'charge', charge: target.chargeId },
+                },
+              ],
+            },
+          },
+        ] as never)
+      const createRefund = vi
+        .fn<IneligibleStripePurchaseOperations['createRefund']>()
+        .mockResolvedValue({
+          amount: target.amountMinorUnits,
+          currency: target.currency,
+          id: `re_reconcile_invalid_${member.id}`,
+          status: 'pending',
+        } as never)
+
+      await expect(
+        reconcileRecordedIneligibleStripePurchaseReversal({
+          originatingInvoiceId: invoiceId,
+          providerEnvironment: 'production',
+          operations: {
+            cancelSubscriptionImmediately:
+              vi.fn<IneligibleStripePurchaseOperations['cancelSubscriptionImmediately']>(),
+            createRefund,
+            getDisputeSettlementForPayment: vi
+              .fn<
+                NonNullable<IneligibleStripePurchaseOperations['getDisputeSettlementForPayment']>
+              >()
+              .mockResolvedValue({ lostDisputeAmountMinorUnits: 0, refundDeferred }),
+            listRefundsForPaymentPage: vi
+              .fn<IneligibleStripePurchaseOperations['listRefundsForPaymentPage']>()
+              .mockResolvedValue({ hasMore: false, nextCursor: undefined, refunds: [] }),
+            listSubscriptionInvoices,
+          },
+        }),
+      ).rejects.toThrow(error)
+      expect(createRefund).toHaveBeenCalledTimes(refundCalls)
+      await expect(
+        getTestIneligiblePurchaseReversalExecutionClaimCount(subscriptionId, 'production'),
+      ).resolves.toBe(0)
+    },
+  )
 })

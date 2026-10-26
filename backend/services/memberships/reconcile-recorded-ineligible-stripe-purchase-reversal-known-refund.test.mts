@@ -38,14 +38,10 @@ describe('recorded ineligible Stripe purchase known-refund reconciliation', () =
     }
     const initial = (await claimTestIneligiblePurchaseReversalOperations(
       {
-        customerId: `cus_reconcile_known_${member.id}`,
         effectiveAt: undefined,
         expiresAt: undefined,
-        incomingPlan: 'pro',
-        incomingStatus: 'active',
         originatingInvoiceId: invoiceId,
         providerEnvironment: 'production',
-        sku: incomingSku,
         stripePriceId: incomingSku.stripe_price_id,
         subscriptionId,
         userId: member.id,

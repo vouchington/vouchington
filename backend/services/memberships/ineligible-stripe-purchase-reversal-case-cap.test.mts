@@ -117,14 +117,10 @@ async function createCaseFixture() {
   const originatingInvoiceId = `in_case_cap_${randomUUID()}`
   return {
     options: {
-      customerId: `cus_case_cap_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId,
       providerEnvironment: 'production' as const,
-      sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
       subscriptionId: `sub_case_cap_${randomUUID()}`,
       userId: user.id,

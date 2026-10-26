@@ -38,14 +38,10 @@ export async function createWonDisputeRecoveryFixture(
   )
   const claim = (await claimTestIneligiblePurchaseReversalOperations(
     {
-      customerId: `cus_won_dispute_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro',
-      incomingStatus: 'active',
       originatingInvoiceId: invoiceId,
       providerEnvironment: 'production',
-      sku,
       stripePriceId: sku.stripe_price_id,
       subscriptionId,
       userId: user.id,

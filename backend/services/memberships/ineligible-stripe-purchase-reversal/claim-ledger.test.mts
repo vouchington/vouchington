@@ -16,12 +16,9 @@ import {
   failIneligiblePurchaseReversal,
   markIneligiblePurchaseReversalCompleted,
 } from '../ineligible-stripe-purchase-reversal-execution.mts'
-import {
-  claimIneligiblePurchaseReversalCaseForDiscovery,
-  claimPersistedIneligiblePurchaseReversalCase,
-} from './claim-ledger.mts'
+import { claimPersistedIneligiblePurchaseReversalCase } from './claim-ledger.mts'
 
-describe('purchase reversal discovery no-op cases', () => {
+describe('persisted purchase reversal case lookup', () => {
   it('does not create operations when the immutable case does not exist', async () => {
     await expect(
       claimPersistedIneligiblePurchaseReversalCase(
@@ -33,66 +30,6 @@ describe('purchase reversal discovery no-op cases', () => {
         [],
       ),
     ).resolves.toBeNull()
-  })
-
-  it('does not create operations without an entitlement collision', async () => {
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'pro' })
-
-    const options: Parameters<typeof claimIneligiblePurchaseReversalCaseForDiscovery>[0] = {
-      customerId: `cus_claim_none_${randomUUID()}`,
-      effectiveAt: undefined,
-      expiresAt: undefined,
-      incomingPlan: 'pro',
-      incomingStatus: 'active',
-      originatingInvoiceId: `in_claim_none_${randomUUID()}`,
-      providerEnvironment: 'production',
-      sku,
-      stripePriceId: sku.stripe_price_id,
-      subscriptionId: `sub_claim_none_${randomUUID()}`,
-      userId: user.id,
-    }
-    await expect(
-      claimIneligiblePurchaseReversalCaseForDiscovery(options, {
-        currency: 'usd',
-        qualifyingAmountMinorUnits: 0,
-      }),
-    ).resolves.toEqual({ disposition: 'none', reversalCase: null })
-    await expect(claimPersistedIneligiblePurchaseReversalCase(options, [])).resolves.toBeNull()
-  })
-
-  it('returns no operations when the direct purchase already converged', async () => {
-    const user = await createTestUser()
-    const sku = await createTestSku({ plan: 'pro' })
-    const subscriptionId = `sub_claim_converged_${randomUUID()}`
-    await createMembership({
-      userId: user.id,
-      plan: 'pro',
-      skuId: sku.id,
-      stripeSubscriptionId: subscriptionId,
-      providerEnvironment: 'production',
-    })
-
-    const options: Parameters<typeof claimIneligiblePurchaseReversalCaseForDiscovery>[0] = {
-      customerId: `cus_claim_converged_${randomUUID()}`,
-      effectiveAt: undefined,
-      expiresAt: undefined,
-      incomingPlan: 'pro',
-      incomingStatus: 'active',
-      originatingInvoiceId: `in_claim_converged_${randomUUID()}`,
-      providerEnvironment: 'production',
-      sku,
-      stripePriceId: sku.stripe_price_id,
-      subscriptionId,
-      userId: user.id,
-    }
-    await expect(
-      claimIneligiblePurchaseReversalCaseForDiscovery(options, {
-        currency: 'usd',
-        qualifyingAmountMinorUnits: 0,
-      }),
-    ).resolves.toEqual({ disposition: 'converged', reversalCase: null })
-    await expect(claimPersistedIneligiblePurchaseReversalCase(options, [])).resolves.toBeNull()
   })
 })
 
@@ -121,15 +58,11 @@ describe('family collision reversal ledger', () => {
     })
     const subscriptionId = `sub_family_proration_${randomUUID()}`
     const options = {
-      customerId: `cus_family_proration_${randomUUID()}`,
       effectiveAt: periodStartedAt,
       expiresAt: periodEndsAt,
-      incomingPlan: 'plus' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId: `in_family_proration_${randomUUID()}`,
       providerApplicationId: incomingSku.provider_application_id,
       providerEnvironment: 'production' as const,
-      sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
       subscriptionId,
       userId: user.id,
@@ -142,7 +75,15 @@ describe('family collision reversal ledger', () => {
       paymentIntentId: null,
       qualifyingAmountMinorUnits: 1_000,
     }
-    const snapshot = { currency: target.currency, qualifyingAmountMinorUnits: 1_000 }
+    const snapshot = {
+      currency: target.currency,
+      qualifyingAmountMinorUnits: 1_000,
+      refundCapMinorUnits: 500,
+      winningSourceKind: 'family' as const,
+      periodStartedAt,
+      periodEndsAt,
+      collisionAt,
+    }
     const initial = (await claimTestIneligiblePurchaseReversalOperations(
       options,
       [target],
@@ -184,14 +125,10 @@ describe('family collision reversal ledger', () => {
     })
     const sku = await createTestSku({ plan: 'pro' })
     const options = {
-      customerId: `cus_completed_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId: `in_completed_${randomUUID()}`,
       providerEnvironment: 'production' as const,
-      sku,
       stripePriceId: sku.stripe_price_id,
       subscriptionId: `sub_completed_${randomUUID()}`,
       userId: user.id,

@@ -27,14 +27,10 @@ describe('recorded ineligible Stripe purchase failed-refund reconciliation', () 
     })
     const incomingSku = await createTestSku({ plan: 'pro' })
     const options = {
-      customerId: `cus_failed_refund_${randomUUID()}`,
       effectiveAt: undefined,
       expiresAt: undefined,
-      incomingPlan: 'pro' as const,
-      incomingStatus: 'active' as const,
       originatingInvoiceId: `in_failed_refund_${randomUUID()}`,
       providerEnvironment: 'production' as const,
-      sku: incomingSku,
       stripePriceId: incomingSku.stripe_price_id,
       subscriptionId: `sub_failed_refund_${randomUUID()}`,
       userId: user.id,

@@ -2,14 +2,11 @@ import { mapWithConcurrency } from '@vouchington/utils/async'
 import type { StripeDisputeSettlement } from '@modules/stripe/disputes'
 import {
   getInvoicePaymentTargets,
-  getQualifyingInvoiceLineAmount,
   type StripeInvoiceForReversal,
 } from './ineligible-stripe-purchase-reversal-target-allocation.mts'
 import { STRIPE_REVERSAL_CONCURRENCY } from './ineligible-stripe-purchase-reversal-provider-policy.mts'
 import type { StripeRefundHistory } from './ineligible-stripe-purchase-reversal/refund-history.mts'
 import type { ReversalTarget } from './ineligible-stripe-purchase-reversal-types.mts'
-
-export { getQualifyingInvoiceLineAmount, type StripeInvoiceForReversal }
 
 type GetStripeRefundHistoryForPayment = (options: {
   chargeId: string | null
