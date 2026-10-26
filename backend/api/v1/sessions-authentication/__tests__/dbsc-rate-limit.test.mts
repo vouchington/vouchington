@@ -1,13 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import { createDbscTestSession } from '@voucha/test-helpers/dbsc-session'
+import { routeRateLimitConfig } from '@services/route-rate-limits/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { useRouteRateLimitConfigSnapshot } from '@voucha/test-helpers/api/route-rate-limit-config-snapshot'
 
 const origin = 'https://dbsc.example'
 
 describe('DBSC route rate limit', () => {
+  useRouteRateLimitConfigSnapshot()
   beforeEach(() => {
     vi.stubEnv('SITE_ORIGIN', origin)
     vi.stubEnv('CF_WORKER_SECRET', 'synthetic-worker-secret-for-dbsc-rate-tests')
+    overrideDynamicConfigFieldsForTest(routeRateLimitConfig, {
+      enabled: true,
+      anon_sensitive: 5,
+      anon_sensitive_ttl: 60,
+    })
   })
   afterEach(() => vi.unstubAllEnvs())
 
@@ -49,7 +58,7 @@ describe('DBSC route rate limit', () => {
       .set('x-forwarded-proto', 'https')
       .set('x-forwarded-host', 'dbsc.example')
     const url = '/api/v1/auth/device-bound-sessions/refreshes'
-    for (let index = 0; index < 5; index++)
+    for (let index = 0; index < 4; index++)
       await request
         .post(url)
         .set('Cookie', `dt=${registered.dt}`)
@@ -66,8 +75,10 @@ describe('DBSC route rate limit', () => {
     const request = createRequest()
       .set('x-forwarded-for', nextTestRequestIp())
       .set('Origin', origin)
+      .set('x-forwarded-proto', 'https')
+      .set('x-forwarded-host', 'dbsc.example')
     const url = '/api/v1/auth/device-bound-sessions/refreshes'
-    for (let index = 0; index < 5; index++)
+    for (let index = 0; index < 4; index++)
       await request.post(url).set('Cookie', 'dt=unsigned').expect(400)
     await request.post(url).set('Cookie', 'dt=unsigned').expect(429)
   })
