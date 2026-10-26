@@ -1,7 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
-import { chmod, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
@@ -10,129 +8,66 @@ import { describe, expect, it } from 'vitest'
 
 const execFile = promisify(execFileCallback)
 
-describe('vouchington-tooling consume wrappers', () => {
-  it('installs a verified tarball with npm and removes its temporary directory', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'tooling-installer-tarball-'))
-    const ciDir = join(dir, 'ci')
-    const archiveDir = join(dir, 'package')
-    const tarball = join(dir, 'published.tgz')
-    const packageJson = join(dir, 'package.json')
-    const installDir = join(dir, 'install')
-    await mkdir(ciDir)
-    await mkdir(archiveDir)
-    await mkdir(installDir)
-    await writeFile(join(installDir, 'package.json'), JSON.stringify({ private: true }))
+describe('vouchington-tooling consume wrapper', () => {
+  it.each([false, true])('uses the frozen graph and propagates install failure: %s', async fail => {
+    const dir = await mkdtemp(join(tmpdir(), 'tooling-installer-'))
+    const bin = join(dir, 'bin')
+    const calls = join(dir, 'calls')
+    const destination = join(dir, 'install')
+    await mkdir(bin)
     await writeFile(
-      join(archiveDir, 'package.json'),
-      JSON.stringify({ name: 'vouchington-tooling', version: '9.9.9' }),
-    )
-    await execFile('tar', ['-czf', tarball, '-C', dir, 'package'])
-    const integrity = createHash('sha512')
-      .update(await readFile(tarball))
-      .digest('base64')
-    await writeFile(
-      packageJson,
-      JSON.stringify({ devDependencies: { 'vouchington-tooling': '^9.9.9' } }),
-    )
-    await writeFile(
-      join(dir, 'pnpm-lock.yaml'),
-      `importers:
-  .:
-    devDependencies:
-      vouchington-tooling:
-        specifier: ^9.9.9
-        version: 9.9.9
-packages:
-  vouchington-tooling@9.9.9:
-    resolution: {integrity: sha512-${integrity}}
+      join(bin, 'pnpm'),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "$CALLS"
+[ "$npm_config_userconfig" = /dev/null ]
+[ "$npm_config_registry" = https://registry.npmjs.org/ ]
+if [ "$3" = install ]; then
+  [ "$4" = --frozen-lockfile ]
+  [ "$5" = --filter ]
+  [ "$6" = @voucha/ci... ]
+  [ "$7" = --prod ]
+  [ "$8" = --ignore-scripts ]
+  [ "$FAIL_INSTALL" = false ] || exit 17
+else
+  [ "$3" = --filter ]
+  [ "$4" = @voucha/ci ]
+  [ "$5" = deploy ]
+  [ "$6" = --prod ]
+  [ "$7" = --legacy ]
+  [ "$8" = --ignore-scripts ]
+  [ "$9" = --frozen-lockfile ]
+  mkdir -p "\${10}/node_modules/vouchington-tooling"
+fi
 `,
     )
-    await writeFile(
-      join(ciDir, 'install-vouchington-tooling.sh'),
-      readFileSync(resolve('ci/install-vouchington-tooling.sh')),
-    )
-    await writeFile(
-      join(ciDir, 'curl-to.sh'),
-      'ci_download_to() { cp "$DOWNLOAD_PACKAGE" "$2"; }\n',
-    )
+    await chmod(join(bin, 'pnpm'), 0o755)
     try {
-      await execFile(
+      const result = execFile(
         'bash',
-        [join(ciDir, 'install-vouchington-tooling.sh'), installDir, packageJson],
+        [resolve('ci/install-vouchington-tooling.sh'), destination, join(dir, 'package.json')],
         {
-          cwd: dir,
           env: {
             ...process.env,
-            DOWNLOAD_PACKAGE: tarball,
-            npm_config_cache: join(dir, 'npm-cache'),
-            // This dependency-free tarball is local; registry audits are not this wrapper's contract.
-            npm_config_offline: 'true',
-            npm_config_audit: 'false',
-            npm_config_fund: 'false',
-            npm_config_update_notifier: 'false',
-            TMPDIR: dir,
+            PATH: `${bin}:${process.env.PATH}`,
+            CALLS: calls,
+            FAIL_INSTALL: String(fail),
+            npm_config_registry: 'https://untrusted.invalid/',
           },
         },
       )
-      expect(
-        JSON.parse(
-          await readFile(join(installDir, 'node_modules/vouchington-tooling/package.json'), 'utf8'),
-        ),
-      ).toMatchObject({ name: 'vouchington-tooling', version: '9.9.9' })
-      expect((await readdir(dir)).filter(name => name.startsWith('vt.'))).toEqual([])
-    } finally {
-      await rm(dir, { force: true, recursive: true })
-    }
-  })
-
-  it('downloads the exact root-importer lockfile version', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'tooling-installer-lock-'))
-    const ciDir = join(dir, 'ci')
-    const downloadUrl = join(dir, 'download-url.txt')
-    const packageJson = join(dir, 'package.json')
-    await mkdir(ciDir)
-    await writeFile(
-      packageJson,
-      JSON.stringify({ devDependencies: { 'vouchington-tooling': '^9.9.9' } }),
-    )
-    await writeFile(
-      join(dir, 'pnpm-lock.yaml'),
-      `lockfileVersion: '9.0'
-
-importers:
-  .:
-    devDependencies:
-      vouchington-tooling:
-        specifier: ^9.9.9
-        version: 9.9.9
-
-packages:
-  vouchington-tooling@9.9.9:
-    resolution: {integrity: sha512-placeholder}
-`,
-    )
-    await writeFile(
-      join(ciDir, 'install-vouchington-tooling.sh'),
-      readFileSync(resolve('ci/install-vouchington-tooling.sh')),
-    )
-    await writeFile(
-      join(ciDir, 'curl-to.sh'),
-      `ci_download_to() {
-  printf '%s\\n' "$1" > "$DOWNLOAD_URL"
-  return 1
-}
-`,
-    )
-    await chmod(join(ciDir, 'install-vouchington-tooling.sh'), 0o755)
-    try {
-      await expect(
-        execFile(
-          'bash',
-          [join(ciDir, 'install-vouchington-tooling.sh'), join(dir, 'install'), packageJson],
-          { cwd: dir, env: { ...process.env, DOWNLOAD_URL: downloadUrl } },
-        ),
-      ).rejects.toThrow(/failed to download vouchington-tooling@9\.9\.9/)
-      expect(await readFile(downloadUrl, 'utf8')).toContain('vouchington-tooling-9.9.9.tgz')
+      const code = await result.then(
+        () => 0,
+        (err: { code: number }) => err.code,
+      )
+      expect(code).toBe(fail ? 17 : 0)
+      const expectedCalls = [
+        `--dir ${dir} install --frozen-lockfile --filter @voucha/ci... --prod --ignore-scripts`,
+        `--dir ${dir} --filter @voucha/ci deploy --prod --legacy --ignore-scripts --frozen-lockfile ${destination}`,
+      ]
+      expect((await readFile(calls, 'utf8')).trim().split('\n')).toEqual(
+        expectedCalls.slice(0, fail ? 1 : 2),
+      )
     } finally {
       await rm(dir, { force: true, recursive: true })
     }
