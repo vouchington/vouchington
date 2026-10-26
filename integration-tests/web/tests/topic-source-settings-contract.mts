@@ -17,10 +17,9 @@ describe('typed source management contracts', () => {
   beforeEach(() => {
     client = new WebIntegrationClient(workerOrigin, traceOrigin, artifactsDir)
   })
-  it('source settings reject correctly typed non-source topics but accept a real RSS source', async () => {
+  it('renders about settings for typed non-source topics', async () => {
     await authenticateTestUserWithDirectSessionTokens(client)
     const bankAccount = await createTestTopic({ topic_type: 'bank_account' })
-    const source = await createTestTopic({ topic_type: 'rss_feed' })
     const options = { userAgent: PLAYWRIGHT_CHROME_UA }
 
     await Promise.all(
@@ -45,6 +44,12 @@ describe('typed source management contracts', () => {
         ).toBeTruthy()
       }),
     )
+  })
+
+  it('rejects source settings for typed non-source topics', async () => {
+    await authenticateTestUserWithDirectSessionTokens(client)
+    const bankAccount = await createTestTopic({ topic_type: 'bank_account' })
+    const options = { userAgent: PLAYWRIGHT_CHROME_UA }
 
     expect(
       (await client.request(`/bank-account/${bankAccount.id}/settings/source`, options)).status,
@@ -79,7 +84,12 @@ describe('typed source management contracts', () => {
     expect(
       (await client.request(`/topic/${SEEDED_IDS.genericTopic}/settings/source`, options)).status,
     ).toBe(404)
+  })
 
+  it('renders source settings for an RSS feed', async () => {
+    await authenticateTestUserWithDirectSessionTokens(client)
+    const source = await createTestTopic({ topic_type: 'rss_feed' })
+    const options = { userAgent: PLAYWRIGHT_CHROME_UA }
     const accepted = await client.loadPage(
       `/source/${source.id}/settings/source`,
       'source-guard-accepted',
