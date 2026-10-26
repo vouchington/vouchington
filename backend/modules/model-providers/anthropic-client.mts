@@ -26,8 +26,8 @@ export function resolveAnthropicCredentials(
 let cached: { credential: string; client: Anthropic } | undefined
 
 /**
- * The shared client. The SDK's own retries are off: retrying is the caller's lifecycle decision,
- * since a retry after a billed turn is a double bill. It uses the same long-running fetch as the
+ * The shared client. A request without its own `maxRetries` makes one attempt; a request that
+ * carries a budget (forwarded by the package) overrides this per call. It uses the same long-running fetch as the
  * OpenAI and OpenRouter clients; Node's default happy-eyeballs stays on because the API tasks reach
  * `api.anthropic.com` over IPv6 only.
  */

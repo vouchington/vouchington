@@ -2,7 +2,7 @@ import onError from '@modules/on-error'
 import { latchAccountingUncertainty } from '@services/ai-usage'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import {
-  OpenAIResponseNotCompletedError,
+  isOpenAIResponseNotCompletedError,
   isOpenAINotFoundError,
   validateCompletedResponse,
 } from '@vouchington/ai/openai'
@@ -95,7 +95,7 @@ export async function reconcileExpiredBackgroundResponse(
       dependencies,
     )
   } catch (err) {
-    if (!(err instanceof OpenAIResponseNotCompletedError)) throw err
+    if (!isOpenAIResponseNotCompletedError(err)) throw err
     if (err.status !== 'failed' && err.status !== 'incomplete' && err.status !== 'cancelled') {
       await cancelOpenAIResponse(row.responseId)
       return 'still-active'

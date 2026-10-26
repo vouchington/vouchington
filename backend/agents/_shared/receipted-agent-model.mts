@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { unrecoverable } from '@vouchington/queue-errors'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import { type ModelCallResult, ModelProviderError } from '@vouchington/ai/providers'
+import { type ModelCallResult, isModelProviderError } from '@vouchington/ai/providers'
 import {
   completeAgentCallReceipt,
   getAgentCallReceipt,
@@ -87,7 +87,7 @@ export async function callReceiptedAgentModel<Output>(
     // credentials, before an SDK call. A post-dispatch 4xx can lack billed flags too, so never
     // infer an unbilled attempt from those flags alone.
     const rejectedBeforeDispatch =
-      err instanceof ModelProviderError &&
+      isModelProviderError(err) &&
       (err.code === 'unsupported-parameter' || err.code === 'client-unavailable') &&
       !err.ambiguousBilled &&
       !err.billedResponse

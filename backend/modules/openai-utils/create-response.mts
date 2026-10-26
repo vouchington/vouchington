@@ -5,7 +5,7 @@ import type {
 } from 'openai/resources/responses/responses'
 import {
   type CompletedOpenAIResponse,
-  OpenAIResponseNotCompletedError,
+  isOpenAIResponseNotCompletedError,
   validateCompletedResponse,
 } from '@vouchington/ai/openai'
 import onError from '@modules/on-error'
@@ -115,7 +115,7 @@ async function drainBackgroundOpenAIResponse(
     // sweeper's status check in reconcile.mts -- leaves a response worth cancelling.
     if (
       responseId &&
-      (!(err instanceof OpenAIResponseNotCompletedError) ||
+      (!isOpenAIResponseNotCompletedError(err) ||
         err.status === 'queued' ||
         err.status === 'in_progress')
     ) {

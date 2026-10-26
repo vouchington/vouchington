@@ -13,14 +13,9 @@ export type OpenAIDeps = {
   createOpenRouterResponse?: typeof createOpenRouterResponse
 }
 
-/**
- * The package forwards the request's `maxRetries`; it is deliberately dropped here. Anthropic runs
- * with SDK retries off because a retry after a billed turn is a double bill, so retrying stays the
- * queue's lifecycle decision.
- */
 /* no-mistakes: integration=anthropic */
 export const createAnthropicMessage: CreateAnthropicMessage = (params, options) =>
-  getAnthropicClient().messages.create(params, { signal: options?.signal })
+  getAnthropicClient().messages.create(params, options)
 
 /**
  * The Responses call for the global transport setting the caller resolved: OpenRouter (model name

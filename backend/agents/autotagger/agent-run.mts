@@ -1,7 +1,7 @@
 import { callAgentToolTurn, type AgentToolTurnCaller } from '@agents/_shared'
 import type { ClassifierRunExecution } from '@agents/classifier-runs'
 import type { ClassifierSafeText } from '@agents/classifiers/safe-content'
-import { ModelProviderError } from '@vouchington/ai/providers'
+import { isModelProviderError } from '@vouchington/ai/providers'
 import type { ModelSelection } from '@modules/model-providers/types'
 import {
   readAutotaggerAppliedTopicNames,
@@ -70,9 +70,8 @@ function classifyAgentFailure(
   phase: Phase,
   signal: AbortSignal,
 ): { kind: ClassifierRunFailureKind; permanent: boolean } | null {
-  const billed =
-    phase.billedTurns > 0 || (error instanceof ModelProviderError && !!error.billedResponse)
-  if (error instanceof ModelProviderError) {
+  const billed = phase.billedTurns > 0 || (isModelProviderError(error) && !!error.billedResponse)
+  if (isModelProviderError(error)) {
     const unusable =
       error.code === 'invalid-response' ||
       error.code === 'refusal' ||
