@@ -6,6 +6,7 @@ import { getSiteOrigin } from '@modules/utils/site-origin'
 import { decodeDeviceJwt } from '@ts-shared/session-jwt'
 import { createDbscRegistrationOffer } from '@services/jwt-session/dbsc-registration'
 import { isNativeClientTransportRequest } from '@modules/request-client-info'
+import onError from '@modules/on-error'
 import {
   DBSC_REGISTRATION_PATH,
   DBSC_REFRESH_PATH,
@@ -51,12 +52,19 @@ export async function advertiseDbscRegistration(
     decodeDeviceJwt(deviceToken.token)?.client !== 'web'
   )
     return
-  const nonce = await createDbscRegistrationOffer({
-    deviceToken: deviceToken.token,
-    userAgent: ctx.req.headers['user-agent'],
-    ja4: getTrustedClientJa4(ctx.req),
-    origin,
-  })
+  let nonce: string | null
+  try {
+    nonce = await createDbscRegistrationOffer({
+      deviceToken: deviceToken.token,
+      userAgent: ctx.req.headers['user-agent'],
+      ja4: getTrustedClientJa4(ctx.req),
+      origin,
+    })
+  } catch (err) {
+    // The optional offer must not invalidate a credential completion already committed.
+    onError(err instanceof Error ? err : new Error(String(err)))
+    return
+  }
   if (nonce)
     ctx.set(
       'Secure-Session-Registration',
