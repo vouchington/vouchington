@@ -47,7 +47,13 @@ describe('topic merge publication capture', () => {
       ]),
     )
     expect((await listLiveTopicMergePostsPage(destination.id, null)).ids).toContain(post.id)
-    expect((await listLiveTopicMergeItemsPage(destination.id, null)).ids).toContain(item.id)
+    const directItems = await listLiveTopicMergeItemsPage(destination.id, null)
+    expect(directItems.ids).toEqual([])
+    expect(directItems.cursor).not.toBeNull()
+    if (!directItems.cursor) throw new Error('Expected the bounded raw-category phase')
+    expect((await listLiveTopicMergeItemsPage(destination.id, directItems.cursor)).ids).toContain(
+      item.id,
+    )
     expect((await listLiveItemSourceFeedsPage(item.id, null)).ids).toContain(feed.id)
 
     await Promise.all([
