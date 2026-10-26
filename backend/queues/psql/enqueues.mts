@@ -1,4 +1,6 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createHash } from 'node:crypto'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
 import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
 import { psql } from './queues.mts'
@@ -22,6 +24,35 @@ export const enqueueRunConfigDriven = createPsqlEnqueue('runConfigDriven')
 export const enqueueCreatePartitions = createPsqlEnqueue('createPartitions')
 export const enqueueCleanupPartitions = createPsqlEnqueue('cleanupPartitions')
 export const enqueueDataRetentionCleanup = createPsqlEnqueue('dataRetentionCleanup')
+
+function retentionContinuationId(parentJobId: string): string {
+  return `data-retention-continuation__${createHash('sha256').update(parentJobId).digest('hex')}`
+}
+
+const enqueueBulkRetentionContinuations = createBulkEnqueueFunction({
+  queue: psql,
+  queueName: QUEUE_NAME,
+  jobName: 'dataRetentionCleanup' as const,
+  sensitive: true,
+  buildJob: (parentJobId: string, _index: number) => ({
+    data: {},
+    opts: {
+      jobId: retentionContinuationId(parentJobId),
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  }),
+})
+
+/** A capped retention run schedules the next page under a stable, bounded child id. */
+export function enqueueDataRetentionCleanupContinuation(parentJobId: string) {
+  return enqueueBulkReactivatingFinished({
+    queue: psql,
+    inputs: [parentJobId],
+    jobIdOf: retentionContinuationId,
+    enqueueBulk: enqueueBulkRetentionContinuations,
+  })
+}
 export const enqueueReconcileVoteDrift = createPsqlEnqueue('reconcileVoteDrift')
 
 const enqueueRefreshMaterializedViewJob = createEnqueueFunction<

@@ -1,4 +1,6 @@
+import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { psql as psqlQueue } from '@queues/psql/queues'
 import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
@@ -54,6 +56,39 @@ describe('processPsql', () => {
 
     expect(dataRetentionCleanup).toHaveBeenCalledExactlyOnceWith({ batchSize: 7, maxBatches: 3 })
   })
+
+  it.each([
+    ['deliveredMembershipEntitlementEffects', true],
+    ['endedMembershipRenewalNotices', true],
+    ['terminalGooglePlayAcknowledgments', true],
+    ['none', false],
+  ] as const)(
+    'admits a retention continuation for %s remaining work',
+    async (remaining, expected) => {
+      const parentJobId = `membership-retention-test__${randomUUID()}`
+      const childJobId = `data-retention-continuation__${createHash('sha256').update(parentJobId).digest('hex')}`
+      onTestFinished(async () => {
+        const child = await psqlQueue.getJob(childJobId)
+        await child?.remove()
+      })
+      const result = {
+        deliveredMembershipEntitlementEffects: {
+          hasMore: remaining === 'deliveredMembershipEntitlementEffects',
+        },
+        endedMembershipRenewalNotices: { hasMore: remaining === 'endedMembershipRenewalNotices' },
+        terminalGooglePlayAcknowledgments: {
+          hasMore: remaining === 'terminalGooglePlayAcknowledgments',
+        },
+      }
+      await processPsql(
+        'dataRetentionCleanup',
+        undefined,
+        { dataRetentionCleanup: async () => result as never },
+        parentJobId,
+      )
+      expect((await psqlQueue.getJob(childJobId)) !== null).toBe(expected)
+    },
+  )
 
   it('waits for stored retention limits to load on a cold start', async () => {
     await dataRetentionConfig.waitForInitialization()

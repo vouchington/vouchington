@@ -7,6 +7,7 @@ import {
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
 import { runDataRetentionCleanup } from '@services/data-retention'
+import { enqueueDataRetentionCleanupContinuation } from '@queues/psql/enqueues'
 import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
 import type { PsqlJobs, RefreshMaterializedViewData } from '@queues/psql/types'
@@ -26,6 +27,7 @@ export default async function processPsql(
   jobName: PsqlJobs,
   data?: Partial<RefreshMaterializedViewData>,
   dependencies?: Partial<ProcessPsqlDependencies>,
+  jobId?: string,
 ) {
   switch (jobName) {
     case 'runMigrations':
@@ -40,9 +42,18 @@ export default async function processPsql(
       return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup': {
       await dataRetentionConfig.waitForInitialization()
-      return (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)(
+      const result = await (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)(
         getDataRetentionLimits(),
       )
+      if (
+        jobId &&
+        (result.deliveredMembershipEntitlementEffects.hasMore ||
+          result.endedMembershipRenewalNotices.hasMore ||
+          result.terminalGooglePlayAcknowledgments.hasMore)
+      ) {
+        await enqueueDataRetentionCleanupContinuation(jobId)
+      }
+      return result
     }
     case 'refreshMaterializedView': {
       if (!data?.viewName) {

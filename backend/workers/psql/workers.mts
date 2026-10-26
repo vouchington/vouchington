@@ -17,7 +17,12 @@ export const psql = createWorker(
     return deferPostgresConnectionTimeout(job, async () =>
       job.name === 'moderationRetentionCleanup'
         ? processModerationRetentionCleanup(job as Job<ModerationRetentionJobData>)
-        : processPsql(job.name as PsqlJobs, job.data as Partial<RefreshMaterializedViewData>),
+        : processPsql(
+            job.name as PsqlJobs,
+            job.data as Partial<RefreshMaterializedViewData>,
+            undefined,
+            job.id,
+          ),
     )
   },
   {
