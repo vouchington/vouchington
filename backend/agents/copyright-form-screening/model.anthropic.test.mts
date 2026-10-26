@@ -8,6 +8,7 @@ import { callCopyrightFormScreeningModel } from './model.mts'
 // and parsing are gated by recorded responses in model.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('copyright form screening on Anthropic Haiku 5.5', () => {
+  // A live Anthropic response can exceed the default budget during normal network latency.
   it('returns an anti-spam recommendation with moderator guidance', async () => {
     const result = await callCopyrightFormScreeningModel(
       JSON.stringify({
@@ -32,5 +33,5 @@ describe('copyright form screening on Anthropic Haiku 5.5', () => {
     expect(
       calcCostMicrounits('anthropic', result.model, result.serviceTier, result.usage),
     ).not.toBeNull()
-  })
+  }, 30_000)
 })

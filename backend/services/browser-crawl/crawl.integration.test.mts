@@ -17,6 +17,7 @@ describe('crawlWithBrowser (Lightpanda cloud)', () => {
     }
   })
 
+  // A live Lightpanda session can exceed the default budget during external service latency.
   it(
     'crawls a real page over the live Lightpanda cloud SaaS',
     /* no-mistakes: integration=http */

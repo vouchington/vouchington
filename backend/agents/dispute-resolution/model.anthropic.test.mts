@@ -8,6 +8,7 @@ import { callDisputeModel } from './model.mts'
 // and parsing are gated by recorded responses in model.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('dispute resolution on Anthropic Haiku 5.5', () => {
+  // A live Anthropic response can exceed the default budget during normal network latency.
   it('returns a schema-valid draft with a priced ledger row shape', async () => {
     const result = await callDisputeModel(
       '## Review Content (post_id: 1)\nThe pizza was cold and the service slow.\n\n## Dispute Claim (reason: factually_inaccurate)\nThe review is false; I never served this customer.',
@@ -22,5 +23,5 @@ describe('dispute resolution on Anthropic Haiku 5.5', () => {
     expect(
       calcCostMicrounits('anthropic', result.model, result.serviceTier, result.usage),
     ).not.toBeNull()
-  })
+  }, 30_000)
 })

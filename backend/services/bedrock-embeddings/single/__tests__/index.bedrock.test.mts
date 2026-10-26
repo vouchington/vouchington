@@ -10,6 +10,7 @@ describe('Bedrock Nova multimodal embeddings', () => {
    * See docs/development/tests.md#live-provider-smoke-checks.
    */
 
+  // A live Bedrock response can exceed the default budget during normal network latency.
   it(
     'returns a 1024-dimensional text embedding from the real Bedrock API',
     { timeout: 30_000 },

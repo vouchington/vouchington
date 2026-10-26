@@ -5,6 +5,7 @@ import { createStructuredDecisionClient } from './structured-decisions.mts'
 // build and the decoding of the native Noul, Choice and Score answers are gated by a recorded
 // response in structured-decisions.replay.test.mts. See docs/development/tests.md#live-provider-smoke-checks.
 describe('OpenRouter Decisions', () => {
+  // A live OpenRouter response can exceed the default budget during normal network latency.
   it('preserves native Jev Noul, Choice, and Score fields', async () => {
     const apiKey = process.env.OPENROUTER_API_KEY?.trim() ?? ''
     if (!apiKey) {
@@ -91,5 +92,5 @@ describe('OpenRouter Decisions', () => {
     const usage = result.usage as { cost?: unknown } | null
     expect(typeof usage?.cost).toBe('number')
     expect(Number.isFinite(usage?.cost)).toBe(true)
-  })
+  }, 30_000)
 })

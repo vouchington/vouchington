@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers/classifier-golden-set'
 
 describe('post classifier golden regression set', () => {
+  // Live OpenRouter fixture calls can exceed the default budget during normal network latency.
   it('keeps synthetic post decisions in their configured bands', async () => {
     if (!process.env.OPENROUTER_API_KEY?.trim()) {
       throw new Error('OPENROUTER_API_KEY is required for this credentialed test.')
@@ -93,5 +94,5 @@ describe('post classifier golden regression set', () => {
       minimumFixturesPerCandidate: 3,
       toleratedUnexpectedFixturesPerCandidate: 1,
     })
-  })
+  }, 30_000)
 })
