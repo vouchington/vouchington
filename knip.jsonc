@@ -168,7 +168,6 @@
         "ci-local.mts",
         "setup-web-integration.mts",
         // Called by Actions or shell entrypoints rather than imported by another module.
-        "check-analyzer-fixture-budget.mts!",
         "validate-vitest-cli-timeouts.mts!",
         "write-coverage-scope.mts!",
         // Invoked from the backend image build action rather than imported by another module.

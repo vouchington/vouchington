@@ -1,10 +1,11 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
-import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
@@ -18,14 +19,8 @@ type Rule = {
 }
 type Diagnostic = { file: string; message: string; rule: string }
 
-let budget: ReturnType<typeof createAnalyzerFixtureBudget>
-
 describe('view lookup predicate no-mistakes configuration', () => {
   const directories: string[] = []
-
-  beforeEach(() => {
-    budget = createAnalyzerFixtureBudget()
-  })
 
   afterEach(async () => {
     await Promise.all(
@@ -64,7 +59,7 @@ describe('view lookup predicate no-mistakes configuration', () => {
       ),
     )
 
-    const result = await budget.check(cli, directory)
+    const result = check(directory)
     expect(result.status).toBe(1)
     const diagnostics = findings(result)
     expect(diagnostics).toHaveLength(
@@ -85,7 +80,7 @@ describe('view lookup predicate no-mistakes configuration', () => {
     ])
     const directory = await fixture(directories, rule, statements)
 
-    const result = await budget.check(cli, directory)
+    const result = check(directory)
     expect(result.status).toBe(0)
     expect(findings(result)).toEqual([])
   })
@@ -110,7 +105,7 @@ describe('view lookup predicate no-mistakes configuration', () => {
     ]
     const directory = await fixture(directories, rule, statements)
 
-    const result = await budget.check(cli, directory)
+    const result = check(directory)
     expect(result.status).toBe(1)
     expect(findings(result)).toHaveLength(statements.length)
   })
@@ -147,7 +142,7 @@ describe('view lookup predicate no-mistakes configuration', () => {
     }
     const directory = await fixture(directories, configured, [], sources)
 
-    const result = await budget.check(cli, directory)
+    const result = check(directory)
     expect(result.status).toBe(1)
     const diagnostics = findings(result)
     expect(diagnostics).toHaveLength(mutations.length)
@@ -184,7 +179,7 @@ async function fixture(
   statements: string[],
   sources?: Record<string, string>,
 ): Promise<string> {
-  const directory = await budget.createRoot('view-required-predicates-')
+  const directory = await mkdtemp(join(tmpdir(), 'view-required-predicates-'))
   directories.push(directory)
   const fixtureSources = sources ?? {
     [runtimePath]: `import { read } from '@data-stores/psql'\nexport async function run() {\n${statements
@@ -197,8 +192,8 @@ async function fixture(
     await writeFile(file, content)
   }
   await writeFile(join(directory, '.no-mistakes.yml'), stringify({ rules: [configured.rule] }))
-  expect(budget.git(['init', '-q', directory]).status).toBe(0)
-  expect(budget.git(['-C', directory, 'add', '.']).status).toBe(0)
+  expect(spawnSync('git', ['init', '-q', directory], { encoding: 'utf8' }).status).toBe(0)
+  expect(spawnSync('git', ['-C', directory, 'add', '.'], { encoding: 'utf8' }).status).toBe(0)
   return directory
 }
 
@@ -225,4 +220,11 @@ function joinedKey({ table, requireColumns }: ViewRelation): string {
 
 function findings(result: { stdout: string }): Diagnostic[] {
   return (JSON.parse(result.stdout) as { rules: Diagnostic[] }).rules
+}
+
+function check(directory: string) {
+  return spawnSync(process.execPath, [cli, 'check', '--root', directory, '--format', 'json'], {
+    cwd: directory,
+    encoding: 'utf8',
+  })
 }

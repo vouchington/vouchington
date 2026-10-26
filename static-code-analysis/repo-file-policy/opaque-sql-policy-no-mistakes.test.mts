@@ -1,12 +1,11 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
-import { beforeEach, describe, expect, it } from 'vitest'
-import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
+import { describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
-
-let budget: ReturnType<typeof createAnalyzerFixtureBudget>
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
@@ -28,11 +27,8 @@ type Finding = { rule: string; line: number }
 // Exercise actual configuration through the released analyzer: opting out of
 // opaque-SQL diagnostics must preserve ordinary, recoverable SQL violations.
 describe('opaque SQL policy', () => {
-  beforeEach(() => {
-    budget = createAnalyzerFixtureBudget()
-  })
   it('preserves known violations and accepts safe or unrecoverable statements', async () => {
-    const root = await budget.createRoot('opaque-sql-policy-')
+    const root = await mkdtemp(join(tmpdir(), 'opaque-sql-policy-'))
     try {
       const config = parse(await readFile(join(repository, '.no-mistakes.yml'), 'utf8')) as {
         rules: Rule[]
@@ -47,17 +43,17 @@ describe('opaque SQL policy', () => {
         'CREATE TABLE widgets (id integer PRIMARY KEY, calculated integer GENERATED ALWAYS AS (id + 1) STORED, updated_at timestamptz);',
       )
       for (const path of paths) await track(root, path, source(true))
-      expect(budget.git(['init', '-q', root]).status).toBe(0)
-      expect(budget.git(['-C', root, 'add', '.']).status).toBe(0)
+      expect(spawnSync('git', ['init', '-q', root], { encoding: 'utf8' }).status).toBe(0)
+      expect(spawnSync('git', ['-C', root, 'add', '.'], { encoding: 'utf8' }).status).toBe(0)
 
-      const rejected = await check(root)
+      const rejected = check(root)
       expect(rejected.status).toBe(1)
       const findings = (JSON.parse(rejected.stdout) as { rules: Finding[] }).rules
       expect(new Set(findings.map(finding => finding.rule))).toEqual(new Set(ruleIds))
       expect(findings.every(finding => finding.line >= 4 && finding.line <= 8)).toBe(true)
 
       for (const path of paths) await track(root, path, source(false))
-      const accepted = await check(root)
+      const accepted = check(root)
       expect(accepted.status).toBe(0)
       expect((JSON.parse(accepted.stdout) as { rules: Finding[] }).rules).toEqual([])
     } finally {
@@ -95,5 +91,8 @@ async function track(root: string, path: string, content: string): Promise<void>
 }
 
 function check(root: string) {
-  return budget.check(cli, root)
+  return spawnSync(process.execPath, [cli, 'check', '--root', root, '--format', 'json'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
 }

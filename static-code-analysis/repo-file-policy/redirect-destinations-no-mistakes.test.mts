@@ -1,21 +1,17 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
+import { afterEach, describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
-
-let budget: ReturnType<typeof createAnalyzerFixtureBudget>
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
 const directories: string[] = []
 
 describe('configured redirect destination rule', () => {
-  beforeEach(() => {
-    budget = createAnalyzerFixtureBudget()
-  })
   afterEach(async () => {
     await Promise.all(directories.splice(0).map(root => rm(root, { force: true, recursive: true })))
   })
@@ -30,9 +26,9 @@ describe('configured redirect destination rule', () => {
   `)
     await write(root, 'web/app/(my)/my/saved/page.tsx', 'export default function Page() {}')
     // An on-disk page must not satisfy the configured tracked route inventory.
-    expect((await check(root)).status).toBe(1)
-    expect(budget.git(['-C', root, 'add', 'web/app']).status).toBe(0)
-    expect((await check(root)).status).toBe(0)
+    expect(check(root).status).toBe(1)
+    expect(spawnSync('git', ['-C', root, 'add', 'web/app'], { encoding: 'utf8' }).status).toBe(0)
+    expect(check(root).status).toBe(0)
   })
 
   it('rejects incomplete redirect construction through the configured rule', async () => {
@@ -40,7 +36,7 @@ describe('configured redirect destination rule', () => {
     const ownerPrivatePaths = generatePaths()
     return ownerPrivatePaths.map(([src, dst]) => ({source: src, destination: dst, permanent: false}))
   } }`)
-    const result = await check(root)
+    const result = check(root)
     expect(result.status).toBe(1)
     const report = JSON.parse(result.stdout) as { rules: { rule: string; file: string }[] }
     expect(
@@ -53,7 +49,7 @@ describe('configured redirect destination rule', () => {
 })
 
 async function fixture(config: string): Promise<string> {
-  const root = await budget.createRoot('tracked-redirect-routes-')
+  const root = await mkdtemp(join(tmpdir(), 'tracked-redirect-routes-'))
   directories.push(root)
   const repositoryConfig = parse(await readFile(join(repository, '.no-mistakes.yml'), 'utf8')) as {
     rules: { rule?: string }[]
@@ -62,8 +58,8 @@ async function fixture(config: string): Promise<string> {
   expect(rules).toHaveLength(1)
   await write(root, '.no-mistakes.yml', stringify({ rules }))
   await write(root, 'web/next.config.ts', config)
-  expect(budget.git(['init', '-q', root]).status).toBe(0)
-  expect(budget.git(['-C', root, 'add', '.']).status).toBe(0)
+  expect(spawnSync('git', ['init', '-q', root], { encoding: 'utf8' }).status).toBe(0)
+  expect(spawnSync('git', ['-C', root, 'add', '.'], { encoding: 'utf8' }).status).toBe(0)
   return root
 }
 
@@ -73,5 +69,8 @@ async function write(root: string, path: string, contents: string): Promise<void
 }
 
 function check(root: string) {
-  return budget.check(cli, root)
+  return spawnSync(process.execPath, [cli, 'check', '--root', root, '--format', 'json'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
 }
