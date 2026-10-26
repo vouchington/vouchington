@@ -1,21 +1,10 @@
 import { readCopyrightLifecycleEventTypes } from '@voucha/test-helpers/data-stores/psql/copyright-lifecycle-event-types'
 import { describe, expect, it } from 'vitest'
-import {
-  copyrightTimelineEventAudience,
-  copyrightTimelineEventTypesFor,
-} from './timeline-visibility.mts'
+import { copyrightTimelineEventTypesFor } from './timeline-visibility.mts'
 
 const internalEventPattern = /^guest_capability_|_replayed$|^legal_hold_|_intent_created$/
 
 describe('copyright timeline audience decisions', () => {
-  it('decides an audience for every database event type and for nothing else', async () => {
-    const databaseEventTypes = await readCopyrightLifecycleEventTypes()
-
-    expect(Object.keys(copyrightTimelineEventAudience).toSorted()).toEqual(
-      [...databaseEventTypes].toSorted(),
-    )
-  })
-
   it('keeps internal, replay, legal-hold, and guest-capability events from members', async () => {
     const internalEventTypes = (await readCopyrightLifecycleEventTypes()).filter(eventType =>
       internalEventPattern.test(eventType),

@@ -3158,6 +3158,23 @@ rules:
         - left: backendTopicTypes
           right: sqlTopicTypes
 
+  - name: copyright timeline audience SQL enum consistency
+    rule: finite-set-consistency
+    scope: repository
+    options:
+      sets:
+        - name: copyrightTimelineEventAudiences
+          file: backend/services/copyright-notices/timeline-visibility.mts
+          kind: ts-const-object-keys
+          target: copyrightTimelineEventAudience
+        - name: copyrightLifecycleEventTypes
+          file: backend/data-stores/psql/migrations/0634-00-00-copyright-notices.sql
+          kind: sql-enum
+          target: copyright_notice_lifecycle_change_types
+      comparisons:
+        - left: copyrightTimelineEventAudiences
+          right: copyrightLifecycleEventTypes
+
   - name: PostType SQL enum consistency
     rule: finite-set-consistency
     scope: repository

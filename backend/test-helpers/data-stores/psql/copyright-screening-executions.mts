@@ -1,11 +1,7 @@
-import { startTestCopyrightFormScreening } from '../../copyright-form-screenings.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
-import {
-  lockCopyrightFormReview,
-  startCopyrightFormScreeningInTransaction,
-} from '../../../services/copyright-notices/form-screening-executions.mts'
+import { claimCopyrightFormScreening } from '../../../services/copyright-notices/form-screening-executions.mts'
 import {
   getTestPostgresBackendProcessId,
   getTestPostgresAdvisoryLockHolderProcessId,
@@ -51,34 +47,6 @@ export async function readTestCopyrightScreeningExecution(intakeId: string) {
   return rows[0]
 }
 
-/** Stops real admission after its form fence, then observes a new screen waiting behind it. */
-export async function admitTestCopyrightBeforeScreening<T>(
-  noticeId: string,
-  intakeId: string,
-  admit: () => Promise<T>,
-): Promise<T> {
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* admitTestCopyrightBeforeScreening:notice */
-    SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
-  `)
-  const pid = await getTestPostgresBackendProcessId(transaction)
-  const admission = admit().then(
-    value => ({ value, error: null }),
-    err => ({ value: null, error: err }),
-  )
-  await waitForTestPostgresLockWaiter(pid, 'acceptCopyrightNoticeAndImposeRestriction:lockNotice')
-  const admissionPid = await getTestPostgresAdvisoryLockHolderProcessId({
-    key: `copyright-form-review:${intakeId}`,
-  })
-  const screening = startTestCopyrightFormScreening(intakeId)
-  await waitForTestPostgresLockWaiter(admissionPid, 'lockCopyrightFormReview')
-  await transaction.commit()
-  const result = await admission
-  await screening
-  if (result.error) throw result.error
-  return result.value as T
-}
-
 export async function readTestCopyrightStaffScreening(noticeId: string) {
   await using transaction = await beginTransaction()
   const staffCases = await getPendingCopyrightStaffCases([noticeId], transaction)
@@ -103,16 +71,29 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
   admit: () => Promise<T>,
 ): Promise<T> {
   await using transaction = await beginTransaction()
-  await lockCopyrightFormReview(intakeId, transaction)
-  await startCopyrightFormScreeningInTransaction(intakeId, transaction)
+  await transaction(sql`/* startTestCopyrightScreeningBeforeAdmission:holdAttempt */
+    SELECT id FROM copyright_notice_form_screening_attempts
+    WHERE copyright_notice_form_intake_id = ${intakeId}
+    ORDER BY attempt_number DESC LIMIT 1 FOR UPDATE
+  `)
   const pid = await getTestPostgresBackendProcessId(transaction)
+  const screening = claimCopyrightFormScreening(intakeId).then(
+    value => ({ value, error: null }),
+    err => ({ value: null, error: err }),
+  )
+  await waitForTestPostgresLockWaiter(pid, 'claimCopyrightFormScreening:current')
+  const screeningPid = await getTestPostgresAdvisoryLockHolderProcessId({
+    key: `copyright-form-review:${intakeId}`,
+  })
   const admission = admit().then(
     value => ({ value, error: null }),
     err => ({ value: null, error: err }),
   )
-  await waitForTestPostgresLockWaiter(pid, 'lockAssessmentForm:fence')
+  await waitForTestPostgresLockWaiter(screeningPid, 'lockAssessmentForm:fence')
   await transaction.commit()
-  const result = await admission
+  const [screeningResult, result] = await Promise.all([screening, admission])
+  if (screeningResult.error) throw screeningResult.error
+  if (!screeningResult.value) throw new Error('Copyright screening retry was not claimed')
   if (result.error) throw result.error
   return result.value as T
 }

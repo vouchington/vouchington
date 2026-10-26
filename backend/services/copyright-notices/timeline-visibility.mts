@@ -9,13 +9,14 @@
  * - `staff`: copyright reviewers, who also see every `member` event. Internal processing,
  *   delivery, replay, legal-hold, and guest-capability events stay here.
  *
- * Visibility is an allowlist: an event type with no entry here is invisible to members. A schema
- * test compares these keys with the database `change_type` CHECK, so a new event type cannot ship
- * without an audience decision.
+ * Visibility is an allowlist: an event type with no entry here is invisible to members. The finite-
+ * set guard compares these keys with the database `change_type` enum, so a new event type cannot
+ * ship without an audience decision.
  */
 export type CopyrightTimelineAudience = 'member' | 'staff'
 
-export const copyrightTimelineEventAudience = {
+// The finite-set-consistency guard keeps these decisions exhaustive with the SQL enum.
+const copyrightTimelineEventAudience = {
   // Case-facing: what happened to the case and to the hosted material.
   notice_received: 'member',
   provisional_restriction_imposed: 'member',

@@ -18,22 +18,15 @@ const permissiveGateFields = {
 } satisfies ConfigFields
 
 /**
- * Records, once, that the switch went on a year ago. Automation acts only on submissions received
- * since the audited switch-on, and a real switch-on is audited the moment an administrator flips it;
- * a test flips the switch in memory, so it needs this backdated record to stand in for that flip.
- * The row is old enough that no test notice predates it, and it is never written as a current flip.
+ * Records that the switch went on a year ago. Automation acts only on submissions received since
+ * the audited switch-on; a test flips the switch in memory, so it needs this backdated record to
+ * stand in for that flip. Each call appends its own immutable row, old enough for fresh test notices.
  */
 async function recordBackdatedSwitchOn(): Promise<void> {
   await write(sql`/* recordBackdatedAutomaticWithholdingSwitchOn */
     INSERT INTO dynamic_configuration_revisions (id, configuration_key, revised_by_id, revision_type, changes)
-    SELECT uuidv7(interval '-1 year'), 'copyright', NULL, 'update',
-      '{"automaticProvisionalWithholding": {"before": false, "after": true}}'::jsonb
-    WHERE NOT EXISTS (
-      SELECT 1 FROM dynamic_configuration_revisions
-      WHERE configuration_key = 'copyright'
-        AND changes #> '{automaticProvisionalWithholding,after}' = 'true'::jsonb
-        AND uuid_extract_timestamp(id) <= now() - interval '1 year' + interval '1 minute'
-    )
+    VALUES (uuidv7(interval '-1 year'), 'copyright', NULL, 'update',
+      '{"automaticProvisionalWithholding": {"before": false, "after": true}}'::jsonb)
   `)
 }
 

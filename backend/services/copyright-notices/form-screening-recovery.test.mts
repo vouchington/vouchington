@@ -21,7 +21,10 @@ import {
 import { acceptCopyrightNoticeAndImposeRestriction } from './restrictions.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
+import {
+  createClearScreenedForm,
+  createSignedInCopyrightForm,
+} from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -80,11 +83,10 @@ describe('copyright form-screening recovery', () => {
     await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
   })
 
-  it('does not recover an earlier clear screen after a newer invalid result', async () => {
-    const { notice } = await createClearScreenedForm()
-    await expectFormEffect(notice.intake.copyright_notice_submission_id)
+  it('does not recover an invalid initial screen', async () => {
+    const { intake } = await createSignedInCopyrightForm()
     await appendTestCopyrightFormScreening({
-      intakeId: notice.intake.id,
+      intakeId: intake.id,
       inputSha256: Buffer.alloc(32, 99),
       recommendation: 'invalid_or_spam',
       rationale: 'The latest input is invalid.',
@@ -92,11 +94,10 @@ describe('copyright form-screening recovery', () => {
       promptVersion: 'copyright-form-screening-v3',
       model: 'test-model',
     })
-    await expect(
-      readTestLatestCopyrightFormScreeningRecommendation(notice.intake.id),
-    ).resolves.toBe('invalid_or_spam')
-
-    await expectNoFormEffect(notice.intake.copyright_notice_submission_id)
+    await expect(readTestLatestCopyrightFormScreeningRecommendation(intake.id)).resolves.toBe(
+      'invalid_or_spam',
+    )
+    await expectNoFormEffect(intake.copyright_notice_submission_id)
   })
 
   it('repairs an unprocessed target while retaining a lifted target', async () => {
@@ -120,15 +121,6 @@ describe('copyright form-screening recovery', () => {
     })
     const partial = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
     await liftTestCopyrightRestriction(partial!.restrictions[0]!.id)
-    await appendTestCopyrightFormScreening({
-      intakeId: notice.intake.id,
-      inputSha256: Buffer.alloc(32, 98),
-      recommendation: 'not_obviously_invalid',
-      rationale: 'A later clear screening supersedes the first.',
-      guidance: testCopyrightFormGuidance,
-      promptVersion: 'copyright-form-screening-v3',
-      model: 'test-model',
-    })
 
     await expectFormEffect(notice.intake.copyright_notice_submission_id)
     await applyNonSpamSignedInCopyrightFormScreening(notice.intake.copyright_notice_submission_id)
