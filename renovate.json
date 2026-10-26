@@ -61,6 +61,15 @@
     },
     {
       "customType": "regex",
+      "description": "Secondary Distroless runtime stage in the backend Dockerfile",
+      "managerFilePatterns": ["backend/Dockerfile"],
+      "matchStrings": [
+        "FROM\\s+(?<depName>ghcr\\.io/vouchington/dependency-distroless-nodejs):(?<currentValue>nonroot)@(?<currentDigest>sha256:[0-9a-f]{64})\\s+AS\\s+runtime-base"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
       "description": "Workflow env vars annotated with `# renovate: datasource=… depName=…`",
       "managerFilePatterns": [".github/workflows/*.yml", ".github/actions/*/action.yml"],
       "matchStrings": [

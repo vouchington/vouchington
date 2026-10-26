@@ -34,8 +34,7 @@ RUN set -- /usr/lib/*-linux-gnu/libssl.so.3 && \
 # @glidemq/speedkey's prebuilt native binary (__isoc23_sscanf, added in glibc 2.38) works.
 # ENTRYPOINT is /nodejs/bin/node; /nodejs/bin is NOT on PATH, so callers that
 # bypass ENTRYPOINT (ECS healthcheck CMD, docker exec) must use the absolute path.
-# renovate: datasource=docker depName=gcr.io/distroless/nodejs26-debian13
-FROM gcr.io/distroless/nodejs26-debian13:nonroot AS runtime-base
+FROM ghcr.io/vouchington/dependency-distroless-nodejs:nonroot@sha256:96455baef11b178fc135b32206e3922c515dbed2400676c94f907f8f84e6abf6 AS runtime-base
 COPY --from=openssl-overlay /distroless-openssl/ /
 
 # Stage 1: Build Node.js application with dependencies

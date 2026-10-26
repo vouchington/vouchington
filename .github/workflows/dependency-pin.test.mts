@@ -150,4 +150,33 @@ describe('reviewed dependency image pins', () => {
     expect(matches[0]?.groups?.currentValue).toMatch(/^[0-9]+-alpine$/u)
     expect(matches[0]?.groups?.currentDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
   })
+
+  it('updates only the backend Distroless runtime stage', () => {
+    const renovate = JSON.parse(readFileSync('renovate.json', 'utf8')) as {
+      customManagers?: Array<{
+        datasourceTemplate?: string
+        description?: string
+        managerFilePatterns?: string[]
+        matchStrings?: string[]
+      }>
+    }
+    const manager = renovate.customManagers?.find(
+      candidate =>
+        candidate.description === 'Secondary Distroless runtime stage in the backend Dockerfile',
+    )
+    assertWorkflowInvariant(manager, 'Expected the backend Distroless Renovate manager')
+    expect(manager.managerFilePatterns).toEqual(['backend/Dockerfile'])
+    expect(manager.datasourceTemplate).toBe('docker')
+    const pattern = manager.matchStrings?.[0]
+    assertWorkflowInvariant(pattern, 'Expected the backend Distroless matcher')
+    const matcher = new RegExp(pattern, 'gu')
+    const matches = [...readFileSync('backend/Dockerfile', 'utf8').matchAll(matcher)]
+    expect(matches).toHaveLength(1)
+    expect(matches[0]?.groups).toMatchObject({
+      depName: 'ghcr.io/vouchington/dependency-distroless-nodejs',
+      currentValue: 'nonroot',
+    })
+    expect(matches[0]?.groups?.currentDigest).toMatch(/^sha256:[0-9a-f]{64}$/u)
+    expect('FROM base-node AS builder').not.toMatch(new RegExp(pattern, 'u'))
+  })
 })
