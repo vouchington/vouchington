@@ -30,10 +30,13 @@ describe('Storybook browser Vitest environment overrides', () => {
     const envConfig = await importEnvironmentModule('storybook-browser-overrides')
 
     expect(envConfig.isStorybookBrowserEnabled).toBe(true)
-    expect(envConfig.coverageFlags.isWebStorybookBrowserCoverage).toBe(true)
+    expect(envConfig.coverageConfig().include).toEqual([
+      'components/**/*.{ts,tsx}',
+      'hooks/**/*.{ts,tsx}',
+    ])
     expect(envConfig.storybookBrowserCacheDir).toBe('/tmp/storybook-browser-cache')
     expect(envConfig.parseStorybookBrowserApiPort()).toBe(49_231)
-    expect(envConfig.parseStorybookBrowserConnectTimeout()).toBe(150_000)
+    expect(envConfig.storybookBrowserConnectionTimeoutMs).toBe(150_000)
   })
 
   it.each(['1', '27519989871'])(
@@ -55,7 +58,7 @@ describe('Storybook browser Vitest environment overrides', () => {
 
       expect(envConfig.storybookBrowserCacheDir).toBe('/runner-temp/vite-storybook-browser')
       expect(envConfig.parseStorybookBrowserApiPort()).toBeUndefined()
-      expect(envConfig.parseStorybookBrowserConnectTimeout()).toBe(120_000)
+      expect(envConfig.storybookBrowserConnectionTimeoutMs).toBe(120_000)
     },
   )
 
@@ -87,13 +90,8 @@ describe('Storybook browser Vitest environment overrides', () => {
   })
 
   it('strips JSON import attributes for browser-story dependencies', async () => {
-    const storybookBrowserProjectModulePath =
-      '../test-helpers/vitest-config/storybook-browser-project.mts'
-    const {
-      stripJsonImportAttributes,
-    }: typeof import('../test-helpers/vitest-config/storybook-browser-project.mts') = await import(
-      `${storybookBrowserProjectModulePath}?json-attributes`
-    )
+    const { stripJsonImportAttributes } =
+      await import('../test-helpers/vitest-config/storybook-browser-project.mts')
 
     expect(
       stripJsonImportAttributes(

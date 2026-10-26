@@ -5,9 +5,7 @@ import type {
 } from 'vouchington-tooling/config-inventory'
 
 export type {
-  DynamicConfigInventoryRow,
   DynamicConfigReference,
-  PackageGateInventoryRow,
   SourceBucket,
   TypedEnvContractEntry,
 } from 'vouchington-tooling/config-inventory'

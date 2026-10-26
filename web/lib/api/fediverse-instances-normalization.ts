@@ -27,9 +27,7 @@ function nullableBoolean(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null
 }
 
-export function normalizeFediverseInstanceAttributes(
-  value: unknown,
-): FediverseInstanceAttributes | null {
+function normalizeFediverseInstanceAttributes(value: unknown): FediverseInstanceAttributes | null {
   if (value === null || value === undefined) return null
   const source = record(value)
   return {

@@ -1,6 +1,6 @@
 export type CuratedAsideType = 'topic' | 'source' | 'community'
 
-export type CuratedAsideEntityData =
+type CuratedAsideEntityData =
   | {
       entity_type: 'topic'
       id: string

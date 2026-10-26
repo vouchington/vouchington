@@ -5,8 +5,6 @@ import { ArticleListItem } from './article-list-item'
 import { VideoListItem } from './video-list-item'
 import { PodcastListItem } from '@/components/podcasts/podcast-list-item'
 
-export type { RssFeedListItemAction } from './rss-feed-action-slot'
-
 export interface RssFeedListItemProps {
   feed: ViewRssFeed
   action?: RssFeedListItemAction

@@ -3,15 +3,12 @@
 import {
   parseCheckpoint as parsePublished,
   renderCheckpoint as renderPublished,
-  sortedCheckpointCandidates as sortedPublished,
   validateCheckpoint as validatePublished,
   type Checkpoint as PublishedCheckpoint,
   type CheckpointCodecOptions,
   type CheckpointStatus,
   type GitHubComment,
 } from 'vouchington-tooling/gha-pr-checkpoint'
-
-export { isTrustedCheckpointComment } from 'vouchington-tooling/gha-pr-checkpoint'
 
 export const CHECKPOINT_MARKER = 'shepherd-checkpoint:v1'
 
@@ -39,13 +36,4 @@ export function parseCheckpoint(body: string): Checkpoint | undefined {
 
 export function validateCheckpoint(value: unknown): Checkpoint | undefined {
   return validatePublished(value, CODEC) as Checkpoint | undefined
-}
-
-export function sortedCheckpointCandidates(
-  comments: GitHubComment[],
-): { comment: GitHubComment; checkpoint: Checkpoint }[] {
-  return sortedPublished(comments, CODEC) as {
-    comment: GitHubComment
-    checkpoint: Checkpoint
-  }[]
 }

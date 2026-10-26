@@ -70,8 +70,3 @@ export interface UserReferralLinkWithDetails {
   unfurl_failed_at: string | null
   unfurl_last_error: string | null
 }
-
-export interface ReferralProgramValidationInfo {
-  user_help_text: string
-  example_urls: string[]
-}

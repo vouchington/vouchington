@@ -9,7 +9,7 @@ import type {
   WorkflowTopology,
 } from 'no-mistakes'
 
-export const BASE_PERMISSIONS: ResolvedPermissions = {
+const BASE_PERMISSIONS: ResolvedPermissions = {
   source: 'default',
   scopes: {},
   assumed_default: true,

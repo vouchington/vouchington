@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import type { MessageKey } from '@ts-shared/ui-messages'
 
-export type NavItem = {
+type NavItem = {
   label: MessageKey
   href: string
   dataPw: string

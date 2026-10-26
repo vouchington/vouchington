@@ -56,13 +56,10 @@ const {
 }))
 export { mockGetCurrentUser, mockIsAdmin, mockIsModerationStaff }
 export { mockCommunityAutomodFlagsPanel, mockCommunityAutomodReviewPanel, mockGetCommunity }
-export { mockGetCommunityAiAgents, mockGetCommunityAgentPrompts }
-export { mockGetCommunityAgentPromptHistory, mockGetCommunityAutomodRecentActions }
-export { mockGetCommunityBans, mockGetCommunityRestrictions, mockGetCommunityModeratorStats }
+export { mockGetCommunityAutomodRecentActions }
 export { mockGetCommunityModerationQueue }
 export { mockGetCommunityPendingModerationReports }
-export { mockGetCommunityPendingPosts, mockGetMyModeratorVacation }
-export { mockNotFound, mockRedirect, mockHeaders }
+export { mockNotFound, mockRedirect }
 vi.mock(import('@/lib/auth/get-current-user'), () => ({
   getCurrentUser: mockGetCurrentUser,
 }))

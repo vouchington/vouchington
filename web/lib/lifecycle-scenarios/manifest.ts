@@ -16,7 +16,7 @@ export interface LifecycleScenarioInput {
   serverOutcome: Record<string, LifecycleJson>
 }
 
-export interface LifecycleScenarioExpected {
+interface LifecycleScenarioExpected {
   visibleState: Record<string, LifecycleJson>
   availableActions: string[]
   reconciliation: Record<string, LifecycleJson>

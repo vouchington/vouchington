@@ -5,7 +5,7 @@
 
 import type { MessageKey } from '@ts-shared/ui-messages'
 
-export type ShortcutModifier = 'meta' | 'none'
+type ShortcutModifier = 'meta' | 'none'
 
 export interface KeyboardShortcut {
   id: string

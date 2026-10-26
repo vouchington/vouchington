@@ -1,6 +1,6 @@
 import { hasNavigatorGlobalPrivacyControl } from './global-privacy-control'
 
-export const COOKIE_CONSENT_STORAGE_KEY = 'cookie-consent'
+const COOKIE_CONSENT_STORAGE_KEY = 'cookie-consent'
 export const COOKIE_CONSENT_CHANGED_EVENT = 'cookie-consent-changed'
 export type CookieConsent = 'all' | 'essential'
 

@@ -10,7 +10,7 @@ const VALID_CHECKS = new Set<CheckName>([
   'targeted-guardrails',
 ])
 
-export function parseArgs(
+function parseArgs(
   args: string[],
   defaultRepoRoot = process.cwd(),
 ): { checks: CheckName[]; repoRoot: string } {

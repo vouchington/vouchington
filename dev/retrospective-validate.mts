@@ -32,5 +32,3 @@ export function validateRetroDoc(markdown: string): ValidationResult {
 
   return { ok: errors.length === 0, errors }
 }
-
-export { validateCiFailureSection }

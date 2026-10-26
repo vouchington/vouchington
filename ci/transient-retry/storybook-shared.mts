@@ -21,20 +21,20 @@ export const failedStorybookJobName = (ctx: WorkflowRunContext): string | undefi
   return ctx.conclusion === 'failure' && ctx.failedJobNames.includes(jobName) ? jobName : undefined
 }
 
-export const hasStorybookBrowserViteDependencyReady = (plainLog: string): boolean =>
+const hasStorybookBrowserViteDependencyReady = (plainLog: string): boolean =>
   plainLog.includes('dependencies optimized') || /\bhash is consistent\b/i.test(plainLog)
 
 export const hasStorybookBrowserViteReady = (plainLog: string): boolean =>
   hasStorybookBrowserViteDependencyReady(plainLog) ||
   /VITE v\d+\.\d+\.\d+\s*ready in \d+\s*ms/.test(plainLog)
 
-export const storybookViteNewDependenciesMarker = 'new dependencies found:'
-export const storybookViteOptimizerReloadMarker = 'optimized dependencies changed. reloading'
+const storybookViteNewDependenciesMarker = 'new dependencies found:'
+const storybookViteOptimizerReloadMarker = 'optimized dependencies changed. reloading'
 
-export const hasStorybookViteNewDependenciesFound = (plainLog: string): boolean =>
+const hasStorybookViteNewDependenciesFound = (plainLog: string): boolean =>
   plainLog.includes(storybookViteNewDependenciesMarker)
 
-export const hasStorybookViteOptimizerReload = (plainLog: string): boolean =>
+const hasStorybookViteOptimizerReload = (plainLog: string): boolean =>
   plainLog.includes(storybookViteOptimizerReloadMarker)
 
 export const hasStorybookViteOptimizerNewDepsReload = (plainLog: string): boolean =>

@@ -5,7 +5,7 @@ import {
 } from './postgres-schema-guardrail-allowlist.mts'
 
 // Kept in sync with the marker text backend/data-stores/psql/AGENTS.md#migration-rules mandates.
-export const CURRENT_EDITED_IN_PLACE_MARKER =
+const CURRENT_EDITED_IN_PLACE_MARKER =
   '-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)'
 // Retired wording. Only files listed in LEGACY_EDITED_IN_PLACE_MARKER_MIGRATIONS may still use it.
 const LEGACY_EDITED_IN_PLACE_MARKER = '-- edited-in-place: pre-launch, never deployed to production'

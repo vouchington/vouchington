@@ -13,7 +13,7 @@ export type SharedDbScopeViolation = {
   filepath: string
 }
 
-export function sharedDbScopeViolations(): readonly SharedDbScopeViolation[] {
+function sharedDbScopeViolations(): readonly SharedDbScopeViolation[] {
   const host = globalThis as unknown as ViolationHost
   return (host[violationsKey] ??= []) as SharedDbScopeViolation[]
 }

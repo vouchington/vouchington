@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useEffectEvent, useState } from 'react'
 import { isInputTarget } from '@/lib/keyboard-shortcuts'
 
-export interface ModerationQueueHotkeyItem {
+interface ModerationQueueHotkeyItem {
   key: string
   tab?: ModerationQueueTab
   onApprove?: () => void

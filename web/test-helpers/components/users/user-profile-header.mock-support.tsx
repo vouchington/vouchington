@@ -150,4 +150,4 @@ function resetUserProfileHeaderDoubles() {
   mockProfileAuth.currentUser = null
 }
 
-export { baseUser, mockNav, mockProfileAuth, resetUserProfileHeaderDoubles }
+export { baseUser, mockProfileAuth, resetUserProfileHeaderDoubles }

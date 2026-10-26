@@ -6,8 +6,6 @@ import {
 } from './tooling-project-policies.mts'
 import { toolingProjects } from './tooling-projects.mts'
 
-export { toolingProjectPolicies }
-
 type ToolingProjectConfiguration = (typeof toolingProjects)[number]
 
 function projectName(project: ToolingProjectConfiguration): ToolingProjectName {

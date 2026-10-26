@@ -19,14 +19,14 @@ import { ciStorybookJobName } from './storybook-shared.mts'
 // where a Next.js build's log output begins.
 export const buildWebTargetsStepMarker = '##[group]Run ./.github/actions/build-web-targets'
 
-export const backendUnitShardPattern = /^test-backend-unit \/ backend-tests \(\d+\)$/
-export const backendSmokeJobName = 'backend-smoke / smoke'
-export const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
-export const areaToolingJobName = 'test-tooling / tooling'
-export const areaStaticWebJobName = 'static-web / static-web'
+const backendUnitShardPattern = /^test-backend-unit \/ backend-tests \(\d+\)$/
+const backendSmokeJobName = 'backend-smoke / smoke'
+const backendCredentialedJobName = 'test-backend-credentialed / backend-credentialed-tests'
+const areaToolingJobName = 'test-tooling / tooling'
+const areaStaticWebJobName = 'static-web / static-web'
 export const webTestsShardPattern = /^test-web \/ web-tests \(\d+\)$/
-export const webApiShardPattern = /^test-web-api \/ web-api-tests \([1-9]\d*\)$/
-export const webIntegrationShardPattern = /^test-web-integration \/ web-integration-tests \(\d+\)$/
+const webApiShardPattern = /^test-web-api \/ web-api-tests \([1-9]\d*\)$/
+const webIntegrationShardPattern = /^test-web-integration \/ web-integration-tests \(\d+\)$/
 
 export function isWebApiShardJob(jobName: string | undefined): boolean {
   return typeof jobName === 'string' && webApiShardPattern.test(jobName)

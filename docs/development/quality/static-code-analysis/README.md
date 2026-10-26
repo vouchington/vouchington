@@ -61,7 +61,7 @@ Raw PostgreSQL SQL in backend tests belongs in focused first-layer helpers under
 
 ## Knip Production Exports
 
-`pnpm run knip:production-exports` finds backend exports kept alive only by tests. Backend packages with a wildcard `"./*"` manifest export also declare `"./*.test.mts": null` and `"./*/__tests__/*": null`, because Node honors the single-star key and ignores the multi-star one while nothing imports a test file by specifier. An AST-grep rule requires both keys as direct siblings of the wildcard.
+`pnpm run knip:production-exports` checks backend exports kept alive only by tests. The full Knip scan also checks exports used only within their defining file in the root and web workspaces. Backend's existing in-file setting remains until its production exports are qualified. Workspace entries continue to model the existing external runner and framework boundaries. Backend packages with a wildcard `"./*"` manifest export also declare `"./*.test.mts": null` and `"./*/__tests__/*": null`, because Node honors the single-star key and ignores the multi-star one while nothing imports a test file by specifier. An AST-grep rule requires both keys as direct siblings of the wildcard.
 
 Production imports of test infrastructure make fixture implementation part of the runtime and can make test-only exports appear production-used. Dependency boundaries preserve that separation while allowing the canonical configuration needed by test runners.
 

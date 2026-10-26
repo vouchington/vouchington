@@ -1,6 +1,6 @@
 import type { PublicUser } from './user'
 
-export type OAuthClientType = 'confidential' | 'public'
+type OAuthClientType = 'confidential' | 'public'
 export type OAuthClientAuthMethod = 'client_secret_basic' | 'none'
 export type OAuthClientVerificationFilter = 'all' | 'unverified' | 'verified'
 

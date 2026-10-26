@@ -30,12 +30,12 @@ type CommunityListItem = Serialized<Api.BackendCommunityListItem>
 type PageInfo = Api.PageInfo
 
 // Community response body types
-export interface CommunitiesSearchResult {
+interface CommunitiesSearchResult {
   __entity_type: 'community'
   id: string
 }
 
-export interface CommunityOwner {
+interface CommunityOwner {
   account_type: AccountType
   id: string
   username: string | null
@@ -100,7 +100,7 @@ export type {
   ModeratorVacationDigestPreferenceResponseBody,
 } from './community-moderation'
 
-export interface CommunityAiAgentEntitlement {
+interface CommunityAiAgentEntitlement {
   allowed: boolean
   reason: string | null
 }

@@ -112,7 +112,7 @@ vi.mock(
     }) as unknown as typeof import('next/link'),
 )
 
-export const basePost: Post = {
+const basePost: Post = {
   id: 'post-1',
   post_type: 'discussion',
   markdown: 'Hello world',

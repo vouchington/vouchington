@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button'
 import type { User } from '@/types/user'
 
 const mockUseEmblaCarousel = vi.hoisted(() => vi.fn<VitestLooseMock>())
-export { mockUseEmblaCarousel }
-
 export const postDetailMockState: { currentUser: User | null } = { currentUser: null }
 
 vi.mock(import('next/dynamic'), () => createNextDynamicMock())

@@ -1,7 +1,7 @@
 import { createContext } from 'react'
 import type { FeatureFlags } from './shared'
 
-export const EMPTY_CONTEXT_FEATURE_FLAGS: FeatureFlags = {}
+const EMPTY_CONTEXT_FEATURE_FLAGS: FeatureFlags = {}
 
 export interface FeatureFlagsContextValue {
   globalFlags: FeatureFlags

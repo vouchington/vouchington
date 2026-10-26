@@ -5,7 +5,6 @@ import type {
   ReportIntegrityResolution,
 } from '@ts-shared/utils/moderation-catalogs'
 
-export type { ReportIntegrityFlagType }
 export type StatusFilter = IntegrityFlagStatusFilter
 export type FlagResolution = ReportIntegrityPatchResolution
 

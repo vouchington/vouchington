@@ -85,7 +85,7 @@ export const resolvedAppeal: ModerationAppeal = {
   target_context: null,
 }
 
-export const suspensionAppeal: ModerationAppeal = {
+const suspensionAppeal: ModerationAppeal = {
   id: 'appeal-4',
   user_warning_id: null,
   community_ban_id: null,

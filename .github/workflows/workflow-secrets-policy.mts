@@ -11,7 +11,7 @@ export interface SecretReference {
 }
 
 /** Workflow `id → path` mapping, shared by callers resolving a job's owning workflow file. */
-export function workflowPathById(topology: WorkflowTopology): Map<string, string> {
+function workflowPathById(topology: WorkflowTopology): Map<string, string> {
   return new Map(topology.workflows.map(workflow => [workflow.id, workflow.path]))
 }
 

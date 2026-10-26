@@ -84,7 +84,7 @@ export interface Household {
   updated_at: string
 }
 
-export type HouseholdAccess = 'all' | 'owned' | 'member'
+type HouseholdAccess = 'all' | 'owned' | 'member'
 
 export interface HouseholdListOptions {
   access?: HouseholdAccess
@@ -92,7 +92,7 @@ export interface HouseholdListOptions {
   limit?: number
 }
 
-export interface HouseholdIndividual {
+interface HouseholdIndividual {
   id: string
   user_id: string | null
   username: string | null

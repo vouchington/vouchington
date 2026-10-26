@@ -3,7 +3,7 @@
 import { clientApi } from './instance'
 import type { ExposureState } from '@/types/moderation-exposure'
 
-export type ModMediaRevealSurface = 'mod_queue' | 'review_queue' | 'reports' | 'post_page'
+type ModMediaRevealSurface = 'mod_queue' | 'review_queue' | 'reports' | 'post_page'
 
 export interface RecordRevealBody {
   postId?: string | null

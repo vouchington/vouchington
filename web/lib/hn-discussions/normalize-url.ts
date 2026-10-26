@@ -1,4 +1,4 @@
-export const HN_DISCUSSION_URL_LIMIT = 3
+const HN_DISCUSSION_URL_LIMIT = 3
 
 export function normalizeHnDiscussionUrl(raw: string): string | null {
   try {

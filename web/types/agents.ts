@@ -1,8 +1,6 @@
 import type { ElectionVote } from './posts'
 import type { AgentModerationResults } from '@voucha/types'
 
-export type { AgentModerationResults }
-
 export interface AgentModeration {
   id: string
   post_id: string

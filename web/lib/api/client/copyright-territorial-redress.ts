@@ -7,10 +7,10 @@ import type { CopyrightTerritorialJurisdiction } from './copyright-territorial-d
 export type CopyrightTerritorialComplaint = NonNullable<
   NonNullable<CopyrightStaffQueueItem['territorial']>['complaints']
 >[number]
-export type CopyrightEuDisputeSettlement = NonNullable<
+type CopyrightEuDisputeSettlement = NonNullable<
   NonNullable<CopyrightStaffQueueItem['territorial']>['dispute_settlements']
 >[number]
-export type CopyrightTerritorialStaffPageInfo = {
+type CopyrightTerritorialStaffPageInfo = {
   has_next_page: boolean
   start_cursor: string | null
   end_cursor: string | null

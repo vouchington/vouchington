@@ -4,7 +4,7 @@ import type { TransientRetryRule } from './types.mts'
 
 const setupPlaywrightWorkflowNames = new Set(['Web'])
 const storybookSetupJobNames = new Set(['storybook / storybook'])
-export const isPlaywrightShardSetupJob = (name: string): boolean =>
+const isPlaywrightShardSetupJob = (name: string): boolean =>
   name.startsWith('test-playwright / playwright-tests (')
 export const isPlaywrightSetupJob = (name: string): boolean =>
   isPlaywrightShardSetupJob(name) || name.includes('/ playwright-credentialed-tests')

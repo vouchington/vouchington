@@ -14,7 +14,7 @@ import {
   presentGroupLabel,
 } from './plan-benefit-value-presentation'
 
-export interface PresentedBenefitRow {
+interface PresentedBenefitRow {
   id: string
   label: string
   tooltip: string

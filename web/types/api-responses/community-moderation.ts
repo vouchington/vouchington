@@ -14,8 +14,6 @@ import type { ModerationQueueClaim } from './moderation-queue-claim'
 
 export type { CommunityBanEvasionContext, ModerationQueueClaim }
 
-export type { ModeratorActionType }
-
 export interface CommunityModeratorStatEntry {
   actor_user_id: string
   total: number

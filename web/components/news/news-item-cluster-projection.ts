@@ -5,7 +5,7 @@ import type {
 } from '@/types/rss-feed-items'
 
 type FeedResult = RssFeedItemsFeedResponseBody['results'][number]
-export type StorySelection = { primaryId: string; preview: StoryMemberPage }
+type StorySelection = { primaryId: string; preview: StoryMemberPage }
 export type FirstStorySelection = StorySelection & {
   primaryResult: FeedResult
   sourcePage: RssFeedItemsFeedResponseBody

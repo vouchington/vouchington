@@ -25,7 +25,7 @@ export interface PublicUrl {
   } | null
 }
 
-export interface PaidSafeCrawlHistory {
+interface PaidSafeCrawlHistory {
   __entity_type: 'crawl'
   id: string
   response_status_code: number | null
@@ -66,7 +66,7 @@ export interface UrlListResponseBody {
   page_info: PageInfo
 }
 
-export interface CrawlListResult {
+interface CrawlListResult {
   __entity_type: 'crawl'
   id: string
   response_status_code: number | null
@@ -84,7 +84,7 @@ export interface CrawlDetailResponseBody {
   og_image_sideload?: string | null
 }
 
-export type ContributionGatingReason = 'account_too_new' | 'email_verification_required'
+type ContributionGatingReason = 'account_too_new' | 'email_verification_required'
 export type ContributionLimitAction =
   | 'topic'
   | 'topic_recommendation'
@@ -97,7 +97,7 @@ export type ContributionLimitAction =
   | 'community'
   | 'rss_feed'
   | 'post_rating'
-export type ContributionLimitTier = 'just_joined' | 'free' | 'plus' | 'pro' | 'admin'
+type ContributionLimitTier = 'just_joined' | 'free' | 'plus' | 'pro' | 'admin'
 
 export interface ContributionStatusResponseBody {
   contribution_status: {
@@ -152,9 +152,9 @@ export interface TrendingTopicsResponse {
   topics_metrics: Record<string, TopicMetrics>
 }
 
-export type ReferralClickLogEntry = Serialized<BackendReferralClickLogEntry>
+type ReferralClickLogEntry = Serialized<BackendReferralClickLogEntry>
 
-export interface ReferralClickLogResult {
+interface ReferralClickLogResult {
   __entity_type: 'referral_click_log'
   id: string
 }
@@ -166,7 +166,7 @@ export interface ReferralClickLogResponseBody {
   page_info: PageInfo
 }
 
-export interface FriendRecommendationResult {
+interface FriendRecommendationResult {
   __entity_type: 'user'
   id: string
   provider: 'facebook' | 'x' | 'github'
@@ -179,7 +179,7 @@ export interface FriendRecommendationsResponseBody {
   users: Record<string, PublicUser>
 }
 
-export interface TrendingReferralProgram {
+interface TrendingReferralProgram {
   id: string
   trending_score: number
   link_count: number

@@ -73,7 +73,7 @@ const COMMENT_LINE = /^<!--.*-->$/
  * True when a visible `### Large diff` details section carries at least one visible line of
  * explanation: fenced code, HTML blocks, and comments neither open the section nor explain it.
  */
-export function hasLargeDiffAcknowledgement(body: string): boolean {
+function hasLargeDiffAcknowledgement(body: string): boolean {
   const lines = sanitizedLines(body).map(line => (COMMENT_LINE.test(line.trim()) ? '' : line))
   const start = lines.findIndex(line => ACKNOWLEDGEMENT_HEADING.test(line.trimEnd()))
   if (start === -1) return false

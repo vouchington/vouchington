@@ -10,13 +10,13 @@ interface BufferJSON {
   data: number[]
 }
 
-export type CommunityAutomodActionSourceType =
+type CommunityAutomodActionSourceType =
   | 'agent_moderation'
   | 'openai_omni'
   | 'spam_detection'
   | 'community_prompt'
 
-export type CommunityAutomodActionCurrentState = 'rejected' | 'in_review' | 'unpublished'
+type CommunityAutomodActionCurrentState = 'rejected' | 'in_review' | 'unpublished'
 
 export type CommunityAutomodTrainingLabel =
   | 'true_positive'
@@ -96,7 +96,7 @@ export interface CommunityAutomodActionsResponseBody {
   page_info: Pick<PageInfo, 'has_next_page' | 'end_cursor'>
 }
 
-export interface CommunityAutomodSimulationResult {
+interface CommunityAutomodSimulationResult {
   post_id: string
   title: string
   declared_language: string | null
@@ -107,7 +107,7 @@ export interface CommunityAutomodSimulationResult {
   flagged: boolean
 }
 
-export interface CommunityAutomodSimulation {
+interface CommunityAutomodSimulation {
   prompt_id: string
   time_window_hours: number
   sample_count: number

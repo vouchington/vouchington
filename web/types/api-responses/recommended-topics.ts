@@ -4,7 +4,7 @@ import type { PaginatedResponse, PaginatedResult } from './pagination-and-entiti
 type Topic = Api.Topic
 type TopicMetrics = Api.TopicMetrics
 
-export type RecommendedTopicResult = PaginatedResult<'topic'> & {
+type RecommendedTopicResult = PaginatedResult<'topic'> & {
   score: number
   reason: string
 }

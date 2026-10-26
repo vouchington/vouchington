@@ -23,7 +23,7 @@ export interface EntityRelationVote {
   choice: import('./client/elections').RelationChoice
 }
 
-export interface EntityRelationElection {
+interface EntityRelationElection {
   __entity_type: 'entity_relation_election'
   id: string
   votes_score_net: number

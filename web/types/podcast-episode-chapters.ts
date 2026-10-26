@@ -1,4 +1,4 @@
-export interface PodcastEpisodeChapter {
+interface PodcastEpisodeChapter {
   start_seconds: number
   end_seconds: number | null
   title: string

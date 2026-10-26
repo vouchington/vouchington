@@ -2,14 +2,14 @@ import type * as Api from './shared'
 
 type PageInfo = Api.PageInfo
 
-export interface WebSearchResultHostname {
+interface WebSearchResultHostname {
   __entity_type: 'hostname'
   id: string
   hostname: string
   topic_id: string | null
 }
 
-export interface WebSearchResultUrl {
+interface WebSearchResultUrl {
   __entity_type: 'url'
   id: string
   url: string

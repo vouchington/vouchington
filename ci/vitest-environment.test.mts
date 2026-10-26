@@ -35,9 +35,8 @@ describe('vitest environment coverage config', () => {
     delete process.env.VITEST_COVERAGE_SCOPE
     process.argv = ['node', 'vitest', 'run', '--project', 'web', '--coverage']
 
-    const { coverageConfig, coverageFlags } = await loadEnvironment('single-web-project')
+    const { coverageConfig } = await loadEnvironment('single-web-project')
 
-    expect(coverageFlags.isScopedCoverage).toBe(true)
     expect(coverageConfig().include).toEqual(['web/**/*.{mts,ts,tsx}'])
   })
 
@@ -53,9 +52,8 @@ describe('vitest environment coverage config', () => {
       '--coverage',
     ]
 
-    const { coverageConfig, coverageFlags } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment('multiple-projects')
 
-    expect(coverageFlags.isScopedCoverage).toBe(false)
     expect(coverageConfig().include).toEqual(['**/*.{mts,ts,tsx}'])
   })
 
@@ -63,9 +61,8 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_SCOPE = 'web-storybook'
     process.argv = ['node', 'vitest', 'run', '--project', 'web-storybook', '--coverage']
 
-    const { coverageConfig, coverageFlags } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment('multiple-projects')
 
-    expect(coverageFlags.isWebStorybookCoverage).toBe(true)
     expect(coverageConfig().include).toEqual([
       'web/storybook/entities/entity-fixtures.ts',
       'web/storybook/entities/topics-story-recommendations.ts',
@@ -76,9 +73,8 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_SCOPE = 'portability'
     process.argv = ['node', 'vitest', 'run', '--project', 'lambdas-portability', '--coverage']
 
-    const { coverageConfig, coverageFlags } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment('multiple-projects')
 
-    expect(coverageFlags.isScopedCoverage).toBe(true)
     expect(coverageConfig().include).toEqual([
       'lambdas/dev-server.mts',
       'cloudflare-worker/scripts/wrangler/runtime.mts',
@@ -89,9 +85,8 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_ENABLED = 'false'
     process.argv = ['node', 'vitest', 'run', '--project', 'backend-modules']
 
-    const { coverageConfig, isVitestCoverageEnabled } = await loadEnvironment('multiple-projects')
+    const { coverageConfig } = await loadEnvironment('multiple-projects')
 
-    expect(isVitestCoverageEnabled).toBe(false)
     expect(coverageConfig().enabled).toBe(false)
   })
 
@@ -99,9 +94,8 @@ describe('vitest environment coverage config', () => {
     process.env.VITEST_COVERAGE_ENABLED = 'false'
     process.argv = ['node', 'vitest', 'run', '--project', 'backend-modules', '--coverage']
 
-    const { coverageConfig, isVitestCoverageEnabled } = await loadEnvironment('single-web-project')
+    const { coverageConfig } = await loadEnvironment('single-web-project')
 
-    expect(isVitestCoverageEnabled).toBe(true)
     expect(coverageConfig().enabled).toBe(true)
   })
 })

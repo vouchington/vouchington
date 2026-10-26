@@ -6,7 +6,6 @@ type PublicUser = Api.PublicUser
 type BackendCommunity = Api.BackendCommunity
 type BackendCommunityMember = Api.BackendCommunityMember
 type BackendCommunityMetrics = Api.BackendCommunityMetrics
-type BackendCommunityPostReview = Api.BackendCommunityPostReview
 type BackendCommunityApplicationQuestion = Api.BackendCommunityApplicationQuestion
 type BackendCommunityApplication = Api.BackendCommunityApplication
 type BackendCommunityBan = Api.BackendCommunityBan
@@ -49,8 +48,6 @@ export type CommunityMember = Serialized<BackendCommunityMember>
 
 export type CommunityMetrics = Serialized<BackendCommunityMetrics>
 
-export type CommunityPostReview = Serialized<BackendCommunityPostReview>
-
 export type CommunityApplicationQuestion = Omit<
   Serialized<BackendCommunityApplicationQuestion>,
   '__entity_type' | 'deleted_at'
@@ -72,7 +69,7 @@ export interface CommunityBansResponseBody {
 
 export type CommunityRestriction = Serialized<BackendCommunityRestriction>
 
-export interface RaidModeSuggestion {
+interface RaidModeSuggestion {
   velocity_spike: boolean
   flag_count: number
   latest_flagged_at: string | null
@@ -92,8 +89,6 @@ export interface ActivateCommunityRestrictionsResponseBody {
 export type CommunityInvite = Serialized<BackendCommunityInvite>
 
 export type CreatedCommunityInvite = CommunityInvite & { code: string }
-
-export type { ModeratorActionType }
 
 export interface ModeratorActionView {
   id: string

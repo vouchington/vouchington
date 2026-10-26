@@ -7,7 +7,7 @@ import { modeledCurrentCost, observedJevCost } from './benchmark-cost.mts'
 import type { StructuredDecisionClient } from './types.mts'
 import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 
-export type BenchmarkObservation = {
+type BenchmarkObservation = {
   success: boolean
   durationMs: number
   anchorProbability?: number
@@ -16,7 +16,7 @@ export type BenchmarkObservation = {
   error?: string
 }
 
-export type BenchmarkSeries = {
+type BenchmarkSeries = {
   name: string
   candidateCount: number
   observations: BenchmarkObservation[]

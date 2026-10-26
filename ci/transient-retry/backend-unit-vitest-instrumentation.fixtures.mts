@@ -4,7 +4,7 @@ const workerExitErrorBlock = [
   'Error: [vitest-pool]: Worker forks emitted error.',
   'Caused by: Error: Worker exited unexpectedly',
 ].join('\n')
-export const workerExitAfterPassLog = [
+const workerExitAfterPassLog = [
   'Run pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-modules --project backend-test-helpers --project backend-email-templates --shard 1/2 --coverage',
   'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/data-stores/analytics --project backend/services/analytics --project backend/analytics-integration --project backend-data-stores --project backend-mocks --project backend-modules --project backend-test-helpers --project backend-email-templates --shard 1/2 --coverage',
   'Vitest caught 1 unhandled error during the test run.',

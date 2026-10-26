@@ -48,7 +48,7 @@ export interface PartitionInfo {
     | null
 }
 
-export interface PartitionTable {
+interface PartitionTable {
   name: string
   partition_count: number
   total_size_bytes: number
@@ -81,9 +81,5 @@ export interface LandingPageCandidatesResponseBody {
 
 export type PublicLandingPageResponseBody = PublicLandingPage
 
-export interface LandingPageAnalyticsResponseBody {
-  analytics: import('../landing-pages').LandingPageAnalytics
-}
-
 export type { RefundableCharge, RefundableChargesResponseBody } from './memberships-refund.ts'
-export type { MembershipRefund, MembershipRefundResponseBody } from './memberships-refund.ts'
+export type { MembershipRefundResponseBody } from './memberships-refund.ts'

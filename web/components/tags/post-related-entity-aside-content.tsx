@@ -11,7 +11,7 @@ import type { useTranslations } from '@/lib/i18n/use-translations'
 import { ManageTagsDialog } from './manage-tags-dialog'
 import { PaginatedEntityTagList } from './paginated-entity-tag-list'
 
-export type PostRelatedAsideKind = 'posts' | 'topics' | 'urls'
+type PostRelatedAsideKind = 'posts' | 'topics' | 'urls'
 
 export interface PostRelatedEntityAsideContentProps {
   post: Post

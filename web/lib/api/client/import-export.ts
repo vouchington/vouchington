@@ -42,7 +42,7 @@ export interface ImportResult {
   recommendation_post_id?: string
 }
 
-export type { RssFeedImportSummary, RssFeedImportSubmission } from '@/types/rss-feed-imports'
+export type { RssFeedImportSubmission } from '@/types/rss-feed-imports'
 
 export interface RssFeedImportStatus {
   import: RssFeedImportSummary

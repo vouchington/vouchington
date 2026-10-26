@@ -10,7 +10,7 @@ function isSafeHref(href: string): boolean {
   }
 }
 
-export interface ExternalLinkProps extends React.ComponentPropsWithoutRef<'a'> {
+interface ExternalLinkProps extends React.ComponentPropsWithoutRef<'a'> {
   href: string
   ugc?: boolean
   ref?: React.Ref<HTMLAnchorElement>

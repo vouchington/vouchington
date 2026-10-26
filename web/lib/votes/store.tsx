@@ -46,7 +46,7 @@ const VOTE_SIGN_BY_CHOICE = {
   vouch: 1,
 } as const satisfies Record<ElectionVoteChoice, -1 | 0 | 1>
 
-export function voteSign(choice: VoteChoice): -1 | 0 | 1 {
+function voteSign(choice: VoteChoice): -1 | 0 | 1 {
   return choice === null ? 0 : VOTE_SIGN_BY_CHOICE[choice]
 }
 export function nextEntryFor(prev: VoteEntry, nextVote: VoteChoice): VoteEntry {

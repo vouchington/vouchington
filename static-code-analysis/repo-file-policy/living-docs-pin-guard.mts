@@ -28,9 +28,9 @@ export const LIVING_DOCS_PIN_CASES: readonly LivingDocsPinCase[] = [
 const PIN_POLICY =
   'living docs must not copy package pins; point at the owner file (docs/development/dependency-updates.md#docs-pinning-policy)'
 
-export const DOCS_PINNING_POLICY_PATH = 'docs/development/dependency-updates.md'
+const DOCS_PINNING_POLICY_PATH = 'docs/development/dependency-updates.md'
 
-export function livingDocsPinDiagnostics(path: string, content: string): string[] {
+function livingDocsPinDiagnostics(path: string, content: string): string[] {
   const patterns = LIVING_DOCS_PIN_CASES.find(entry => entry.path === path)?.patterns
   if (!patterns) return []
   const errors: string[] = []

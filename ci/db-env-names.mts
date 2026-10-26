@@ -19,7 +19,7 @@ export const LIBPQ_RESOURCE_ENV_NAMES = new Set([
   'PGUSER',
 ])
 
-export const DB_ENV_NAMES = new Set([
+const DB_ENV_NAMES = new Set([
   'DATABASE_HOST',
   'DATABASE_NAME',
   'DATABASE_PASSWORD',

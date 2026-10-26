@@ -1,8 +1,8 @@
 import { SSR_LOCALIZATION_REVISION_ATTRIBUTE } from '../../web/lib/i18n/ssr-localization-revision-props.mts'
 
-export const LOCALIZATION_SSR_REVISION_DIAGNOSTIC = 'LOCALIZATION_SSR_REVISION_DIAGNOSTIC'
+const LOCALIZATION_SSR_REVISION_DIAGNOSTIC = 'LOCALIZATION_SSR_REVISION_DIAGNOSTIC'
 
-export const LOCALIZATION_SSR_DIAGNOSTIC_PATHS = ['/', '/login', '/news'] as const
+const LOCALIZATION_SSR_DIAGNOSTIC_PATHS = ['/', '/login', '/news'] as const
 
 const NEXTJS_RESTART_HINT =
   'restart the nextjs tmux window so SSR reloads the backend catalog revision'

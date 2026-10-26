@@ -15,7 +15,7 @@ import {
 } from './entity-menubar-classes'
 import { preserveScrollForInternalHrefClick } from '@/lib/navigation/scroll-preservation'
 
-export interface EntityMenubarDropdownItem {
+interface EntityMenubarDropdownItem {
   key: string
   content: ReactElement
   active?: boolean
