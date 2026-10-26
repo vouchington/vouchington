@@ -211,7 +211,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -r /proc/meminfo ]; then
-            (while sleep 30; do
+            # sleep gets no inherited output pipes, so stopping the sampler never waits on it.
+            (while sleep 30 >/dev/null 2>&1; do
               awk '/^(MemAvailable|SwapFree):/ { printf "%s %d MiB ", $1, $2 / 1024 } END { print "" }' /proc/meminfo
               ps -eo rss=,comm= --sort=-rss | head -3 | awk '{ printf "  %d MiB %s\n", $1 / 1024, $2 }'
             done) &

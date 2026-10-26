@@ -4460,9 +4460,6 @@ rules:
         # Steps sum to 12m; cap 11m is below it; healthy runtime ~1.6m (max, n=5).
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
           maxMinutes: 11
-        # Fail-safe for backend/browser setup plus the bounded 9m web build before the sharded browser runtime begins.
-        - job: '.github/workflows/tests-playwright.yml#playwright-tests'
-          maxMinutes: 23
         # Fail-safe for backend/browser setup plus the bounded 9m web build before credentialed browser setup and execution begin.
         - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
           maxMinutes: 13
