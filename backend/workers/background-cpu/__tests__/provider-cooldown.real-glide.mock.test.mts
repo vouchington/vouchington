@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { QueueEvents } from 'glide-mq'
+import { QueueEvents, Worker } from 'glide-mq'
+import { throwRateLimited } from '@vouchington/queue-errors'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import {
@@ -25,6 +26,8 @@ const connection = { connection: workerQueueConnection, prefix: workerQueuePrefi
 const single = requireBackgroundCpuJob('bedrock-embeddings.post')
 const singleTopic = requireBackgroundCpuJob('bedrock-embeddings.topic')
 const contentPost = requireBackgroundCpuJob('content-analysis.post')
+const creationImage = requireBackgroundCpuJob('bedrock-embeddings.create_images')
+const creationPost = requireBackgroundCpuJob('bedrock-embeddings.create_posts')
 
 describe('background-cpu groups through real GlideMQ', () => {
   let harness: RealGlideBackgroundHarness<BackgroundCpuJobDefinition> | undefined
@@ -166,5 +169,76 @@ describe('background-cpu groups through real GlideMQ', () => {
     expect((await harness.queue.getJob(sameGroup.id))?.attemptsMade).toBe(0)
     expect(await (await harness.queue.getJob(sameGroup.id))?.getState()).toBe('delayed')
     expect(delayedEvents).toContainEqual(expect.objectContaining({ jobId: sameGroup.id }))
+  })
+
+  it('shares creation cooldown across type lanes while serving other CPU work', async ({
+    signal,
+  }) => {
+    let imageAttempts = 0
+    let postStarts = 0
+    const handlers = new Map<string, BackgroundCpuHandler>([
+      [
+        creationImage.name,
+        {
+          job: creationImage,
+          handle: () => {
+            imageAttempts += 1
+            if (imageAttempts === 1)
+              throwRateLimited(3_000, new Error('Bedrock throttled'), {
+                RateLimitError: Worker.RateLimitError,
+              })
+          },
+        },
+      ],
+      [
+        creationPost.name,
+        {
+          job: creationPost,
+          handle: () => {
+            postStarts += 1
+          },
+        },
+      ],
+      [contentPost.name, { job: contentPost, handle: () => undefined }],
+    ])
+    harness = await trackWork(signal, () =>
+      startRealGlideBackgroundLifecycle<BackgroundCpuJobDefinition>({
+        queueNamePrefix: 'background_cpu_creation_cooldown',
+        connection,
+        processor: createBackgroundCpuProcessor(handlers),
+      }),
+    )
+    events = new QueueEvents(harness.queue.name, {
+      ...connection,
+      lastEventId: '0',
+      blockTimeout: 1_000,
+    })
+    await events.waitUntilReady()
+
+    const imageDelayed = waitForQueueDomainTestResult(
+      once(events, 'delay-changed', { signal }),
+      signal,
+    )
+    const image = await trackWork(signal, () => harness!.add(creationImage, {}))
+    expect((await imageDelayed)[0]).toMatchObject({ jobId: image.id })
+    expect(await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation')).toBeGreaterThan(
+      0,
+    )
+
+    const postDelayed = waitForQueueDomainTestResult(
+      once(events, 'delay-changed', { signal }),
+      signal,
+    )
+    const post = await trackWork(signal, () => harness!.add(creationPost, {}))
+    expect((await postDelayed)[0]).toMatchObject({ jobId: post.id })
+    const other = await trackWork(signal, () => harness!.add(contentPost, { id: randomUUID() }))
+    expect(await waitForQueueDomainTestResult(harness.settled(other), signal)).toBe('completed')
+    expect(postStarts).toBe(0)
+    expect(await (await harness.queue.getJob(post.id))?.getState()).toBe('delayed')
+
+    expect(await waitForQueueDomainTestResult(harness.settled(image), signal)).toBe('completed')
+    expect(await waitForQueueDomainTestResult(harness.settled(post), signal)).toBe('completed')
+    expect(imageAttempts).toBe(2)
+    expect(postStarts).toBe(1)
   })
 })
