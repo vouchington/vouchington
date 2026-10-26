@@ -107,7 +107,9 @@ function getRetryAfterMs(error: unknown): number | null {
 }
 
 function isUnknownBilledOpenAIResponseAttempt(error: unknown): boolean {
-  if (isExplicitClientCancelError(error)) return false
+  // The transport call has already begun. A cancellation before this point is checked above,
+  // so a cancellation here may have billed despite lacking a response id.
+  if (isExplicitClientCancelError(error)) return true
   if (error instanceof APIConnectionError) return true
   if (!(error instanceof APIError)) return false
   return isAmbiguousBilledHttpStatus(error.status)
