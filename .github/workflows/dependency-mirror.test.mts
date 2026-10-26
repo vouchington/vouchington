@@ -18,6 +18,7 @@ const images = [
 
 async function runMirror(
   options: {
+    images?: Array<{ package: string; source: string; tag: string; digest: string }>
     failStage?: number
     poisonedApproved?: boolean
     authLookupFailure?: boolean
@@ -31,7 +32,7 @@ async function runMirror(
   const regctl = join(directory, 'regctl')
   const calls = join(directory, 'calls.jsonl')
   const summary = join(directory, 'summary.md')
-  await writeFile(config, JSON.stringify({ schemaVersion: 1, images }))
+  await writeFile(config, JSON.stringify({ schemaVersion: 1, images: options.images ?? images }))
   if (options.existingCandidate) {
     await writeFile(
       join(directory, 'state.json'),
@@ -55,7 +56,7 @@ if (args[0] === 'image' && args[1] === 'digest') {
     console.error('unauthorized [http 401]')
     process.exit(1)
   }
-  if (ref.startsWith('docker.io/')) {
+  if (ref.startsWith('docker.io/') || ref.startsWith('gcr.io/')) {
     console.log(expected(ref))
     process.exit(0)
   }
@@ -111,10 +112,8 @@ process.exit(19)
       stderr: err.stderr,
     }),
   )
-  const recorded = (await readFile(calls, 'utf8'))
-    .trim()
-    .split('\n')
-    .map(line => JSON.parse(line) as string[])
+  const callLog = (await readFile(calls, 'utf8').catch(() => '')).trim()
+  const recorded = callLog ? callLog.split('\n').map(line => JSON.parse(line) as string[]) : []
   return { ...result, calls: recorded }
 }
 
@@ -132,6 +131,40 @@ describe('reviewed CI dependency mirror', () => {
     expect(result.calls.filter(call => call[0] === 'image' && call[1] === 'copy')).toHaveLength(2)
     expect(result.calls.some(call => call.join(' ').includes('ghcr.io/'))).toBe(false)
   })
+
+  it('publishes the reviewed distroless GCR source through the same verified path', async () => {
+    const distroless = {
+      package: 'dependency-distroless-nodejs',
+      source: 'gcr.io/distroless/nodejs26-debian13',
+      tag: 'nonroot',
+      digest: second,
+    }
+    const result = await runMirror({ images: [distroless] })
+    expect(result.code).toBe(0)
+    const copies = result.calls.filter(call => call[0] === 'image' && call[1] === 'copy')
+    expect(copies.some(call => call.at(-2) === `${distroless.source}@${distroless.digest}`)).toBe(
+      true,
+    )
+    expect(
+      copies.some(
+        call => call.at(-2) === `ghcr.io/vouchington/${distroless.package}@${distroless.digest}`,
+      ),
+    ).toBe(true)
+  })
+
+  it.each(['quay.io/distroless/nodejs26-debian13', 'gcr.io/unreviewed/nodejs26-debian13'])(
+    'rejects an unreviewed source registry or repository: %s',
+    async source => {
+      const result = await runMirror({
+        images: [
+          { package: 'dependency-distroless-nodejs', source, tag: 'nonroot', digest: second },
+        ],
+      })
+      expect(result.code).toBe(2)
+      expect(result.stderr).toContain('Invalid or duplicate reviewed dependency image entry')
+      expect(result.calls).toEqual([])
+    },
+  )
 
   it('verifies candidates before immutable approved tags and retains every digest', async () => {
     const result = await runMirror()

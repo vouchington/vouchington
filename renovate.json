@@ -10,7 +10,7 @@
   "prConcurrentLimit": 8,
   "packageRules": [
     {
-      "description": "Propose Docker Hub dependency mirror digest updates as reviewable PRs whenever Renovate runs",
+      "description": "Propose dependency mirror digest updates as reviewable PRs whenever Renovate runs",
       "matchFileNames": ["ci/dependency-mirror/images.json"],
       "matchManagers": ["custom.regex"],
       "schedule": ["at any time"],
@@ -20,10 +20,10 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Reviewed Docker Hub image indexes copied to GHCR",
+      "description": "Reviewed upstream image indexes copied to GHCR",
       "managerFilePatterns": ["ci/dependency-mirror/images.json"],
       "matchStrings": [
-        "\"source\": \"docker\\.io/(?<depName>[^\"]+)\",\\s*\"tag\": \"(?<currentValue>[^\"]+)\",\\s*\"digest\": \"(?<currentDigest>sha256:[0-9a-f]{64})\""
+        "\"source\": \"(?<depName>(?:docker\\.io/[^\"]+|gcr\\.io/distroless/nodejs26-debian13))\",\\s*\"tag\": \"(?<currentValue>[^\"]+)\",\\s*\"digest\": \"(?<currentDigest>sha256:[0-9a-f]{64})\""
       ],
       "datasourceTemplate": "docker"
     },

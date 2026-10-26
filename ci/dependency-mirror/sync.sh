@@ -17,7 +17,7 @@ if ! jq -e '
   (.images | type == "array" and length > 0 and
     all(.[];
       (.package | test("^dependency-[a-z0-9-]+$")) and
-      (.source | test("^docker\\.io/[a-z0-9._/-]+$")) and
+      (.source | test("^(docker\\.io/[a-z0-9._/-]+|gcr\\.io/distroless/nodejs26-debian13)$")) and
       (.tag | test("^[A-Za-z0-9_][A-Za-z0-9_.-]*$")) and
       (.digest | test("^sha256:[0-9a-f]{64}$"))
     )
