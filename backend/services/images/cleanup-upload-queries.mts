@@ -68,8 +68,9 @@ export async function readUploadCleanupPage(
   if (window.after)
     query.append(sql` AND (upload_staged_at, id) >
       (${window.after.stagedAt}::timestamptz, ${window.after.id}::uuid)`)
-  query.append(sql` ORDER BY upload_staged_at, id LIMIT ${batchSize + 1}
-    FOR UPDATE SKIP LOCKED`)
+  query.append(sql` ORDER BY upload_staged_at, id LIMIT ${batchSize + 1} FOR UPDATE`)
+  // Staged sources wait for earlier locks so their physical cursor never skips an unsettled row.
+  if (phase !== 'staged') query.append(' SKIP LOCKED')
   const { rows } = await transaction<UploadCleanupRow>(query)
   return rows
 }

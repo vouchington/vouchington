@@ -140,4 +140,30 @@ describe('abandoned upload cursor windows', () => {
       restoreConfig()
     }
   })
+
+  it('leaves a later committed eligible upload beyond its physical fence for the next sweep', async () => {
+    const user = await createTestUser()
+    const now = new Date()
+    const stagedAt = new Date(now.getTime() - 25 * HOUR)
+    const initial = await insertOwnedUploadCleanupCluster(user.id, 1, stagedAt)
+    const sweep = await makeOwnedUploadCleanupSweep(initial, now)
+    sweep.windows.staged.done = true
+    sweep.windows.recovery.done = true
+    const late = await insertOwnedUploadCleanupCluster(user.id, 1, new Date(stagedAt.getTime() + 1))
+    const storage = installOwnedUploadCleanupStorage([...initial, ...late])
+    expect(await cleanupAbandonedUploads(sweep, async () => {})).toMatchObject({
+      cleaned: 1,
+      hasMore: false,
+    })
+    expect(await getImageById(initial[0]!)).toBeNull()
+    expect(await getImageById(late[0]!)).not.toBeNull()
+    expect(storage.calls.map(call => call.Key)).toEqual(initial)
+    const nextSweep = await makeOwnedUploadCleanupSweep(late, now)
+    expect(await cleanupAbandonedUploads(nextSweep, async () => {})).toMatchObject({
+      cleaned: 1,
+      hasMore: false,
+    })
+    expect(await getImageById(late[0]!)).toBeNull()
+    expect(storage.calls.map(call => call.Key)).toEqual([...initial, ...late])
+  })
 })

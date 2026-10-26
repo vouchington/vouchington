@@ -6,7 +6,8 @@ import { captureUploadCleanupUpper } from './cleanup-upload-queries.mts'
 
 export const UPLOAD_CLEANUP_PHASES = ['staged', 'recovery', 'abandonment'] as const
 
-/** Capture only: scheduling a new sweep never mutates an image or contacts a provider. */
+/** Physical upper keys exclude later eligibility changes beyond the captured phase interval.
+ * Capture only: scheduling a new sweep never mutates an image or contacts a provider. */
 export async function initializeAbandonedUploadSweep(): Promise<AbandonedUploadSweep> {
   await using transaction = await beginTransaction()
   const { rows } = await transaction<{ recovery_cutoff: string; abandonment_cutoff: string }>(sql`
@@ -42,9 +43,4 @@ export function uploadCleanupCutoff(
   phase: UploadCleanupPhase,
 ): string {
   return phase === 'abandonment' ? sweep.abandonmentCutoff : sweep.recoveryCutoff
-}
-
-/** Keep deadline construction shared by the worker and native retained-job contract. */
-export function getUploadCleanupResumeAt(backpressured: boolean, now: () => number = Date.now) {
-  return backpressured ? now() + getImagesWorkLimit('recovery_backoff_ms') : undefined
 }

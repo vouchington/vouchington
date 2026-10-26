@@ -31,6 +31,22 @@ describe('upload cleanup retained payload', () => {
       },
     },
     { sweep: { ...snapshot, recoveryCutoff: 'invalid' } },
+    { sweep: { ...snapshot, recoveryCutoff: '2026-01-02T00:00:00.000Z' } },
+    {
+      sweep: {
+        ...snapshot,
+        windows: { ...snapshot.windows, staged: { upper: { ...key, id: 'invalid' }, done: false } },
+      },
+    },
+    {
+      sweep: {
+        ...snapshot,
+        windows: {
+          ...snapshot.windows,
+          staged: { upper: { ...key, id: '019b76da-a800-7000-8000-00000000000A' }, done: false },
+        },
+      },
+    },
     {
       sweep: {
         ...snapshot,

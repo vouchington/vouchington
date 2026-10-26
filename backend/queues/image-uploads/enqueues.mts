@@ -4,7 +4,7 @@ import type { JobOptions } from 'glide-mq'
 import { IMAGE_UPLOADS_QUEUE_NAME } from './config.mts'
 import { imageUploadsQueue } from './queues.mts'
 
-/** Bind both native admission and depth observation to the same real destination queue. */
+/** Bind recovery admission to its real destination queue. */
 export function createExtractImageMetadataEnqueue(queue: typeof imageUploadsQueue) {
   const enqueue = createEnqueueFunction<{ id: string }, 'extract-metadata'>({
     queue,

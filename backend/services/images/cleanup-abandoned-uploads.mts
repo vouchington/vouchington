@@ -1,5 +1,5 @@
 import { getImagesWorkLimit } from './work-limits.mts'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { markImageUploadSourcesDeleted } from './complete-upload-state.mts'
@@ -18,56 +18,51 @@ const ABANDONED_UPLOAD_ERROR = 'Upload abandoned before completion'
 export async function cleanupAbandonedUploads(
   sweep: AbandonedUploadSweep,
   save: (sweep: AbandonedUploadSweep) => Promise<void>,
-  recoveryQueue: typeof imageUploadsQueue = imageUploadsQueue,
+  dependencies: {
+    recoveryQueue?: typeof imageUploadsQueue
+    acknowledgementQuery?: QueryExecutor
+  } = {},
 ) {
   const batchSize = getImagesWorkLimit('cleanup_batch_size')
-  const enqueueRecovery = createExtractImageMetadataEnqueue(recoveryQueue)
-  let recoveryBackpressured = false
+  const enqueueRecovery = createExtractImageMetadataEnqueue(
+    dependencies.recoveryQueue ?? imageUploadsQueue,
+  )
   let state = sweep
   const counts = { cleaned: 0, recovered: 0, stagedSourcesDeleted: 0 }
   for (const phase of UPLOAD_CLEANUP_PHASES) {
     if (state.windows[phase].done) continue
-    let pageSize = batchSize
-    let available = batchSize
-    if (phase === 'recovery') {
-      // oxlint-disable-next-line no-await-in-loop -- every fan-out page checks the actual destination
-      available = await readRecoveryCapacity(recoveryQueue)
-      if (available === 0) {
-        recoveryBackpressured = true
-        continue
-      }
-      pageSize = Math.min(batchSize, available)
-    }
     // oxlint-disable-next-line no-await-in-loop -- phase order preserves source cleanup before recovery and abandonment
-    const page = await readPhase(state, phase, pageSize) // no-mistakes-disable-line query-reached-per-item: three fixed phases use bounded transactions and ordered checkpoints
-    const rows = page.slice(0, pageSize)
+    const page = await readPhase(state, phase, batchSize) // no-mistakes-disable-line query-reached-per-item: three fixed phases use bounded transactions and ordered checkpoints
+    const rows = page.slice(0, batchSize)
     if (phase === 'staged') {
       for (let offset = 0; offset < rows.length; offset += STAGED_SOURCE_CLEANUP_CONCURRENCY) {
         // oxlint-disable-next-line no-await-in-loop -- cap dedicated advisory-lock sessions per process
-        const results = await Promise.all(
+        const results = await Promise.allSettled(
           rows
             .slice(offset, offset + STAGED_SOURCE_CLEANUP_CONCURRENCY)
-            .map(image => cleanupStagedUploadSource(image.id)),
+            .map(image => cleanupStagedUploadSource(image.id, dependencies.acknowledgementQuery)),
         )
-        counts.stagedSourcesDeleted += results.filter(Boolean).length
+        rejectFailedPageEffects(results)
+        // A known provider failure stays dirty for the next sweep without starving later keys.
+        counts.stagedSourcesDeleted += results.filter(
+          result => result.status === 'fulfilled' && result.value,
+        ).length
       }
     } else if (phase === 'recovery') {
       // A rejection prevents checkpointing. A deduplicated admission already has live extraction work.
       // oxlint-disable-next-line no-await-in-loop -- checkpoint only after the bounded fan-out settles
-      await Promise.all(rows.map(image => enqueueRecovery(image.id)))
-      if (page.length > pageSize && rows.length >= available) recoveryBackpressured = true
+      const admissions = await Promise.allSettled(rows.map(image => enqueueRecovery(image.id)))
+      rejectFailedPageEffects(admissions)
       counts.recovered += rows.length
     } else {
       // oxlint-disable-next-line no-await-in-loop -- retain best-effort per-image storage deletion after the committed soft delete
-      const deletedIds = (await Promise.all(rows.map(deleteAbandonedStorage))).filter(
-        (id): id is string => id !== undefined,
+      const deletions = await Promise.allSettled(rows.map(deleteAbandonedStorage))
+      rejectFailedPageEffects(deletions)
+      const deletedIds = deletions.flatMap(result =>
+        result.status === 'fulfilled' && result.value ? [result.value] : [],
       )
-      try {
-        // oxlint-disable-next-line no-await-in-loop -- acknowledge the successful bounded phase as one SQL batch before checkpointing
-        await markImageUploadSourcesDeleted(deletedIds) // no-mistakes-disable-line query-reached-per-item: one bounded acknowledgement batch per fixed phase preserves checkpoint ordering
-      } catch (err) {
-        onError(err as Error)
-      }
+      // oxlint-disable-next-line no-await-in-loop -- acknowledge one successful bounded phase before checkpointing
+      await markImageUploadSourcesDeleted(deletedIds, { query: dependencies.acknowledgementQuery }) // no-mistakes-disable-line query-reached-per-item: one bounded acknowledgement batch per fixed phase preserves checkpoint ordering
       counts.cleaned += rows.length
     }
     const last = rows.at(-1)
@@ -79,7 +74,7 @@ export async function cleanupAbandonedUploads(
         [phase]: {
           ...state.windows[phase],
           ...(last ? { after: { id: last.id, stagedAt: last.staged_at } } : {}),
-          done: page.length <= pageSize,
+          done: page.length <= batchSize,
         },
       },
     }
@@ -88,7 +83,6 @@ export async function cleanupAbandonedUploads(
   }
   return {
     ...counts,
-    recoveryBackpressured,
     hasMore: UPLOAD_CLEANUP_PHASES.some(phase => !state.windows[phase].done),
   }
 }
@@ -132,12 +126,7 @@ async function deleteAbandonedStorage(image: UploadCleanupRow): Promise<string |
   }
 }
 
-/** A capacity sample bounds this page, not concurrent producers' aggregate admissions. */
-async function readRecoveryCapacity(queue: typeof imageUploadsQueue): Promise<number> {
-  const counts = await queue.getJobCounts()
-  const values = [counts.waiting, counts.active, counts.delayed]
-  if (values.some(value => !Number.isSafeInteger(value) || value < 0))
-    throw new Error('Invalid image extraction queue depth')
-  const depth = values.reduce((total, value) => total + value, 0)
-  return Math.max(0, getImagesWorkLimit('recovery_max_depth') - depth)
+function rejectFailedPageEffects(results: readonly PromiseSettledResult<unknown>[]): void {
+  const errors = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
+  if (errors.length) throw new AggregateError(errors, 'Upload cleanup page effects failed')
 }

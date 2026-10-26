@@ -1,4 +1,9 @@
-import { beginTransaction } from '@data-stores/psql'
+import {
+  beginTransaction,
+  withTransactionOptions,
+  type QueryOptions,
+  type QueryExecutor,
+} from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-lifecycle-lock'
 import { deriveUploadStatus } from './get-upload-state.mts'
@@ -139,13 +144,23 @@ export async function markImageUploadSourceDeleted(imageId: string): Promise<voi
 }
 
 /** Acknowledge only storage deletions that succeeded, in one bounded transaction. */
-export async function markImageUploadSourcesDeleted(imageIds: readonly string[]): Promise<void> {
+export async function markImageUploadSourcesDeleted(
+  imageIds: readonly string[],
+  options: QueryOptions = {},
+): Promise<void> {
   const ids = [...new Set(imageIds)]
   if (ids.length === 0) return
   if (ids.length > imagesWorkMaxValues.cleanup_batch_size)
     throw new Error('Image source deletion acknowledgement exceeds its bounded page')
+  if (options.query)
+    return withTransactionOptions(options, query => acknowledgeImageUploadSources(query, ids))
   await using transaction = await beginTransaction()
-  await transaction(
+  await acknowledgeImageUploadSources(transaction, ids)
+  await transaction.commit()
+}
+
+async function acknowledgeImageUploadSources(query: QueryExecutor, ids: string[]): Promise<void> {
+  await query(
     `/* markImageUploadSourcesDeleted:lock */
     SELECT id
     FROM images
@@ -154,7 +169,7 @@ export async function markImageUploadSourcesDeleted(imageIds: readonly string[])
   `,
     [ids, ids.length],
   )
-  await transaction(
+  await query(
     `/* markImageUploadSourcesDeleted:update */
     UPDATE images
     SET upload_source_deleted_at = CURRENT_TIMESTAMP,
@@ -169,5 +184,4 @@ export async function markImageUploadSourcesDeleted(imageIds: readonly string[])
   `,
     [ids],
   )
-  await transaction.commit()
 }

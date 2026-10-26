@@ -22,8 +22,6 @@ export const backgroundWorkEntries2 = [
     maxValues: imagesWorkMaxValues,
     descriptions: {
       cleanup_batch_size: 'Cleanup batch size for images processing.',
-      recovery_max_depth: 'Whole image extraction queue waiting, active and delayed capacity.',
-      recovery_backoff_ms: 'Delay before a capacity-blocked image recovery page resumes.',
       recovery_threshold_hours: 'Recovery threshold hours for images processing.',
       abandoned_threshold_hours: 'Abandoned threshold hours for images processing.',
     },

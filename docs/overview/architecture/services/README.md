@@ -111,10 +111,8 @@ deletion through the foreign key.
   sweep. Progress follows committed state and attempted external effects; a later scheduled sweep
   retries failed or temporarily locked rows. This is replayable maintenance, not an exactly-once
   guarantee for provider calls. Capturing a new window is read-only; only processing it causes
-  deletion or extraction admissions. Recovery also checks the actual extraction backlog before
-  each page; otherwise continuation could exchange starvation for a downstream admission flood.
-  A blocked destination keeps recovery progress and yields, rather than treating capacity as a
-  failed attempt. The sampled capacity bounds a page, not concurrent producers as a whole.
+  deletion or extraction admissions. Recovery admits only its bounded page and saves progress
+  after every admission succeeds; an admission failure leaves that phase available for replay.
 - **Hash uploads after upload.** The client cannot be trusted to report a hash, and the server has
   to read the bytes to validate format anyway.
 - **Referral card catalogs are curated seeds, not scraped,** because the provider's page cannot be

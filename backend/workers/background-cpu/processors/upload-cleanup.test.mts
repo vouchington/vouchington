@@ -34,9 +34,10 @@ describe('upload cleanup processor', () => {
     const storage = installOwnedUploadCleanupStorage([imageId])
     await expect(handler.handle(job)).rejects.toThrow('owned checkpoint failure')
     expect(saved).toHaveLength(1)
-    expect(parseCleanupAbandonedUploadsData(saved[0]).staged).toMatchObject({
-      cutoff: expect.any(String),
-      done: expect.any(Boolean),
+    expect(parseCleanupAbandonedUploadsData(saved[0]).sweep).toMatchObject({
+      recoveryCutoff: expect.any(String),
+      abandonmentCutoff: expect.any(String),
+      windows: expect.any(Object),
     })
     expect((await backgroundCpu.getJob(job.id))?.data).toEqual({})
     expect(await getImageByIdFromPrimary(imageId, true)).toMatchObject({

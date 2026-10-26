@@ -40,7 +40,7 @@ export async function runUploadCleanupScenarios(): Promise<void> {
             stagedAt: UPLOAD_CLEANUP_ELIGIBLE_TIME,
           }
     const after = { id: uploadCleanupMarkerId(phase), stagedAt: UPLOAD_CLEANUP_MARKER_TIME }
-    for (const kind of ['upper', 'forward'] as const) {
+    for (const kind of ['upper', 'first', 'forward'] as const) {
       const scenario = `upload-cleanup-${phase}-${kind}`
       registerScenarioContract(scenario, {
         seededRows: { images: UPLOAD_CLEANUP_TOTAL_ROWS },
@@ -53,7 +53,7 @@ export async function runUploadCleanupScenarios(): Promise<void> {
           },
         ],
       })
-      // no-mistakes-disable-next-line query-reached-per-item: six fixed phase and cursor shapes require independent production query captures and plan gates
+      // no-mistakes-disable-next-line query-reached-per-item: fixed phase and cursor shapes require independent production query captures and plan gates
       await runAndCapture(
         scenario,
         async () => {
@@ -71,7 +71,7 @@ export async function runUploadCleanupScenarios(): Promise<void> {
               transaction,
               phase,
               UPLOAD_CLEANUP_CUTOFF,
-              { upper, after, done: false },
+              { upper, ...(kind === 'forward' ? { after } : {}), done: false },
               UPLOAD_CLEANUP_PAGE_SIZE,
             )
             const first =
@@ -79,9 +79,18 @@ export async function runUploadCleanupScenarios(): Promise<void> {
                 ? 0
                 : UPLOAD_CLEANUP_NOISE_ROWS +
                   (phase === 'recovery' ? UPLOAD_CLEANUP_ELIGIBLE_ROWS : 0)
-            const expected = Array.from({ length: UPLOAD_CLEANUP_PAGE_SIZE + 1 }, (_, index) =>
-              uploadCleanupSeedId(first + index),
-            )
+            const markers =
+              kind === 'forward'
+                ? []
+                : phase === 'staged'
+                  ? [UPLOAD_CLEANUP_TOTAL_ROWS - 3, UPLOAD_CLEANUP_TOTAL_ROWS - 2]
+                  : [UPLOAD_CLEANUP_TOTAL_ROWS - (phase === 'recovery' ? 2 : 1)]
+            const expected = [
+              ...markers.map(uploadCleanupSeedId),
+              ...Array.from({ length: UPLOAD_CLEANUP_PAGE_SIZE + 1 - markers.length }, (_, index) =>
+                uploadCleanupSeedId(first + index),
+              ),
+            ]
             if (JSON.stringify(rows.map(row => row.id)) !== JSON.stringify(expected))
               throw new Error(`Unexpected ${phase} B+1 page; representative seed has drifted`)
           }

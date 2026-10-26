@@ -4,7 +4,6 @@ import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { enqueueCleanupAbandonedUploads } from './image-jobs.mts'
-import type { CleanupAbandonedUploadsData } from '../types.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QUEUE_NAME, [
   {

@@ -2,15 +2,9 @@ import { randomUUID, randomBytes } from 'node:crypto'
 import { once } from 'node:events'
 import { describe, expect, it, vi } from 'vitest'
 import { Queue, QueueEvents } from 'glide-mq'
-import {
-  closeAndUnregisterGlideMQInstance,
-  workerQueueConnection,
-  workerQueuePrefix,
-} from '@data-stores/valkey-glide-mq'
-import {
-  onEnqueueAdmission,
-  type EnqueueAdmission,
-} from '@data-stores/valkey-glide-mq/glide-mq-admission'
+import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import {
   acquireContentAnalysisTestReservation,
   waitForQueueDomainTestResult,
@@ -31,7 +25,6 @@ import {
 } from '@voucha/test-helpers/image-upload-cleanup'
 import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { getImageById } from '@services/images/get'
-import { getImagesWorkLimit } from '@services/images/work-limits'
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
 import { BACKGROUND_CPU_HANDLERS } from '../processors/handlers.mts'
 
@@ -54,11 +47,6 @@ describe('background CPU abandoned upload cleanup', () => {
     context.onTestFinished(close)
     reservation = acquireContentAnalysisTestReservation('shared')
     await waitForQueueDomainTestResult(reservation, context.signal)
-    context.signal.throwIfAborted()
-    const depth = await imageUploadsQueue.getJobCounts()
-    const unfinished = depth.waiting + depth.active + depth.delayed
-    // Default extraction queue needs spare capacity for this owned recovery admission.
-    expect(unfinished).toBeLessThan(getImagesWorkLimit('recovery_max_depth'))
     context.signal.throwIfAborted()
     const user = await createTestUser()
     const now = new Date()

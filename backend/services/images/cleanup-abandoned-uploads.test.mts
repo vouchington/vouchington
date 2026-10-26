@@ -89,8 +89,7 @@ describe('abandoned upload cleanup', () => {
     await setImageHashAndProcessing(id, digest)
     const storage = installOwnedUploadCleanupStorage([id])
     const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
-    expect(await cleanupStagedUploadSource(id)).toBe(true)
-    expect(result).toMatchObject({ cleaned: 0, recovered: 1 })
+    expect(result).toMatchObject({ cleaned: 0, recovered: 1, stagedSourcesDeleted: 1 })
     expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: id }])
     expect(await getImageById(id)).not.toBeNull()
     expect((await getImageById(id))?.upload_source_deleted_at).toBeInstanceOf(Date)
@@ -156,7 +155,7 @@ describe('abandoned upload cleanup', () => {
       expect((await readEnqueuedJob(imageUploadsQueue, await admission.completion)).data).toEqual({
         id: ids[0],
       })
-      expect(storage.calls).toEqual([])
+      expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: ids[0] }])
       for (const id of ids) expect(await getImageById(id)).not.toBeNull()
     } finally {
       off()

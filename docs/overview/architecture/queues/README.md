@@ -167,7 +167,8 @@ without spending a failure attempt. Snapshot persistence precedes side effects a
 progress follows them. Retries can repeat an admission or object deletion if a worker stops
 between an effect and its checkpoint; existing image storage lifecycle locks, extraction admission
 deduplication and idempotent provider deletion remain the replay boundaries. A resumed snapshot
-never recaptures a moving global range. Recovery observes destination backlog and uses retained
-delay when capacity is exhausted, keeping the cursor rather than immediately retrying the same
-page. Backlog observation and admission must bind to the same queue; this is cooperative
-backpressure, not an atomic reservation against other producers.
+never recaptures a moving global range. The shared scheduler lease skips fresh ticks that overlap
+an active pass. Separate retained sweeps can revisit a row between passes: locking selectors,
+image lifecycle locks, and idempotent storage deletion keep those effects replayable, while
+extraction admission deduplicates in-flight work. Recovery advances only after its bounded page
+is admitted.

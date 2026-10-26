@@ -50,7 +50,6 @@
     "@modules/utils": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
     "@queues/background": "workspace:^",
-    "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/image-uploads": "workspace:^",
