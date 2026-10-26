@@ -1,8 +1,6 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { encryptSecret } from '@modules/token-secrets'
-import { resolveCopyrightLegalHoldInTransaction } from '../../../services/copyright-notices/hold-resolution.mts'
 import { lockCopyrightNoticeHoldPlacements } from '../../../services/copyright-notices/hold-placement-locks.mts'
 import { replayFailedCopyrightActionIntent } from '../../../services/copyright-notices/action-delivery-state.mts'
 import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
@@ -10,39 +8,6 @@ import {
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
 } from '../../postgres-lock-wait.mts'
-
-/** Reproduces the pre-fix committed resolution with no intent reset, without changing original authority. */
-export async function recordHistoricalTestCopyrightHoldResolution(input: {
-  assessmentId: string
-  resolvedAt: Date
-  actorId: string
-}): Promise<void> {
-  await write(sql`/* recordHistoricalTestCopyrightHoldResolution */
-    INSERT INTO copyright_notice_legal_hold_resolutions (
-      copyright_notice_legal_hold_assessment_id, resolved_at, resolved_by_id, resolution_kind, rationale_ciphertext
-    ) VALUES (${input.assessmentId}, ${input.resolvedAt}, ${input.actorId}, 'dismissed',
-      ${encryptSecret('Historical resolution', `copyright-legal-hold-resolution:${input.assessmentId}`)})
-  `)
-}
-
-/** Exercises the actual transaction-owned legal transition, then rolls back its resolution/reset/audit. */
-export async function rollbackTestCopyrightHoldResolution(
-  input: Parameters<typeof resolveCopyrightLegalHoldInTransaction>[0],
-): Promise<string[]> {
-  await using transaction = await beginTransaction()
-  const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
-  return result.intentIds
-}
-
-/** Returns exactly the committed intent IDs the public resolution will enqueue. */
-export async function commitTestCopyrightHoldResolution(
-  input: Parameters<typeof resolveCopyrightLegalHoldInTransaction>[0],
-): Promise<string[]> {
-  await using transaction = await beginTransaction()
-  const result = await resolveCopyrightLegalHoldInTransaction(input, transaction)
-  await transaction.commit()
-  return result.intentIds
-}
 
 /** Supplies an owned candidate directly, proving the locked automatic replay rechecks its state. */
 export async function replayTestAutomaticCopyrightRestore(input: {

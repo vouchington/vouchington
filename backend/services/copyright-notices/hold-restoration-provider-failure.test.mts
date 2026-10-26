@@ -1,14 +1,13 @@
 import { appendTestCopyrightNoticeSubmission } from '@voucha/test-helpers/copyright-notice-submissions'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { notifications } from '@queues/notifications/queues'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import {
-  commitTestCopyrightHoldResolution,
-  replayTestAutomaticCopyrightRestore,
-} from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
+import { replayTestAutomaticCopyrightRestore } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
   appendCopyrightLegalHoldAssessment,
   processCopyrightActionIntent,
+  resolveCopyrightLegalHold,
   searchRecoverableCopyrightActionIntentIds,
 } from './index.mts'
 import {
@@ -66,7 +65,7 @@ describe('automatic hold restoration preserves provider failures', () => {
     async transition => {
       const scene = await exhaustedRestoreWithSibling()
       let blockedResult: string
-      let enqueueIds: string[] = []
+      const batches: Array<{ name: string; data: unknown }[]> = []
       if (transition === 'resolution') {
         const hold = await recordOrdinaryCopyrightHold(scene, publish, [scene.other.id])
         blockedResult = await processCopyrightActionIntent(
@@ -74,13 +73,37 @@ describe('automatic hold restoration preserves provider failures', () => {
           scene.sibling.now,
           createTestCopyrightDeliveryDependencies(publish),
         )
-        enqueueIds = await commitTestCopyrightHoldResolution({
-          currentUser: scene.moderator,
-          assessmentId: hold.id,
-          resolvedAt: scene.sibling.now,
-          resolutionKind: 'dismissed',
-          rationale: 'Sibling target proceeding dismissed.',
+        const ownedIntentIds = new Set([scene.restore.id, scene.sibling.restore.id])
+        const admissions: Promise<unknown>[] = []
+        const originalAddBulk = notifications.addBulk
+        const addBulkSpy = vi.spyOn(notifications, 'addBulk').mockImplementation(jobs => {
+          const hasOwnedAction = jobs.some(
+            job =>
+              job.name === 'notifications.processApplyCopyrightAction' &&
+              typeof job.data === 'object' &&
+              job.data !== null &&
+              'intentId' in job.data &&
+              typeof job.data.intentId === 'string' &&
+              ownedIntentIds.has(job.data.intentId),
+          )
+          if (!hasOwnedAction) return originalAddBulk.call(notifications, jobs)
+          batches.push(jobs.map(({ name, data }) => ({ name, data })))
+          const admission = originalAddBulk.call(notifications, jobs)
+          admissions.push(admission)
+          return admission
         })
+        try {
+          await resolveCopyrightLegalHold({
+            currentUser: scene.moderator,
+            assessmentId: hold.id,
+            resolvedAt: scene.sibling.now,
+            resolutionKind: 'dismissed',
+            rationale: 'Sibling target proceeding dismissed.',
+          })
+          await Promise.all(admissions)
+        } finally {
+          addBulkSpy.mockRestore()
+        }
       } else {
         const submission = await appendTestCopyrightNoticeSubmission({
           noticeId: scene.notice.id,
@@ -109,8 +132,19 @@ describe('automatic hold restoration preserves provider failures', () => {
           rationale: 'Filing does not establish a qualifying proceeding.',
         })
       }
+      expect(batches).toEqual(
+        transition === 'resolution'
+          ? [
+              [
+                {
+                  name: 'notifications.processApplyCopyrightAction',
+                  data: { intentId: scene.sibling.restore.id },
+                },
+              ],
+            ]
+          : [],
+      )
       expect(blockedResult).toBe('blocked')
-      expect(enqueueIds).toEqual(transition === 'resolution' ? [scene.sibling.restore.id] : [])
       const after = await getCopyrightNoticePrivateAggregate(scene.notice.id)
       expect(after?.actionIntents.find(intent => intent.id === scene.restore.id)).toEqual(
         scene.failed,

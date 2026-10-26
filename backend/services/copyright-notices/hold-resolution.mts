@@ -32,7 +32,7 @@ export async function resolveCopyrightLegalHold(
 }
 
 /** The owner's legal record, exact replay and audit commit together; no external effects here. */
-export async function resolveCopyrightLegalHoldInTransaction(
+async function resolveCopyrightLegalHoldInTransaction(
   input: ResolveCopyrightLegalHoldInput,
   transaction: TransactionQuery,
 ): Promise<{ resolution: CopyrightLegalHoldResolutionRecord; intentIds: string[] }> {
