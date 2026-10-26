@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createOpenAIResponse } from './create-response.mts'
+import { runWithBackgroundResponseHooks } from './background-response-context.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import {
@@ -13,12 +14,18 @@ type CreateMock = (
   options: Parameters<typeof createOpenAIResponse>[1],
 ) => Promise<unknown>
 
-const openAIMocks = vi.hoisted(() => ({ create: vi.fn<CreateMock>() }))
+const openAIMocks = vi.hoisted(() => ({
+  create: vi.fn<CreateMock>(),
+  cancel: vi.fn<(responseId: string) => Promise<unknown>>(),
+}))
 
 vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
   ...(await importOriginal()),
   default: class MockOpenAI {
-    responses = { create: openAIMocks.create } as unknown as typeof import('openai').default
+    responses = {
+      create: openAIMocks.create,
+      cancel: openAIMocks.cancel,
+    } as unknown as typeof import('openai').default
   } as unknown as typeof import('openai').default,
 }))
 
@@ -26,6 +33,7 @@ describe('OpenAI response stream latch decisions', () => {
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-key'
     openAIMocks.create.mockReset()
+    openAIMocks.cancel.mockReset().mockResolvedValue(undefined)
   })
 
   it('does not latch when the signal aborts during beforeAttempt', async () => {
@@ -78,7 +86,7 @@ describe('OpenAI response stream latch decisions', () => {
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('does not latch when the caller aborts an in-flight stream', async () => {
+  it('latches a billed-ambiguous abort of an in-flight stream without a response id', async () => {
     const abort = new Error('This operation was aborted')
     abort.name = 'AbortError'
     const stream: AsyncIterable<ReturnType<typeof makeStreamEvent>> = {
@@ -107,6 +115,52 @@ describe('OpenAI response stream latch decisions', () => {
       ),
     ).rejects.toBe(abort)
 
+    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith({
+      requestStartedAt: expect.any(Date),
+      error: abort,
+    })
+  })
+
+  it('uses a durably registered response id instead of a day latch after stream abort', async () => {
+    const responseId = 'resp_registered_abort'
+    const abort = new Error('Stream connection ended')
+    abort.name = 'AbortError'
+    const stream: AsyncIterable<ReturnType<typeof makeStreamEvent>> = {
+      async *[Symbol.asyncIterator]() {
+        yield makeStreamEvent({
+          type: 'response.created',
+          sequence_number: 1,
+          response: makeSdkResponse({ id: responseId, status: 'in_progress' }),
+        })
+        throw abort
+      },
+    }
+    openAIMocks.create.mockResolvedValueOnce(stream)
+    const registered: string[] = []
+    const onUnknownBilledAttempt = vi.fn<
+      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
+    >(() => Promise.resolve())
+
+    await expect(
+      runWithBackgroundResponseHooks(
+        {
+          onResponseCreated: async id => {
+            registered.push(id)
+          },
+        },
+        () =>
+          runWithOpenAIResponseAttemptHooks(
+            { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
+            () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+          ),
+      ),
+    ).rejects.toBe(abort)
+
+    expect(registered).toEqual([responseId])
+    expect(openAIMocks.cancel).toHaveBeenCalledExactlyOnceWith(
+      responseId,
+      expect.objectContaining({ maxRetries: 0 }),
+    )
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 })
