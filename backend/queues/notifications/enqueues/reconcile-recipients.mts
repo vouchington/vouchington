@@ -3,11 +3,13 @@ import { getBackgroundOrderingConcurrency, PRIORITY_DISPATCH } from '@queues/bac
 import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import {
   NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+  NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
   NOTIFICATIONS_RECONCILE_POST_JOB,
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import type {
   ReconcileContentVisibilityData,
+  ReconcileMembershipVisibilityData,
   ReconcilePostNotificationsData,
   ReconcileRssFeedItemNotificationsData,
 } from '@queues/background/enqueues/notifications-domain'
@@ -35,6 +37,12 @@ function visibilityJobId(data: ReconcileContentVisibilityData): string {
   const kind = data.postId ? 'post' : 'rss'
   const entityId = data.postId ?? data.rssFeedItemId
   return `notifications__content-visibility__${kind}__${entityId}__${data.changeId}__${data.after.userId}__${data.after.notificationId}`
+}
+
+function membershipJobId(data: ReconcileMembershipVisibilityData): string {
+  const kind = data.postId ? 'post' : 'rss'
+  const entityId = data.postId ?? data.rssFeedItemId
+  return `notifications__membership-visibility__${kind}__${entityId}__${data.changeId}__${data.after.userId}__${data.after.notificationId}`
 }
 
 const enqueuePostJobs = createBackgroundBulkEnqueue(
@@ -65,6 +73,17 @@ const enqueueVisibilityJobs = createBackgroundBulkEnqueue(
     data,
     opts: {
       jobId: visibilityJobId(data),
+      ordering: bulkOrdering(data.postId ? 'post' : 'rss', data.postId ?? data.rssFeedItemId),
+      ...CONTINUATION,
+    },
+  }),
+)
+const enqueueMembershipJobs = createBackgroundBulkEnqueue(
+  NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
+  (data: ReconcileMembershipVisibilityData) => ({
+    data,
+    opts: {
+      jobId: membershipJobId(data),
       ordering: bulkOrdering(data.postId ? 'post' : 'rss', data.postId ?? data.rssFeedItemId),
       ...CONTINUATION,
     },
@@ -137,5 +156,14 @@ export function enqueueContinueContentVisibility(data: ReconcileContentVisibilit
     inputs: [data],
     jobIdOf: visibilityJobId,
     enqueueBulk: enqueueVisibilityJobs,
+  })
+}
+
+export function enqueueContinueMembershipVisibility(data: ReconcileMembershipVisibilityData) {
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs: [data],
+    jobIdOf: membershipJobId,
+    enqueueBulk: enqueueMembershipJobs,
   })
 }

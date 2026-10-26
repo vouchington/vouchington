@@ -48,12 +48,15 @@ export function getBackgroundOrderingLimits(key: string): {
   defaultValue: number
   maxValue: number
 } {
-  const configKey = key
+  const configKey =
+    key.startsWith('notifications:bulk:post:') || key.startsWith('notifications:bulk:rss:')
+      ? 'notifications:bulk'
+      : key
   const defaultValue = BACKGROUND_ORDERING_CAPS[configKey as keyof typeof BACKGROUND_ORDERING_CAPS]
   if (defaultValue === undefined) throw new Error(`Unregistered background ordering key: ${key}`)
   return {
     configKey,
     defaultValue,
-    maxValue: key === 'notifications:bulk' ? 1 : orderingMaxValue(defaultValue),
+    maxValue: configKey === 'notifications:bulk' ? 1 : orderingMaxValue(defaultValue),
   }
 }

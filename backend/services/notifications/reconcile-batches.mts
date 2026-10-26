@@ -1,4 +1,4 @@
-import { getNotificationsWorkLimit } from './work-limits.mts'
+import { getContentVisibilityPageLimit, getNotificationsWorkLimit } from './work-limits.mts'
 import { writePool, type PoolClient } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import {
@@ -23,16 +23,11 @@ export type ReconcileNotificationsOptions = {
 /** The keyset slice of recipients one job owns: ids after `afterUserId`, at most `limit`. */
 export type RecipientPage = { afterUserId: string | null; limit: number }
 
-/** The user-id range one page covers; `throughUserId` is null on the last page. */
-export type RecipientPageRange = {
-  afterUserId: string | null
-  throughUserId: string | null
-}
-
 export type ReconcileNotificationsResult = {
   created: number
   pruned: number
   nextVisibilityCursor?: { userId: string; notificationId: string }
+  nextMembershipCursor?: { userId: string; notificationId: string }
   /** Present only when a full page may be followed by more recipients. */
   nextAfterUserId?: string
 }
@@ -51,7 +46,6 @@ type ReconcileNotificationBatchConfig = {
     recipientIds: string[],
     createdTable: string,
   ) => Promise<CreatedNotification[]>
-  prune: (client: PoolClient, recipientTable: string, range: RecipientPageRange) => Promise<number>
 }
 
 export async function reconcileNotificationBatches(
@@ -59,10 +53,12 @@ export async function reconcileNotificationBatches(
   options: ReconcileNotificationsOptions = {},
 ): Promise<ReconcileNotificationsResult> {
   const DEFAULT_RECONCILE_BATCH_SIZE = getNotificationsWorkLimit('reconcile_batch_size')
-  const batchSize = options.batchSize ?? DEFAULT_RECONCILE_BATCH_SIZE
-  if (!Number.isInteger(batchSize) || batchSize <= 0) {
+  const requestedBatchSize = options.batchSize ?? DEFAULT_RECONCILE_BATCH_SIZE
+  if (!Number.isInteger(requestedBatchSize) || requestedBatchSize <= 0) {
     throw new Error('batchSize must be a positive integer')
   }
+  // The insert path also restores system-pruned subscription rows on conflict.
+  const batchSize = Math.min(requestedBatchSize, getContentVisibilityPageLimit())
   const pageSize = options.pageSize ?? getNotificationsWorkLimit('reconcile_recipient_page_size')
   if (!Number.isInteger(pageSize) || pageSize <= 0) {
     throw new Error('pageSize must be a positive integer')
@@ -99,17 +95,13 @@ export async function reconcileNotificationBatches(
 
     // A full page may be followed by more recipients: only then does this job stop at its last id.
     const nextAfterUserId = recipients === pageSize && lastUserId ? lastUserId : undefined
-    const pruned = await config.prune(client, recipientTable, {
-      afterUserId,
-      throughUserId: nextAfterUserId ?? null,
-    })
     await dispatchCreatedNotificationBatches(
       client,
       createdTable,
       batchSize,
       options.onCreatedNotifications,
     )
-    return { created, pruned, ...(nextAfterUserId ? { nextAfterUserId } : {}) }
+    return { created, pruned: 0, ...(nextAfterUserId ? { nextAfterUserId } : {}) }
   } finally {
     await dropTempTables(client, recipientTable, createdTable).catch(onError)
     client.release()

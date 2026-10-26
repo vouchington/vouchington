@@ -6,10 +6,14 @@ import {
 } from './reconcile-batches.mts'
 import {
   insertRssFeedItemNotificationsForRecipients,
-  pruneRssFeedItemNotificationsExceptRecipients,
   type RssFeedItemSnapshot,
 } from './reconcile-rss-feed-item-writes.mts'
-import { reconcileRssFeedItemContentNotificationVisibility } from './content-visibility-writes.mts'
+import {
+  reconcileRssFeedItemContentNotificationVisibility,
+  type ContentVisibilityCursor,
+  type ContentVisibilityPage,
+} from './content-visibility-writes.mts'
+import { reconcileMembershipNotificationVisibility } from './membership-visibility-writes.mts'
 import { getRssFeedItemNotificationSnapshot } from './reconcile-rss-feed-item-snapshot.mts'
 export async function reconcileNotificationsForRssFeedItem(
   rssFeedItemId: string,
@@ -31,32 +35,52 @@ export async function reconcileNotificationsForRssFeedItem(
         populateRssFeedItemNotificationRecipients(client, recipientTable, item, page),
       insertBatch: (client, recipientIds, createdTable) =>
         insertRssFeedItemNotificationsForRecipients(item, recipientIds, client, createdTable),
-      prune: (client, recipientTable, range) =>
-        pruneRssFeedItemNotificationsExceptRecipients(
-          item.rss_feed_item_id,
-          item.is_content_eligible,
-          client,
-          recipientTable,
-          range,
-        ),
     },
     options,
   )
   if (options.afterUserId) return reconciled
   const visibility = await reconcileRssFeedItemContentNotificationVisibility(rssFeedItemId)
+  const membership = await reconcileRssFeedItemMembershipVisibility(rssFeedItemId)
   return {
     ...reconciled,
-    pruned: reconciled.pruned + visibility.pruned,
+    pruned: reconciled.pruned + visibility.pruned + membership.pruned,
     nextVisibilityCursor: visibility.nextCursor,
+    nextMembershipCursor: membership.nextCursor,
   }
 }
+
+/** A membership continuation reads source and recipient eligibility again for its target page. */
+export async function reconcileRssFeedItemMembershipVisibility(
+  rssFeedItemId: string,
+  after?: ContentVisibilityCursor,
+): Promise<ContentVisibilityPage> {
+  const item = await getRssFeedItemNotificationSnapshot(rssFeedItemId)
+  if (!item) return { updated: 0, pruned: 0 }
+  return reconcileMembershipNotificationVisibility({
+    kind: 'rss',
+    entityId: rssFeedItemId,
+    eligible: item.is_content_eligible,
+    after,
+    populateRecipients: (client, table, userIds) =>
+      populateRssFeedItemNotificationRecipients(
+        client,
+        table,
+        item,
+        { afterUserId: null, limit: userIds.length },
+        userIds,
+      ),
+  })
+}
+
 async function populateRssFeedItemNotificationRecipients(
   client: PoolClient,
   recipientTable: string,
   item: RssFeedItemSnapshot,
   page: RecipientPage,
+  targetUserIds?: string[],
 ): Promise<void> {
   if (!item.is_content_eligible) return
+  const targetSubjectFilter = targetUserIds ? 'AND rel.subject_id = ANY($4::uuid[])' : ''
 
   await client.query(
     `/* populateRssFeedItemNotificationRecipients */
@@ -89,6 +113,7 @@ async function populateRssFeedItemNotificationRecipients(
       JOIN item ON item.id = src.rss_feed_item_id
       JOIN relation__user__subscribe__rss_feed rel ON rel.object_id = src.rss_feed_id
       WHERE src.rss_feed_item_id = $1
+        ${targetSubjectFilter}
         AND rel.created_at <= item.notification_at
         AND (
           rel.deleted_at IS NULL
@@ -100,6 +125,7 @@ async function populateRssFeedItemNotificationRecipients(
       JOIN topic_matches ON topic_matches.topic_id = rel.object_id
       CROSS JOIN item
       WHERE rel.created_at <= item.notification_at
+        ${targetSubjectFilter}
         AND (
           rel.deleted_at IS NULL
           OR rel.deleted_at > item.notification_at
@@ -115,6 +141,11 @@ async function populateRssFeedItemNotificationRecipients(
     LIMIT $3
     ON CONFLICT (user_id) DO NOTHING
   `,
-    [item.rss_feed_item_id, page.afterUserId, page.limit],
+    [
+      item.rss_feed_item_id,
+      page.afterUserId,
+      page.limit,
+      ...(targetUserIds ? [targetUserIds] : []),
+    ],
   )
 }

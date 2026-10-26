@@ -45,6 +45,8 @@ export type ReconcileContentVisibilityData =
       after: { userId: string; notificationId: string }
     }
 
+export type ReconcileMembershipVisibilityData = ReconcileContentVisibilityData
+
 export type ReconcileNotificationPushIntentsData = {
   scanBefore?: string
   after?: { updatedAt: string; userId: string; notificationId: string }

@@ -7,6 +7,7 @@ import { notificationsWorkConfig } from '@services/notifications/work-limits'
 import { background } from '@queues/background/queues'
 import {
   NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+  NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
   NOTIFICATIONS_RECONCILE_POST_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
@@ -52,6 +53,11 @@ describe('notification worker paged dispatch', () => {
       `notifications__reconcile-post__${post.id}__${changeId}__root`
     const pageId = (changeId: string, after: { userId: string; notificationId: string }) =>
       `notifications__content-visibility__post__${post.id}__${changeId}__${after.userId}__${after.notificationId}`
+    const membershipPageId = (
+      changeId: string,
+      after: { userId: string; notificationId: string },
+    ) =>
+      `notifications__membership-visibility__post__${post.id}__${changeId}__${after.userId}__${after.notificationId}`
     const rootHandler = notificationsHandlers.find(
       candidate => candidate.job.name === NOTIFICATIONS_RECONCILE_POST_JOB.name,
     )!
@@ -95,13 +101,17 @@ describe('notification worker paged dispatch', () => {
     expect(rootB.opts.ordering).toEqual(rootA.opts.ordering)
     await (rootHandler.handle as (job: Job) => Promise<unknown>)(rootB)
     expect(await getNotificationById(firstPageA.notificationId)).toMatchObject({ deleted_at: null })
-    const firstPageB = (
+    const resultB = (
       (await background.getJob(rootB.id)) as Job<{
         dispatchReceipt: {
-          result: { nextVisibilityCursor?: { userId: string; notificationId: string } }
+          result: {
+            nextVisibilityCursor?: { userId: string; notificationId: string }
+            nextMembershipCursor?: { userId: string; notificationId: string }
+          }
         }
       }>
-    ).data.dispatchReceipt.result.nextVisibilityCursor
+    ).data.dispatchReceipt.result
+    const firstPageB = resultB.nextVisibilityCursor
     if (!firstPageB) throw new Error('Expected change B to enqueue a visibility continuation')
     expect(firstPageB).toEqual(firstPageA)
 
@@ -119,6 +129,20 @@ describe('notification worker paged dispatch', () => {
     }
     expect(nextA).toBeUndefined()
     expect(nextB).toBeUndefined()
+    const membershipHandler = notificationsHandlers.find(
+      candidate => candidate.job.name === NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB.name,
+    )!
+    const handleMembership = membershipHandler.handle as (job: Job) => Promise<{
+      nextCursor?: typeof firstPageA
+    }>
+    let nextMembership = resultB.nextMembershipCursor
+    expect(nextMembership).toBeDefined()
+    for (let page = 0; page <= notificationIds.length && nextMembership; page += 1) {
+      nextMembership = (
+        await handleMembership(await getJob(membershipPageId(changeB, nextMembership)))
+      ).nextCursor
+    }
+    expect(nextMembership).toBeUndefined()
     for (const id of notificationIds)
       expect(await getNotificationById(id)).toMatchObject({ deleted_at: null })
   })

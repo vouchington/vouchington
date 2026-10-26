@@ -1,7 +1,7 @@
 import { writePool } from '@data-stores/psql'
 import { getPostNotificationSnapshot } from './reconcile-post-snapshot.mts'
 import { getRssFeedItemNotificationSnapshot } from './reconcile-rss-feed-item-snapshot.mts'
-import { getNotificationsWorkLimit } from './work-limits.mts'
+import { getContentVisibilityPageLimit } from './work-limits.mts'
 
 export type ContentVisibilityCursor = { userId: string; notificationId: string }
 const FIRST_UUID = '00000000-0000-0000-0000-000000000000'
@@ -17,7 +17,7 @@ export async function reconcilePostContentNotificationVisibility(
   after?: ContentVisibilityCursor,
 ): Promise<ContentVisibilityPage> {
   const post = await getPostNotificationSnapshot(postId)
-  const pageSize = getNotificationsWorkLimit('content_visibility_page_size')
+  const pageSize = getContentVisibilityPageLimit()
   const cursorOperator = after ? '>' : '>='
   const { rows } = await writePool.query<VisibilityPageRow>(
     `/* reconcilePostContentNotificationVisibility */
@@ -74,7 +74,7 @@ export async function reconcileRssFeedItemContentNotificationVisibility(
   after?: ContentVisibilityCursor,
 ): Promise<ContentVisibilityPage> {
   const item = await getRssFeedItemNotificationSnapshot(rssFeedItemId)
-  const pageSize = getNotificationsWorkLimit('content_visibility_page_size')
+  const pageSize = getContentVisibilityPageLimit()
   const cursorOperator = after ? '>' : '>='
   const { rows } = await writePool.query<VisibilityPageRow>(
     `/* reconcileRssFeedItemContentNotificationVisibility */

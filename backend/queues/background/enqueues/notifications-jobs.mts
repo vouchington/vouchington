@@ -8,6 +8,7 @@ import {
   type CommunityActivityDigestScheduleData,
   type CommunityActivityDigestDispatchData,
   type ReconcileContentVisibilityData,
+  type ReconcileMembershipVisibilityData,
   type ConversationMessageNotificationData,
   type CopyrightIntentData,
   type CopyrightSweepContinuation,
@@ -30,6 +31,13 @@ const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFa
 const TASK = { priority: PRIORITY_TASK } as const
 const DISPATCH = { priority: PRIORITY_DISPATCH } as const
 const BULK_ORDERING = { key: 'notifications:bulk' } as const
+const VISIBILITY = {
+  ...DISPATCH,
+  ordering: BULK_ORDERING,
+  attempts: 3,
+  removeOnComplete: 100,
+  removeOnFail: 100,
+} as const
 
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(
   DOMAIN,
@@ -50,11 +58,12 @@ export const NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB =
 export const NOTIFICATIONS_CONTENT_VISIBILITY_JOB =
   defineBackgroundJob<ReconcileContentVisibilityData>(DOMAIN, {
     name: 'processReconcileContentVisibility',
-    ...DISPATCH,
-    ordering: BULK_ORDERING,
-    attempts: 3,
-    removeOnComplete: 100,
-    removeOnFail: 100,
+    ...VISIBILITY,
+  })
+export const NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB =
+  defineBackgroundJob<ReconcileMembershipVisibilityData>(DOMAIN, {
+    name: 'processReconcileMembershipVisibility',
+    ...VISIBILITY,
   })
 export const NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB =
   defineBackgroundJob<DeliverNotificationPushData>(DOMAIN, {
@@ -162,11 +171,11 @@ export const NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB =
     ...DISPATCH,
     ...RETRY,
   })
-
 export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_RECONCILE_POST_JOB,
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
   NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+  NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
   NOTIFICATIONS_DELETE_JOB,

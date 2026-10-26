@@ -38,6 +38,7 @@ export {
 } from './processors/community-activity-digest.mts'
 export { processDeliverNotificationPushIntent } from './processors/push-delivery.mts'
 export { processConversationMessageNotification } from './processors/conversation.mts'
+export { processReconcileMembershipVisibility } from './processors/membership-visibility.mts'
 export {
   processDeliverCopyrightNotice,
   processReconcileCopyrightDeliveryIntents,

@@ -29,6 +29,10 @@ flowchart TD
   that run repeatedly, because topic and tag classification completes asynchronously. Flagged or
   deleted content does not notify, read notifications are kept even if the entity later stops
   qualifying, and only subscription rows take part in reconciliation (manual sends are snapshots).
+- **Visibility follows current eligibility.** A publication change starts an ordered notification
+  chain for its post or RSS item. Content and subscription visibility changes scan bounded target
+  pages and read current eligibility on each page. A later change starts at the first page, so an
+  earlier page cannot hide recipients that became eligible again mid-run.
 - **Retained identities.** Rows reference retained post and RSS identities so reconciliation can
   find a row after the live display FK is cleared; a retained identity never makes deleted content
   visible.

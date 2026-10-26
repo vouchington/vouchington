@@ -5,6 +5,7 @@ import {
   enqueueContinueReconcilePostNotifications,
   enqueueContinueReconcileRssFeedItemNotifications,
   enqueueContinueContentVisibility,
+  enqueueContinueMembershipVisibility,
   enqueueBulkApplyCopyrightActions,
   enqueueBulkApplyMediaDeliveryRegistryRecords,
   enqueueBulkDeliverCopyrightNotices,
@@ -240,6 +241,23 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     expect(job?.data).toEqual({ postId, changeId, after })
     expect(job?.opts.ordering).toMatchObject({
       key: `notifications:bulk:post:${postId}`,
+      concurrency: 1,
+    })
+  })
+
+  it('uses a distinct stable page id for membership visibility', async () => {
+    const rssFeedItemId = randomUUID()
+    const changeId = randomUUID()
+    const after = { userId: randomUUID(), notificationId: randomUUID() }
+    await enqueueContinueMembershipVisibility({ rssFeedItemId, changeId, after })
+    await enqueueContinueMembershipVisibility({ rssFeedItemId, changeId, after })
+    const job = await notifications.getJob(
+      `notifications__membership-visibility__rss__${rssFeedItemId}__${changeId}__${after.userId}__${after.notificationId}`,
+    )
+    expect(job?.name).toBe('notifications.processReconcileMembershipVisibility')
+    expect(job?.data).toEqual({ rssFeedItemId, changeId, after })
+    expect(job?.opts.ordering).toMatchObject({
+      key: `notifications:bulk:rss:${rssFeedItemId}`,
       concurrency: 1,
     })
   })

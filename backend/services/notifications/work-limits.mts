@@ -1,4 +1,5 @@
 import { DynamicConfig } from '@data-stores/valkey'
+import { getNotificationRecipientDispatchPageLimit } from '@queues/notifications/enqueues/page-limits'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
@@ -38,4 +39,13 @@ export function getNotificationsWorkLimit(field: keyof typeof defaultFields): nu
     defaultValue: defaultFields[field],
     maxValue: notificationsWorkMaxValues[field],
   })
+}
+
+/** Visibility pages honor the smaller configured recipient/dispatcher bound as settings change. */
+export function getContentVisibilityPageLimit(): number {
+  return Math.min(
+    getNotificationsWorkLimit('content_visibility_page_size'),
+    getNotificationsWorkLimit('reconcile_recipient_page_size'),
+    getNotificationRecipientDispatchPageLimit(),
+  )
 }

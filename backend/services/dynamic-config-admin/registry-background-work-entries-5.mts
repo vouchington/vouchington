@@ -81,7 +81,7 @@ export const backgroundWorkRegistryEntries5 = {
       reconcile_recipient_page_size:
         'Recipients one post or RSS feed item notification reconcile job handles before it continues.',
       content_visibility_page_size:
-        'Maximum notification recipients one content visibility statement updates.',
+        'Maximum notification targets one content or subscription visibility page examines.',
       push_intent_recovery_page_size: 'Page size for durable notification push intent recovery.',
     },
   }),

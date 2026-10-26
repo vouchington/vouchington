@@ -5,6 +5,7 @@ import {
 } from './content-visibility-writes.mts'
 import { deleteNotification } from './mutations.mts'
 import { notificationsWorkConfig } from './work-limits.mts'
+import { pagedDispatchConfig } from '@queues/notifications/enqueues/page-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestManualPostNotification,
@@ -23,7 +24,10 @@ import {
 describe('bounded content visibility pages', () => {
   it('advances past an unchanged raw target page before changing the next post recipient', async () => {
     const restoreLimit = overrideDynamicConfigFieldsForTest(notificationsWorkConfig, {
-      content_visibility_page_size: 1,
+      content_visibility_page_size: 3,
+    })
+    const restoreDispatcherLimit = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      notifications_page_size: 1,
     })
     try {
       const sender = await createTestUser()
@@ -60,6 +64,7 @@ describe('bounded content visibility pages', () => {
         delete_reason: 'system_pruned',
       })
     } finally {
+      restoreDispatcherLimit()
       restoreLimit()
     }
   })

@@ -1,5 +1,5 @@
 import type { PoolClient } from '@data-stores/psql'
-import type { CreatedNotification, RecipientPageRange } from './reconcile-batches.mts'
+import type { CreatedNotification } from './reconcile-batches.mts'
 import { truncateText } from './shared.mts'
 
 export type RssFeedItemSnapshot = {
@@ -105,35 +105,4 @@ export async function insertRssFeedItemNotificationsForRecipients(
   )
 
   return rows
-}
-
-export async function pruneRssFeedItemNotificationsExceptRecipients(
-  rssFeedItemId: string,
-  isContentEligible: boolean,
-  client: PoolClient,
-  recipientTable: string,
-  range: RecipientPageRange,
-): Promise<number> {
-  if (!isContentEligible) return 0
-
-  const { rowCount } = await client.query(
-    `/* pruneRssFeedItemNotificationsExceptRecipients */
-    UPDATE notifications n
-    SET deleted_at = CURRENT_TIMESTAMP,
-        delete_reason = 'system_pruned'
-    WHERE n.rss_feed_item_id = $1
-      AND n.delivery_type = 'subscription'
-      AND n.deleted_at IS NULL
-      AND n.read_at IS NULL
-      AND ($2::uuid IS NULL OR n.user_id > $2)
-      AND ($3::uuid IS NULL OR n.user_id <= $3)
-      AND NOT EXISTS (
-        SELECT 1
-        FROM ${recipientTable} recipients
-        WHERE recipients.user_id = n.user_id
-      )
-  `,
-    [rssFeedItemId, range.afterUserId, range.throughUserId],
-  )
-  return rowCount ?? 0
 }
