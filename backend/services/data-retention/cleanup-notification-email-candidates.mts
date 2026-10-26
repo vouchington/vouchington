@@ -34,6 +34,8 @@ export async function listNotificationEmailCandidates(
   let predicate = notification
     ? `${alias}.deleted_at < $1::timestamptz AND ${alias}.deleted_at IS NOT NULL AND ${alias}.delete_reason = '${name === 'system_pruned_notifications' ? 'system_pruned' : 'user_deleted'}'`
     : `${alias}.id < $1::uuid`
+  if (notification)
+    predicate += ` AND ${alias}.event_key IS NULL AND ${alias}.entity_type <> 'copyright_notice'`
   if (lowerBoundDate) {
     parameters.push(notification ? lowerBoundDate : getMinUUIDv7ForDate(lowerBoundDate))
     predicate += notification

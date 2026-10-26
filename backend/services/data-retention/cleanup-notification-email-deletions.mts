@@ -50,7 +50,8 @@ export async function deleteNotificationEmailPage(
      DELETE FROM notifications notification
      WHERE notification.user_id = ANY($1::uuid[])
        AND (notification.user_id, notification.id) IN
-       (SELECT * FROM unnest($1::uuid[], $2::uuid[]))
+       (SELECT candidate.user_id, candidate.id
+        FROM unnest($1::uuid[], $2::uuid[]) AS candidate(user_id, id))
        AND notification.deleted_at IS NOT NULL
        AND notification.delete_reason = $3::notification_delete_reasons
        AND notification.entity_type <> 'copyright_notice'

@@ -64,4 +64,44 @@ describe('notification tombstones with no post or RSS source', () => {
       expect(await testNotificationEmailRetentionRowExists(query, 'notifications', id)).toBe(true)
     }
   })
+
+  it('skips permanently retained tombstones before filling a one-row deletion page', async () => {
+    const window = createTestExpiryWindow()
+    const now = new Date(window.upperBoundDate.getTime() + 180 * DAY_MS)
+    const user = await createTestUserDirect()
+    if (!user) throw new Error('Expected test user')
+    await using query = await beginTransaction()
+    const insert = (options: {
+      entityType: 'review_dispute' | 'copyright_notice'
+      copyrightNoticeId?: string
+      eventKey?: string
+    }) =>
+      insertTestNoContentSourceNotificationTombstone(query, {
+        ...options,
+        userId: user.id,
+        deletedAt: window.firstEligibleDate,
+      })
+    const replay = await insert({ entityType: 'review_dispute', eventKey: randomUUID() })
+    const copyrightNoticeId = await insertTestMinimalCopyrightNotice(query)
+    const copyright = await insert({ entityType: 'copyright_notice', copyrightNoticeId })
+    const removable = await insert({ entityType: 'review_dispute' })
+    await deleteTestRetentionNotificationPushIntents(query, user.id, [replay, copyright, removable])
+
+    expect(
+      await cleanupUserDeletedNotifications({
+        batchSize: 1,
+        maxBatches: 1,
+        lowerBoundDate: window.lowerBoundDate,
+        now,
+        borrowedQuery: query,
+      }),
+    ).toEqual({ deleted: 1, hasMore: false, continuation: null })
+    expect(await testNotificationEmailRetentionRowExists(query, 'notifications', replay)).toBe(true)
+    expect(await testNotificationEmailRetentionRowExists(query, 'notifications', copyright)).toBe(
+      true,
+    )
+    expect(await testNotificationEmailRetentionRowExists(query, 'notifications', removable)).toBe(
+      false,
+    )
+  })
 })

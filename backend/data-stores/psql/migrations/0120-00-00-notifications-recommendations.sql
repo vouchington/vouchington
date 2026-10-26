@@ -513,12 +513,14 @@ COMMENT ON COLUMN notifications.delete_reason IS 'Why this notification was dele
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__system_pruned_retention
 ON notifications (deleted_at, id, user_id)
-WHERE deleted_at IS NOT NULL AND delete_reason = 'system_pruned';
+WHERE deleted_at IS NOT NULL AND delete_reason = 'system_pruned'
+  AND event_key IS NULL AND entity_type <> 'copyright_notice';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__user_deleted_retention
 ON notifications (deleted_at, id, user_id)
-WHERE deleted_at IS NOT NULL AND delete_reason = 'user_deleted';
+WHERE deleted_at IS NOT NULL AND delete_reason = 'user_deleted'
+  AND event_key IS NULL AND entity_type <> 'copyright_notice';
 COMMENT ON COLUMN notifications.review_dispute_id IS 'The review dispute this notification refers to; set when entity_type is review_dispute.';
 COMMENT ON COLUMN notifications.user_warning_id IS 'The user warning this notification refers to; set when entity_type is user_warning.';
 COMMENT ON COLUMN notifications.conversation_id IS 'The conversation this notification refers to; set when entity_type is direct_message or modmail.';
