@@ -83,16 +83,22 @@ scheduled run.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
 ActivityPub inbox and outbound replay ledgers expire through bounded oldest-eligible pages after
-their configured maximum activity age. Inbound processing checks the signed request date before
-deduplication; durable per-activity Follow and Like Undo state prevents a freshly signed old
-activity from recreating an undone edge after its generic inbox identity expires. Outbound
-fan-out rejects a job whose durable UUIDv7 activity identity is too old before it can recreate a
-completed checkpoint. A separate monotonic admission floor remains when ledger identities are
-purged. Increasing the configured age cannot reactivate a retired signed-date period or an
-outbound UUIDv7 identity; admission and cleanup serialize on the floor row before any network
-delivery. Announce has no local entity effect. Terminal follower distribution intents
-also expire through bounded oldest-eligible pages; their delivery identities and recipient snapshots
-cascade from the parent, while unfinished intents remain available for retries.
+their configured maximum activity age. Each page locks its admission floor, deletes its rows,
+advances the monotonic floor and commits before the next page. Inbound signed-date admission and
+outbound checkpoint admission serialize with that short transaction. A distribution job checks its
+floor while claiming the bounded recipient page; its already-admitted delivery jobs may drain after
+the floor advances, retaining their own maximum-age check without a database floor read per recipient.
+No floor lock crosses queue admission or external HTTP.
+
+Active Follow and Like cycles remain live domain facts. Replacement and Undo transitions retire old
+cycle identities; terminal rows expire from that immutable transition time after a configurable
+window longer than every supported replay-age setting. Captured signed requests remain rejected
+through the supported horizon, including when the age setting widens. Reuse of a remote opaque id
+with a newly signed request after terminal retention is outside that finite deduplication guarantee.
+An embedded Undo id must belong to the verified actor's hostname before it can reserve a tombstone.
+Expiring an old Follow cycle clears only the optional cycle pointer, preserving the relation's actor
+and target facts. Terminal follower distribution intents also expire through bounded pages; their
+children cascade from the parent, while unfinished intents remain available for retries.
 
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong

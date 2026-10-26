@@ -12,7 +12,7 @@ describe('undoLike', () => {
     const likeId = `https://remote.example/activities/${remoteActor.id}`
     await recordLike(post.id, remoteActor.id, likeId)
 
-    await undoLike(post.id, remoteActor.id, likeId)
+    await undoLike(post.id, remoteActor, likeId)
 
     expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
@@ -25,7 +25,7 @@ describe('undoLike', () => {
     const remoteActor = await createRemoteActorFixture()
 
     await expect(
-      undoLike(post.id, remoteActor.id, `https://remote.example/activities/${remoteActor.id}`),
+      undoLike(post.id, remoteActor, `https://remote.example/activities/${remoteActor.id}`),
     ).resolves.toBeUndefined()
 
     expect(await getTestApPostLikesTally(post.id)).toBeNull()
@@ -36,9 +36,9 @@ describe('undoLike', () => {
     const remoteActor = await createRemoteActorFixture()
     const likeId = `https://remote.example/activities/${remoteActor.id}`
     await recordLike(post.id, remoteActor.id, likeId)
-    await undoLike(post.id, remoteActor.id, likeId)
+    await undoLike(post.id, remoteActor, likeId)
 
-    await expect(undoLike(post.id, remoteActor.id, likeId)).resolves.toBeUndefined()
+    await expect(undoLike(post.id, remoteActor, likeId)).resolves.toBeUndefined()
 
     expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
@@ -53,7 +53,7 @@ describe('undoLike', () => {
     await recordLike(post.id, first.id, `https://remote.example/activities/${first.id}`)
     await recordLike(post.id, second.id, `https://remote.example/activities/${second.id}`)
 
-    await undoLike(post.id, first.id, `https://remote.example/activities/${first.id}`)
+    await undoLike(post.id, first, `https://remote.example/activities/${first.id}`)
 
     expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,

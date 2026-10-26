@@ -141,12 +141,7 @@ async function handleUndoFollow(
 ): Promise<void> {
   const targetUserId = await resolveUndoTargetUserId(followObject, options)
   if (!targetUserId) return
-  const cycleId = await markRemoteFollowUndone(
-    followActivityId,
-    remoteActor.id,
-    targetUserId,
-    options,
-  )
+  const cycleId = await markRemoteFollowUndone(followActivityId, remoteActor, targetUserId, options)
   if (!cycleId) return
   await softDeleteEntityRelation(
     null,
@@ -175,5 +170,5 @@ async function handleUndoLike(
 ): Promise<void> {
   const postId = await resolveUndoLikeTargetPostId(likeObject, options)
   if (!postId) return
-  await undoLike(postId, remoteActor.id, likeActivityId, options)
+  await undoLike(postId, remoteActor, likeActivityId, options)
 }

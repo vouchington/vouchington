@@ -67,6 +67,10 @@ without holding a worker through the entire backlog.
 The data-retention schedule runs in deployed environments so staging exposes retention failures
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping.
+Terminal ActivityPub identity cleanup can yield the same retained family job while work remains,
+so a daily seed is not a daily throughput ceiling. A finished fixed family id is reactivated by a
+later real cleanup pass; an active or delayed job keeps its claim. Each family has its own serial
+ordering lane, and every pass commits bounded SQL work before yielding.
 
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against

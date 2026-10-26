@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
@@ -16,18 +16,12 @@ import {
 } from '@queues/activitypub/enqueues/delivery'
 import { deliverActivity, distributeActivity } from './delivery.mts'
 import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
-import {
-  activityPubInboxConfig,
-  getMaximumActivityAgeDays,
-} from '@services/ap-inbox-activities/config'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import type { readOutboundReplayFloor } from '@services/ap-inbox-activities/replay-floor'
+import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
 const buildActivityJsonMock = vi.fn<typeof buildActivityJson>()
 const deliverActivityToInboxMock = vi.fn<typeof deliverActivityToInbox>()
 const getActorPrivateKeyPemMock = vi.fn<typeof getActorPrivateKeyPem>()
-const readOutboundReplayFloorMock = vi.fn<typeof readOutboundReplayFloor>()
 
 const FOLLOW_DATA: DeliverActivityData = {
   activityId: mintUUIDv7(),
@@ -77,7 +71,6 @@ function deliverDeps() {
     deliverActivityToInbox: deliverActivityToInboxMock,
     getActorPrivateKeyPem: getActorPrivateKeyPemMock,
     isFederationEnabledForUser: isFederationEnabledForUserMock,
-    readOutboundReplayFloor: readOutboundReplayFloorMock,
   }
 }
 
@@ -88,29 +81,6 @@ describe('deliverActivity', () => {
     getActorPrivateKeyPemMock.mockResolvedValue('-----BEGIN PRIVATE KEY-----\nfake\n-----END-----')
     buildActivityJsonMock.mockReturnValue({ type: 'Follow' })
     deliverActivityToInboxMock.mockResolvedValue(undefined)
-    readOutboundReplayFloorMock.mockResolvedValue(null)
-  })
-
-  it('rejects a purged delivery after the activity-age policy is widened', async () => {
-    const createdAt = new Date(Date.now() - 40 * 86_400_000)
-    onTestFinished(
-      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
-        maximum_activity_age_days: 60,
-      }),
-    )
-    readOutboundReplayFloorMock.mockResolvedValue(createdAt)
-    const result = await deliverActivity(
-      { ...FOLLOW_DATA, activityId: getMinUUIDv7ForDate(createdAt) },
-      deliverDeps(),
-    )
-    expect(result).toEqual({ delivered: false, reason: 'expired-activity' })
-    expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
-  })
-
-  it('uses the database floor transaction before signing a current delivery', async () => {
-    const { readOutboundReplayFloor: _floor, ...deps } = deliverDeps()
-    expect(await deliverActivity(FOLLOW_DATA, deps)).toEqual({ delivered: true })
-    expect(deliverActivityToInboxMock).toHaveBeenCalledOnce()
   })
 
   it('keeps direct Accept replies outside the outbound distribution floor', async () => {
@@ -125,9 +95,7 @@ describe('deliverActivity', () => {
       followActivityId: 'remote-follow',
       followActorUri: 'https://a.example/users/follower',
     }
-    readOutboundReplayFloorMock.mockResolvedValue(new Date())
     expect(await deliverActivity(accept, deliverDeps())).toEqual({ delivered: true })
-    expect(readOutboundReplayFloorMock).not.toHaveBeenCalled()
     expect(deliverActivityToInboxMock).toHaveBeenCalledOnce()
   })
 

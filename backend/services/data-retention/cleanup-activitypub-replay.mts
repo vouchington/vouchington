@@ -2,6 +2,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
+import { assertPositiveInteger } from './normalize-positive-integer.mts'
 import { advanceReplayRejectionFloor } from './cleanup-activitypub-replay-floor.mts'
 
 type Kind = 'inbox' | 'outbound'
@@ -12,7 +13,6 @@ export type ReplayCleanupPage = {
   hasMore: boolean
   continuationPosition: Key | null
 }
-export type ReplayCleanupScope = { activityIds: readonly string[] }
 
 const SOURCE = {
   inbox: {
@@ -35,37 +35,45 @@ const SOURCE = {
   },
 } as const
 
-/** Delete oldest eligible ledger rows in bounded pages; the durable floor survives policy changes. */
+/** Each capped ledger page and its floor advance commit before the next page begins. */
 export async function cleanupActivityPubReplayLedger(
   kind: Kind,
-  options: {
-    batchSize: number
-    maxBatches: number
-    now?: Date
-    borrowedQuery?: TransactionQuery
-    scope?: ReplayCleanupScope
-  },
+  options: { batchSize: number; maxBatches: number; now?: Date },
 ): Promise<ReplayCleanupPage> {
-  if (options.scope && !options.borrowedQuery)
-    throw new TypeError('A scoped replay sweep requires a borrowed transaction')
-  if (options.borrowedQuery && !options.scope)
-    throw new TypeError('A borrowed replay sweep requires a source-row scope')
+  return cleanupActivityPubReplayPages(kind, options, beginTransaction)
+}
+
+/** The bounded page protocol owns each transaction; SQL callers supply the normal DB opener. */
+export async function cleanupActivityPubReplayPages(
+  kind: Kind,
+  options: { batchSize: number; maxBatches: number; now?: Date },
+  openTransaction: typeof beginTransaction,
+): Promise<ReplayCleanupPage> {
+  assertPositiveInteger(options.batchSize, 'batchSize')
+  assertPositiveInteger(options.maxBatches, 'maxBatches')
   const cutoff = new Date(
     (options.now ?? new Date()).getTime() - getMaximumActivityAgeDays() * 86_400_000,
   )
-  await using ownedQuery = options.borrowedQuery ? undefined : await beginTransaction()
-  const query = options.borrowedQuery ?? ownedQuery!
-  const result = await cleanupWithQuery(kind, options, cutoff, query)
-  if (ownedQuery) await ownedQuery.commit()
-  return result
+  let deleted = 0
+  let page: ReplayCleanupPage = { deleted: 0, hasMore: false, continuationPosition: null }
+  for (let batch = 0; batch < options.maxBatches; batch += 1) {
+    await using query = await openTransaction()
+    // no-mistakes-disable-next-line query-reached-per-item: each capped page must commit its floor before the next page opens; one sweep-wide transaction violates ingress lock bounds
+    page = await cleanupActivityPubReplayPage(query, kind, { batchSize: options.batchSize, cutoff })
+    await query.commit()
+    deleted += page.deleted
+    if (!page.hasMore) break
+  }
+  return { ...page, deleted }
 }
 
-async function cleanupWithQuery(
-  kind: Kind,
-  options: { batchSize: number; maxBatches: number; scope?: ReplayCleanupScope },
-  cutoff: Date,
+/** One real SQL page, called inside the short production transaction. */
+export async function cleanupActivityPubReplayPage(
   query: TransactionQuery,
+  kind: Kind,
+  options: { batchSize: number; cutoff: Date },
 ): Promise<ReplayCleanupPage> {
+  const cutoff = options.cutoff
   const source = SOURCE[kind]
   const isOutbound = kind === 'outbound'
   const ageBound = isOutbound
@@ -83,44 +91,35 @@ async function cleanupWithQuery(
      WHERE is_outbound = $1 FOR UPDATE`,
     [isOutbound],
   )
-
-  let deleted = 0
-  let hasMore = false
-  let continuationPosition: Key | null = null
-  for (let batch = 0; batch < options.maxBatches; batch += 1) {
-    // The inbox UUIDv7 primary key and outbound completion index supply oldest eligible rows.
-    // no-mistakes-disable-next-line query-reached-per-item: capped oldest eligible ledger page
-    const { rows } = await query<Key>(
-      `/* no-mistakes: deadlock-safe -- the floor row is locked first, then one ordered indexed ledger page; waiting preserves contiguous floor advancement. */
+  // The inbox UUIDv7 primary key and outbound completion index supply oldest eligible rows.
+  // no-mistakes-disable-next-line query-reached-per-item: capped oldest eligible ledger page
+  const { rows } = await query<Key>(
+    `/* no-mistakes: deadlock-safe -- the floor row is locked first, then one ordered indexed ledger page; waiting preserves contiguous floor advancement. */
        /* listActivityPubReplayRetentionCandidates */
        SELECT ${source.date}::text AS at, ${source.id} AS id FROM ${source.table}
        WHERE ${source.age} < $1::${source.ageCast} ${source.condition}
-         ${options.scope ? `AND ${source.id} = ANY($3::uuid[])` : ''}
        ORDER BY ${source.order} LIMIT $2 FOR UPDATE`,
-      [ageBound, options.batchSize + 1, ...(options.scope ? [options.scope.activityIds] : [])],
-    )
-    const page = rows.slice(0, options.batchSize)
-    if (page.length === 0) {
-      hasMore = false
-      continuationPosition = null
-      break
-    }
-    // no-mistakes-disable-next-line query-reached-per-item: selected capped UUID page
-    const removed = await query<Key>(
-      `/* deleteActivityPubReplayRetentionCandidates */
+    [ageBound, options.batchSize + 1],
+  )
+  const page = rows.slice(0, options.batchSize)
+  if (page.length === 0) {
+    return { deleted: 0, hasMore: false, continuationPosition: null }
+  }
+  // no-mistakes-disable-next-line query-reached-per-item: selected capped UUID page
+  const removed = await query<Key>(
+    `/* deleteActivityPubReplayRetentionCandidates */
        DELETE FROM ${source.table} WHERE ${source.id} = ANY($1::uuid[])
          AND ${source.age} < $2::${source.ageCast} ${source.condition}
-         ${options.scope ? `AND ${source.id} = ANY($3::uuid[])` : ''}
        RETURNING ${source.date}::text AS at, ${source.id} AS id`,
-      [page.map(item => item.id), ageBound, ...(options.scope ? [options.scope.activityIds] : [])],
-    )
-    // Admission holds a share lock on the same floor row. Deletion and floor advance commit together.
-    // no-mistakes-disable-next-line query-reached-per-item: one durable floor update per capped page
-    if (removed.rows.length > 0) await advanceReplayRejectionFloor(query, kind, removed.rows)
-    deleted += removed.rowCount ?? 0
-    hasMore = rows.length > options.batchSize
-    continuationPosition = hasMore ? page.at(-1)! : null
-    if (!hasMore) break
+    [page.map(item => item.id), ageBound],
+  )
+  // Admission holds a share lock on the same floor row. Deletion and floor advance commit together.
+  // no-mistakes-disable-next-line query-reached-per-item: one durable floor update per capped page
+  if (removed.rows.length > 0) await advanceReplayRejectionFloor(query, kind, removed.rows)
+  const hasMore = rows.length > options.batchSize
+  return {
+    deleted: removed.rowCount ?? 0,
+    hasMore,
+    continuationPosition: hasMore ? page.at(-1)! : null,
   }
-  return { deleted, hasMore, continuationPosition }
 }

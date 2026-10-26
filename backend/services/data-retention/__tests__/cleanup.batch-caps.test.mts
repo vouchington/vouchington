@@ -20,7 +20,6 @@ import {
 } from '@voucha/test-helpers/entities/retained-identities'
 import { seedTestRetainedMediaOrphan } from '@voucha/test-helpers/entities/retained-media'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import * as cleanupBatches from '../cleanup-batches.mts'
 import * as retainedRoots from '../cleanup-retained-identities.mts'
 import * as retainedMedia from '../cleanup-retained-media-bindings.mts'
@@ -67,7 +66,7 @@ function emptyScopedOptions(now: Date) {
     webPushSubscriptionTombstones: emptyWindow,
     oldModerationQueueClaims: emptyWindow,
     oldModerationMediaReveals: emptyWindow,
-    federationRetention: { scope: { followerDistributionIds: [] } },
+    federationRetention: { now: new Date(0) },
   }
 }
 
@@ -107,14 +106,12 @@ describe('data retention per-run caps', () => {
       retainedMediaBindingIds: [placementId],
     }
 
-    const result = await withPostgresTransactionForTest(query =>
-      runDataRetentionCleanup(
-        { batchSize, maxBatches: 1 },
-        {
-          ...options,
-          federationRetention: { ...options.federationRetention, borrowedQuery: query },
-        },
-      ),
+    const result = await runDataRetentionCleanup(
+      { batchSize, maxBatches: 1 },
+      {
+        ...options,
+        federationRetention: { now: new Date(0) },
+      },
     )
 
     expect(relations).toHaveBeenCalledExactlyOnceWith(
@@ -199,12 +196,10 @@ describe('data retention per-run caps', () => {
     expect(getDataRetentionLimits()).toEqual({ batchSize: 1, maxBatches: 2 })
     const batches = vi.spyOn(cleanupBatches, 'deleteOldReferralAttributionBatch')
     onTestFinished(() => batches.mockRestore())
-    const first = await withPostgresTransactionForTest(query =>
-      runDataRetentionCleanup(getDataRetentionLimits(), {
-        ...options,
-        federationRetention: { ...options.federationRetention, borrowedQuery: query },
-      }),
-    )
+    const first = await runDataRetentionCleanup(getDataRetentionLimits(), {
+      ...options,
+      federationRetention: { now: new Date(0) },
+    })
     expect({
       limits: batches.mock.calls.map(call => call[1]),
       result: first.oldReferralAttributions,
@@ -217,12 +212,10 @@ describe('data retention per-run caps', () => {
       (await Promise.all(ids.map(id => referralAttributionExistsById(id)))).filter(Boolean),
     ).toHaveLength(1)
 
-    const second = await withPostgresTransactionForTest(query =>
-      runDataRetentionCleanup(getDataRetentionLimits(), {
-        ...options,
-        federationRetention: { ...options.federationRetention, borrowedQuery: query },
-      }),
-    )
+    const second = await runDataRetentionCleanup(getDataRetentionLimits(), {
+      ...options,
+      federationRetention: { now: new Date(0) },
+    })
     expect(second.oldReferralAttributions).toEqual({ deleted: 1, hasMore: false })
     expect(await Promise.all(ids.map(id => referralAttributionExistsById(id)))).toEqual([
       false,
@@ -243,23 +236,18 @@ describe('data retention per-run caps', () => {
       insertReferralAttributionAt(referrer.id, window.secondEligibleDate),
     ])
 
-    const result = await withPostgresTransactionForTest(query =>
-      runDataRetentionCleanup(
-        { batchSize: 1, maxBatches: 1 },
-        {
-          ...emptyScopedOptions(window.now),
-          oldReferralAttributions: {
-            retentionDays: window.retentionDays,
-            lowerBoundDate: window.lowerBoundDate,
-            now: window.now,
-            maxBatches: 10,
-          },
-          federationRetention: {
-            scope: { followerDistributionIds: [] },
-            borrowedQuery: query,
-          },
+    const result = await runDataRetentionCleanup(
+      { batchSize: 1, maxBatches: 1 },
+      {
+        ...emptyScopedOptions(window.now),
+        oldReferralAttributions: {
+          retentionDays: window.retentionDays,
+          lowerBoundDate: window.lowerBoundDate,
+          now: window.now,
+          maxBatches: 10,
         },
-      ),
+        federationRetention: { now: new Date(0) },
+      },
     )
 
     expect(result.oldReferralAttributions).toEqual({ deleted: 2, hasMore: false })

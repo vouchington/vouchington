@@ -1,4 +1,4 @@
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql'
 
 /** Share-lock the ledger's permanent floor before an identity claim; cleanup takes FOR UPDATE. */
 export async function lockActivityPubReplayFloor(
@@ -20,12 +20,4 @@ export async function lockActivityPubReplayFloor(
   )
   if (!rows[0]) throw new Error('Missing ActivityPub replay rejection floor')
   return rows[0].rejection_floor_at
-}
-
-/** Serialize admission with cleanup, then release the lock before outbound network delivery. */
-export async function readOutboundReplayFloor(): Promise<Date | null> {
-  await using query = await beginTransaction()
-  const floor = await lockActivityPubReplayFloor(query, 'outbound')
-  await query.commit()
-  return floor
 }

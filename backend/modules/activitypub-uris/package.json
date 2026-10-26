@@ -24,6 +24,11 @@
   },
   "scripts": {},
   "dependencies": {
-    "@modules/utils": "workspace:^"
+    "@modules/utils": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
+    "http-errors": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/http-errors": "^2.0.5"
   }
 }

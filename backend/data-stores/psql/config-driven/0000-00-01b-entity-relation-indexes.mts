@@ -143,10 +143,10 @@ BEGIN
 END $$;
 `
     }
-    // A referenced Follow identity survives relation cleanup. Deferred NO ACTION also lets
-    // remote-actor or target-user deletion cascade through both tables in one statement.
+    // Expiring an old terminal identity clears only its optional cycle pointer; actor and target
+    // remain the relation identity. Active cycles are never selected by terminal cleanup.
     const definition =
-      'FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED'
+      'FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) ON DELETE SET NULL (inbound_follow_activity_row_id) DEFERRABLE INITIALLY DEFERRED'
     query += `\n${buildConstraintAddAndValidateSql(
       relation,
       constraint,
@@ -162,12 +162,12 @@ BEGIN
       AND conname = '${constraint}'
       AND convalidated
       AND pg_get_constraintdef(oid, true) =
-        'FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) DEFERRABLE INITIALLY DEFERRED'
+        'FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) ON DELETE SET NULL (inbound_follow_activity_row_id) DEFERRABLE INITIALLY DEFERRED'
   ) THEN
     RAISE EXCEPTION 'Remote Follow activity FK is missing, unvalidated, or has an unexpected definition';
   END IF;
 END $$;
-COMMENT ON COLUMN ${relation}.inbound_follow_activity_row_id IS 'Current inbound Follow activity cycle; undone identities remain in the activity table and cannot reauthorize this relation.';
+COMMENT ON COLUMN ${relation}.inbound_follow_activity_row_id IS 'Current inbound Follow activity cycle; expiring a terminal identity clears this optional pointer and never authorizes the relation.';
 `
   }
 

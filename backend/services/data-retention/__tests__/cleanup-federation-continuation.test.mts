@@ -7,15 +7,17 @@ import {
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
-import { cleanupActivityPubReplayLedger } from '../cleanup-activitypub-replay.mts'
-import { cleanupSweepWithQuery } from '../cleanup-federation-run.mts'
+import {
+  cleanupActivityPubReplayLedgerForTest,
+  cleanupFollowerRetentionForTest,
+} from '@voucha/test-helpers/federation-retention-scopes'
 
 describe('federation retention continuation', () => {
   it('finds no unscoped terminal follower candidates before the UUIDv7 epoch', async () => {
     await withPostgresTransactionForTest(async query => {
       const beforeEpoch = new Date(0)
       expect(
-        await cleanupSweepWithQuery(
+        await cleanupFollowerRetentionForTest(
           { batchSize: 1, maxBatches: 1, now: beforeEpoch, scope: { followerDistributionIds: [] } },
           query,
         ),
@@ -49,7 +51,10 @@ describe('federation retention continuation', () => {
       })
       const scope = { followerDistributionIds: ids.expiredFollowerDistributionIds }
 
-      const first = await cleanupSweepWithQuery({ batchSize: 1, maxBatches: 1, now, scope }, query)
+      const first = await cleanupFollowerRetentionForTest(
+        { batchSize: 1, maxBatches: 1, now, scope },
+        query,
+      )
       expect(first).toEqual({
         deleted: 1,
         hasMore: true,
@@ -60,7 +65,10 @@ describe('federation retention continuation', () => {
          DELETE FROM follower_distributions WHERE id = $1::uuid`,
         [ids.expiredFollowerDistributionIds[1]],
       )
-      const second = await cleanupSweepWithQuery({ batchSize: 1, maxBatches: 1, now, scope }, query)
+      const second = await cleanupFollowerRetentionForTest(
+        { batchSize: 1, maxBatches: 1, now, scope },
+        query,
+      )
       expect(second).toEqual({ deleted: 0, hasMore: false, continuationPosition: null })
     })
   })
@@ -91,7 +99,7 @@ describe('federation retention continuation', () => {
       })
       const scope = { activityIds: ids.expiredInboxActivityIds }
 
-      const first = await cleanupActivityPubReplayLedger('inbox', {
+      const first = await cleanupActivityPubReplayLedgerForTest('inbox', {
         batchSize: 1,
         maxBatches: 1,
         now,
@@ -104,7 +112,7 @@ describe('federation retention continuation', () => {
          DELETE FROM activitypub_inbox_activities WHERE id = $1::uuid`,
         [ids.expiredInboxActivityIds[1]],
       )
-      const second = await cleanupActivityPubReplayLedger('inbox', {
+      const second = await cleanupActivityPubReplayLedgerForTest('inbox', {
         batchSize: 1,
         maxBatches: 1,
         now,

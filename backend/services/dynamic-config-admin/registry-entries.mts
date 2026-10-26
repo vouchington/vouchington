@@ -1,3 +1,4 @@
+import { psqlQueueRegistryEntry } from './registry-psql-queue-entry.mts'
 import { pagedDispatchRegistryEntry } from './registry-paged-dispatch-entry.mts'
 import { REGISTRY_ORDER } from '@voucha/config/dynamic-config-registry-order'
 import { paginationRegistryEntries } from './registry-pagination-entries.mts'
@@ -23,6 +24,7 @@ import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-ent
 import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 
 const unorderedRegistryEntries = [
+  psqlQueueRegistryEntry,
   pagedDispatchRegistryEntry,
   ...paginationRegistryEntries,
   ...backgroundWorkEntries1,

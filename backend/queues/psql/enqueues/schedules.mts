@@ -38,6 +38,7 @@ import {
   RECONCILE_VOTE_DRIFT_SCHEDULER_ID,
   RECONCILE_VOTE_DRIFT_CRON,
   PRIORITY_DEFAULT,
+  PSQL_RETRY_OPTIONS,
   QUEUE_NAME,
 } from '../config.mts'
 import {
@@ -48,8 +49,7 @@ import {
 } from '../enqueues.mts'
 
 const SCHEDULE_OPTS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+  ...PSQL_RETRY_OPTIONS,
   removeOnComplete: 100,
   removeOnFail: 100,
   priority: PRIORITY_DEFAULT,

@@ -18,44 +18,16 @@ import {
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 import { cleanupFederationRetention } from '../cleanup-federation.mts'
-import { cleanupActivityPubReplayLedger } from '../cleanup-activitypub-replay.mts'
+import {
+  cleanupFederationRetentionForTest,
+  cleanupActivityPubReplayLedgerForTest,
+} from '@voucha/test-helpers/federation-retention-scopes'
 
 describe('federation retention', () => {
-  it('requires a bounded sweep and matching transaction ownership for source scopes', async () => {
-    await expect(
-      cleanupFederationRetention({
-        batchSize: 1,
-        maxBatches: 1,
-        scope: { followerDistributionIds: [] },
-      }),
-    ).rejects.toThrow('A scoped federation retention sweep requires a borrowed transaction')
-
-    await withPostgresTransactionForTest(async query => {
-      await expect(
-        cleanupFederationRetention({ batchSize: 1, maxBatches: 1, borrowedQuery: query }),
-      ).rejects.toThrow('A borrowed federation retention sweep requires a source-row scope')
-    })
-
+  it('rejects an unbounded cleanup before opening a transaction', async () => {
     await expect(cleanupFederationRetention({ batchSize: 0, maxBatches: 1 })).rejects.toThrow(
       'batchSize must be a positive safe integer',
     )
-
-    await expect(
-      cleanupActivityPubReplayLedger('inbox', {
-        batchSize: 1,
-        maxBatches: 1,
-        scope: { activityIds: [] },
-      }),
-    ).rejects.toThrow('A scoped replay sweep requires a borrowed transaction')
-    await withPostgresTransactionForTest(async query => {
-      await expect(
-        cleanupActivityPubReplayLedger('outbound', {
-          batchSize: 1,
-          maxBatches: 1,
-          borrowedQuery: query,
-        }),
-      ).rejects.toThrow('A borrowed replay sweep requires a source-row scope')
-    })
   })
 
   it('preserves replay identities while continuing capped terminal-follower cleanup', async () => {
@@ -99,7 +71,7 @@ describe('federation retention', () => {
         ],
       }
 
-      const first = await cleanupFederationRetention({
+      const first = await cleanupFederationRetentionForTest({
         batchSize: 1,
         maxBatches: 1,
         now,
@@ -136,7 +108,7 @@ describe('federation retention', () => {
         ),
       ).resolves.toEqual({ status: 'completed' })
 
-      const second = await cleanupFederationRetention({
+      const second = await cleanupFederationRetentionForTest({
         batchSize: 1,
         maxBatches: 1,
         now,
@@ -202,14 +174,14 @@ describe('federation retention', () => {
         activityIds: [...ids.expiredDistributionActivityIds, ids.unfinishedDistributionActivityId],
       }
 
-      const firstInbox = await cleanupActivityPubReplayLedger('inbox', {
+      const firstInbox = await cleanupActivityPubReplayLedgerForTest('inbox', {
         batchSize: 1,
         maxBatches: 1,
         now,
         borrowedQuery: query,
         scope: inboxScope,
       })
-      const firstOutbound = await cleanupActivityPubReplayLedger('outbound', {
+      const firstOutbound = await cleanupActivityPubReplayLedgerForTest('outbound', {
         batchSize: 1,
         maxBatches: 1,
         now,
@@ -218,14 +190,14 @@ describe('federation retention', () => {
       })
       expect(firstInbox).toMatchObject({ deleted: 1, hasMore: true })
       expect(firstOutbound).toMatchObject({ deleted: 1, hasMore: true })
-      const secondInbox = await cleanupActivityPubReplayLedger('inbox', {
+      const secondInbox = await cleanupActivityPubReplayLedgerForTest('inbox', {
         batchSize: 1,
         maxBatches: 1,
         now,
         borrowedQuery: query,
         scope: inboxScope,
       })
-      const secondOutbound = await cleanupActivityPubReplayLedger('outbound', {
+      const secondOutbound = await cleanupActivityPubReplayLedgerForTest('outbound', {
         batchSize: 1,
         maxBatches: 1,
         now,
@@ -235,7 +207,7 @@ describe('federation retention', () => {
       expect(secondInbox).toMatchObject({ deleted: 1, hasMore: false })
       expect(secondOutbound).toMatchObject({ deleted: 1, hasMore: false })
       expect(
-        await cleanupActivityPubReplayLedger('inbox', {
+        await cleanupActivityPubReplayLedgerForTest('inbox', {
           batchSize: 1,
           maxBatches: 1,
           now,

@@ -12,7 +12,6 @@ import {
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -34,33 +33,31 @@ describe('runDataRetentionCleanup', () => {
       now,
     }
 
-    const result = await withPostgresTransactionForTest(query =>
-      runDataRetentionCleanup(limits, {
-        retainedIdentityRootIds: {},
-        retainedRelationIdentityKeys: {},
-        retainedMediaBindingIds: [],
-        softDeletedUsers: emptyWindow,
-        oldReferralAttributions: emptyWindow,
-        orphanedOAuthAccounts: emptyWindow,
-        expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
-        expiredOAuthServerArtifacts: emptyWindow,
-        expiredBlueskyLinkCompletions: emptyWindow,
-        abandonedBlueskyLinkSessions: emptyWindow,
-        expiredContributionAdmissions: emptyWindow,
-        expiredContributionQuotaConsumptions: emptyWindow,
-        expiredTopicImportAttempts: emptyWindow,
-        terminalNotificationPushIntents: emptyWindow,
-        terminalStripeEventWork: emptyWindow,
-        abandonedMembershipPurchaseIntents: emptyWindow,
-        emailAddressLoginTokens: emptyWindow,
-        phoneNumberLoginTokens: emptyWindow,
-        expiredUserSessions: emptyWindow,
-        webPushSubscriptionTombstones: emptyWindow,
-        oldModerationQueueClaims: emptyWindow,
-        oldModerationMediaReveals: emptyWindow,
-        federationRetention: { borrowedQuery: query, scope: { followerDistributionIds: [] } },
-      }),
-    )
+    const result = await runDataRetentionCleanup(limits, {
+      retainedIdentityRootIds: {},
+      retainedRelationIdentityKeys: {},
+      retainedMediaBindingIds: [],
+      softDeletedUsers: emptyWindow,
+      oldReferralAttributions: emptyWindow,
+      orphanedOAuthAccounts: emptyWindow,
+      expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
+      expiredOAuthServerArtifacts: emptyWindow,
+      expiredBlueskyLinkCompletions: emptyWindow,
+      abandonedBlueskyLinkSessions: emptyWindow,
+      expiredContributionAdmissions: emptyWindow,
+      expiredContributionQuotaConsumptions: emptyWindow,
+      expiredTopicImportAttempts: emptyWindow,
+      terminalNotificationPushIntents: emptyWindow,
+      terminalStripeEventWork: emptyWindow,
+      abandonedMembershipPurchaseIntents: emptyWindow,
+      emailAddressLoginTokens: emptyWindow,
+      phoneNumberLoginTokens: emptyWindow,
+      expiredUserSessions: emptyWindow,
+      webPushSubscriptionTombstones: emptyWindow,
+      oldModerationQueueClaims: emptyWindow,
+      oldModerationMediaReveals: emptyWindow,
+      federationRetention: { now: new Date(0) },
+    })
 
     expect(result.retainedIdentityRoots).toEqual([])
     expect(result.retainedRelationIdentities).toEqual([])

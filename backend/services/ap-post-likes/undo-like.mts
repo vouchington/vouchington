@@ -1,3 +1,4 @@
+import { assertRemoteActivityHost } from '@modules/activitypub-uris'
 import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -5,10 +6,12 @@ import sql from 'sql-template-strings'
 // comparison prevents an actor from undoing another actor's activity id.
 export async function undoLike(
   postId: string,
-  remoteActorId: string,
+  remoteActor: { id: string; actor_uri: string },
   likeApId: string,
   options: QueryOptions = {},
 ): Promise<void> {
+  assertRemoteActivityHost(likeApId, remoteActor.actor_uri)
+  const remoteActorId = remoteActor.id
   const run = options.query ?? write
   await run(sql`/* undoLike */
     INSERT INTO activitypub_post_likes

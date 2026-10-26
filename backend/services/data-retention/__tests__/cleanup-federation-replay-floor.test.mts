@@ -17,7 +17,7 @@ import {
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { cleanupActivityPubReplayLedger } from '../cleanup-activitypub-replay.mts'
+import { cleanupActivityPubReplayLedgerForTest } from '@voucha/test-helpers/federation-retention-scopes'
 import { advanceReplayRejectionFloor } from '../cleanup-activitypub-replay-floor.mts'
 
 describe('replay floor', () => {
@@ -61,7 +61,7 @@ describe('replay floor', () => {
         completedAt: new Date(now.getTime() - 31 * 86_400_000),
       })
       expect(
-        await cleanupActivityPubReplayLedger('outbound', {
+        await cleanupActivityPubReplayLedgerForTest('outbound', {
           batchSize: 1,
           maxBatches: 1,
           now,
@@ -124,7 +124,7 @@ describe('replay floor', () => {
       await advanceFederationReplayFloorForTest(query, 'outbound', new Date(oldAt.getTime() - 1))
       const initialFloor = await readFederationReplayFloorForTest(query, 'outbound')
       expect(
-        await cleanupActivityPubReplayLedger('outbound', {
+        await cleanupActivityPubReplayLedgerForTest('outbound', {
           batchSize: 1,
           maxBatches: 1,
           now,
@@ -145,7 +145,7 @@ describe('replay floor', () => {
         completedAt,
       })
       expect(
-        await cleanupActivityPubReplayLedger('outbound', {
+        await cleanupActivityPubReplayLedgerForTest('outbound', {
           batchSize: 1,
           maxBatches: 1,
           now,
@@ -185,7 +185,7 @@ describe('replay floor', () => {
 
     await withPostgresTransactionForTest(async query => {
       expect(
-        await cleanupActivityPubReplayLedger('outbound', {
+        await cleanupActivityPubReplayLedgerForTest('outbound', {
           batchSize: 1,
           maxBatches: 1,
           now,

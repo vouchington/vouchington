@@ -52,7 +52,7 @@ describe('recordLike', () => {
 
     const firstId = `https://remote.example/activities/${remoteActor.id}-first-like`
     await recordLike(post.id, remoteActor.id, firstId)
-    await undoLike(post.id, remoteActor.id, firstId)
+    await undoLike(post.id, remoteActor, firstId)
     expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
       activitypub_likes_count: 0,
@@ -82,7 +82,7 @@ describe('recordLike', () => {
     for (const suffix of ['one', 'two', 'three']) {
       const likeId = `https://remote.example/activities/${remoteActor.id}-${suffix}`
       await recordLike(post.id, remoteActor.id, likeId)
-      await undoLike(post.id, remoteActor.id, likeId)
+      await undoLike(post.id, remoteActor, likeId)
     }
     await recordLike(
       post.id,

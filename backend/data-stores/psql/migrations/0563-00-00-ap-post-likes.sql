@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS activitypub_post_likes (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_activitypub_id ON activitypub_post_likes (like_activitypub_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor ON activitypub_post_likes (post_id, remote_actor_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__undone_retention
+  ON activitypub_post_likes (deleted_at, id) WHERE deleted_at IS NOT NULL;
 -- RI-usable leading indexes for the post_id/remote_actor_id FKs — the unique index above is
 -- predicated on deleted_at IS NULL, which the planner can't use for cascade/RESTRICT checks that
 -- must also touch soft-deleted rows (see docs/development/postgres-schema-rules.md).
@@ -50,11 +52,11 @@ CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_id ON activitypub_po
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__remote_actor_id ON activitypub_post_likes (remote_actor_id);
 
-COMMENT ON TABLE activitypub_post_likes IS 'Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local posts. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.';
+COMMENT ON TABLE activitypub_post_likes IS 'Current remote ActivityPub Like cycles and terminal tombstones retained beyond the supported replay horizon. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.';
 COMMENT ON COLUMN activitypub_post_likes.post_id IS 'The local post that was liked.';
 COMMENT ON COLUMN activitypub_post_likes.remote_actor_id IS 'The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.';
-COMMENT ON COLUMN activitypub_post_likes.like_activitypub_id IS 'The inbound Like activity''s ActivityPub id; unique across active and undone cycles so an old Like cannot reactivate after inbox dedup expiry.';
-COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; an undone id is never reactivated.';
+COMMENT ON COLUMN activitypub_post_likes.like_activitypub_id IS 'The inbound Like activity''s ActivityPub id; unique across active and retained terminal cycles so replay within the supported horizon cannot reactivate an undone Like.';
+COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; this immutable terminal timestamp starts bounded retention longer than the supported replay horizon.';
 
 -- Keeps post_activitypub_like_tallies in sync with the count of active (deleted_at IS NULL) activitypub_post_likes rows for the
 -- affected post via an atomic delta-based upsert, not a read-then-write COUNT: two concurrent

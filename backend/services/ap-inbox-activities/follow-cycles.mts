@@ -1,4 +1,5 @@
-import { write, type QueryOptions } from '@data-stores/psql'
+import { assertRemoteActivityHost } from '@modules/activitypub-uris'
+import { write, type QueryOptions, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 type FollowCycle = {
@@ -17,6 +18,7 @@ export async function reserveRemoteFollowCycle(
   options: QueryOptions,
 ): Promise<{ id: string; isNew: boolean; isUndone: boolean }> {
   const run = options.query ?? write
+  await lockRemoteFollowPair(run, remoteActorId, targetUserId)
   const { rows: inserted } = await run<
     Pick<FollowCycle, 'id' | 'undone_at'>
   >(sql`/* reserveRemoteFollowCycle */
@@ -42,11 +44,14 @@ export async function reserveRemoteFollowCycle(
 
 export async function markRemoteFollowUndone(
   activityId: string,
-  remoteActorId: string,
+  remoteActor: { id: string; actor_uri: string },
   targetUserId: string,
   options: QueryOptions,
 ): Promise<string | null> {
+  assertRemoteActivityHost(activityId, remoteActor.actor_uri)
+  const remoteActorId = remoteActor.id
   const run = options.query ?? write
+  await lockRemoteFollowPair(run, remoteActorId, targetUserId)
   const { rows } = await run<{ id: string }>(sql`/* markRemoteFollowUndone */
     INSERT INTO activitypub_remote_follow_activities
       (activity_id, remote_actor_id, target_user_id, undone_at)
@@ -67,6 +72,16 @@ export async function setCurrentRemoteFollowCycle(
   options: QueryOptions,
 ): Promise<void> {
   const run = options.query ?? write
+  await run(sql`/* retireReplacedRemoteFollowCycle */
+    UPDATE activitypub_remote_follow_activities
+    SET undone_at = COALESCE(undone_at, clock_timestamp())
+    WHERE id = (
+      SELECT inbound_follow_activity_row_id FROM relation__remote_actor__follow__user
+      WHERE subject_id = ${remoteActorId} AND object_id = ${targetUserId}
+        AND deleted_at IS NULL
+      LIMIT 1
+    ) AND id <> ${cycleId}
+  `)
   await run(sql`/* setCurrentRemoteFollowCycle */
     UPDATE relation__remote_actor__follow__user
     SET inbound_follow_activity_row_id = ${cycleId}
@@ -89,4 +104,16 @@ export async function isCurrentRemoteFollowCycle(
     LIMIT 1
   `)
   return rows.length > 0
+}
+
+async function lockRemoteFollowPair(
+  query: QueryExecutor,
+  remoteActorId: string,
+  targetUserId: string,
+): Promise<void> {
+  await query(sql`/* lockRemoteFollowPair */
+    SELECT pg_advisory_xact_lock(hashtextextended(
+      'activitypub-follow:' || ${remoteActorId} || ':' || ${targetUserId}, 0
+    ))
+  `)
 }

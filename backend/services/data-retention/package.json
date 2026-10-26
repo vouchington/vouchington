@@ -37,6 +37,7 @@
     "valkyries": "^0.12.1"
   },
   "devDependencies": {
+    "@modules/activitypub-uris": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

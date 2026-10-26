@@ -57,8 +57,6 @@ const UNBOUNDED_MEMBERSHIP_WORK_ITEMS = [
   'membership_verification_processing_work_items',
 ] as const
 const INDEFINITE_EDGE_TABLES = [
-  'activitypub_post_likes',
-  'activitypub_remote_follow_activities',
   'bluesky_follow_records',
   'community_list_posts',
   'community_list_rss_feeds',
@@ -125,6 +123,14 @@ export function buildUnboundedUnpartitionedTables(
             ],
       ),
       ...RETAINED_RELATION_GROWTH_POLICIES,
+      [
+        'activitypub_post_likes',
+        'Active Like cycles track live domain edges; terminal rows expire in bounded indexed pages after a configurable window longer than every supported replay age.',
+      ],
+      [
+        'activitypub_remote_follow_activities',
+        'Active Follow cycles track live domain edges; replaced and undone cycles expire in bounded indexed pages from their terminal timestamp beyond the supported replay age.',
+      ],
       [
         'community_search_counts',
         'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',

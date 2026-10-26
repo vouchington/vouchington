@@ -1,3 +1,4 @@
+import type { TerminalActivityRetentionFamily } from './config.mts'
 export type PsqlJobs =
   | 'runMigrations'
   | 'runViews'
@@ -5,6 +6,7 @@ export type PsqlJobs =
   | 'createPartitions'
   | 'cleanupPartitions'
   | 'dataRetentionCleanup'
+  | 'cleanupTerminalActivityIdentities'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -28,4 +30,8 @@ export type PsqlAdminJobType = (typeof PSQL_ADMIN_JOB_TYPES)[number]
 
 export type RefreshMaterializedViewData = {
   viewName: string
+}
+
+export type TerminalActivityRetentionData = {
+  family: TerminalActivityRetentionFamily
 }

@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_activities (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_inbox_activities__activity_id ON activitypub_inbox_activities (activity_id);
 
--- Each remote Follow activity keeps its own Undo state after the inbox dedup row expires.
+-- Each Follow cycle keeps its terminal state beyond the maximum replay horizon.
 CREATE TABLE IF NOT EXISTS activitypub_remote_follow_activities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -31,12 +31,15 @@ CREATE TABLE IF NOT EXISTS activitypub_remote_follow_activities (
 CREATE INDEX IF NOT EXISTS idx_activitypub_remote_follow_activities__target_user_id
   ON activitypub_remote_follow_activities (target_user_id);
 
-COMMENT ON TABLE activitypub_remote_follow_activities IS 'Per-activity remote Follow identity and durable Undo state. An undone activity cannot reactivate a follow after inbox dedup retention.';
-COMMENT ON COLUMN activitypub_remote_follow_activities.created_at IS 'Virtual UUIDv7 creation time for per-activity Follow identity; the identity and Undo state remain durable.';
+CREATE INDEX IF NOT EXISTS idx_activitypub_remote_follow_activities__undone_retention
+  ON activitypub_remote_follow_activities (undone_at, id) WHERE undone_at IS NOT NULL;
+
+COMMENT ON TABLE activitypub_remote_follow_activities IS 'Per-activity remote Follow identity. Active cycles remain domain facts; terminal cycles expire after their configured replay-safe retention window.';
+COMMENT ON COLUMN activitypub_remote_follow_activities.created_at IS 'Virtual UUIDv7 creation time for per-activity Follow identity; active identities remain while terminal retention is measured from undone_at.';
 COMMENT ON COLUMN activitypub_remote_follow_activities.activity_id IS 'External ActivityPub Follow id; unique across active and undone cycles.';
 COMMENT ON COLUMN activitypub_remote_follow_activities.remote_actor_id IS 'Signing remote actor that sent the Follow.';
 COMMENT ON COLUMN activitypub_remote_follow_activities.target_user_id IS 'Local user targeted by the Follow.';
-COMMENT ON COLUMN activitypub_remote_follow_activities.undone_at IS 'Set by Undo, including an Undo received before its original Follow; never cleared.';
+COMMENT ON COLUMN activitypub_remote_follow_activities.undone_at IS 'Set by Undo or replacement, including Undo before Follow; never cleared while retained and starts the terminal identity retention window.';
 
 COMMENT ON TABLE activitypub_inbox_activities IS 'Replay-dedup ledger for the ActivityPub inbox receiver. One row per accepted activity id; a second delivery of the same activity id is rejected before it reaches any write-path.';
 COMMENT ON COLUMN activitypub_inbox_activities.activity_id IS 'The ActivityPub activity''s `id` field (a remote URI). Unique — the dedup key.';

@@ -2,7 +2,6 @@ import { getActorKeyId } from '@modules/activitypub-uris'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { wrapHttpForRetry } from '@modules/queue-errors'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
-import { readOutboundReplayFloor } from '@services/ap-inbox-activities/replay-floor'
 import {
   buildActivityJson,
   commitActivityDistributionPage,
@@ -31,7 +30,6 @@ type DeliverActivityDependencies = {
   deliverActivityToInbox: typeof deliverActivityToInbox
   getActorPrivateKeyPem: typeof getActorPrivateKeyPem
   isFederationEnabledForUser: typeof isFederationEnabledForUser
-  readOutboundReplayFloor: typeof readOutboundReplayFloor
 }
 
 function isUndoMissingOriginalActivityId(
@@ -149,7 +147,6 @@ export async function deliverActivity(
     deliverActivityToInbox,
     getActorPrivateKeyPem,
     isFederationEnabledForUser,
-    readOutboundReplayFloor,
     ...dependencies,
   }
 
@@ -158,13 +155,11 @@ export async function deliverActivity(
   }
   // Accept is a direct response with a stable UUIDv5 wire identity, not a distribution job.
   // Every other production delivery shares the UUIDv7 source event and its maximum age.
+  // prepareActivityDistributionPage already checked the floor while claiming this page.
+  // Admitted deliveries may drain after it advances; never take a floor lock per recipient.
   if (data.activityType !== 'Accept') {
     const ageRejection = activityAgeRejectionReason(data.activityId)
     if (ageRejection) return { delivered: false, reason: ageRejection }
-    const rejectionFloor = await deps.readOutboundReplayFloor()
-    if (rejectionFloor && getDateFromUUIDv7(data.activityId)! <= rejectionFloor) {
-      return { delivered: false, reason: 'expired-activity' as const }
-    }
   }
   if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
     return { delivered: false, reason: 'federation-disabled' as const }

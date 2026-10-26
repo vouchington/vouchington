@@ -1,3 +1,7 @@
+import type { JobOptions } from 'glide-mq'
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+
 export const QUEUE_NAME = 'psql'
 export const PRIORITY_DEFAULT = 10
 
@@ -46,3 +50,29 @@ export const REFRESH_REVENUE_MEMBERSHIPS_CRON = '2,7,12,17,22,27,32,37,42,47,52,
 export const REFRESH_REVENUE_CHANGES_CRON = '3,8,13,18,23,28,33,38,43,48,53,58 * * * *'
 // Daily at 6:00 AM UTC
 export const RECONCILE_VOTE_DRIFT_CRON = '0 6 * * *'
+
+export type TerminalActivityRetentionFamily = 'follow' | 'like'
+export const TERMINAL_ACTIVITY_RETENTION_JOB_NAME = 'cleanupTerminalActivityIdentities'
+export const TERMINAL_ACTIVITY_RETENTION_ORDERING_MAX = 1
+export const psqlQueueConfig = new DynamicConfig({
+  key: 'psql-queue-config',
+  fieldTypes: { terminal_activity_retention_concurrency: 'number' },
+  defaultFields: { terminal_activity_retention_concurrency: 1 },
+})
+
+export function getTerminalActivityRetentionConcurrency(): number {
+  return getBoundedPositiveIntegerField(
+    psqlQueueConfig,
+    'terminal_activity_retention_concurrency',
+    {
+      defaultValue: 1,
+      maxValue: TERMINAL_ACTIVITY_RETENTION_ORDERING_MAX,
+    },
+  )
+}
+
+/** Existing PSQL transient-failure policy, shared by schedules and retained continuations. */
+export const PSQL_RETRY_OPTIONS = {
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+} satisfies JobOptions

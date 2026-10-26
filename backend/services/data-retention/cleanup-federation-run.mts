@@ -2,15 +2,12 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { listRetentionCandidates } from './cleanup-federation-candidates.mts'
 import { deleteRetentionCandidates } from './cleanup-federation-delete.mts'
-import type {
-  FederationRetentionPage,
-  FederationRetentionScope,
-} from './cleanup-federation.types.mts'
+import type { FederationRetentionPage } from './cleanup-federation.types.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1_000
 
 export async function cleanupSweepWithQuery(
-  options: { batchSize: number; maxBatches: number; now?: Date; scope?: FederationRetentionScope },
+  options: { batchSize: number; maxBatches: number; now?: Date },
   query: TransactionQuery,
 ): Promise<FederationRetentionPage> {
   // UUIDv7 timestamps begin at the Unix epoch.
@@ -21,12 +18,7 @@ export async function cleanupSweepWithQuery(
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
     // Oldest eligible terminal rows remain index-selectable on the next scheduled run.
     // no-mistakes-disable-next-line query-reached-per-item: capped oldest terminal page
-    const candidates = await listRetentionCandidates(
-      query,
-      cutoff,
-      options.batchSize + 1,
-      options.scope,
-    )
+    const candidates = await listRetentionCandidates(query, cutoff, options.batchSize + 1)
     const page = candidates.slice(0, options.batchSize)
     if (page.length === 0) {
       hasMore = false
