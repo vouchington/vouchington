@@ -4023,9 +4023,18 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/ap-actor-keys':
+        specifier: workspace:^
+        version: link:../ap-actor-keys
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../posts
       '@services/remote-actors':
         specifier: workspace:^
         version: link:../remote-actors
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12690,9 +12699,6 @@ importers:
 
   backend/workers/activitypub:
     dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -12714,18 +12720,9 @@ importers:
       '@services/activitypub-delivery':
         specifier: workspace:^
         version: link:../../services/activitypub-delivery
-      '@services/ap-actor-keys':
-        specifier: workspace:^
-        version: link:../../services/ap-actor-keys
       '@services/ap-inbox-activities':
         specifier: workspace:^
         version: link:../../services/ap-inbox-activities
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@vouchington/queue-errors':
         specifier: ^0.2.0
         version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
@@ -12739,6 +12736,9 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
+      '@services/ap-actor-keys':
+        specifier: workspace:^
+        version: link:../../services/ap-actor-keys
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
@@ -12754,6 +12754,9 @@ importers:
       '@services/route-rate-limits':
         specifier: workspace:^
         version: link:../../services/route-rate-limits
+      '@services/users':
+        specifier: workspace:^
+        version: link:../../services/users
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

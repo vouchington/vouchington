@@ -1,33 +1,28 @@
 import { getActorKeyId } from '@modules/activitypub-uris'
 import { wrapHttpForRetry } from '@modules/queue-errors'
-import { withPrimaryReads } from '@data-stores/psql'
 import {
   buildActivityJson,
+  canDistributeOutboundActivity,
   deliverActivityToInbox,
+  getOutboundActivityDeliveryCredentials,
   prepareActivityDistributionPage,
+  type OutboundActivityDeliveryDependencies,
+  type OutboundActivityEligibilityDependencies,
 } from '@services/activitypub-delivery'
-import { getActorPrivateKeyPem } from '@services/ap-actor-keys'
-import { isFederationEnabledForUser } from '@services/users'
-import { canDistributeActivityPubLike } from '@services/posts/activitypub-visibility'
 import {
   enqueueBulkDeliverActivity,
   type DeliverActivityData,
   type DistributeActivityData,
 } from '@queues/activitypub/enqueues/delivery'
 
-type DistributeActivityDependencies = {
+type DistributeActivityDependencies = OutboundActivityEligibilityDependencies & {
   enqueueBulkDeliverActivity: typeof enqueueBulkDeliverActivity
-  isFederationEnabledForUser: typeof isFederationEnabledForUser
-  canDistributeActivityPubLike: typeof canDistributeActivityPubLike
   prepareActivityDistributionPage: typeof prepareActivityDistributionPage
 }
 
-type DeliverActivityDependencies = {
+type DeliverActivityDependencies = OutboundActivityDeliveryDependencies & {
   buildActivityJson: typeof buildActivityJson
   deliverActivityToInbox: typeof deliverActivityToInbox
-  getActorPrivateKeyPem: typeof getActorPrivateKeyPem
-  isFederationEnabledForUser: typeof isFederationEnabledForUser
-  canDistributeActivityPubLike: typeof canDistributeActivityPubLike
 }
 
 function isUndoMissingOriginalActivityId(
@@ -47,8 +42,6 @@ export async function distributeActivity(
 ) {
   const deps = {
     enqueueBulkDeliverActivity,
-    isFederationEnabledForUser,
-    canDistributeActivityPubLike,
     prepareActivityDistributionPage,
     ...dependencies,
   }
@@ -56,37 +49,7 @@ export async function distributeActivity(
   if (isUndoMissingOriginalActivityId(data)) {
     return { enqueued: 0, completed: true, reason: 'missing-original-activity-id' as const }
   }
-  // A false opt-in or visibility result permanently settles recovery's source row. Keep all
-  // terminal eligibility reads on primary; follower page selection remains outside this scope.
-  const eligible = await withPrimaryReads(async () => {
-    if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) return false
-    // Follow/UndoFollow name a local target user in `object` (unlike Like/UndoLike, whose target is
-    // a post) — announcing "I followed/unfollowed X" to the source's remote audience discloses X's
-    // actor URI and follow edge even though X never opted into federation. Gate on the target's own
-    // opt-in, mirroring the existing inbound-Follow and GET /ap/users/:id gates.
-    //
-    // UndoFollow is gated on the target's opt-in the same as Follow — a deliberate choice, not an
-    // oversight. Gating on the target's *current* state (rather than tracking whether the original
-    // Follow was ever announced) means a target who opts out between being followed and unfollowed
-    // leaves a stale "still following" belief on the remote side (no retraction reaches them). The
-    // alternative — always emitting UndoFollow — is worse: a target who was *never* federated (Follow
-    // correctly suppressed) would have their identity disclosed for the first time by an UndoFollow
-    // with nothing to retract. Consistent gating never discloses a non-consenting target.
-    if (
-      (data.activityType === 'Follow' || data.activityType === 'UndoFollow') &&
-      !(await deps.isFederationEnabledForUser(data.targetUserId))
-    ) {
-      return false
-    }
-    if (
-      (data.activityType === 'Like' || data.activityType === 'UndoLike') &&
-      !(await deps.canDistributeActivityPubLike(data.targetPostId))
-    ) {
-      return false
-    }
-    return true
-  })
-  if (!eligible) return { enqueued: 0, completed: true }
+  if (!(await canDistributeOutboundActivity(data, deps))) return { enqueued: 0, completed: true }
 
   const page = await deps.prepareActivityDistributionPage(
     data.sourceUserId,
@@ -118,40 +81,13 @@ export async function deliverActivity(
   const deps = {
     buildActivityJson,
     deliverActivityToInbox,
-    getActorPrivateKeyPem,
-    isFederationEnabledForUser,
-    canDistributeActivityPubLike,
     ...dependencies,
   }
 
   if (isUndoMissingOriginalActivityId(data)) {
     return { delivered: false, reason: 'missing-original-activity-id' as const }
   }
-  // A replica miss must not permanently drop a delivery after opt-in or key creation committed.
-  const eligibility = await withPrimaryReads(async () => {
-    if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
-      return { reason: 'federation-disabled' as const }
-    }
-    // Re-check the target's opt-in here too, not just at distributeActivity's fan-out time — same
-    // toggle-race rationale as the source re-check above (the target could disable federation
-    // between enqueue and delivery).
-    if (
-      (data.activityType === 'Follow' || data.activityType === 'UndoFollow') &&
-      !(await deps.isFederationEnabledForUser(data.targetUserId))
-    ) {
-      return { reason: 'federation-disabled' as const }
-    }
-    if (
-      (data.activityType === 'Like' || data.activityType === 'UndoLike') &&
-      !(await deps.canDistributeActivityPubLike(data.targetPostId))
-    ) {
-      return { reason: 'post-not-public' as const }
-    }
-
-    const privateKeyPem = await deps.getActorPrivateKeyPem(data.sourceUserId)
-    if (!privateKeyPem) return { reason: 'missing-actor-keypair' as const }
-    return { privateKeyPem }
-  })
+  const eligibility = await getOutboundActivityDeliveryCredentials(data, deps)
   if ('reason' in eligibility) return { delivered: false, reason: eligibility.reason }
 
   const activity = deps.buildActivityJson(data)

@@ -22,7 +22,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/psql": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/activitypub-inbox-storage-policy": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
@@ -30,21 +29,20 @@
     "@queues/activitypub": "workspace:^",
     "@queues/background": "workspace:^",
     "@services/activitypub-delivery": "workspace:^",
-    "@services/ap-actor-keys": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
-    "@services/posts": "workspace:^",
-    "@services/users": "workspace:^",
     "@vouchington/queue-errors": "^0.2.0",
     "glide-mq": "^0.19.0"
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
     "@modules/http-signatures": "workspace:^",
+    "@services/ap-actor-keys": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
+    "@services/users": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "http-errors": "^2.0.1"
