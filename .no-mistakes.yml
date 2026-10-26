@@ -2557,6 +2557,7 @@ rules:
   - name: banned repository paths
     rule: banned-paths
     scope: repository
+    severity: error
     options:
       bannedPaths:
         - glob: '**/*test-helpers*'
