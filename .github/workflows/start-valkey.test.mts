@@ -39,12 +39,13 @@ describe('Valkey test container', () => {
       runs?: { steps?: Array<Step & { env?: Record<string, string> }> }
     }
     const [start] = action.runs?.steps ?? []
-    const image = start?.run?.match(
-      /docker pull (ghcr\.io\/vouchington\/dependency-valkey:\d+\.\d+\.\d+@sha256:[0-9a-f]{64})/u,
-    )?.[1]
-    expect(image).toBeDefined()
-    expect(start?.run).toContain(`timeout --kill-after=2s 50s docker pull ${image}`)
-    expect(start?.run).toContain(`  ${image} >/dev/null`)
+    expect(start?.env?.VALKEY_IMAGE).toMatch(
+      /^ghcr\.io\/vouchington\/dependency-valkey:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
+    )
+    expect(start?.run).toContain(
+      `timeout --kill-after=2s 50s docker pull ${start?.env?.VALKEY_IMAGE}`,
+    )
+    expect(start?.run).toContain(`  ${start?.env?.VALKEY_IMAGE} >/dev/null`)
     expect(start?.run).toContain('timeout 60')
     expect(start?.run).toContain('-p 127.0.0.1::6379')
     expect(start?.run).not.toMatch(/-p\s+\d+:6379/u)
