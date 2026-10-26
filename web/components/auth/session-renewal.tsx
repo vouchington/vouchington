@@ -54,7 +54,6 @@ export function SessionRenewal({
       <div className='flex min-h-screen flex-col items-center justify-center gap-4'>
         <p role='alert'>{t('extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda')}</p>
         <Button
-          data-pw='session-renewal-retry'
           onClick={() => {
             setFailed(false)
             setAttempt(value => value + 1)
