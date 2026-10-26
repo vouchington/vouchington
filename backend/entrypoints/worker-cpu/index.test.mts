@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 import type { WorkerRuntime, WorkerRuntimeConfig } from '@backend/worker-runtime'
 import { initializeWorkerRuntime } from './runtime.mts'
 import { SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
@@ -43,6 +43,11 @@ describe('worker-cpu runtime bootstrap', () => {
 })
 
 describe('worker-cpu entrypoint wrapper', () => {
+  afterAll(() => {
+    // The runtime closes its universal heartbeat worker; later files need a fresh singleton.
+    vi.resetModules()
+  })
+
   it('initializes in prewarm mode and exposes worker collections', async () => {
     const originalNodePrewarm = process.env.NODE_PREWARM
     const originalQueues = process.env.QUEUES
