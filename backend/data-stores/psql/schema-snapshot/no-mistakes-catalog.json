@@ -3077,7 +3077,7 @@
           "ordinalPosition": 5
         },
         "deleted_at": {
-          "comment": "Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; an undone id is never reactivated.",
+          "comment": "Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; this immutable terminal timestamp starts bounded retention longer than the supported replay horizon.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
@@ -3097,7 +3097,7 @@
           "ordinalPosition": 1
         },
         "like_activitypub_id": {
-          "comment": "The inbound Like activity's ActivityPub id; unique across active and undone cycles so an old Like cannot reactivate after inbox dedup expiry.",
+          "comment": "The inbound Like activity's ActivityPub id; unique across active and retained terminal cycles so replay within the supported horizon cannot reactivate an undone Like.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
@@ -3127,7 +3127,7 @@
           "ordinalPosition": 3
         }
       },
-      "comment": "Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local posts. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.",
+      "comment": "Current remote ActivityPub Like cycles and terminal tombstones retained beyond the supported replay horizon. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.",
       "foreignKeys": {
         "activitypub_post_likes_post_id_fkey": {
           "columns": ["post_id"],
@@ -3270,6 +3270,38 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_activitypub_post_likes__undone_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_post_likes__undone_retention ON public.activitypub_post_likes USING btree (deleted_at, id) WHERE (deleted_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "deleted_at",
+              "descending": false,
+              "expression": "deleted_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -3303,7 +3335,7 @@
           "ordinalPosition": 3
         },
         "created_at": {
-          "comment": "Virtual UUIDv7 creation time for per-activity Follow identity; the identity and Undo state remain durable.",
+          "comment": "Virtual UUIDv7 creation time for per-activity Follow identity; active identities remain while terminal retention is measured from undone_at.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": "virtual",
@@ -3343,7 +3375,7 @@
           "ordinalPosition": 5
         },
         "undone_at": {
-          "comment": "Set by Undo, including an Undo received before its original Follow; never cleared.",
+          "comment": "Set by Undo or replacement, including Undo before Follow; never cleared while retained and starts the terminal identity retention window.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
@@ -3353,7 +3385,7 @@
           "ordinalPosition": 6
         }
       },
-      "comment": "Per-activity remote Follow identity and durable Undo state. An undone activity cannot reactivate a follow after inbox dedup retention.",
+      "comment": "Per-activity remote Follow identity. Active cycles remain domain facts; terminal cycles expire after their configured replay-safe retention window.",
       "foreignKeys": {
         "activitypub_remote_follow_activities_remote_actor_id_fkey": {
           "columns": ["remote_actor_id"],
@@ -3437,6 +3469,38 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_activitypub_remote_follow_activities__undone_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_remote_follow_activities__undone_retention ON public.activitypub_remote_follow_activities USING btree (undone_at, id) WHERE (undone_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "undone_at",
+              "descending": false,
+              "expression": "undone_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(undone_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -95316,7 +95380,7 @@
           "ordinalPosition": 6
         },
         "inbound_follow_activity_row_id": {
-          "comment": "Current inbound Follow activity cycle; undone identities remain in the activity table and cannot reauthorize this relation.",
+          "comment": "Current inbound Follow activity cycle; expiring a terminal identity clears this optional pointer and never authorizes the relation.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -95350,7 +95414,7 @@
       "foreignKeys": {
         "fk_remote_follow__inbound_follow_activity_row_id": {
           "columns": ["subject_id", "object_id", "inbound_follow_activity_row_id"],
-          "onDelete": "NO ACTION",
+          "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["remote_actor_id", "target_user_id", "id"],
           "referencedTable": "activitypub_remote_follow_activities",

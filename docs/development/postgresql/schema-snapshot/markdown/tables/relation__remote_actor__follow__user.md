@@ -6,15 +6,15 @@ remote_actor follow user relations. <subject> follows <object>
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                     |
-| -------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `subject_id`                     | `uuid`                     | no       |                     |          |           |           | Concrete relation subject in remote_actors.                                                                                 |
-| `object_id`                      | `uuid`                     | no       |                     |          |           |           | Concrete relation object in users.                                                                                          |
-| `created_by_id`                  | `uuid`                     | yes      |                     |          |           |           |                                                                                                                             |
-| `created_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                             |
-| `deleted_at`                     | `timestamp with time zone` | yes      |                     |          |           |           |                                                                                                                             |
-| `deleted_by_id`                  | `uuid`                     | yes      |                     |          |           |           |                                                                                                                             |
-| `inbound_follow_activity_row_id` | `uuid`                     | yes      |                     |          |           |           | Current inbound Follow activity cycle; undone identities remain in the activity table and cannot reauthorize this relation. |
+| Column                           | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                             |
+| -------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `subject_id`                     | `uuid`                     | no       |                     |          |           |           | Concrete relation subject in remote_actors.                                                                                         |
+| `object_id`                      | `uuid`                     | no       |                     |          |           |           | Concrete relation object in users.                                                                                                  |
+| `created_by_id`                  | `uuid`                     | yes      |                     |          |           |           |                                                                                                                                     |
+| `created_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                     |
+| `deleted_at`                     | `timestamp with time zone` | yes      |                     |          |           |           |                                                                                                                                     |
+| `deleted_by_id`                  | `uuid`                     | yes      |                     |          |           |           |                                                                                                                                     |
+| `inbound_follow_activity_row_id` | `uuid`                     | yes      |                     |          |           |           | Current inbound Follow activity cycle; expiring a terminal identity clears this optional pointer and never authorizes the relation. |
 
 **Primary key:** `PRIMARY KEY (subject_id, object_id)`
 
@@ -26,7 +26,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_remote_follow__inbound_follow_activity_row_id`: `FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) DEFERRABLE INITIALLY DEFERRED`
+- `fk_remote_follow__inbound_follow_activity_row_id`: `FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) ON DELETE SET NULL (inbound_follow_activity_row_id) DEFERRABLE INITIALLY DEFERRED`
 - `relation__remote_actor__follow__user_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `relation__remote_actor__follow__user_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `relation__remote_actor__follow__user_object_id_fkey`: `FOREIGN KEY (object_id) REFERENCES users(id) ON DELETE CASCADE`
