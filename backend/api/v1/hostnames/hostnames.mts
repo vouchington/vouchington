@@ -52,7 +52,13 @@ app.route('/api/v1/hostnames').post(async (ctx: Context) => {
 
   if (body.is_blocked === true) {
     const { id, result } = await upsertAndBlockHostname(currentUser.id, hostname)
-    ctx.json({ id, hostname, ...result })
+    ctx.json(
+      apiResponse('POST:/api/v1/hostnames#block', {
+        id,
+        hostname,
+        ...result,
+      }),
+    )
     return
   }
 

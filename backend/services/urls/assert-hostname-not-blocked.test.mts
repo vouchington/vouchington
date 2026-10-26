@@ -35,6 +35,22 @@ describe('assert-hostname-not-blocked', () => {
     }).toThrow(/blocked/)
   })
 
+  it('rejects an unprojected child of a blocked parent hostname', async () => {
+    const random = Math.random().toString(36).slice(2, 10)
+    const parent = `blocked-parent-${random}.example.com`
+    await insertTestUrlHostname({ hostname: parent, is_blocked: true })
+    const childHostnameId = await insertTestUrlHostname({
+      hostname: `child.${parent}`,
+      is_blocked: false,
+    })
+    const urlId = await insertTestUrl({
+      url: `https://child.${parent}/page`,
+      hostnameId: childHostnameId,
+    })
+
+    await expect(assertUrlsHaveNoBlockedHostnames([urlId])).rejects.toMatchObject({ status: 422 })
+  })
+
   it('assertUrlsHaveNoBlockedHostnames passes for empty array', async () => {
     await expect(assertUrlsHaveNoBlockedHostnames([])).resolves.toBeUndefined()
   })

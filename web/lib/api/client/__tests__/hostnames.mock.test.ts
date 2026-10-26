@@ -13,7 +13,12 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import { createHostname, fetchHostnames, updateHostname } from '../hostnames'
+import {
+  createHostname,
+  fetchHostnameBlockOperation,
+  fetchHostnames,
+  updateHostname,
+} from '../hostnames'
 
 const mockGet = vi.mocked(clientApi.get)
 const mockPatch = vi.mocked(clientApi.patch)
@@ -39,7 +44,7 @@ describe('hostnames client', () => {
   })
 
   it('returns the block result when marking a hostname blocked', async () => {
-    const response = { blocked_hostname_ids: ['hostname-1'], affected_user_ids: [] }
+    const response = { operation_id: 'operation-1', status: 'pending', totals: null }
     mockPatch.mockResolvedValueOnce(response)
 
     const result = await updateHostname('hostname-1', { is_blocked: true })
@@ -67,6 +72,16 @@ describe('hostnames client', () => {
       hostname: 'example.com',
       is_blocked: true,
     })
+    expect(result).toBe(response)
+  })
+
+  it('reads hostname block operation status', async () => {
+    const response = { operation_id: 'operation-1', status: 'pending', totals: null }
+    mockGet.mockResolvedValueOnce(response)
+
+    const result = await fetchHostnameBlockOperation('operation-1')
+
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/hostname-block-operations/operation-1')
     expect(result).toBe(response)
   })
 })

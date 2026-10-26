@@ -47,6 +47,8 @@ export const BACKGROUND_ORDERING_CAPS = {
   'email-digests': 5,
   imports: 10,
   'moderation-signals': 10,
+  'hostname-blocking': 2,
+  'hostname-blocking:dispatcher': 1,
 } as const
 
 export function getBackgroundOrderingLimits(key: string): {

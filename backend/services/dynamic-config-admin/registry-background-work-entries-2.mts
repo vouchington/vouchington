@@ -62,8 +62,11 @@ export const backgroundWorkEntries2 = [
     label: 'Hostname Blocking',
     maxValues: hostnameBlockingWorkMaxValues,
     descriptions: {
-      post_related_url_delete_batch_size:
-        'Post related url delete batch size for hostname blocking processing.',
+      relation_delete_batch_size: 'Entity relation delete page size for hostname blocking.',
+      hostname_scan_batch_size: 'Hostname family scan and subdomain projection page size.',
+      url_scan_batch_size: 'URL registry scan page size for hostname blocking.',
+      penalty_enqueue_batch_size: 'Vote-weight penalty enqueue page size for hostname blocking.',
+      recovery_batch_size: 'Pending hostname block recovery page size.',
     },
   }),
 ]

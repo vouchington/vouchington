@@ -28,7 +28,7 @@ describe('current EXPLAIN read inventory', () => {
         'backend/services/urls/get.mts',
         'backend/services/entity-cache/keys.mts',
         'backend/services/entity-relations/query.mts',
-        'backend/services/hostname-blocking/soft-delete-relations.mts',
+        'backend/services/hostname-blocking/relation-cleanup-pages.mts',
         'backend/services/posts/create/source-url-relation.mts',
         'backend/services/urls-hostnames/get.mts',
       ]
@@ -52,6 +52,7 @@ describe('current EXPLAIN read inventory', () => {
       ]) {
         expect(names.filter(candidate => candidate === name)).toHaveLength(1)
       }
+      expect(names.filter(name => name === 'getHostnameCleanupPage')).toHaveLength(2)
       expect(report.unclassifiedStatements).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -66,7 +67,6 @@ describe('current EXPLAIN read inventory', () => {
         'getPublicUsersByAnyBatch',
         'getPublicUserByAny',
         'getPrivateUserByAny',
-        'blockHostname_softDeleteRelations',
       ])
         expect(names).not.toContain(name)
       expect(report.annotatedStatements).toBeGreaterThan(report.reads)

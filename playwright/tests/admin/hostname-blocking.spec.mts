@@ -26,7 +26,11 @@ test.describe('Admin Hostname Blocking', () => {
     }, hostnameId)
 
     expect(blockResult.status).toBe(200)
-    expect(blockResult.body.blocked_hostname_count).toBeGreaterThanOrEqual(1)
+    expect(blockResult.body).toEqual({
+      operation_id: expect.any(String),
+      status: 'pending',
+      totals: null,
+    })
 
     // Verify it appears in the blocked hostnames list
     const blockedList = await page.evaluate(findBlockedHostnameInList, hostnameId)

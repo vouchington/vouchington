@@ -107,6 +107,13 @@ Membership retention pages persist their position. A capped run enqueues a reten
 step naming the membership families with more eligible rows, and that step reruns only those
 families, keeping the backlog draining between schedules.
 
+Hostname blocking records one durable cleanup operation before admitting background work. Its
+continuations page child hostnames, URLs, relations, creator penalties, and recalculation jobs with
+stable identities; a bounded recovery sweep re-admits stalled operations after the commit/enqueue
+window. Staff clients receive the operation identity and read its durable progress and totals.
+Unblocking remains fenced until cleanup completes, so a newly accepted relation cannot race an
+older block operation and be deleted by it.
+
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing

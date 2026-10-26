@@ -43,6 +43,7 @@ export const BACKGROUND_DOMAINS = [
   'email-digests',
   'imports',
   'moderation-signals',
+  'hostname-blocking',
 ] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]

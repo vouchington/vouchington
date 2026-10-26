@@ -11,7 +11,6 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { describe, expect, it } from 'vitest'
-import { blockHostname } from './block-hostname.mts'
 import { unblockHostname } from './unblock-hostname.mts'
 import { upsertAndBlockHostname } from './upsert-and-block-hostname.mts'
 
@@ -22,7 +21,7 @@ function ownedSourceName() {
 }
 
 describe('feed-owned hostname blocks', () => {
-  it('introduces a private root and older child only after staff acquires the ordered block locks', async () => {
+  it('admits the private root without synchronously projecting an older child', async () => {
     const moderator = (await createTestUser({ administrator: true })) as PrivateUser
     const hostname = `staff-introduce-${randomBytes(6).toString('hex')}.example.com`
     const [childId, rootId] = [uuidv7(), uuidv7()].toSorted()
@@ -34,11 +33,14 @@ describe('feed-owned hostname blocks', () => {
 
     const result = await upsertAndBlockHostname(moderator.id, hostname)
     expect(result.id).toBe(rootId)
-    for (const id of [childId, rootId]) {
-      const row = await getTestHostnameRow(id)
-      expect(row?.publicly_introduced_at).toBeInstanceOf(Date)
-      expect(row?.is_blocked).toBe(true)
-    }
+    expect(await getTestHostnameRow(rootId)).toMatchObject({
+      publicly_introduced_at: expect.any(Date),
+      is_blocked: true,
+    })
+    expect(await getTestHostnameRow(childId)).toMatchObject({
+      publicly_introduced_at: null,
+      is_blocked: false,
+    })
   })
 
   it.each(['url', 'email'] as const)(
@@ -46,7 +48,7 @@ describe('feed-owned hostname blocks', () => {
     async sourceType => {
       const moderator = (await createTestUser({ administrator: true })) as PrivateUser
       const hostname = `feed-unblock-${randomBytes(6).toString('hex')}.example.com`
-      const hostnameId = await insertTestUrlHostname({ hostname })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_blocked: true })
       const sourceName = ownedSourceName()
       const sourceId = await createTestBlacklistSource({
         type: sourceType,
@@ -55,7 +57,6 @@ describe('feed-owned hostname blocks', () => {
       })
       try {
         await insertTestDomainBlacklist(hostname, sourceName)
-        await blockHostname(moderator.id, hostnameId, { penalizeCreators: false })
         expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
 
         await unblockHostname(moderator.id, hostnameId)
@@ -76,7 +77,7 @@ describe('feed-owned hostname blocks', () => {
     async sourceType => {
       const moderator = (await createTestUser({ administrator: true })) as PrivateUser
       const hostname = `feed-admin-${randomBytes(6).toString('hex')}.example.com`
-      const hostnameId = await insertTestUrlHostname({ hostname })
+      const hostnameId = await insertTestUrlHostname({ hostname, is_blocked: true })
       const sourceName = ownedSourceName()
       const sourceId = await createTestBlacklistSource({
         type: sourceType,
@@ -84,7 +85,6 @@ describe('feed-owned hostname blocks', () => {
         url: 'https://example.com/owned-feed.txt',
       })
       await insertTestDomainBlacklist(hostname, sourceName)
-      await blockHostname(moderator.id, hostnameId, { penalizeCreators: false })
       await deleteTestBlacklistSource(sourceId)
       expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
       await unblockHostname(moderator.id, hostnameId)

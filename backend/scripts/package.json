@@ -62,6 +62,7 @@
     "@services/follower-distributions": "workspace:^",
     "@services/friend-recommendations": "workspace:^",
     "@services/growth-metrics": "workspace:^",
+    "@services/hostname-blocking": "workspace:^",
     "@services/identity-verification": "workspace:^",
     "@services/images": "workspace:^",
     "@services/individuals-households": "workspace:^",

@@ -43,6 +43,7 @@ import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query
 import { readHostnameChanges } from './hostname-update.mts'
 import type { UpdateHostnameBody } from './hostname-update-types.mts'
 import './hostname-vote-routes.mts'
+import './hostname-block-operation-route.mts'
 
 const blockedHostnamesQuery = defineQueryContract({
   limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
@@ -148,7 +149,7 @@ app.route('/api/v1/hostnames/:id').patch(async (ctx: Context) => {
       'Cannot combine is_blocked:true with other fields',
     )
     const result = await blockHostname(currentUser.id, ctx.params.id!)
-    ctx.json(result)
+    ctx.json(apiResponse('PATCH:/api/v1/hostnames/:id#block', result))
     return
   }
 

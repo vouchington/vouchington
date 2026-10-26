@@ -8,6 +8,8 @@ export type TestVoteWeightPenalty = {
   reason: string
   created_by_id: string
   revoked_at: Date | null
+  source_hostname_id?: string | null
+  source_hostname_block_id?: string | null
 }
 
 export async function getTestPenaltiesByFlagId(flagId: string): Promise<TestVoteWeightPenalty[]> {
@@ -23,7 +25,8 @@ export async function getTestPenaltiesByHostnameId(
   hostnameId: string,
 ): Promise<TestVoteWeightPenalty[]> {
   const { rows } = await read(sql`/* getTestPenaltiesByHostnameId */
-    SELECT id, user_id, penalty_multiplier, reason, created_by_id, revoked_at
+    SELECT id, user_id, penalty_multiplier, reason, created_by_id, revoked_at,
+      source_hostname_id, source_hostname_block_id
     FROM vote_weight_penalties
     WHERE source_hostname_id = ${hostnameId}
   `)

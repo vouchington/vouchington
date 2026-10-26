@@ -2,6 +2,7 @@ import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
@@ -30,12 +31,35 @@ export async function unblockHostname(
     await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] }).catch(onError)
 }
 
+async function assertHostnameCleanupCompletedForUnblock(
+  query: TransactionQuery,
+  hostnameId: string,
+): Promise<void> {
+  const { rows } = await query(sql`/* unblockHostname:pendingCleanup */
+    SELECT cleanup_root.id
+    FROM url_hostname_blocks active_block
+    JOIN url_hostname_blocks cleanup_root
+      ON cleanup_root.id = active_block.relation_cleanup_root_block_id
+    WHERE active_block.url_hostname_id = ${hostnameId}
+      AND active_block.lifted_at IS NULL
+      AND active_block.domain_blocklist_source_id IS NULL
+      AND cleanup_root.relation_cleanup_completed_at IS NULL
+    LIMIT 1
+  `)
+  if (rows.length > 0)
+    throw createHttpError(
+      409,
+      'Hostname cleanup is still in progress. Try unblocking again after it completes.',
+    )
+}
+
 async function lockHostnameForUnblock(query: TransactionQuery, hostnameId: string): Promise<void> {
   await lockHostnameOwnership(query, [hostnameId])
   // Match the block flow's hostname-before-block-row order.
   await query(sql`/* unblockHostname:lockHostname */
     SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE
   `)
+  return assertHostnameCleanupCompletedForUnblock(query, hostnameId)
 }
 
 async function liftStaffBlocksAndEnqueue(

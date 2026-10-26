@@ -50,3 +50,9 @@ export async function createHostname(input: {
 }): Promise<CreateHostnameResponse> {
   return clientApi.post<CreateHostnameResponse>('/api/v1/hostnames', input)
 }
+
+export async function fetchHostnameBlockOperation(
+  operationId: string,
+): Promise<BlockHostnameResult> {
+  return clientApi.get<BlockHostnameResult>(`/api/v1/hostname-block-operations/${operationId}`)
+}

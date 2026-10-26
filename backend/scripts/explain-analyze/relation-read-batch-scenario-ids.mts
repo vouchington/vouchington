@@ -12,6 +12,7 @@ export const RELATION_READ_BATCH_SCENARIO_IDS = [
   'hostname-owner-source-hide',
   'hostname-owner-revival-discovery',
   'hostname-owner-child-batch',
+  'hostname-block-post-url-relation-page',
   'follow-context-votes-batch',
   'follow-context-topic-followers',
   'topic-comparison-insights',

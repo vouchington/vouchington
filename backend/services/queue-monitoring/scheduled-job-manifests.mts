@@ -28,6 +28,7 @@ import { scheduledJobManifest as unfurlReferralLinks } from '@queues/unfurl-refe
 import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { scheduledJobManifest as userRssFeedImports } from '@queues/user-rss-feed-imports/enqueues/schedules'
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
+import { scheduledJobManifest as hostnameBlocking } from '@queues/background/enqueues/hostname-blocking-schedules'
 
 // Background domains register through one combined manifest, so the catalog lists that manifest.
 const background = combineBackgroundManifests([
@@ -46,6 +47,7 @@ const background = combineBackgroundManifests([
   kagiSmallweb,
   emailDigests,
   userRssFeedImports,
+  hostnameBlocking,
 ])
 
 const backgroundCpu = combineBackgroundCpuManifests([
