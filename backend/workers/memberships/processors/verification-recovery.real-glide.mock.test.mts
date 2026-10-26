@@ -12,6 +12,56 @@ import type { RecoverMembershipVerificationsData } from '@queues/memberships/typ
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('membership verification recovery with real PostgreSQL and GlideMQ', () => {
+  it('persists the initial upper bound when the resume range is already drained', async () => {
+    const user = await createTestUser()
+    const verification = await createMembershipVerification({
+      userId: user.id,
+      provider: 'apple_app_store',
+      purchaseIntentId: null,
+      idempotencyKey: randomUUID(),
+      evidence: { signed_transaction: randomUUID() },
+    })
+    // A cursor need not retain its source row. This upper UUIDv7 cursor keeps the empty
+    // resumed range isolated from other tests' pending verifications on the shared database.
+    const after = 'ffffffff-ffff-7fff-bfff-ffffffffffff'
+    const job = await memberships.add(
+      'recoverMembershipVerifications',
+      { after },
+      {
+        jobId: `test-verification-bound-${randomUUID()}`,
+        priority: 100,
+      },
+    )
+    if (!job) throw new Error('Expected a real dispatcher job')
+    try {
+      await expect(
+        recoverMembershipVerifications(job as Job<RecoverMembershipVerificationsData>),
+      ).resolves.toEqual({ enqueued: 0 })
+      const persisted = (await memberships.getJob(
+        job.id,
+      )) as Job<RecoverMembershipVerificationsData> | null
+      expect(persisted?.data).toMatchObject({
+        after,
+        through: expect.any(String),
+        dispatchReceipt: { result: { enqueued: 0 } },
+      })
+      const through = persisted?.data.through
+      if (!through) throw new Error('Expected a durable recovery upper bound')
+      expect(through.localeCompare(verification.id)).toBeGreaterThanOrEqual(0)
+      await expect(
+        recoverMembershipVerifications(job as Job<RecoverMembershipVerificationsData>),
+      ).resolves.toEqual({ enqueued: 0 })
+      const replay = (await memberships.getJob(
+        job.id,
+      )) as Job<RecoverMembershipVerificationsData> | null
+      expect(replay?.data.through).toBe(through)
+    } finally {
+      await completeMembershipVerification(verification.id)
+      await (await memberships.getJob(verification.id))?.remove()
+      await (await memberships.getJob(job.id))?.remove()
+    }
+  })
+
   it('restores missed admission, deduplicates concurrent sweeps, and converges after outcome', async () => {
     const user = await createTestUser()
     const submit = () =>
