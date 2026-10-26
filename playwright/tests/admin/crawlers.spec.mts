@@ -22,6 +22,23 @@ test.describe('Admin Crawlers list', () => {
     await navigateTo(page, '/crawlers')
     await expect(page).toHaveURL('/')
   })
+
+  test('should open crawler details and edit from the hostname row', async ({ page }) => {
+    await navigateTo(page, '/crawlers')
+
+    await page
+      .getByRole('row')
+      .filter({ hasText: 'Example.com crawler' })
+      .getByTestId('crawler-row')
+      .filter({ hasText: 'example.com' })
+      .click()
+    await expect(page).toHaveURL(`/crawler/${SEEDED_CRAWLER_ID}`)
+    await expect(page.getByTestId('crawler-detail-heading')).toBeVisible()
+
+    await page.getByTestId('crawler-edit-link').click()
+    await expect(page).toHaveURL(`/crawler/${SEEDED_CRAWLER_ID}/edit`)
+    await expect(page.getByTestId('crawler-edit-heading')).toBeVisible()
+  })
 })
 
 test.describe('Admin Crawlers', () => {
