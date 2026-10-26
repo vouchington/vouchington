@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import sql from 'sql-template-strings'
 import {
   beginTransaction,
   countTestPostPublicationDirtyWorkForPostsWithReason,
@@ -7,6 +8,8 @@ import {
   getTestRelationDeletedAt,
   insertTestPost,
   insertTestPostRelatedUrlBatch,
+  insertTestTopicBatch,
+  insertTestUrlDirect,
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
 import type { HostnameBlockCleanupCursor } from '@queues/background/enqueues/hostname-blocking-jobs'
@@ -171,6 +174,73 @@ describe('bounded hostname block relation cleanup', () => {
     await expect(
       Promise.all(postIds.map((postId, index) => getTestRelationDeletedAt(postId, urlIds[index]!))),
     ).resolves.toEqual([expect.any(Date), expect.any(Date)])
+  })
+
+  it('continues an exact-limit ordinary relation page without repeating a creator penalty', async () => {
+    const [administrator, creator] = await Promise.all([
+      createAdministrator('ordinary-page'),
+      createTestUserDirect({ username: `hostname-ordinary-creator-${randomToken()}` }),
+    ])
+    const hostname = randomHostname('ordinary-page')
+    const url = await insertTestUrlDirect(creator.id, `https://${hostname}/landing`)
+    if (!url) throw new Error('Expected a public test URL')
+    const topicIds = await insertTestTopicBatch({
+      count: 2,
+      createdById: creator.id,
+      prefix: `ordinary-relation-${randomToken()}`,
+    })
+    await using fixtureQuery = await beginTransaction()
+    await fixtureQuery(sql`/* hostname cleanup ordinary relation fixture */
+      INSERT INTO relation__topic__landing_page__url (subject_id, object_id, created_by_id)
+      SELECT topic_id, ${url.id}, ${creator.id}
+      FROM unnest(${topicIds}::uuid[]) AS relation(topic_id)
+    `)
+    await fixtureQuery.commit()
+
+    const operation = await createOperation(url.hostname.id, administrator.id, true)
+    const tableIndex = getEntityRelationUrlTables().indexOf('relation__topic__landing_page__url')
+    expect(tableIndex).toBeGreaterThanOrEqual(0)
+    const cursor: Extract<HostnameBlockCleanupCursor, { stage: 'relations' }> = {
+      stage: 'relations',
+      hostnames: [
+        {
+          id: url.hostname.id,
+          reversedHostname: hostname.split('.').toReversed().join('.'),
+          owned: true,
+        },
+      ],
+      hostnameIndex: 0,
+      hostnamesExhausted: true,
+      urlIds: [url.id],
+      urlsExhausted: true,
+      tableIndex,
+    }
+
+    const first = await softDeleteNextBlockedHostnameRelationPage(
+      operation.blockId,
+      operation.progress,
+      cursor,
+      { hostname: 1, url: 1, relation: 1 },
+    )
+    expect(first).toMatchObject({
+      deleted: 1,
+      operation: { softDeletedRelationCount: 1, penalizedUserCount: 1 },
+      cursor: { stage: 'relations', tableIndex, relationAfter: expect.any(Object) },
+    })
+    const firstCursor = first.cursor
+    if (firstCursor.stage !== 'relations') throw new Error('Expected relation continuation')
+    const second = await softDeleteNextBlockedHostnameRelationPage(
+      operation.blockId,
+      first.operation!.progress,
+      firstCursor,
+      { hostname: 1, url: 1, relation: 1 },
+    )
+    expect(second).toMatchObject({
+      deleted: 1,
+      operation: { softDeletedRelationCount: 2, penalizedUserCount: 1 },
+      cursor: { stage: 'relations', tableIndex, relationAfter: expect.any(Object) },
+    })
+    expect(second.cursor).not.toEqual(first.cursor)
   })
 })
 
