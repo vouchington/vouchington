@@ -103,12 +103,14 @@ describe('get-batch', () => {
       '00000000-0000-0000-0000-000000000001',
       post.id,
       'nonexistent-slug',
+      post.id,
     ])
 
-    expect(results).toHaveLength(3)
+    expect(results).toHaveLength(4)
     expect(results[0]).toBeNull()
     expect(results[1]?.id).toBe(post.id)
     expect(results[2]).toBeNull()
+    expect(results[3]?.id).toBe(post.id)
   })
 
   it('getPostsByAnyBatch throws for invalid identifiers', async () => {
