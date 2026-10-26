@@ -7,7 +7,10 @@ import {
   addTestUserRole,
   insertTestTotpAuthenticator,
 } from '@voucha/test-helpers'
-import { setTestSessionMfaVerifiedAt } from '@voucha/test-helpers/entities/session-assurance'
+import {
+  getTestStoredSessionAssurance,
+  setTestSessionMfaVerifiedAt,
+} from '@voucha/test-helpers/entities/session-assurance'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createDeviceAndSessionTokens } from './create.mts'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
@@ -142,6 +145,9 @@ describe('original MFA assurance continuity', () => {
       (await readSessionDeviceAuthority(initial.sessionToken.payload.sid))?.device_token_binding
         ?.mfa_at,
     ).toBe(verifiedAt)
+    const stored = await getTestStoredSessionAssurance(initial.sessionToken.payload.sid)
+    expect(stored?.mfaVerifiedAt?.getTime()).toBe(verifiedAt * 1000)
+    expect(stored?.hasJsonMfa).toBe(false)
   })
 
   it('does not acquire administrator authority from later enrollment or role changes in either request surface', async () => {

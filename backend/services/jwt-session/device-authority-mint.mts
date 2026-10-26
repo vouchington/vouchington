@@ -104,6 +104,7 @@ export async function mintAuthenticatedDeviceAuthority(options: {
       }
     }
     const binding = row.device_token_binding ?? options.binding
+    const { mfa_at: originalMfaAt, ...durableBinding } = binding
     const payload: DeviceTokenPayload = {
       did: options.did,
       jti: randomUUID(),
@@ -120,8 +121,8 @@ export async function mintAuthenticatedDeviceAuthority(options: {
       device_token_digest = ${hashDeviceToken(token)},
       device_token_encrypted = ${encryptSecret(token, deviceTokenSecretPurpose(options.sid))},
       device_token_issued_at = ${new Date(options.issuedAt * 1000)},
-      device_token_binding = ${JSON.stringify(binding)}::jsonb,
-      mfa_verified_at = ${binding.mfa_at === undefined ? null : new Date(binding.mfa_at * 1000)},
+      device_token_binding = ${JSON.stringify(durableBinding)}::jsonb,
+      mfa_verified_at = ${originalMfaAt === undefined ? null : new Date(originalMfaAt * 1000)},
       expires_at = ${expiresAt}
     WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
     return {

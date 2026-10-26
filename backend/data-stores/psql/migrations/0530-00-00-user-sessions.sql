@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   CHECK (previous_device_token_digest IS NULL OR previous_device_token_digest ~ '^[a-f0-9]{64}$'),
   CHECK (previous_device_token_digest IS NULL OR device_token_digest IS NOT NULL),
   CHECK (device_token_binding IS NULL OR jsonb_typeof(device_token_binding) = 'object'),
+  CHECK (device_token_binding IS NULL OR NOT (device_token_binding ? 'mfa_at')),
   CHECK (mfa_verified_at IS NULL OR device_token_binding IS NOT NULL),
   CHECK (num_nonnulls(account_change_proof_hash, account_change_proof_expires_at) IN (0, 2)),
   CHECK (account_change_proof_hash IS NULL OR account_change_proof_hash ~ '^[A-F0-9]{64}$'),
@@ -85,7 +86,7 @@ COMMENT ON COLUMN user_sessions.previous_device_token_digest IS 'Immediately pre
 COMMENT ON COLUMN user_sessions.previous_device_token_grace_expires_at IS 'Deadline for idempotent replay of the immediately preceding device credential; older reuse revokes the session.';
 COMMENT ON COLUMN user_sessions.device_token_encrypted IS 'Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.';
 COMMENT ON COLUMN user_sessions.device_token_issued_at IS 'Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.';
-COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original signed client binding document (client family, optional browser User-Agent/JA4 hashes and the original completed MFA timestamp), never joined to other rows. Verified credential replay preserves this document.';
+COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original client family and optional browser User-Agent/JA4 hashes. The completed MFA time is stored only in mfa_verified_at and reconstructed for signed credential replay.';
 COMMENT ON COLUMN user_sessions.mfa_verified_at IS 'Typed original completed MFA time from the signed device binding, used for durable session assurance checks.';
 COMMENT ON COLUMN user_sessions.device_bound_session_binding IS 'Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.';
 
