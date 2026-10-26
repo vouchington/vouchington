@@ -8,13 +8,3 @@ export type BatchSource = {
   urlId?: string
   crawlId?: string
 }
-
-export type BatchResultItem = {
-  recordId: string
-  modelOutput?: {
-    embedding?: number[]
-    embeddings?: Array<{ embedding: number[] } | number[]>
-    inputTokenCount?: number
-  }
-  error?: unknown
-}

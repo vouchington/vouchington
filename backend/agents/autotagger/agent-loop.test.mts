@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ToolTurnRequest, ToolTurnResult } from '@modules/model-providers/tool-turn-types'
+import type { ToolTurnRequest, ToolTurnResult } from '@vouchington/ai/providers'
 import { makeToolTurnResult } from '@voucha/test-helpers/agents/model-call-result'
 import { runAutotaggerAgentLoop, type AutotaggerAgentBounds } from './agent-loop.mts'
 import { buildAutotaggerAgentTools, type SearchTopics } from './agent-tools.mts'

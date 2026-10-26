@@ -1,11 +1,8 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { calcCostMicrounits, getReportedCostMicrounits } from '@modules/model-providers/pricing'
-import type {
-  LedgerModelProvider,
-  ModelUsage,
-  ProviderTransport,
-} from '@modules/model-providers/types'
+import { MODEL_PRICES } from '@modules/model-providers/pricing-table'
+import type { ModelUsage } from '@vouchington/ai/providers'
+import { getUsageCostMicrounits } from '@vouchington/ai/usage'
 
 export interface RecordAiUsageOptions {
   /** Provider response or decision id. When present, repeated recording is an idempotent no-op. */
@@ -22,9 +19,10 @@ export interface RecordAiUsageOptions {
   /** Milliseconds from the request leaving to the response body being read, when measured. */
   latencyMs?: number | null
   agentSlug: string
-  provider: LedgerModelProvider
+  /** `anthropic`, `openai` or `typesafe`; the `ai_model_providers` finite set guards the column. */
+  provider: string
   /** How the call reached the provider (direct API, OpenRouter, or the jev transport). */
-  transport: ProviderTransport
+  transport: string
   /** The model the provider actually served (`response.model`), not the requested alias. */
   model: string
   /** The service tier the provider actually served, not the requested tier. */
@@ -65,8 +63,10 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
     createdAt,
   } = options
   const run = options.query ?? write
-  const costMicrounits =
-    getReportedCostMicrounits(usage) ?? calcCostMicrounits(provider, model, serviceTier, usage)
+  const costMicrounits = getUsageCostMicrounits(
+    { provider, model, serviceTier, usage },
+    MODEL_PRICES,
+  )
   if (responseId !== undefined) {
     const { rows } = await run<RecordedRow>(sql`/* recordAiUsage */
       WITH registered_tier AS (

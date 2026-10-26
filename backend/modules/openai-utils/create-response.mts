@@ -3,6 +3,11 @@ import type {
   ResponseInput,
   ResponseStreamEvent,
 } from 'openai/resources/responses/responses'
+import {
+  type CompletedOpenAIResponse,
+  isOpenAIResponseNotCompletedError,
+  validateCompletedResponse,
+} from '@vouchington/ai/openai'
 import onError from '@modules/on-error'
 import {
   getBackgroundResponseHooks,
@@ -11,19 +16,13 @@ import {
 import { cancelOpenAIResponse } from './background-response-teardown.mts'
 import { withOpenAIFlexFallback } from './flex-fallback.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import {
-  OpenAIResponseNotCompletedError,
-  shouldLatchUnknownBilledOpenAIAttempt,
-} from './response-errors.mts'
+import { shouldLatchUnknownBilledAttempt } from './latch-policy.mts'
 import { createOpenAIResponseWithRetries } from './response-retry.mts'
 import { iterateOpenAIResponseStream } from './response-stream-iteration.mts'
-import { validateCompletedResponse, type OpenAIResponse } from './validate-completed-response.mts'
 
 export * from './background-response-context.mts'
 export * from './background-response-teardown.mts'
 export * from './response-attempt-context.mts'
-export * from './response-errors.mts'
-export * from './validate-completed-response.mts'
 
 type RawCreateParams = Parameters<typeof import('./client.mts').default.responses.create>[0]
 type RawCreateOptions = Parameters<typeof import('./client.mts').default.responses.create>[1]
@@ -42,7 +41,7 @@ export type CreateResponseParams = Omit<RawCreateParams, 'input' | 'background'>
 export async function createOpenAIResponse(
   params: CreateResponseParams,
   options?: RawCreateOptions,
-): Promise<OpenAIResponse> {
+): Promise<CompletedOpenAIResponse> {
   return withOpenAIFlexFallback(params, 'openai', async (attemptParams, priorAttempts) => {
     const streamParams: ResponseCreateParamsStreaming = {
       ...attemptParams,
@@ -57,7 +56,7 @@ export async function createOpenAIResponse(
 export async function* streamOpenAIResponseEvents(
   stream: ResponseStreamLike,
   onResponseId?: (responseId: string) => void | Promise<void>,
-): AsyncGenerator<{ delta: string }, OpenAIResponse> {
+): AsyncGenerator<{ delta: string }, CompletedOpenAIResponse> {
   let emittedTextDelta = false
   let reportedResponseId = false
   for await (const event of iterateOpenAIResponseStream(stream, () => emittedTextDelta)) {
@@ -97,7 +96,7 @@ export async function* streamOpenAIResponseEvents(
 async function drainBackgroundOpenAIResponse(
   stream: ResponseStreamLike,
   requestStartedAt: Date,
-): Promise<OpenAIResponse> {
+): Promise<CompletedOpenAIResponse> {
   const hooks = getBackgroundResponseHooks()
   const attemptHooks = getOpenAIResponseAttemptHooks()
   let responseId: string | undefined
@@ -116,13 +115,13 @@ async function drainBackgroundOpenAIResponse(
     // sweeper's status check in reconcile.mts -- leaves a response worth cancelling.
     if (
       responseId &&
-      (!(err instanceof OpenAIResponseNotCompletedError) ||
+      (!isOpenAIResponseNotCompletedError(err) ||
         err.status === 'queued' ||
         err.status === 'in_progress')
     ) {
       await cancelOpenAIResponse(responseId).catch(onError)
     }
-    if (!lease && shouldLatchUnknownBilledOpenAIAttempt(err)) {
+    if (!lease && shouldLatchUnknownBilledAttempt(err)) {
       await attemptHooks?.onUnknownBilledAttempt({ requestStartedAt, error: err })
     }
     throw err

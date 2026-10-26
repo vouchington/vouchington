@@ -1,6 +1,6 @@
 import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_shared'
 import { generateJson } from '@modules/model-providers/generate'
-import type { ModelCallResult } from '@modules/model-providers/types'
+import type { ModelCallResult } from '@vouchington/ai/providers'
 import {
   parseCopyrightSubmissionGuidanceOutput,
   type CopyrightSubmissionGuidanceKind,

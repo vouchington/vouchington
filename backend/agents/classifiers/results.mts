@@ -3,7 +3,7 @@ import type {
   StructuredDecisionAnswer,
   StructuredDecisionRequest,
   StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 import type {
   ClassifierDecisionInputResult,
   PersistClassifierDecisionCall,

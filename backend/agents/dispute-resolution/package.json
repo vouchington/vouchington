@@ -24,12 +24,12 @@
     "@jongleberry/vurst-prompt": "^0.4.3",
     "@modules/model-providers": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/openai-utils": "workspace:^",
     "@services/moderation": "workspace:^",
     "@services/moderation-ai-config": "workspace:^",
     "@services/review-disputes": "workspace:^",
     "@services/topic-claims": "workspace:^",
-    "openai": "^7.38.0"
+    "@vouchington/ai": "^0.3.0",
+    "openai": "^7.43.0"
   },
   "devDependencies": {
     "@services/users": "workspace:^",

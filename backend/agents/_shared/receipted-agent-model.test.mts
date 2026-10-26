@@ -3,9 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { getOpenAIResponseAttemptHooks } from '@modules/openai-utils/create-response'
 import { MissingModelClientCredentialError } from '@modules/openai-utils/missing-client-credential'
 import { resolveAnthropicCredentials } from '@modules/model-providers/anthropic-client'
-import { ModelProviderError } from '@modules/model-providers/errors'
-import { assertSupportedRequest } from '@modules/model-providers/generate'
-import { callOpenAIJson } from '@modules/model-providers/openai-generate'
+import { ModelProviderError } from '@vouchington/ai/providers'
+import { assertSupportedRequest, generateJson } from '@modules/model-providers/generate'
 import { spendCapConfig } from '@services/ai-usage/spend-cap-config'
 import { getAgentCallReceipt } from '@services/ai-usage/agent-call-receipts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -187,9 +186,8 @@ describe('paid agent receipt after provider validation', () => {
           callReceiptedAgentModel({
             ...params,
             callModel: () =>
-              callOpenAIJson(
-                TEST_OPENAI_SELECTION.model,
-                transport,
+              generateJson(
+                TEST_OPENAI_SELECTION,
                 {
                   instructions: 'Return a title.',
                   input: params.input,
@@ -203,7 +201,7 @@ describe('paid agent receipt after provider validation', () => {
                   parse: value => value as { title: string },
                   maxOutputTokens: 100,
                 },
-                deps,
+                { openaiTransport: transport, deps },
               ),
           }),
         ).rejects.toMatchObject({

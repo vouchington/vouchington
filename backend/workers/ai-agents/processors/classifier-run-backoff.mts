@@ -1,4 +1,4 @@
-import { StructuredDecisionError } from '@modules/structured-decisions'
+import { isStructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import {
   CLASSIFIER_RUN_BACKOFF,
   CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS,
@@ -20,7 +20,7 @@ export function classifierRunBackoffMs(
 ): number {
   const { delay, jitter } = CLASSIFIER_RUN_BACKOFF
   const exponential = delay * 2 ** (attemptsMade - 1)
-  const retryAfter = error instanceof StructuredDecisionError ? (error.retryAfterMs ?? 0) : 0
+  const retryAfter = isStructuredDecisionError(error) ? (error.retryAfterMs ?? 0) : 0
   const base = Math.max(exponential, Math.min(retryAfter, CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS))
   return Math.round(base * (1 + random() * jitter))
 }

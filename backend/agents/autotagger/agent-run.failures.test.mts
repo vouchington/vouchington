@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentToolTurnCaller } from '@agents/_shared'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { ModelProviderError } from '@vouchington/ai/providers'
 import { SpendCapBreachError, spendCapConfig } from '@services/ai-usage'
 import { createAutotaggerAgentRunAdapter } from '@services/autotagger'
 import {

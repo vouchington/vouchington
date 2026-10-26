@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { vi } from 'vitest'
 import type { AgentModelCaller } from '../../agents/_shared/call-agent-model.mts'
-import type { ToolCall, ToolTurnResult } from '../../modules/model-providers/tool-turn-types.mts'
-import type { ModelCallResult } from '../../modules/model-providers/types.mts'
+import type { ModelCallResult, ToolCall, ToolTurnResult } from '@vouchington/ai/providers'
 
 /**
  * A billed model answer, as an agent's model caller returns it (typed `never` so it fits any agent): priced (Haiku 5.5 on the standard

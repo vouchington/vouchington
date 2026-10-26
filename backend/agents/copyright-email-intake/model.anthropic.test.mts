@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { calcCostMicrounits } from '@modules/model-providers/pricing'
+import { calcCostMicrounits } from '@voucha/test-helpers/agents/calc-cost-microunits'
 import { callCopyrightEmailIntakeModel } from './model.mts'
 
 // Non-gating smoke check of the live Anthropic Messages API (credentialed project

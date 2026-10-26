@@ -1,5 +1,5 @@
 import { recordClassifierRunAlarm } from '@modules/on-error'
-import { StructuredDecisionError } from '@modules/structured-decisions'
+import { isStructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import type { ClassifierRunFailureKind } from '@services/classifier-runs'
 
 export type ClassifierRunFailure = {
@@ -24,9 +24,9 @@ export function classifyFailure(
   signal: AbortSignal,
 ): ClassifierRunFailure | null {
   if (!phase.reserved) return null
-  if (error instanceof StructuredDecisionError && error.code === 'invalid-response')
+  if (isStructuredDecisionError(error) && error.code === 'invalid-response')
     return { kind: 'invalid-result', permanent: false }
-  if (error instanceof StructuredDecisionError && error.code === 'provider-error') {
+  if (isStructuredDecisionError(error) && error.code === 'provider-error') {
     if (error.retryClass !== 'permanent') return { kind: 'provider-error', permanent: false }
     return {
       kind: error.detail?.moderation ? 'context-rejected' : 'provider-error',
@@ -50,7 +50,7 @@ export function alarmPermanentProviderRejection(
   error: unknown,
 ): void {
   if (!failure.permanent || failure.kind === 'context-rejected') return
-  if (!(error instanceof StructuredDecisionError)) return
+  if (!isStructuredDecisionError(error)) return
   recordClassifierRunAlarm({
     kind: 'provider-rejected',
     ...context,

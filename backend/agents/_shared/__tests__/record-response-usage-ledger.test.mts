@@ -13,7 +13,7 @@ import {
   type ExpiredBackgroundResponse,
   type OwnedBackgroundResponseLease,
 } from '@services/openai-background-responses'
-import type { ModelUsage } from '@modules/model-providers/types'
+import type { ModelUsage } from '@vouchington/ai/providers'
 import { claimRegisteredResponseUsage } from '../record-response-usage-ledger.mts'
 
 function randomSuffix(): string {

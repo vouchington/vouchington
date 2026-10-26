@@ -1,9 +1,9 @@
 import { vi, type Mock } from 'vitest'
+import type { StructuredDecisionClient } from '@modules/structured-decisions'
 import type {
-  StructuredDecisionClient,
   StructuredDecisionRequest,
   StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 
 /** The lifecycle's provider hooks, structurally (the helpers workspace has no agent dependency). */
 type ProviderHooks = { beforeAttempt: () => Promise<void> }

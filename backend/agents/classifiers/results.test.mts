@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { StructuredDecisionResult } from '@modules/structured-decisions'
+import type { StructuredDecisionResult } from '@vouchington/ai/structured-decisions'
 import { assertCompleteCandidateCoverage, resultsForShard } from './results.mts'
 import { classifierChoiceKey, classifierPrompt } from './safe-content.mts'
 import { makeInput, storyAId, topicAId } from '@voucha/test-helpers/agents/classifiers/fixtures'

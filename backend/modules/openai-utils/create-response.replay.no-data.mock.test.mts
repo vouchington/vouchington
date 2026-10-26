@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
 import {
   createOpenAIResponse,
-  OpenAIResponseStreamIterationError,
   runWithBackgroundResponseHooks,
   runWithOpenAIResponseAttemptHooks,
 } from './create-response.mts'
+import { OpenAIResponseStreamIterationError } from '@vouchington/ai/openai'
 
 // The recorded responses are served through the real OpenAI SDK's `fetch` option, so the SDK parses
 // actual status lines, headers and SSE bytes (delivered in 41-byte pieces that ignore event

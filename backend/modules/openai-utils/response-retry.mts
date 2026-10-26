@@ -6,10 +6,12 @@ import type {
 } from 'openai/resources/responses/responses'
 import { isAmbiguousBilledHttpStatus } from '@modules/utils'
 import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
+import {
+  isExplicitClientCancelError,
+  isOpenAIFlexResourceUnavailableError,
+} from '@vouchington/ai/openai'
 import openai from './client.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import { isOpenAIFlexResourceUnavailableError } from './rate-limit.mts'
-import { isExplicitClientCancelError } from './response-errors.mts'
 
 const INITIAL_RETRY_DELAY_MS = 500
 const MAX_RETRY_DELAY_MS = 8_000

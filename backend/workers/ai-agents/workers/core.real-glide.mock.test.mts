@@ -4,7 +4,7 @@ import { RateLimitError } from 'openai'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { ModelProviderError } from '@vouchington/ai/providers'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 

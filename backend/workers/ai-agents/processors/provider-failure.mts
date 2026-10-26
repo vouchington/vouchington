@@ -1,5 +1,5 @@
 import type { Job } from 'glide-mq'
-import type { ModelProviderError } from '@modules/model-providers/errors'
+import type { ModelProviderError } from '@vouchington/ai/providers'
 import { deferJobForRateLimit, unrecoverable } from '@vouchington/queue-errors'
 
 /**

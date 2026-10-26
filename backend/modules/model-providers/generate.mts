@@ -1,13 +1,18 @@
-import { callAnthropicJson, type AnthropicDeps } from './anthropic-generate.mts'
-import { ModelProviderError } from './errors.mts'
-import { callOpenAIJson, type OpenAIDeps } from './openai-generate.mts'
-import { isPricedModel, normalizeModelAlias } from './pricing.mts'
-import type {
-  GenerateJsonRequest,
-  ModelCallResult,
-  ModelSelection,
-  OpenAITransport,
-} from './types.mts'
+import {
+  type GenerateJsonRequest,
+  type ModelCallResult,
+  assertSupportedRequest as assertSupported,
+  callAnthropicJson,
+  callOpenAIJson,
+} from '@vouchington/ai/providers'
+import {
+  createAnthropicMessage,
+  openAIResponseCreator,
+  type AnthropicDeps,
+  type OpenAIDeps,
+} from './clients.mts'
+import { MODEL_PRICES } from './pricing-table.mts'
+import type { ModelSelection, OpenAITransport } from './types.mts'
 
 /** Models that return a 400 for any non-default `temperature`, `top_p` or `top_k`. */
 const REJECTS_SAMPLING_PARAMETERS = new Set(['anthropic:claude-haiku-5-5'])
@@ -19,33 +24,21 @@ export type GenerateJsonOptions = {
   deps?: AnthropicDeps & OpenAIDeps
 }
 
-function unsupported(message: string): ModelProviderError {
-  return new ModelProviderError('unsupported-parameter', message, { retryClass: 'permanent' })
-}
-
-/**
- * Rejects what a model cannot take before any request is sent, so a bad configuration fails fast
- * and unbilled instead of as a provider 400. An unpriced model is rejected too: its calls would be
- * recorded unpriced, which the spend cap treats as a breach.
- */
+/** Rejects, before any request, what the selected model cannot take or has no price row for. */
 export function assertSupportedRequest(
   selection: ModelSelection,
   request: Pick<GenerateJsonRequest<unknown>, 'temperature' | 'topP' | 'topK'>,
 ): void {
-  if (!isPricedModel(selection.provider, normalizeModelAlias(selection.model)))
-    throw unsupported(`${selection.provider} model '${selection.model}' has no price row.`)
-  const key = `${selection.provider}:${normalizeModelAlias(selection.model)}`
-  if (!REJECTS_SAMPLING_PARAMETERS.has(key)) return
-  if (request.temperature !== undefined || request.topP !== undefined || request.topK !== undefined)
-    throw unsupported(`${selection.model} does not accept temperature, top_p or top_k.`)
+  assertSupported(selection, request, {
+    prices: MODEL_PRICES,
+    rejectsSamplingParameters: REJECTS_SAMPLING_PARAMETERS,
+  })
 }
 
-/* no-mistakes: integration=anthropic */
-/* no-mistakes: integration=openai */
 /**
  * A single model call returning JSON validated against the request's schema, on whichever provider
- * the caller selected. Every result carries the served model, response id and provider-neutral
- * usage; every billed-but-unusable answer is a `ModelProviderError` carrying its billed response.
+ * the caller selected. Every billed-but-unusable answer is a `ModelProviderError` carrying its
+ * billed response.
  */
 /* no-mistakes: integration=anthropic */
 /* no-mistakes: integration=openai */
@@ -55,7 +48,10 @@ export async function generateJson<T>(
   options: GenerateJsonOptions,
 ): Promise<ModelCallResult<T>> {
   assertSupportedRequest(selection, request)
-  if (selection.provider === 'anthropic')
-    return callAnthropicJson(selection.model, request, options.deps, options.signal)
-  return callOpenAIJson(selection.model, options.openaiTransport, request, options.deps)
+  if (selection.provider === 'anthropic') {
+    const createMessage = options.deps?.createMessage ?? createAnthropicMessage
+    return callAnthropicJson(createMessage, selection.model, request, options.signal)
+  }
+  const create = openAIResponseCreator(options.openaiTransport, options.deps)
+  return callOpenAIJson(create, selection.model, options.openaiTransport, request)
 }

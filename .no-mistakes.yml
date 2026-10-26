@@ -2668,6 +2668,8 @@ rules:
           reason: First-party prompt utility published by the repo author.
         - name: '@jongleberry/vurst-runtime'
           reason: First-party runtime utility published by the repo author.
+        - name: '@vouchington/ai'
+          reason: First-party provider-neutral model-call primitives published by the repo author.
         - name: '@vouchington/auth'
           reason: First-party injected authentication protocol engines published by the repo author.
         - name: '@vouchington/aws'

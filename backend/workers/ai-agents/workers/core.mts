@@ -1,7 +1,7 @@
 import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { isModelProviderError } from '@vouchington/ai/providers'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { agentCallOperationKey, runWithJobTokenAccumulator } from '@agents/_shared'
@@ -113,7 +113,7 @@ export async function processAIAgentWorkerJob(
         dependencies.reportSpendCapRegistrationFailure,
       )
     }
-    if (err instanceof ModelProviderError) return handleModelProviderError(err, job)
+    if (isModelProviderError(err)) return handleModelProviderError(err, job)
     return dependencies.handleOpenAIRateLimit(err, job)
   }
 }

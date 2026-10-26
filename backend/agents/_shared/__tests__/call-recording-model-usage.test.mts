@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { makeModelCallResult } from '@voucha/test-helpers/agents/model-call-result'
-import { ModelProviderError, type ModelProviderErrorCode } from '@modules/model-providers/errors'
+import { ModelProviderError, type ModelProviderErrorCode } from '@vouchington/ai/providers'
 import type { recordModelProviderAlarm } from '@modules/on-error'
 import type { latchAccountingUncertainty } from '@services/ai-usage'
 import { callRecordingModelUsage } from '../call-recording-model-usage.mts'

@@ -5,7 +5,8 @@ import {
   makeStreamEvent,
 } from '../../test-helpers/modules/openai-utils/responses.mts'
 import { runWithOpenAIResponseAttemptHooks } from '@modules/openai-utils/response-attempt-context'
-import { createOpenRouterResponse, toOpenRouterModel } from './create-response.mts'
+import { toOpenRouterModel } from '@vouchington/ai/openai'
+import { createOpenRouterResponse } from './create-response.mts'
 
 type CreateResponse = NonNullable<
   NonNullable<Parameters<typeof createOpenRouterResponse>[2]>['createResponse']

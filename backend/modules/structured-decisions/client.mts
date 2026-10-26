@@ -1,21 +1,33 @@
 import { isAmbiguousBilledHttpStatus } from '@modules/utils/http'
 import { isNetworkError } from '@vouchington/http-transport/fetch'
 import type { Response } from 'undici'
-import { decodeResult } from './decode.mts'
-import { describeProviderErrorDetail, readProviderErrorDetail } from './provider-error-detail.mts'
-import { classifyProviderFailure, classifyProviderResponse } from './retry-classification.mts'
-import { createTransportRequest, fetchStructuredDecisionProvider } from './transport.mts'
 import {
   StructuredDecisionError,
-  type CreateStructuredDecisionClientOptions,
-  type StructuredDecisionAttemptHooks,
-  type StructuredDecisionClient,
-  type StructuredDecisionFetch,
   type StructuredDecisionRequest,
   type StructuredDecisionResult,
-  type StructuredDecisionUsage,
+  classifyByStatus,
+  classifyOpenRouterFailure,
+  classifyProviderResponse,
+  decodeResult,
+  describeProviderErrorDetail,
+  parseBilledUsage,
+  readProviderErrorDetail,
+  validateRequest,
+} from '@vouchington/ai/structured-decisions'
+import { createTransportRequest, fetchStructuredDecisionProvider } from './transport.mts'
+import type {
+  CreateStructuredDecisionClientOptions,
+  StructuredDecisionAttemptHooks,
+  StructuredDecisionClient,
+  StructuredDecisionFetch,
 } from './types.mts'
-import { validateRequest } from './validation.mts'
+
+const OPENROUTER_MODEL = /^typesafe\/jev-1\.13(?:-[A-Za-z0-9.]+)?$/
+const TYPESAFE_MODEL = /^(?:typesafe\/)?(?:jev-latest|jev-1\.13(?:\.0)?(?:-[A-Za-z0-9.]+)?)$/
+
+function classifierFor(transport: CreateStructuredDecisionClientOptions['transport']) {
+  return transport === 'openrouter' ? classifyOpenRouterFailure : classifyByStatus
+}
 
 export function createStructuredDecisionClient(
   options: CreateStructuredDecisionClientOptions,
@@ -86,7 +98,7 @@ async function attemptDecision(options: AttemptOptions): Promise<StructuredDecis
       undefined,
       {
         cause: err,
-        failure: { retryClass: classifyProviderFailure(options.transport, undefined, undefined) },
+        failure: { retryClass: classifierFor(options.transport)(undefined, undefined) },
       },
     )
   }
@@ -97,7 +109,7 @@ async function attemptDecision(options: AttemptOptions): Promise<StructuredDecis
 async function rejectResponse(response: Response, options: AttemptOptions): Promise<never> {
   // Never throws: an unreadable or non-JSON body leaves the status as the only signal.
   const detail = await readProviderErrorDetail(response)
-  const failure = classifyProviderResponse(options.transport, response, detail)
+  const failure = classifyProviderResponse(classifierFor(options.transport), response, detail)
   const summary = detail && describeProviderErrorDetail(detail)
   const error = new StructuredDecisionError(
     'provider-error',
@@ -149,7 +161,12 @@ async function decodeBilledResponse(
       requestStartedAt: options.requestStartedAt,
     })
   }
-  return decodeResult(raw, options.request, options.transport, options.dispatch.provider)
+  const isOpenRouter = options.transport === 'openrouter'
+  return decodeResult(raw, options.request, {
+    fallbackProvider: options.dispatch.provider,
+    isExpectedModel: model => (isOpenRouter ? OPENROUTER_MODEL : TYPESAFE_MODEL).test(model),
+    isExpectedProvider: provider => !isOpenRouter || provider === 'TypeSafe',
+  })
 }
 
 async function latchUnknownBilledAttempt(options: AttemptOptions, error: unknown): Promise<void> {
@@ -157,27 +174,6 @@ async function latchUnknownBilledAttempt(options: AttemptOptions, error: unknown
     requestStartedAt: options.requestStartedAt,
     error,
   })
-}
-
-// Only `input_tokens`/`output_tokens` gate whether a 2xx is trustworthy enough to record --
-// `cost` is passed through unchecked (including when absent or the wrong type): a missing or
-// malformed cost is a pricing-fallback concern for the ledger writer
-// (`getExplicitCostMicrounits`/`calcCostMicrounits`, `@services/ai-usage/record.mts`), which
-// already fails closed to an unpriced row rather than something this transport-level boundary
-// should reclassify as an uncertain-billing failure.
-function parseBilledUsage(raw: unknown): StructuredDecisionUsage | null {
-  if (!record(raw) || !record(raw.usage)) return null
-  const { input_tokens, output_tokens, cost } = raw.usage
-  if (!isFiniteNonNegative(input_tokens) || !isFiniteNonNegative(output_tokens)) return null
-  return {
-    input_tokens,
-    output_tokens,
-    ...(typeof cost === 'number' ? { cost } : {}),
-  }
-}
-
-function isFiniteNonNegative(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
 function record(value: unknown): value is Record<string, unknown> {

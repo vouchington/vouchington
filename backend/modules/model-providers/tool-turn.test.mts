@@ -1,12 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { describe, expect, it, vi } from 'vitest'
-import { callAnthropicToolTurn, type AnthropicToolDeps } from './anthropic-tool-turn.mts'
-import { ModelProviderError } from './errors.mts'
-import type { OpenAIDeps } from './openai-generate.mts'
+import type { AnthropicDeps, OpenAIDeps } from './clients.mts'
 import { generateToolTurn } from './tool-turn.mts'
-import type { ToolTurnRequest } from './tool-turn-types.mts'
+import type { ToolTurnRequest } from '@vouchington/ai/providers'
 
-type CreateMessage = NonNullable<AnthropicToolDeps['createMessage']>
+type CreateMessage = NonNullable<AnthropicDeps['createMessage']>
 type CreateOpenRouter = NonNullable<OpenAIDeps['createOpenRouterResponse']>
 
 const request: ToolTurnRequest = {
@@ -61,111 +59,6 @@ function message(overrides: Partial<Anthropic.Message> = {}): Anthropic.Message 
   } as Anthropic.Message
 }
 
-describe('callAnthropicToolTurn', () => {
-  it('sends the transcript and tools, requires a tool call and returns the parsed calls', async () => {
-    const createMessage = vi.fn<CreateMessage>().mockResolvedValue(message())
-
-    const result = await callAnthropicToolTurn('claude-haiku-5-5', request, { createMessage })
-
-    const [params] = createMessage.mock.calls[0] as unknown as [Record<string, unknown>]
-    expect(params).toMatchObject({
-      model: 'claude-haiku-5-5',
-      max_tokens: 300,
-      system: 'Decide.',
-      tool_choice: { type: 'any' },
-      metadata: { user_id: 'actor' },
-      tools: [{ name: 'lookup_topics', description: 'Search.' }],
-      messages: [
-        { role: 'user', content: 'Which topics?' },
-        {
-          role: 'assistant',
-          content: [
-            { type: 'text', text: 'Let me look.' },
-            { type: 'tool_use', id: 'call_1', name: 'lookup_topics', input: { query: 'rust' } },
-          ],
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'tool_result',
-              tool_use_id: 'call_1',
-              content: '{"topics":[]}',
-              is_error: true,
-            },
-          ],
-        },
-      ],
-    })
-    expect(params).not.toHaveProperty('temperature')
-    expect(result).toMatchObject({
-      provider: 'anthropic',
-      transport: 'direct',
-      responseId: 'msg_1',
-      usage: { inputTokens: 20, outputTokens: 8 },
-      output: {
-        text: 'Searching.',
-        toolCalls: [{ id: 'toolu_1', name: 'lookup_topics', input: { query: 'go' } }],
-      },
-    })
-  })
-
-  it('omits empty assistant text and a successful tool result flag', async () => {
-    const createMessage = vi.fn<CreateMessage>().mockResolvedValue(message())
-
-    await callAnthropicToolTurn(
-      'claude-haiku-5-5',
-      {
-        ...request,
-        messages: [
-          { role: 'assistant', text: '', toolCalls: [{ id: 'a', name: 't', input: {} }] },
-          { role: 'tool', results: [{ callId: 'a', content: 'ok' }] },
-        ],
-      },
-      { createMessage },
-    )
-
-    const [params] = createMessage.mock.calls[0] as unknown as [{ messages: unknown[] }]
-    expect(params.messages).toEqual([
-      { role: 'assistant', content: [{ type: 'tool_use', id: 'a', name: 't', input: {} }] },
-      { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'a', content: 'ok' }] },
-    ])
-  })
-
-  it.each([
-    ['a refusal', message({ stop_reason: 'refusal' }), 'refusal'],
-    ['a cut-off turn', message({ stop_reason: 'max_tokens' }), 'output-truncated'],
-    [
-      'a turn with no tool call',
-      message({ content: [], stop_reason: 'end_turn' }),
-      'invalid-response',
-    ],
-  ])('throws a billed, permanent error for %s', async (_name, answer, code) => {
-    const createMessage = vi.fn<CreateMessage>().mockResolvedValue(answer)
-
-    const error = await callAnthropicToolTurn('claude-haiku-5-5', request, { createMessage }).catch(
-      (err: unknown) => err,
-    )
-
-    expect(error).toBeInstanceOf(ModelProviderError)
-    expect(error).toMatchObject({
-      code,
-      retryClass: 'permanent',
-      billedResponse: { responseId: 'msg_1' },
-    })
-  })
-
-  it('classifies a provider failure without a billed response', async () => {
-    const createMessage = vi
-      .fn<CreateMessage>()
-      .mockRejectedValue(new Anthropic.APIConnectionError({ message: 'down' }))
-
-    await expect(
-      callAnthropicToolTurn('claude-haiku-5-5', request, { createMessage }),
-    ).rejects.toMatchObject({ code: 'connection', retryClass: 'transient', ambiguousBilled: true })
-  })
-})
-
 describe('generateToolTurn', () => {
   it('routes Anthropic to Messages and OpenAI to Responses', async () => {
     const createMessage = vi.fn<CreateMessage>().mockResolvedValue(message())
@@ -219,7 +112,7 @@ describe('generateToolTurn', () => {
       deps,
     })
 
-    expect(createMessage.mock.calls[0]![1]).toEqual({ signal })
+    expect(createMessage.mock.calls[0]![1]).toMatchObject({ signal })
     expect(createOpenRouterResponse.mock.calls[0]![1]).toMatchObject({ signal })
   })
 

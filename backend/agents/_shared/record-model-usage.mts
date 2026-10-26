@@ -1,10 +1,6 @@
 import { latchAccountingUncertainty } from '@services/ai-usage'
 import onError from '@modules/on-error'
-import type {
-  LedgerModelProvider,
-  ModelUsage,
-  ProviderTransport,
-} from '@modules/model-providers/types'
+import type { ModelUsage } from '@vouchington/ai/providers'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import { addAccumulatedTokens } from './token-accumulator.mts'
 import {
@@ -18,8 +14,9 @@ export interface RecordModelUsageParams {
   /** The provider response id; the ledger's idempotency key. */
   responseId?: string
   agentSlug: string
-  provider: LedgerModelProvider
-  transport: ProviderTransport
+  /** `anthropic`, `openai` or `typesafe`; the `ai_model_providers` finite set guards the column. */
+  provider: string
+  transport: string
   /** The model and service tier the provider actually served, not the requested ones. */
   model: string
   serviceTier: string

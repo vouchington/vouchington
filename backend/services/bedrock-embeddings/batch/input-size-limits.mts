@@ -1,11 +1,19 @@
 import {
-  EMBEDDING_DIMENSION,
-  MAX_EMBEDDING_TEXT_LENGTH,
-  truncateEmbeddingText,
-} from '../config.mts'
+  createEmbeddingImageRecordLine as createImageLine,
+  createEmbeddingTextRecordLine as createTextLine,
+  minimumImageBatchSizeMB as minimumImageMB,
+  minimumTextBatchSizeMB as minimumTextMB,
+} from '@vouchington/utils/bedrock-embedding-batches'
 
 /** Converted image bytes have this provider-bound maximum before base64 encoding. */
 export const MAX_IMAGE_EMBEDDING_BYTES = 4 * 1024 * 1024
+
+/**
+ * Longest `recordId` we write: `{"entity_id":"<crawl UUID>-<INT>","content_sha256":"<64 hex>"}`
+ * (image ids carry one more character in `image_sha_256`).
+ */
+const SIZE_OPTIONS = { maxRecordIdLength: 150, maxImageBytes: MAX_IMAGE_EMBEDDING_BYTES }
+
 export type EmbeddingImageInput = {
   entity_id: string
   image_sha_256: Buffer
@@ -13,66 +21,31 @@ export type EmbeddingImageInput = {
   bytes: string
 }
 
+export type EmbeddingTextInput = { entity_id: string; content: string; content_sha256: Buffer }
+
 export function createEmbeddingImageRecordLine(image: EmbeddingImageInput): string {
-  return JSON.stringify({
+  return createImageLine({
     recordId: JSON.stringify({
       entity_id: image.entity_id,
       image_sha_256: image.image_sha_256.toString('hex'),
     }),
-    modelInput: {
-      taskType: 'SINGLE_EMBEDDING',
-      singleEmbeddingParams: {
-        embeddingPurpose: 'GENERIC_INDEX',
-        embeddingDimension: EMBEDDING_DIMENSION,
-        image: { format: image.format, source: { bytes: image.bytes } },
-      },
-    },
+    format: image.format,
+    bytes: image.bytes,
   })
 }
 
-/** Bound the actual framing with a UUID, SHA-256, longest format name and newline. */
-export function minimumImageBatchSizeMB(records: number): number {
-  const framing =
-    Buffer.byteLength(
-      createEmbeddingImageRecordLine({
-        entity_id: '0'.repeat(36),
-        image_sha_256: Buffer.alloc(32),
-        format: 'jpeg',
-        bytes: '',
-      }),
-    ) + 1
-  return (records * (Math.ceil(MAX_IMAGE_EMBEDDING_BYTES / 3) * 4 + framing)) / 1024 / 1024
-}
-
-export type EmbeddingTextInput = { entity_id: string; content: string; content_sha256: Buffer }
-
 export function createEmbeddingTextRecordLine(entity: EmbeddingTextInput): string {
-  return JSON.stringify({
+  return createTextLine({
     recordId: JSON.stringify({
       entity_id: entity.entity_id,
       content_sha256: entity.content_sha256.toString('hex'),
     }),
-    modelInput: {
-      taskType: 'SINGLE_EMBEDDING',
-      singleEmbeddingParams: {
-        embeddingPurpose: 'GENERIC_INDEX',
-        embeddingDimension: EMBEDDING_DIMENSION,
-        text: { truncationMode: 'END', value: truncateEmbeddingText(entity.content) },
-      },
-    },
+    content: entity.content,
   })
 }
 
-/** JSON control-character escapes cost up to six bytes per UTF-16 code unit. */
-export function minimumTextBatchSizeMB(records: number): number {
-  const framing =
-    Buffer.byteLength(
-      createEmbeddingTextRecordLine({
-        // The longest identifier is a crawl UUID plus its PostgreSQL INT order index.
-        entity_id: `${'0'.repeat(36)}-${-(2 ** 31)}`,
-        content: '',
-        content_sha256: Buffer.alloc(32),
-      }),
-    ) + 1
-  return (records * (MAX_EMBEDDING_TEXT_LENGTH * 6 + framing)) / 1024 / 1024
-}
+export const minimumImageBatchSizeMB = (records: number): number =>
+  minimumImageMB(records, SIZE_OPTIONS)
+
+export const minimumTextBatchSizeMB = (records: number): number =>
+  minimumTextMB(records, SIZE_OPTIONS)

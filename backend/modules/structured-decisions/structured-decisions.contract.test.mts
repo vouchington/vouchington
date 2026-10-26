@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createStructuredDecisionClient,
   type StructuredDecisionFetch,
-  type StructuredDecisionRequest,
 } from './structured-decisions.mts'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const request: StructuredDecisionRequest = {

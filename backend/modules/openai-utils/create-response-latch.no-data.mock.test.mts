@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createOpenAIResponse } from './create-response.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import { OpenAIResponseNotCompletedError } from './response-errors.mts'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import {
   makeResponseStream,
   makeSdkResponse,

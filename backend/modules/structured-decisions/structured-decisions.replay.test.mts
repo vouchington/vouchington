@@ -5,8 +5,8 @@ import {
   createStructuredDecisionClient,
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionFetch,
-  type StructuredDecisionRequest,
 } from './structured-decisions.mts'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 
 // A recorded OpenRouter Decisions response, hand-written from the documented wire format (answers
 // keyed by question id, no `id` inside a fragment, a Score `legend` and `probabilities` keyed by

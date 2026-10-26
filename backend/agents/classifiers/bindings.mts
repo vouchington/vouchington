@@ -2,7 +2,7 @@ import type {
   ChoiceQuestion,
   NoulQuestion,
   StructuredDecisionQuestion,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 import {
   classifierCandidateKindFamily,
   type ActiveClassifierConfiguration,

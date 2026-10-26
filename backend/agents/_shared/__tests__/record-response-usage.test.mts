@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
+import { openAIUsageToModelUsage } from '@vouchington/ai/providers'
 import {
   countAiUsageRecordsForAgent,
   findAiUsageRecordForAgent,
@@ -18,7 +18,7 @@ import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.se
 import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
 import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
 import { recordAgentResponseUsage } from '../record-response-usage.mts'
-import { OpenAIResponseNotCompletedError } from '../create-response.mts'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
 
 // callRecordingModelUsage's fn never actually calls createOpenAIResponse here. It awaits

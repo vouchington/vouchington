@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { StructuredDecisionError } from '@modules/structured-decisions'
+import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import {
   CLASSIFIER_RUN_ATTEMPTS,
   CLASSIFIER_RUN_BACKOFF,

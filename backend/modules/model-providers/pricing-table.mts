@@ -1,17 +1,5 @@
+import type { PriceTable } from '@vouchington/ai/providers'
 import type { ModelProvider } from './types.mts'
-
-/** Scale-six USD microunits per one million tokens (USD per million tokens x 1,000,000). */
-export type TokenRates = {
-  input: number
-  cacheRead: number
-  /** Null when the provider publishes no such cache-write rate, so such tokens cannot be priced. */
-  cacheWrite5m: number | null
-  cacheWrite1h: number | null
-  output: number
-}
-
-/** The rates that apply while the whole prompt is at most `maxPromptTokens` tokens. */
-export type PriceBand = { maxPromptTokens: number; rates: TokenRates }
 
 /**
  * Sources, both read from the raw published tables (not a rendered page summary, which is
@@ -29,10 +17,6 @@ export type PriceBand = { maxPromptTokens: number; rates: TokenRates }
  * Anthropic `standard`; OpenAI `default` (Standard) and `flex`. Any other tier is unpriced.
  */
 const ANY_PROMPT = Number.POSITIVE_INFINITY
-
-export type PriceTable = Readonly<
-  Record<ModelProvider, Readonly<Record<string, Readonly<Record<string, readonly PriceBand[]>>>>>
->
 
 export const MODEL_PRICES = {
   anthropic: {
@@ -109,4 +93,4 @@ export const MODEL_PRICES = {
       ],
     },
   },
-} as const satisfies PriceTable
+} as const satisfies Readonly<Record<ModelProvider, PriceTable[string]>>

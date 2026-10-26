@@ -3,17 +3,17 @@ import {
   latchAccountingUncertainty,
   SpendCapBreachError,
 } from '@services/ai-usage'
-import { ModelProviderError } from '@modules/model-providers/errors'
-import type {
-  BilledModelResponse,
-  ModelCallResult,
-  ModelSelection,
-  OpenAITransport,
-} from '@modules/model-providers/types'
+import {
+  type BilledModelResponse,
+  type ModelCallResult,
+  type ModelProviderError,
+  isModelProviderError,
+} from '@vouchington/ai/providers'
+import type { ModelSelection, OpenAITransport } from '@modules/model-providers/types'
 import { recordModelProviderAlarm } from '@modules/on-error'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
+import { isOpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import {
-  OpenAIResponseNotCompletedError,
   runWithBackgroundResponseHooks,
   runWithOpenAIResponseAttemptHooks,
 } from './create-response.mts'
@@ -119,7 +119,7 @@ export async function callRecordingModelUsage<T>(
       background ? runWithBackgroundResponseHooks(background.hooks, run) : run(),
     )
   } catch (err) {
-    if (err instanceof OpenAIResponseNotCompletedError) {
+    if (isOpenAIResponseNotCompletedError(err)) {
       await recordAgentResponseUsage({
         response: err,
         agentSlug,
@@ -129,7 +129,7 @@ export async function callRecordingModelUsage<T>(
         registration: background?.getRegistration(),
         createdAt: requestStartedAt,
       })
-    } else if (err instanceof ModelProviderError) {
+    } else if (isModelProviderError(err)) {
       await settleProviderFailure(err, params, record, requestStartedAt, deps)
     } else if (params.signal?.aborted) {
       await (deps.latchAccountingUncertainty ?? latchAccountingUncertainty)({

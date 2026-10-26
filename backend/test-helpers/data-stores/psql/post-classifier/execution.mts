@@ -1,7 +1,7 @@
 import { write } from '@data-stores/psql'
 import { runConfigDrivenStatementsInTransaction } from '@data-stores/psql/migration-runner/config-driven-statements'
 import generateSeed from '@data-stores/psql/config-driven/0635-00-03-seed-post-classifier'
-import type { StructuredDecisionResult } from '@modules/structured-decisions'
+import type { StructuredDecisionResult } from '@vouchington/ai/structured-decisions'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { moderationConfig } from '../../../../services/moderation/config.mts'
 import {

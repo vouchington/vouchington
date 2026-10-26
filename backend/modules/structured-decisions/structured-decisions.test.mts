@@ -5,10 +5,10 @@ import {
   makeStructuredDecisionResponse as makeResponse,
 } from './structured-decisions-fixtures.mts'
 import {
-  StructuredDecisionError,
   createStructuredDecisionClient,
   type StructuredDecisionFetch,
 } from './structured-decisions.mts'
+import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 
 describe('createStructuredDecisionClient', () => {
   it('requires a non-empty API key', () => {

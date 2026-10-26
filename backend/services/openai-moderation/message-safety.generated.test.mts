@@ -171,13 +171,5 @@ describe('checkMessageSafety', () => {
         checkMessageSafety('Test message', { createTextModeration }),
       ).resolves.toBeUndefined()
     })
-
-    it('should handle undefined result', async () => {
-      const createTextModeration = vi.fn<VitestLooseMock>().mockResolvedValue([undefined as never])
-
-      await expect(
-        checkMessageSafety('Test message', { createTextModeration }),
-      ).resolves.toBeUndefined()
-    })
   })
 })

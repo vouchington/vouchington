@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createStructuredDecisionClient } from '@modules/structured-decisions'
 import {
   StructuredDecisionError,
-  createStructuredDecisionClient,
   type StructuredDecisionRequest,
   type StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 import { createPostModerationContent } from '@services/posts/content'
 import {
   readClassifierRunOutcomes,
