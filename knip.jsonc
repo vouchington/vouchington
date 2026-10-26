@@ -187,6 +187,10 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
     },
+    "backend/modules/pagination": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
     "backend/modules/structured-decisions": {
       // Benchmark is a development CLI; keep manifest entries for production callers.
       "entry": ["benchmark.mts"],

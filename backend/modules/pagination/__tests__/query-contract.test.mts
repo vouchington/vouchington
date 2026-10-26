@@ -1,7 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { queryCsvArray, queryEnum, queryString } from '@vouchington/pagination'
 import { createPaginationParser } from '../index.mts'
-import { definePaginationFilterContractBuilder } from '../pagination-query-contract-builder.mts'
 
 describe('query contracts', () => {
   it('derives literal cursor, limit, and filter metadata from pagination configuration', () => {
@@ -64,6 +62,8 @@ describe('query contracts', () => {
     expectTypeOf(parser.queryContract.semantic_search_query.kind).toEqualTypeOf<'string'>()
     expectTypeOf(parser.queryContract.media_type.kind).toEqualTypeOf<'enum'>()
     expectTypeOf(parser.queryContract.media_types.kind).toEqualTypeOf<'csv-array'>()
+    // @ts-expect-error -- misspelled filters are absent from the public parser contract
+    expect(parser.queryContract.post_typse).toBeUndefined()
     expect(Object.keys(parser.queryContract).toSorted()).toEqual(
       [
         'after',
@@ -78,17 +78,5 @@ describe('query contracts', () => {
         'media_types',
       ].toSorted(),
     )
-  })
-
-  it('rejects pagination filter builders that add typo keys beside allowed keys', () => {
-    const buildContract = () => ({
-      post_types: queryCsvArray(queryEnum(['discussion'] as const)),
-      post_typse: queryString(),
-    })
-
-    // @ts-expect-error -- a filter builder cannot add keys outside its exact allowed set
-    const builder = definePaginationFilterContractBuilder('postTypes', buildContract)
-
-    expect(builder).toBe(buildContract)
   })
 })

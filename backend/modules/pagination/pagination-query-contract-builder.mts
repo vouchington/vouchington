@@ -36,7 +36,7 @@ type ExtraPaginationFilterContractKeys<
   ? Exclude<keyof TContract, (typeof paginationFilterQueryNames)[TFilterName][number]>
   : never
 
-export function definePaginationFilterContractBuilder<
+function definePaginationFilterContractBuilder<
   const TFilterName extends PaginationFilterName,
   const TContract extends object,
 >(
