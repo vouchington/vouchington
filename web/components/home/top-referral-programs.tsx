@@ -20,7 +20,10 @@ export function TopReferralPrograms({ data }: TopReferralProgramsProps) {
 
   if (data.length === 0) {
     return (
-      <p className='text-sm text-muted-foreground'>
+      <p
+        className='text-sm text-muted-foreground'
+        data-pw='top-referral-programs-empty'
+      >
         {t('extracted.home.topReferralPrograms.noReferralProgramsYet_6867fc79')}
       </p>
     )
