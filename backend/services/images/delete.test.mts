@@ -27,9 +27,29 @@ import { deleteImageById, processImageDeletionPage } from './delete.mts'
 import { getImageByAny, getImageByIdFromPrimary } from './get.mts'
 import { imagesWorkConfig } from './work-limits.mts'
 import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
+import { getPostByAnyCached } from '@services/posts/get-cached'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 
 describe('paged image deletion', () => {
   afterEach(() => vi.restoreAllMocks())
+
+  it('invalidates a warmed post cache after the deletion reset is committed', async () => {
+    const fixture = await createImageDeletionFixture(1)
+    const postId = fixture.postIds[0]!
+    await expect(getPostByAnyCached(postId)).resolves.toMatchObject({
+      clearance_status: 'approved',
+    })
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    installOwnedUploadCleanupStorage([image!.id, image!.s3_key, image!.sha_256!.toString('hex')])
+    await withEntityListenerCompletion([{ jobName: 'processPostUpdated', entityId: postId }], () =>
+      deleteImageById(fixture.imageId),
+    )
+    await expect(getPostByAnyCached(postId)).resolves.toMatchObject({
+      clearance_status: 'pending',
+      images: [],
+    })
+    await expect(countPostImageRevisions(postId)).resolves.toBe(1)
+  })
 
   it('preserves quarantine reconciliation when a stale lookup races quarantine admission', async () => {
     const fixture = await createImageDeletionFixture(1)

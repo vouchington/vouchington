@@ -13,7 +13,7 @@ export async function resetPostClearanceIfContentCurrent(
   await using query = await beginTransaction()
   const contentCurrent = await resetClearanceWhenContentCurrent()
   await query.commit()
-  if (clearanceChanged) await invalidate.posts(postId)
+  if (clearanceChanged || (alreadyReset && contentCurrent)) await invalidate.posts(postId)
   return contentCurrent
 
   async function resetClearanceWhenContentCurrent(): Promise<boolean> {
