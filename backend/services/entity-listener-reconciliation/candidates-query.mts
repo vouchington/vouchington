@@ -92,7 +92,7 @@ export function streamEntityReconciliationRows(
         WITH raw_community_candidates AS MATERIALIZED (
           SELECT id, xmin::text AS row_xmin, updated_at FROM communities WHERE updated_at >= ${window.start} AND updated_at <= ${window.end}
             AND (updated_at, id::text, 'community'::text, true, ''::text) > (COALESCE(to_timestamp(floor(${after?.changedAtEpochUs ?? null}::numeric / 1000000)::double precision) + (${after?.changedAtEpochUs ?? null}::numeric % 1000000)::double precision * INTERVAL '1 microsecond', '-infinity'::timestamptz), ${after?.entityId ?? ''}::text, ${after?.entityType ?? ''}::text, ${after?.changeId === undefined}, ${after?.changeId ?? ''}::text)
-          ORDER BY updated_at, id LIMIT ${options.limits.maxRows + 1})
+          ORDER BY updated_at, id::text LIMIT ${options.limits.maxRows + 1})
         SELECT 'community', community.id::text, floor(extract(epoch FROM community.updated_at) * 1000000)::text, NULL::text, jsonb_build_object(
             'xmin', community.row_xmin, 'updatedAt', community.updated_at::text,
             'minimumReplayLsn', CASE WHEN current_setting('transaction_read_only') = 'off' THEN pg_current_wal_insert_lsn()::text
