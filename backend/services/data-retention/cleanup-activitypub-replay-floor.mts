@@ -1,7 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
 
-/** Advance the permanent floor before a bounded delete while holding the ledger cursor lock. */
+/** Advance the permanent floor while holding its row lock through the bounded ledger delete. */
 export async function advanceReplayRejectionFloor(
   query: TransactionQuery,
   kind: 'inbox' | 'outbound',
@@ -21,7 +21,7 @@ export async function advanceReplayRejectionFloor(
   if (floorInputs.length === 0) return // Unsupported outbound IDs are rejected on admission.
   await query(
     `/* advanceActivityPubReplayRejectionFloor */
-     UPDATE activitypub_replay_retention_cursors
+     UPDATE activitypub_replay_rejection_floors
      SET rejection_floor_at = GREATEST(
        COALESCE(rejection_floor_at, '-infinity'::timestamptz),
        (SELECT MAX(receipt_at) FROM unnest($2::timestamptz[]) AS receipts(receipt_at))

@@ -3,34 +3,23 @@ import {
   createTestUserDirect,
   insertFederationRetentionFixturesForTest,
   insertTestPost,
-  readFollowerDistributionRetentionCursorForTest,
-  resetActivityPubReplayRetentionCursorForTest,
-  resetFollowerDistributionRetentionCursorForTest,
 } from '@voucha/test-helpers'
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 import { cleanupActivityPubReplayLedger } from '../cleanup-activitypub-replay.mts'
-import {
-  findRetentionUpperBound,
-  listRetentionCandidates,
-} from '../cleanup-federation-candidates.mts'
 import { cleanupSweepWithQuery } from '../cleanup-federation-run.mts'
 
 describe('federation retention continuation', () => {
   it('finds no unscoped terminal follower candidates before the UUIDv7 epoch', async () => {
     await withPostgresTransactionForTest(async query => {
       const beforeEpoch = new Date(0)
-      expect(await findRetentionUpperBound(query, beforeEpoch)).toBeNull()
       expect(
-        await listRetentionCandidates(
+        await cleanupSweepWithQuery(
+          { batchSize: 1, maxBatches: 1, now: beforeEpoch, scope: { followerDistributionIds: [] } },
           query,
-          beforeEpoch,
-          null,
-          'ffffffff-ffff-7fff-ffff-ffffffffffff',
-          1,
         ),
-      ).toEqual([])
+      ).toEqual({ deleted: 0, hasMore: false, continuationPosition: null })
     })
   })
 
@@ -58,7 +47,6 @@ describe('federation retention continuation', () => {
         now,
         query,
       })
-      await resetFollowerDistributionRetentionCursorForTest(query, now)
       const scope = { followerDistributionIds: ids.expiredFollowerDistributionIds }
 
       const first = await cleanupSweepWithQuery({ batchSize: 1, maxBatches: 1, now, scope }, query)
@@ -74,11 +62,6 @@ describe('federation retention continuation', () => {
       )
       const second = await cleanupSweepWithQuery({ batchSize: 1, maxBatches: 1, now, scope }, query)
       expect(second).toEqual({ deleted: 0, hasMore: false, continuationPosition: null })
-      expect(await readFollowerDistributionRetentionCursorForTest(query)).toMatchObject({
-        sweep_cutoff_at: null,
-        cursor_distribution_position: null,
-        sweep_upper_bound_distribution_position: null,
-      })
     })
   })
 
@@ -106,7 +89,6 @@ describe('federation retention continuation', () => {
         now,
         query,
       })
-      await resetActivityPubReplayRetentionCursorForTest(query, 'inbox')
       const scope = { activityIds: ids.expiredInboxActivityIds }
 
       const first = await cleanupActivityPubReplayLedger('inbox', {

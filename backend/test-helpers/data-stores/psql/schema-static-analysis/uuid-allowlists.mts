@@ -1,5 +1,4 @@
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
-import { FEDERATION_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './federation-retention-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
@@ -9,7 +8,6 @@ import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './s
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
-  ...FEDERATION_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'user_rss_feed_import_row_discoveries.generation',
     'Opaque per-attempt crawl outcome fence; not a durable relationship.',

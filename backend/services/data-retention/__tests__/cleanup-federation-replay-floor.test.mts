@@ -3,13 +3,12 @@ import { v7 } from 'uuid'
 import {
   createTestUserDirect,
   advanceFederationReplayFloorForTest,
-  ensureFederationReplayCursorForTest,
+  ensureFederationReplayFloorForTest,
   insertCompletedFederationReplayForTest,
   isReplayFloorLockedForTest,
   prepareFederationDistributionPageForTest,
   prepareFederationDistributionReplayForTest,
   readFederationReplayFloorForTest,
-  resetActivityPubReplayRetentionCursorForTest,
 } from '@voucha/test-helpers'
 import {
   withCommittedPostgresTransactionForTest,
@@ -61,7 +60,6 @@ describe('replay floor', () => {
         sourceUserId: sender.id,
         completedAt: new Date(now.getTime() - 31 * 86_400_000),
       })
-      await resetActivityPubReplayRetentionCursorForTest(query, 'outbound')
       expect(
         await cleanupActivityPubReplayLedger('outbound', {
           batchSize: 1,
@@ -115,13 +113,69 @@ describe('replay floor', () => {
     })
   })
 
+  it('keeps the floor on an empty page and advances it only through a deleted partial page', async () => {
+    const sender = await createTestUserDirect()
+    onTestFinished(() => deleteTestUser(sender.id))
+    const now = new Date()
+    const oldAt = new Date(now.getTime() - 40 * 86_400_000)
+    const firstId = v7({ msecs: oldAt.getTime() })
+    const secondId = v7({ msecs: oldAt.getTime() + 1 })
+    await withPostgresTransactionForTest(async query => {
+      await advanceFederationReplayFloorForTest(query, 'outbound', new Date(oldAt.getTime() - 1))
+      const initialFloor = await readFederationReplayFloorForTest(query, 'outbound')
+      expect(
+        await cleanupActivityPubReplayLedger('outbound', {
+          batchSize: 1,
+          maxBatches: 1,
+          now,
+          borrowedQuery: query,
+          scope: { activityIds: [firstId, secondId] },
+        }),
+      ).toEqual({ deleted: 0, hasMore: false, continuationPosition: null })
+      expect(await readFederationReplayFloorForTest(query, 'outbound')).toEqual(initialFloor)
+      const completedAt = new Date(now.getTime() - 31 * 86_400_000)
+      await insertCompletedFederationReplayForTest(query, {
+        activityId: firstId,
+        sourceUserId: sender.id,
+        completedAt,
+      })
+      await insertCompletedFederationReplayForTest(query, {
+        activityId: secondId,
+        sourceUserId: sender.id,
+        completedAt,
+      })
+      expect(
+        await cleanupActivityPubReplayLedger('outbound', {
+          batchSize: 1,
+          maxBatches: 1,
+          now,
+          borrowedQuery: query,
+          scope: { activityIds: [firstId, secondId] },
+        }),
+      ).toMatchObject({ deleted: 1, hasMore: true })
+      expect(await readFederationReplayFloorForTest(query, 'outbound')).toEqual(
+        new Date(Math.max(initialFloor?.getTime() ?? 0, oldAt.getTime())),
+      )
+      const restoreWider = overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
+        maximum_activity_age_days: 60,
+      })
+      try {
+        expect(await prepareFederationDistributionPageForTest(firstId, sender.id, query)).toEqual({
+          status: 'expired',
+        })
+      } finally {
+        restoreWider()
+      }
+    })
+  })
+
   it('holds the replay-floor row lock through an uncommitted purge', async () => {
     const sender = await createTestUserDirect()
     onTestFinished(() => deleteTestUser(sender.id))
     const now = new Date()
     const oldId = v7({ msecs: now.getTime() - 40 * 86_400_000 })
     await withCommittedPostgresTransactionForTest(async query => {
-      await ensureFederationReplayCursorForTest(query, 'outbound')
+      await ensureFederationReplayFloorForTest(query, 'outbound')
       await insertCompletedFederationReplayForTest(query, {
         activityId: oldId,
         sourceUserId: sender.id,
@@ -130,7 +184,6 @@ describe('replay floor', () => {
     })
 
     await withPostgresTransactionForTest(async query => {
-      await resetActivityPubReplayRetentionCursorForTest(query, 'outbound')
       expect(
         await cleanupActivityPubReplayLedger('outbound', {
           batchSize: 1,

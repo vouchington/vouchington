@@ -9,8 +9,8 @@ export const FEDERATION_BOUNDED_TABLES: [string, string][] = [
     'UUIDv7 activity age bounds distribution replay; a capped keyset sweep removes old completed checkpoints.',
   ],
   [
-    'activitypub_replay_retention_cursors',
-    'At most one persisted high-water key per inbox or outbound replay ledger.',
+    'activitypub_replay_rejection_floors',
+    'One durable replay rejection boundary per inbound or outbound kind survives ledger expiry.',
   ],
   [
     'follower_distributions',
@@ -23,9 +23,5 @@ export const FEDERATION_BOUNDED_TABLES: [string, string][] = [
   [
     'follower_distribution_selected_recipients',
     'Recipient snapshots cascade with bounded terminal follower distributions.',
-  ],
-  [
-    'follower_distribution_retention_cursors',
-    'One singleton cursor retains the bounded terminal follower-distribution sweep position.',
   ],
 ]

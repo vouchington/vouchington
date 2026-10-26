@@ -89,7 +89,7 @@ export async function readFederationReplayFloorForTest(
 ): Promise<Date | null> {
   const { rows } = await query<{ rejection_floor_at: Date | null }>(
     `/* readFederationReplayFloorForTest */
-     SELECT rejection_floor_at FROM activitypub_replay_retention_cursors
+     SELECT rejection_floor_at FROM activitypub_replay_rejection_floors
      WHERE is_outbound = $1`,
     [kind === 'outbound'],
   )
@@ -103,13 +103,13 @@ export async function advanceFederationReplayFloorForTest(
 ): Promise<void> {
   await query(
     `/* ensureFederationReplayFloorForTest */
-     INSERT INTO activitypub_replay_retention_cursors (is_outbound) VALUES ($1)
+     INSERT INTO activitypub_replay_rejection_floors (is_outbound) VALUES ($1)
      ON CONFLICT (is_outbound) DO NOTHING`,
     [kind === 'outbound'],
   )
   await query(
     `/* advanceFederationReplayFloorForTest */
-     UPDATE activitypub_replay_retention_cursors
+     UPDATE activitypub_replay_rejection_floors
      SET rejection_floor_at = GREATEST(
        COALESCE(rejection_floor_at, '-infinity'::timestamptz), $2::timestamptz
      ) WHERE is_outbound = $1`,
@@ -117,25 +117,25 @@ export async function advanceFederationReplayFloorForTest(
   )
 }
 
-export async function ensureFederationReplayCursorForTest(
+export async function ensureFederationReplayFloorForTest(
   query: TransactionQuery,
   kind: 'inbox' | 'outbound',
 ): Promise<void> {
   await query(
-    `/* ensureFederationReplayCursorForTest */
-     INSERT INTO activitypub_replay_retention_cursors (is_outbound) VALUES ($1)
+    `/* ensureFederationReplayFloorForTest */
+     INSERT INTO activitypub_replay_rejection_floors (is_outbound) VALUES ($1)
      ON CONFLICT (is_outbound) DO NOTHING`,
     [kind === 'outbound'],
   )
 }
 
-/** Probe an already-held cursor lock from another transaction without waiting or polling. */
+/** Probe an already-held rejection-floor lock from another transaction without waiting. */
 export async function isReplayFloorLockedForTest(kind: 'inbox' | 'outbound'): Promise<boolean> {
   await using query = await beginTransaction()
   try {
     await query(
       `/* isReplayFloorLockedForTest */
-       SELECT rejection_floor_at FROM activitypub_replay_retention_cursors
+       SELECT rejection_floor_at FROM activitypub_replay_rejection_floors
        WHERE is_outbound = $1 FOR UPDATE NOWAIT`,
       [kind === 'outbound'],
     )

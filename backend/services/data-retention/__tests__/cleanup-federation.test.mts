@@ -8,10 +8,7 @@ import {
   insertTestPost,
   prepareFederationDistributionReplayForTest,
   readFederationRetentionFixtureStateForTest,
-  readFollowerDistributionRetentionCursorForTest,
   recordFederationInboxActivityReplayForTest,
-  resetActivityPubReplayRetentionCursorForTest,
-  resetFollowerDistributionRetentionCursorForTest,
   type FederationRetentionFixtureIds,
 } from '@voucha/test-helpers'
 import {
@@ -94,9 +91,6 @@ describe('federation retention', () => {
       }),
     )
     await withPostgresTransactionForTest(async retentionQuery => {
-      expect(await resetFollowerDistributionRetentionCursorForTest(retentionQuery, now)).toBe(
-        'ffffffff-ffff-7fff-ffff-ffffffffffff',
-      )
       const scope = {
         followerDistributionIds: [
           ...fixtureIds.expiredFollowerDistributionIds,
@@ -116,9 +110,6 @@ describe('federation retention', () => {
         deleted: 1,
         hasMore: true,
         continuationPosition: { id: fixtureIds.expiredFollowerDistributionIds[0] },
-      })
-      expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
-        cursor_distribution_position: fixtureIds.expiredFollowerDistributionIds[0],
       })
       expect(
         await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds),
@@ -156,11 +147,6 @@ describe('federation retention', () => {
         deleted: 1,
         hasMore: false,
         continuationPosition: null,
-      })
-      expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
-        sweep_cutoff_at: null,
-        cursor_distribution_position: null,
-        sweep_upper_bound_distribution_position: null,
       })
       expect(await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds)).toEqual({
         inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(
@@ -209,8 +195,6 @@ describe('federation retention', () => {
         query,
       })
       const decoys = await insertFederationReplayDecoysForTest(query, sender.id, now)
-      await resetActivityPubReplayRetentionCursorForTest(query, 'inbox')
-      await resetActivityPubReplayRetentionCursorForTest(query, 'outbound')
       const inboxScope = {
         activityIds: [...ids.expiredInboxActivityIds, ids.currentInboxActivityId],
       }

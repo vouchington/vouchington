@@ -9,9 +9,4 @@ export type FederationRetentionPage = {
   hasMore: boolean
   continuationPosition: FederationRetentionPosition | null
 }
-export type FederationRetentionCursor = {
-  cutoffAt: Date
-  cursorId: string | null
-  upperBoundId: string
-}
 export type FederationRetentionQuery = TransactionQuery

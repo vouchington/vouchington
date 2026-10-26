@@ -15,8 +15,6 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_activities (
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_inbox_activities__activity_id ON activitypub_inbox_activities (activity_id);
-CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_activities__retention
-  ON activitypub_inbox_activities (received_at, id);
 
 -- Each remote Follow activity keeps its own Undo state after the inbox dedup row expires.
 CREATE TABLE IF NOT EXISTS activitypub_remote_follow_activities (
