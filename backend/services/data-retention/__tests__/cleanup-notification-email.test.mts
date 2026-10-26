@@ -21,7 +21,7 @@ import {
   testNotificationEmailRetentionRowExists,
   testSesRetentionSuppressionExists,
 } from '@voucha/test-helpers'
-import { createCommunityLifecycleNotifications } from '../../notifications/create-community-lifecycle-notification.mts'
+import { createCommunityLifecycleNotifications } from '@services/notifications/create-community-lifecycle-notification'
 import { isEmailSuppressed } from '@services/ses-bounce-events'
 import {
   cleanupModerationEmailSends,

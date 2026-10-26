@@ -6109,6 +6109,9 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
+      '@services/notifications':
+        specifier: workspace:^
+        version: link:../notifications
       '@services/oauth-accounts':
         specifier: workspace:^
         version: link:../oauth-accounts
