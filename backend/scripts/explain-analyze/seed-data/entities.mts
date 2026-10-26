@@ -44,6 +44,23 @@ export async function seedUsers(count = 2000): Promise<void> {
   )
   await transaction.commit()
 }
+/** Model a 50%-density role lookup corpus while hydration authors remain ordinary users. */
+export async function seedUserRoleLookups(): Promise<void> {
+  console.log('Seeding developer roles for the latter half of the 20000-user lookup corpus...')
+  await using transaction = await beginTransaction()
+  for (let start = 10_000; start < 20_000; start += 1000) {
+    const userIds = Array.from({ length: 1000 }, (_, offset) => seedUuid(start + offset, '01'))
+    await transaction(
+      `/* seedUserRoleLookups */ INSERT INTO user_roles (user_id, role_type_id)
+       SELECT seeded.id, role.id FROM users seeded CROSS JOIN user_role_types role
+       WHERE seeded.id = ANY($1::uuid[]) AND role.slug = 'developer'
+       ON CONFLICT (user_id, role_type_id) DO NOTHING`,
+      [userIds],
+    )
+  }
+  await transaction.commit()
+}
+
 export async function seedHostnames(count = HOSTNAME_COUNT): Promise<void> {
   console.log(`Seeding ${count} hostnames...`)
   {
