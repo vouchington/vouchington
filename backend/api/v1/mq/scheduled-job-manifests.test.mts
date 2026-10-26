@@ -49,6 +49,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/email-digests-moderation-summary',
   'background/email-digests-engagement',
   'background/entityListenerReconciliation',
+  'background/hostnameBlockingRecovery',
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
   'background/kagi-smallweb-sync',
