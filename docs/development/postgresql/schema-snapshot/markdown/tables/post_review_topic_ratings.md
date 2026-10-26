@@ -32,7 +32,7 @@ _none_
 
 **Indexes:**
 
-- `idx_post_review_topic_ratings__topic_id`: `CREATE INDEX idx_post_review_topic_ratings__topic_id ON ONLY public.post_review_topic_ratings USING btree (topic_id) INCLUDE (post_id, rating)`
+- `idx_post_review_topic_ratings__topic_id`: `CREATE INDEX idx_post_review_topic_ratings__topic_id ON ONLY public.post_review_topic_ratings USING btree (topic_id, post_id) INCLUDE (rating)`
 - `post_review_topic_ratings_pkey`: `CREATE UNIQUE INDEX post_review_topic_ratings_pkey ON ONLY public.post_review_topic_ratings USING btree (post_id, topic_id)`
 
 **Triggers:**

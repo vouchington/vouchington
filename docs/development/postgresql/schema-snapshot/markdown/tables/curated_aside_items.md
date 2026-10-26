@@ -39,10 +39,11 @@ _none_
 
 - `curated_aside_items_pkey`: `CREATE UNIQUE INDEX curated_aside_items_pkey ON public.curated_aside_items USING btree (id)`
 - `idx_curated_aside_items__community_id`: `CREATE INDEX idx_curated_aside_items__community_id ON public.curated_aside_items USING btree (community_id) WHERE (community_id IS NOT NULL)`
-- `idx_curated_aside_items__rss_feed_id`: `CREATE INDEX idx_curated_aside_items__rss_feed_id ON public.curated_aside_items USING btree (rss_feed_id) WHERE (rss_feed_id IS NOT NULL)`
+- `idx_curated_aside_items__rss_feed_id`: `CREATE INDEX idx_curated_aside_items__rss_feed_id ON public.curated_aside_items USING btree (rss_feed_id, id) WHERE (rss_feed_id IS NOT NULL)`
 - `idx_curated_aside_items__topic_id`: `CREATE INDEX idx_curated_aside_items__topic_id ON public.curated_aside_items USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
 - `idx_curated_aside_items__type_entity`: `CREATE UNIQUE INDEX idx_curated_aside_items__type_entity ON public.curated_aside_items USING btree (aside_type, entity_id) WHERE (deleted_at IS NULL)`
 
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF topic_id ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+- `trigger_curated_aside_items_guard_rss_feed_hard_delete`: `CREATE TRIGGER trigger_curated_aside_items_guard_rss_feed_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`

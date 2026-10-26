@@ -42,7 +42,7 @@ _none_
 
 **Indexes:**
 
-- `idx_user_import_requests__rss_feed_id`: `CREATE INDEX idx_user_import_requests__rss_feed_id ON public.user_import_requests USING btree (rss_feed_id) WHERE (rss_feed_id IS NOT NULL)`
+- `idx_user_import_requests__rss_feed_id`: `CREATE INDEX idx_user_import_requests__rss_feed_id ON public.user_import_requests USING btree (rss_feed_id, id) WHERE (rss_feed_id IS NOT NULL)`
 - `idx_user_import_requests__rss_feed_import_row_id`: `CREATE UNIQUE INDEX idx_user_import_requests__rss_feed_import_row_id ON public.user_import_requests USING btree (rss_feed_import_row_id) WHERE (rss_feed_import_row_id IS NOT NULL)`
 - `idx_user_import_requests__topic_id`: `CREATE INDEX idx_user_import_requests__topic_id ON public.user_import_requests USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
 - `idx_user_import_requests__topic_recommendation`: `CREATE INDEX idx_user_import_requests__topic_recommendation ON public.user_import_requests USING btree (topic_recommendation_post_id) WHERE ((topic_recommendation_post_id IS NOT NULL) AND (followed_at IS NULL))`
@@ -53,4 +53,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_user_import_requests_guard_rss_feed_hard_delete`: `CREATE TRIGGER trigger_user_import_requests_guard_rss_feed_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.user_import_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`
 - `trigger_user_import_requests_updated_at`: `CREATE TRIGGER trigger_user_import_requests_updated_at BEFORE UPDATE ON public.user_import_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

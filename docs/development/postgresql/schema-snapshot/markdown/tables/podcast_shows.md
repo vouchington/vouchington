@@ -43,4 +43,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_podcast_shows_guard_hard_delete`: `CREATE TRIGGER trigger_podcast_shows_guard_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.podcast_shows FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`
 - `trigger_podcast_shows_updated_at`: `CREATE TRIGGER trigger_podcast_shows_updated_at BEFORE UPDATE ON public.podcast_shows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

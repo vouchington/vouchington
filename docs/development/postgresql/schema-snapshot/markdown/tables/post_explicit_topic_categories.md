@@ -28,7 +28,7 @@ _none_
 
 **Indexes:**
 
-- `idx_post_explicit_topic_categories__topic_id`: `CREATE INDEX idx_post_explicit_topic_categories__topic_id ON ONLY public.post_explicit_topic_categories USING btree (topic_id) INCLUDE (post_id)`
+- `idx_post_explicit_topic_categories__topic_id`: `CREATE INDEX idx_post_explicit_topic_categories__topic_id ON ONLY public.post_explicit_topic_categories USING btree (topic_id, post_id)`
 - `post_explicit_topic_categories_pkey`: `CREATE UNIQUE INDEX post_explicit_topic_categories_pkey ON ONLY public.post_explicit_topic_categories USING btree (post_id, topic_id)`
 
 **Triggers:**

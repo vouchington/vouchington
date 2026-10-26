@@ -1419,54 +1419,6 @@
 - `spam_detection`
 - `staff`
 
-## `post_publication_identity_bridge_families`
-
-- `post`
-- `community`
-- `rss_feed_item`
-- `author`
-- `rss_feed`
-- `topic_alias`
-- `story`
-
-## `post_publication_reasons`
-
-- `post_created`
-- `post_updated`
-- `post_content_reset`
-- `post_audience_changed`
-- `post_archived`
-- `post_deleted`
-- `post_topics_changed`
-- `post_related_urls_changed`
-- `post_ratings_changed`
-- `post_clearance_changed`
-- `post_moderation_flag_changed`
-- `community_publication_changed`
-- `moderation_appeal_resolved`
-- `author_suspension_changed`
-- `author_deleted`
-- `author_username_changed`
-- `community_visibility_changed`
-- `rss_feed_discoverability_changed`
-- `rss_feed_enablement_changed`
-- `rss_feed_source_changed`
-
-## `post_publication_receipt_cursor_kinds`
-
-- `typed`
-
-## `post_publication_source_cursor_kinds`
-
-- `review`
-- `data`
-- `relation`
-- `alias_source`
-- `alias_relation`
-- `static`
-- `slug`
-- `feed`
-
 ## `post_topic_alias_source_types`
 
 - `title`
@@ -1521,6 +1473,7 @@
 - `rss_feed_item`
 - `image`
 - `membership`
+- `community_bridge`
 
 ## `retained_identity_families`
 

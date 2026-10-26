@@ -36,9 +36,10 @@ _none_
 
 - `community_list_rss_feeds_pkey`: `CREATE UNIQUE INDEX community_list_rss_feeds_pkey ON public.community_list_rss_feeds USING btree (id)`
 - `idx_community_list_rss_feeds__community`: `CREATE INDEX idx_community_list_rss_feeds__community ON public.community_list_rss_feeds USING btree (community_id)`
-- `idx_community_list_rss_feeds__rss_feed`: `CREATE INDEX idx_community_list_rss_feeds__rss_feed ON public.community_list_rss_feeds USING btree (rss_feed_id)`
+- `idx_community_list_rss_feeds__rss_feed`: `CREATE INDEX idx_community_list_rss_feeds__rss_feed ON public.community_list_rss_feeds USING btree (rss_feed_id, id)`
 - `idx_community_list_rss_feeds__unique`: `CREATE UNIQUE INDEX idx_community_list_rss_feeds__unique ON public.community_list_rss_feeds USING btree (community_id, rss_feed_id) WHERE (removed_at IS NULL)`
 
 **Triggers:**
 
+- `trigger_community_list_rss_feeds_guard_hard_delete`: `CREATE TRIGGER trigger_community_list_rss_feeds_guard_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.community_list_rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`
 - `trigger_project_community_list_rss_feeds_count`: `CREATE TRIGGER trigger_project_community_list_rss_feeds_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()`

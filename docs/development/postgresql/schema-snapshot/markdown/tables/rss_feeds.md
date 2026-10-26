@@ -22,6 +22,7 @@ Not partitioned — growth: unbounded.
 | `created_by_id`               | `uuid`                      | yes      |                                                                                               |          |           |           | User who created this RSS feed, used for auto-follow and auto-vote side effects.                                                                                                         |
 | `created_at`                  | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)`                                                                  |          | virtual   |           |                                                                                                                                                                                          |
 | `deleted_at`                  | `timestamp with time zone`  | yes      |                                                                                               |          |           |           |                                                                                                                                                                                          |
+| `hard_delete_requested_at`    | `timestamp with time zone`  | yes      |                                                                                               |          |           |           | Accepted asynchronous hard deletion marker; workers drain bounded child pages and recover unfinished feeds.                                                                              |
 | `updated_at`                  | `timestamp with time zone`  | yes      | `CURRENT_TIMESTAMP`                                                                           |          |           |           |                                                                                                                                                                                          |
 | `feed_type`                   | `rss_feed_content_types`    | no       | `'article'::rss_feed_content_types`                                                           |          |           |           | Content type of the feed: article, podcast, video, or mixed.                                                                                                                             |
 | `is_enabled`                  | `boolean`                   | no       | `false`                                                                                       |          |           |           | Whether this feed is enabled for fetching. Denormalized from rss_feed_setting_changes for query performance; kept in sync by trigger_project_rss_feed_enablement.                        |
@@ -40,6 +41,7 @@ _none_
 - `rss_feeds_check`: `CHECK (((canonical_rss_feed_id IS NULL) OR (canonical_rss_feed_id <> id)))`
 - `rss_feeds_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `rss_feeds_declared_language_check`: `CHECK (((declared_language IS NULL) OR ((declared_language = lower(declared_language)) AND (length(declared_language) <= 10))))`
+- `rss_feeds_hard_delete_requires_hidden`: `CHECK (((hard_delete_requested_at IS NULL) OR (deleted_at IS NOT NULL)))`
 - `rss_feeds_title_check`: `CHECK ((char_length(title) <= 255))`
 - `rss_feeds_title_check1`: `CHECK ((title = TRIM(BOTH FROM title)))`
 
@@ -53,11 +55,12 @@ _none_
 
 **Indexes:**
 
-- `idx_rss_feeds__canonical_rss_feed_id`: `CREATE INDEX idx_rss_feeds__canonical_rss_feed_id ON public.rss_feeds USING btree (canonical_rss_feed_id) WHERE (canonical_rss_feed_id IS NOT NULL)`
+- `idx_rss_feeds__canonical_rss_feed_id`: `CREATE INDEX idx_rss_feeds__canonical_rss_feed_id ON public.rss_feeds USING btree (canonical_rss_feed_id, id) WHERE (canonical_rss_feed_id IS NOT NULL)`
 - `idx_rss_feeds__created_via_oauth_client_id`: `CREATE INDEX idx_rss_feeds__created_via_oauth_client_id ON public.rss_feeds USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
 - `idx_rss_feeds__disabled`: `CREATE INDEX idx_rss_feeds__disabled ON public.rss_feeds USING btree (id DESC) WHERE ((is_enabled = false) AND (deleted_at IS NULL))`
 - `idx_rss_feeds__enabled__discoverable`: `CREATE INDEX idx_rss_feeds__enabled__discoverable ON public.rss_feeds USING btree (id) WHERE ((is_enabled = true) AND (is_discoverable = true) AND (deleted_at IS NULL))`
 - `idx_rss_feeds__feed_type`: `CREATE INDEX idx_rss_feeds__feed_type ON public.rss_feeds USING btree (feed_type) WHERE (deleted_at IS NULL)`
+- `idx_rss_feeds__hard_delete_pending_id`: `CREATE INDEX idx_rss_feeds__hard_delete_pending_id ON public.rss_feeds USING btree (id) WHERE (hard_delete_requested_at IS NOT NULL)`
 - `idx_rss_feeds__is_enabled`: `CREATE INDEX idx_rss_feeds__is_enabled ON public.rss_feeds USING btree (id) WHERE ((is_enabled = true) AND (deleted_at IS NULL))`
 - `idx_rss_feeds__rss_feed_url_id`: `CREATE UNIQUE INDEX idx_rss_feeds__rss_feed_url_id ON public.rss_feeds USING btree (rss_feed_url_id) WHERE (deleted_at IS NULL)`
 - `idx_rss_feeds__rss_feed_url_id_bare`: `CREATE INDEX idx_rss_feeds__rss_feed_url_id_bare ON public.rss_feeds USING btree (rss_feed_url_id)`

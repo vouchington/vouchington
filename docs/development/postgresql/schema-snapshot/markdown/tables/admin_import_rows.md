@@ -49,6 +49,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_admin_import_rows_guard_deleted_rss_feed`: `CREATE TRIGGER trigger_admin_import_rows_guard_deleted_rss_feed BEFORE INSERT OR UPDATE OF rss_feed_id, completed_at ON public.admin_import_rows FOR EACH ROW WHEN ((new.rss_feed_id IS NOT NULL)) EXECUTE FUNCTION fn_reject_admin_import_deleted_rss_feed()`
 - `trigger_admin_import_rows_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_admin_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.admin_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')`
 - `trigger_admin_import_rows_updated_at`: `CREATE TRIGGER trigger_admin_import_rows_updated_at BEFORE UPDATE ON public.admin_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_admin_import_rows_validate_target`: `CREATE TRIGGER trigger_admin_import_rows_validate_target BEFORE INSERT OR UPDATE OF batch_id, completed_at, topic_id, rss_feed_id ON public.admin_import_rows FOR EACH ROW WHEN ((new.completed_at IS NOT NULL)) EXECUTE FUNCTION fn_reject_admin_import_row_target()`
