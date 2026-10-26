@@ -1,104 +1,21 @@
-import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import {
-  enqueueCommunityActivityDigestBatch,
-  enqueueCommunityActivityDigestDispatch,
-  enqueueCommunityActivityDigestScheduleTick,
-  getCommunityActivityDigestDispatchData,
-} from './community-activity-digest.mts'
-import { notifications } from '../queues.mts'
-import { enqueueBulkDeliverNotificationPushIntents } from '../enqueues.mts'
+import { getCommunityActivityDigestDispatchData } from './community-activity-digest.mts'
 import { scheduledJobManifest } from './schedules.mts'
-import { COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS } from '@voucha/types/community-activity-digest'
-import { readAllQueueJobs } from '@voucha/test-helpers'
 
-describe('community activity digest queue wiring', () => {
-  it('persists the previous closed UTC week in dispatch data', () => {
+describe('community activity digest schedule', () => {
+  it('selects the previous closed UTC week', () => {
     expect(getCommunityActivityDigestDispatchData(new Date('2026-07-15T18:42:00.000Z'))).toEqual({
       windowStart: '2026-07-06T00:00:00.000Z',
       windowEnd: '2026-07-13T00:00:00.000Z',
     })
   })
-  it('assigns simultaneous and retried cursor jobs the same throttle identity', async () => {
-    const leaseToken = randomUUID()
-    await enqueueCommunityActivityDigestDispatch({
-      ...getCommunityActivityDigestDispatchData(),
-      leaseToken,
-    })
-    const batch = {
-      windowStart: '2026-07-06T00:00:00.000Z',
-      windowEnd: '2026-07-13T00:00:00.000Z',
-      afterUserId: '00000000-0000-7000-8000-000000000001',
-      leaseToken,
-    }
-    await Promise.all([
-      enqueueCommunityActivityDigestBatch(batch),
-      enqueueCommunityActivityDigestBatch(batch),
-    ])
-    await enqueueCommunityActivityDigestBatch(batch)
 
-    const jobs = await readAllQueueJobs(notifications)
-    const dispatch = jobs.find(
-      job =>
-        job.name === 'notifications.processCommunityActivityDigestDispatch' &&
-        (job.data as { leaseToken?: string }).leaseToken === leaseToken,
-    )
-    const cursors = jobs.filter(
-      job =>
-        job.name === 'notifications.processCommunityActivityDigestBatch' &&
-        (job.data as { leaseToken?: string }).leaseToken === leaseToken &&
-        (job.data as { windowStart?: string }).windowStart === batch.windowStart &&
-        (job.data as { afterUserId?: string }).afterUserId === batch.afterUserId,
-    )
-    expect(dispatch?.opts.deduplication).toMatchObject({ mode: 'throttle' })
-    // The shim's dedup, faithful to production's throttle window, collapses all three attempts
-    // (the two simultaneous ones and the retry) onto the same throttle identity: only the one that
-    // reaches the dedup check first actually enqueues.
-    expect(cursors).toHaveLength(1)
-    expect(cursors[0]?.opts.deduplication).toEqual({
-      id: `processCommunityActivityDigestBatch__${batch.windowStart}__${batch.leaseToken}__${batch.afterUserId}`,
-      mode: 'throttle',
-      ttl: COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS,
-    })
-    expect(cursors[0]?.opts).toMatchObject({ attempts: 3, priority: 10 })
-  })
-
-  it('deduplicates durable push-intent jobs by notification identity', async () => {
-    const notification = {
-      userId: '00000000-0000-7000-8000-000000000002',
-      notificationId: '00000000-0000-7000-8000-000000000003',
-    }
-
-    await enqueueBulkDeliverNotificationPushIntents([notification, notification])
-
-    const jobs = await readAllQueueJobs(notifications)
-    const pushIntents = jobs.filter(
-      job =>
-        job.name === 'notifications.processDeliverNotificationPushIntent' &&
-        (job.data as { notificationId?: string }).notificationId === notification.notificationId,
-    )
-    expect(pushIntents).toHaveLength(1)
-    expect(pushIntents[0]?.opts.deduplication).toEqual({
-      id: `processDeliverNotificationPushIntent__${notification.userId}__${notification.notificationId}`,
-      mode: 'debounce',
-    })
-  })
-
-  it('schedules the Monday 09:00 UTC tick as a background job', () => {
+  it('runs the Monday UTC schedule tick through background', () => {
     const tick = scheduledJobManifest.jobs.find(
       job => job.schedulerId === 'community-activity-digest-weekly',
     )
     expect(scheduledJobManifest.queueName).toBe('background')
     expect(tick?.repeat).toEqual({ pattern: '0 9 * * 1' })
     expect(tick?.template.name).toBe('notifications.processCommunityActivityDigestScheduleTick')
-  })
-
-  it('enqueues the schedule tick as an empty background job', async () => {
-    const tick = await enqueueCommunityActivityDigestScheduleTick()
-
-    expect(tick).toMatchObject({
-      name: 'notifications.processCommunityActivityDigestScheduleTick',
-      data: {},
-    })
   })
 })

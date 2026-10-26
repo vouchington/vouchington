@@ -31,9 +31,9 @@
   rows; ownership transfer notifies both the previous and new owner.
 - A weekly job creates at most one combined previous-week community activity digest per
   eligible owner/moderator. Communities without qualifying activity do not contribute. Incomplete
-  dispatch windows become eligible for durable requeue after an hour without batch activity and
-  restart on the next scheduler tick. Replay starts at the first recipient page, cursor jobs are
-  deduplicated by window and page, and the per-recipient event key prevents duplicate digest rows.
+  windows are recovered by the next scheduler tick. Native retries resume recipient-page progress;
+  terminal recovery can restart the window without creating duplicate digest rows or repeating
+  already-receipted deliveries. The sent-through boundary cannot skip an incomplete earlier window.
 - Active vacation suppression is per community and independent from the vacation dates; when
   enabled it suppresses both the weekly in-app digest contribution and moderation-summary email.
 

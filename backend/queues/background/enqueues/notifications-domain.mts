@@ -55,9 +55,6 @@ export type CopyrightSweepContinuation = {
 export type CommunityActivityDigestDispatchData = {
   windowStart: string
   windowEnd: string
-  leaseToken: string
-}
-export type CommunityActivityDigestBatchData = CommunityActivityDigestDispatchData & {
   afterUserId?: string
 }
 

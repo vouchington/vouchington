@@ -1,119 +1,171 @@
 import { randomUUID } from 'node:crypto'
+import { describe, expect, it, vi } from 'vitest'
+import { Queue, type Job } from 'glide-mq'
+import { rejectQuery } from '@voucha/test-helpers/injected-failures'
 import {
-  createQueue,
-  closeAndUnregisterGlideMQInstance,
-} from '../../data-stores/valkey-glide-mq/glide-mq-factory.mts'
-import { enqueueCommunityActivityDigestDispatch } from '../../queues/notifications/enqueues/community-activity-digest.mts'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { processCommunityActivityDigestScheduleTick } from '../../workers/notifications/processors/community-activity-digest-schedule.mts'
+  getTestCommunityActivityDigestQueueConnection,
+  beforeTestDigestUserId,
+  readTestCommunityActivityDigestCursor,
+  readTestCommunityActivityDigestDelivery,
+  withTestCommunityActivityDigestCursor,
+} from '@voucha/test-helpers/community-activity-digest-dispatch'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
+import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users-direct'
+import { insertTestCommunity } from '@voucha/test-helpers/entities/communities'
+import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
+import { insertTestPost } from '@voucha/test-helpers/entities/posts'
+import { createCommunityActivityDigestBatch } from './community-activity-digest.mts'
 import {
-  getTestCommunityActivityDigestWorkItems as unownedGetTestCommunityActivityDigestWorkItems,
-  insertTestCommunityActivityDigestWorkItem,
-  readNextTestCommunityActivityDigestWindowStart as unownedReadNextTestCommunityActivityDigestWindowStart,
-  readTestCommunityActivityDigestWorkItem as unownedReadTestCommunityActivityDigestWorkItem,
-  withTestCommunityActivityDigestLock,
-} from '@voucha/test-helpers'
-import {
-  claimCommunityActivityDigestWorkItem as unownedClaimCommunityActivityDigestWorkItem,
-  completeCommunityActivityDigestWorkItem as unownedCompleteCommunityActivityDigestWorkItem,
-  prepareCommunityActivityDigestWorkItems,
+  advanceCommunityActivityDigestCursor,
+  isCommunityActivityDigestWindowComplete,
+  prepareCommunityActivityDigestWindows,
 } from './community-activity-digest-dispatch.mts'
+import {
+  communityActivityDigestWindowJobId,
+  enqueueCommunityActivityDigestWindows,
+} from '../../queues/notifications/enqueues/community-activity-digest.mts'
+import type { CommunityActivityDigestDispatchData } from '../../queues/background/enqueues/notifications-domain.mts'
+import { processCommunityActivityDigestDispatch } from '../../workers/notifications/processors/community-activity-digest.mts'
+import { processCommunityActivityDigestScheduleTick } from '../../workers/notifications/processors/community-activity-digest-schedule.mts'
 
-vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
+// This project replaces its default transport shim with the real external package.
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 
-describe('community activity digest work items', () => {
-  it('releases the durable lease when queue admission fails', async () => {
-    await withTestCommunityActivityDigestLock(async owner => {
-      const getTestCommunityActivityDigestWorkItems = owner.operation(
-        unownedGetTestCommunityActivityDigestWorkItems,
-      )
-      const readNextTestCommunityActivityDigestWindowStart = owner.operation(
-        unownedReadNextTestCommunityActivityDigestWindowStart,
-      )
-      const readTestCommunityActivityDigestWorkItem = owner.operation(
-        unownedReadTestCommunityActivityDigestWorkItem,
-      )
-      const claimCommunityActivityDigestWorkItem = owner.operation(
-        unownedClaimCommunityActivityDigestWorkItem,
-      )
-      const completeCommunityActivityDigestWorkItem = owner.operation(
-        unownedCompleteCommunityActivityDigestWorkItem,
-      )
-      const queue = createQueue(`digest-admission-${randomUUID()}`, { priorityKind: 'ranked' })
-      const admission = vi.spyOn(queue, 'add')
-      let started: ReturnType<typeof processCommunityActivityDigestScheduleTick> | undefined
-      let cleanupPromise: Promise<void> | undefined
-      const cleanup = () =>
-        (cleanupPromise ??= (async () => {
-          if (started) await Promise.allSettled([started])
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+
+describe('community activity digest real queue admission', () => {
+  it('reactivates a failed stable window on the next tick without duplicating its delivery', async () => {
+    const businessNow = new Date()
+    const windowStart = new Date(businessNow)
+    windowStart.setUTCHours(0, 0, 0, 0)
+    windowStart.setUTCDate(windowStart.getUTCDate() - ((windowStart.getUTCDay() + 6) % 7))
+    const windowEnd = new Date(windowStart.getTime() + WEEK_MS)
+    const user = await createTestUserDirect()
+    const community = await insertTestCommunity({ createdById: user.id })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: user.id,
+      role: 'owner',
+      createdAt: businessNow,
+    })
+    await insertTestPost({
+      title: 'Digest dispatch recovery',
+      slug: `digest-dispatch-recovery-${user.id}`,
+      markdown: 'A post in the owned week.',
+      createdById: user.id,
+      communityId: community.id,
+      createdAt: businessNow,
+    })
+
+    await withTestCommunityActivityDigestCursor(windowStart, async (query, owner) => {
+      let failAdvance = true
+      let runs = 0
+      const replaySettled = Promise.withResolvers<void>()
+      void replaySettled.promise.catch(() => undefined)
+      const harness = await startRealGlideBackgroundLifecycle({
+        queueNamePrefix: 'community_digest_recovery',
+        connection: getTestCommunityActivityDigestQueueConnection(),
+        processor: async job => {
+          runs += 1
           try {
-            await closeAndUnregisterGlideMQInstance(queue)
-          } finally {
-            admission.mockRestore()
-          }
-        })())
-      owner.beforeRelease(cleanup)
-      onTestFinished(cleanup, 5000)
-      try {
-        await queue.close()
-        const windowStart = await readNextTestCommunityActivityDigestWindowStart()
-        const foreignStart = new Date(windowStart.getTime() - 3 * 24 * 60 * 60 * 1000)
-        await expect(
-          (started = owner.run(() =>
-            processCommunityActivityDigestScheduleTick(
-              {},
+            await processCommunityActivityDigestDispatch(
+              job as Job<CommunityActivityDigestDispatchData>,
               {
-                prepareCommunityActivityDigestWorkItems: async () => {
-                  const windows = await prepareCommunityActivityDigestWorkItems(windowStart, [
-                    windowStart,
-                  ])
-                  await insertTestCommunityActivityDigestWorkItem(foreignStart)
-                  return windows
+                createCommunityActivityDigestBatch: input =>
+                  createCommunityActivityDigestBatch({
+                    ...input,
+                    afterUserId: beforeTestDigestUserId(user.id),
+                    throughUserId: user.id,
+                    now: businessNow,
+                  }),
+                isCommunityActivityDigestWindowComplete: end =>
+                  isCommunityActivityDigestWindowComplete(end, { query }),
+                advanceCommunityActivityDigestCursor: (start, end) => {
+                  if (!failAdvance)
+                    return advanceCommunityActivityDigestCursor(start, end, { query })
+                  failAdvance = false
+                  return advanceCommunityActivityDigestCursor(start, end, {
+                    query: rejectQuery(
+                      query,
+                      statement => statement.includes('advanceCommunityActivityDigestCursor'),
+                      'injected failure after recipient write',
+                    ),
+                  })
                 },
-                enqueueCommunityActivityDigestDispatch: data =>
-                  enqueueCommunityActivityDigestDispatch(data, { queue }),
+                getJobCounts: () => harness.queue.getJobCounts(),
               },
-            ),
-          )),
-        ).rejects.toThrow(/clos/i)
-        expect(admission).toHaveBeenCalledTimes(1)
-        expect(admission).toHaveBeenCalledWith(
-          'notifications.processCommunityActivityDigestDispatch',
-          expect.objectContaining({
-            windowStart: windowStart.toISOString(),
-            leaseToken: expect.any(String),
-          }),
-          expect.any(Object),
-        )
-        const stored = await getTestCommunityActivityDigestWorkItems()
-        expect(
-          stored.find(row => row.window_starts_at.toISOString() === windowStart.toISOString()),
-        ).toMatchObject({ lease_token: null, completed_at: null, attempt_count: 1 })
-        expect(
-          stored.find(row => row.window_starts_at.toISOString() === foreignStart.toISOString()),
-        ).toMatchObject({ lease_token: null, completed_at: null, attempt_count: 0 })
-        await expect(readTestCommunityActivityDigestWorkItem(windowStart)).resolves.toMatchObject({
-          lease_token: null,
-          completed_at: null,
-          attempt_count: 1,
+            )
+            if (runs === 2) replaySettled.resolve()
+          } catch (err) {
+            if (runs === 2) replaySettled.reject(err)
+            throw err
+          }
+        },
+      })
+      owner.beforeRelease(() => harness.close())
+      const queue = Object.assign(harness.queue, { priorityKind: 'ranked' as const })
+      try {
+        const tick = () =>
+          processCommunityActivityDigestScheduleTick(
+            { targetWindowStart: windowStart.toISOString() },
+            {
+              prepareCommunityActivityDigestWindows: target =>
+                prepareCommunityActivityDigestWindows(target, { query }),
+              enqueueCommunityActivityDigestWindows: windows =>
+                enqueueCommunityActivityDigestWindows(windows, {
+                  queue,
+                  retry: { attempts: 1 },
+                }),
+            },
+          )
+        await tick()
+        const jobId = `digest:${windowStart.toISOString()}`
+        expect(await harness.settled({ id: jobId })).toBe('failed')
+        expect(await readTestCommunityActivityDigestCursor(query)).toEqual(windowStart)
+        expect(await readTestCommunityActivityDigestDelivery(user.id, windowStart)).toEqual({
+          notification_count: 1,
+          intent_count: 1,
         })
-        await expect(readTestCommunityActivityDigestWorkItem(foreignStart)).resolves.toMatchObject({
-          lease_token: null,
-          completed_at: null,
-          attempt_count: 0,
+        await tick()
+        await waitForRealGlideEvent(replaySettled.promise, 'digest replay completion')
+        expect(runs).toBe(2)
+        expect(await readTestCommunityActivityDigestCursor(query)).toEqual(windowEnd)
+        expect(await readTestCommunityActivityDigestDelivery(user.id, windowStart)).toEqual({
+          notification_count: 1,
+          intent_count: 1,
         })
-        const successor = await claimCommunityActivityDigestWorkItem(windowStart)
-        expect(successor).toBeTypeOf('string')
-        if (!successor) throw new Error('Expected released digest work to be immediately claimable')
-        await expect(completeCommunityActivityDigestWorkItem(windowStart, successor)).resolves.toBe(
-          true,
-        )
-        const durable = await readTestCommunityActivityDigestWorkItem(windowStart)
-        expect(durable?.completed_at).toBeInstanceOf(Date)
-        expect(durable).toMatchObject({ lease_token: null, attempt_count: 2 })
+        expect(harness.stalledJobIds).toEqual([])
       } finally {
-        await cleanup()
+        await harness.close()
       }
     })
+  })
+
+  it('admits one native job for duplicate window enqueue attempts', async () => {
+    const queue = Object.assign(
+      new Queue(
+        `community_digest_dedup_${randomUUID()}`,
+        getTestCommunityActivityDigestQueueConnection(),
+      ),
+      { priorityKind: 'ranked' as const },
+    )
+    try {
+      const window = {
+        windowStart: '2400-01-06T00:00:00.000Z',
+        windowEnd: '2400-01-13T00:00:00.000Z',
+      }
+      const [first, duplicate] = await Promise.all([
+        enqueueCommunityActivityDigestWindows([window], { queue }),
+        enqueueCommunityActivityDigestWindows([window], { queue }),
+      ])
+      expect([...first, ...duplicate].map(job => job.id)).toEqual([
+        communityActivityDigestWindowJobId(window),
+      ])
+      expect(await queue.getJob(communityActivityDigestWindowJobId(window))).toBeDefined()
+    } finally {
+      await queue.obliterate({ force: false })
+      await queue.close()
+    }
   })
 })

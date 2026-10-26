@@ -20,7 +20,6 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'admin_import_batches',
   'admin_import_rows',
   'activitypub_inbox_activities',
-  'community_activity_digest_work_items',
   'community_agent_prompt_revisions',
   'dynamic_configuration_revisions',
   'follower_distribution_deliveries',

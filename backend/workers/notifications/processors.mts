@@ -26,10 +26,7 @@ type NotificationProcessorDependencies = {
   reconcileNotificationsForRssFeedItem: typeof reconcileNotificationsForRssFeedItem
 }
 
-export {
-  processCommunityActivityDigestBatch,
-  processCommunityActivityDigestDispatch,
-} from './processors/community-activity-digest.mts'
+export { processCommunityActivityDigestDispatch } from './processors/community-activity-digest.mts'
 export { processDeliverNotificationPushIntent } from './processors/push-delivery.mts'
 export { processConversationMessageNotification } from './processors/conversation.mts'
 export {
