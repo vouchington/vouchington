@@ -51,6 +51,7 @@ export async function authorizedFixMainCandidates({
       state?: unknown
       pull_request?: unknown
       author_association?: unknown
+      user?: { login?: unknown; type?: unknown } | null
     }
     if (
       live.number === candidate.number &&
@@ -58,7 +59,8 @@ export async function authorizedFixMainCandidates({
       live.html_url === candidate.url &&
       live.state === 'open' &&
       live.pull_request === undefined &&
-      trustedIssueAuthor(live.author_association)
+      (trustedIssueAuthor(live.author_association) ||
+        (live.user?.login === 'github-actions[bot]' && live.user.type === 'Bot'))
     ) {
       authorized.push(candidate)
     }
