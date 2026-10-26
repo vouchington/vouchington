@@ -49245,7 +49245,7 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "post_identity_id": {
+        "post_id": {
           "comment": "Post requiring content-changed admission; retained identity survives concurrent deletion.",
           "dataType": "uuid",
           "defaultExpression": null,
@@ -49266,8 +49266,8 @@
           "referencedTable": "images",
           "validated": true
         },
-        "image_deletion_post_updates_post_identity_id_fkey": {
-          "columns": ["post_identity_id"],
+        "image_deletion_post_updates_post_id_fkey": {
+          "columns": ["post_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -49276,17 +49276,17 @@
         }
       },
       "indexes": {
-        "idx_image_deletion_post_updates__post_identity_id": {
+        "idx_image_deletion_post_updates__post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_image_deletion_post_updates__post_identity_id ON public.image_deletion_post_updates USING btree (post_identity_id)",
+          "definition": "CREATE INDEX idx_image_deletion_post_updates__post_id ON public.image_deletion_post_updates USING btree (post_id)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "post_identity_id",
+              "column": "post_id",
               "descending": false,
-              "expression": "post_identity_id",
+              "expression": "post_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -49302,7 +49302,7 @@
         "image_deletion_post_updates_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX image_deletion_post_updates_pkey ON public.image_deletion_post_updates USING btree (image_id, post_identity_id)",
+          "definition": "CREATE UNIQUE INDEX image_deletion_post_updates_pkey ON public.image_deletion_post_updates USING btree (image_id, post_id)",
           "immediate": true,
           "keys": [
             {
@@ -49316,9 +49316,9 @@
             },
             {
               "collation": null,
-              "column": "post_identity_id",
+              "column": "post_id",
               "descending": false,
-              "expression": "post_identity_id",
+              "expression": "post_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -49334,7 +49334,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["image_id", "post_identity_id"]
+        "columns": ["image_id", "post_id"]
       },
       "relationKind": "table",
       "triggers": {},

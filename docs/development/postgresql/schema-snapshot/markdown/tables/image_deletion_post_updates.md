@@ -6,12 +6,12 @@ Bounded post-updated admission receipts committed with each image deletion page;
 
 Not partitioned — growth: bounded.
 
-| Column             | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                                   |
-| ------------------ | ------ | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `image_id`         | `uuid` | no       |         |          |           |           | Image whose deletion reset the post.                                                      |
-| `post_identity_id` | `uuid` | no       |         |          |           |           | Post requiring content-changed admission; retained identity survives concurrent deletion. |
+| Column     | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                                   |
+| ---------- | ------ | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
+| `image_id` | `uuid` | no       |         |          |           |           | Image whose deletion reset the post.                                                      |
+| `post_id`  | `uuid` | no       |         |          |           |           | Post requiring content-changed admission; retained identity survives concurrent deletion. |
 
-**Primary key:** `PRIMARY KEY (image_id, post_identity_id)`
+**Primary key:** `PRIMARY KEY (image_id, post_id)`
 
 **Unique constraints:**
 _none_
@@ -22,12 +22,12 @@ _none_
 **Foreign keys:**
 
 - `image_deletion_post_updates_image_id_fkey`: `FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE`
-- `image_deletion_post_updates_post_identity_id_fkey`: `FOREIGN KEY (post_identity_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`
+- `image_deletion_post_updates_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `idx_image_deletion_post_updates__post_identity_id`: `CREATE INDEX idx_image_deletion_post_updates__post_identity_id ON public.image_deletion_post_updates USING btree (post_identity_id)`
-- `image_deletion_post_updates_pkey`: `CREATE UNIQUE INDEX image_deletion_post_updates_pkey ON public.image_deletion_post_updates USING btree (image_id, post_identity_id)`
+- `idx_image_deletion_post_updates__post_id`: `CREATE INDEX idx_image_deletion_post_updates__post_id ON public.image_deletion_post_updates USING btree (post_id)`
+- `image_deletion_post_updates_pkey`: `CREATE UNIQUE INDEX image_deletion_post_updates_pkey ON public.image_deletion_post_updates USING btree (image_id, post_id)`
 
 **Triggers:**
 _none_
