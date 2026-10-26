@@ -145,7 +145,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
         with:
           suite: backend-native-mv
       - name: Upload full native materialized-view LCOV (attempt 2)
@@ -153,7 +153,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
         with:
           suite: backend-native-mv
           name-suffix: -retry

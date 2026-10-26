@@ -13,6 +13,6 @@ permissions:
 
 jobs:
   dedupe:
-    uses: vouchington/vouchington-tooling/.github/workflows/pnpm-dedupe.yml@f0f8a576e3dc51bb38c1bca80d2046c5124637a2 # v0.67.0
+    uses: vouchington/vouchington-tooling/.github/workflows/pnpm-dedupe.yml@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
     secrets:
       PUSH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
