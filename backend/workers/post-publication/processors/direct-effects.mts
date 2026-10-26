@@ -1,3 +1,5 @@
+import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
+import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
 import { isLiveRssContinuation, processLiveRssContinuation } from './direct-rss-effects.mts'
 import {
   enqueueLiveScopePostEffects,
@@ -48,8 +50,13 @@ export async function processApplyPostPublicationEffects(
     await processLivePublicationIdentityContinuation(data)
     return { affectedPosts: 0 }
   }
-  const result = await processPublicationKeys(data, data.keys, true)
-  await enqueueLiveScopePostEffects(data)
+  const limit = getPostPublicationWorkLimit('capture_batch_size')
+  const end = data.keyOffset + limit
+  const current = { ...data, postId: data.scopeStart ? data.postId : null }
+  const result = await processPublicationKeys(current, data.keys.slice(data.keyOffset, end), true)
+  if (data.scopeStart) await enqueueLiveScopePostEffects(current)
+  if (end < data.keys.length)
+    await enqueuePostPublicationEffects({ ...data, scopeStart: false, keyOffset: end })
   return result
 }
 
@@ -66,7 +73,7 @@ async function processPublicationKeys(
   ]
   if (postIds.length > 0) await reconcileReviewSuccessionsForPostIds(postIds)
   const posts = await listLivePublicationPosts(postIds)
-  const scopeKeys = await listLivePublicationScopeKeys(data.scope)
+  const scopeKeys = data.scopeStart ? await listLivePublicationScopeKeys(data.scope) : []
   const selected = selectDirectPublicationEffects([...keys, ...scopeKeys], posts)
   const authorKeys: string[] = []
   const communityKeys: string[] = []
@@ -116,11 +123,20 @@ async function processPublicationKeys(
       {
         postIds: enqueueLivePages ? [...new Set([...postIds, ...currentPostIds])] : [],
         descendantPostIds: enqueueLivePages ? postIds : [],
-        topicIds: selected.topicIds,
+        // Explicit topic keys are globally unique before capture splitting. The alias/feed
+        // producer owns both old and new topic footprints; live scope keys still invalidate now.
+        topicIds: [
+          ...new Set([
+            ...keys.flatMap(key => (key.kind === 'impact_topic' ? [key.uuidValue] : [])),
+            ...(!data.scopeTopicKeysCaptured
+              ? scopeKeys.flatMap(key => (key.kind === 'impact_topic' ? [key.uuidValue] : []))
+              : []),
+          ]),
+        ],
         rssFeedIds: enqueueLivePages ? rssFeedIds : [],
         rssFeedItemIds: enqueueLivePages ? selected.rssFeedItemIds : [],
       },
-      enqueueLivePages,
+      enqueueLivePages && data.scopeStart,
     )
   return { affectedPosts: postIds.length }
 }

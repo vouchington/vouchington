@@ -37,6 +37,9 @@ export function postPublicationEffectJobId(data: PostPublicationEffectsJobData):
       JSON.stringify([
         data.keyHash,
         data.chunkIndex,
+        data.scopeStart,
+        data.scopeTopicKeysCaptured,
+        data.keyOffset,
         continuation?.kind ?? null,
         subjectId,
         continuation?.subjectIds.slice(continuation.subjectIndex) ?? null,

@@ -19,7 +19,8 @@ export const POST_PUBLICATION_EFFECTS_JOB = defineBackgroundJob<PostPublicationE
     name: 'apply-effects',
     priority: PRIORITY_TASK,
     sensitive: true,
-    attempts: 3,
+    // Keep immutable preimages available through a datastore outage without retaining terminal PII.
+    attempts: 10,
     backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
     ordering: { key: POST_PUBLICATION_EFFECTS_ORDERING_KEY },
   },

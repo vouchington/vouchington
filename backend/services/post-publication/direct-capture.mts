@@ -15,6 +15,8 @@ export function enqueueCapturedPublicationChangeAfterCommit(
     keys: readonly PublicationCapturedKey[]
     /** Reuse only when a bounded page belongs to this same logical mutation. */
     changeId?: string
+    /** Extra preimage pages never restart the logical change's scope discovery. */
+    scopeStart?: boolean
   },
 ): string {
   const changeId = capture.changeId ?? randomUUID()
@@ -29,6 +31,9 @@ export function enqueueCapturedPublicationChangeAfterCommit(
     keys,
     keyHash: hashCapturedPublicationKeys(keys),
     chunkIndex,
+    scopeStart: capture.scopeStart !== false && chunkIndex === 0,
+    scopeTopicKeysCaptured: capture.keys.some(key => key.kind === 'impact_topic'),
+    keyOffset: 0,
   }))
   // Register on this query's action scope, so a rolled-back nested transaction drops its jobs.
   registerPostCommitAction(query, async () => {

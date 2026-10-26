@@ -126,7 +126,7 @@ async function deletePostRelatedUrls(
     for (const row of rows) {
       if (row.publication_eligibility_changed) postIds.push(row.subject_id)
     }
-    // oxlint-disable-next-line no-await-in-loop -- dirty work must be durable in the same transaction as each bounded delete.
+    // oxlint-disable-next-line no-await-in-loop -- capture post-commit effects on the same transaction as each bounded delete.
     await recordPostRelatedUrlPublicationChanges(query, postIds)
   }
 }

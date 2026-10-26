@@ -1,3 +1,4 @@
+import { listHardDeleteRssFeedNextPages } from './hard-delete-next-page.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { markRssFeedItemCategorySnapshotsForReconciliation } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import {
@@ -18,6 +19,7 @@ export type HardDeleteRssFeedSourcePage = {
 /** One committed source-association page, with publication effects registered after commit. */
 export async function hardDeleteRssFeedSourcePage(
   rssFeedId: string,
+  expectedCursor?: string,
 ): Promise<HardDeleteRssFeedSourcePage> {
   const limit = getPostPublicationWorkLimit('rss_feed_hard_delete_capture_batch_size')
   await using query = await beginTransaction()
@@ -33,6 +35,13 @@ export async function hardDeleteRssFeedSourcePage(
     await query.commit()
     return { removed: 0, hasMore: false, keys: [] }
   }
+  if (expectedCursor !== undefined) {
+    const current = (await listHardDeleteRssFeedNextPages([rssFeedId], { query }))[0]
+    if (current?.phase !== 'sources' || current.cursor !== expectedCursor) {
+      await query.commit()
+      return { removed: 0, hasMore: false, keys: [] }
+    }
+  }
   const sourcePage = await query<{ rss_feed_item_id: string }>(
     `/* hardDeleteRssFeedSourcePage:candidates */
     SELECT rss_feed_item_id FROM rss_feed_item_sources
@@ -41,7 +50,10 @@ export async function hardDeleteRssFeedSourcePage(
     LIMIT $2`,
     [rssFeedId, limit],
   )
-  if (sourcePage.rows.length === 0) {
+  if (
+    sourcePage.rows.length === 0 ||
+    (expectedCursor !== undefined && sourcePage.rows[0]?.rss_feed_item_id !== expectedCursor)
+  ) {
     await query.commit()
     return { removed: 0, hasMore: false, keys: [] }
   }
@@ -79,8 +91,6 @@ export async function hardDeleteRssFeedSourcePage(
         )
       : { rows: [] }
   const keys = uniquePublicationKeys([
-    { kind: 'identity_rss_feed', uuidValue: rssFeedId },
-    { kind: 'impact_topic', uuidValue: feed.rows[0]!.topic_id },
     ...itemIds.map(uuidValue => ({ kind: 'impact_rss_feed_item' as const, uuidValue })),
     ...linkedPosts.rows.map(row => ({ kind: 'impact_post' as const, uuidValue: row.post_id })),
   ])
@@ -96,6 +106,7 @@ export async function hardDeleteRssFeedSourcePage(
   enqueueCapturedPublicationChangeAfterCommit(query, {
     scope: { type: 'rss_feed', rssFeedId },
     reason: 'rss_feed_source_changed',
+    scopeStart: false,
     keys,
   })
   await query.commit()

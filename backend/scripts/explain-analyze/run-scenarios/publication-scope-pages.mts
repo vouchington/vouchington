@@ -1,3 +1,4 @@
+import { capturePublicationHardDeleteScenarios } from './publication-hard-delete.mts'
 import assert from 'node:assert/strict'
 import {
   listLiveScopePostPage,
@@ -27,6 +28,7 @@ export async function runPublicationScopePageScenarios(): Promise<void> {
     await seedPublicationScopePages()
     await preparePublicationScopePlans()
     await capturePublicationScopePages()
+    await capturePublicationHardDeleteScenarios()
   } finally {
     await cleanupPublicationScopePages()
     await runAnalyze()

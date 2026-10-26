@@ -26,6 +26,9 @@ describe('post-publication direct enqueues', () => {
       keys: [{ kind: 'impact_post', uuidValue: postId }],
       keyHash: hashCapturedPublicationKeys([{ kind: 'impact_post', uuidValue: postId }]),
       chunkIndex: 0,
+      scopeStart: true,
+      scopeTopicKeysCaptured: false,
+      keyOffset: 0,
     }
     const id = postPublicationEffectJobId(data)
     onTestFinished(async () => (await postPublicationQueue.getJob(id))?.remove())

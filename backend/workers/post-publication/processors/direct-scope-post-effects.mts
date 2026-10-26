@@ -24,6 +24,7 @@ export function isScopePostContinuation(kind: Continuation['kind']): kind is Liv
 export async function enqueueLiveScopePostEffects(
   data: PostPublicationEffectsJobData,
 ): Promise<void> {
+  if (!data.scopeStart) return
   const kinds: LiveScopePostKind[] =
     data.scope.type === 'author'
       ? ['author_posts']

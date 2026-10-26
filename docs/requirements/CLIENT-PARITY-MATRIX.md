@@ -56,12 +56,15 @@ first.
 ## Staff RSS feed deletion
 
 The staff REST `DELETE /api/v1/rss-feeds/:id` accepts an asynchronous hard delete with HTTP 202
-and `{ "rss_feed_id": id, "status": "deleting" }`. The feed is hidden when accepted. Its source
+and `{ "rss_feed_id": id, "status": "deleting" }`. The feed is hidden from discovery when accepted. Its source
 associations are then removed in bounded committed pages, followed by the feed row; HTTP 202 does
-not mean physical deletion has finished. Staff can revisit `GET /api/v1/rss-feeds/:id` to observe
-the pending feed and eventual 404. The web source manager reports that deletion has started. There
-is no MCP feed-delete tool or existing native staff-source-management parity row; this REST change
-does not claim native UI coverage. Completed user feed-import results keep their successful status
+not mean physical deletion has finished. A feed referenced by retained admin import history
+returns HTTP 409 before deletion is accepted. Detail reads may remain available during cleanup;
+`GET /api/v1/rss-feeds/:id` is not a deletion-progress endpoint or a completion signal.
+The web source manager reports that deletion has started. The staff RSS deletion row in
+`client-feature-parity.json` records the web behavior and the native gaps. Native adoption is
+tracked by [clients #521](https://github.com/vouchington/vouchington-clients/issues/521); this change
+does not claim native UI coverage. There is no MCP feed-delete tool. Completed user feed-import results keep their successful status
 after the feed is removed, with no linked feed ID in the result.
 
 ## Community moderation MCP handoff

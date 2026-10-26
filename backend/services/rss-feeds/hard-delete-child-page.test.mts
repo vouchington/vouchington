@@ -68,10 +68,7 @@ describe('resumable RSS feed child removal', () => {
       hardDeleteRssFeedChildPage(feed.id, 'feed_categories'),
     )
     expect(first.flatMap(job => job.keys)).toEqual(
-      expect.arrayContaining([
-        { kind: 'identity_rss_feed', uuidValue: feed.id },
-        { kind: 'impact_topic', uuidValue: categoryTopic.id },
-      ]),
+      expect.arrayContaining([{ kind: 'impact_topic', uuidValue: categoryTopic.id }]),
     )
     expect(await getTestRssFeedCategories(feed.id)).toHaveLength(1)
     const second = await runWithCapturedQueries(() =>

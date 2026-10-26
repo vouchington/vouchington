@@ -65,7 +65,7 @@ export async function recordRssFeedTopicPublicationChanges(
   }
 }
 
-/** Pre-locks RSS-feed scopes in one global order before a set-based dirty-work capture. */
+/** Pre-locks RSS-feed scopes in one global order before capturing post-commit effects. */
 export async function lockPostPublicationRssFeedScopes(
   query: TransactionQuery,
   rssFeedIds: readonly string[],

@@ -34,6 +34,12 @@ export type PostPublicationEffectsJobData = {
   keys: PublicationCapturedKey[]
   keyHash: string
   chunkIndex: number
+  /** Only the primary capture owns scope discovery; key chunks retain their own exact effects. */
+  scopeStart: boolean
+  /** Alias/feed producers capture both old and new topics; those unique keys own their chains. */
+  scopeTopicKeysCaptured: boolean
+  /** Position within an immutable key page when a lower runtime cap requires another job. */
+  keyOffset: number
   /** One bounded live-identity page in a stable child chain of the captured change. */
   continuation?: {
     kind:

@@ -1,3 +1,4 @@
+import { insertRssFeedStateChanges } from './state-changes.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 import { enqueueCapturedPublicationChangeAfterCommit } from '@services/post-publication/direct-capture'
@@ -50,6 +51,26 @@ export async function finalizeHardDeleteRssFeed(
     ) remaining ORDER BY ord LIMIT 1`,
     [rssFeedId],
   )
+  if (pending[0]?.phase === 'admin_import_history') {
+    await query(
+      `/* finalizeHardDeleteRssFeed:park */
+      UPDATE rss_feeds SET hard_delete_requested_at = NULL
+      WHERE id = $1::uuid`,
+      [rssFeedId],
+    )
+    await insertRssFeedStateChanges(
+      rssFeedId,
+      [
+        {
+          kind: 'enablement',
+          is_enabled: false,
+          reason: 'Hard delete stopped: retained admin import history',
+        },
+      ],
+      null,
+      { query },
+    )
+  }
   if (pending[0]) {
     await query.commit()
     return { deleted: false, remaining: pending[0].phase }

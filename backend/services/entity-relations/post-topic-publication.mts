@@ -46,7 +46,7 @@ export function isTopicPublisherTypePublicationRelationTable(relationTable: stri
 
 /**
  * Records public-projection invalidation at the relation boundary. Callers pass the transaction
- * that changed the row, so a rollback cannot strand publication dirty work.
+ * that changed the row, so rollback discards the captured post-commit effects.
  */
 export async function recordPostTopicRelationPublicationChanges(
   query: TransactionQuery,

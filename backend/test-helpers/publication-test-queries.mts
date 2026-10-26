@@ -147,3 +147,12 @@ export function gateTestTopicAliasPublicationLockQuery(
   gated.client = query.client
   return gated
 }
+
+/** A retained alias can be claimed from an inactive owner by the normal link service. */
+export async function markTestTopicInactiveKeepingAliases(topicId: string): Promise<void> {
+  await write(
+    `/* markTestTopicInactiveKeepingAliases */
+    UPDATE topics SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1::uuid`,
+    [topicId],
+  )
+}

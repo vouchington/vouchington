@@ -31,6 +31,9 @@ function change(scope: PostPublicationEffectsJobData['scope']): PostPublicationE
     keys: [],
     keyHash: hashCapturedPublicationKeys([]),
     chunkIndex: 0,
+    scopeStart: true,
+    scopeTopicKeysCaptured: false,
+    keyOffset: 0,
   }
 }
 

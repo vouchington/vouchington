@@ -4,9 +4,9 @@ import { readEnqueuedJob } from '@voucha/test-helpers'
 import { PRIORITY_HARD_DELETE, PRIORITY_RECOVERY } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
 import {
-  enqueueFinalizeHardDeleteRssFeed,
-  enqueueHardDeleteRssFeedChildPage,
-  enqueueHardDeleteRssFeedSourcePage,
+  enqueueHardDeleteRssFeedFinalizers,
+  enqueueHardDeleteRssFeedChildPages,
+  enqueueHardDeleteRssFeedSourcePages,
   enqueueRecoverRssFeedHardDeletes,
 } from './hard-delete.mts'
 
@@ -16,13 +16,20 @@ describe('RSS feed hard-delete admissions', () => {
     const jobs = [
       await readEnqueuedJob(
         rssFeedMaintenance,
-        await enqueueHardDeleteRssFeedSourcePage(rssFeedId),
+        (await enqueueHardDeleteRssFeedSourcePages([{ rssFeedId, pageCursor: randomUUID() }]))[0],
       ),
       await readEnqueuedJob(
         rssFeedMaintenance,
-        await enqueueHardDeleteRssFeedChildPage(rssFeedId, 'feed_categories'),
+        (
+          await enqueueHardDeleteRssFeedChildPages([
+            { rssFeedId, phase: 'feed_categories', pageCursor: randomUUID() },
+          ])
+        )[0],
       ),
-      await readEnqueuedJob(rssFeedMaintenance, await enqueueFinalizeHardDeleteRssFeed(rssFeedId)),
+      await readEnqueuedJob(
+        rssFeedMaintenance,
+        (await enqueueHardDeleteRssFeedFinalizers([{ rssFeedId, pageCursor: rssFeedId }]))[0],
+      ),
     ]
     try {
       for (const job of jobs) {

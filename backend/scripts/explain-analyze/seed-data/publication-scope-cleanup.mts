@@ -36,9 +36,11 @@ export async function cleanupPublicationScopePages(): Promise<void> {
     `/* cleanupPublicationScopePages:itemGuid */ DELETE FROM rss_feed_item_guids WHERE id = $1`,
     [s.item],
   )
-  await query(`/* cleanupPublicationScopePages:feed */ DELETE FROM rss_feeds WHERE id = $1`, [
-    s.feed,
-  ])
+  await query(
+    `/* cleanupPublicationScopePages:feed */ DELETE FROM rss_feeds
+    WHERE id = ANY($1::uuid[]) OR (id >= $2::uuid AND id < $3::uuid)`,
+    [[s.feed, s.descriptorFeed], seedUuid(0, 'ee'), seedUuid(s.negativeFeedCount, 'ee')],
+  )
   await query(`/* cleanupPublicationScopePages:url */ DELETE FROM urls WHERE id = $1`, [s.url])
   await query(
     `/* cleanupPublicationScopePages:alias */ DELETE FROM topic_aliases WHERE id = ANY($1::uuid[])`,

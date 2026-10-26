@@ -7,7 +7,7 @@ import assert from 'http-assert'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { markRssFeedCategorySnapshotsForReconciliation } from '@services/rss-feed-items/category-snapshot-reconciliations'
 import { enqueueReconcileRssFeedItemCategorySnapshots } from '@queues/rss-feed-maintenance/enqueues/item-categories'
-import { enqueueHardDeleteRssFeedSourcePage } from '@queues/rss-feed-maintenance/enqueues/hard-delete'
+import { enqueueNextHardDeleteRssFeedPages } from './hard-delete-next-page.mts'
 import {
   lockPostPublicationRssFeedScopes,
   recordPostPublicationChange,
@@ -78,11 +78,6 @@ export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
     [id],
   )
   assert(referencedImports.length === 0, 409, 'Feed is referenced by admin import history')
-  await recordPostPublicationChange(query, {
-    scope: { type: 'rss_feed', rssFeedId: id },
-    reason: 'rss_feed_discoverability_changed',
-    impactedTopicIds: [feedRows[0]!.topic_id],
-  })
   const { rowCount } = await query(sql`/* hardDeleteRssFeedById:start */
     UPDATE rss_feeds
     SET deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP),
@@ -94,7 +89,7 @@ export async function hardDeleteRssFeedById(id: string): Promise<boolean> {
     registerPostCommitAction(query, async () => {
       await Promise.all([
         invalidate.rss_feeds(id),
-        enqueueHardDeleteRssFeedSourcePage(id),
+        enqueueNextHardDeleteRssFeedPages([id]),
         enqueueRefreshTopHashtags(),
       ])
     })

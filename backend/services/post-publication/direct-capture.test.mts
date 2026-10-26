@@ -46,6 +46,9 @@ function effectPayload(
     keys,
     keyHash: hashCapturedPublicationKeys(keys),
     chunkIndex: 0,
+    scopeStart: true,
+    scopeTopicKeysCaptured: keys.some(key => key.kind === 'impact_topic'),
+    keyOffset: 0,
   }
 }
 
@@ -127,6 +130,9 @@ describe('direct post-publication capture', () => {
       keys,
       keyHash: hashCapturedPublicationKeys(keys),
       chunkIndex: 0,
+      scopeStart: false,
+      scopeTopicKeysCaptured: false,
+      keyOffset: 0,
     })
     onTestFinished(async () => (await postPublicationQueue.getJob(id))?.remove())
     expect((await postPublicationQueue.getJob(id))?.data).toMatchObject({ keys })

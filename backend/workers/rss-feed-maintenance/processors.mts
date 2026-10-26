@@ -8,11 +8,14 @@ import { processRecoverRssFeedHardDeletes } from '@services/rss-feeds/hard-delet
 export function processRssFeedMaintenanceJob(job: Job) {
   switch (job.name) {
     case 'processHardDeleteRssFeedSourcePage':
-      return hardDelete.processHardDeleteRssFeedSourcePage(job.data as { rssFeedId: string })
+      return hardDelete.processHardDeleteRssFeedSourcePage(
+        job.data as import('@queues/rss-feed-maintenance/types').RssFeedHardDeletePageData,
+      )
     case 'processHardDeleteRssFeedChildPage':
       return hardDelete.processHardDeleteRssFeedChildPage(
         job.data as {
           rssFeedId: string
+          pageCursor: string
           phase: import('@queues/rss-feed-maintenance/types').RssFeedHardDeleteChildPhase
         },
       )

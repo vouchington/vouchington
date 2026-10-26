@@ -36,7 +36,15 @@ export function continuationJob(
   data: PostPublicationEffectsJobData,
   continuation: Continuation,
 ): PostPublicationEffectsJobData {
-  return { ...data, keys: [], continuation }
+  return {
+    ...data,
+    postId: null,
+    scopeStart: false,
+    scopeTopicKeysCaptured: false,
+    keyOffset: 0,
+    keys: [],
+    continuation,
+  }
 }
 
 export function nextContinuation(

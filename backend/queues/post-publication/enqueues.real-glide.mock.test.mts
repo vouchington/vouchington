@@ -24,6 +24,9 @@ function payload(changeId: string, postId: string): PostPublicationEffectsJobDat
     keys,
     keyHash: hashCapturedPublicationKeys(keys),
     chunkIndex: 0,
+    scopeStart: true,
+    scopeTopicKeysCaptured: false,
+    keyOffset: 0,
   }
 }
 
@@ -42,6 +45,9 @@ describe('direct publication jobs through real GlideMQ', () => {
       keys: [],
       keyHash: hashCapturedPublicationKeys([]),
       chunkIndex: 0,
+      scopeStart: false,
+      scopeTopicKeysCaptured: false,
+      keyOffset: 0,
       continuation: { kind: 'author_posts', subjectIds: [authorId], subjectIndex: 0, after: null },
     }
     const id = postPublicationEffectJobId(canonical)
@@ -54,6 +60,7 @@ describe('direct publication jobs through real GlideMQ', () => {
         keys: [],
         keyHash: 'another-capture-page',
         chunkIndex: 1,
+        scopeStart: false,
       })
       expect((await postPublicationQueue.getJob(id))?.data).toEqual(canonical)
       expect(await enqueuePostPublicationEffects(canonical)).toBeNull()

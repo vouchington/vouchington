@@ -65,6 +65,9 @@ describe('resumable RSS feed source removal', () => {
         { kind: 'impact_post', uuidValue: postIds[0] },
       ]),
     )
+    expect(
+      page.keys.some(key => key.kind === 'identity_rss_feed' || key.kind === 'impact_topic'),
+    ).toBe(false)
     expect(await countTestFeedSources(first.id)).toBe(0)
     expect(await countTestFeedSources(second.id)).toBe(1)
     expect(await countTestPosts(postIds)).toBe(1)
@@ -105,7 +108,9 @@ describe('resumable RSS feed source removal', () => {
     const first = await hardDeleteRssFeedSourcePage(feed.id)
     expect(first.removed).toBe(2)
     expect(first.hasMore).toBe(true)
-    expect(first.keys).toContainEqual({ kind: 'identity_rss_feed', uuidValue: feed.id })
+    expect(
+      first.keys.some(key => key.kind === 'identity_rss_feed' || key.kind === 'impact_topic'),
+    ).toBe(false)
     expect(first.keys.filter(key => key.kind === 'impact_post')).toHaveLength(2)
     const second = await hardDeleteRssFeedSourcePage(feed.id)
     expect(second.removed).toBe(1)

@@ -153,3 +153,28 @@ export async function countTestPendingCategoryReconciliations(
   )
   return rows[0]?.count ?? 0
 }
+
+/** Arrange a defensive marked+referenced state without bypassing insertion fences. */
+export async function markReferencedTestRssFeedForDeletion(feedId: string): Promise<void> {
+  await write(
+    `/* markReferencedTestRssFeedForDeletion */
+    UPDATE rss_feeds SET deleted_at = CURRENT_TIMESTAMP,
+      hard_delete_requested_at = CURRENT_TIMESTAMP WHERE id = $1::uuid`,
+    [feedId],
+  )
+}
+
+/** Select the exact synthetic UUID as the first key in a dirty-database recovery page. */
+export function beforeTestRssFeedUuid(id: string): string {
+  const hex = (BigInt(`0x${id.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+export async function countTestHardDeleteFeedCrawls(feedId: string): Promise<number> {
+  const { rows } = await read<{ count: number }>(
+    `/* countTestHardDeleteFeedCrawls */
+    SELECT count(*)::integer AS count FROM rss_feed_crawls WHERE rss_feed_id = $1::uuid AND id > $1::uuid`,
+    [feedId],
+  )
+  return rows[0]?.count ?? 0
+}

@@ -93,6 +93,7 @@ export async function captureDestroyedTopicAliasPostImpacts(
       reason: 'post_topics_changed',
       keys: impactPublicationKeys({ postIds: rows.map(row => row.post_id) }),
       changeId,
+      scopeStart: false,
     })
     afterPostId = rows.at(-1)!.post_id
   }

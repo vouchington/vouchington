@@ -31,6 +31,9 @@ function capturedJob(
     keys,
     keyHash: hashCapturedPublicationKeys(keys),
     chunkIndex: 0,
+    scopeStart: true,
+    scopeTopicKeysCaptured: false,
+    keyOffset: 0,
   }
 }
 

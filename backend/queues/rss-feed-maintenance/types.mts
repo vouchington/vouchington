@@ -27,3 +27,6 @@ export type TopicAliasJobs =
   | 'processTopicAliasesUpdate'
   | 'processInvalidatePostsForTopicAliases'
   | 'processReconcileTopicAliasCategoryMappings'
+
+/** First remaining raw row, revalidated under the feed lock before a destructive page. */
+export type RssFeedHardDeletePageData = { rssFeedId: string; pageCursor: string }

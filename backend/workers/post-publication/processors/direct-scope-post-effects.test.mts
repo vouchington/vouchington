@@ -54,6 +54,9 @@ describe('bounded live publication scope effects', () => {
       keys: [],
       keyHash: hashCapturedPublicationKeys([]),
       chunkIndex: 0,
+      scopeStart: true,
+      scopeTopicKeysCaptured: false,
+      keyOffset: 0,
     }
     const admitted = await executeTestPublicationChain(job, processApplyPostPublicationEffects)
     expect(admitted).toContainEqual({
@@ -208,6 +211,9 @@ describe('bounded live publication scope effects', () => {
         keys: [],
         keyHash: hashCapturedPublicationKeys([]),
         chunkIndex: 0,
+        scopeStart: true,
+        scopeTopicKeysCaptured: false,
+        keyOffset: 0,
       }
       const admitted = await executeTestPublicationChain(job, processApplyPostPublicationEffects)
       const notifications = admitted

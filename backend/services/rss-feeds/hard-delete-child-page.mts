@@ -1,3 +1,4 @@
+import { listHardDeleteRssFeedNextPages } from './hard-delete-next-page.mts'
 import { beginTransaction } from '@data-stores/psql'
 import {
   uniquePublicationKeys,
@@ -67,6 +68,7 @@ const CHILD_TABLES: Record<
 export async function hardDeleteRssFeedChildPage(
   rssFeedId: string,
   phase: RssFeedHardDeleteChildPhase,
+  expectedCursor?: string,
 ): Promise<{ removed: number; hasMore: boolean }> {
   const target = CHILD_TABLES[phase]
   if (!target) throw new TypeError(`Unsupported RSS feed hard-delete phase ${phase}`)
@@ -116,7 +118,18 @@ export async function hardDeleteRssFeedChildPage(
     await query.commit()
     return { removed: 0, hasMore: true }
   }
+  if (expectedCursor !== undefined) {
+    const current = (await listHardDeleteRssFeedNextPages([rssFeedId], { query }))[0]
+    if (current?.phase !== phase || current.cursor !== expectedCursor) {
+      await query.commit()
+      return { removed: 0, hasMore: false }
+    }
+  }
   const rows = await lockHardDeleteRssFeedChildRows(query, rssFeedId, phase, limit)
+  if (expectedCursor !== undefined && rows[0]?.id !== expectedCursor) {
+    await query.commit()
+    return { removed: 0, hasMore: false }
+  }
   if (
     categoryFootprint &&
     (rows.length !== categoryFootprint.length ||
@@ -132,7 +145,6 @@ export async function hardDeleteRssFeedChildPage(
   if (rows.length > 0) {
     const ids = rows.map(row => row.id)
     const keys: PublicationCapturedKey[] = uniquePublicationKeys([
-      { kind: 'identity_rss_feed', uuidValue: rssFeedId },
       ...rows.flatMap(row =>
         row.topic_id ? [{ kind: 'impact_topic' as const, uuidValue: row.topic_id }] : [],
       ),
@@ -164,11 +176,13 @@ export async function hardDeleteRssFeedChildPage(
         [rssFeedId, ids],
       )
     }
-    enqueueCapturedPublicationChangeAfterCommit(query, {
-      scope: { type: 'rss_feed', rssFeedId },
-      reason: 'rss_feed_source_changed',
-      keys,
-    })
+    if (keys.length > 0)
+      enqueueCapturedPublicationChangeAfterCommit(query, {
+        scope: { type: 'rss_feed', rssFeedId },
+        reason: 'rss_feed_source_changed',
+        scopeStart: false,
+        keys,
+      })
   }
   await query.commit()
   return { removed: rows.length, hasMore: rows.length === limit }
