@@ -95,6 +95,14 @@
       "entry": ["**/*.mts"],
     },
     "backend/scripts": {
+      "entry": [
+        "generate-mcp-catalog.mts",
+        "explain-analyze/seed.mts",
+        "explain-analyze/run.mts",
+        "explain-analyze/analyze.mts",
+        "explain-analyze/dump.mts",
+        "prepare-husky.mts",
+      ],
       "project": ["**/*.mts"],
       "includeEntryExports": true,
     },
