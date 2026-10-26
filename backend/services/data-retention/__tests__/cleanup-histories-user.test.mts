@@ -9,9 +9,15 @@ import {
   insertTopicRecommendationForRetention,
 } from '@voucha/test-helpers/history-retention-seeds'
 import {
+  acquireHistoryRetentionSweepTestLock,
+  cleanupHistoryFixtureIds,
+  positionHistoryCursorForTest,
+  readHistoryCursor,
   readReferralDetails,
   readRemainingHistoryIds,
   reserveHistoryRetentionFixtureIds,
+  restoreHistoryCursorForTest,
+  snapshotHistoryCursorForTest,
 } from '@voucha/test-helpers/history-retention-reads'
 import { getReferralClickLog } from '../../attribution/click-log.mts'
 import { streamReferralAttributions } from '../../account-data-requests/stream-consents.mts'
@@ -33,6 +39,85 @@ async function createRecommendationPost(userId: string): Promise<string> {
 }
 
 describe('bounded import and referral history retention', () => {
+  it('keeps scrub progress across passes and catches late rows behind the cursor', async () => {
+    const lock = await acquireHistoryRetentionSweepTestLock()
+    const priorCursor = await snapshotHistoryCursorForTest('referral_attribution_scrub')
+    const ids: string[] = []
+    try {
+      const { base, lowerBoundDate, upperBoundDate } = createHistoryRetentionWindow(30)
+      const kind = 'referral_attribution_scrub'
+      const referrer = await createTestUser()
+      const referred = await createTestUser()
+      await positionHistoryCursorForTest(kind, lowerBoundDate)
+      const firstId = await insertReferralAttributionAt(
+        referrer.id,
+        referred.id,
+        new Date(base.getTime() + 4),
+      )
+      const laterId = await insertReferralAttributionAt(
+        referrer.id,
+        referred.id,
+        new Date(base.getTime() + 10),
+      )
+      ids.push(firstId, laterId)
+      const options = {
+        batchSize: 1,
+        maxBatches: 1,
+        now: new Date(base.getTime() + 90 * day + 5),
+        lowerBoundDate,
+        upperBoundDate,
+        persistentCursorForTest: true,
+      }
+
+      expect(await cleanupHistory(kind, options)).toEqual({
+        scanned: 1,
+        changed: 1,
+        hasMore: false,
+      })
+      const firstCursor = await readHistoryCursor(kind)
+      expect(firstCursor?.cursor_id).toBe(firstId)
+      expect(await cleanupHistory(kind, options)).toEqual({
+        scanned: 0,
+        changed: 0,
+        hasMore: false,
+      })
+      expect((await readHistoryCursor(kind))?.cursor_id).toBe(firstId)
+
+      const lateId = await insertReferralAttributionAt(
+        referrer.id,
+        referred.id,
+        new Date(base.getTime() + 2),
+      )
+      ids.push(lateId)
+      expect(await cleanupHistory(kind, options)).toEqual({ scanned: 1, changed: 1, hasMore: true })
+      expect((await readReferralDetails(lateId))?.landing_url).toBeNull()
+      expect((await readHistoryCursor(kind))?.cursor_id).toBe(firstId)
+      expect(await cleanupHistory(kind, options)).toEqual({
+        scanned: 0,
+        changed: 0,
+        hasMore: false,
+      })
+
+      // With a one-page budget, an empty residual probe must still advance the forward cursor.
+      const later = await cleanupHistory(kind, {
+        ...options,
+        now: new Date(base.getTime() + 90 * day + 20),
+      })
+      expect(later).toEqual({ scanned: 1, changed: 1, hasMore: false })
+      expect((await readReferralDetails(laterId))?.landing_url).toBeNull()
+      expect((await readHistoryCursor(kind))?.cursor_id).toBe(laterId)
+    } finally {
+      try {
+        await cleanupHistoryFixtureIds('referral_attribution_scrub', ids)
+      } finally {
+        try {
+          await restoreHistoryCursorForTest('referral_attribution_scrub', priorCursor)
+        } finally {
+          await lock.release()
+        }
+      }
+    }
+  })
   it('expires only imports followed more than 90 days ago', async () => {
     const ownedIds = await reserveHistoryRetentionFixtureIds('followed_user_import_requests')
     const { base, ...range } = createHistoryRetentionWindow(5)

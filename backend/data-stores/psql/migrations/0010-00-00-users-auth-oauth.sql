@@ -910,6 +910,11 @@ CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__anonymous_id
   ON session_referral_attributions (id)
   WHERE user_id IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__unscrubbed_id
+  ON session_referral_attributions (id)
+  WHERE landing_url IS NOT NULL OR utm_source IS NOT NULL OR utm_medium IS NOT NULL
+    OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL;
+
 COMMENT ON TABLE session_referral_attributions IS 'Tracks which user referred a session, linking anonymous sessions to referrers for attribution. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions.';
 COMMENT ON COLUMN session_referral_attributions.session_id IS 'The anonymous session that was referred. Not a FK — sessions live outside PostgreSQL.';
 COMMENT ON COLUMN session_referral_attributions.referrer_user_id IS 'The user who referred this session. NULL if the referrer deleted their account.';

@@ -57,6 +57,9 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_user_import_requests__user_id__id_desc
 ON user_import_requests (user_id, id DESC);
 
+CREATE INDEX IF NOT EXISTS idx_user_import_requests__pending_id
+ON user_import_requests (id) WHERE followed_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_user_import_requests__topic_recommendation
 ON user_import_requests (topic_recommendation_post_id)
 WHERE topic_recommendation_post_id IS NOT NULL AND followed_at IS NULL;

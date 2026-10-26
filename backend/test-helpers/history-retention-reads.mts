@@ -1,6 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { onTestFinished } from 'vitest'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import type { HistoryKind } from '../services/data-retention/cleanup-histories.mts'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
 
@@ -25,8 +26,51 @@ export async function reserveHistoryRetentionFixtureIds(kind: HistoryKind): Prom
 export async function resetHistoryCursorForTest(kind: HistoryKind): Promise<void> {
   await write(sql`/* resetHistoryCursorForTest */
     UPDATE history_retention_cursors
-    SET cursor_id = NULL, sweep_cutoff_id = NULL
+    SET cursor_id = NULL, sweep_cutoff_id = NULL, is_sweep_complete = FALSE
     WHERE cleanup_name = ${kind}::history_retention_cleanup_names`)
+}
+
+export async function positionHistoryCursorForTest(kind: HistoryKind, before: Date): Promise<void> {
+  const cursorId = getMinUUIDv7ForDate(before)
+  await write(sql`/* positionHistoryCursorForTest */
+    INSERT INTO history_retention_cursors (cleanup_name, cursor_id)
+    VALUES (${kind}::history_retention_cleanup_names, ${cursorId}::uuid)
+    ON CONFLICT (cleanup_name) DO UPDATE
+      SET cursor_id = EXCLUDED.cursor_id, sweep_cutoff_id = NULL, is_sweep_complete = FALSE`)
+}
+
+type HistoryCursorSnapshot = {
+  cursor_id: string | null
+  sweep_cutoff_id: string | null
+  is_sweep_complete: boolean
+} | null
+
+export async function snapshotHistoryCursorForTest(
+  kind: HistoryKind,
+): Promise<HistoryCursorSnapshot> {
+  const { rows } = await write<
+    NonNullable<HistoryCursorSnapshot>
+  >(sql`/* snapshotHistoryCursorForTest */
+    SELECT cursor_id, sweep_cutoff_id, is_sweep_complete FROM history_retention_cursors
+    WHERE cleanup_name = ${kind}::history_retention_cleanup_names`)
+  return rows[0] ?? null
+}
+
+export async function restoreHistoryCursorForTest(
+  kind: HistoryKind,
+  prior: HistoryCursorSnapshot,
+): Promise<void> {
+  if (prior === null) {
+    await write(sql`/* removeTestHistoryCursor */
+      DELETE FROM history_retention_cursors WHERE cleanup_name = ${kind}::history_retention_cleanup_names`)
+    return
+  }
+  await write(sql`/* restoreHistoryCursorForTest */
+    INSERT INTO history_retention_cursors (cleanup_name, cursor_id, sweep_cutoff_id, is_sweep_complete)
+    VALUES (${kind}::history_retention_cleanup_names, ${prior.cursor_id}::uuid,
+      ${prior.sweep_cutoff_id}::uuid, ${prior.is_sweep_complete})
+    ON CONFLICT (cleanup_name) DO UPDATE SET cursor_id = EXCLUDED.cursor_id,
+      sweep_cutoff_id = EXCLUDED.sweep_cutoff_id, is_sweep_complete = EXCLUDED.is_sweep_complete`)
 }
 
 export async function readRemainingHistoryIds(kind: HistoryKind, ids: string[]): Promise<string[]> {
