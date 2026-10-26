@@ -41,7 +41,6 @@ const NAVBAR = 'web/components/navbar.tsx'
 
 export {
   assembleRouteAliasMap,
-  type RouteAliasEntry,
   type RouteAliasMap,
   type RouteAliasSource,
 } from './route-alias-map-assembly.mts'
