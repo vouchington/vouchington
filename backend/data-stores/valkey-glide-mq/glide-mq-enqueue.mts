@@ -87,6 +87,7 @@ const createBulkEnqueueFunctionImpl = <TInput, TData, TName extends string, TCal
         enqueueBulkRows(options.queue, options.queueName, jobs, {
           prefix: options.queuePrefix,
           retry: options.retry,
+          reactivatedData: options.reactivatedData,
         })
       const checkpoint = checkpointPagedDispatchFences()
       return checkpoint ? checkpoint.then(add) : add()

@@ -23,6 +23,7 @@ import { background } from '../queues/background/queues.mts'
 import { createFederatedUser } from './ap-inbox-activity-fixtures.mts'
 import {
   addRemoteFollowerAudience,
+  createRecoveryBulkEnqueues,
   getActivityDeliveryJobs,
   getRetainedContinuationId,
 } from './activitypub-recovery-fixtures.mts'
@@ -49,6 +50,7 @@ export async function assertTerminalActivityPubRootRecovery(
     queueName,
     connection,
   )
+  const bulkEnqueues = createRecoveryBulkEnqueues(queue, queueName, workerQueuePrefix ?? 'glide')
   const continuationJobs: Array<Job<DistributeActivityData | RecoverOutboundDistributionData>> = []
   const firstSettled = Promise.withResolvers<void>()
   let firstWorker: Worker<DistributeActivityData | RecoverOutboundDistributionData> | undefined
@@ -120,17 +122,7 @@ export async function assertTerminalActivityPubRootRecovery(
       {
         queue,
         // The sweep must perform WATCH-fenced reactivation for the stable root ID.
-        enqueueBulk: inputs =>
-          queue.addBulk(
-            inputs.map(data => ({
-              name: ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.name,
-              data,
-              opts: {
-                ...ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB.options,
-                jobId: distributionPageJobId(data),
-              },
-            })),
-          ),
+        enqueueBulk: options.withReceipt ? bulkEnqueues.production : bulkEnqueues.raw,
         // Keep recovery continuations in this isolated queue.
         enqueueNext: async (data, options) => {
           const continuation = await queue.add(scheduled.template.name, data, {
@@ -179,7 +171,8 @@ export async function assertTerminalActivityPubRootRecovery(
     await expect(
       waitForRealGlideEvent(replayed.promise, 'Recovered ActivityPub root'),
     ).resolves.toMatchObject({ ...rootData, recovery: true })
-    expect(await (await queue.getJob(rootId))?.getState()).toBe('completed')
+    if (!options.withReceipt)
+      expect(await (await queue.getJob(rootId))?.getState()).toBe('completed')
     if (options.withReceipt) {
       if (!continuationId) throw new Error('Expected a saved continuation identity')
       const resumed = await background.getJob(continuationId)

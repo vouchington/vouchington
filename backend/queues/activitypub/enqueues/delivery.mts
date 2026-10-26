@@ -1,4 +1,8 @@
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  createBackgroundBulkEnqueue,
+  createBackgroundEnqueue,
+  type BackgroundBulkEnqueueOptions,
+} from '@queues/background/enqueues'
 import type {
   DeliverActivityData,
   DistributeActivityData,
@@ -9,6 +13,7 @@ import {
 } from '@queues/background/enqueues/activitypub-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import { v5 as uuidv5 } from 'uuid'
+import { resumeDistributionPage } from './distribution-recovery.mts'
 
 export type { DeliverActivityData, DistributeActivityData }
 
@@ -23,13 +28,23 @@ const enqueueDeliverActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DELIVER_AC
 
 // Bulk fan-out for a batch of social actions (e.g. every relation in one upsertEntityRelation
 // call): one addBulk round-trip per batch, not one enqueue per input.
-export const enqueueBulkDistributeActivity = createBackgroundBulkEnqueue(
-  ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
-  (input: DistributeActivityInput) => ({
-    data: input,
-    opts: { jobId: distributionPageJobId(input) },
-  }),
-)
+type DistributionBulkQueue = Pick<
+  BackgroundBulkEnqueueOptions<DistributeActivityData>,
+  'queue' | 'queueName' | 'queuePrefix'
+>
+
+export function createBulkDistributeActivityEnqueue(options: DistributionBulkQueue = {}) {
+  return createBackgroundBulkEnqueue(
+    ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
+    (input: DistributeActivityInput) => ({
+      data: input,
+      opts: { jobId: distributionPageJobId(input) },
+    }),
+    { ...options, reactivatedData: resumeDistributionPage },
+  )
+}
+
+export const enqueueBulkDistributeActivity = createBulkDistributeActivityEnqueue()
 
 // One job per follower inbox. Callers should dedupe inboxUrl within a batch before calling this —
 // see @workers/activitypub's distributeActivity processor — since the `simple`

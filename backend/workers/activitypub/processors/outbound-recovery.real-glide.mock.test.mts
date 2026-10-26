@@ -27,7 +27,7 @@ import { assertTerminalActivityPubRootRecovery } from '@voucha/test-helpers/acti
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
-import { resumeDistributionPage } from './distribution-recovery.mts'
+import { resumeDistributionPage } from '@queues/activitypub/enqueues/distribution-recovery'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 

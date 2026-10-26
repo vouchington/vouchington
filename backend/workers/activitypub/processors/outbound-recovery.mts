@@ -17,7 +17,7 @@ import {
   listPendingOutboundDistributionPage,
   type OutboundRecoveryRow,
 } from '@services/activitypub-delivery'
-import { resumeDistributionPage } from './distribution-recovery.mts'
+import { resumeDistributionPage } from '@queues/activitypub/enqueues/distribution-recovery'
 
 const enqueueRecoveryContinuation = createBackgroundEnqueue(ACTIVITYPUB_RECOVER_OUTBOUND_JOB)
 

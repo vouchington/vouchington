@@ -18,7 +18,7 @@ import {
   type deliverActivityToInbox,
 } from '@services/activitypub-delivery'
 import { distributeActivity, deliverActivity } from './processors/delivery.mts'
-import { resumeDistributionPage } from './processors/distribution-recovery.mts'
+import { resumeDistributionPage } from '@queues/activitypub/enqueues/distribution-recovery'
 
 export async function processDistributeActivityJob(
   job: Pick<Job<DistributeActivityData>, 'data' | 'id' | 'name' | 'updateData' | 'moveToDelayed'>,
