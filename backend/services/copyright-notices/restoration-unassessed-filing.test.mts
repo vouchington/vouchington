@@ -56,11 +56,24 @@ async function openRestorationWindow() {
   }
 }
 
-async function recordCourtFiling(noticeId: string) {
+async function withFakeDate<T>(now: Date, callback: () => Promise<T>): Promise<T> {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(now)
+  try {
+    return await callback()
+  } finally {
+    vi.useRealTimers()
+  }
+}
+
+async function recordCourtFiling(
+  noticeId: string,
+  receivedAt = new Date('2026-07-02T13:00:00.000Z'),
+) {
   return appendTestCopyrightNoticeSubmission({
     noticeId,
     kind: 'court_or_ccb_hold',
-    receivedAt: new Date('2026-07-02T13:00:00.000Z'),
+    receivedAt,
     sourceKind: 'email',
     submittedByUserId: null,
     bodyCiphertext: `hold-${crypto.randomUUID()}`,
@@ -121,6 +134,88 @@ describe('unassessed court or CCB filings', () => {
         })
       ).action,
     ).toBe('restore')
+  })
+
+  it.each([
+    {
+      label: 'an uncommenced threat',
+      proceedingKind: null,
+      fromOriginalClaimant: true,
+      sameMaterial: true,
+    },
+    {
+      label: 'a proceeding about different material',
+      proceedingKind: 'federal_court' as const,
+      fromOriginalClaimant: true,
+      sameMaterial: false,
+    },
+  ])('creates a restore intent for $label', async testCase => {
+    const { deadline, moderator, notice, now, restriction, target } = await openRestorationWindow()
+    const filing = await recordCourtFiling(notice.id)
+    const commencedAt = testCase.proceedingKind ? new Date(now.getTime() - 120_000) : null
+    await appendCopyrightLegalHoldAssessment({
+      currentUser: moderator,
+      submissionId: filing.id,
+      assessedAt: now,
+      fromOriginalClaimant: testCase.fromOriginalClaimant,
+      proceedingKind: testCase.proceedingKind,
+      ccbClaimKind: null,
+      commencedAt,
+      receivedByDesignatedAgentAt: commencedAt ? new Date(now.getTime() - 60_000) : null,
+      sameMaterial: testCase.sameMaterial,
+      targetIds: [target.id],
+      rationale: 'The assessment does not establish a qualifying same-material proceeding.',
+    })
+
+    const intent = await createEligibleCopyrightRestoreIntent({
+      noticeId: notice.id,
+      targetId: target.id,
+      restrictionId: restriction.id,
+      deadlineId: deadline.id,
+      expectedPlacementRevision: target.placement_revision,
+      now,
+    })
+    expect(intent.action).toBe('restore')
+  })
+
+  it('does not block restoration for a qualifying hold received after the batch as-of time', async () => {
+    const wallNow = new Date('2026-10-26T12:00:00.000Z')
+    await withFakeDate(new Date(wallNow.getTime() - 30 * 24 * 60 * 60 * 1000), async () => {
+      const { deadline, moderator, notice, restriction, target } = await openRestorationWindow()
+      const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
+      vi.setSystemTime(wallNow)
+      const receivedByDesignatedAgentAt = new Date(wallNow.getTime() - 60_000)
+      expect(receivedByDesignatedAgentAt.getTime()).toBeGreaterThan(now.getTime())
+
+      const filing = await recordCourtFiling(
+        notice.id,
+        new Date(receivedByDesignatedAgentAt.getTime() - 60_000),
+      )
+      await appendCopyrightLegalHoldAssessment({
+        currentUser: moderator,
+        submissionId: filing.id,
+        assessedAt: wallNow,
+        fromOriginalClaimant: true,
+        proceedingKind: 'federal_court',
+        ccbClaimKind: null,
+        commencedAt: new Date(receivedByDesignatedAgentAt.getTime() - 86_400_000),
+        receivedByDesignatedAgentAt,
+        sameMaterial: true,
+        targetIds: [target.id],
+        rationale:
+          'The designated agent received the commenced proceeding after this batch cutoff.',
+      })
+
+      const intent = await createEligibleCopyrightRestoreIntent({
+        noticeId: notice.id,
+        targetId: target.id,
+        restrictionId: restriction.id,
+        deadlineId: deadline.id,
+        expectedPlacementRevision: target.placement_revision,
+        now,
+      })
+      expect(intent.action).toBe('restore')
+    })
   })
 
   it('blocks the case until an assessment records that the filing does not qualify', async () => {

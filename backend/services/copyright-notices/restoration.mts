@@ -5,49 +5,7 @@ import { getImagePlacementForCopyright, getImagePlacementKey } from '@services/i
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { recordCounterNoticeRestoration } from './claimant-misuse-ledger.mts'
 import { noticeHasUnassessedCourtOrCcbFiling } from './court-hold-assessment-gate.mts'
-import type { CopyrightActionIntentRecord, CopyrightLegalHoldAssessmentRecord } from './types.mts'
-
-export type CopyrightRestorationHold = {
-  receivedByDesignatedAgentAt: Date | null
-  fromOriginalClaimant: boolean
-  commenced: boolean
-  sameMaterial: boolean
-  proceedingKind: 'federal_court' | 'ccb'
-}
-
-/**
- * A court/CCB hold is is_operative only when it came from the original claimant,
- * identifies the same material, and reports a commenced qualifying proceeding.
- */
-export function precheckCopyrightRestoration({
-  restrictionHumanReviewAt,
-  now,
-  earliestRestorationAt,
-  restorationDeadlineAt,
-  otherActiveRestrictionCount,
-  hold,
-}: {
-  restrictionHumanReviewAt: Date | null
-  now: Date
-  earliestRestorationAt: Date
-  restorationDeadlineAt: Date
-  otherActiveRestrictionCount: number
-  hold: CopyrightRestorationHold | null
-}): { eligible: boolean; overdue: boolean } {
-  if (!restrictionHumanReviewAt || otherActiveRestrictionCount > 0 || now < earliestRestorationAt)
-    return { eligible: false, overdue: now >= restorationDeadlineAt }
-  return {
-    eligible: !(
-      hold?.fromOriginalClaimant &&
-      hold.commenced &&
-      hold.sameMaterial &&
-      hold.receivedByDesignatedAgentAt !== null &&
-      hold.receivedByDesignatedAgentAt <= now &&
-      (hold.proceedingKind === 'federal_court' || hold.proceedingKind === 'ccb')
-    ),
-    overdue: now >= restorationDeadlineAt,
-  }
-}
+import type { CopyrightActionIntentRecord } from './types.mts'
 
 export async function createEligibleCopyrightRestoreIntent(input: {
   noticeId: string
@@ -82,12 +40,11 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     placement_revision: number
     lifted_at: Date | null
     earliest_restoration_at: Date
-    restoration_deadline_at: Date
     resolved_at: Date | null
     cancelled_at: Date | null
   }>(sql`/* createEligibleCopyrightRestoreIntent:lock */
     SELECT r.human_reviewed_at, t.placement_id, t.placement_revision, r.lifted_at,
-      d.earliest_restoration_at, d.restoration_deadline_at, d.resolved_at, d.cancelled_at
+      d.earliest_restoration_at, d.resolved_at, d.cancelled_at
     FROM copyright_notices n
     JOIN copyright_notice_targets t ON t.copyright_notice_id = n.id
     JOIN copyright_restrictions r ON r.copyright_notice_target_id = t.id
@@ -131,10 +88,10 @@ export async function createEligibleCopyrightRestoreIntent(input: {
     'Copyright restoration awaits assessment of a court or CCB filing',
   )
 
-  const qualifyingHolds =
-    await transaction<CopyrightLegalHoldAssessmentRecord>(sql`/* createEligibleCopyrightRestoreIntent:lockQualifyingHolds */
-      SELECT h.received_by_designated_agent_at, h.is_from_original_claimant,
-        h.commenced_at, h.is_same_material, h.proceeding_kind
+  const qualifyingHolds = await transaction<{
+    id: string
+  }>(sql`/* createEligibleCopyrightRestoreIntent:lockQualifyingHolds */
+      SELECT h.id
       FROM copyright_notice_legal_hold_assessments h
       JOIN copyright_notice_submissions s ON s.id = h.copyright_notice_submission_id
       JOIN copyright_notice_legal_hold_assessment_targets hold_target
@@ -152,25 +109,15 @@ export async function createEligibleCopyrightRestoreIntent(input: {
         AND h.received_by_designated_agent_at <= ${input.now}
       FOR UPDATE OF h
     `)
-  const result = precheckCopyrightRestoration({
-    restrictionHumanReviewAt: locked.human_reviewed_at,
-    now: input.now,
-    earliestRestorationAt: locked.earliest_restoration_at,
-    restorationDeadlineAt: locked.restoration_deadline_at,
-    // Each case becomes independently eligible. The delivery worker lifts this case's restriction
-    // while keeping the placement withheld until every other active restriction is resolved.
-    otherActiveRestrictionCount: 0,
-    hold: qualifyingHolds.rows[0]
-      ? {
-          receivedByDesignatedAgentAt: qualifyingHolds.rows[0].received_by_designated_agent_at,
-          fromOriginalClaimant: qualifyingHolds.rows[0].is_from_original_claimant,
-          commenced: qualifyingHolds.rows[0].commenced_at !== null,
-          sameMaterial: qualifyingHolds.rows[0].is_same_material,
-          proceedingKind: qualifyingHolds.rows[0].proceeding_kind as 'federal_court' | 'ccb',
-        }
-      : null,
-  })
-  assert(result.eligible, 409, 'Copyright restoration is not eligible')
+  // Each case becomes independently eligible. The delivery worker lifts this case's restriction
+  // while keeping the placement withheld until every other active restriction is resolved.
+  assert(
+    locked.human_reviewed_at !== null &&
+      input.now >= locked.earliest_restoration_at &&
+      qualifyingHolds.rows.length === 0,
+    409,
+    'Copyright restoration is not eligible',
+  )
   const currentPlacement = await getImagePlacementForCopyright(locked.placement_id, {
     query: transaction,
   })
