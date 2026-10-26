@@ -1,184 +1,43 @@
-# Saving (full contract)
+# Vouchington retrospective document
 
-Full detail for [SKILL.md](SKILL.md). Covers the front-matter/title schema, the file structure
-template, the provenance contract `retrospective-distill` depends on, and what the
-`retrospective_check` and `retrospective_save` tools do.
+The canonical `vouchington-workflow:retrospective` skill owns MCP composition, preview, saving,
+outbox delivery, and evidence minimization. This file records only the Vouchington document shape
+validated by [`validateRetroDoc`](../../../dev/retrospective-validate.mts) and
+[`validateRetrospective`](../../../dev/agent-policy.mts).
 
-## Front matter
+The front matter uses JSON values for `date`, `description`, `issues`, `prs`, `session_id`,
+`repositories`, `work_outcome`, and `feedback_coverage`. The composer writes them; if authoring
+manually, unquoted YAML dates, block arrays, unrelated keys, and a partial outcome/coverage pair
+are rejected. The title is `# Retrospective: PR #s - [session description]`.
 
-Include in the front matter of a hand-written `markdown` document. Each line is `key: <JSON value>`
-(`date: "2026-10-13"`, `issues: [1154]`, `prs: []`); plain YAML such as an unquoted date or a block
-list is rejected. `compose` writes this format for you:
-
-- `date`: the date of the retrospective
-- `description`: a brief description of the session
-- `issues`: a list of issue numbers relevant to the retrospective
-- `prs`: a list of PR numbers relevant to the retrospective
-- `session_id`: the session ID, if available
-- `repositories`: the canonical repository attribution list
-- `work_outcome`: the generated terminal work outcome
-- `feedback_coverage`: the generated object with `status`, `sources`, and `droppedCount`
-
-`date`, `issues`, and `prs` are parsed by the `retrospective_save` tool and stored as typed
-fields on the agent-blackboard entry (`data.date`, `data.issues`, `data.prs`); `description`,
-and `session_id` are not extracted separately — they stay readable only inside the
-entry's stored `markdown` field. The paired `work_outcome` and `feedback_coverage` fields are
-validated through the shared envelope codec and stored as `data.workOutcome` and
-`data.feedbackCoverage`. A document must supply both or neither. Keep durable provenance and
-generated metadata accurate and complete.
-Other keys, such as `worktree`, are rejected. The composer does not write `repositories` into the
-front matter: the tool resolves the list from the `repositories` argument, else the front matter,
-else the policy default repository, and rejects a front-matter list that conflicts with the
-argument.
-
-## Title
-
-The title should be `Retrospective: PR #s - [session description]`. This is a heading inside the
-markdown body (`# Retrospective: <title>`), not a separate stored field.
-
-## File structure
+Required body sections, in order:
 
 ```markdown
----
-<front matter>
----
-
-# Retrospective: <title>
-
 ## Outcome
-
-Work outcome: <terminal-outcome>
-Feedback coverage: <coverage-status>
-Dropped records: <count>
 
 ## Verifiable Facts
 
-<facts prepared under the canonical retrospective evidence boundary>
-
 ## Transcript Facts
-
-<transcript facts prepared under the canonical retrospective evidence boundary>
 
 ## CI Failures
 
 Status: <failures observed|none observed|unavailable (reason)>
 
-<required failure groups when failures were observed>
-
 ## Findings
-
-## Plan vs Actual
 
 ## Tool Findings
 
-Status: <findings|none observed (inspected scope)|not assessed (reason)|unavailable (reason)>
+Status: <findings|none observed (scope)|not assessed (reason)|unavailable (reason)>
 
 ## Architecture Findings
 
-Status: <findings|none observed (inspected scope)|not assessed (reason)|unavailable (reason)>
-
-## Scheduled Prompt Suggestions
-
-## PR Creation Feedback
+Status: <findings|none observed (scope)|not assessed (reason)|unavailable (reason)>
 
 ## Sandbox & Permission Audit
 ```
 
-`## Plan vs Actual`, `## Scheduled Prompt Suggestions`, and `## PR Creation Feedback` are
-conditional sections — include each only when it fires. `## Tool Findings` and
-`## Architecture Findings` are required with an explicit assessment status and inspected scope
-or reason; findings require observations, evidence, and dispositions. The composer always
-builds `## CI Failures` and `## Sandbox & Permission Audit` from the session's hosted journal; an
-unavailable source is assessed as unavailable, not empty. For a manually staged retrospective,
-derive observed evidence from the `journal_entries` tool of the `vouchington-tooling` MCP server
-under the canonical evidence boundary. Empty capture is not proof of absence.
-
-If you proactively made a GitHub issue already as a follow-up task, link it in the relevant section.
-
-## What `retrospective_save` does
-
-Call the `retrospective_save` tool of the `vouchington-tooling` MCP server with the SessionStart
-`sessionId`, `parentSessionId` (`null` for a root session; a spawned child passes the ID it
-received), `agent` (the session's stored agent label, for example `claude-code`; reuse the label the session
-was created with, or the save fails with `identity-conflict`), `version` (the harness version, or
-`unknown`), `mode` (`interactive` or `autonomous`), `workOutcome`, `feedbackCoverage` (`status`,
-`sources`, `droppedCount`; pass `{status: "not-assessed"}` when coverage was not assessed — there is
-no default), and exactly one of `markdown` (a finished document) or `compose` (the composer input).
-Optional arguments: `repositories`, `sourceEventId`, `category`, `dryRun`, and, beside `markdown`,
-`knownSensitiveValues` (with `compose`, pass it inside `compose`). Either list also redacts
-`category` and `feedbackCoverage`. Add `dryRun: true` to compose and validate without writing; the
-result carries the document and a single-use `previewToken`. Save the preview by calling
-`retrospective_save` again with the same `sessionId`, `parentSessionId`, `agent`, `version`, `mode`,
-`sourceEventId`, and that `previewToken`, and none of `markdown`, `compose`, `workOutcome`,
-`feedbackCoverage`, `repositories`, `category`, `knownSensitiveValues`, or `dryRun`. The server stores
-exactly the previewed content without running the policy again. Never save a preview with a second
-`compose`, which can recompose a different document and conflict on `sourceEventId`. A token is held
-only in server memory: after a server restart, or an unknown, spent, or mismatched token error,
-repeat the dry run.
-When the front matter repeats `session_id`, `work_outcome`, `feedback_coverage`, or `repositories`,
-each must equal the argument. Delivery mode is never read from the document.
-
-The tool:
-
-1. Composes the document (`compose`) or takes `markdown`, and redacts the server's blackboard token
-   and any `knownSensitiveValues`.
-2. Runs the checkout policy (`dev/agent-policy.mts`, `validateRetrospective`): `validateRetroDoc`
-   (see [fact-contracts.md](fact-contracts.md)) rejects a malformed `## CI Failures` section, missing
-   assessments, and bad section structure; the front-matter check rejects a
-   missing/unclosed block, plain-YAML values, non-array references, or an incomplete metadata pair.
-   Any error rejects the save and writes nothing.
-3. Builds the shared validated schema-version-1 retrospective envelope with repository attribution,
-   the validated terminal work outcome, and separate coverage. The default `sourceEventId` is
-   `retrospective-<sessionId>`; a hand-off uses its own `handoff-pr<N>`, and a later task in the same
-   session requires its own explicit `sourceEventId` (and a matching `retrospective_check`).
-   Re-saving identical content returns the stored receipt; changed content under the same
-   `sourceEventId` is an `event-conflict`, so a revision needs a new `sourceEventId`.
-4. Writes through the shared writer for sanitization, attribution, append deduplication, and exact
-   read-back. The server owns the timestamp. Repeat an identical `markdown` call to retry; a
-   `compose` call regenerates the document, so deliver a retained `compose` save with
-   `outbox_flush` instead of repeating it.
-
-Interactive mode returns visible pending state only after the bounded private outbox durably
-preserves sanitized feedback. Inspect and flush through the `outbox_status` and `outbox_flush`
-tools of the same server. `autonomous` mode requires verified read-back and does not fall back to
-that outbox. A successful work outcome with blocked delivery is not fully reported. Invalid content,
-identity conflicts, saturation, and persistence failure come back as tool errors. Do not discard
-pending records or claim acknowledged delivery. If the server is unavailable, restore it per the
-[blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable) or report the retrospective
-as blocked; never store one through `journal_append`.
-
-`compose` accepts: `narrative` (concise, non-empty), `date`, `issues`, `prs`, `description`,
-`facts`, `transcript`, `tools`, `architecture`, and optional `knownSensitiveValues`. Unknown keys are
-rejected.
-
-- `facts`: exactly one of `pr` (digits), `branch` (a plain branch name), `noPr: true`, or
-  `{status, reason}`. There is no `repo`: a PR in another repository is recorded as
-  `{status: "not-assessed", reason}`.
-- `transcript`: `{harnessSessionId}` or `{}`, or `{status, reason}`. The transcript is looked up by
-  `harnessSessionId`, else by the call's `sessionId` when that is a UUID; if neither is a UUID the
-  call fails. Reads are bound to the harness session that launched the server: after `/clear` or a
-  thread switch, reconnect the server (`/mcp` in Claude Code, restart Codex) or pass
-  `{status, reason}`. Path overrides are rejected.
-- `tools` and `architecture`: an assessment `{status, findings?, reason?}` where `status` is
-  `findings`, `none-observed`, `not-assessed`, or `unavailable`, and each finding has
-  `observation`, `evidence`, `disposition`, and optional `trackingReference`.
-
-`## CI Failures` and `## Sandbox & Permission Audit` come only from journal entries in the documented
-block grammar. A missing hosted connection or a session unknown to the hosted blackboard is reported
-as unavailable, not as an empty journal. Declare coverage truthfully, including any dropped records.
-Use observations with evidence and disposition; `none-observed`, `not-assessed`, and `unavailable`
-remain distinct. No raw transcript re-mining or routine hand-written lint narratives are required.
-The policy tools refuse to run on Windows and when a blackboard or GitHub token variable in the
-server's environment is shorter than four characters.
-
-## What `retrospective_check` does
-
-`retrospective_check` (`sessionId`, optional `sourceEventId`) is the cheap precheck
-[SKILL.md](SKILL.md) runs before any fact collection. It reads back the session's existing entries
-and returns `{sessionId, saved, entries}`; each entry is `{sourceEventId, timestamp, issues, prs}` of
-a retrospective, oldest first. `saved: false` covers both a session with no retrospective and a
-session that was never created. It is read-only and never creates the session, so it costs nothing
-even for a session that will never get a retrospective. A failing check (server unreachable, invalid
-session id) is a tool error. Do not continue fact collection: restore the server per the
-[blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable) or report the
-retrospective as blocked, and correct an invalid session id before retrying.
+`## Plan vs Actual`, `## Scheduled Prompt Suggestions`, and `## PR Creation Feedback` appear
+only when applicable. For the failure and assessment grammar see [fact contracts](fact-contracts.md);
+for PR creation feedback see [PR feedback](pr-feedback.md). The composer derives CI failures and
+the sandbox audit from hosted journal entries, so unavailable evidence stays unavailable. The
+local validator decides a mismatch between this page and code.

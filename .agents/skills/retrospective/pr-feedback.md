@@ -1,6 +1,6 @@
 # PR Creation Feedback (full contract)
 
-Full detail for [SKILL.md's `## PR Creation Feedback` step](SKILL.md#pr-creation-feedback). Read this
+Full detail for the [local retrospective adapter](SKILL.md). Read this
 file only when a PR-triage caller supplied agent-authored PR creation feedback this session.
 
 Keep both the per-PR findings and the deduplicated grouped themes; cross-reference a matching

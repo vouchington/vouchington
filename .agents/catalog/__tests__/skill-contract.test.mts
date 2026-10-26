@@ -81,16 +81,6 @@ describe('Vouchington workflow skill adapters', () => {
     },
   )
 
-  it('keeps only Vouchington issue routing and taxonomy policy in the local adapter', () => {
-    const skill = read('.agents/skills/github-issue/SKILL.md')
-
-    expect(skill).toContain('`vouchington/vouchington`')
-    expect(skill).toContain('`github-issue-agent`')
-    expect(skill).toContain('vouchington-tooling/skills/github-issue/SKILL.md#bounded-output')
-    expect(skill).toContain('`preflight`')
-    expect(skill).not.toContain('vouchington/*')
-  })
-
   it('keeps local taxonomy handoffs conditional', () => {
     expect(read('.agents/skills/organize-github-issues/SKILL.md')).toContain(
       '[review-github-issue-taxonomy](../review-github-issue-taxonomy/SKILL.md)',
@@ -98,22 +88,6 @@ describe('Vouchington workflow skill adapters', () => {
     expect(read('.agents/skills/review-github-issue-taxonomy/SKILL.md')).toContain(
       '[organize-github-issues](../organize-github-issues/SKILL.md)',
     )
-  })
-
-  it('retrospective retains its Vouchington-only safety invariants', () => {
-    const skill = read('.agents/skills/retrospective/SKILL.md')
-
-    for (const invariant of ['≤10 tool calls', 'unknown — no journal']) {
-      expect(skill).toContain(invariant)
-    }
-  })
-
-  it('keeps the spawned-child identity contract fail closed', () => {
-    const skill = read('.agents/skills/blackboard/SKILL.md')
-
-    expect(skill).toContain('`CODEX_THREAD_ID`')
-    expect(skill).toContain('`CLAUDE_CODE_SESSION_ID`')
-    expect(skill).toContain('isValidSessionId')
   })
 
   it('documents the machine-installed upstream plugins and declares none in the project', () => {

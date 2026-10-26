@@ -7,10 +7,9 @@ const VERIFIABLE_FACTS_HEADER = '## Verifiable Facts'
 const RETROSPECTIVE_FACTS_MARKER = '=== Retrospective Facts ==='
 const TRANSCRIPT_FACTS_MARKER = '=== Transcript Facts ==='
 
-// Enforces the `## CI Failures` grammar documented in
-// .agents/skills/retrospective/fact-contracts.md:35-72 (status line, failure-group
-// shape, ordering) as a per-line state machine, so error messages can point at
-// which grammar rule broke. Keep both in sync if either changes.
+// Enforces the `## CI Failures` grammar from the canonical retrospective skill
+// and the local ordering and no-mistakes disposition documented in
+// .agents/skills/retrospective/fact-contracts.md. Keep both in sync.
 export function validateRetroDoc(markdown: string): ValidationResult {
   const normalized = markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
   const lines = normalized.split('\n')
