@@ -24,7 +24,7 @@ const reporters = ciReporters(vitestCiReporterOptions)
 const outputFile = ciOutputFile()
 
 export default defineConfig({
-  plugins: [effectiveTimeoutCap()],
+  plugins: [effectiveTimeoutCap({ maxTimeoutMs: 5_000 })],
   cacheDir: vitestViteCacheDir,
   resolve: {
     alias: backendAliases(),
@@ -65,8 +65,8 @@ export default defineConfig({
     // how ts-shared broke `main` twice (#10762). This root value exists so a project added
     // between edits, or run ad hoc, never regresses to that silent default while the
     // per-project assertion is temporarily unsatisfied.
-    testTimeout: 15_000,
-    hookTimeout: 30_000,
+    testTimeout: 5_000,
+    hookTimeout: 5_000,
     // Stop early on widespread failure instead of running every remaining test.
     bail: 10,
     // Vitest 4.1's BrowserSessions reads this root-level value through
@@ -100,13 +100,13 @@ export default defineConfig({
           isolate: true,
           name: 'backend-real-glide-mq',
           env: {
-            PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000',
+            PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000',
           },
           setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
           include: ['backend/**/*.real-glide.mock.test.mts'],
           exclude: ['**/node_modules/**', '**/.git/**'],
-          testTimeout: 30_000,
-          hookTimeout: 30_000,
+          testTimeout: 5_000,
+          hookTimeout: 5_000,
         },
       },
       ...toolingProjects,

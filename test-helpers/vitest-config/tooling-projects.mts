@@ -1,17 +1,11 @@
 import type { TestProjectConfiguration } from 'vitest/config'
 import { isolatedSetupFile, worktreeDbSetupFile } from './tooling-project-policies.mts'
 
-const toolingTestBudget = {
-  // Child-process-heavy tests are timeout-sensitive under CPU contention.
-  // Run at the root's parallel maxWorkers, but keep generous 30s test/hook budgets so
-  // slow child-process spawns and coverage reporting can still finish cleanly.
-  //
-  // The canonical suite hard cap (docs/development/tests.md#test-suite-rules) applies to
-  // every test and hook, including targeted overrides. dev/vitest-config.test.mts checks
-  // project budgets against the same 30s ceiling; the five-second defaults rollout is separate.
-  hookTimeout: 30_000,
+export const toolingTestBudget = {
+  // Child-process fixtures retain bounded cleanup within the standard project budget.
+  hookTimeout: 5_000,
   isolate: true,
-  testTimeout: 30_000,
+  testTimeout: 5_000,
 }
 
 const defaultExcludes = ['**/node_modules/**', '**/.git/**']
@@ -58,7 +52,6 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'static-analysis-ast-grep',
-      // Finite analyzer fixtures use the suite defaults, not the broad tooling headroom.
       testTimeout: 5_000,
       hookTimeout: 5_000,
       include: [

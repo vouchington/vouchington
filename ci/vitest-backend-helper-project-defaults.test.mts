@@ -42,8 +42,8 @@ describe('backend test-helper project defaults', () => {
       test: {
         include: expect.arrayContaining(files),
         globalSetup: './test-helpers/vitest.setup.data-stores.mts',
-        testTimeout: 30_000,
-        hookTimeout: 30_000,
+        testTimeout: 5_000,
+        hookTimeout: 5_000,
       },
     })
   })

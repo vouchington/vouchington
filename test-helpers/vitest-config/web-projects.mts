@@ -42,9 +42,9 @@ const webIntegrationProject: TestProjectConfiguration = {
     exclude: ['**/node_modules/**', '**/.git/**'],
     environment: 'node',
     globalSetup: './integration-tests/web/helpers/global-setup.mts',
-    testTimeout: 30_000,
-    // Global setup starts the stack before cases run; hooks retain the suite cap.
-    hookTimeout: 30_000,
+    testTimeout: 5_000,
+    // Global setup starts the stack before cases run.
+    hookTimeout: 5_000,
   },
 }
 export const webProjects: TestProjectConfiguration[] = [

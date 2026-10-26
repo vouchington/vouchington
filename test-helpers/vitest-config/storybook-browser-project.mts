@@ -164,8 +164,8 @@ export const storybookBrowserProject: TestProjectConfiguration = {
     // Share one module context so the virtual annotations module is fetched once
     // per browser session; isolated story files restored the setup-file flake.
     isolate: false,
-    testTimeout: 30_000,
-    hookTimeout: 30_000,
+    testTimeout: 5_000,
+    hookTimeout: 5_000,
     api: { port: parseStorybookBrowserApiPort() },
     browser: {
       enabled: isStorybookBrowserEnabled,
