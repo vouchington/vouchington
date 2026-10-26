@@ -16,9 +16,6 @@ files:
   - '**/test-helpers/**/*.mts'
   - 'test-helpers/**/*.ts'
   - 'test-helpers/**/*.mts'
-# Remaining batch-boundary fixture cleanup is tracked by #2145.
-ignores:
-  - 'backend/services/oauth-github/__tests__/friends-batching.mock.test.mts'
 rule:
   any:
     - pattern: 'Array.from({ length: $N })'
