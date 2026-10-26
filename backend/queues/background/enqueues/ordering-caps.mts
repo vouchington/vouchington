@@ -54,6 +54,6 @@ export function getBackgroundOrderingLimits(key: string): {
   return {
     configKey,
     defaultValue,
-    maxValue: configKey === 'notifications:digest-windows' ? 1 : orderingMaxValue(defaultValue),
+    maxValue: orderingMaxValue(defaultValue),
   }
 }

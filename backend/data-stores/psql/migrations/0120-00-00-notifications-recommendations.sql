@@ -375,10 +375,17 @@ WHERE user_warning_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_activity_digest_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
-  sent_through_at TIMESTAMPTZ NOT NULL
+  sent_through_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE OR REPLACE TRIGGER trigger_community_activity_digest_cursors_updated_at
+BEFORE UPDATE ON community_activity_digest_cursors
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
+
 COMMENT ON TABLE community_activity_digest_cursors IS 'Singleton high-water mark for completed community activity digest windows.';
+COMMENT ON COLUMN community_activity_digest_cursors.updated_at IS 'Time the digest progress boundary was last changed.';
 COMMENT ON COLUMN community_activity_digest_cursors.is_singleton IS 'Only one community activity digest progress row may exist.';
 COMMENT ON COLUMN community_activity_digest_cursors.sent_through_at IS 'Exclusive end of the latest completed digest window; advances only after every recipient page and its durable delivery intents are admitted.';
 
