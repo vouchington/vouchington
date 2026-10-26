@@ -28,7 +28,7 @@ export type CommunityPromptDryRunDependencies = {
   callTimeoutMs?: number
 }
 
-export type CommunityPromptDryRunVerdict = { flagged: boolean; probability: number }
+type CommunityPromptDryRunVerdict = { flagged: boolean; probability: number }
 
 export type CommunityPromptDryRun = {
   modelName: string

@@ -41,7 +41,7 @@ const METRIC_FIELDS = [
 ] as const
 
 /** One community as an MCP client receives it. Private communities never reach this shape. */
-export type McpCommunity = {
+type McpCommunity = {
   id: string
   slug: string
   name: string
@@ -58,9 +58,9 @@ export type McpCommunity = {
   provenance?: Community['provenance']
 }
 
-export type McpCommunityOwner = { id: string; username: string | null }
+type McpCommunityOwner = { id: string; username: string | null }
 
-export type McpCommunityMetrics = Pick<CommunityMetrics, (typeof METRIC_FIELDS)[number]>
+type McpCommunityMetrics = Pick<CommunityMetrics, (typeof METRIC_FIELDS)[number]>
 
 /** A community with its owner and public counts, as `discover_communities (option search)` and `read_community (option details)` return it. */
 export type McpCommunityEntry = {

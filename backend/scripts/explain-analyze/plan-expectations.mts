@@ -62,7 +62,7 @@ export function assertPlanRegistry(capturedIds: readonly string[]): void {
   for (const id of captured) if (!known.has(id)) throw new Error(`Unknown EXPLAIN scenario: ${id}`)
 }
 
-export function assertExpectationKinds(id: string, contract: ScenarioPlanContract): void {
+function assertExpectationKinds(id: string, contract: ScenarioPlanContract): void {
   const kinds = new Set([
     'maxProcessedRows',
     'usesIndexes',

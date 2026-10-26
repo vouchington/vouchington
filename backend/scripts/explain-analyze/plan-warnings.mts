@@ -28,7 +28,7 @@ const LARGE_TABLES = new Set([
 const HIGH_SHARED_BLOCKS_THRESHOLD = 10_000
 const HIGH_WAL_BYTES_THRESHOLD = 10 * 1024 * 1024
 
-export function busiestFunctionCall(result: ExplainResult): FunctionCall | null {
+function busiestFunctionCall(result: ExplainResult): FunctionCall | null {
   return (result.function_calls ?? []).reduce<FunctionCall | null>(
     (busiest, call) => (busiest === null || call.calls > busiest.calls ? call : busiest),
     null,

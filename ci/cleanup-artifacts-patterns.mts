@@ -3,7 +3,7 @@ import {
   type ArtifactClassification,
 } from 'vouchington-tooling/gha-artifacts-cleanup'
 
-import { createArtifactPatternMatcher } from './cleanup-artifacts-pattern-matcher.mjs'
+import { createArtifactPatternMatcher } from './cleanup-artifacts-pattern-matcher.mts'
 import artifactPatterns from './cleanup-artifacts-patterns.json' with { type: 'json' }
 
 export type { ArtifactClassification } from 'vouchington-tooling/gha-artifacts-cleanup'

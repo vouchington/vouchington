@@ -19,7 +19,7 @@ export const classifierComparisonClassifiers = {
   rss: seedUuid(3, '2d'),
 } as const
 
-export const classifierComparisonPromptVersions = {
+const classifierComparisonPromptVersions = {
   target: seedUuid(0, '2e'),
   bystander: seedUuid(1, '2e'),
   community: seedUuid(2, '2e'),

@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { contentHash, seedUuid } from './common.mts'
 
 export const REWARDS_PROGRAM_STATUS_SEED_COUNT = 10_000
-export const REWARDS_PROGRAM_STATUS_SEED_OWNER_COUNT = 100
+const REWARDS_PROGRAM_STATUS_SEED_OWNER_COUNT = 100
 
 export async function seedRewardsProgramStatuses(
   count = REWARDS_PROGRAM_STATUS_SEED_COUNT,

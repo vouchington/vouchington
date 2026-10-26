@@ -9,7 +9,7 @@ export const SUBMIT_TOPICS_TOOL = 'submit_topics'
 const SEARCH_RESULT_LIMIT = 5
 const MAX_QUERY_LENGTH = 200
 
-export type TopicSearchHit = { id: string; name: string; slug: string }
+type TopicSearchHit = { id: string; name: string; slug: string }
 export type SearchTopics = (query: string) => Promise<readonly TopicSearchHit[]>
 
 /** The text search over topic names and slugs the agent may use to check what a topic means. */

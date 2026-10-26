@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
 
-export const EXPLAIN_TOPIC_IMPORT_ATTEMPT_SEED_COUNT = 25_000
+const EXPLAIN_TOPIC_IMPORT_ATTEMPT_SEED_COUNT = 25_000
 
 export async function seedTopicImportAttempts(
   count = EXPLAIN_TOPIC_IMPORT_ATTEMPT_SEED_COUNT,

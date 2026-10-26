@@ -8,7 +8,7 @@ import createHttpError from 'http-errors'
 import { INVALID_CURSOR_RESULT } from './paged-search.mts'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
-export type CommonArgs = {
+type CommonArgs = {
   limit?: number
   after?: string
   community?: string
@@ -31,12 +31,12 @@ export type ItemArgs = CommonArgs & {
   media_type?: Array<'article' | 'audio' | 'video'>
 }
 export type ReferralArgs = { feed_type: ReferralLinksFeedType; limit?: number; after?: string }
-export type PageInfo = {
+type PageInfo = {
   has_next_page: boolean
   start_cursor: string | null
   end_cursor: string | null
 }
-export type FeedItem = {
+type FeedItem = {
   id: string
   entity_id: string
   delivery_type: 'direct' | 'share'
@@ -46,7 +46,7 @@ export type FeedItem = {
 export type FeedResult =
   | { success: true; results: FeedItem[]; page_info: PageInfo }
   | typeof INVALID_CURSOR_RESULT
-export type ReferralRow = {
+type ReferralRow = {
   id: string
   user_id: string
   referral_program_id: string

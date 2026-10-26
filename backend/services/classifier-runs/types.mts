@@ -11,7 +11,7 @@ export type ClassifierRunSubject =
   | { postId: null; rssFeedItemId: string }
 
 /** One exact remote candidate and pinned threshold snapshot of a run's reserved decision batch. */
-export type RemoteCandidate = {
+type RemoteCandidate = {
   topicId: string
   candidateId: string
   thresholdId: string
@@ -39,7 +39,7 @@ export type TopicRemotePlan = RemotePlanBase & {
  * Community moderation prompts, pinned by the configuration. They have no stored candidate or
  * threshold revision: every result carries the prompt version's default thresholds.
  */
-export type CommunityPromptRemotePlan = RemotePlanBase & {
+type CommunityPromptRemotePlan = RemotePlanBase & {
   candidateKind: 'community_prompt'
   promptIds: readonly string[]
 }
@@ -53,7 +53,7 @@ export type StoryRunCandidate =
  * Story-clustering candidates, always captured when the receipt is reserved. They have no stored
  * candidate or threshold revision: every result carries the prompt version's default thresholds.
  */
-export type StoryRemotePlan = RemotePlanBase & { candidateKind: 'story' }
+type StoryRemotePlan = RemotePlanBase & { candidateKind: 'story' }
 
 export type RemotePlan = TopicRemotePlan | CommunityPromptRemotePlan | StoryRemotePlan
 

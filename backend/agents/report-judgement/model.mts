@@ -5,7 +5,7 @@ import {
   renderReportReasonPolicyCoverageForPrompt,
 } from '@services/moderation/content-policy'
 
-export type JudgementOutput = {
+type JudgementOutput = {
   recommended_action: 'no_action' | 'warn' | 'remove' | 'escalate'
   public_response: string
   internal_response: string

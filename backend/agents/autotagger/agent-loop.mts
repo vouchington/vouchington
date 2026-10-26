@@ -22,11 +22,7 @@ export type AutotaggerAgentBounds = {
 }
 
 /** Why the loop ended. Only `submitted` carries an answer; every other reason answers with none. */
-export type AutotaggerAgentEnd =
-  | 'submitted'
-  | 'turns-exhausted'
-  | 'output-budget-exhausted'
-  | 'stalled'
+type AutotaggerAgentEnd = 'submitted' | 'turns-exhausted' | 'output-budget-exhausted' | 'stalled'
 
 export type AutotaggerAgentLoopResult = {
   topicIds: readonly string[]

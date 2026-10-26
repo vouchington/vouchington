@@ -2,7 +2,7 @@ import type { StructuredDecisionClient } from '@modules/structured-decisions'
 import type { ClassifierDecisionScope } from '@services/classifiers'
 import type { ClassifierChoiceKey, ClassifierSafeText } from './safe-content.mts'
 
-export type ClassifierDecisionSubject =
+type ClassifierDecisionSubject =
   | { postId: string; rssFeedItemId: null }
   | { postId: null; rssFeedItemId: string }
 
@@ -12,7 +12,7 @@ export type TopicClassifierCandidate = {
   storedCandidateId: string | null
 }
 
-export type StoryClassifierCandidate = {
+type StoryClassifierCandidate = {
   candidateKind: 'story'
   storyId: string
   storedCandidateId: string | null
@@ -22,7 +22,7 @@ export type StoryClassifierCandidate = {
  * A standalone RSS feed item scored as a story-clustering candidate. It shares the `story`
  * candidate family (the classifier's persisted `candidateKind`) with `StoryClassifierCandidate`.
  */
-export type RssFeedItemClassifierCandidate = {
+type RssFeedItemClassifierCandidate = {
   candidateKind: 'rss_feed_item'
   rssFeedItemId: string
   storedCandidateId: null

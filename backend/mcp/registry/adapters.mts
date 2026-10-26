@@ -11,7 +11,7 @@ import {
   factorToolSchema,
 } from '@vouchington/mcp-server/schema'
 
-export type McpToolAnnotations = {
+type McpToolAnnotations = {
   readOnlyHint: boolean
   destructiveHint?: boolean
   idempotentHint: boolean

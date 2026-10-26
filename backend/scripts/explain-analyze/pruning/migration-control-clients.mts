@@ -4,7 +4,7 @@ const pruningDatabaseName = /^voucha_pruning_[a-f0-9]{24}$/
 const serverClientBackendTypes = ['client backend', 'parallel worker'] as const
 
 /** How long an already-exited child's backend may remain visible, inside the control budget. */
-export const migrationServerClientSettleMs = 2_000
+const migrationServerClientSettleMs = 2_000
 export const migrationServerClientSampleMs = 200
 
 export interface MigrationActivityRow {

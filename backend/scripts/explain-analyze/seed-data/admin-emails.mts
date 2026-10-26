@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 import { seedUuid } from './common.mts'
 
-export const ADMIN_EMAIL_SEED_COUNT = 20_000
+const ADMIN_EMAIL_SEED_COUNT = 20_000
 export const ADMIN_EMAIL_PROBE_INDEX = 1234
 export const ADMIN_EMAIL_PROBE = `seeduser${ADMIN_EMAIL_PROBE_INDEX}@example.com`
 

@@ -38,7 +38,7 @@ export function getConfigInventoryUsage(): string {
   return USAGE
 }
 
-export async function runConfigInventoryCli(options: CliOptions): Promise<string> {
+async function runConfigInventoryCli(options: CliOptions): Promise<string> {
   const ctx = await buildSharedContext(options.repoRoot)
   if (!ctx.isInsideGitRepo) throw new Error(`${options.repoRoot} is not inside a git repository`)
   const inventory = await collectConfigInventory(ctx)
