@@ -2,16 +2,14 @@ import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { createHash } from 'node:crypto'
 import { beginTransaction, type QueryExecutor, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
+import { enqueueProcessMembershipVerification } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import {
   createMembershipVerificationInTransaction,
   createMembershipVerificationFingerprint,
 } from '../verifications.mts'
-import { createConfiguredMicrosoftStoreClient } from './configured-client.mts'
-import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
 import { recoveryLineageIdentity } from './recovery-recurrence.mts'
 import type { MicrosoftStoreSourceRecoveryContext } from './source-recovery-context.mts'
-import type { MicrosoftStoreClient } from './types.mts'
 
 const SWEEP_BUCKET_MS = 60 * 60 * 1000
 export type MicrosoftStoreSourceRecoveryBatch = {
@@ -52,17 +50,14 @@ export async function advanceMicrosoftStoreSourceRecoveryCursor(
   )
   return rowCount === 1
 }
-export async function reconcileMicrosoftStoreSource(options: {
-  sourceId: string
-  client?: MicrosoftStoreClient
-}): Promise<void> {
-  const verificationId = await findOrCreateRecoveryVerification(options.sourceId)
-  if (!verificationId) return
-  await processMicrosoftStoreMembershipVerification(verificationId, {
-    client: options.client ?? createConfiguredMicrosoftStoreClient(),
-  })
+export async function reconcileMicrosoftStoreSource(options: { sourceId: string }): Promise<void> {
+  const verification = await findOrCreateRecoveryVerification(options.sourceId)
+  if (verification?.status === 'pending')
+    await enqueueProcessMembershipVerification({ verificationId: verification.id })
 }
-async function findOrCreateRecoveryVerification(sourceId: string): Promise<string | null> {
+async function findOrCreateRecoveryVerification(
+  sourceId: string,
+): Promise<{ id: string; status: 'pending' | 'verified' | 'conflict' | 'rejected' } | null> {
   await using query = await beginTransaction()
   const context = await getSourceContext(sourceId, query)
   if (!context) return null
@@ -79,7 +74,7 @@ async function findOrCreateRecoveryVerification(sourceId: string): Promise<strin
   )
   if (existingVerificationId) {
     await query.commit()
-    return existingVerificationId
+    return { id: existingVerificationId, status: 'pending' }
   }
   const verification = await createMembershipVerificationInTransaction(
     {
@@ -100,7 +95,7 @@ async function findOrCreateRecoveryVerification(sourceId: string): Promise<strin
     query,
   )
   await query.commit()
-  return verification.id
+  return { id: verification.id, status: verification.status }
 }
 async function findRecoveryCursor(): Promise<{
   previousCursor: string | null

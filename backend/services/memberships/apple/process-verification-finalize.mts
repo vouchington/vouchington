@@ -25,6 +25,7 @@ export async function finalizeAppleVerificationFromPriorAttempt(
     WHERE membership_provider_evidence_record_id = ${context.evidenceId}
       AND id <> ${context.verificationId}
       AND (verified_at IS NOT NULL OR conflicted_at IS NOT NULL OR rejected_at IS NOT NULL)
+      AND (rejected_at IS NULL OR result_code IS DISTINCT FROM 'provider_unavailable')
     ORDER BY
       (user_id = ${context.userId} AND verified_at IS NOT NULL) DESC,
       (verified_at IS NOT NULL) DESC,

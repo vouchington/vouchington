@@ -9,13 +9,14 @@ import {
 export async function createTestAppleVerificationFixture(
   userId: string,
   applicationId = `ai.voucha.apple-${randomUUID()}`,
+  environment: 'test' | 'production' = 'test',
 ) {
   const sku = await createTestSku({ plan: 'plus' })
   const providerProductId = `ai.voucha.plus.${randomUUID()}`
   const providerProduct = await createTestNativeMembershipProviderProduct({
     membershipProductId: sku.id,
     provider: 'apple_app_store',
-    environment: 'test',
+    environment,
     applicationId,
     providerProductId,
   })

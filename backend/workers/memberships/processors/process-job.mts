@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import { processMembershipProviderJob } from './membership-provider-job.mts'
 import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import type { MembershipsJobs } from '@queues/memberships/types'
 import { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
@@ -128,7 +129,9 @@ async function dispatchMembershipJob(job: Job, processors: MembershipJobProcesso
       await processors.recoverAppleNotifications()
       return
     case 'processGooglePlayNotification':
-      await processors.processGooglePlayNotification(job.data)
+      await processMembershipProviderJob(job, () =>
+        processors.processGooglePlayNotification(job.data),
+      )
       return
     case 'recoverGooglePlayNotifications':
       await processors.recoverGooglePlayNotifications()

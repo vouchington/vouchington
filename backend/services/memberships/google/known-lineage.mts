@@ -3,19 +3,19 @@ import sql from 'sql-template-strings'
 import { tokenDigest } from './token-digest.mts'
 import { decryptSecret } from '@modules/token-secrets'
 
-/** Identifies a durable token family and whether a signed-in direct proof now owns it. */
+/** Identifies a durable token family and its active direct proof, even after source expiry. */
 export async function getKnownGooglePlayTokenLineage(options: {
   environment: 'test' | 'production'
   applicationId: string
   purchaseToken: string
-}): Promise<{ lineageId: string; hasDirectBinding: boolean } | null> {
-  const { rows } = await write<{ lineageId: string; hasDirectBinding: boolean }>(
+}): Promise<{ lineageId: string; boundUserId: string | null } | null> {
+  const { rows } = await write<{ lineageId: string; boundUserId: string | null }>(
     sql`/* getKnownGooglePlayTokenLineage */
-      SELECT lineage.id AS "lineageId", EXISTS (
-        SELECT 1 FROM membership_lineage_bindings binding
+      SELECT lineage.id AS "lineageId", (
+        SELECT binding.user_id FROM membership_lineage_bindings binding
         WHERE binding.membership_provider_lineage_id = lineage.id
           AND binding.source_kind = 'direct' AND binding.released_at IS NULL
-      ) AS "hasDirectBinding"
+      ) AS "boundUserId"
       FROM membership_google_play_purchase_tokens token
       INNER JOIN membership_provider_lineages lineage ON lineage.id = token.membership_provider_lineage_id
       INNER JOIN membership_provider_contexts context ON context.id = token.membership_provider_context_id

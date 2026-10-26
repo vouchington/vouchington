@@ -3,14 +3,12 @@ import { createHash } from 'node:crypto'
 import { write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import { createMembershipVerification } from '../verifications.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import {
   advanceGooglePlayRecoverySweep,
   beginGooglePlayRecoverySweep,
   pageGooglePlayRecoveryItems,
 } from './recovery-cursor.mts'
 import sql from 'sql-template-strings'
-import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 const RECOVERY_CURSOR_ID = 'active_sources'
 const SWEEP_BUCKET_MS = 60 * 60 * 1000
@@ -50,10 +48,9 @@ export async function advanceGooglePlayActiveSourceRecoveryCursor(
   await advanceGooglePlayRecoverySweep({ cursorId: RECOVERY_CURSOR_ID, ...batch })
 }
 
-/** Revalidates and reconciles one source; the queue payload never contains the raw token. */
+/** Admits one source observation to the canonical verification job without exposing its token. */
 export async function reconcileGooglePlayActiveSource(options: {
   sourceId: string
-  client: GooglePlaySubscriptionsV2Client
 }): Promise<void> {
   const context = await getActiveSourceContext(options.sourceId)
   if (!context) return
@@ -66,7 +63,7 @@ export async function reconcileGooglePlayActiveSource(options: {
     context.purchaseTokenLookupSha256,
     Math.floor(Date.now() / SWEEP_BUCKET_MS).toString(),
   )
-  const verification = await createMembershipVerification({
+  await createMembershipVerification({
     userId: context.userId,
     provider: 'google_play',
     purchaseIntentId: null,
@@ -81,7 +78,6 @@ export async function reconcileGooglePlayActiveSource(options: {
       active_source_reconciliation: idempotencyKey,
     },
   })
-  await processGooglePlayMembershipVerification(verification.id, { client: options.client })
 }
 
 async function findSourcesAfterCursor(

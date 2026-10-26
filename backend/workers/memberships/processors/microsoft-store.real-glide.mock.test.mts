@@ -22,6 +22,7 @@ import {
 } from '@voucha/test-helpers'
 import { getEnqueuedJobId, isDeduplicatedEnqueue } from '@voucha/test-helpers/queue-jobs'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
+import { getTestPendingMicrosoftStoreVerification } from '@voucha/test-helpers/microsoft-store-memberships'
 import { processMicrosoftStoreSource, recoverMicrosoftStoreSources } from './microsoft-store.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -91,6 +92,7 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
     const fixture = await createActiveMicrosoftStoreFixture()
     const verificationJobId = fixture.verificationId
     let sourceJobId: string | undefined
+    let recoveryVerificationId: string | null = null
 
     try {
       const [enqueued] = await enqueueBulkReconcileMicrosoftStoreSources([
@@ -116,9 +118,21 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
           ordering: { key: `microsoft-store-source:${fixture.sourceId}`, concurrency: 1 },
         },
       })
+      await processMicrosoftStoreSource({ sourceId: fixture.sourceId })
+      recoveryVerificationId = await getTestPendingMicrosoftStoreVerification({
+        userId: fixture.userId,
+        applicationId: fixture.applicationId,
+      })
+      if (!recoveryVerificationId)
+        throw new Error('Expected source recovery to admit a membership verification')
+      await expect(memberships.getJob(recoveryVerificationId)).resolves.toMatchObject({
+        id: recoveryVerificationId,
+        name: 'processMembershipVerification',
+        data: { verificationId: recoveryVerificationId },
+      })
     } finally {
       await Promise.all(
-        [sourceJobId, verificationJobId].map(async jobId => {
+        [sourceJobId, verificationJobId, recoveryVerificationId].map(async jobId => {
           if (!jobId) return
           await (await memberships.getJob(jobId))?.remove()
         }),
@@ -130,6 +144,8 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
 async function createActiveMicrosoftStoreFixture(): Promise<{
   verificationId: string
   sourceId: string
+  userId: string
+  applicationId: string
 }> {
   const user = await createTestUser()
   const applicationId = `voucha.microsoft.${randomUUID()}`
@@ -176,7 +192,7 @@ async function createActiveMicrosoftStoreFixture(): Promise<{
   if (!membership) throw new Error('Microsoft Store fixture was not projected')
   const sourceId = await getMembershipSourceIdByMembershipId(membership.id)
   if (!sourceId) throw new Error('Microsoft Store fixture source was not projected')
-  return { verificationId: verification.id, sourceId }
+  return { verificationId: verification.id, sourceId, userId: user.id, applicationId }
 }
 
 function clientFixture(productId: string, skuId: string, expiresAt: Date): MicrosoftStoreClient {

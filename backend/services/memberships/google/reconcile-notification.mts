@@ -3,7 +3,11 @@ import { beginTransaction, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { createMembershipVerification } from '../verifications.mts'
-import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
+import {
+  createConfiguredGooglePlaySubscriptionsV2Client,
+  GooglePlaySubscriptionLookupError,
+} from './configured-client.mts'
+import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import {
   getLatestKnownGooglePlayPurchaseToken,
   persistGooglePlayTokenLineage,
@@ -11,14 +15,13 @@ import {
 } from './lineage.mts'
 import { getKnownGooglePlayTokenLineage } from './known-lineage.mts'
 import { parseGooglePlayRtdn } from './rtdn.mts'
-import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import { getKnownGooglePlayCurrentSource } from './permanent-lookup-loss.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 /** Replays a durable RTDN trigger into the same authoritative worker verifier used by purchases. */
 export async function reconcileGooglePlayRtdnNotification(options: {
   evidenceId: string
-  client: GooglePlaySubscriptionsV2Client
+  client?: GooglePlaySubscriptionsV2Client
 }): Promise<void> {
   const context = await loadNotification(options.evidenceId)
   if (!context) return
@@ -37,29 +40,32 @@ export async function reconcileGooglePlayRtdnNotification(options: {
     applicationId: context.applicationId,
     purchaseTokenDigest: createHash('sha256').update(purchaseToken).digest('hex'),
   })
-  if (known)
-    return processBoundNotification(
-      context,
-      known.lineageId,
-      known.userId,
-      purchaseToken,
-      options.client,
-    )
+  if (known) return processBoundNotification(context, known.lineageId, known.userId, purchaseToken)
   const knownLineage = await getKnownGooglePlayTokenLineage({
     environment: context.environment,
     applicationId: context.applicationId,
     purchaseToken,
   })
-  if (knownLineage && !knownLineage.hasDirectBinding) return
+  if (knownLineage) {
+    if (!knownLineage.boundUserId) return
+    return processBoundNotification(
+      context,
+      knownLineage.lineageId,
+      knownLineage.boundUserId,
+      purchaseToken,
+    )
+  }
   let resolved: Awaited<ReturnType<typeof resolveGooglePlayTokenLineage>>
   try {
     resolved = await resolveGooglePlayTokenLineage({
-      client: options.client,
+      client: options.client ?? createConfiguredGooglePlaySubscriptionsV2Client(),
       environment: context.environment,
       applicationId: context.applicationId,
       purchaseToken,
     })
   } catch (err) {
+    if (err instanceof MembershipProviderUnavailableError)
+      return rejectNotification(context.evidenceId, 'provider_unavailable')
     if (
       err instanceof GooglePlaySubscriptionLookupError &&
       err.invalidPurchaseToken &&
@@ -91,7 +97,7 @@ export async function reconcileGooglePlayRtdnNotification(options: {
       applicationId: context.applicationId,
       purchaseToken,
     })) ?? purchaseToken
-  await processBoundNotification(context, lineageId, userId, latestPurchaseToken, options.client)
+  await processBoundNotification(context, lineageId, userId, latestPurchaseToken)
 }
 
 async function processBoundNotification(
@@ -99,7 +105,6 @@ async function processBoundNotification(
   lineageId: string,
   userId: string,
   purchaseToken: string,
-  client: GooglePlaySubscriptionsV2Client,
 ): Promise<void> {
   const verification = await createMembershipVerification({
     userId,
@@ -114,7 +119,8 @@ async function processBoundNotification(
     // previously verified; subscriptionsv2 is refetched for every RTDN state transition.
     evidence: { purchase_token: purchaseToken, rtdn_evidence_id: context.evidenceId },
   })
-  await processGooglePlayMembershipVerification(verification.id, { client })
+  // The canonical job owns provider calls and pacing. Receipt recovery reuses this verification
+  // and finalizes the RTDN evidence only after its durable outcome exists.
   const { rows: outcomes } = await write<{
     verified_at: Date | null
     conflicted_at: Date | null

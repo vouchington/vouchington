@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { createMembershipVerification } from '../verifications.mts'
 import { getMembershipByUserId } from '../get.mts'
 import {
@@ -8,6 +9,11 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-play-memberships'
+import {
+  createTestGooglePlayClient,
+  createTestGooglePlayRtdnBody,
+  getTestPendingGooglePlayVerification,
+} from '@voucha/test-helpers/google-play-recovery'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
@@ -21,11 +27,11 @@ describe('Google Play RTDN reconciliation failures', () => {
     const applicationId = configureGooglePlay()
     const ignoredEvidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
-      rawBody: makeRtdnBody(applicationId, { testNotification: {} }),
+      rawBody: createTestGooglePlayRtdnBody(applicationId, { testNotification: {} }),
     })
     const corruptedEvidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
-      rawBody: makeRtdnBody(applicationId, {
+      rawBody: createTestGooglePlayRtdnBody(applicationId, {
         subscriptionNotification: {
           notificationType: 2,
           purchaseToken: `google-token-${randomUUID()}`,
@@ -57,7 +63,7 @@ describe('Google Play RTDN reconciliation failures', () => {
     const unboundToken = `google-token-${randomUUID()}`
     const unboundEvidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
-      rawBody: makeRtdnBody(applicationId, {
+      rawBody: createTestGooglePlayRtdnBody(applicationId, {
         subscriptionNotification: {
           notificationType: 2,
           purchaseToken: unboundToken,
@@ -67,7 +73,7 @@ describe('Google Play RTDN reconciliation failures', () => {
     })
     await reconcileGooglePlayRtdnNotification({
       evidenceId: unboundEvidenceId,
-      client: makeClient({ productId, userId: (await createTestUser()).id }),
+      client: createTestGooglePlayClient({ productId, userId: (await createTestUser()).id }),
     })
     await expect(
       getTestMembershipProviderEvidenceTerminalState(unboundEvidenceId),
@@ -96,12 +102,12 @@ describe('Google Play RTDN reconciliation failures', () => {
     })
     await expect(
       processGooglePlayMembershipVerification(verification.id, {
-        client: makeClient({ productId, userId: owner.id, pending: true }),
+        client: createTestGooglePlayClient({ productId, userId: owner.id, pending: true }),
       }),
     ).rejects.toThrow('Google Play purchase is pending')
     const boundEvidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
-      rawBody: makeRtdnBody(applicationId, {
+      rawBody: createTestGooglePlayRtdnBody(applicationId, {
         subscriptionNotification: {
           notificationType: 2,
           purchaseToken: boundToken,
@@ -110,10 +116,17 @@ describe('Google Play RTDN reconciliation failures', () => {
       }),
     })
 
-    await reconcileGooglePlayRtdnNotification({
-      evidenceId: boundEvidenceId,
-      client: makeClient({ productId, userId: other.id }),
+    const mismatchClient = createTestGooglePlayClient({ productId, userId: other.id })
+    const mismatchFetch = vi.spyOn(mismatchClient, 'getSubscription')
+    await reconcileGooglePlayRtdnNotification({ evidenceId: boundEvidenceId })
+    const recoveryVerificationId = await expectQueuedVerification(owner.id, applicationId)
+    await processGooglePlayMembershipVerification(recoveryVerificationId, {
+      client: mismatchClient,
     })
+    await (await memberships.getJob(recoveryVerificationId))?.remove()
+    expect(mismatchFetch).toHaveBeenCalledOnce()
+    await reconcileGooglePlayRtdnNotification({ evidenceId: boundEvidenceId })
+    expect(mismatchFetch).toHaveBeenCalledOnce()
 
     await expect(
       getTestMembershipProviderEvidenceTerminalState(boundEvidenceId),
@@ -128,7 +141,7 @@ describe('Google Play RTDN reconciliation failures', () => {
       const purchaseToken = `google-token-${randomUUID()}`
       const evidenceId = await createTestGooglePlayRtdnEvidence({
         applicationId,
-        rawBody: makeRtdnBody(applicationId, {
+        rawBody: createTestGooglePlayRtdnBody(applicationId, {
           subscriptionNotification: {
             notificationType: 2,
             purchaseToken,
@@ -212,7 +225,7 @@ describe('Google Play RTDN reconciliation failures', () => {
     fetched.length = 0
     const evidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
-      rawBody: makeRtdnBody(applicationId, {
+      rawBody: createTestGooglePlayRtdnBody(applicationId, {
         subscriptionNotification: {
           notificationType: 13,
           purchaseToken: oldToken,
@@ -220,7 +233,11 @@ describe('Google Play RTDN reconciliation failures', () => {
         },
       }),
     })
-    await reconcileGooglePlayRtdnNotification({ evidenceId, client })
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
+    const recoveryVerificationId = await expectQueuedVerification(owner.id, applicationId)
+    await processGooglePlayMembershipVerification(recoveryVerificationId, { client })
+    await (await memberships.getJob(recoveryVerificationId))?.remove()
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
 
     expect(fetched).toEqual([newToken])
     await expect(getMembershipByUserId(owner.id)).resolves.toMatchObject({
@@ -230,6 +247,17 @@ describe('Google Play RTDN reconciliation failures', () => {
   })
 })
 
+async function expectQueuedVerification(userId: string, applicationId: string): Promise<string> {
+  const verificationId = await getTestPendingGooglePlayVerification({ userId, applicationId })
+  if (!verificationId) throw new Error('Google Play RTDN verification was not admitted')
+  await expect(memberships.getJob(verificationId)).resolves.toMatchObject({
+    id: verificationId,
+    name: 'processMembershipVerification',
+    data: { verificationId },
+  })
+  return verificationId
+}
+
 function configureGooglePlay(): string {
   const applicationId = `ai.voucha.google-${randomUUID()}`
   vi.stubEnv('ENVIRONMENT', 'staging')
@@ -238,55 +266,11 @@ function configureGooglePlay(): string {
   return applicationId
 }
 
-function makeRtdnBody(applicationId: string, notification: Record<string, unknown>): Buffer {
-  return Buffer.from(
-    JSON.stringify({
-      message: {
-        messageId: `test-rtdn-${randomUUID()}`,
-        data: Buffer.from(
-          JSON.stringify({
-            packageName: applicationId,
-            eventTimeMillis: String(Date.now()),
-            ...notification,
-          }),
-        ).toString('base64'),
-      },
-    }),
-  )
-}
-
 function unavailableClient(): GooglePlaySubscriptionsV2Client {
   return {
     getSubscription: async () => {
       throw new Error('Provider access is not expected for invalid RTDN evidence')
     },
-    acknowledgeSubscription: async () => undefined,
-  }
-}
-
-function makeClient(options: {
-  productId: string
-  userId: string
-  pending?: boolean
-}): GooglePlaySubscriptionsV2Client {
-  return {
-    getSubscription: async () => ({
-      latestOrderId: `synthetic-order-${randomUUID()}`,
-      subscriptionState: options.pending
-        ? 'SUBSCRIPTION_STATE_PENDING'
-        : 'SUBSCRIPTION_STATE_ACTIVE',
-      acknowledgementState: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
-      testPurchase: {},
-      externalAccountIdentifiers: {
-        obfuscatedExternalAccountId: createHash('sha256').update(options.userId).digest('hex'),
-      },
-      lineItems: [
-        {
-          productId: options.productId,
-          expiryTime: new Date(Date.now() + 60 * 86_400_000).toISOString(),
-        },
-      ],
-    }),
     acknowledgeSubscription: async () => undefined,
   }
 }

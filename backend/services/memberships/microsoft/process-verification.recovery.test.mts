@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId, getMembershipSourceIdByMembershipId } from '@services/memberships'
 import {
   createTestNativeMembershipProviderProduct,
@@ -10,7 +11,10 @@ import {
   releaseMembershipSourceForRebindForTest,
 } from '@voucha/test-helpers'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
-import { listTestMicrosoftStoreSourceIds } from '@voucha/test-helpers/microsoft-store-memberships'
+import {
+  getTestPendingMicrosoftStoreVerification,
+  listTestMicrosoftStoreSourceIds,
+} from '@voucha/test-helpers/microsoft-store-memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { projectVerifiedProviderMembershipObservation } from '../provider-observation-projection.mts'
 import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
@@ -118,7 +122,18 @@ describe('Microsoft Store membership verification recovery', () => {
     if (!firstSource) throw new Error('First Microsoft Store source was not persisted')
     const recoveryClient = fixture.client(firstRecurrenceId)
     const queryCollections = vi.spyOn(recoveryClient, 'queryCollections')
-    await reconcileMicrosoftStoreSource({ sourceId: firstSource, client: recoveryClient })
+    await reconcileMicrosoftStoreSource({ sourceId: firstSource })
+    const recoveryId = await getTestPendingMicrosoftStoreVerification({
+      userId: fixture.user.id,
+      applicationId: fixture.applicationId,
+    })
+    if (!recoveryId) throw new Error('Microsoft Store recovery verification was not admitted')
+    await expect(memberships.getJob(recoveryId)).resolves.toMatchObject({
+      name: 'processMembershipVerification',
+      data: { verificationId: recoveryId },
+    })
+    await processMicrosoftStoreMembershipVerification(recoveryId, { client: recoveryClient })
+    await (await memberships.getJob(recoveryId))?.remove()
     expect(queryCollections).toHaveBeenCalledWith(expect.objectContaining({ key: collectionsKey }))
   })
 

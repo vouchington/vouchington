@@ -195,6 +195,9 @@ purchases cannot occupy the dispatcher lane. Each verification retains its job a
 identity while pending purchases and provider throttles delay that job. Per-verification ordering
 isolates these waits; a token-owned Valkey execution lease enforces the global provider-call cap
 and is released before deferral, so a delayed purchase cannot block unrelated verifications.
+Source recovery admits the same canonical verification jobs. Bound Google notification receipts
+remain pending until an outcome exists and finalize on receipt replay. Unbound token-lineage
+discovery shares the execution cap while it waits for a user binding.
 
 ## Related architecture
 
