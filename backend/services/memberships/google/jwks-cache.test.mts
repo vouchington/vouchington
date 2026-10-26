@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import {
   getCachedGoogleOidcTrustMaterial,
   googleOidcValkeyTrustStore,
@@ -14,6 +15,7 @@ const trustStoreCache = new ValkeyCache<{ key: string }>({
   prefix: 'memberships-google-oidc-trust',
   ttlSeconds: 6 * 60 * 60,
   keySerializer: value => value.key,
+  runBackgroundRefresh: runDetachedBackgroundWork,
 })
 
 const utcBoundaries = [

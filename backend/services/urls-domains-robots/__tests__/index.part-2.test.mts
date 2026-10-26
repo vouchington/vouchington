@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchRobotsTxt, fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
 import { defaultRobotsDependencies } from '../fetch-retry.mts'
 import { ValkeyCache } from '@data-stores/valkey/cache'
+import { runDetachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { insertTestDomainBlacklist, insertTestUrlHostname } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 
@@ -132,6 +133,7 @@ describe('fetchRobotsTxt', () => {
     const cache = new ValkeyCache({
       prefix: 'urls-domains-robots',
       ttlSeconds: 60 * 60 * 24,
+      runBackgroundRefresh: runDetachedBackgroundWork,
     })
     await cache.set(domain, cachedRobotsTxt)
 
