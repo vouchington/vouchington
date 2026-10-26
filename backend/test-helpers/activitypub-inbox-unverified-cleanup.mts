@@ -4,10 +4,9 @@ import { insertActivityPubInboxCapacityDeliveriesForTest } from './entities/acti
 
 /** Small owned expiry-category fixture. */
 export async function createUnverifiedActivityPubCleanupFixture() {
-  const ids = await insertActivityPubInboxCapacityDeliveriesForTest(5, 4, true)
-  const [idle, stale, failed, active, unexpired] = ids
-  if (!idle || !stale || !failed || !active || !unexpired)
-    throw new Error('Missing owned cleanup identities')
+  const ids = await insertActivityPubInboxCapacityDeliveriesForTest(3, 4, true)
+  const [pending, failed, unexpired] = ids
+  if (!pending || !failed || !unexpired) throw new Error('Missing owned cleanup identities')
   await write(sql`/* createUnverifiedActivityPubCleanupFixture */
     UPDATE activitypub_inbox_envelopes
     SET failed_at = CASE WHEN id = ${failed} THEN CURRENT_TIMESTAMP - INTERVAL '1 minute' ELSE NULL END,
@@ -18,5 +17,5 @@ export async function createUnverifiedActivityPubCleanupFixture() {
     WHERE id = ANY(${ids}::uuid[])
   `)
   const foreign = await insertActivityPubInboxCapacityDeliveriesForTest(1, 7, true)
-  return { ids, eligible: [idle, stale, failed, active], retained: [unexpired], foreign }
+  return { ids, eligible: [pending, failed], retained: [unexpired], foreign }
 }
