@@ -6,7 +6,7 @@ import type { PostToolUseChecker, PostToolUseWarning } from 'vouchington-tooling
 
 const FMT_EXTS = /\.(md|json|jsonc|yml|yaml|toml)$/
 
-export const autoFormatChecker: PostToolUseChecker = {
+const autoFormatChecker: PostToolUseChecker = {
   matches: filePath => FMT_EXTS.test(filePath),
   check: (filePath, worktreeRoot) => {
     const fullPath = path.isAbsolute(filePath) ? filePath : path.resolve(worktreeRoot, filePath)
@@ -27,7 +27,7 @@ export const autoFormatChecker: PostToolUseChecker = {
 const INTERNAL_MOCK_RE =
   /vi\.mock\(\s*['"`]((@services|@queues|@data-stores)\/|.*\.\.(\/?\.\.)*\/(services|queues|data-stores)\/)/
 
-export const nonWebMockPolicyChecker: PostToolUseChecker = {
+const nonWebMockPolicyChecker: PostToolUseChecker = {
   matches: (filePath, worktreeRoot) => {
     if (/\.(test\.mts|test\.ts)$/.test(filePath)) {
       const rel = path.relative(worktreeRoot, filePath)
@@ -57,7 +57,7 @@ export const nonWebMockPolicyChecker: PostToolUseChecker = {
 
 const DATA_PW_RE = /data-pw="([^"]+)"/g
 
-export const dataPwSpecChecker: PostToolUseChecker = {
+const dataPwSpecChecker: PostToolUseChecker = {
   matches: (filePath, worktreeRoot) => {
     const rel = path.relative(worktreeRoot, filePath)
     return (
@@ -88,7 +88,7 @@ export const dataPwSpecChecker: PostToolUseChecker = {
   },
 }
 
-export const servicePackageChecker: PostToolUseChecker = {
+const servicePackageChecker: PostToolUseChecker = {
   matches: (filePath, worktreeRoot) =>
     /^backend\/services\/[^/]+\/package\.json$/.test(path.relative(worktreeRoot, filePath)),
   check: (filePath, worktreeRoot) => {
