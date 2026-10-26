@@ -16,6 +16,11 @@ and enqueue can leave a cache entry stale until its TTL, a sitemap entry until i
 a notification until its next reconciliation. The capture and application boundary is owned by
 `backend/services/post-publication` and `backend/workers/post-publication`.
 
+Author and community eligibility also affects inherited visibility in comment threads. Scope
+discovery therefore follows affected posts downward to their descendants, while captured previous
+identities remain applicable even when their live relations have disappeared. A logical change
+starts scope discovery once even when its previous identities require multiple payloads.
+
 ## Predicates
 
 - **Core public state**: candidate and root are not deleted and are approved; the root has

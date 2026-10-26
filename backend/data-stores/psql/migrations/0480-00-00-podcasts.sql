@@ -41,7 +41,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- for /podcasts/[category] hub filter: list feeds in a category
 CREATE INDEX IF NOT EXISTS idx_rss_feed_categories__topic_id
-ON rss_feed_categories (topic_id, rss_feed_id DESC)
+ON rss_feed_categories (topic_id, rss_feed_id DESC, category_identity_id DESC)
 WHERE topic_id IS NOT NULL;
 
 -- for category identity filtering and joins

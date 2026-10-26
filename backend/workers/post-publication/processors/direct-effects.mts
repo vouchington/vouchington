@@ -1,3 +1,8 @@
+import {
+  enqueueLiveScopePostEffects,
+  isScopePostContinuation,
+  processLiveScopePostContinuation,
+} from './direct-scope-post-effects.mts'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import {
@@ -43,6 +48,8 @@ export async function processApplyPostPublicationEffects(
   data: PostPublicationEffectsJobData,
 ): Promise<{ affectedPosts: number }> {
   if (data.continuation) {
+    if (isScopePostContinuation(data.continuation.kind))
+      return processLiveScopePostContinuation(data, data.continuation, processPublicationKeys)
     if (isTopicMergeContinuation(data.continuation.kind))
       return processLiveTopicMergeContinuation(data, data.continuation, processPublicationKeys)
     if (isRssContinuation(data.continuation.kind))
@@ -50,7 +57,9 @@ export async function processApplyPostPublicationEffects(
     await processLivePublicationIdentityContinuation(data)
     return { affectedPosts: 0 }
   }
-  return processPublicationKeys(data, data.keys, true)
+  const result = await processPublicationKeys(data, data.keys, true)
+  await enqueueLiveScopePostEffects(data)
+  return result
 }
 
 async function processPublicationKeys(
@@ -115,6 +124,7 @@ async function processPublicationKeys(
       data,
       {
         postIds: [...new Set([...postIds, ...currentPostIds])],
+        descendantPostIds: postIds,
         topicIds: selected.topicIds,
         rssFeedIds,
         rssFeedItemIds: selected.rssFeedItemIds,
@@ -171,6 +181,7 @@ async function processLiveRssContinuation(
   if (itemIds.length > 0 || postIds.length > 0)
     await enqueueLivePublicationIdentityEffects(data, {
       postIds,
+      descendantPostIds: postIds,
       topicIds: [],
       rssFeedIds: [],
       rssFeedItemIds: itemIds,

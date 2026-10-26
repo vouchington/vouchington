@@ -529,7 +529,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- for searching items by topic
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__topic_id
-ON rss_feed_item_categories (topic_id, rss_feed_item_id DESC)
+ON rss_feed_item_categories (topic_id, rss_feed_item_id DESC, category_identity_id DESC)
 WHERE topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

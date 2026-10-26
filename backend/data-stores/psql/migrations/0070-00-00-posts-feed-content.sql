@@ -187,7 +187,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__topic_alias_id
-ON post_topic_alias_sources (topic_alias_id, post_id DESC);
+ON post_topic_alias_sources (topic_alias_id, post_id DESC, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__contributor_id
@@ -298,7 +298,7 @@ WHERE deleted_at IS NULL;
 -- searching posts by creator; bare so it also serves as the RI-usable index for created_by_id's FK
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id
-ON posts (created_by_id);
+ON posts (created_by_id, id);
 
 -- first-post and ban-evasion candidate lookups within a community
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

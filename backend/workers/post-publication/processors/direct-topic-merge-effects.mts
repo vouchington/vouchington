@@ -60,6 +60,7 @@ export async function processLiveTopicMergeContinuation(
   if (postIds.length > 0 || itemIds.length > 0 || feedIds.length > 0)
     await enqueueLivePublicationIdentityEffects(data, {
       postIds,
+      descendantPostIds: postIds,
       topicIds: [],
       rssFeedIds: feedIds,
       rssFeedItemIds: itemIds,

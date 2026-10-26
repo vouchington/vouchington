@@ -39,6 +39,7 @@ export function postPublicationEffectJobId(data: PostPublicationEffectsJobData):
         data.chunkIndex,
         continuation?.kind ?? null,
         subjectId,
+        continuation?.subjectIds.slice(continuation.subjectIndex) ?? null,
         continuation?.subjectIndex ?? null,
         continuation?.after ?? null,
       ]),

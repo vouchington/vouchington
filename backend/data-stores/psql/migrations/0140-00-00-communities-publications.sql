@@ -530,7 +530,7 @@ ALTER TABLE posts VALIDATE CONSTRAINT fk_posts_community_id;
 
 -- RI-usable index for the community_id FK (existing composite indexes have community_id in a non-leading position)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_posts__community_id ON posts (community_id) WHERE community_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_posts__community_id ON posts (community_id, id) WHERE community_id IS NOT NULL;
 
 
 -- community_pinned_posts

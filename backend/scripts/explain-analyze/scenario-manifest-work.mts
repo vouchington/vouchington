@@ -1,4 +1,5 @@
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
+import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
@@ -11,6 +12,7 @@ export const BOUNDED_WORK_SCENARIOS = [
   'upload-cleanup-abandonment-upper',
   'upload-cleanup-abandonment-first',
   'upload-cleanup-abandonment-forward',
+  ...PUBLICATION_SCOPE_SCENARIO_IDS,
   'dispatch-hostname-url-selectivity',
   'dispatch-tier1-url-selectivity',
   'dispatch-tier2-url-selectivity',

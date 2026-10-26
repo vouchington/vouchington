@@ -37,6 +37,12 @@ export type PostPublicationEffectsJobData = {
   /** One bounded live-identity page in a stable child chain of the captured change. */
   continuation?: {
     kind:
+      | 'author_posts'
+      | 'community_posts'
+      | 'post_descendants'
+      | 'alias_post_relations'
+      | 'alias_post_sources'
+      | 'story_posts'
       | 'post_slugs'
       | 'topic_aliases'
       | 'post_data_topics'

@@ -24,6 +24,7 @@ export async function enqueueLivePublicationIdentityEffects(
   data: PostPublicationEffectsJobData,
   subjects: {
     postIds: readonly string[]
+    descendantPostIds?: readonly string[]
     topicIds: readonly string[]
     rssFeedIds: readonly string[]
     rssFeedItemIds: readonly string[]
@@ -32,6 +33,7 @@ export async function enqueueLivePublicationIdentityEffects(
 ): Promise<void> {
   const jobs = [
     ...subjectChainJobs(data, 'post_slugs', subjects.postIds),
+    ...subjectChainJobs(data, 'post_descendants', subjects.descendantPostIds ?? []),
     ...subjectChainJobs(data, 'topic_aliases', subjects.topicIds),
     ...subjectChainJobs(data, 'rss_feed_items', subjects.rssFeedIds),
     ...subjectChainJobs(data, 'rss_feed_categories', subjects.rssFeedIds),
