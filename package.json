@@ -139,8 +139,8 @@
     "@vitest/browser-playwright": "^5.0.5",
     "@vitest/coverage-v8": "^5.0.5",
     "@vouchington/api-client": "^0.2.0",
-    "@vouchington/localization": "^0.2.1",
-    "@vouchington/localization-compiler": "^0.2.2",
+    "@vouchington/localization": "^0.3.0",
+    "@vouchington/localization-compiler": "^0.3.0",
     "@vouchington/postgres": "^0.1.0",
     "@vouchington/session-jwt": "^0.0.2",
     "@vouchington/worker-runtime": "^0.2.1",
@@ -169,7 +169,7 @@
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.5",
-    "vouchington-tooling": "^0.72.2",
+    "vouchington-tooling": "^0.72.3",
     "yaml": "^2.9.1"
   },
   "engines": {

@@ -34,7 +34,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.4.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.12.0"
+    "valkyries": "^0.12.1"
   },
   "devDependencies": {
     "@services/bookmarks": "workspace:^",

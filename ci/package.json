@@ -9,8 +9,8 @@
   "scripts": {},
   "dependencies": {
     "@ts-shared/utils": "workspace:^",
-    "@vouchington/localization": "^0.2.1",
-    "@vouchington/localization-compiler": "^0.2.2",
+    "@vouchington/localization": "^0.3.0",
+    "@vouchington/localization-compiler": "^0.3.0",
     "coverage-check": "^0.18.0",
     "jsonc-parser": "^3.3.1",
     "no-mistakes": "^0.98.0",
@@ -20,7 +20,7 @@
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
-    "vouchington-tooling": "^0.72.2"
+    "vouchington-tooling": "^0.72.3"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",

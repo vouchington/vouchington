@@ -245,8 +245,8 @@
     "@ts-shared/utm": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/localization": "^0.2.1",
-    "@vouchington/oauth-server": "^0.3.0",
+    "@vouchington/localization": "^0.3.0",
+    "@vouchington/oauth-server": "^0.5.0",
     "@vouchington/pagination": "^0.0.3",
     "@vouchington/rate-limit": "^0.3.0",
     "@vouchington/sentry": "^0.4.0",
@@ -260,7 +260,7 @@
     "p-map": "^7.1.0",
     "undici": "^8.12.3",
     "uuid": "^14.0.3",
-    "valkyries": "^0.12.0"
+    "valkyries": "^0.12.1"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.1156.0",

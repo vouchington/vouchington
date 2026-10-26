@@ -51,13 +51,13 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/sentry": "^0.4.0",
-    "@vouchington/typed-entities": "^0.4.0",
+    "@vouchington/typed-entities": "^0.6.0",
     "@vouchington/utils": "^0.10.2",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.12.0"
+    "valkyries": "^0.12.1"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
