@@ -1,3 +1,4 @@
+import { expireActivityDistributionCheckpoint } from './distribution-expiration.mts'
 import { getRemoteActorsWorkLimit } from '@services/remote-actors/work-limits'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import { listRemoteFollowerInboxPage } from '@services/remote-actors'
@@ -73,7 +74,9 @@ async function prepareActivityDistributionPageInTransaction(
     pageSize ?? getRemoteActorsWorkLimit('follower_inbox_batch_size')
   const rejectionFloor = await lockActivityPubReplayFloor(query, 'outbound')
   const activityCreatedAt = getDateFromUUIDv7(activityId)
-  if (!activityCreatedAt || (rejectionFloor && activityCreatedAt <= rejectionFloor)) {
+  if (!activityCreatedAt) return { status: 'expired' }
+  if (rejectionFloor && activityCreatedAt <= rejectionFloor) {
+    await expireActivityDistributionCheckpoint(activityId, sourceUserId, { query })
     return { status: 'expired' }
   }
   await query(sql`/* prepareActivityDistributionPage:insert */

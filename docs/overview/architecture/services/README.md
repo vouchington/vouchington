@@ -89,6 +89,9 @@ outbound checkpoint admission serialize with that short transaction. A distribut
 floor while claiming the bounded recipient page; its already-admitted delivery jobs may drain after
 the floor advances, retaining their own maximum-age check without a database floor read per recipient.
 No floor lock crosses queue admission or external HTTP.
+Age or permanent-floor rejection retires an existing matching fan-out checkpoint and releases its
+lease without creating work. Its recorded cursor remains intact, and terminal retention can
+eventually remove work that can no longer resume.
 
 Active Follow and Like cycles remain live domain facts. Replacement and Undo transitions retire old
 cycle identities; terminal rows expire from that immutable transition time after a configurable

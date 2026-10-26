@@ -240,7 +240,7 @@ describe('old outbound activity jobs', () => {
     const prepare = vi.fn<typeof prepareActivityDistributionPage>()
     expect(
       await distributeActivity(
-        { ...FOLLOW_DATA, activityId: oldId },
+        { ...FOLLOW_DATA, activityId: oldId, sourceUserId: mintUUIDv7() },
         {
           prepareActivityDistributionPage: prepare,
         },

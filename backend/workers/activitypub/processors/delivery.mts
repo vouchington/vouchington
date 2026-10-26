@@ -6,6 +6,7 @@ import {
   buildActivityJson,
   commitActivityDistributionPage,
   deliverActivityToInbox,
+  expireActivityDistributionCheckpoint,
   prepareActivityDistributionPage,
   releaseActivityDistributionPage,
 } from '@services/activitypub-delivery'
@@ -73,7 +74,12 @@ export async function distributeActivity(
   }
   // UUIDv7 age prevents delayed retries from recreating an expired checkpoint.
   const ageRejection = activityAgeRejectionReason(data.activityId)
-  if (ageRejection) return { enqueued: 0, reason: ageRejection }
+  if (ageRejection) {
+    if (ageRejection === 'expired-activity') {
+      await expireActivityDistributionCheckpoint(data.activityId, data.sourceUserId)
+    }
+    return { enqueued: 0, reason: ageRejection }
+  }
   if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
     return { enqueued: 0 }
   }
