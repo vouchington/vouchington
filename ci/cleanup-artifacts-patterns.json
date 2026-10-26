@@ -35,6 +35,7 @@
     "web-integration-artifacts",
     "web-integration-shard-*",
     "web-test-report-*",
+    "backend-postgres-*",
     "explain-analyze-results",
     "gitleaks-report",
     "trivy-*",

@@ -31,6 +31,10 @@ const reportOnly: Record<string, string[]> = {
   backend: ['test-backend-credentialed'],
   web: ['test-playwright-credentialed'],
 }
+// Producer jobs that prepare shared test inputs before a database-backed suite starts.
+const preparations: Record<string, string[]> = {
+  backend: ['prepare-postgres'],
+}
 
 const readWorkflow = (path: string): Workflow => load(readFileSync(path, 'utf8')) as Workflow
 const needsOf = (job: Job): string[] => [job.needs ?? []].flat()
@@ -109,15 +113,18 @@ describe('area workflows', () => {
     const jobs = workflow.jobs ?? {}
     const selected = `needs.changes.outputs.area-${area} == 'true'`
     const staticJobs = Object.keys(jobs).filter(id => id === `static-${area}`)
+    const preparationJobs = preparations[area] ?? []
     const suites = Object.keys(jobs).filter(
-      id => ![area, 'changes', ...staticJobs].includes(id) && !fanIns.has(id),
+      id => ![area, 'changes', ...staticJobs, ...preparationJobs].includes(id) && !fanIns.has(id),
     )
     const suiteShape = (id: string) => {
       const needs = needsOf(jobs[id]!)
       return {
         id,
-        // A suite waits only for the area selection and its static checks, never another suite.
-        waitsOnSelectionOnly: needs.every(need => need === 'changes' || staticJobs.includes(need)),
+        // A suite waits only for area selection, static checks, and declared setup jobs.
+        waitsOnSelectionAndSetupOnly: needs.every(
+          need => need === 'changes' || staticJobs.includes(need) || preparationJobs.includes(need),
+        ),
         // The area static checks gate it; without them, it selects the area itself.
         gated:
           staticJobs.length > 0
@@ -130,9 +137,21 @@ describe('area workflows', () => {
     expect(staticJobs.map(id => ({ id, needs: needsOf(jobs[id]!), if: jobs[id]!.if }))).toEqual(
       staticJobs.map(id => ({ id, needs: ['changes'], if: selected })),
     )
+    expect(
+      preparationJobs.map(id => ({ id, needs: needsOf(jobs[id]!), if: jobs[id]!.if })),
+    ).toEqual(preparationJobs.map(id => ({ id, needs: staticJobs, if: undefined })))
     expect(suites.map(suiteShape)).toEqual(
-      suites.map(id => ({ id, waitsOnSelectionOnly: true, gated: true })),
+      suites.map(id => ({ id, waitsOnSelectionAndSetupOnly: true, gated: true })),
     )
+
+    const setupConsumers = Object.entries(jobs)
+      .filter(([, job]) => needsOf(job).some(need => preparationJobs.includes(need)))
+      .map(([id]) => id)
+    const expectedSetupConsumers =
+      area === 'backend'
+        ? ['test-backend-unit', 'test-backend-credentialed', 'backend', 'coverage', 'codecov']
+        : []
+    expect(setupConsumers.toSorted()).toEqual(expectedSetupConsumers.toSorted())
   })
 
   // no-mistakes' tsconfig-gate-coverage counts the repository typechecks only through a root that

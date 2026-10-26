@@ -113,7 +113,10 @@ describe('area coverage wiring', () => {
       )
       expect(needsOf(coverage)).toEqual(expect.arrayContaining(producerIds))
       const selectionNeeds = area === 'tooling' ? ['changes'] : []
-      expect(needsOf(codecov).toSorted()).toEqual([...producerIds, ...selectionNeeds].toSorted())
+      const setupNeeds = area === 'backend' ? ['prepare-postgres'] : []
+      expect(needsOf(codecov).toSorted()).toEqual(
+        [...producerIds, ...selectionNeeds, ...setupNeeds].toSorted(),
+      )
 
       // Each producer's artifacts match exactly one upload pattern, and every pattern matches.
       const artifacts = producers.flatMap(([, job]) => fullLcovArtifacts(job.uses!.slice(2)))
@@ -150,15 +153,24 @@ describe('area coverage wiring', () => {
     area => {
       const { jobs } = areas.find(({ area: name }) => name === area)!
       const [, codecov] = jobCalling(jobs, codecovWorkflow)
-      const successClause = clausesOf(codecov.if).find(clause =>
-        clause.includes(".result == 'success'"),
-      )
+      const producerIds = Object.entries(jobs)
+        .filter(
+          ([, job]) =>
+            job.uses?.startsWith('./.github/workflows/') &&
+            fullLcovArtifacts(job.uses.slice(2)).length > 0,
+        )
+        .map(([id]) => id)
+      const successClause = clausesOf(codecov.if).find(clause => clause.includes(' || ')) ?? ''
+      const actualProducers = [
+        ...successClause.matchAll(/needs\.([\w-]+)\.result == 'success'/gu),
+      ].map(([, id]) => id)
 
       expect(codecov.if).not.toContain("contains(needs.*.result, 'success')")
-      expect(successClause).toBe(
-        `(${needsOf(codecov)
-          .map(id => `needs.${id}.result == 'success'`)
-          .join(' || ')})`,
+      expect(actualProducers.toSorted()).toEqual(producerIds.toSorted())
+      const setupNeeds = area === 'backend' ? ['prepare-postgres'] : []
+      expect(needsOf(codecov)).toEqual(expect.arrayContaining(setupNeeds))
+      expect(clausesOf(codecov.if)).toEqual(
+        expect.arrayContaining(setupNeeds.map(id => `needs.${id}.result == 'success'`)),
       )
     },
   )

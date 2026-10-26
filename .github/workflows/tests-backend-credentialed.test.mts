@@ -26,7 +26,9 @@ function stepSection(job: string, stepName: string): string {
 describe('backend credentialed test workflow', () => {
   it('combines the credentialed projects in one job', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
-    expect(credentialedJob).toContain('if: ${{ inputs.trusted_secret_context }}')
+    expect(credentialedJob).toContain(
+      'if: ${{ !cancelled() && !failure() && inputs.trusted_secret_context }}',
+    )
     expect(credentialedJob).toContain('AWS_REGION: us-west-2')
     expect(credentialedJob).toContain('AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}')
     expect(credentialedJob).toContain("REQUIRE_BEDROCK_INTEGRATION: ''")
@@ -141,6 +143,18 @@ describe('backend credentialed test workflow', () => {
     expect(workflow).toContain('LIGHTPANDA_TOKEN:\n        required: false')
   })
 
+  it('restores the shared prepared database and keeps standalone dispatch support', () => {
+    const credentialedJob = jobSection('backend-credentialed-tests')
+    expect(workflow).toContain('prepared_database:')
+    expect(workflow).toContain('uses: ./.github/workflows/prepare-postgres.yml')
+    expect(credentialedJob).toContain('needs: [prepare-postgres]')
+    expect(credentialedJob).toContain('Restore prepared PostgreSQL database')
+    expect(credentialedJob).toContain(
+      'pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges',
+    )
+    expect(credentialedJob).not.toContain('node data-stores/psql/migrate.mts')
+  })
+
   // Live provider calls are smoke checks, not a gate. Recorded-response fixtures in the unit suites
   // gate the same behavior and own its coverage (docs/development/tests.md#live-provider-smoke-checks).
   it('publishes no coverage, so the area coverage gate never depends on live providers', () => {
@@ -185,7 +199,7 @@ describe('backend credentialed test workflow', () => {
     const anthropic = stepSection(credentialedJob, 'Run Anthropic credentialed tests')
 
     expect(mint).toContain(
-      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.migrate.outcome == 'success' }}",
+      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.restore-database.outcome == 'success' }}",
     )
     expect(anthropic).toContain(
       "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.anthropic-token.outcome == 'success' }}",
@@ -215,6 +229,8 @@ describe('backend area wiring for the live-provider smoke checks', () => {
     const results = JSON.parse(String(gate.steps?.[0]?.with?.results)) as Record<string, unknown>
 
     expect(backendJobs['test-backend-credentialed']).toBeDefined()
+    expect(needsOf('test-backend-credentialed')).toContain('prepare-postgres')
+    expect(backendJobs['test-backend-credentialed']!.with?.prepared_database).toBe(true)
     expect(needsOf('backend')).not.toContain('test-backend-credentialed')
     expect(results).not.toHaveProperty('test-backend-credentialed')
   })

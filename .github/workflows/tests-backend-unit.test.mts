@@ -42,6 +42,16 @@ function jobSection(jobName: string): string {
   return next === -1 ? rest : rest.slice(0, next)
 }
 describe('backend uncredentialed Docker test workflow', () => {
+  it('wires one area-level database producer to every backend database suite', () => {
+    const caller = load(readFileSync('.github/workflows/backend.yml', 'utf8')) as {
+      jobs: Record<string, { needs?: string[]; with?: Record<string, unknown> }>
+    }
+
+    expect(caller.jobs['prepare-postgres']?.needs).toEqual(['static-backend'])
+    expect(caller.jobs['test-backend-unit']?.needs).toContain('prepare-postgres')
+    expect(caller.jobs['test-backend-unit']?.with?.prepared_database).toBe(true)
+  })
+
   it('leaves Docker-free static checks to the backend module workflow', () => {
     const backendJob = jobSection('backend-tests')
     expect(workflow).toContain('name: Backend Uncredentialed Docker Tests')
@@ -107,15 +117,20 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')
   })
 
-  it('builds email templates and migrates each shard without owning backend smoke', () => {
-    // Email-templates build is folded into .github/actions/setup-backend. Each
-    // shard still owns that setup and migration; the standalone smoke workflow
-    // owns allocated-port API/worker smoke instead.
+  it('restores the shared prepared database before backend tests', () => {
     const setupBackend = workflow.indexOf('actions/setup-backend')
-    const migration = workflow.indexOf('node data-stores/psql/migrate.mts')
+    const restore = workflow.indexOf('Restore prepared PostgreSQL database')
 
     expect(setupBackend).toBeGreaterThanOrEqual(0)
-    expect(migration).toBeGreaterThan(setupBackend)
+    expect(restore).toBeGreaterThanOrEqual(0)
+    expect(restore).toBeLessThan(workflow.indexOf('name: Run backend tests'))
+    expect(workflow).toContain('prepared_database:')
+    expect(workflow).toContain('uses: ./.github/workflows/prepare-postgres.yml')
+    expect(workflow).not.toContain('node data-stores/psql/migrate.mts')
+    expect(workflow).not.toContain('check-retained-relation-bootstrap.mts')
+    expect(workflow).toContain(
+      'pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges',
+    )
     expect(workflow).not.toContain('Allocate backend port')
     expect(workflow).not.toContain('./scripts/tests/smoke-test-server.sh')
     expect(workflow).not.toContain('./scripts/tests/smoke-test-worker.sh')
@@ -268,23 +283,18 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toMatch(/actions\/cache\/(?:restore|save)|\.cache\/vite\/vitest/u)
   })
 
-  // Real fresh-server acceptance belongs after migrate, before test/worker execution.
-  it('runs retained relation bootstrap acceptance exactly once between migrate and tests', () => {
-    const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
-    const command = 'node scripts/data-retention/check-retained-relation-bootstrap.mts'
-    const matches = steps.filter(step => step.run === command)
-    expect(matches).toHaveLength(1)
-    expect(matches[0]?.if).toBeUndefined()
-    const migrate = steps.findIndex(step => step.run === 'node data-stores/psql/migrate.mts')
-    const acceptance = steps.findIndex(step => step.run === command)
-    const tests = steps.findIndex(step => step.name === 'Run backend tests')
+  it('keeps database setup in the single prepared PostgreSQL producer', () => {
+    const producer = readFileSync('.github/workflows/prepare-postgres.yml', 'utf8')
+    const migrate = producer.indexOf('node data-stores/psql/migrate.mts')
+    const acceptance = producer.indexOf(
+      'node scripts/data-retention/check-retained-relation-bootstrap.mts',
+    )
+    const dump = producer.indexOf('Dump prepared PostgreSQL database')
+
     expect(migrate).toBeGreaterThanOrEqual(0)
     expect(acceptance).toBeGreaterThan(migrate)
-    expect(tests).toBeGreaterThan(acceptance)
-    const upload = steps.find(step => step.name === 'Upload retained relation bootstrap receipt')
-    expect(upload?.if).toBe('always()')
-    expect(upload?.with?.path).toBe('artifacts/retained-relation-bootstrap.json')
-    expect(upload?.with?.['retention-days']).toBe(1)
-    expect(upload?.with?.overwrite).toBe(true)
+    expect(dump).toBeGreaterThan(acceptance)
+    expect(producer).toContain('pg_dump --format=custom --no-owner --no-privileges')
+    expect(producer).toContain('backend-postgres-${{ github.run_id }}')
   })
 })

@@ -4446,6 +4446,9 @@ rules:
         # Existing backend-credentialed budget; no #2260 change.
         - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
           maxMinutes: 20
+        # Steps sum to 16m; cap 15m is below their combined deadlines.
+        - job: '.github/workflows/prepare-postgres.yml#prepare-postgres'
+          maxMinutes: 15
         # Steps sum to 26m; cap 25m is below it; healthy maximum was 134 seconds across 65
         # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-backend-modules.yml#backend-modules'
@@ -4562,6 +4565,7 @@ rules:
             changes,
             codecov,
             coverage,
+            prepare-postgres,
             publish-backend-images,
             static-backend,
             test-backend-credentialed,
@@ -4635,6 +4639,7 @@ rules:
         .github/workflows/plan.yml: [comment-session, dispatch, escalate, gate, render-prompt]
         .github/workflows/pnpm-dedupe.yml: [dedupe]
         .github/workflows/postgresql-snapshot-update.yml: [generate, prepare, publish]
+        .github/workflows/prepare-postgres.yml: [prepare-postgres]
         .github/workflows/publish-backend-images.yml: [build, resolve-main-images]
         .github/workflows/publish-web-images.yml: [build, resolve-main-images]
         .github/workflows/scheduled-prompts.yml: [dispatch, select-prompt]
@@ -4644,9 +4649,10 @@ rules:
         .github/workflows/static.yml: [static, static-code-analysis]
         .github/workflows/storybook.yml: [storybook]
         .github/workflows/sync-articles.yml: [publish]
-        .github/workflows/tests-backend-credentialed.yml: [backend-credentialed-tests]
+        .github/workflows/tests-backend-credentialed.yml:
+          [backend-credentialed-tests, prepare-postgres]
         .github/workflows/tests-backend-modules.yml: [backend-modules]
-        .github/workflows/tests-backend-unit.yml: [backend-tests, prep]
+        .github/workflows/tests-backend-unit.yml: [backend-tests, prep, prepare-postgres]
         .github/workflows/tests-cloudflare-worker.yml: [cloudflare-worker-tests]
         .github/workflows/tests-lambdas.yml: [lambdas-tests]
         .github/workflows/tests-playwright-credentialed.yml: [playwright-credentialed-tests]
@@ -4695,6 +4701,18 @@ rules:
         - '.github/workflows/tooling.yml#tooling'
         - '.github/workflows/gitleaks.yml#gitleaks'
       requiredDirectEdges:
+        - - '.github/workflows/backend.yml#static-backend'
+          - '.github/workflows/backend.yml#prepare-postgres'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-backend-unit'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-backend-credentialed'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#coverage'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#codecov'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#backend'
         - - '.github/workflows/main-backend.yml#detect-image-publication'
           - '.github/workflows/main-backend.yml#backend-deploy-intent'
         - - '.github/workflows/main-backend.yml#detect-image-publication'
@@ -4706,6 +4724,10 @@ rules:
       exactCallerJobs:
         .github/workflows/backend.yml:
           - '.github/workflows/nightly.yml#backend'
+        .github/workflows/prepare-postgres.yml:
+          - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-credentialed.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-unit.yml#prepare-postgres'
         .github/workflows/checks-backend-smoke.yml:
           - '.github/workflows/backend.yml#backend-smoke'
         .github/workflows/checks-static.yml:
@@ -4786,6 +4808,7 @@ rules:
         .github/workflows/web.yml:
           - '.github/workflows/nightly.yml#web'
       unlockedWorkflowReasons:
+        .github/workflows/prepare-postgres.yml: 'the backend area caller owns concurrency'
         .github/workflows/checks-backend-smoke.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/checks-static.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/ci-area-coverage.yml: 'short-lived read-only area coverage check'
