@@ -77,6 +77,8 @@ describe('embedding creation lease loss through real background CPU workers', ()
     const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       min_records_per_job: 1,
       max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
       max_scan_rows_per_run: 10_000,
       creation_lease_renewal_interval_ms: 100,
       creation_lease_retry_delay_ms: 1_000,

@@ -16,7 +16,10 @@ import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-cre
 import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/embedding-quota-snapshot'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getBatchRecordsCreatedInLastHour } from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import {
+  BEDROCK_BATCH_MAX_VALUES,
+  bedrockEmbeddingsBatchConfig,
+} from '@services/bedrock-embeddings/batch/config'
 import { getBatchCreationLimits } from '../../rate-limits.mts'
 import { creationSubmissionAdmission } from '../../submission-admission.mts'
 import {
@@ -88,7 +91,8 @@ describe('createBatch input upload failure', () => {
     const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       min_records_per_job: 1,
       max_requests_per_hour: 100,
-      max_inflight_jobs: 10_000,
+      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
     })
     const user = await createTestUserDirect()
     const suffix = randomUUID()
@@ -157,6 +161,10 @@ describe('createBatch input upload failure', () => {
         }
       })
       await fixture.insertCompletedControl(100)
+      expect(await getBatchCreationLimits(new Date())).toMatchObject({
+        allowed: false,
+        reason: 'hourly_request_limit_exceeded',
+      })
       finishUpload.resolve()
       await expect(pending).rejects.toMatchObject({ reason: 'quota_changed_before_submit' })
       expect(await getTestBatchEntities(batchId)).toEqual([])

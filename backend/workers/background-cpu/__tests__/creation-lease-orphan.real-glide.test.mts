@@ -7,7 +7,12 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-co
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
+import {
+  BEDROCK_BATCH_MAX_VALUES,
+  bedrockEmbeddingsBatchConfig,
+} from '@services/bedrock-embeddings/batch/config'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
@@ -30,6 +35,13 @@ describe('crashed embedding creation lease holder', () => {
       connection,
       BACKGROUND_CPU_QUEUE_NAME,
     )
+    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+      min_records_per_job: 1,
+      max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
+    })
+    fixture.beforeRelease(async () => restore())
     let orphanHeld = false
     fixture.beforeRelease(async () => {
       // The child exited without release. Only its unexpired, unreplaced key can remain after
@@ -54,7 +66,7 @@ describe('crashed embedding creation lease holder', () => {
       child.stderr?.on('data', (chunk: Buffer) => {
         errors += chunk.toString()
       })
-      const [code] = await once(child, 'exit')
+      const [code] = await once(child, 'close')
       if (code !== 0) throw new Error(`Orphan lease child exited with ${code}: ${errors}`)
       expect(output).toContain('acquired')
       orphanHeld = true
