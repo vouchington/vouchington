@@ -4054,9 +4054,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-      uuid:
-        specifier: ^14.0.3
-        version: 14.0.3
 
   backend/services/admin-imports:
     dependencies:

@@ -39,7 +39,6 @@
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^",
-    "uuid": "^14.0.3"
+    "@voucha/test-helpers": "workspace:^"
   }
 }
