@@ -11,6 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import type { HostnameBlockCleanupCursor } from '@queues/background/enqueues/hostname-blocking-jobs'
 import { getEntityRelationUrlTables } from '@services/entity-relations/url-tables'
+import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { blockHostname } from './block-hostname.mts'
 import {
   getHostnameBlockCleanupOperation,
@@ -61,6 +62,50 @@ describe('hostname block cleanup ownership', () => {
 
     const completedParent = await completeAdmittedCleanup(parent.operation_id)
     expect(completedParent.blockedHostnameCount).toBe(2)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeInstanceOf(Date)
+    await expect(getTestPenaltiesByHostnameId(leafId)).resolves.toEqual([])
+  })
+
+  it('prefers the most-specific owned scope over inherited block row age', async () => {
+    const [administrator, creator] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUser({ username: `inherited-owner-${randomToken()}` }),
+    ])
+    const topHostname = `inherited-owner-${randomToken()}.example.com`
+    const topId = await insertTestUrlHostname({ hostname: topHostname })
+    const top = await blockHostname(administrator.id, topId, { penalizeCreators: false })
+    await completeAdmittedCleanup(top.operation_id)
+
+    const broadHostname = `broad.${topHostname}`
+    const deepHostname = `deep.${broadHostname}`
+    const leafHostname = `leaf.${deepHostname}`
+    const broadId = (await upsertUrlHostnames(null, [broadHostname])).get(broadHostname)!
+    const deepId = (await upsertUrlHostnames(null, [deepHostname])).get(deepHostname)!
+    const leafId = (await upsertUrlHostnames(null, [leafHostname])).get(leafHostname)!
+    const postId = await insertTestPost({
+      title: `Inherited cleanup ownership ${randomToken()}`,
+      slug: `inherited-cleanup-ownership-${randomToken()}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+    const urlId = uuidv7()
+    await insertTestPostRelatedUrlBatch({
+      postIds: [postId],
+      urlIds: [urlId],
+      hostname: leafHostname,
+      hostnameId: leafId,
+      createdById: creator.id,
+    })
+
+    const deep = await blockHostname(administrator.id, deepId, { penalizeCreators: false })
+    const broad = await blockHostname(administrator.id, broadId, { penalizeCreators: true })
+    const leaf = await blockHostname(administrator.id, leafId, { penalizeCreators: true })
+
+    expect(broad.operation_id.localeCompare(deep.operation_id)).toBeLessThan(0)
+    expect(leaf).toEqual(deep)
+    await completeAdmittedCleanup(broad.operation_id)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeNull()
+    await completeAdmittedCleanup(deep.operation_id)
     await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeInstanceOf(Date)
     await expect(getTestPenaltiesByHostnameId(leafId)).resolves.toEqual([])
   })
