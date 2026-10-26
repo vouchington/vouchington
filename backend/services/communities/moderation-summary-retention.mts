@@ -14,7 +14,7 @@ export function isModerationSummaryJobCurrent(
 ): boolean {
   const end = new Date(windowEnd)
   if (!Number.isFinite(end.getTime())) return false
-  if (end.getTime() > now.getTime()) return false
+  // Dispatcher and worker clocks can differ; the worker clamps activity reads to its now.
   if (end.getTime() <= now.getTime() - MODERATION_EMAIL_SEND_RETENTION_DAYS * DAY_MS) return false
   const localDate = formatLocalDate(end, timeZone)
   const expectedKey = trackingKey.startsWith('weekly:')

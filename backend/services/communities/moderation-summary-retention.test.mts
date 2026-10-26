@@ -19,8 +19,6 @@ describe('moderation summary retention horizon', () => {
     expect(isModerationSummaryJobCurrent('daily:2026-10-21', end, 'UTC', now)).toBe(true)
     expect(isModerationSummaryJobCurrent('weekly:2026-W43', end, 'UTC', now)).toBe(true)
     expect(isModerationSummaryJobCurrent('daily:2026-10-20', end, 'UTC', now)).toBe(false)
-    expect(
-      isModerationSummaryJobCurrent('daily:2026-10-23', '2026-10-23T00:00:00Z', 'UTC', now),
-    ).toBe(false)
+    expect(isModerationSummaryJobCurrent('daily:2026-10-21', 'invalid', 'UTC', now)).toBe(false)
   })
 })

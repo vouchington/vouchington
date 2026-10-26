@@ -42,6 +42,7 @@ async function dispatchModerationSummary(
       recipient.id,
       windowStart,
       now,
+      now,
     )
     if (communities.length === 0) return
 
@@ -316,10 +317,13 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
 export async function getCommunityModerationSummaryCommunities(
   userId: string,
   windowStart: Date,
-  windowEnd: Date,
+  activityWindowEnd: Date,
+  eligibilityAt: Date,
 ): Promise<CommunityModerationSummaryEmailProps['communities']> {
+  // Vacation eligibility belongs to the queued period; activity reads may stop earlier
+  // when a worker clock trails the dispatcher clock.
   const windowStartId = timestampToUuidv7LowerBound(windowStart.getTime())
-  const windowEndId = timestampToUuidv7LowerBound(windowEnd.getTime())
+  const windowEndId = timestampToUuidv7LowerBound(activityWindowEnd.getTime())
   const { rows } = await read(sql`/* getCommunityModerationSummaryCommunities */
     SELECT
       c.name,
@@ -403,7 +407,7 @@ export async function getCommunityModerationSummaryCommunities(
         FROM community_members departed_members
         WHERE departed_members.community_id = c.id
           AND departed_members.removed_at >= ${windowStart}
-          AND departed_members.removed_at < ${windowEnd}
+          AND departed_members.removed_at < ${activityWindowEnd}
       ), 0) AS departed_members,
       COALESCE((
         SELECT COUNT(*)::int
@@ -493,8 +497,8 @@ export async function getCommunityModerationSummaryCommunities(
         FROM community_member_vacations v
         WHERE v.community_id = cm.community_id
           AND v.user_id = cm.user_id
-          AND v.starts_at <= ${windowEnd}::timestamptz
-          AND (v.ends_at IS NULL OR v.ends_at > ${windowEnd}::timestamptz)
+          AND v.starts_at <= ${eligibilityAt}::timestamptz
+          AND (v.ends_at IS NULL OR v.ends_at > ${eligibilityAt}::timestamptz)
         )
       )
     ORDER BY c.name ASC, c.id ASC

@@ -1,5 +1,14 @@
 import { read } from '../data-stores/psql/index.mts'
 import sql from 'sql-template-strings'
+import { createTestUser } from './entities/users.mts'
+import { insertTestCommunity } from './entities/communities.mts'
+import {
+  insertTestCommunityMember,
+  setTestCommunityDigestVacationSuppression,
+} from './entities/community-members.mts'
+import { insertTestPendingCommunityPostReview } from './entities/community-post-reviews.mts'
+import { insertTestPost } from './entities/posts.mts'
+import { insertTestCommunityVacation } from './entities/community-member-vacations.mts'
 import {
   claimModerationEmailSend,
   formatLocalDate,
@@ -26,4 +35,41 @@ export async function claimCurrentModerationSummaryForTest(userId: string): Prom
   const trackingKey = `daily:${formatLocalDate(now, timeZone)}`
   await claimModerationEmailSend(userId, trackingKey)
   return { trackingKey, windowEnd: now.toISOString(), dispatchTimeZone: timeZone }
+}
+
+export async function createClockSkewModerationSummaryFixture(
+  activityAt: string | null,
+  vacationBoundary: boolean,
+): Promise<string> {
+  const user = await createTestUser()
+  const community = await insertTestCommunity({ createdById: user.id })
+  await insertTestCommunityMember({
+    communityId: community.id,
+    userId: user.id,
+    role: 'owner',
+    approvedById: user.id,
+  })
+  if (vacationBoundary) {
+    await setTestCommunityDigestVacationSuppression(community.id, user.id, true)
+    await insertTestCommunityVacation({
+      communityId: community.id,
+      userId: user.id,
+      startsAt: '2030-01-06T23:00:00.000Z',
+      endsAt: '2030-01-07T00:00:00.000Z',
+    })
+  }
+  const postId = await insertTestPost({
+    title: 'Clock skew moderation activity',
+    slug: `clock-skew-moderation-${user.id}`,
+    createdById: user.id,
+    markdown: 'Needs review.',
+    communityId: community.id,
+    createdAt: new Date(activityAt ?? '2020-01-01T00:00:00.000Z'),
+  })
+  await insertTestPendingCommunityPostReview({
+    communityId: community.id,
+    postId,
+    submittedById: user.id,
+  })
+  return user.id
 }

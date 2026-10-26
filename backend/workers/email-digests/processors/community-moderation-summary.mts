@@ -22,6 +22,7 @@ import { isModerationSummaryJobCurrent } from '@services/communities/moderation-
 export const processSendCommunityModerationSummaryEmail = async (
   input: EmailTemplateInput,
   variables: ProcessSendCommunityModerationSummaryEmailVariables,
+  now = new Date(),
 ): Promise<unknown> => {
   let renderVariables = variables
   const recipient = await resolveEmailRecipient(input)
@@ -38,13 +39,14 @@ export const processSendCommunityModerationSummaryEmail = async (
     if (
       input.trackingKey &&
       (!input.windowEnd ||
-        !isModerationSummaryJobCurrent(input.trackingKey, input.windowEnd, timeZone, new Date()))
+        !isModerationSummaryJobCurrent(input.trackingKey, input.windowEnd, timeZone, now))
     )
       return null
     if (input.trackingKey && (await hasModerationEmailSent(input.userId, input.trackingKey))) {
       return null
     }
-    const windowEnd = input.windowEnd ? new Date(input.windowEnd) : new Date()
+    const queuedWindowEnd = input.windowEnd ? new Date(input.windowEnd) : now
+    const windowEnd = new Date(Math.min(queuedWindowEnd.getTime(), now.getTime()))
     const windowStart = input.windowStart
       ? new Date(input.windowStart)
       : getModerationActivityWindowStart(await getModerationEmailCadence(input.userId), windowEnd)
@@ -52,12 +54,13 @@ export const processSendCommunityModerationSummaryEmail = async (
       input.userId,
       windowStart,
       windowEnd,
+      queuedWindowEnd,
     )
     if (communities.length === 0) return null
     renderVariables = {
       ...variables,
       communities,
-      generatedForDate: formatLocalDate(windowEnd, timeZone),
+      generatedForDate: formatLocalDate(queuedWindowEnd, timeZone),
     }
   }
   const { subject, html, text } = await renderCommunityModerationSummaryEmail({

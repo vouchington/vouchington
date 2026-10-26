@@ -8,6 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
+import { createClockSkewModerationSummaryFixture } from '@voucha/test-helpers/moderation-summary-retention'
 import {
   claimModerationEmailSend,
   formatLocalDate,
@@ -238,4 +239,60 @@ describe('moderation summary queued retention', () => {
     await expect(processSendCommunityModerationSummaryEmail(input, variables)).resolves.toBeNull()
     expect(ses.sendEmail).toHaveBeenCalledTimes(1)
   })
+})
+
+describe('moderation summary dispatcher clock skew', () => {
+  beforeEach(() => {
+    vi.stubEnv(
+      'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',
+      'test:raw32:this fake test key is not secret',
+    )
+    vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  it.each([
+    { trackingKey: 'daily:2030-01-07', vacationBoundary: false, activityAt: null },
+    { trackingKey: 'weekly:2030-W02', vacationBoundary: false, activityAt: null },
+    { trackingKey: 'daily:2030-01-07', vacationBoundary: true, activityAt: null },
+    { trackingKey: 'daily:2025-01-06', vacationBoundary: false, activityAt: '2025-01-06' },
+  ])(
+    'delivers claimed $trackingKey once (vacation boundary=$vacationBoundary)',
+    async ({ trackingKey, vacationBoundary, activityAt }) => {
+      const userId = await createClockSkewModerationSummaryFixture(activityAt, vacationBoundary)
+      expect(await claimModerationEmailSend(userId, trackingKey)).toBe(true)
+      expect(await claimModerationEmailSend(userId, trackingKey)).toBe(false)
+      const queuedDate = activityAt ? '2025-01-06' : '2030-01-07'
+      const input = {
+        userId,
+        trackingKey,
+        windowStart: '2019-01-01T00:00:00.000Z',
+        windowEnd: `${queuedDate}T00:00:00.500Z`,
+      }
+      const variables = {
+        generatedForDate: queuedDate,
+        dispatchTimeZone: 'UTC',
+        settingsUrl: 'https://voucha.ai/my/notification-settings',
+        communities: [],
+      }
+      const workerNow = new Date(new Date(input.windowEnd).getTime() - 1000)
+
+      await processSendCommunityModerationSummaryEmail(input, variables, workerNow)
+
+      expect(ses.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: `Community moderation summary for ${queuedDate}` }),
+      )
+      const message = vi.mocked(ses.sendEmail).mock.calls[0]?.[0]
+      expect(message?.text?.includes('Clock skew moderation activity')).toBe(activityAt === null)
+      await expect(hasModerationEmailSent(userId, trackingKey)).resolves.toBe(true)
+      await expect(
+        processSendCommunityModerationSummaryEmail(input, variables, workerNow),
+      ).resolves.toBeNull()
+      expect(ses.sendEmail).toHaveBeenCalledTimes(1)
+    },
+  )
 })

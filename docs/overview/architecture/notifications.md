@@ -52,7 +52,8 @@ flowchart TD
   durable replay suppression; a surviving content source can still be restored or must continue
   to suppress re-notification, so its tombstone remains regardless of age. Moderator-summary send keys expire after their deduplication
   window; the worker rejects queued windows older than that same horizon so a delayed retry cannot
-  send again after its claim expires. SES delivery callbacks are acknowledged without storing their
+  send again after its claim expires. Dispatcher clock skew preserves the queued period identity
+  and vacation eligibility while activity reads stop at the worker clock. SES delivery callbacks are acknowledged without storing their
   payloads. Permanent bounces and complaints fold into one durable suppression row per address;
   old raw SES events are deleted after that suppression state is recorded.
 
