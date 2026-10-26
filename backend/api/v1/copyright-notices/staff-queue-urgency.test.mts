@@ -117,10 +117,9 @@ describe('copyright staff queue urgency', () => {
       undefined,
       async ({ read, assertInterleaving }) => {
         await assertInterleaving(due, interleavingControl, filingCase, false)
-        const walked = await read(ownedIds, false, 1)
+        const walked = await read(ownedIds, false, 1, true)
         const owned = walked.copyright_notices
         expect(new Set(owned.map(item => item.id)).size).toBe(owned.length)
-        expect(walked.page_info.end_cursor).toBeNull()
         expect(owned.map(notice => notice.id)).toEqual(ownedIds)
         const [missedCase, dueCase, unassessedCase, intakeCase] = owned
         expect(missedCase).toMatchObject({

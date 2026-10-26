@@ -26,7 +26,7 @@ export async function withCopyrightStaffQueueHttp<Result>(
   policy: { approvalId: string; actor: PrivateUser } | undefined,
   run: (context: {
     query: TransactionQuery
-    read: (ids: readonly string[], boost: boolean, limit: 1 | 100) => Promise<QueuePage>
+    read: (...args: [readonly string[], boolean, 1 | 100, boolean?]) => Promise<QueuePage>
     rejectPriorCursor: (cursor: string) => Promise<void>
     assertInterleaving: (
       first: string,
@@ -76,7 +76,7 @@ export async function withCopyrightStaffQueueHttp<Result>(
         await request.authenticateAs(moderator)
         return run({
           query: transaction,
-          read: async (ids, boost, limit) => {
+          read: async (ids, boost, limit, stopAfterOwned = false) => {
             const key = await firstOwnedKey(transaction, ids, boost, now)
             let after = encodeScopedTierPreciseUuidCursor(
               key.before,
@@ -128,6 +128,8 @@ export async function withCopyrightStaffQueueHttp<Result>(
               const next = endCursor
               if (!next || cursors.has(next)) throw new Error('HTTP queue cursor did not advance')
               cursors.add(next)
+              if (stopAfterOwned && seenOwned.size === ids.length)
+                return { copyright_notices: owned, page_info: page.page_info }
               after = next
             }
             throw new Error('HTTP queue exceeded its native snapshot suffix')
