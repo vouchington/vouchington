@@ -82,7 +82,6 @@ describe('ReportIntegrityPenaltiesClient', () => {
     if (!props) throw new Error('Expected report penalty client props')
     expect(props).toMatchObject({
       domain: 'report',
-      available: true,
       endpoint: '/api/v1/report-integrity/penalties',
       flagsPath: '/report-integrity/flags',
       initialData,

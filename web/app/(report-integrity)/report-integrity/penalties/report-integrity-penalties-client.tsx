@@ -18,9 +18,7 @@ export function ReportIntegrityPenaltiesClient({
   initialData,
   initialDuePage,
   initialStatus,
-  available = true,
 }: {
-  available?: boolean
   initialDuePage: ReportIntegrityPenaltyReviewsDueResponse | null
   initialData: ReportIntegrityPenaltiesResponse
   initialStatus: IntegrityPenaltyStatusFilter
@@ -28,7 +26,6 @@ export function ReportIntegrityPenaltiesClient({
   return (
     <IntegrityPenaltiesClient<ReportIntegrityPenalty>
       domain='report'
-      available={available}
       endpoint='/api/v1/report-integrity/penalties'
       flagsPath='/report-integrity/flags'
       initialData={initialData}
