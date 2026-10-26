@@ -72,7 +72,6 @@ export async function getRssFeedImport(
       batch.completed_at, batch.created_at, page.id AS row_id, page.input_url, page.outcome,
       page.error_message, page.rss_feed_id, page.topic_slug,
       EXISTS (
-        -- no-mistakes-disable-next-line postgres-required-predicates: topic merges transactionally repoint feed ownership; this persisted reference cannot target a merged source.
         SELECT 1 FROM user_rss_feed_import_rows cursor_row
         WHERE cursor_row.id = ${afterRowId}::uuid
           AND cursor_row.batch_id = batch.id
@@ -81,6 +80,7 @@ export async function getRssFeedImport(
     LEFT JOIN LATERAL (
       SELECT import_row.id, import_row.row_index, import_row.input_url, import_row.outcome,
         import_row.error_message, import_row.rss_feed_id, topic.slug AS topic_slug
+      -- no-mistakes-disable-next-line postgres-required-predicates: topic merges transactionally repoint feed ownership; this persisted reference cannot target a merged source.
       FROM user_rss_feed_import_rows import_row
       LEFT JOIN rss_feeds feed ON feed.id = import_row.rss_feed_id
       LEFT JOIN topics topic ON topic.id = feed.topic_id AND topic.deleted_at IS NULL

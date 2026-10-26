@@ -13,11 +13,11 @@ export async function getRssFeedWithTopicForDiscoverability(
 ): Promise<RssFeedWithTopicForDiscoverability | null> {
   const { rows } = await read(sql`/* getRssFeedWithTopicForDiscoverability */
     SELECT
-      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
       rss_feeds.id,
       rss_feeds.topic_id,
       rss_feeds.deleted_at,
       topics.votes_score_net AS topic_votes_score_net
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM rss_feeds
     JOIN topics ON topics.id = rss_feeds.topic_id
     WHERE rss_feeds.id = ${rssFeedId}
