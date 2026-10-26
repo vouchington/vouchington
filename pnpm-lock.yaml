@@ -7444,9 +7444,6 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@ts-shared/url-signing':
         specifier: workspace:^
         version: link:../../../ts-shared/url-signing

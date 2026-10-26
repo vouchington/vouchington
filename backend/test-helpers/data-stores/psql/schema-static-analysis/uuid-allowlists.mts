@@ -33,6 +33,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'follower_distributions.cursor_recipient_id',
     'Deletion-stable recipient UUIDv7 keyset position, not a relationship.',
   ],
+  ['images.deletion_post_cursor', 'Post scan position survives deletion; never joined.'],
   [
     'retained_identity_cleanup_cursors.cursor_identity_id',
     'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
