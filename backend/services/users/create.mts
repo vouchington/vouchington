@@ -1,3 +1,4 @@
+import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
 import { getPrivateUserByAny } from './get.mts'
 import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
 import { isHttpError } from 'http-errors'
@@ -101,17 +102,21 @@ export const upsertUser = async ({
   ])
   if (referrerId) {
     await updateAttributionSignup(sessionId!, referrerId, newUser.id)
-    void enqueueReferralSignupNotification(referrerId, newUser.id)
+    await awaitReportedEnqueueAdmission(async () => {
+      await enqueueReferralSignupNotification(referrerId, newUser.id)
+    })
     void enqueueAutoFollowReferrer(newUser.id, referrerId)
   }
   if (effectiveEmailAddress || oauthAccount) {
-    void enqueueSendWelcomeEmail(
-      {
-        userId: newUser.id,
-        uiLocale: newUser.ui_locale ?? null,
-      },
-      { userName: newUser.username ?? undefined, uiLocale: newUser.ui_locale ?? null },
-    )
+    await awaitReportedEnqueueAdmission(async () => {
+      await enqueueSendWelcomeEmail(
+        {
+          userId: newUser.id,
+          uiLocale: newUser.ui_locale ?? null,
+        },
+        { userName: newUser.username ?? undefined, uiLocale: newUser.ui_locale ?? null },
+      )
+    })
   }
   void enqueueOnUserCreated(newUser.id)
   return newUser

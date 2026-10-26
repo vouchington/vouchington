@@ -121,7 +121,7 @@ export async function createSessionReferralAttribution({
 
   // Only a genuinely new (session, referrer) pair notifies — a moved or frozen row
   // already notified the referrer on its original click.
-  if (isNewPair) void enqueueReferralClickNotification(referrerId, landingUrl)
+  if (isNewPair) await enqueueReferralClickNotification(referrerId, landingUrl)
 }
 
 async function getReferrerId(referrer: string): Promise<string | null> {
