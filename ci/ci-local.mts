@@ -16,7 +16,7 @@ export function getCiLocalTargets(): Record<CiLocalTargetName, CiLocalTarget> {
   return targets
 }
 
-export function runCiLocal(args: string[]): number {
+function runCiLocal(args: string[]): number {
   return runPublished({ args, targets, usage: USAGE })
 }
 

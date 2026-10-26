@@ -6,8 +6,8 @@ import { upsertMediaTypes } from '@services/urls/media-types'
 import { createHash } from 'node:crypto'
 import { seedUuid } from './common.mts'
 
-export const BLOCKLISTED_DOMAIN_SEED_COUNT = 20_000
-export const USER_AGENT_SEED_COUNT = 5_000
+const BLOCKLISTED_DOMAIN_SEED_COUNT = 20_000
+const USER_AGENT_SEED_COUNT = 5_000
 
 /** Domain-blocklist rows large enough that the policy batches must probe by key, not scan. */
 export async function seedBlocklistedDomains(): Promise<void> {

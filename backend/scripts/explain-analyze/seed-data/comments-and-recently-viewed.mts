@@ -80,7 +80,7 @@ export async function seedComments(): Promise<void> {
   }
 }
 const SEED_SESSION_ID = seedUuid(0, '11') // 019e0000-1100-7000-8000-000000000000
-export async function seedRecentlyViewedEntities(
+async function seedRecentlyViewedEntities(
   entityType: 'post' | 'topic',
   getEntityId: (i: number) => string,
   count = 100,

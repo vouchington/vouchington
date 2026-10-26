@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/cleanup-artifacts.yml'
-      - 'ci/cleanup-artifacts-pattern-matcher.mjs'
+      - 'ci/cleanup-artifacts-pattern-matcher.mts'
       - 'ci/cleanup-artifacts-patterns.json'
       - '.github/workflows/main-storybook.yml'
       - '.github/workflows/storybook.yml'

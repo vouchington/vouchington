@@ -31,7 +31,7 @@ export type TopicClassifierDecisionResult = PersistedDecisionResultBase & {
   storedCandidateId: string | null
 }
 
-export type StoryClassifierDecisionResult = PersistedDecisionResultBase & {
+type StoryClassifierDecisionResult = PersistedDecisionResultBase & {
   candidateKind: 'story'
   storyId: string
   storedCandidateId: string | null
@@ -41,14 +41,14 @@ export type StoryClassifierDecisionResult = PersistedDecisionResultBase & {
  * A standalone RSS item scored as a story-clustering candidate. It belongs to the `story` family
  * (`classifiers.candidate_kind = 'story'`) and is stored in `story_classifier_results.rss_feed_item_id`.
  */
-export type RssFeedItemClassifierDecisionResult = PersistedDecisionResultBase & {
+type RssFeedItemClassifierDecisionResult = PersistedDecisionResultBase & {
   candidateKind: 'rss_feed_item'
   rssFeedItemId: string
   storedCandidateId: null
 }
 
 /** A community moderation prompt is its own candidate: nothing is stored for it. */
-export type CommunityPromptClassifierDecisionResult = PersistedDecisionResultBase & {
+type CommunityPromptClassifierDecisionResult = PersistedDecisionResultBase & {
   candidateKind: 'community_prompt'
   communityPromptId: string
   storedCandidateId: null

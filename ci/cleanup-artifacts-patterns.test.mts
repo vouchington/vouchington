@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createArtifactPatternMatcher } from './cleanup-artifacts-pattern-matcher.mjs'
+import { createArtifactPatternMatcher } from './cleanup-artifacts-pattern-matcher.mts'
 import { classifyArtifact, isExplicitlyClassified } from './cleanup-artifacts-patterns.mts'
 
 const KEEP_NAMES = [

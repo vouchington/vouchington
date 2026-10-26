@@ -4,7 +4,7 @@ import {
   routeSelectorId,
 } from '@vouchington/localization'
 
-export interface RouteAliasEntry {
+interface RouteAliasEntry {
   readonly pattern: string
   readonly selectorId: string
   readonly aliases: readonly string[]

@@ -27,10 +27,18 @@
         "gitleaks", // GitHub Actions runs the real scanner in gitleaks-scanner.test.mts
         "lychee", // Real Lychee matcher exercised by the CI tooling test suite
       ],
+      // Hook modules are loaded by the harness outside the import graph.
+      "includeEntryExports": false,
     },
     "static-code-analysis": {
-      "entry": ["**/*.mts"],
+      "entry": [
+        "config-inventory/cli.mts",
+        "docker-deploy/prune-deployed-runtime-deps.mts",
+        "docker-deploy/prune-opentelemetry-alternate-builds.mts",
+        "docker-deploy/restore-deployed-workspace-packages.mts",
+      ],
       "project": ["**/*.mts"],
+      "includeEntryExports": true,
     },
     "backend": {
       "entry": ["dev.mts"],
@@ -87,7 +95,8 @@
       "entry": ["**/*.mts"],
     },
     "backend/scripts": {
-      "entry": ["**/*.mts"],
+      "project": ["**/*.mts"],
+      "includeEntryExports": true,
     },
     "backend/mcp": {
       "entry": ["**/*.mts"],
@@ -96,7 +105,8 @@
       "entry": ["**/*.mts"],
     },
     "email-templates": {
-      "entry": ["**/*.tsx", "**/*.mts"],
+      // The build emits runtime and declaration entrypoints for external consumers.
+      "includeEntryExports": false,
     },
     "playwright": {
       "entry": [
@@ -154,8 +164,18 @@
       },
     },
     "ci": {
-      "entry": ["**/*.mts"],
+      "entry": [
+        "ci-local.mts",
+        "setup-web-integration.mts",
+        // Called by Actions or shell entrypoints rather than imported by another module.
+        "check-analyzer-fixture-budget.mts!",
+        "validate-vitest-cli-timeouts.mts!",
+        "write-coverage-scope.mts!",
+        // Invoked from the backend image build action rather than imported by another module.
+        "check-deployed-worker-native-addons.mjs!",
+      ],
       "project": ["**/*.mts"],
+      "includeEntryExports": true,
       // The backend unit workflow executes ./ci/node_modules/.bin/coverage-check directly.
       "ignoreDependencies": ["coverage-check"],
     },
@@ -213,21 +233,28 @@
     },
     "web": {
       "entry": [
-        "lib/api/**/*.ts",
-        "types/api-responses.ts",
-        "storybook/mocks/**/*.{ts,tsx}",
-        "public/service-worker.js",
+        "public/service-worker.js!",
         // Loaded at runtime by service-worker.js through importScripts(), which knip cannot
         // follow as a static module edge.
-        "public/service-worker-push.js",
+        "public/service-worker-push.js!",
+        // Vite and Vitest resolve these fixture modules through configured aliases.
+        "storybook/mocks/contribute-cta-aside.tsx",
+        "storybook/mocks/get-resolved-ui-locale.ts",
+        "storybook/mocks/get-translations.ts",
+        "storybook/mocks/languages.ts",
+        "storybook/mocks/load-server-messages.ts",
+        "storybook/mocks/upgrade-membership-aside.tsx",
         // Reached only via the `web-storybook-browser` Vitest project's `setupFiles` string
         // (test-helpers/vitest-config/storybook-browser-project.mts), never a static import;
         // same pattern as the root workspace's string-valued Vitest runner entry.
         "test-helpers/vitest.setup.fake-timer-guard.mts",
       ],
+      // Next route exports and browser-loaded workers have external consumers.
+      "includeEntryExports": false,
     },
     "cloudflare-worker": {
-      "entry": ["**/*.mts"],
+      // Wrangler and esbuild load the Worker export outside the static import graph.
+      "includeEntryExports": false,
       // `cloudflare:workers` is a Workers-runtime built-in import protocol
       // (like `node:fs`), not the npm `cloudflare` API-client package; knip
       // strips the scheme and flags the bare specifier as unlisted.
@@ -237,7 +264,8 @@
       "entry": ["**/*.mts"],
     },
     "lambdas/image-resize": {
-      "entry": ["**/*.mts"],
+      // AWS invokes the bundled handler export outside the module graph.
+      "includeEntryExports": false,
       // @fontsource/inter is read at runtime via createRequire().resolve(), which knip's
       // static import analysis can't follow. @types/react is a devDependency purely so
       // satori's public .d.ts (which types its element param as React's ReactNode) resolves;

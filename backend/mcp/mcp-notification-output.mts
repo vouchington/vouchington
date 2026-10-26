@@ -20,7 +20,7 @@ type JsonSchema = Record<string, unknown>
  * it has no `target_path`. That field is a frontend route; what a notification is about comes as
  * the structured `target_entity`, `target_intent` and the ids of the records it points at.
  */
-export type McpNotification = Omit<Notification, DatedFields | 'target_path'> & {
+type McpNotification = Omit<Notification, DatedFields | 'target_path'> & {
   read_at: string | null
   pushed_at: string | null
   created_at: string

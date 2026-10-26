@@ -1,8 +1,8 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
-export const MEMBERSHIP_SEED_COUNT = 300
-export const MEMBERSHIP_REFUND_SEED_COUNT = 2000
+const MEMBERSHIP_SEED_COUNT = 300
+const MEMBERSHIP_REFUND_SEED_COUNT = 2000
 
 // Rows deliberately pinned to one stripe_charge_id / stripe_payment_intent_id so the
 // EXPLAIN scenarios (run-scenarios/memberships.mts) have a small, selective result set.

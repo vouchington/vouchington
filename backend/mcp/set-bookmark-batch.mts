@@ -21,7 +21,7 @@ export const SET_BOOKMARK_LIMIT = 500
 // The structured MCP result cap is 512 KiB. Echoed targets stay under half of that.
 const MAX_ECHOED_TARGET_BYTES = 256 * 1024
 
-export type BookmarkTarget = { entity_type: string; entity: string }
+type BookmarkTarget = { entity_type: string; entity: string }
 
 export type SetBookmarkArgs = {
   predicate: string

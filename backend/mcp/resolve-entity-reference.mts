@@ -5,7 +5,7 @@ import { resolvePosts } from './resolve-post.mts'
 import { resolveRssFeeds } from './resolve-rss-feed.mts'
 import { resolveTopics } from './resolve-topic.mts'
 
-export type ResolvedReference = { id: string; slug: string | null }
+type ResolvedReference = { id: string; slug: string | null }
 
 /**
  * Resolves one entity type's references. Types other than topic, post, RSS feed, community

@@ -2,7 +2,7 @@ import { QUEUED_BACKGROUND_RETRY_POLICY, type AgentModelCaller } from '@agents/_
 import { generateJson } from '@modules/model-providers/generate'
 import { renderContentPolicyForPrompt } from '@services/moderation/content-policy'
 
-export type AppealOutput = {
+type AppealOutput = {
   recommended_action: 'accept' | 'deny' | 'reduce'
   public_response: string
   internal_response: string
