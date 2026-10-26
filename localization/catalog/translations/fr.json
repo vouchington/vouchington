@@ -6075,6 +6075,8 @@
 {"id":"copy.native.taxonomy.notification.genericTitle","value":"Notification"},
 {"id":"copy.native.taxonomy.posts.story","value":"Actualité"},
 {"id":"copy.native.taxonomy.topics.rssFeed","value":"Flux RSS"},
+{"id":"copy.notifications.markAllPending","value":"Certaines notifications restent non lues. Actualisez le statut pour vérifier la progression ou sélectionnez de nouveau Tout marquer comme lu pour continuer."},
+{"id":"copy.notifications.refreshReadState","value":"Actualiser le statut"},
 {"id":"copy.oauth.consent.allow","value":"Autoriser l’accès"},
 {"id":"copy.oauth.consent.authorizationError","value":"Impossible de terminer cette demande d’autorisation."},
 {"id":"copy.oauth.consent.deny","value":"Refuser"},

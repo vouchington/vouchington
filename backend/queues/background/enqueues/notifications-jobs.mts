@@ -64,6 +64,7 @@ export const NOTIFICATIONS_MARK_ALL_READ_JOB = defineBackgroundJob<MarkAllNotifi
     name: 'processMarkAllNotificationsRead',
     ...DISPATCH,
     ...RETRY,
+    ordering: { key: 'notifications:mark-all-read' },
     sensitive: true,
   },
 )

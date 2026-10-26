@@ -6075,6 +6075,8 @@
 {"descriptor":null,"id":"copy.native.taxonomy.notification.genericTitle"},
 {"descriptor":null,"id":"copy.native.taxonomy.posts.story"},
 {"descriptor":null,"id":"copy.native.taxonomy.topics.rssFeed"},
+{"descriptor":null,"id":"copy.notifications.markAllPending"},
+{"descriptor":null,"id":"copy.notifications.refreshReadState"},
 {"descriptor":null,"id":"copy.oauth.consent.allow"},
 {"descriptor":null,"id":"copy.oauth.consent.authorizationError"},
 {"descriptor":null,"id":"copy.oauth.consent.deny"},

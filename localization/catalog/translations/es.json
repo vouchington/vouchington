@@ -6075,6 +6075,8 @@
 {"id":"copy.native.taxonomy.notification.genericTitle","value":"Notificación"},
 {"id":"copy.native.taxonomy.posts.story","value":"Historia"},
 {"id":"copy.native.taxonomy.topics.rssFeed","value":"Fuente RSS"},
+{"id":"copy.notifications.markAllPending","value":"Algunas notificaciones siguen sin leer. Actualiza el estado para comprobar el progreso o vuelve a seleccionar Marcar todo como leído para continuar."},
+{"id":"copy.notifications.refreshReadState","value":"Actualizar estado"},
 {"id":"copy.oauth.consent.allow","value":"Permitir acceso"},
 {"id":"copy.oauth.consent.authorizationError","value":"No se pudo completar esta solicitud de autorización."},
 {"id":"copy.oauth.consent.deny","value":"Denegar"},

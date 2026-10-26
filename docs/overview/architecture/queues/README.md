@@ -47,7 +47,11 @@ flowchart LR
   traffic. Inbound recovery also has a separate lane so a flood of deliveries cannot delay repair. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
 - Marking a large inbox read starts with one bounded request write. Notification continuation jobs
-  finish the older unread rows under the request's upper ID, leaving later notifications unread.
+  use a separate globally capped ordering lane to finish older unread rows under the request's
+  upper ID, leaving later notifications unread. Automatic continuation is best effort: if its
+  retries exhaust or Valkey loses the job, remaining unread PostgreSQL rows persist. This is an
+  explicit accepted loss of queued progress; another mark-all request resumes bounded work from
+  those rows. There is no durable request intent or automatic recovery for this user mutation.
 - The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
   coordination, and content analysis. URL and referral crawls use the same hostname ordering key,
   so they respect one external host limit. Provider limits use group rate windows; database-only

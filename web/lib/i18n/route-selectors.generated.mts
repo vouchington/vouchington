@@ -219,7 +219,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/news-sources/muted", selectorId: "web.route.ef025c4add2d2501.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/news-sources/viewed", selectorId: "web.route.4a8853f12155049e.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/notification-settings", selectorId: "web.route.261f5e76931b4ad4.6fec067cad9d1d91", hasMembership: true },
-  { pattern: "/my/notifications", selectorId: "web.route.3397123a11f4af97.cdedceb3796b574b", hasMembership: true },
+  { pattern: "/my/notifications", selectorId: "web.route.3397123a11f4af97.cd0327b0f4916eb4", hasMembership: true },
   { pattern: "/my/podcast-episodes/hidden", selectorId: "web.route.81a68437405a4ea5.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/podcast-episodes/saved", selectorId: "web.route.321e8a1c9e5af2e0.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/podcast-episodes/viewed", selectorId: "web.route.10658e11d3b2287d.b042399f4bbaa68d", hasMembership: true },

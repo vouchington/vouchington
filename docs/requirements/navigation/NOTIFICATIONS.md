@@ -9,7 +9,10 @@
 - The dropdown includes `Mark all as read`
 - Mark all as read reports how many notifications the request changed and whether older unread
   notifications remain; REST and MCP use the same count and `has_more` meaning. Background jobs
-  continue large backlogs, while notifications arriving afterward stay unread.
+  continue large backlogs, while notifications arriving afterward stay unread. If queued work is
+  lost, unread rows remain visible and another mark-all request resumes progress. The web inbox
+  offers a read-state refresh after a partial result and revalidates on return to the tab without
+  polling.
 - The dropdown links to `/my/notifications`
 
 ## Notification Behavior

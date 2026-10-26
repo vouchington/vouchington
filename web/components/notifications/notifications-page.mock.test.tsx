@@ -9,12 +9,14 @@ const mockReceiveLoadMore = vi.fn<VitestLooseMock>()
 
 const {
   mockMarkAllMyNotificationsRead,
+  mockGetMyUnreadNotificationsSummaryClient,
   mockMarkMyNotificationReadKeepalive,
   mockDeleteMyNotification,
   mockCreateMyWebPushSubscription,
   mockDeleteMyWebPushSubscription,
 } = vi.hoisted(() => ({
   mockMarkAllMyNotificationsRead: vi.fn<VitestLooseMock>(),
+  mockGetMyUnreadNotificationsSummaryClient: vi.fn<VitestLooseMock>(),
   mockMarkMyNotificationReadKeepalive: vi.fn<VitestLooseMock>(),
   mockDeleteMyNotification: vi.fn<VitestLooseMock>(),
   mockCreateMyWebPushSubscription: vi.fn<VitestLooseMock>(),
@@ -58,6 +60,7 @@ vi.mock(import('@/lib/api/client'), () => ({
 
 vi.mock(import('@/lib/api/client/my'), () => ({
   markAllMyNotificationsRead: mockMarkAllMyNotificationsRead,
+  getMyUnreadNotificationsSummaryClient: mockGetMyUnreadNotificationsSummaryClient,
   markMyNotificationReadKeepalive: mockMarkMyNotificationReadKeepalive,
   deleteMyNotification: mockDeleteMyNotification,
   createMyWebPushSubscription: mockCreateMyWebPushSubscription,
@@ -98,6 +101,7 @@ describe('notifications-page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockMarkAllMyNotificationsRead.mockReset()
+    mockGetMyUnreadNotificationsSummaryClient.mockReset()
     mockMarkMyNotificationReadKeepalive.mockReset()
     mockMarkMyNotificationReadKeepalive.mockResolvedValue(undefined)
     mockDeleteMyNotification.mockReset()
@@ -170,11 +174,18 @@ describe('notifications-page', () => {
       )
     })
 
-    it('keeps the unread state while background pages remain', async () => {
+    it('offers a status refresh while unread work remains', async () => {
       mockMarkAllMyNotificationsRead.mockResolvedValue({
         success: true,
         marked_read: 1,
         has_more: true,
+      })
+      vi.mocked(getPaginatedPage).mockResolvedValue(initialNotifications)
+      mockGetMyUnreadNotificationsSummaryClient.mockResolvedValue({
+        unread_count: 1,
+        results: [],
+        notifications: {},
+        communities: {},
       })
       render(
         <NotificationsPage
@@ -182,13 +193,11 @@ describe('notifications-page', () => {
           initialSubscriptions={[]}
         />,
       )
-
-      fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
-      await waitFor(() => expect(mockMarkAllMyNotificationsRead).toHaveBeenCalled())
-      expect(screen.getByRole('button', { name: 'Mark all as read' })).toHaveProperty(
-        'disabled',
-        false,
-      )
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark all as read' }))
+      })
+      expect(screen.getByRole('button', { name: 'Refresh status' })).toBeInTheDocument()
+      expect(screen.getByRole('status')).toHaveTextContent('Some notifications remain unread')
     })
 
     it('deletes a notification from the page', async () => {
