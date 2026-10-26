@@ -16,6 +16,9 @@ import {
   getPasskeyReAuthOptions,
   getReAuthMethods,
   retrieveBrokerProviderReAuthProof,
+  requestReAuthEmail,
+  verifyReAuthEmail,
+  verifyReAuthTotp,
   verifyPasskeyReAuth,
   verifySdkProviderReAuth,
   type ReAuthMethods,
@@ -118,6 +121,31 @@ describe('fresh authentication client contract', () => {
       response: proof,
       call: () => retrieveBrokerProviderReAuthProof('github', flowId),
       expectedArgs: ['/api/v1/auth/re-auth/providers/github/proofs', { flow_id: flowId }],
+    })
+  })
+
+  it('requests and redeems email proof through distinct one-use endpoints', async () => {
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: { email_address: 'member@example.test' },
+      call: requestReAuthEmail,
+      expectedArgs: ['/api/v1/auth/mfa/re-auth/email/tokens', {}],
+    })
+    mocks.post.mockClear()
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: proof,
+      call: () => verifyReAuthEmail<ReAuthProof>('527104'),
+      expectedArgs: ['/api/v1/auth/mfa/re-auth/email/verification', { code: '527104' }],
+    })
+  })
+
+  it('redeems a TOTP code for a scoped account-change proof', async () => {
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: proof,
+      call: () => verifyReAuthTotp<ReAuthProof>('713029'),
+      expectedArgs: ['/api/v1/auth/mfa/re-auth/totp/verification', { code: '713029' }],
     })
   })
 })
