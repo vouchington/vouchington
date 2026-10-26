@@ -87,7 +87,8 @@ Creation jobs use separate ordering lanes for each entity type, allowing a quota
 job to leave a ready text job runnable. A renewable lease on the worker-queue Valkey server caps
 actual batch creation across those lanes and worker processes. The lane limit orders each type;
 the lease is the global creation cap. Contention defers the same job briefly, preserving its
-cursor and deduplication identity. Every creation type shares the Bedrock provider cooldown.
+cursor and deduplication identity. Every creation type shares the Bedrock provider cooldown; batch
+submission rechecks it after input upload because another type can be throttled during preparation.
 Quota denial releases the lease before delaying the job, so a different type can use available
 capacity. A worker that loses the lease stops new submissions. If a Bedrock submission is already
 in flight, it finishes and records the result; a successor may briefly overlap that call after

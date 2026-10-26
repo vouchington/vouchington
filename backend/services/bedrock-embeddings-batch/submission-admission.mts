@@ -4,6 +4,7 @@ import {
   minimumTextBatchSizeMB,
 } from '@services/bedrock-embeddings/batch/input-size-limits'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
+import { getCpuProviderCooldownRemainingMs } from '@services/bedrock-embeddings/provider-cooldown'
 import { BatchCreationDeferredError } from './orchestrator/create.mts'
 import type { BatchCreationDependencies } from './types.mts'
 
@@ -42,5 +43,9 @@ export function creationSubmissionAdmission(options: {
         'quota_changed_before_submit',
         getEmbeddingCreationRetryDelayMs(),
       )
+    // A different creation type can receive a 429 while this batch uploads to S3.
+    const remainingMs = await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation')
+    if (!options.isLeaseHeld()) throw new BatchCreationDeferredError('lease_lost', 0)
+    if (remainingMs) throw new BatchCreationDeferredError('provider_cooldown', remainingMs)
   }
 }
