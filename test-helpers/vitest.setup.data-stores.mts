@@ -84,6 +84,7 @@ async function settleSetupOperations<const T extends readonly unknown[]>(operati
 }
 
 export async function setup() {
+  const setupStart = performance.now()
   const [
     { Logger },
     { warmUpEmbeddingBloomFilter },
@@ -126,6 +127,8 @@ export async function setup() {
       ]),
     false,
   )
+  // Always retain the total so ordinary CI shards can compare setup costs without verbose logs.
+  emitSetupDiagnostic(`[vitest-setup] total ms=${Math.round(performance.now() - setupStart)}\n`)
 }
 
 const emitTeardownTiming = process.env.VITEST_DIAGNOSTICS === '1'
