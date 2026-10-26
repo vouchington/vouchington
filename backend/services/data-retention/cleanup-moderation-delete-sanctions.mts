@@ -2,7 +2,7 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { ModerationCleanupKind } from './cleanup-moderation-kinds.mts'
 
-/** Active sanctions remain until explicitly revoked or lifted; their review is a separate duty. */
+/** Active suspensions, bans, and penalties remain until their lifecycle ends; warnings have their own retention window. */
 export async function deleteExpiredModerationSanctions(
   kind: ModerationCleanupKind,
   query: QueryExecutor,

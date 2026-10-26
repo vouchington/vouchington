@@ -16,6 +16,13 @@ export async function recordModerationTrainingFeedback(
   options?: QueryOptions,
 ): Promise<ModerationTrainingFeedback | null> {
   if (input.trainingEvidence === 'agent') return null
+  if (input.sourceType === 'moderation_report') {
+    assert(input.moderationReportId != null, 422, 'moderationReportId is required')
+  } else if (input.sourceType === 'moderation_appeal') {
+    assert(input.moderationAppealId != null, 422, 'moderationAppealId is required')
+  } else if (input.sourceType === 'review_dispute') {
+    assert(input.reviewDisputeId != null, 422, 'reviewDisputeId is required')
+  }
   assert(input.humanAction.trim() === input.humanAction, 422, 'humanAction must be trimmed')
   assert(
     input.humanAction.length > 0 && input.humanAction.length <= 120,

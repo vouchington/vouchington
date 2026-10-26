@@ -41,7 +41,8 @@ feed. It applies the shared delay, cohort suppression, and rounding before data 
 Operational moderation history is retained only while it can support an open decision, an appeal,
 or a staff audit. The daily retention worker walks each record family in small, resumable pages;
 terminal records become eligible according to their own lifecycle. Pending decisions, active
-sanctions, and penalties remain available until staff resolves or revokes them.
+suspensions, bans, and penalties remain available until their lifecycle ends. Warnings follow their
+own retention window.
 
 Source deletion does not erase public dispute annotations, retained false-positive training labels
 that still suppress a flagged post, or already released aggregate transparency counts. The released

@@ -33,7 +33,6 @@ export type ModerationTrainingEvidence = 'staff_or_user' | 'agent'
 
 export type RecordModerationTrainingFeedbackInput = {
   trainingEvidence: ModerationTrainingEvidence
-  sourceType: ModerationTrainingSourceType
   eventType: ModerationTrainingEventType
   label: ModerationTrainingLabel
   humanAction: FiniteValue<'moderation_training_human_actions'>
@@ -44,13 +43,38 @@ export type RecordModerationTrainingFeedbackInput = {
   communityId?: string | null
   postId?: string | null
   agentModerationId?: string | null
-  moderationReportId?: string | null
-  moderationAppealId?: string | null
-  reviewDisputeId?: string | null
   postClearanceChangeId?: string | null
   inputSha256?: Buffer | null
   metadata?: Record<string, unknown>
-}
+} & (
+  | {
+      sourceType: 'moderation_report'
+      moderationReportId: string
+      moderationAppealId?: never
+      reviewDisputeId?: never
+    }
+  | {
+      sourceType: 'moderation_appeal'
+      moderationReportId?: never
+      moderationAppealId: string
+      reviewDisputeId?: never
+    }
+  | {
+      sourceType: 'review_dispute'
+      moderationReportId?: never
+      moderationAppealId?: never
+      reviewDisputeId: string
+    }
+  | {
+      sourceType: Exclude<
+        ModerationTrainingSourceType,
+        'moderation_report' | 'moderation_appeal' | 'review_dispute'
+      >
+      moderationReportId?: never
+      moderationAppealId?: never
+      reviewDisputeId?: never
+    }
+)
 
 export type RecentAutomodActionSourceType =
   | 'agent_moderation'
