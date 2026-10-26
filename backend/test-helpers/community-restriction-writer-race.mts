@@ -1,31 +1,21 @@
-import { beginTransaction } from '@data-stores/psql'
-import { setTimeout } from 'node:timers/promises'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { vi } from 'vitest'
 import { lockDelegatedPostCommunity } from '../services/posts/delegated-write-locks.mts'
-import {
-  FAST_TEST_STATEMENT_TIMEOUT_MS,
-  TEST_STATEMENT_TIMEOUT_MS,
-} from './statement-timeout-constant.mts'
 import {
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
 } from './postgres-lock-wait.mts'
-
-/**
- * How far ahead of "now" a restriction expiry sits when a case needs it to pass while the writer is
- * held at the fence. `withHeldDelegatedCommunityFenceForTest` really sleeps until that instant, so
- * keep it just long enough for the writer to reach the fence (a handful of queries). Half the
- * smaller fast-project/configured SQL deadline leaves headroom for lock-wait and scheduler overhead.
- */
-export const FENCE_HELD_EXPIRY_OFFSET_MS =
-  Math.min(TEST_STATEMENT_TIMEOUT_MS, FAST_TEST_STATEMENT_TIMEOUT_MS) / 2
 
 /** Keep the delegated community fence until the real restriction writer is blocked on it. */
 export async function withHeldDelegatedCommunityFenceForTest<T>(
   communityId: string,
   actorId: string,
   operation: () => Promise<T>,
-  releaseAfter?: () => Date,
+  options: {
+    beforeRelease?: (query: TransactionQuery) => Promise<void>
+    signal?: AbortSignal
+  } = {},
 ): Promise<T> {
   await using query = await beginTransaction()
   await lockDelegatedPostCommunity(query, communityId, actorId)
@@ -33,16 +23,14 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
   const pending = operation()
   void pending.catch(() => undefined)
   try {
-    await waitForTestPostgresLockWaiter(processId, 'lockCommunityRestrictionWrites')
-    if (releaseAfter) {
-      const releaseAt = releaseAfter().getTime()
-      // The writer must be blocked before the expiry; otherwise this case would pass without ever
-      // testing an expiry that lapses while the writer waits on the fence.
-      if (releaseAt <= Date.now()) {
-        throw new Error('The writer reached the fence only after the expiry had already passed')
-      }
-      await setTimeout(releaseAt - Date.now() + 1)
-    }
+    await waitForTestPostgresLockWaiter(
+      processId,
+      'lockCommunityRestrictionWrites',
+      'write',
+      undefined,
+      options.signal,
+    )
+    await options.beforeRelease?.(query)
     await query.commit()
   } catch (err) {
     await query.rollback()
@@ -50,6 +38,25 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
     throw err
   }
   return await pending
+}
+
+/** Expire one fixture-owned restriction while its community writer is held at the fence. */
+export async function expireTestCommunityRestrictionWhileFenceHeld(
+  query: TransactionQuery,
+  communityId: string,
+  restrictionId: string,
+): Promise<void> {
+  const { rows } = await query<{
+    id: string
+  }>(sql`/* expireTestCommunityRestrictionWhileFenceHeld */
+    UPDATE community_restrictions
+    SET expires_at = statement_timestamp() - INTERVAL '1 second'
+    WHERE community_id = ${communityId} AND id = ${restrictionId}
+    RETURNING id
+  `)
+  if (rows.length !== 1) {
+    throw new Error('Expected to expire exactly one fixture-owned community restriction')
+  }
 }
 
 /** Simulate application clock skew without changing PostgreSQL or real lock-wait timers. */
