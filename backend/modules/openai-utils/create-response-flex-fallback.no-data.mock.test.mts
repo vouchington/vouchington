@@ -78,10 +78,9 @@ describe('OpenAI flex capacity fallback', () => {
         ]),
       )
       .mockResolvedValueOnce(completedStream())
-    const stopAndSettle = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const onResponseCreated = vi
-      .fn<(responseId: string) => Promise<{ stopAndSettle: () => Promise<void> }>>()
-      .mockResolvedValue({ stopAndSettle })
+      .fn<(responseId: string) => Promise<void>>()
+      .mockResolvedValue(undefined)
     const hooks = makeHooks()
 
     const result = await runWithOpenAIResponseAttemptHooks(hooks, () =>
@@ -104,7 +103,6 @@ describe('OpenAI flex capacity fallback', () => {
       'resp-flex-failed',
       'resp-default',
     ])
-    expect(stopAndSettle).toHaveBeenCalledTimes(2)
     // A response that reached the failed status is finished; cancelling it would waste a request.
     expect(mocks.cancel).not.toHaveBeenCalled()
     expect(hooks.onUnknownBilledAttempt).not.toHaveBeenCalled()

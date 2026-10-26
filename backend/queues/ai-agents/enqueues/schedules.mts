@@ -3,7 +3,12 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
+import {
+  AGENT_PRIORITY,
+  AI_AGENTS_DEFAULTS,
+  AI_AGENTS_QUEUE_NAME,
+  getBackgroundResponseReconcileConcurrency,
+} from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
 import { enqueueReconcileBackgroundResponses } from './reconcile-background-responses.mts'
@@ -79,7 +84,13 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
     repeat: { pattern: '*/5 * * * *' },
     template: {
       name: 'reconcile-background-responses',
-      opts: () => reconcilerOptions('reconcile-background-responses'),
+      opts: () => ({
+        ...reconcilerOptions('reconcile-background-responses'),
+        ordering: {
+          key: 'ai_background_response_reconcile',
+          concurrency: getBackgroundResponseReconcileConcurrency(),
+        },
+      }),
     },
     operatorSurfaces: [
       {

@@ -165,10 +165,9 @@ describe('OpenAI response integration boundary', () => {
         makeSdkResponse({ status: 'cancelled', id: 'resp-abc' }),
       )
 
-      const stopAndSettle = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
       const onResponseCreated = vi
-        .fn<(responseId: string) => Promise<{ stopAndSettle: () => Promise<void> }>>()
-        .mockResolvedValue({ stopAndSettle })
+        .fn<(responseId: string) => Promise<void>>()
+        .mockResolvedValue(undefined)
       const onUnknownBilledAttempt = vi.fn<
         (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
       >(() => Promise.resolve())
@@ -187,7 +186,6 @@ describe('OpenAI response integration boundary', () => {
 
       expect(onResponseCreated).toHaveBeenCalledExactlyOnceWith('resp-abc')
       expect(openAIMocks.cancel).toHaveBeenCalledWith('resp-abc', BACKGROUND_TEARDOWN_OPTIONS)
-      expect(stopAndSettle).toHaveBeenCalledTimes(1)
       expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
     })
 

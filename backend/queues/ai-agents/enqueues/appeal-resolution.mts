@@ -22,7 +22,7 @@ function buildAppealResolutionJob(
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-      removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+      removeOnFail: false,
       priority: AGENT_PRIORITY['appeal-resolution'],
       // Automatic retries coalesce per appeal. Manual generations keep distinct request IDs
       // so a later staff rerun is not suppressed by an earlier request.

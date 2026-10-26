@@ -24,6 +24,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/model-providers": "workspace:^",
     "@queues/admin-imports": "workspace:^",
+    "@queues/ai-agents": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/background-cpu": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",

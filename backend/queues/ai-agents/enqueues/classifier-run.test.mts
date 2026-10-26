@@ -107,7 +107,7 @@ describe('classifier run enqueue', () => {
       attempts: CLASSIFIER_RUN_ATTEMPTS,
       backoff: CLASSIFIER_RUN_BACKOFF,
       removeOnComplete: true,
-      removeOnFail: true,
+      removeOnFail: false,
       jobId: `classifier_run_${data.runId}`,
     })
   })

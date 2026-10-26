@@ -4,7 +4,7 @@ import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createRetryingCommandClient } from './glide-mq-command-client.mts'
 import { acquireTerminalJobRemoval } from './terminal-job-removal.mts'
 
-type JobLookupQueue = Pick<Queue, 'name'>
+type JobLookupQueue = Pick<Queue, 'name'> & Partial<Pick<Queue, 'getJob'>>
 
 /**
  * Adds `inputs` through `enqueueBulk`, then adds again the ones whose custom job id was held only
@@ -32,6 +32,8 @@ export async function enqueueBulkReactivatingFinished<
   enqueueBulk: (inputs: TInput[]) => Promise<TJob[]>
   /** Rebuild an app-specific payload from the terminal record removed by this pass. */
   reactivatedInput?: (input: TInput, retainedData: unknown) => TInput
+  /** For retained failed jobs with unsettled external work, release the id only after settlement. */
+  canRemoveFailed?: (job: Job) => boolean | Promise<boolean>
   /** Isolated real queues in tests may override the production queue namespace. */
   prefix?: string
 }): Promise<TJob[]> {
@@ -46,10 +48,11 @@ export async function enqueueBulkReactivatingFinished<
   if (skipped.length === 0) return added
 
   const released = await releaseFinishedJobIds(
-    queue.name,
+    queue,
     options.prefix ?? workerQueuePrefix ?? 'glide',
     skipped.map(entry => entry.jobId),
     options.reactivatedInput !== undefined,
+    options.canRemoveFailed,
   )
   const reactivated = skipped.flatMap(entry => {
     if (!released.has(entry.jobId)) return []
@@ -65,13 +68,14 @@ export async function enqueueBulkReactivatingFinished<
 }
 
 async function releaseFinishedJobIds(
-  queueName: string,
+  queue: JobLookupQueue,
   prefix: string,
   jobIds: string[],
   preserveData: boolean,
+  canRemoveFailed?: (job: Job) => boolean | Promise<boolean>,
 ): Promise<Map<string, unknown>> {
   const released = new Map<string, unknown>()
-  const namespace = `${prefix}:{${queueName}}`
+  const namespace = `${prefix}:{${queue.name}}`
   const dedicated = createRetryingCommandClient('terminal-job-reactivation')
   const client = dedicated.client
   try {
@@ -79,12 +83,19 @@ async function releaseFinishedJobIds(
       jobIds,
       async jobId => {
         const claim = await acquireTerminalJobRemoval(client, namespace, jobId)
-        if (claim.state === 'terminal') {
-          const data = preserveData ? await claim.readData() : null
-          const retainedData = data === null ? undefined : (JSON.parse(data.toString()) as unknown)
-          if (await claim.remove()) released.set(jobId, retainedData)
-        } else {
-          if (claim.state === 'missing') released.set(jobId, undefined)
+        try {
+          if (claim.state === 'terminal') {
+            if (claim.terminalState === 'failed' && canRemoveFailed) {
+              if (!queue.getJob)
+                throw new Error('Failed-job removal predicate requires queue.getJob')
+              const current = await queue.getJob(jobId)
+              if (!current || !(await canRemoveFailed(current))) return
+            }
+            const data = preserveData ? await claim.readData() : null
+            const retainedData = data === null ? undefined : (JSON.parse(data.toString()) as unknown)
+            if (await claim.remove()) released.set(jobId, retainedData)
+          } else if (claim.state === 'missing') released.set(jobId, undefined)
+        } finally {
           await claim.release()
         }
       },

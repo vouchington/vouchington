@@ -8,13 +8,9 @@ import { AsyncLocalStorage } from 'node:async_hooks'
  * scope, and never has to know what it does. Same AsyncLocalStorage idiom as
  * backend/services/bluesky-accounts/session-lifecycle-context.mts.
  */
-export interface BackgroundResponseLease {
-  stopAndSettle(): Promise<void>
-}
-
 export interface BackgroundResponseHooks {
-  /** Establishes the durable lease before the drain can advance past `response.created`. */
-  onResponseCreated: (responseId: string) => Promise<BackgroundResponseLease | undefined>
+  /** Persists the response id before the drain advances past `response.created`. */
+  onResponseCreated: (responseId: string) => Promise<void>
 }
 
 const backgroundResponseHooksContext = new AsyncLocalStorage<BackgroundResponseHooks>()

@@ -47,10 +47,7 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
 
   it('sends one background streaming request and parses the completed response from the SSE bytes', async () => {
     replay.respondWith(loadRecordedResponse('openai/responses-stream-text-completed.http'))
-    const stopAndSettle = vi.fn<() => Promise<void>>(() => Promise.resolve())
-    const onResponseCreated = vi.fn<
-      (responseId: string) => Promise<{ stopAndSettle: () => Promise<void> }>
-    >(() => Promise.resolve({ stopAndSettle }))
+    const onResponseCreated = vi.fn<(responseId: string) => Promise<void>>(() => Promise.resolve())
 
     const response = await runWithBackgroundResponseHooks({ onResponseCreated }, () =>
       createOpenAIResponse({ model: 'gpt-6-luna', input: INPUT }),
@@ -66,7 +63,6 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
       usage: { input_tokens: 17, output_tokens: 6 },
     })
     expect(onResponseCreated).toHaveBeenCalledExactlyOnceWith('resp_replay_fixture')
-    expect(stopAndSettle).toHaveBeenCalledOnce()
     expect(replay.requests).toHaveLength(1)
     expect(replay.requests[0]).toMatchObject({
       method: 'POST',

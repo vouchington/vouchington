@@ -2,7 +2,7 @@ import type { Response } from 'openai/resources/responses/responses'
 import openai from './client.mts'
 
 // Background responses keep billing after this process stops caring if nobody stops them — see
-// the registry + sweeper in backend/services/openai-background-responses (#8836). Both teardown
+// job-data or inline registry recovery in backend/services/openai-background-responses. Both teardown
 // seams below use maxRetries: 0 and a short timeout because they run on abort/shutdown paths and
 // must never retry-storm; retrying a cancel/retrieve that's already failing only delays shutdown.
 const BACKGROUND_TEARDOWN_TIMEOUT_MS = 10_000
@@ -12,7 +12,7 @@ const BACKGROUND_TEARDOWN_TIMEOUT_MS = 10_000
  * carry usage synchronously (a cancelled background response's usage can lag ~10s behind the
  * cancel call, per the #8836 background-mode spike written up in the private
  * vouchington/vouchington-docs repository),
- * so callers must not treat this as the usage-recording step. The registry sweeper's
+ * so callers must not treat this as the usage-recording step. Recovery's
  * retrieveOpenAIResponse() is what records usage for a response cancelled here.
  */
 /* no-mistakes: integration=openai */

@@ -9,7 +9,6 @@ const TITLE_AGENT_SLUG = 'chat-generate-title'
 type TitleResponseRegistration = {
   response_id: string
   agent_slug: string
-  lease_token: string
 }
 
 /** Reads the committed primary registration for this fixture's unique response id. */
@@ -17,14 +16,14 @@ export async function readTitleResponseRegistration(
   responseId: string,
 ): Promise<TitleResponseRegistration | null> {
   const { rows } = await write<TitleResponseRegistration>(sql`/* readTitleResponseRegistration */
-    SELECT response_id, agent_slug, lease_token
+    SELECT response_id, agent_slug
     FROM openai_background_responses
     WHERE response_id = ${responseId} AND agent_slug = ${TITLE_AGENT_SLUG}
   `)
   return rows[0] ?? null
 }
 
-/** A real SDK stream that observes the production lease after its created event is consumed. */
+/** A real SDK stream that observes the production registration after its created event is consumed. */
 export function createTitleResponseStream(response: Response) {
   let registration: TitleResponseRegistration | null | undefined
   const controller = new AbortController()
@@ -55,7 +54,7 @@ export function createTitleResponseStream(response: Response) {
   }
 }
 
-/** Call only after all fixture provider/title operations and their owned leases have settled. */
+/** Call only after all fixture provider/title operations and their owned registrations have settled. */
 export async function deleteTitleResponseFixture(responseId: string): Promise<void> {
   await using query = await beginTransaction()
   // The response-key FK cascades from the exact ledger row; unrelated provider keys are retained.

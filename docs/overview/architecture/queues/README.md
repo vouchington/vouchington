@@ -207,6 +207,13 @@ still marked, so the queue is not a second source of truth and there is no dead-
   The coordinator that releases them is deliberately not behind the provider limiter.
 - **Embedding cache deletion leaves safe Bloom false positives.** Writes add membership; operator
   actions and detected failures own full rebuilds. Retention does not schedule a full rebuild.
+- **Background OpenAI responses keep their recovery owner.** AI worker calls persist each provider
+  response id in their GlideMQ job before draining it. A replay retrieves or cancels unsettled
+  responses before it can dispatch another paid call; terminal failed jobs retain those ids for a
+  bounded recovery sweep. The response-id ledger key prevents duplicate accounting. Conversation
+  titles generated inline from an API request have no job, so an age-scanned PostgreSQL registry
+  carries their response ids until usage settles. An unknown billing outcome closes the spend gate
+  for that request day.
 - **Deletion and money paths recover from durable rows.** Account deletion, membership refunds and
   OAuth exchange keep their work in PostgreSQL with fenced leases, so terminal queue failure can
   never silently mark the work complete or issue a duplicate refund.

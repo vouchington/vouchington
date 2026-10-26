@@ -22,7 +22,7 @@ function buildDisputeResolutionJob(
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-      removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+      removeOnFail: false,
       priority: AGENT_PRIORITY['dispute-resolution'],
       // Skip deduplication on manual re-runs so the staff-triggered job is
       // not silently dropped by a pending automatic job.

@@ -1,4 +1,26 @@
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
+
+export const aiAgentsQueueConfig = new DynamicConfig({
+  key: 'ai-agents-queue-config',
+  fieldTypes: { background_response_reconcile_concurrency: 'number' },
+  defaultFields: { background_response_reconcile_concurrency: 1 },
+})
+
+export const aiAgentsQueueMaxValues = { background_response_reconcile_concurrency: 5 }
+
+export function getBackgroundResponseReconcileConcurrency(): number {
+  return getBoundedPositiveIntegerField(
+    aiAgentsQueueConfig,
+    'background_response_reconcile_concurrency',
+    {
+      defaultValue: 1,
+      maxValue: aiAgentsQueueMaxValues.background_response_reconcile_concurrency,
+    },
+  )
+}
 export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
@@ -69,7 +91,7 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
 // daily spend-ceiling check (#8773, `backend/workers/ai-agents/workers/core.mts`). The three
 // `reconcile-*` job types only sweep/cancel/re-enqueue existing work -- none call OpenAI to
 // generate new content -- so they must keep running through a cap breach. In particular,
-// `reconcile-background-responses` cancels orphaned leases that are still billing OpenAI;
+// `reconcile-background-responses` cancels retained responses that may still be billing OpenAI;
 // blocking it on the spend cap would increase spend, not bound it. `auto-dispatch-judgement` is
 // exempt for the same reason: it only applies an already-computed judgement (remove content, warn
 // a user, escalate, resolve a report) -- it never calls a model itself, and blocking it on the cap

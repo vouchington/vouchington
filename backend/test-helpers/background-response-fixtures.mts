@@ -1,18 +1,22 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-type PostgreSQLTimestamp = Date | string
-
-/**
- * Forces a registered response lease to a specific expiry so tests can assert PostgreSQL-time
- * ownership transitions without racing the test process's wall clock.
- */
-export async function setBackgroundResponseLeaseExpiresAt(
+/** Ages one owned UUIDv7 registration without changing the shared database clock. */
+export async function ageBackgroundResponseRegistration(
   responseId: string,
-  leaseExpiresAt: PostgreSQLTimestamp,
+  createdAt: Date,
 ): Promise<void> {
-  await write(sql`/* setBackgroundResponseLeaseExpiresAt */
-    UPDATE openai_background_responses SET lease_expires_at = ${leaseExpiresAt}
+  await write(sql`/* ageBackgroundResponseRegistration */
+    UPDATE openai_background_responses
+    SET id = uuidv7(${createdAt}::timestamptz - clock_timestamp())
     WHERE response_id = ${responseId}
   `)
+}
+
+export async function countBackgroundResponseRegistrations(responseId: string): Promise<number> {
+  const { rows } = await write<{ count: string }>(sql`/* countBackgroundResponseRegistrations */
+    SELECT COUNT(*)::text AS count FROM openai_background_responses
+    WHERE response_id = ${responseId}
+  `)
+  return Number(rows[0]?.count ?? 0)
 }

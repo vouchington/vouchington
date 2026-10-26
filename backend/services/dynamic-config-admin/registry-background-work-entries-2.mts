@@ -1,4 +1,5 @@
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
+import { aiAgentsQueueConfig, aiAgentsQueueMaxValues } from '@queues/ai-agents/config'
 import { imagesWorkConfig, imagesWorkMaxValues } from '@services/images/work-limits'
 import {
   openaiBackgroundResponsesWorkConfig,
@@ -15,6 +16,16 @@ import {
 } from '@services/hostname-blocking/work-limits'
 
 export const backgroundWorkEntries2 = [
+  defineBoundedWorkNamespace({
+    namespace: 'ai-agents-queue-config',
+    config: aiAgentsQueueConfig,
+    label: 'AI Agents Queue',
+    maxValues: aiAgentsQueueMaxValues,
+    descriptions: {
+      background_response_reconcile_concurrency:
+        'Global concurrency for background response recovery pages.',
+    },
+  }),
   defineBoundedWorkNamespace({
     namespace: 'images-work-config',
     config: imagesWorkConfig,

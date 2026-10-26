@@ -15,12 +15,14 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background-cpu": "workspace:^",
     "@services/analytics": "workspace:^",
-    "glide-mq": "^0.20.0"
+    "glide-mq": "^0.20.0",
+    "valkyries": "^0.11.2"
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",

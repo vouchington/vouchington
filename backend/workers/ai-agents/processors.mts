@@ -80,7 +80,9 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
     case 'reconcile-auto-dispatch-judgements':
       return processReconcileAutoDispatchJudgements()
     case 'reconcile-background-responses':
-      return processReconcileBackgroundResponses()
+      return processReconcileBackgroundResponses(
+        job as Job<import('@queues/ai-agents/types').ReconcileBackgroundResponsesJobData>,
+      )
     case 'reconcile-copyright-agent-dispatches':
       return processReconcileCopyrightAgentDispatches(
         {},

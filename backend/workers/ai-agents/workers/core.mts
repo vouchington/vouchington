@@ -1,11 +1,16 @@
 import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
+import {
+  PAGED_DISPATCHER_MAX_STALLED_COUNT,
+  withPagedDispatcherStallBudget,
+} from '@data-stores/valkey-glide-mq/worker-stall-budget'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
 import { isModelProviderError } from '@vouchington/ai/providers'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { runWithJobTokenAccumulator } from '@agents/_shared'
-import { wouldStoryPostCallOpenAI } from '../processors/process-story-post.mts'
+import { runWithBackgroundResponseJob } from '@agents/_shared/background-response-job-context'
+import { jobWouldIncurSpend } from '../processors/job-would-incur-spend.mts'
 import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
 import {
   AI_AGENT_JOB_PRODUCES_SPEND,
@@ -26,6 +31,11 @@ import { handleModelProviderError } from '../processors/provider-failure.mts'
 import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { registerSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
+import {
+  assertNoUnsettledBackgroundResponses,
+  createBackgroundResponseJobContext,
+  reconcileJobBackgroundResponses,
+} from '../processors/background-response-job.mts'
 
 type AIAgentsWorkerDeps = {
   createWorker: typeof createWorker
@@ -66,6 +76,9 @@ export async function processAIAgentWorkerJob(
   deps: Partial<AIAgentsWorkerDeps> = {},
 ): Promise<unknown> {
   const dependencies = { ...defaultDeps, ...deps }
+  const responseContext = createBackgroundResponseJobContext(job)
+  await reconcileJobBackgroundResponses(job, responseContext)
+  if (job.data.backgroundResponseProcessorCompleted) return undefined
 
   // Daily spend ceiling (#8773) before the OpenAI-error catch. reconcile-* jobs stay exempt so they
   // can still cancel orphaned billed responses. A breach parks only this job until the queried day
@@ -96,11 +109,14 @@ export async function processAIAgentWorkerJob(
     }
   }
 
+  let result: unknown
   try {
     // recordAgentResponseUsage feeds every billed call into this job's tokenLimiter total.
-    return await runWithJobTokenAccumulator(
-      () => dependencies.processAIAgent(job),
-      totalTokens => job.reportTokens(totalTokens),
+    result = await runWithBackgroundResponseJob(responseContext, () =>
+      runWithJobTokenAccumulator(
+        () => dependencies.processAIAgent(job),
+        totalTokens => job.reportTokens(totalTokens),
+      ),
     )
   } catch (err: unknown) {
     if (err instanceof SpendCapBreachError) {
@@ -115,27 +131,26 @@ export async function processAIAgentWorkerJob(
     if (isModelProviderError(err)) return handleModelProviderError(err, job)
     return dependencies.handleOpenAIRateLimit(err, job)
   }
+  if ((job.data.backgroundResponses?.length ?? 0) > 0) {
+    await job.updateData({ ...job.data, backgroundResponseProcessorCompleted: true })
+    await reconcileJobBackgroundResponses(job, responseContext)
+  }
+  assertNoUnsettledBackgroundResponses(job)
+  return result
 }
 
 function jobProducesSpend(job: Job<AIAgentJobData>): boolean {
   return AI_AGENT_JOB_PRODUCES_SPEND[job.name as AIAgentJobName]
 }
 
-// DB predicates run only after the cheap static filter and an active breach, so spend-free
-// story-post retries do not pay a round trip on every dispatch.
-async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
-  if (job.name === 'story-post') {
-    const data = job.data as import('@queues/ai-agents/types').StoryPostJobData
-    return wouldStoryPostCallOpenAI(data.post_id, data.force ?? false)
-  }
-  return true
-}
-
 export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Worker {
   const dependencies = { ...defaultDeps, ...deps }
   return dependencies.createWorker(
     dependencies.queueName,
-    (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job, dependencies),
+    withPagedDispatcherStallBudget<AIAgentJobData, unknown>(
+      dependencies.queueName,
+      (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job, dependencies),
+    ),
     {
       dedicatedCommandClient: true,
       concurrency: dependencies.concurrency,
@@ -147,6 +162,7 @@ export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Wo
       },
       lockDuration: 300_000,
       stalledInterval: 30_000,
+      maxStalledCount: PAGED_DISPATCHER_MAX_STALLED_COUNT,
       // Only the `classifier-run` job names this strategy; every other job keeps its own backoff.
       backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: classifierRunBackoffMs },
     },

@@ -61,6 +61,7 @@ export const REGISTRY_ORDER = [
   'report-integrity-work-config',
   'images-work-config',
   'openai-background-responses-work-config',
+  'ai-agents-queue-config',
   'openai-moderation-work-config',
   'entity-cache-work-config',
   'hostname-blocking-work-config',

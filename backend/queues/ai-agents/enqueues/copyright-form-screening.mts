@@ -8,6 +8,7 @@ const jobIdFor = (submissionId: string) => `copyright_form_screening_${submissio
 export async function enqueueCopyrightFormScreening(submissionId: string): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
+    removeOnFail: false,
     jobId: jobIdFor(submissionId),
     priority: AGENT_PRIORITY['copyright-form-screening'],
     deduplication: { id: `copyright_form_screening_${submissionId}`, mode: 'simple' },

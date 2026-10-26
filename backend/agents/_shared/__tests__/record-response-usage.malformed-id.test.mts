@@ -14,11 +14,7 @@ import {
   refreshDailyAiCostTotalMicrounits,
   spendCapConfig,
 } from '@services/ai-usage'
-import { deleteBackgroundResponseRegistration } from '@services/openai-background-responses'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
-import { getBackgroundResponseHooks } from '@modules/openai-utils/create-response'
-import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
-import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
 import { recordAgentResponseUsage } from '../record-response-usage.mts'
 import { createBackgroundResponseRegistrationHooks } from '../record-response-background-hooks.mts'
 
@@ -98,7 +94,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
     })
   })
 
-  it('uses a valid registration ID when the completed ID is unusable without a lease', async () => {
+  it('uses a valid registration ID when the completed ID is unusable', async () => {
     await withReservedDay(async day => {
       const slug = agentSlug()
       const registrationId = `resp_fallback_${slug}`
@@ -106,7 +102,11 @@ describe('recordAgentResponseUsage response ID storage', () => {
         response: response(' invalid'),
         agentSlug: slug,
         transport: 'direct' as const,
-        registration: { responseId: registrationId, lease: undefined },
+        registration: {
+          responseId: registrationId,
+          kind: 'table' as const,
+          createdAt: createdAt(day),
+        },
         createdAt: createdAt(day),
       }
       sentryCaptureExceptionMock.mockClear()
@@ -124,17 +124,20 @@ describe('recordAgentResponseUsage response ID storage', () => {
     })
   })
 
-  it('preserves the registration lease and response-ID fence with an invalid completed ID', async () => {
+  it('preserves the inline registration and response-ID fence with an invalid completed ID', async () => {
     await withReservedDay(async day => {
       const slug = agentSlug()
-      const registrationId = `resp_lease_${slug}`
-      const background = createBackgroundResponseRegistrationHooks({ agentSlug: slug })
+      const registrationId = `resp_inline_${slug}`
+      const background = createBackgroundResponseRegistrationHooks({
+        agentSlug: slug,
+        createdAt: createdAt(day),
+      })
       sentryCaptureExceptionMock.mockClear()
 
       await background.hooks.onResponseCreated(registrationId)
       const registration = background.getRegistration()
-      if (!registration?.lease) throw new Error('Expected an owned background lease')
-      await registration.lease.stopAndSettle()
+      if (!registration || registration.kind !== 'table')
+        throw new Error('Expected an inline registration')
       await recordAgentResponseUsage({
         response: response(' invalid'),
         agentSlug: slug,
@@ -142,9 +145,6 @@ describe('recordAgentResponseUsage response ID storage', () => {
         registration,
       })
 
-      await expect(
-        deleteBackgroundResponseRegistration(registrationId, registration.lease.leaseToken),
-      ).resolves.toBe(false)
       expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
       expectRedactedUsageDiagnostic(slug)
 
@@ -157,35 +157,6 @@ describe('recordAgentResponseUsage response ID storage', () => {
 
       await expect(countAiUsageRecordsForAgent(slug, tokens)).resolves.toBe(1)
       await expect(countAiUsageOpenAIResponseKeys(registrationId)).resolves.toBe(1)
-      await expect(getAccountingUncertaintySource(day)).resolves.toBeNull()
-      expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(2)
-      expectRedactedUsageDiagnostic(slug, 1)
-    })
-  })
-
-  it('records keylessly after the real registration hook rejects an invalid ID', async () => {
-    await withReservedDay(async day => {
-      const slug = agentSlug()
-      sentryCaptureExceptionMock.mockClear()
-
-      await callRecordingModelUsage(
-        async () => {
-          await expect(getBackgroundResponseHooks()?.onResponseCreated('invalid ')).resolves.toBe(
-            undefined,
-          )
-          expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
-          // A response id the ledger cannot store: the usage is still recorded, without a key.
-          return makeDirectOpenAIResult('', usage)
-        },
-        {
-          agentSlug: slug,
-          selection: { provider: 'openai', model: 'gpt-6-luna' },
-          openaiTransport: 'direct',
-        },
-      )
-
-      await expect(countAiUsageRecordsForAgent(slug, tokens)).resolves.toBe(1)
-      await expect(countAiUsageOpenAIResponseKeys('invalid ')).resolves.toBe(0)
       await expect(getAccountingUncertaintySource(day)).resolves.toBeNull()
       expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(2)
       expectRedactedUsageDiagnostic(slug, 1)

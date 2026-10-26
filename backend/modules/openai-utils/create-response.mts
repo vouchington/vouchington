@@ -6,17 +6,14 @@ import type {
 import {
   type CompletedOpenAIResponse,
   isOpenAIResponseNotCompletedError,
+  shouldLatchUnknownBilledOpenAIAttempt,
   validateCompletedResponse,
 } from '@vouchington/ai/openai'
 import onError from '@modules/on-error'
-import {
-  getBackgroundResponseHooks,
-  type BackgroundResponseLease,
-} from './background-response-context.mts'
+import { getBackgroundResponseHooks } from './background-response-context.mts'
 import { cancelOpenAIResponse } from './background-response-teardown.mts'
 import { withOpenAIFlexFallback } from './flex-fallback.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import { shouldLatchUnknownBilledAttempt } from './latch-policy.mts'
 import { createOpenAIResponseWithRetries } from './response-retry.mts'
 import { iterateOpenAIResponseStream } from './response-stream-iteration.mts'
 
@@ -100,10 +97,11 @@ async function drainBackgroundOpenAIResponse(
   const hooks = getBackgroundResponseHooks()
   const attemptHooks = getOpenAIResponseAttemptHooks()
   let responseId: string | undefined
-  let lease: BackgroundResponseLease | undefined
+  let registered = false
   const events = streamOpenAIResponseEvents(stream, async id => {
     responseId = id
-    lease = await hooks?.onResponseCreated(id)
+    await hooks?.onResponseCreated(id)
+    registered = hooks !== undefined
   })
   try {
     return await drainAsyncGenerator(events)
@@ -121,12 +119,10 @@ async function drainBackgroundOpenAIResponse(
     ) {
       await cancelOpenAIResponse(responseId).catch(onError)
     }
-    if (!lease && shouldLatchUnknownBilledAttempt(err)) {
+    if (!registered && shouldLatchUnknownBilledOpenAIAttempt(err)) {
       await attemptHooks?.onUnknownBilledAttempt({ requestStartedAt, error: err })
     }
     throw err
-  } finally {
-    await lease?.stopAndSettle().catch(onError)
   }
 }
 

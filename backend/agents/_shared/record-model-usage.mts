@@ -30,7 +30,7 @@ export interface RecordModelUsageParams {
   classifier?: ClassifierUsageAttribution
   // The request's start time, for a foreground request recorded after its request day (see
   // RecordAiUsageOptions.createdAt in @services/ai-usage/record.mts). Ignored when
-  // `registration.lease` is set: the lease's own createdAt is the more authoritative request time.
+  // a background response registered: its createdAt is the authoritative request time.
   createdAt?: Date
 }
 
@@ -79,7 +79,9 @@ export async function recordModelUsage(
     await claimUsage({ ...billed, responseId, registration, createdAt })
   } catch (err) {
     onError(err instanceof Error ? err : new Error('AI usage ledger write failed', { cause: err }))
-    const requestDay = getUtcDayFromDate(registration?.lease?.createdAt ?? createdAt ?? new Date())
+    const requestDay = getUtcDayFromDate(registration?.createdAt ?? createdAt ?? new Date())
     await latchUncertainty({ requestDay, source: 'ledger_write_failed' })
+    // A job must remain retryable while its response id is still in job data.
+    if (registration?.kind === 'job') throw err
   }
 }

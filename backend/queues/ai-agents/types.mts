@@ -30,6 +30,14 @@ export type ReconcileClassifierRunsJobData = {
   after?: string | null
 }
 
+export type ReconcileBackgroundResponsesJobData = {
+  phase?: 'inline' | 'failed' | 'cleanup'
+  inlineAfter?: string
+  failedOffset?: number
+  sweepId?: string
+  page?: number
+}
+
 export type StoryPostJobData = {
   post_id: string
   /** When true, re-summarize even if ai_summary_markdown is already set (used by story refresh). */
@@ -77,6 +85,21 @@ export type SpendCapDelayedData = {
   spendCapDelayedDay?: string
 }
 
+/** Unsettled direct OpenAI responses owned by an AI worker job. */
+export type JobBackgroundResponse = {
+  responseId: string
+  agentSlug: string
+  communityId: string | null
+  postId: string | null
+  createdAt: string
+}
+
+export type BackgroundResponseJobData = {
+  backgroundResponses?: JobBackgroundResponse[]
+  /** The paid processor succeeded; a delayed settlement must not run it again. */
+  backgroundResponseProcessorCompleted?: boolean
+}
+
 export type SpendCapRecheckJobData = {
   day: string
   generation: string
@@ -98,8 +121,10 @@ export type AIAgentJobData = (
   | StoryPostJobData
   | BackfillReportJudgementsJobData
   | ReconcileClassifierRunsJobData
+  | ReconcileBackgroundResponsesJobData
   | AutoDispatchJudgementJobData
 ) &
-  SpendCapDelayedData
+  SpendCapDelayedData &
+  BackgroundResponseJobData
 
 export type CopyrightAgentSweepData = { after?: string }

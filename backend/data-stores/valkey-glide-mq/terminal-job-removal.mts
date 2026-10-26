@@ -1,5 +1,8 @@
 import { Batch } from '@glidemq/speedkey'
-import type { createRetryingCommandClient } from './glide-mq-command-client.mts'
+import type { Job, Queue } from 'glide-mq'
+import pMap from 'p-map'
+import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { createRetryingCommandClient } from './glide-mq-command-client.mts'
 
 type CommandClient = ReturnType<typeof createRetryingCommandClient>['client']
 
@@ -49,5 +52,35 @@ export async function acquireTerminalJobRemoval(
       // Native removal leaves cross-queue parent notifications in xq-pending for its scheduler.
       return result !== null && result[0] !== 0
     },
+  }
+}
+
+/** Re-read data under WATCH before pruning retained failed jobs. */
+export async function removeTerminalJobsWhen<D>(
+  queue: Pick<Queue<D>, 'name' | 'getJob'>,
+  jobIds: readonly string[],
+  canRemove: (job: Job<D>) => boolean | Promise<boolean>,
+): Promise<number> {
+  const namespace = `${workerQueuePrefix ?? 'glide'}:{${queue.name}}`
+  const dedicated = createRetryingCommandClient('terminal-job-pruning')
+  try {
+    // One dedicated WATCH connection serializes the bounded page's state check and native remove.
+    const outcomes = await pMap(
+      jobIds,
+      async jobId => {
+        const claim = await acquireTerminalJobRemoval(dedicated.client, namespace, jobId)
+        try {
+          if (claim.state !== 'terminal' || claim.terminalState !== 'failed') return false
+          const current = await queue.getJob(jobId)
+          return current !== null && (await canRemove(current)) && (await claim.remove())
+        } finally {
+          await claim.release()
+        }
+      },
+      { concurrency: 1 },
+    )
+    return outcomes.filter(Boolean).length
+  } finally {
+    await dedicated.close()
   }
 }
