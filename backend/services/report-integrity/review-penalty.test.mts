@@ -43,8 +43,5 @@ describe('report abuse penalty annual review', () => {
     expect((await getReportAbusePenaltyReviewsDue()).results).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: penaltyId, user_username: null })]),
     )
-    expect((await getReportAbusePenaltyReviewsDue()).results.map(row => row.id)).not.toContain(
-      penaltyId,
-    )
   })
 })

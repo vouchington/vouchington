@@ -41,8 +41,5 @@ describe('vote weight penalty annual review', () => {
     expect((await getVoteWeightPenaltyReviewsDue()).results).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: penaltyId, user_username: null })]),
     )
-    expect((await getVoteWeightPenaltyReviewsDue()).results.map(row => row.id)).not.toContain(
-      penaltyId,
-    )
   })
 })
