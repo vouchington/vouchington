@@ -15,7 +15,7 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       integer: true,
     },
     moderation_batch_size: {
-      description: 'Moderation source rows examined per retention page.',
+      description: 'Moderation source rows processed per retention page, plus one lookahead row.',
       minValue: 1,
       maxValue: DATA_RETENTION_MAX_VALUES.moderation_batch_size,
       integer: true,
