@@ -53,7 +53,6 @@ import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-c
 
 // A failing step is recorded and the run continues, so one run reports every failure.
 const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
-  runPublicationScopePageScenarios,
   runBloomReconciliationScenarios,
   runMaterializedViewRefreshScenarios,
   runHostnameBlocklistScenario,
@@ -93,6 +92,8 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
+  // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
+  runPublicationScopePageScenarios,
 ]
 
 async function main() {

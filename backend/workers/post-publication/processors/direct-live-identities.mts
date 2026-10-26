@@ -1,3 +1,5 @@
+import { hashCapturedPublicationKeys } from '@services/post-publication/captured-keys'
+import { continuationJob, nextContinuation, subjectChainJobs } from './direct-continuations.mts'
 import {
   enqueueBulkPostPublicationEffects,
   enqueuePostPublicationEffects,
@@ -9,12 +11,12 @@ import {
   listLiveTopicAliasesPage,
 } from '@services/post-publication/live-identity-pages'
 import { listLivePostSlugsPage } from '@services/post-publication/live-post-slug-pages'
+import { listLiveTopicMergedSourcesPage } from '@services/post-publication/live-topic-merged-source-pages'
 import {
   LIVE_POST_TOPIC_FAMILIES,
   listLivePostTopicPage,
   type LivePostTopicFamily,
 } from '@services/post-publication/live-post-topic-pages'
-import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 
 type Continuation = NonNullable<PostPublicationEffectsJobData['continuation']>
@@ -34,7 +36,7 @@ export async function enqueueLivePublicationIdentityEffects(
   const jobs = [
     ...subjectChainJobs(data, 'post_slugs', subjects.postIds),
     ...subjectChainJobs(data, 'post_descendants', subjects.descendantPostIds ?? []),
-    ...subjectChainJobs(data, 'topic_aliases', subjects.topicIds),
+    ...topicIdentityJobs(data, subjects.topicIds),
     ...subjectChainJobs(data, 'rss_feed_items', subjects.rssFeedIds),
     ...subjectChainJobs(data, 'rss_feed_categories', subjects.rssFeedIds),
     ...subjectChainJobs(data, 'rss_feed_item_categories', subjects.rssFeedItemIds),
@@ -49,35 +51,6 @@ export async function enqueueLivePublicationIdentityEffects(
   await enqueueBulkPostPublicationEffects(jobs)
 }
 
-export async function enqueueSubjectChains(
-  data: PostPublicationEffectsJobData,
-  kind: Continuation['kind'],
-  ids: readonly string[],
-): Promise<void> {
-  await enqueueBulkPostPublicationEffects(subjectChainJobs(data, kind, ids))
-}
-
-function subjectChainJobs(
-  data: PostPublicationEffectsJobData,
-  kind: Continuation['kind'],
-  ids: readonly string[],
-): PostPublicationEffectsJobData[] {
-  const subjects = [...new Set(ids)].toSorted()
-  const limit = getPostPublicationWorkLimit('capture_batch_size')
-  const jobs: PostPublicationEffectsJobData[] = []
-  for (let offset = 0; offset < subjects.length; offset += limit) {
-    jobs.push(
-      continuationJob(data, {
-        kind,
-        subjectIds: subjects.slice(offset, offset + limit),
-        subjectIndex: 0,
-        after: null,
-      }),
-    )
-  }
-  return jobs
-}
-
 /** One live slug/alias page; the next job carries only its bounded UUID list and cursor. */
 export async function processLivePublicationIdentityContinuation(
   data: PostPublicationEffectsJobData,
@@ -86,13 +59,31 @@ export async function processLivePublicationIdentityContinuation(
   if (!continuation) throw new TypeError('Publication continuation payload is required')
   const subjectId = continuation.subjectIds[continuation.subjectIndex]
   if (!subjectId) throw new TypeError('Publication continuation has no current subject')
+  if (continuation.kind === 'topic_merged_sources') {
+    const page = await listLiveTopicMergedSourcesPage(subjectId, continuation.after)
+    await Promise.all([
+      invalidateExactPublicationCacheKeys({
+        postIds: [],
+        postSlugs: [],
+        userKeys: [],
+        communityKeys: [],
+        rssFeedIds: [],
+        rssFeedItemIds: [],
+        topicKeys: [...page.ids, ...page.slugs],
+      }),
+      enqueueBulkPostPublicationEffects(topicIdentityJobs(data, page.ids, ['topic_aliases'])),
+    ])
+    const next = nextContinuation(continuation, page.cursor)
+    if (next) await enqueuePostPublicationEffects(continuationJob(data, next))
+    return
+  }
   if (LIVE_POST_TOPIC_FAMILIES.includes(continuation.kind as LivePostTopicFamily)) {
     const page = await listLivePostTopicPage(
       subjectId,
       continuation.kind as LivePostTopicFamily,
       continuation.after,
     )
-    await applyLivePostTopicPage(page.topicIds)
+    await applyLivePostTopicPage(data, page.topicIds)
     const next = nextContinuation(continuation, page.cursor)
     if (next) await enqueuePostPublicationEffects(continuationJob(data, next))
     return
@@ -115,7 +106,10 @@ export async function processLivePublicationIdentityContinuation(
   if (next) await enqueuePostPublicationEffects(continuationJob(data, next))
 }
 
-async function applyLivePostTopicPage(topicIds: string[]): Promise<void> {
+async function applyLivePostTopicPage(
+  data: PostPublicationEffectsJobData,
+  topicIds: string[],
+): Promise<void> {
   const names = await listLivePublicationIdentityNames({
     userIds: [],
     communityIds: [],
@@ -132,21 +126,33 @@ async function applyLivePostTopicPage(topicIds: string[]): Promise<void> {
       topicKeys: [...topicIds, ...names.topicSlugs],
     }),
     enqueueBulkUpdateTopicRatingStatsForTopicId(topicIds),
+    enqueueLivePublicationIdentityEffects(data, {
+      postIds: [],
+      topicIds,
+      rssFeedIds: [],
+      rssFeedItemIds: [],
+    }),
   ])
 }
 
-export function continuationJob(
+/** A topic's complete identity scan is shared by every expanded key chunk in one change. */
+function topicIdentityJobs(
   data: PostPublicationEffectsJobData,
-  continuation: Continuation,
-): PostPublicationEffectsJobData {
-  return { ...data, keys: [], continuation }
-}
-
-export function nextContinuation(
-  current: Continuation,
-  cursor: string | null,
-): Continuation | null {
-  if (cursor) return { ...current, after: cursor }
-  const subjectIndex = current.subjectIndex + 1
-  return subjectIndex < current.subjectIds.length ? { ...current, subjectIndex, after: null } : null
+  ids: readonly string[],
+  kinds: Continuation['kind'][] = ['topic_aliases', 'topic_merged_sources'],
+) {
+  const canonical = {
+    ...data,
+    postId: null,
+    keys: [],
+    keyHash: hashCapturedPublicationKeys([]),
+    chunkIndex: 0,
+  }
+  return [...new Set(ids)]
+    .toSorted()
+    .flatMap(id =>
+      kinds.map(kind =>
+        continuationJob(canonical, { kind, subjectIds: [id], subjectIndex: 0, after: null }),
+      ),
+    )
 }

@@ -6,12 +6,8 @@ import {
   type LiveScopePostKind,
 } from '@services/post-publication/live-scope-post-pages'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
-import {
-  continuationJob,
-  enqueueLivePublicationIdentityEffects,
-  enqueueSubjectChains,
-  nextContinuation,
-} from './direct-live-identities.mts'
+import { enqueueLivePublicationIdentityEffects } from './direct-live-identities.mts'
+import { continuationJob, enqueueSubjectChains, nextContinuation } from './direct-continuations.mts'
 
 type Continuation = NonNullable<PostPublicationEffectsJobData['continuation']>
 type ApplyKeys = (

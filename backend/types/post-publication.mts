@@ -45,6 +45,7 @@ export type PostPublicationEffectsJobData = {
       | 'story_posts'
       | 'post_slugs'
       | 'topic_aliases'
+      | 'topic_merged_sources'
       | 'post_data_topics'
       | 'post_review_topics'
       | 'post_topic_relations'

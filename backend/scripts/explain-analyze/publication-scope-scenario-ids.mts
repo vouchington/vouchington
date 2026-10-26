@@ -4,6 +4,7 @@ export const PUBLICATION_SCOPE_SCENARIO_IDS = [
   'publication-descendant-page',
   'publication-alias-relations-page',
   'publication-alias-sources-page',
+  'publication-merged-topic-sources-page',
   'publication-merge-feed-categories-page',
   'publication-merge-item-categories-page',
 ] as const

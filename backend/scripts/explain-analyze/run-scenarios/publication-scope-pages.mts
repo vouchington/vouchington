@@ -8,11 +8,33 @@ import {
   listLiveTopicMergeCategoryOwnersPage,
 } from '@services/post-publication/live-topic-merge-category-pages'
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
+import { listLiveTopicMergedSourcesPage } from '@services/post-publication/live-topic-merged-source-pages'
+import { write, refreshMaterializedView } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
-import { PUBLICATION_SCOPE_SEED as seed } from '../seed-data/publication-scope-pages.mts'
+import {
+  PUBLICATION_SCOPE_SEED as seed,
+  seedPublicationScopePages,
+} from '../seed-data/publication-scope-pages.mts'
+import { cleanupPublicationScopePages } from '../seed-data/publication-scope-cleanup.mts'
+import { preparePublicationScopePlans } from '../seed-data/publication-scope-maintenance.mts'
+import { runAnalyze } from '../seed-data/maintenance.mts'
+import { refreshExplainMaterializedViews } from '../seed-data/materialized-view-maintenance.mts'
 
 export async function runPublicationScopePageScenarios(): Promise<void> {
+  try {
+    await cleanupPublicationScopePages()
+    await seedPublicationScopePages()
+    await preparePublicationScopePlans()
+    await capturePublicationScopePages()
+  } finally {
+    await cleanupPublicationScopePages()
+    await runAnalyze()
+    await refreshExplainMaterializedViews(refreshMaterializedView, statement => write(statement))
+  }
+}
+
+async function capturePublicationScopePages(): Promise<void> {
   const limit = getPostPublicationWorkLimit('capture_batch_size')
   const scopes: Array<[string, LiveScopePostKind, string, string, string]> = [
     ['author', 'author_posts', seed.author, 'posts', 'posts__default_created_by_id_id_idx'],
@@ -36,7 +58,14 @@ export async function runPublicationScopePageScenarios(): Promise<void> {
   for (const [name, kind, subject, relation, index] of scopes) {
     const id = `publication-${name}-page`
     registerScenarioContract(id, {
-      seededRows: { [relation]: kind === 'alias_post_sources' ? seed.count * 3 : seed.count },
+      seededRows: {
+        [relation]:
+          kind === 'alias_post_sources'
+            ? seed.count * 6
+            : kind === 'alias_post_relations'
+              ? seed.count * 2
+              : seed.count,
+      },
       expectations: [
         { kind: 'maxProcessedRows', relation, max: limit },
         { kind: 'usesIndexes', indexes: [index], noSort: true },
@@ -52,6 +81,18 @@ export async function runPublicationScopePageScenarios(): Promise<void> {
       )
     })
   }
+  registerScenarioContract('publication-merged-topic-sources-page', {
+    seededRows: { topics: seed.count },
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'topics', max: limit },
+      { kind: 'usesIndexes', indexes: ['idx_topics__merged_into_topic_id'], noSort: true },
+    ],
+  })
+  await runAndCapture('publication-merged-topic-sources-page', async () => {
+    const page = await listLiveTopicMergedSourcesPage(seed.topic, null)
+    assert.equal(page.ids.length, limit)
+    assert.ok(page.cursor)
+  })
   for (const kind of ['feed', 'item'] as const) {
     const relation = kind === 'feed' ? 'rss_feed_categories' : 'rss_feed_item_categories'
     const index =
