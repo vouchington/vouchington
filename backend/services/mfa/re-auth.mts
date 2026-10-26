@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { createCodedError } from '@modules/on-error/create-coded-error'
+import { createCodedError } from '@vouchington/sentry'
 import { MFA_REAUTH_REQUIRED } from '@modules/on-error/error-codes'
 import { isUUID } from '@ts-shared/utils/validation-core'
 import type { AccountChangeSession } from './active-account-session.mts'
