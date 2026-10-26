@@ -1,19 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { buildRateLimitKeys as buildPublishedRateLimitKeys } from '@vouchington/rate-limit'
 import { getRateLimitKeyDimensions, resolveRateLimitIdentities } from './identity.mts'
 import { getRouteConfig } from './config.mts'
 import type { RateLimitIdentities } from './types.mts'
 
-const buildRateLimitKeys = (routeKey: string, identities: RateLimitIdentities) =>
-  buildPublishedRateLimitKeys(routeKey, getRateLimitKeyDimensions(identities), {
-    hashedDimensions: new Set(['email']),
-  })
-
-describe('buildRateLimitKeys', () => {
-  it('includes IP key when IP is present', () => {
+describe('getRateLimitKeyDimensions', () => {
+  it('selects IP when IP is present', () => {
     const identities: RateLimitIdentities = { ip: '192.0.2.1' }
-    const keys = buildRateLimitKeys('GET:/api/v1/posts', identities)
-    expect(keys).toContain('ip:192.0.2.1:GET:/api/v1/posts')
+    expect(getRateLimitKeyDimensions(identities)).toEqual({
+      ip: '192.0.2.1',
+      did: undefined,
+      sid: undefined,
+      uid: undefined,
+      email: undefined,
+    })
   })
 
   it('includes all browser session dimensions when present', () => {
@@ -23,65 +22,52 @@ describe('buildRateLimitKeys', () => {
       sessionId: 'session-456',
       userId: 'user-789',
     }
-    const keys = buildRateLimitKeys('POST:/api/v1/posts', identities)
-    expect(keys).toContain('ip:192.0.2.1:POST:/api/v1/posts')
-    expect(keys).toContain('did:device-123:POST:/api/v1/posts')
-    expect(keys).toContain('sid:session-456:POST:/api/v1/posts')
-    expect(keys).toContain('uid:user-789:POST:/api/v1/posts')
-    expect(keys).toHaveLength(4)
+    expect(getRateLimitKeyDimensions(identities)).toEqual({
+      ip: '192.0.2.1',
+      did: 'device-123',
+      sid: 'session-456',
+      uid: 'user-789',
+      email: undefined,
+    })
   })
 
-  it('API key path: only IP + apikey keys, no device/session/user', () => {
+  it('API key path: only IP + apikey dimensions, no browser identities', () => {
     const identities: RateLimitIdentities = {
       ip: '192.0.2.1',
       apiKeyId: 'abcd1234',
+      deviceId: 'device-123',
+      sessionId: 'session-456',
+      userId: 'user-789',
+      email: 'alice@example.test',
     }
-    const keys = buildRateLimitKeys('POST:/api/v1/posts', identities)
-    expect(keys).toContain('ip:192.0.2.1:POST:/api/v1/posts')
-    expect(keys).toContain('apikey:abcd1234:POST:/api/v1/posts')
-    expect(keys).toHaveLength(2)
-    // No device/session/user keys
-    expect(keys.some(k => k.startsWith('did:'))).toBe(false)
-    expect(keys.some(k => k.startsWith('sid:'))).toBe(false)
-    expect(keys.some(k => k.startsWith('uid:'))).toBe(false)
+    expect(getRateLimitKeyDimensions(identities)).toEqual({
+      ip: '192.0.2.1',
+      apikey: 'abcd1234',
+    })
   })
 
-  it('omits optional dimensions when not provided', () => {
+  it('leaves missing session and user dimensions undefined', () => {
     const identities: RateLimitIdentities = {
       ip: '192.0.2.1',
       deviceId: 'device-123',
-      // No sessionId or userId
     }
-    const keys = buildRateLimitKeys('GET:/api/v1/posts', identities)
-    expect(keys).toContain('ip:192.0.2.1:GET:/api/v1/posts')
-    expect(keys).toContain('did:device-123:GET:/api/v1/posts')
-    expect(keys).toHaveLength(2)
-    expect(keys.some(k => k.startsWith('sid:'))).toBe(false)
-    expect(keys.some(k => k.startsWith('uid:'))).toBe(false)
+    expect(getRateLimitKeyDimensions(identities)).toEqual({
+      ip: '192.0.2.1',
+      did: 'device-123',
+      sid: undefined,
+      uid: undefined,
+      email: undefined,
+    })
   })
 
-  it('returns empty array when no identities', () => {
-    const identities: RateLimitIdentities = {}
-    const keys = buildRateLimitKeys('GET:/api/v1/posts', identities)
-    expect(keys).toHaveLength(0)
-  })
-
-  it('sanitizes route key for Valkey key safety', () => {
-    const identities: RateLimitIdentities = { ip: '10.0.0.1' }
-    // Route key with param placeholders — no braces in our route keys
-    const keys = buildRateLimitKeys('GET:/api/v1/posts/:id', identities)
-    // Should not contain { or } in the key
-    expect(keys[0]).not.toMatch(/[{}]/)
-  })
-
-  it('uses route-specific prefix to isolate counters per route', () => {
-    const identities: RateLimitIdentities = { ip: '192.0.2.1', userId: 'user-1' }
-    const keys1 = buildRateLimitKeys('GET:/api/v1/posts', identities)
-    const keys2 = buildRateLimitKeys('POST:/api/v1/posts', identities)
-    // Keys should differ by route prefix
-    expect(keys1).not.toEqual(keys2)
-    expect(keys1[0]).toContain('GET:/api/v1/posts')
-    expect(keys2[0]).toContain('POST:/api/v1/posts')
+  it('selects no identity values when no identities are provided', () => {
+    expect(getRateLimitKeyDimensions({})).toEqual({
+      ip: undefined,
+      did: undefined,
+      sid: undefined,
+      uid: undefined,
+      email: undefined,
+    })
   })
 })
 
