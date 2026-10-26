@@ -97,7 +97,7 @@ function copyrightSweepKeyset(
   }
 }
 
-export function toCopyrightSweepIdPage(
+function toCopyrightSweepIdPage(
   rows: ReadonlyArray<{ id: string }>,
   limit: number,
 ): CopyrightSweepIdPage {

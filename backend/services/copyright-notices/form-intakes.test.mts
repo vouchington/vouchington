@@ -15,13 +15,11 @@ import {
   createCopyrightFormIntake,
 } from './index.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
-import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import { claimCopyrightFormScreening } from './form-screening-executions.mts'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 describe('copyright form intakes', () => {
-  useAutomaticProvisionalWithholding()
-
   it('atomically replays an unchanged idempotency key without another legal case', async () => {
     const user = await createTestUser()
     const postId = await insertTestPost({
@@ -79,9 +77,8 @@ describe('copyright form intakes', () => {
       promptVersion: 'copyright-form-screening-v2',
       model: 'test-model',
     }
-    const screeningId = await appendTestCopyrightFormScreening(screening)
-    const repeatedScreeningId = await appendTestCopyrightFormScreening(screening)
-    expect(repeatedScreeningId).not.toBe(screeningId)
+    await appendTestCopyrightFormScreening(screening)
+    await expect(claimCopyrightFormScreening(first.intake.id)).resolves.toBeNull()
   })
 
   it('treats an unknown screening submission as an inert queue replay', async () => {

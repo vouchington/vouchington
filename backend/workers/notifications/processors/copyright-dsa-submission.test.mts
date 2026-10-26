@@ -24,7 +24,6 @@ import { notifications } from '@queues/notifications/queues'
 import { processDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission'
 import { replayDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission-replay'
 import { searchRecoverableDsaStatementSubmissionIds } from '@services/copyright-notices/dsa-statement-submission-sweep'
-import { toCopyrightSweepIdPage } from '@services/copyright-notices/sweep-id-pages'
 import {
   processReconcileDsaStatementSubmissions,
   processSubmitDsaStatementOfReasons,
@@ -139,9 +138,10 @@ describe('DSA statement reconciliation notification processor', () => {
 
   it('leaves durable work untouched when the submission gate is closed', async () => {
     const submissionId = await createTestDsaSubmission()
-    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () =>
-      toCopyrightSweepIdPage([{ id: submissionId }], 100),
-    )
+    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () => ({
+      results: [submissionId],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }))
 
     await expect(processReconcileDsaStatementSubmissions({ search })).resolves.toEqual({
       enqueued: 0,
@@ -155,9 +155,10 @@ describe('DSA statement reconciliation notification processor', () => {
     const firstId = await createTestDsaSubmission()
     const secondId = await createTestDsaSubmission()
     const from = new Date('2020-01-01T00:00:00.000Z')
-    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () =>
-      toCopyrightSweepIdPage([{ id: firstId }, { id: secondId }], 100),
-    )
+    const search = vi.fn<typeof searchRecoverableDsaStatementSubmissionIds>(async () => ({
+      results: [firstId, secondId],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }))
     const enqueuedJobs: unknown[] = []
     const enqueue = vi.fn<typeof enqueueBulkSubmitDsaStatementOfReasons>(async ids => {
       const jobs = await enqueueBulkSubmitDsaStatementOfReasons(ids)
@@ -214,7 +215,10 @@ describe('DSA statement reconciliation notification processor', () => {
           from: new Date('2020-01-01T00:00:00.000Z'),
           hasMore: false,
         }),
-        search: async () => toCopyrightSweepIdPage([{ id: submissionId }], 100),
+        search: async () => ({
+          results: [submissionId],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }),
         enqueue,
       }),
     ).rejects.toBe(failure)

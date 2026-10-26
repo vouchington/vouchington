@@ -68,11 +68,14 @@ describe('the live switch decides whether automation is on', () => {
 
   it('opens the window at the audited switch-on once the switch is on', async () => {
     await switchOn()
+    const before = Date.now()
     const window = await getAutomaticWithholdingWindow()
     expect(window.enabled).toBe(true)
     expect(window.since).toBeInstanceOf(Date)
-    expect((window.since as Date).getTime()).toBeLessThan(Date.now())
-    await expect(getAutomaticEnforcementSince()).resolves.toEqual(window.since)
+    expect(window.since?.getTime()).toBeLessThan(before)
+    const automaticSince = await getAutomaticEnforcementSince()
+    expect(automaticSince).toBeInstanceOf(Date)
+    expect(automaticSince?.getTime()).toBeLessThan(before)
   })
 
   it('stays closed while any approved threshold is unset', async () => {

@@ -1,17 +1,18 @@
-import {
-  appendTestCopyrightFormScreening,
-  startTestCopyrightFormScreening,
-} from '@voucha/test-helpers/copyright-form-screenings'
+import { appendTestCopyrightFormScreening } from '@voucha/test-helpers/copyright-form-screenings'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { eraseTestCopyrightFormRequester } from '@voucha/test-helpers/data-stores/psql/copyright-screening-executions'
 import {
   createClearScreenedForm,
+  createSignedInCopyrightForm,
   isTestCopyrightStaffCaseQueued,
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { reviewCopyrightFormIntake } from './form-reviews.mts'
 
-import { failCopyrightFormScreening } from './form-screening-executions.mts'
+import {
+  claimCopyrightFormScreening,
+  failCopyrightFormScreening,
+} from './form-screening-executions.mts'
 import { testCopyrightFormGuidance } from '@voucha/test-helpers/services/copyright-notices/form-guidance'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
@@ -40,18 +41,18 @@ describe('human form review with changing screening authority', () => {
   })
 
   it('replays durable human approval after failed screening becomes clear and rejects an opposite decision', async () => {
-    const [{ notice }, user] = await Promise.all([createClearScreenedForm(), createTestUser()])
-    await failCopyrightFormScreening(await startTestCopyrightFormScreening(notice.intake.id))
+    const [{ intake }, user] = await Promise.all([createSignedInCopyrightForm(), createTestUser()])
+    await failCopyrightFormScreening((await claimCopyrightFormScreening(intake.id))!)
     const input = {
-      intakeId: notice.intake.id,
+      intakeId: intake.id,
       currentUser: { ...user, roles: ['moderator'] },
       is_accepted: true,
       rationale: 'Human statutory review.',
     }
     await reviewCopyrightFormIntake(input)
-    const before = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    const before = await getCopyrightNoticePrivateAggregate(intake.copyright_notice_id)
     await appendTestCopyrightFormScreening({
-      intakeId: notice.intake.id,
+      intakeId: intake.id,
       inputSha256: Buffer.alloc(32, 77),
       recommendation: 'not_obviously_invalid',
       rationale: 'Current clear recommendation.',
@@ -60,7 +61,7 @@ describe('human form review with changing screening authority', () => {
       model: 'test-model',
     })
     await expect(reviewCopyrightFormIntake(input)).resolves.toMatchObject({ is_accepted: true })
-    const after = await getCopyrightNoticePrivateAggregate(notice.intake.copyright_notice_id)
+    const after = await getCopyrightNoticePrivateAggregate(intake.copyright_notice_id)
     expect(after?.assessments).toEqual(before?.assessments)
     await expect(reviewCopyrightFormIntake({ ...input, is_accepted: false })).rejects.toMatchObject(
       {

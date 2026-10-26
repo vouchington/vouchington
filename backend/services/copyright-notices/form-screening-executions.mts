@@ -24,13 +24,13 @@ export type CopyrightFormScreeningResultInput = {
   model: string
 }
 
-export async function lockCopyrightFormReview(intakeId: string, query: Transaction): Promise<void> {
+async function lockCopyrightFormReview(intakeId: string, query: Transaction): Promise<void> {
   await query(sql`/* lockCopyrightFormReview */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-form-review:${intakeId}`}, 0))
   `)
 }
 
-export async function startCopyrightFormScreeningInTransaction(
+async function startCopyrightFormScreeningInTransaction(
   intakeId: string,
   transaction: Transaction,
 ): Promise<CopyrightFormScreeningAttempt> {
