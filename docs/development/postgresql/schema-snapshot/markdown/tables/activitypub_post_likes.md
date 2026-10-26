@@ -11,9 +11,10 @@ Not partitioned — growth: unbounded.
 | `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                                                          |
 | `post_id`             | `uuid`                     | no       |                              |          |           |           | The local post that was liked.                                                                                                                                                                           |
 | `remote_actor_id`     | `uuid`                     | no       |                              |          |           |           | The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.                                                                   |
-| `like_activitypub_id` | `text`                     | no       |                              |          |           |           | The inbound Like activity's ActivityPub id; unique across active and retained terminal cycles so replay within the supported horizon cannot reactivate an undone Like.                                   |
+| `like_activitypub_id` | `text`                     | no       |                              |          |           |           | External Like URI. Undo-only assertions are actor scoped; receipt of the original Like establishes one global URI owner.                                                                                 |
 | `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                          |
 | `deleted_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; this immutable terminal timestamp starts bounded retention longer than the supported replay horizon. |
+| `confirmed_at`        | `timestamp with time zone` | yes      | `clock_timestamp()`          |          |           |           | When the original signed Like was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.                                                                   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -22,6 +23,7 @@ _none_
 
 **Check constraints:**
 
+- `activitypub_post_likes_check`: `CHECK (((confirmed_at IS NOT NULL) OR (deleted_at IS NOT NULL)))`
 - `activitypub_post_likes_like_activitypub_id_check`: `CHECK (((char_length(like_activitypub_id) > 0) AND (char_length(like_activitypub_id) <= 2048)))`
 
 **Foreign keys:**
@@ -32,10 +34,10 @@ _none_
 **Indexes:**
 
 - `activitypub_post_likes_pkey`: `CREATE UNIQUE INDEX activitypub_post_likes_pkey ON public.activitypub_post_likes USING btree (id)`
-- `idx_activitypub_post_likes__like_activitypub_id`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__like_activitypub_id ON public.activitypub_post_likes USING btree (like_activitypub_id)`
+- `idx_activitypub_post_likes__actor_activity`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__actor_activity ON public.activitypub_post_likes USING btree (remote_actor_id, like_activitypub_id)`
+- `idx_activitypub_post_likes__confirmed_activity`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__confirmed_activity ON public.activitypub_post_likes USING btree (like_activitypub_id) WHERE (confirmed_at IS NOT NULL)`
 - `idx_activitypub_post_likes__post_id`: `CREATE INDEX idx_activitypub_post_likes__post_id ON public.activitypub_post_likes USING btree (post_id)`
 - `idx_activitypub_post_likes__post_remote_actor`: `CREATE UNIQUE INDEX idx_activitypub_post_likes__post_remote_actor ON public.activitypub_post_likes USING btree (post_id, remote_actor_id) WHERE (deleted_at IS NULL)`
-- `idx_activitypub_post_likes__remote_actor_id`: `CREATE INDEX idx_activitypub_post_likes__remote_actor_id ON public.activitypub_post_likes USING btree (remote_actor_id)`
 - `idx_activitypub_post_likes__undone_retention`: `CREATE INDEX idx_activitypub_post_likes__undone_retention ON public.activitypub_post_likes USING btree (deleted_at, id) WHERE (deleted_at IS NOT NULL)`
 
 **Triggers:**

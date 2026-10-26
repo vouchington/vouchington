@@ -2992,9 +2992,21 @@
     },
     "activitypub_post_likes": {
       "checkConstraints": {
+        "activitypub_post_likes_check": "CHECK (((confirmed_at IS NOT NULL) OR (deleted_at IS NOT NULL)))",
         "activitypub_post_likes_like_activitypub_id_check": "CHECK (((char_length(like_activitypub_id) > 0) AND (char_length(like_activitypub_id) <= 2048)))"
       },
       "columns": {
+        "confirmed_at": {
+          "collation": null,
+          "comment": "When the original signed Like was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -3030,7 +3042,7 @@
         },
         "like_activitypub_id": {
           "collation": null,
-          "comment": "The inbound Like activity's ActivityPub id; unique across active and retained terminal cycles so replay within the supported horizon cannot reactivate an undone Like.",
+          "comment": "External Like URI. Undo-only assertions are actor scoped; receipt of the original Like establishes one global URI owner.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -3105,10 +3117,37 @@
           "unique": true,
           "valid": true
         },
-        "idx_activitypub_post_likes__like_activitypub_id": {
+        "idx_activitypub_post_likes__actor_activity": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_activitypub_post_likes__like_activitypub_id ON public.activitypub_post_likes USING btree (like_activitypub_id)",
+          "definition": "CREATE UNIQUE INDEX idx_activitypub_post_likes__actor_activity ON public.activitypub_post_likes USING btree (remote_actor_id, like_activitypub_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "remote_actor_id",
+              "descending": false,
+              "expression": "remote_actor_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "like_activitypub_id",
+              "descending": false,
+              "expression": "like_activitypub_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_post_likes__confirmed_activity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_activitypub_post_likes__confirmed_activity ON public.activitypub_post_likes USING btree (like_activitypub_id) WHERE (confirmed_at IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -3119,7 +3158,7 @@
               "opclass": "text_ops"
             }
           ],
-          "predicate": null,
+          "predicate": "(confirmed_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -3172,26 +3211,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_activitypub_post_likes__remote_actor_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_post_likes__remote_actor_id ON public.activitypub_post_likes USING btree (remote_actor_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "remote_actor_id",
-              "descending": false,
-              "expression": "remote_actor_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_activitypub_post_likes__undone_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -3234,12 +3253,13 @@
     },
     "activitypub_remote_follow_activities": {
       "checkConstraints": {
-        "activitypub_remote_follow_activities_activity_id_check": "CHECK (((char_length(activity_id) >= 1) AND (char_length(activity_id) <= 2048)))"
+        "activitypub_remote_follow_activities_activity_id_check": "CHECK (((char_length(activity_id) >= 1) AND (char_length(activity_id) <= 2048)))",
+        "activitypub_remote_follow_activities_check": "CHECK (((confirmed_at IS NOT NULL) OR (undone_at IS NOT NULL)))"
       },
       "columns": {
         "activity_id": {
           "collation": null,
-          "comment": "External ActivityPub Follow id; unique across active and undone cycles.",
+          "comment": "External Follow URI. Undo-only assertions are actor scoped; receipt of the original Follow establishes one global URI owner.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -3247,6 +3267,17 @@
           "nullable": false,
           "ordinalPosition": 3,
           "type": "text"
+        },
+        "confirmed_at": {
+          "collation": null,
+          "comment": "When the original signed Follow was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
         },
         "created_at": {
           "collation": null,
@@ -3327,26 +3358,6 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "activitypub_remote_follow_activities_activity_id_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX activitypub_remote_follow_activities_activity_id_key ON public.activitypub_remote_follow_activities USING btree (activity_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "activity_id",
-              "descending": false,
-              "expression": "activity_id",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "activitypub_remote_follow_activities_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -3363,6 +3374,26 @@
           ],
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_remote_follow_activities__confirmed_activity": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_activitypub_remote_follow_activities__confirmed_activity ON public.activitypub_remote_follow_activities USING btree (activity_id) WHERE (confirmed_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "activity_id",
+              "descending": false,
+              "expression": "activity_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "(confirmed_at IS NOT NULL)",
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -3414,6 +3445,33 @@
           "unique": false,
           "valid": true
         },
+        "uq_ap_remote_follow_activities__actor_activity": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_ap_remote_follow_activities__actor_activity ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, activity_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "remote_actor_id",
+              "descending": false,
+              "expression": "remote_actor_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "activity_id",
+              "descending": false,
+              "expression": "activity_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "uq_ap_remote_follow_activities__scope_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -3458,9 +3516,9 @@
       "relationKind": "table",
       "triggers": {},
       "uniqueConstraints": {
-        "activitypub_remote_follow_activities_activity_id_key": {
-          "columns": ["activity_id"],
-          "definition": "UNIQUE (activity_id)"
+        "uq_ap_remote_follow_activities__actor_activity": {
+          "columns": ["remote_actor_id", "activity_id"],
+          "definition": "UNIQUE (remote_actor_id, activity_id)"
         },
         "uq_ap_remote_follow_activities__scope_id": {
           "columns": ["remote_actor_id", "target_user_id", "id"],

@@ -10,21 +10,23 @@ Not partitioned — growth: unbounded.
 | ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                              |
 | `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Virtual UUIDv7 creation time for per-activity Follow identity; active identities remain while terminal retention is measured from undone_at. |
-| `activity_id`     | `text`                     | no       |                              |          |           |           | External ActivityPub Follow id; unique across active and undone cycles.                                                                      |
+| `activity_id`     | `text`                     | no       |                              |          |           |           | External Follow URI. Undo-only assertions are actor scoped; receipt of the original Follow establishes one global URI owner.                 |
 | `remote_actor_id` | `uuid`                     | no       |                              |          |           |           | Signing remote actor that sent the Follow.                                                                                                   |
 | `target_user_id`  | `uuid`                     | no       |                              |          |           |           | Local user targeted by the Follow.                                                                                                           |
 | `undone_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Set by Undo or replacement, including Undo before Follow; never cleared while retained and starts the terminal identity retention window.    |
+| `confirmed_at`    | `timestamp with time zone` | yes      | `clock_timestamp()`          |          |           |           | When the original signed Follow was received. NULL for an Undo-only assertion; confirmation never clears or restarts terminal retention.     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `activitypub_remote_follow_activities_activity_id_key`: `UNIQUE (activity_id)`
+- `uq_ap_remote_follow_activities__actor_activity`: `UNIQUE (remote_actor_id, activity_id)`
 - `uq_ap_remote_follow_activities__scope_id`: `UNIQUE (remote_actor_id, target_user_id, id)`
 
 **Check constraints:**
 
 - `activitypub_remote_follow_activities_activity_id_check`: `CHECK (((char_length(activity_id) >= 1) AND (char_length(activity_id) <= 2048)))`
+- `activitypub_remote_follow_activities_check`: `CHECK (((confirmed_at IS NOT NULL) OR (undone_at IS NOT NULL)))`
 
 **Foreign keys:**
 
@@ -33,10 +35,11 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `activitypub_remote_follow_activities_activity_id_key`: `CREATE UNIQUE INDEX activitypub_remote_follow_activities_activity_id_key ON public.activitypub_remote_follow_activities USING btree (activity_id)`
 - `activitypub_remote_follow_activities_pkey`: `CREATE UNIQUE INDEX activitypub_remote_follow_activities_pkey ON public.activitypub_remote_follow_activities USING btree (id)`
+- `idx_activitypub_remote_follow_activities__confirmed_activity`: `CREATE UNIQUE INDEX idx_activitypub_remote_follow_activities__confirmed_activity ON public.activitypub_remote_follow_activities USING btree (activity_id) WHERE (confirmed_at IS NOT NULL)`
 - `idx_activitypub_remote_follow_activities__target_user_id`: `CREATE INDEX idx_activitypub_remote_follow_activities__target_user_id ON public.activitypub_remote_follow_activities USING btree (target_user_id)`
 - `idx_activitypub_remote_follow_activities__undone_retention`: `CREATE INDEX idx_activitypub_remote_follow_activities__undone_retention ON public.activitypub_remote_follow_activities USING btree (undone_at, id) WHERE (undone_at IS NOT NULL)`
+- `uq_ap_remote_follow_activities__actor_activity`: `CREATE UNIQUE INDEX uq_ap_remote_follow_activities__actor_activity ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, activity_id)`
 - `uq_ap_remote_follow_activities__scope_id`: `CREATE UNIQUE INDEX uq_ap_remote_follow_activities__scope_id ON public.activitypub_remote_follow_activities USING btree (remote_actor_id, target_user_id, id)`
 
 **Triggers:**
