@@ -137,7 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__actor__id
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_target
   ON moderator_actions (agent_moderation_post_id, agent_moderation_id);
 
-COMMENT ON TABLE moderator_actions IS 'Append-only unified log of moderator/admin actions.';
+COMMENT ON TABLE moderator_actions IS 'Unified log of moderator/admin actions. Scheduled-job, backfill and queue actions are deleted after 90 days; other actions after 24 months.';
 
 COMMENT ON COLUMN moderator_actions.community_id IS 'Community scope; NULL for global/platform-level actions.';
 COMMENT ON COLUMN moderator_actions.moderation_transparency_community_id IS 'Immutable community scope stamped at action creation for global-transparency exclusion.';

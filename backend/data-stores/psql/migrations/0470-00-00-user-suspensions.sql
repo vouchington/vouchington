@@ -18,7 +18,7 @@ CREATE OR REPLACE TRIGGER trigger_user_suspensions_updated_at
 -- lifted_at IS NULL means active; lifted_at IS NOT NULL means manually lifted.
 CREATE INDEX IF NOT EXISTS idx_user_suspensions__user ON user_suspensions (user_id) WHERE lifted_at IS NULL;
 
-COMMENT ON TABLE user_suspensions IS 'Append-only history of user suspensions. A user is suspended as long as any active row (lifted_at IS NULL) exists. NULL lifted_at means active. Canonical insert-then-cancel pattern; never UPDATE timestamps in place. See community_bans for reference.';
+COMMENT ON TABLE user_suspensions IS 'History of user suspensions. Active rows remain; lifted rows are deleted after 12 months once linked appeals have expired.';
 COMMENT ON COLUMN user_suspensions.user_id IS 'The suspended user.';
 COMMENT ON COLUMN user_suspensions.suspended_by_id IS 'Admin who issued the suspension.';
 COMMENT ON COLUMN user_suspensions.reason IS 'Optional reason shown to the user and recorded for moderation history.';

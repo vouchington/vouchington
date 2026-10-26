@@ -229,7 +229,7 @@ CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__post
   ON vote_weight_penalties (source_post_id)
   WHERE source_post_id IS NOT NULL;
 
-COMMENT ON TABLE vote_weight_penalties IS 'Penalties applied to users'' vote weights as a result of detected voting rings or manual moderation.';
+COMMENT ON TABLE vote_weight_penalties IS 'Penalties applied to users'' vote weights. Revoked rows are deleted after 180 days; active rows remain until explicitly revoked.';
 COMMENT ON COLUMN vote_weight_penalties.user_id IS 'The penalized user.';
 COMMENT ON COLUMN vote_weight_penalties.penalty_multiplier IS 'Multiplier applied to vote weight (0-1, where 1 means no penalty).';
 COMMENT ON COLUMN vote_weight_penalties.reason IS 'Human-readable explanation of why the penalty was applied.';

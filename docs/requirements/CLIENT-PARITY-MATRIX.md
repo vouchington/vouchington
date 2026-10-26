@@ -32,6 +32,16 @@ without exposing a UUID in presentation. The ID remains the API and MCP referenc
 joins, and exact reads. Native clients can adopt the hostname fact when rendering these records;
 the added response field does not change their existing request contract.
 
+## Moderation history retention
+
+The producer applies the approved moderation history access window to member appeal reads and
+keeps public dispute annotations after their source dispute expires. An annotation's
+`review_dispute_id` can therefore be null; the web contract accepts that retained provenance.
+[Producer #3639](https://github.com/vouchington/vouchington/issues/3639) owns this retention
+contract. Swift and .NET handling of expired appeal history and nullable annotation provenance
+still need verification; native executable and rendered evidence has not been assessed, so this
+change makes no native parity completion claim.
+
 ## Copyright filing and staff matches
 
 The web notice form discloses whether a filing will be attributed to a signed-in user or a guest.

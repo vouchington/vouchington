@@ -125,6 +125,18 @@ app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
 
   ctx.assert(isStaff || isOwner, 403, 'Forbidden')
 
+  if (!isStaff && appeal.resolved_at) {
+    const now = new Date()
+    const visibilityCutoff = new Date(now)
+    visibilityCutoff.setUTCDate(1)
+    visibilityCutoff.setUTCMonth(visibilityCutoff.getUTCMonth() - 24)
+    const lastDayOfCutoffMonth = new Date(
+      Date.UTC(visibilityCutoff.getUTCFullYear(), visibilityCutoff.getUTCMonth() + 1, 0),
+    ).getUTCDate()
+    visibilityCutoff.setUTCDate(Math.min(now.getUTCDate(), lastDayOfCutoffMonth))
+    ctx.assert(appeal.resolved_at >= visibilityCutoff, 404, 'Appeal not found')
+  }
+
   if (isStaff) {
     ctx.json(apiResponse('GET:/api/v1/appeals/:id#staff', { appeal }))
     return

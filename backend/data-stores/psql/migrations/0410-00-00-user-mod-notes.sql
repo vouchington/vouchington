@@ -30,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_user_moderator_notes__author_user_id
 CREATE INDEX IF NOT EXISTS idx_user_moderator_notes__community_id
   ON user_moderator_notes (community_id);
 
-COMMENT ON TABLE user_moderator_notes IS 'Private moderator notes on a user. community_id NULL = global/site-level note.';
+COMMENT ON TABLE user_moderator_notes IS 'Private moderator notes on a user. community_id NULL is a global note. Soft-deleted notes are deleted after 30 days.';
 COMMENT ON COLUMN user_moderator_notes.target_user_id IS 'The user the note is about.';
 COMMENT ON COLUMN user_moderator_notes.author_user_id IS 'Moderator who wrote the note.';
 COMMENT ON COLUMN user_moderator_notes.community_id IS 'Community scope; NULL means a global/site-level note visible only to site moderation staff.';
