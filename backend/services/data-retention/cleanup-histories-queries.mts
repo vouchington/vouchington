@@ -30,13 +30,13 @@ export async function mutatePage(
         `/* deleteOldRssSettingHistoryPage */
          DELETE FROM rss_feed_setting_changes AS old
          WHERE old.id = ANY($1::uuid[])
-           AND EXISTS (
-             SELECT 1 FROM rss_feed_setting_changes AS newer
+           AND (
+             SELECT newer.id FROM rss_feed_setting_changes AS newer
              WHERE newer.rss_feed_id = old.rss_feed_id
                AND newer.change_type = old.change_type AND newer.id > old.id
-             LIMIT 1
-           )`,
-        [ids],
+             ORDER BY newer.id ASC LIMIT 1
+           ) < $2::uuid`,
+        [ids, getMinUUIDv7ForDate(cutoff)],
       )
       return result.rowCount ?? 0
     }
@@ -45,11 +45,12 @@ export async function mutatePage(
         `/* deleteOldFediverseHistoryPage */
          DELETE FROM fediverse_instance_integration_changes AS old
          WHERE old.id = ANY($1::uuid[])
-           AND EXISTS (
-             SELECT 1 FROM fediverse_instance_integration_changes AS newer
-             WHERE newer.topic_id = old.topic_id AND newer.id > old.id LIMIT 1
-           )`,
-        [ids],
+           AND (
+             SELECT newer.id FROM fediverse_instance_integration_changes AS newer
+             WHERE newer.topic_id = old.topic_id AND newer.id > old.id
+             ORDER BY newer.id ASC LIMIT 1
+           ) < $2::uuid`,
+        [ids, getMinUUIDv7ForDate(cutoff)],
       )
       return result.rowCount ?? 0
     }
