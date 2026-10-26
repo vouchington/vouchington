@@ -102,7 +102,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
         timeout-minutes: 5
       - name: Next.js pages-router check
         timeout-minutes: 1
@@ -137,7 +137,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
         timeout-minutes: 5
       - name: Check lambda dependencies
         run: pnpm exec depcruise --config lambdas/.dependency-cruiser.cjs --output-type err --cache --cache-strategy content lambdas
@@ -161,7 +161,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
         timeout-minutes: 5
       - name: Smoke test Cloudflare Worker runtime
         working-directory: cloudflare-worker

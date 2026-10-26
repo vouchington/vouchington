@@ -36,7 +36,7 @@ jobs:
         timeout-minutes: 1
         with:
           fetch-depth: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@ccb179f471c0388d354a0bc5c9a02075c0b34101 # v0.72.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
         timeout-minutes: 3
       - name: Build and validate the Cloudflare Worker bundle
         timeout-minutes: 5

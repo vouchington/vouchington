@@ -85,7 +85,7 @@ jobs:
 
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@f0f8a576e3dc51bb38c1bca80d2046c5124637a2 # v0.67.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
