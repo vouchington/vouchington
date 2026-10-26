@@ -19,7 +19,6 @@ type QueuePage = {
   copyright_notices: QueueCase[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
-
 /** One stable native queue snapshot, optional rolled-back policy reservation, and actual HTTP. */
 export async function withCopyrightStaffQueueHttp<Result>(
   moderator: PrivateUser,
@@ -85,10 +84,11 @@ export async function withCopyrightStaffQueueHttp<Result>(
               copyrightStaffQueueCursorScope,
             )
             const count = await suffixCount(transaction, key, boost, now)
+            const ownedIdCount = new Set(ids).size
             const owned: QueueCase[] = []
             const cursors = new Set<string>([after])
             const seenOwned = new Set<string>()
-            // Count actual snapshot keys, including interleaving rows. No polling or foreign mutation.
+            // Include interleaving rows, then stop. Later shared-database rows are not part of the walk.
             for (let remaining = count; remaining > 0; remaining -= limit) {
               const nativePage = await nativeKeyPage(transaction, after, boost, limit, now)
               const expectedHasNext = nativePage.length > limit
@@ -119,6 +119,8 @@ export async function withCopyrightStaffQueueHttp<Result>(
                 seenOwned.add(item.id)
                 owned.push(item)
               }
+              if (seenOwned.size === ownedIdCount)
+                return { copyright_notices: owned, page_info: page.page_info }
               if (!page.page_info.has_next_page) {
                 if (remaining > limit)
                   throw new Error('HTTP queue ended before native snapshot suffix')
