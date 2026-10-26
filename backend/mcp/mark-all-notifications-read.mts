@@ -10,7 +10,7 @@ const tool: MergedToolSource<
 > = {
   schema: {
     description:
-      "Mark one page of the current user's unread notifications as read. marked_read counts this call's changes; has_more means eligible unread notifications remain and a background job is continuing. Call again if an immediate complete result is needed. Already read or deleted notifications are left alone.",
+      "Mark a page of unread notifications as read. marked_read is this call's count; has_more means continuation is queued. Repeat for an immediate next page.",
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {
