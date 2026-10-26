@@ -81,7 +81,8 @@ Image deletion fences delivery before processing posts that share the image. Eac
 commits a bounded page of post resets and deletion revisions with its cursor and pending listener
 admissions. Admission retries drain that receipt before mutating another page, so a lost queue
 acknowledgement cannot reset a post again. Image maintenance re-admits unfinished deletions;
-source storage and quarantined-image renders are removed only after the final page commits and
+root admission coalesces overlapping sweeps so backpressure cannot accumulate dispatchers.
+Source storage and quarantined-image renders are removed only after the final page commits and
 its listener work is admitted. Quarantine deletion still requires a confirmed permanent copy.
 
 The data-retention schedule runs in deployed environments so staging exposes retention failures

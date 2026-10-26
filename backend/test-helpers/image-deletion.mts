@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
+import { background } from '@queues/background/queues'
+import { IMAGE_DELETION_RECOVER_JOB } from '@queues/background/enqueues/image-deletion-jobs'
+import { readAllQueueJobs } from './queue-jobs.mts'
 import { approveTestPost } from './entities/post-clearance.mts'
 import { createTestUserDirect } from './entities/users-direct.mts'
 import { getPostModerationResetState } from './entities/post-moderation.mts'
@@ -8,6 +11,18 @@ import { insertTestPost } from './entities/posts.mts'
 import { insertTestPostImage } from './entities/images-post-placements.mts'
 import { markImageQuarantinePending } from './entities/image-safety.mts'
 import { rejectQuery } from './injected-failures.mts'
+
+/** Snapshot root admissions without counting scoped fixture or continuation jobs. */
+export async function readImageDeletionRootRecoveryJobIds(): Promise<string[]> {
+  return (await readAllQueueJobs(background))
+    .flatMap(job => {
+      const data = job.data as { imageIds?: readonly string[]; afterId?: string }
+      return job.name === IMAGE_DELETION_RECOVER_JOB.name && !data.imageIds && !data.afterId
+        ? [job.id]
+        : []
+    })
+    .toSorted()
+}
 
 /** Identical post content makes paged and single-page deletion outcomes comparable. */
 export async function createImageDeletionFixture(postCount = 3) {

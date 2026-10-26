@@ -5,7 +5,7 @@ import {
   type ImageDeletionPageData,
   type ImageDeletionRecoveryData,
 } from './image-deletion-jobs.mts'
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '../enqueues.mts'
+import { createBackgroundBulkEnqueue } from '../enqueues.mts'
 import type { JobOptions } from 'glide-mq'
 import { background } from '../queues.mts'
 
@@ -41,10 +41,19 @@ export async function enqueueImageDeletionPages(inputs: ImageDeletionPageData[])
   })
 }
 
-const enqueueRecovery = createBackgroundEnqueue(IMAGE_DELETION_RECOVER_JOB)
+const enqueueRecovery = createBackgroundBulkEnqueue(
+  IMAGE_DELETION_RECOVER_JOB,
+  (data: ImageDeletionRecoveryData) => ({ data }),
+)
 export async function enqueueImageDeletionRecovery(
   data: ImageDeletionRecoveryData = {},
   options?: Partial<JobOptions>,
 ): Promise<void> {
-  await enqueueRecovery(data, options)
+  const opts = { jobId: 'image-deletion-recovery', ...options }
+  await enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs: [data],
+    jobIdOf: () => opts.jobId,
+    enqueueBulk: inputs => enqueueRecovery(inputs, opts),
+  })
 }
