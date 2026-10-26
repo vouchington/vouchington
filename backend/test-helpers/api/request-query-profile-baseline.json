@@ -316,6 +316,14 @@
   },
   {
     "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "First verified native attestation reads the current actor before accepting hardware proof, then rereads under the session authority lock before replacing its SID so deletion or factor changes committed during proof verification cannot authorize the upgrade.",
+    "permanent": true,
+    "code": "backend/api/v1/app-attestation/app-attestation.mts:50",
+    "routes": ["POST /api/v1/app-attestation/attest"]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
     "maxCount": null,
     "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
     "permanent": true,
@@ -553,6 +561,22 @@
     "routes": ["DELETE /api/v1/rss-feeds/:id"]
   },
   {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["POST /api/v1/app-attestation/attest"],
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade locks the old browser SID before revocation and the replacement native SID before minting, so exactly two distinct session admissions share one transaction.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["POST /api/v1/app-attestation/attest"],
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade admits the old browser authority and the replacement native SID in one transaction. Each canonical mint guard takes the same user fence; the second acquisition is reentrant and bounded to these two admissions.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
     "annotation": "lockSurfaceOwnerDomains",
     "maxCount": null,
     "reason": "User deletion locks the user image-owner domain first (users/delete.mts:77), then locks the profile-link domains it discovers by reading user_profile_links under that lock (users/delete.mts:86-89); the second lock needs ids only readable after the first",
@@ -643,6 +667,14 @@
       "POST /api/v1/copyright-form-intakes/:id/reviews",
       "POST /api/v1/copyright-uk-notices/:id/reviews"
     ]
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["POST /api/v1/app-attestation/attest"],
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade reads and locks the current old browser authority, then the replacement SID row created by the joined native mint. These are two distinct rows required by the revocation-safe handoff.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
@@ -967,6 +999,30 @@
     "routes": ["PATCH /api/v1/topic-recommendations/:id"]
   },
   {
+    "annotation": "updateSessionRevocationRegistry",
+    "maxCount": 2,
+    "reason": "A rejected DELETE may carry two different signed session principals: the cookie pair and a body-selected pair. The failure path durably revokes each SID once before returning the validation error.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
+    "routes": ["DELETE /api/v1/session"]
+  },
+  {
+    "annotation": "updateSessionRevocationRegistry:sessionFence",
+    "maxCount": 2,
+    "reason": "Each of the two independently presented signed SIDs needs its own advisory fence before durable revocation in a rejected DELETE request.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
+    "routes": ["DELETE /api/v1/session"]
+  },
+  {
+    "annotation": "upsertAuthenticatedSession",
+    "maxCount": 2,
+    "reason": "A single refresh registration takes the user advisory lock and then writes the durable session row; both statements use this annotation in one transaction.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
+    "routes": ["PATCH /api/v1/session"]
+  },
+  {
     "annotation": "upsertAuthenticatedSession",
     "maxCount": null,
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
@@ -981,6 +1037,14 @@
       "POST /api/v1/auth/oauth/authorizations/:flowId/complete",
       "POST /api/v1/auth/native/email-address/login"
     ]
+  },
+  {
+    "annotation": "upsertUserAgentString",
+    "maxCount": 3,
+    "reason": "Email login persists a cold request user agent once: read, conflict-tolerant insert, and reread to observe a concurrent winner.",
+    "permanent": true,
+    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
+    "routes": ["POST /api/v1/auth/email-address/login"]
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",

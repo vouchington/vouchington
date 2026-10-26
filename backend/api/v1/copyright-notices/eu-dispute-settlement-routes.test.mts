@@ -29,7 +29,7 @@ describe('EU dispute settlement staff request contracts', () => {
     const { anonymousRequest, strangerRequest } = await createTerritorialActors()
     const url = `${base}/not-a-uuid/${suffix.replace(':referralId', 'not-a-uuid')}`
     const anonymous = await anonymousRequest.post(url).send({ injected: true }).expect(401)
-    expect(anonymous.text).not.toMatch(schemaDiagnostic)
+    expect(anonymous.body.message).not.toMatch(schemaDiagnostic)
     await strangerRequest.post(url).send({ injected: true }).expect(403)
   })
 

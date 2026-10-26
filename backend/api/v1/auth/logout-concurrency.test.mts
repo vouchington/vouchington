@@ -40,7 +40,7 @@ describe('POST /api/v1/auth/logout concurrent replay', () => {
     expect(cleanup).not.toHaveBeenCalled()
   })
 
-  it('keeps cookies when an active lease cannot complete, then permits a retry', async () => {
+  it('clears cookies when an active lease cannot complete, while durably ending its session', async () => {
     const user = await createTestUser()
     const tokens = await createDeviceAndSessionTokens({ did: v7(), sid: v7(), uid: user.id })
     const sid = tokens.sessionToken.payload.sid
@@ -56,11 +56,13 @@ describe('POST /api/v1/auth/logout concurrent replay', () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
       vi.setTimerTickMode('nextTimerAsync')
       const blocked = await request().expect(500)
-      expect(blocked.headers['set-cookie']).toBeUndefined()
+      expect(blocked.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('dt=;'), expect.stringContaining('st=;')]),
+      )
     } finally {
       vi.useRealTimers()
     }
-    await expect(isSessionRevoked(sid)).resolves.toBe(false)
+    await expect(isSessionRevoked(sid)).resolves.toBe(true)
 
     await logoutCleanupLease.release(sid, 'stalled-owner')
     const recovered = await request().expect(204)

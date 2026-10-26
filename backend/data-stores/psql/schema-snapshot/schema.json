@@ -133377,8 +133377,15 @@
     },
     "user_sessions": {
       "checkConstraints": {
+        "user_sessions_check": "CHECK ((num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) = ANY (ARRAY[0, 4])))",
+        "user_sessions_check1": "CHECK ((num_nonnulls(previous_device_token_digest, previous_device_token_grace_expires_at) = ANY (ARRAY[0, 2])))",
+        "user_sessions_check2": "CHECK (((previous_device_token_digest IS NULL) OR (device_token_digest IS NOT NULL)))",
+        "user_sessions_check3": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
         "user_sessions_device_name_check": "CHECK ((TRIM(BOTH FROM device_name) = device_name))",
-        "user_sessions_device_name_check1": "CHECK ((char_length(device_name) <= 255))"
+        "user_sessions_device_name_check1": "CHECK ((char_length(device_name) <= 255))",
+        "user_sessions_device_token_binding_check": "CHECK (((device_token_binding IS NULL) OR (jsonb_typeof(device_token_binding) = 'object'::text)))",
+        "user_sessions_device_token_digest_check": "CHECK (((device_token_digest IS NULL) OR (device_token_digest ~ '^[a-f0-9]{64}$'::text)))",
+        "user_sessions_previous_device_token_digest_check": "CHECK (((previous_device_token_digest IS NULL) OR (previous_device_token_digest ~ '^[a-f0-9]{64}$'::text)))"
       },
       "columns": {
         "authentication_origin": {
@@ -133400,7 +133407,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "device_id": {
@@ -133425,9 +133432,53 @@
           "ordinalPosition": 5,
           "type": "text"
         },
+        "device_token_binding": {
+          "collation": null,
+          "comment": "Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
+          "type": "jsonb"
+        },
+        "device_token_digest": {
+          "collation": null,
+          "comment": "SHA-256 digest of the current signed device credential. Row-locked compare-and-set rotation detects reuse without storing plaintext credentials.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "text"
+        },
+        "device_token_encrypted": {
+          "collation": null,
+          "comment": "Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "text"
+        },
+        "device_token_issued_at": {
+          "collation": null,
+          "comment": "Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "timestamp with time zone"
+        },
         "expires_at": {
           "collation": null,
-          "comment": "JWT session expiration timestamp.",
+          "comment": "Original device credential expiry when device authority is present; otherwise the registered access-session expiry. Ordinary refresh never extends it.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -133469,6 +133520,28 @@
           "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
+        "previous_device_token_digest": {
+          "collation": null,
+          "comment": "Immediately preceding signed device credential digest, accepted only during a bounded lost-response grace window under the session row lock.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "previous_device_token_grace_expires_at": {
+          "collation": null,
+          "comment": "Deadline for idempotent replay of the immediately preceding device credential; older reuse revokes the session.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
         "revoked_at": {
           "collation": null,
           "comment": "When the session was revoked. NULL means active.",
@@ -133488,7 +133561,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "user_agent_string_id": {
@@ -133514,7 +133587,7 @@
           "type": "uuid"
         }
       },
-      "comment": "User session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition; bounded retention removes expired rows after the audit window.",
+      "comment": "User session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition; bounded retention removes expired rows after the audit window. Rows hold durable device credential authority and revocation checked after cache misses, and support session listing and audit.",
       "foreignKeys": {
         "user_sessions_user_agent_string_id_fkey": {
           "columns": ["user_agent_string_id"],

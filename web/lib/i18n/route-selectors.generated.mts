@@ -334,6 +334,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/rewards-program/[id]/tags/[objectType]", selectorId: "web.route.3528c42c3c85f6b3.42146feab422aa5b", hasMembership: true },
   { pattern: "/rewards-programs", selectorId: "web.route.9928bf1a2f684b9c.1cfc7e93dc02c7f1", hasMembership: true },
   { pattern: "/rss-feed-categories", selectorId: "web.route.1eed8570a2cfed6c.795fc46e03eb2ff1", hasMembership: true },
+  { pattern: "/session-renewal", selectorId: "web.route.5fd4de2e7db5531b.cbf29ce484222325", hasMembership: false },
   { pattern: "/source/[id]", selectorId: "web.route.986fa32d1f90e68f.13abd20a50e708b8", hasMembership: true },
   { pattern: "/source/[id]/crawls", selectorId: "web.route.a3b32d2fd5aa0848.7af03e0f09b086ac", hasMembership: true },
   { pattern: "/source/[id]/crawls/[crawlId]", selectorId: "web.route.839998f08c285227.7af03e0f09b086ac", hasMembership: true },

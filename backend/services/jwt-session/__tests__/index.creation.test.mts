@@ -1,3 +1,4 @@
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { it, expect, describe } from 'vitest'
 import {
   createDeviceAndSessionTokens,
@@ -10,7 +11,7 @@ import { legacyUuidV4 } from '../../../test-helpers/services/jwt-session/index.m
 
 describe('index.creation', () => {
   const DEVICE_TOKEN_EXPIRATION_SECONDS = 2_592_000 // matches jose's "30 days" duration
-  const SESSION_TOKEN_EXPIRATION_SECONDS = 2 * 24 * 60 * 60 // matches SESSION_EXPIRATION_STRING
+  const SESSION_TOKEN_EXPIRATION_SECONDS = 10 * 60 // web access lifetime
   const ATTESTED_SESSION_TOKEN_EXPIRATION_SECONDS = 30 * 24 * 60 * 60 // matches ATTESTED_SESSION_EXPIRATION_STRING
 
   it('createDeviceAndSessionTokens creates a valid device token', async () => {
@@ -56,7 +57,8 @@ describe('index.creation', () => {
 
   it('createDeviceAndSessionTokens sets issuer and expiration claims on both tokens', async () => {
     const did = v7()
-    const uid = v7()
+    const user = await createTestUserDirect()
+    const uid = user.id
     const result = await createDeviceAndSessionTokens({ did, uid })
 
     const decodedDevice = jose.decodeJwt(result.deviceToken.token)
@@ -84,7 +86,8 @@ describe('index.creation', () => {
 
   it('createDeviceAndSessionTokens with uid creates session with user', async () => {
     const did = v7()
-    const uid = v7()
+    const user = await createTestUserDirect()
+    const uid = user.id
     const result = await createDeviceAndSessionTokens({ did, uid })
 
     expect(result.sessionToken.payload.uid).toBe(uid)
@@ -139,7 +142,8 @@ describe('index.creation', () => {
 
   it('createDeviceAndSessionTokens creates both device and session tokens', async () => {
     const did = v7()
-    const uid = v7()
+    const user = await createTestUserDirect()
+    const uid = user.id
     const result = await createDeviceAndSessionTokens({ did, uid })
 
     expect(result.deviceToken.token).toBeTruthy()
@@ -160,7 +164,8 @@ describe('index.creation', () => {
 
   it('createDeviceAndSessionTokens with uid includes enrichment fields in session payload', async () => {
     const did = v7()
-    const uid = v7()
+    const user = await createTestUserDirect()
+    const uid = user.id
     const roles = ['administrator']
     const result = await createDeviceAndSessionTokens({
       did,

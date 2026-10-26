@@ -38,6 +38,32 @@ describe('streamImportProgress', () => {
     ])
   })
 
+  it('renews before replaying an import status poll after access expiry', async () => {
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
+          callback(),
+      },
+    })
+    const mockFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ code: 'AUTH_REQUIRED' }, { status: 401 }))
+      .mockResolvedValueOnce(Response.json({ session: { uid: 'owner' } }))
+      .mockResolvedValueOnce(importResponse())
+    vi.stubGlobal('fetch', mockFetch)
+
+    const progress: ImportProgress[] = []
+    await streamImportProgress('import-1', value => progress.push(value))
+
+    expect(mockFetch.mock.calls.map(([url]) => url)).toEqual([
+      '/api/v1/my/import/rss-feeds/import-1',
+      '/api/v1/session',
+      '/api/v1/my/import/rss-feeds/import-1',
+    ])
+    expect(mockFetch.mock.calls[2]?.[1]).toBe(mockFetch.mock.calls[0]?.[1])
+    expect(progress).toHaveLength(1)
+  })
+
   it('throws ApiError on a non-transient response', async () => {
     vi.stubGlobal(
       'fetch',

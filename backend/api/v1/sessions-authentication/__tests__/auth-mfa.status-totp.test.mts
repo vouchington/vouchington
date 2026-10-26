@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import {
   createTestUser,
   generateTestTotpCode,
@@ -15,15 +16,12 @@ import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   EDGE_ANON_SESSION_JWT_ISSUER,
   SESSION_EXPIRATION_SECONDS,
+  WEB_SESSION_EXPIRATION_SECONDS,
+  verifyDeviceJwt,
+  verifySessionJwt,
   signDeviceJwt,
   signSessionJwt,
 } from '@ts-shared/session-jwt'
-
-function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {
-  const cookie = cookieHeader?.find(c => c.startsWith(`${name}=`))
-  const match = cookie?.match(/Max-Age=(\d+)/)
-  return match ? Number(match[1]) : undefined
-}
 
 describe('MFA API Routes', () => {
   let user: PrivateUser
@@ -178,9 +176,19 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       expect(res.body.user.id).toBe(mfaUser.id)
-      expect(typeof res.body.dt.token).toBe('string')
-      expect(typeof res.body.st.token).toBe('string')
-      expect(res.body.session).toEqual(res.body.st.payload)
+      expect(res.body).not.toHaveProperty('dt')
+      expect(res.body).not.toHaveProperty('st')
+      const cookies = res.headers['set-cookie'] as unknown as string[]
+      const dtCookie = cookies.find(cookie => cookie.startsWith('dt='))
+      const stCookie = cookies.find(cookie => cookie.startsWith('st='))
+      expect(dtCookie).toBeDefined()
+      expect(stCookie).toBeDefined()
+      const [device, session] = await Promise.all([
+        verifyDeviceJwt(decodeURIComponent(dtCookie!.slice(3).split(';', 1)[0]!)),
+        verifySessionJwt(decodeURIComponent(stCookie!.slice(3).split(';', 1)[0]!)),
+      ])
+      expect(device).toMatchObject({ client: 'web' })
+      expect(session).toMatchObject({ ...res.body.session, did: device!.did, uid: mfaUser.id })
     }, 20_000)
 
     it('mints a 30-day (not 2-day) st cookie when the login attempt itself carries deviceClass', async () => {
@@ -196,8 +204,14 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(SESSION_EXPIRATION_SECONDS)
+      const stCookie = cookieHeader!.find(cookie => cookie.startsWith('st='))!
+      expect(
+        await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
+      ).toMatchObject({ client: 'native' })
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: SESSION_EXPIRATION_SECONDS,
+        maxRemainingSeconds: ATTESTED_SESSION_EXPIRATION_SECONDS,
+      })
     }, 20_000)
 
     it('does not elevate to a 30-day session from the completing request own attested cookies', async () => {
@@ -226,8 +240,14 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
+      const stCookie = cookieHeader!.find(cookie => cookie.startsWith('st='))!
+      expect(
+        await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
+      ).toMatchObject({ client: 'web' })
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS - 10,
+        maxRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS,
+      })
     }, 20_000)
   })
 })

@@ -1,3 +1,4 @@
+import type { TransactionQuery } from '@data-stores/psql/types'
 import type { DeviceClass, DeviceTokenPayload, SessionTokenPayload } from '@ts-shared/session-jwt'
 import type { PrivateUser } from '@voucha/types/entities/user'
 
@@ -19,6 +20,7 @@ export type RefreshedSessionState = {
 export interface DeviceContext {
   ip_address?: string
   user_agent?: string
+  ja4?: string
 }
 
 export type { DeviceClass, DeviceTokenPayload, SessionTokenPayload }
@@ -42,7 +44,12 @@ export interface VerifyDeviceAndSessionTokenResult {
   did: string
   sid: string
   uid: string | null
+  client?: 'web' | 'native'
+  ua_hash?: string
+  ja4_hash?: string
   exp?: number
+  device_exp?: number
+  device_iat?: number
   iat?: number
   rol?: readonly string[]
   mpl?: string | null
@@ -52,4 +59,30 @@ export interface VerifyDeviceAndSessionTokenResult {
   rca?: number
   sca?: number
   dc?: DeviceClass
+}
+
+export type SessionClientBinding =
+  | { client: 'web'; ua_hash: string; ja4_hash?: string }
+  | { client: 'native' }
+
+export interface SessionMintOptions {
+  query?: TransactionQuery
+  did: string
+  sid?: string
+  uid?: string | null
+  roles?: readonly string[]
+  membershipPlan?: string | null
+  membershipExpiresAt?: Date | null
+  trustTier?: number
+  uiLocale?: string | null
+  eventType?: import('@data-stores/analytics').AuthSessionRecord['event_type']
+  deviceClass?: DeviceClass
+  deviceContext?: DeviceContext
+  authOrigin?: 'web' | 'native'
+  recheckAfter?: number
+  clientBinding?: SessionClientBinding
+  sessionExpiresAt?: Date
+  clock?: () => number
+  credentialReplay?: boolean
+  deviceRenewal?: 'verified-native-attestation'
 }

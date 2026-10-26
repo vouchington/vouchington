@@ -35,7 +35,7 @@ describe('GET /api/v1/posts/:idOrSlug/ancestors query profile', () => {
         .map(([chunk]) => String(chunk))
         .filter(line => line.startsWith('[pg-request-profile]'))
       expect(profileLines).toHaveLength(1)
-      expect(profileLines[0]).toContain('queries=9 serialDepth=6')
+      expect(profileLines[0]).toContain('queries=10 serialDepth=7')
     } finally {
       stderr.mockRestore()
       vi.unstubAllEnvs()

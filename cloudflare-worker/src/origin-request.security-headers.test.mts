@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildWorkerOriginRequest } from './origin-request.mts'
+import type { RouteTarget } from './routing.mts'
 import type { Env } from './types.mts'
 
-function build(request: Request) {
+function build(request: Request, target: RouteTarget = 'backend') {
   const env = { CF_WORKER_SECRET: 'worker-secret' } as Env
   return buildWorkerOriginRequest({
     canonicalSitemapUrl: null,
@@ -14,7 +15,7 @@ function build(request: Request) {
     requestId: 'request-id',
     stripAllCookies: false,
     stripCookieNames: new Set(),
-    target: 'backend',
+    target,
     webCsp: '',
   })
 }
@@ -22,6 +23,7 @@ function build(request: Request) {
 describe('origin request security policy', () => {
   it('removes client-supplied identity, control, and Next.js internal headers at the origin boundary', () => {
     const untrustedHeaders = [
+      'x-voucha-client-ja4',
       'x-user-id',
       'x-device-token',
       'x-session-token',
@@ -52,6 +54,18 @@ describe('origin request security policy', () => {
     expect(originRequest.headers.get('x-cf-worker-secret')).toBe('worker-secret')
     expect(originRequest.headers.get('x-request-id')).toBe('request-id')
   })
+
+  it.each([undefined, 'cloudflare-ja4'])(
+    'forwards only original Cloudflare JA4 to the backend (%s)',
+    ja4 => {
+      const request = new Request('https://voucha.ai/api/v1/posts', {
+        headers: { 'x-voucha-client-ja4': 'forged' },
+      })
+      Object.defineProperty(request, 'cf', { value: { botManagement: { ja4 } } })
+      expect(build(request).headers.get('x-voucha-client-ja4')).toBe(ja4 ?? null)
+      expect(build(request, 'web').headers.get('x-voucha-client-ja4')).toBeNull()
+    },
+  )
 
   it.each([undefined, '1'])('derives the internal privacy signal only from sec-gpc %s', signal => {
     const originRequest = build(

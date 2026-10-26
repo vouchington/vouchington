@@ -18,22 +18,9 @@ export async function getDiscoverablePasskeyAuthenticationOptions(deviceId: stri
   )
 }
 
-export type DiscoverablePasskeyLogin = {
+export type DiscoverablePasskeyLogin = Awaited<ReturnType<typeof createDeviceAndSessionTokens>> & {
   userId: string
-  deviceToken: { token: string; payload: { did: string; dc?: DeviceClass } }
-  sessionToken: {
-    token: string
-    payload: {
-      did: string
-      sid: string
-      uid: string | null
-      rol?: readonly string[]
-      mpl?: string | null
-      tt?: number
-      rca?: number
-      sca?: number
-    }
-  }
+  deviceClass?: DeviceClass
 }
 
 export async function verifyDiscoverablePasskeyAuthentication(opts: {

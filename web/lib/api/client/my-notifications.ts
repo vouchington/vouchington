@@ -1,6 +1,6 @@
 'use client'
 import { clientApi } from './instance'
-import { clientFetch } from './raw-fetch'
+import { authRecoveryFetch } from './auth-recovery-fetch'
 import type {
   NotificationsUnreadSummaryResponseBody,
   WebPushSubscriptionResponseBody,
@@ -14,7 +14,7 @@ export function markMyNotificationRead(notificationId: string): Promise<void> {
   return clientApi.patch(`/api/v1/my/notifications/${notificationId}`, { is_read: true })
 }
 export async function markMyNotificationReadKeepalive(notificationId: string): Promise<void> {
-  const response = await clientFetch(`/api/v1/my/notifications/${notificationId}`, {
+  const response = await authRecoveryFetch(`/api/v1/my/notifications/${notificationId}`, {
     method: 'PATCH',
     body: JSON.stringify({ is_read: true }),
     headers: { 'Content-Type': 'application/json' },

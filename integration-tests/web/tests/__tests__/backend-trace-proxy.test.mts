@@ -27,7 +27,10 @@ describe('backend-trace-proxy parallel isolation', () => {
 
   beforeAll(async () => {
     stubServer = http.createServer((_req: http.IncomingMessage, res: http.ServerResponse) => {
-      res.writeHead(200, { 'Content-Type': 'text/plain' })
+      res.writeHead(200, {
+        'Content-Type': 'text/plain',
+        'Set-Cookie': ['dt=device; Path=/; HttpOnly', 'st=session; Path=/; HttpOnly'],
+      })
       res.end('ok')
     })
 
@@ -48,6 +51,15 @@ describe('backend-trace-proxy parallel isolation', () => {
         resolve()
       })
     })
+  })
+
+  it('preserves every Set-Cookie header across the HTTP trace proxy', async () => {
+    const response = await fetch(`${proxy.origin}/cookies`)
+    expect(response.headers.getSetCookie()).toEqual([
+      'dt=device; Path=/; HttpOnly',
+      'st=session; Path=/; HttpOnly',
+    ])
+    await response.body?.cancel()
   })
 
   it('buckets concurrent requests by x-request-id without clobbering', async () => {

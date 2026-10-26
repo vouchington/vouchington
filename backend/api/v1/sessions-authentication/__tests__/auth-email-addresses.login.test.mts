@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
-import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
+import { nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
+import { createNativeRequest as createRequest } from '@voucha/test-helpers/native-api-request'
 import {
   createUniqueTestEmail,
   createTestUser,

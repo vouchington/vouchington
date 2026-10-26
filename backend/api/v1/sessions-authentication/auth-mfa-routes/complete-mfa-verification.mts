@@ -1,3 +1,4 @@
+import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import type { Context } from '@jongleberry/api-server'
 import { setAuthenticationCookies } from '@modules/api-utils'
 import {
@@ -10,8 +11,8 @@ import { getDeviceContext } from '../device-context.mts'
 
 interface MfaVerificationResponseBody {
   user: { id: string }
-  dt: CompletedMfaLogin['deviceToken']
-  st: CompletedMfaLogin['sessionToken']
+  dt?: CompletedMfaLogin['deviceToken']
+  st?: CompletedMfaLogin['sessionToken']
   session: CompletedMfaLogin['sessionToken']['payload']
 }
 
@@ -37,8 +38,10 @@ export async function completeMfaVerification(
   })
   return {
     user: { id: login.userId },
-    dt: login.deviceToken,
-    st: login.sessionToken,
+    ...(isNativeClientTransportRequest(ctx.req) && {
+      dt: login.deviceToken,
+      st: login.sessionToken,
+    }),
     session: login.sessionToken.payload,
   }
 }

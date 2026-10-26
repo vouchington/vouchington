@@ -118,7 +118,10 @@ export async function createTraceProxy(
     responseHeaders.delete('content-encoding')
     responseHeaders.delete('content-length')
 
-    outgoing.writeHead(response.status, Object.fromEntries(responseHeaders.entries()))
+    const outgoingHeaders: http.OutgoingHttpHeaders = Object.fromEntries(responseHeaders.entries())
+    const setCookies = responseHeaders.getSetCookie()
+    if (setCookies.length > 0) outgoingHeaders['set-cookie'] = setCookies
+    outgoing.writeHead(response.status, outgoingHeaders)
     try {
       if (response.body)
         await pipeline(Readable.from(response.body as AsyncIterable<Uint8Array>), outgoing)

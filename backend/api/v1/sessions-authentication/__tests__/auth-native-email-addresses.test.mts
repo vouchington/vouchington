@@ -122,6 +122,7 @@ describe('native email OTP session provenance', () => {
       did: initial.deviceToken.payload.did,
       sid: initial.sessionToken.payload.sid,
       uid: user.id,
+      credentialReplay: true,
     })
     await expect(getTestUserSessionById(initial.sessionToken.payload.sid)).resolves.toMatchObject({
       authentication_origin: 'native',

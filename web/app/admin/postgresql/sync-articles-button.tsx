@@ -12,6 +12,9 @@ import {
 } from '@/lib/api/client/admin'
 import { ApiError } from '@vouchington/api-client'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
+
+type SyncStream = ReturnType<typeof createRecoverableEventSource>
 
 type SyncStatus =
   | { status: 'completed'; result: ArticleSyncResult }
@@ -24,12 +27,9 @@ export function SyncArticlesButton() {
   const t = useTranslations()
   const [syncing, setSyncing] = useState(false)
   const [result, setResult] = useState<ArticleSyncResult | null>(null)
-  const streamRef = useRef<{ source: EventSource; close: () => void } | null>(null)
+  const streamRef = useRef<SyncStream | null>(null)
 
-  function finishSync(
-    data: TerminalSyncStatus,
-    stream?: { source: EventSource; close: () => void },
-  ) {
+  function finishSync(data: TerminalSyncStatus, stream?: SyncStream) {
     if (stream && streamRef.current !== stream) return
     stream?.close()
     if (streamRef.current === stream) streamRef.current = null
@@ -64,14 +64,13 @@ export function SyncArticlesButton() {
   }, [])
 
   function connectStream(jobId: string) {
-    const es = new EventSource(`/api/v1/admin/article-syncs/${jobId}/stream`)
-    const stream = {
-      source: es,
-      close: () => {
-        es.removeEventListener('status', handleStatus)
-        es.close()
-      },
-    }
+    const stream = createRecoverableEventSource({
+      url: `/api/v1/admin/article-syncs/${jobId}/stream`,
+      eventName: 'status',
+      isCurrent: () => streamRef.current === stream,
+      onEvent: handleStatus,
+      onError: handleError,
+    })
     streamRef.current = stream
 
     function handleStatus(event: MessageEvent) {
@@ -85,17 +84,19 @@ export function SyncArticlesButton() {
       finishSync(data, stream)
     }
 
-    es.addEventListener('status', handleStatus)
-
-    es.onerror = () => {
+    function handleError(source: EventSource) {
+      if (!stream.isCurrentSource(source)) return
       getArticleSyncStatus(jobId)
         .then(status => {
-          if (streamRef.current !== stream) return
-          if (status.status === 'active') return
+          if (streamRef.current !== stream || !stream.isCurrentSource(source)) return
+          if (status.status === 'active') {
+            stream.recoverClosed(source)
+            return
+          }
           finishSync(status, stream)
         })
         .catch(err => {
-          if (streamRef.current !== stream) return
+          if (streamRef.current !== stream || !stream.isCurrentSource(source)) return
           if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
           stream.close()
           if (streamRef.current === stream) streamRef.current = null

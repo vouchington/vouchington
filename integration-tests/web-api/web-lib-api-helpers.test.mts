@@ -91,7 +91,9 @@ describe('web/lib/api utility helpers — integration', () => {
   ): Promise<T> {
     clientRuntimeActive = true
     clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
+    ;(globalThis as { window?: unknown }).window = {
+      location: { pathname: '/', search: '', assign() {} },
+    }
 
     try {
       return await run()

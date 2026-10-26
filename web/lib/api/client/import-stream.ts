@@ -1,6 +1,7 @@
 'use client'
 
 import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
+import { authRecoveryFetch } from './auth-recovery-fetch'
 import type { RssFeedImportStatus } from './import-export'
 
 export interface ImportProgress {
@@ -28,11 +29,14 @@ export async function streamImportProgress(
   onCompleted?: (status: RssFeedImportStatus) => void,
 ): Promise<void> {
   const fetchProgress = async () => {
-    const response = await fetch(`/api/v1/my/import/rss-feeds/${encodeURIComponent(importId)}`, {
-      credentials: 'include',
-      signal,
-      headers: { Accept: 'application/json' },
-    })
+    const response = await authRecoveryFetch(
+      `/api/v1/my/import/rss-feeds/${encodeURIComponent(importId)}`,
+      {
+        credentials: 'include',
+        signal,
+        headers: { Accept: 'application/json' },
+      },
+    )
 
     if (!response.ok) {
       throw new ApiError(

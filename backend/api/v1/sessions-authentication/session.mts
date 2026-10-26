@@ -1,36 +1,30 @@
 import { isHttpError } from 'http-errors'
+import {
+  SESSION_JA4_MISMATCH,
+  SESSION_REFRESH_REUSED,
+  SESSION_RELOGIN_REQUIRED,
+  SESSION_USER_AGENT_MISMATCH,
+} from '@modules/on-error/error-codes'
+import { buildSessionResponse } from './session-response.mts'
+import { getTrustedClientJa4 } from '@modules/request-client-info/cloudflare-signals'
 import app from '../../app.mts'
-import { DEVICE_EXPIRATION_SECONDS, sessionExpirySecondsFor } from '@ts-shared/session-jwt'
-import { refreshSessionState, resetSessionState } from '@services/jwt-session'
-import { setAuthenticationCookies, COOKIE_OPTIONS } from '@modules/api-utils'
+import onError from '@modules/on-error'
+import {
+  refreshSessionState,
+  resetSessionState,
+  revokeSessionForLogout,
+} from '@services/jwt-session'
+import { setAuthenticationCookies, clearAuthenticationCookies } from '@modules/api-utils'
 import { getPrivateUserByAny } from '@services/users/get'
 import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
-
-const isTest = process.env.NODE_ENV === 'test'
-
-interface SessionBody {
-  dte: number
-  ste: number
-  secure: boolean
-  did?: string
-  dt?: string
-  st?: string
-  sid?: string
-  uid?: string | null
-  session?: {
-    did: string
-    sid: string
-    uid: string | null
-  }
-}
 
 interface SessionTokenBody {
   dt?: string
   st?: string
 }
 
-// NOTE: this route should only ever be called from Next.js or from the app, never from the web
+// Web callers refresh via httpOnly cookies; native callers retain explicit token transport.
 app
   .route('/api/v1/session')
   .patch(async (ctx: Context) => {
@@ -48,83 +42,80 @@ app
       if (isHttpError(err) && err.status === 422) throw err
       ctx.throw(422, 'Invalid body')
     }
-    const { dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
+    const tokens = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
+    const dt = tokens.dt ?? ctx.cookies.get('dt')
+    const st = tokens.st ?? ctx.cookies.get('st')
 
     const sessionState = await refreshSessionState({
       deviceToken: dt,
       sessionToken: st,
-      fetchUser: getPrivateUserByAny,
-      verifyRevocationOnHotPath: true,
+      fetchUser: userId => getPrivateUserByAny(userId, { readOnly: false }),
+      userAgent: ctx.req.headers['user-agent'],
+      ja4: getTrustedClientJa4(ctx.req),
+    }).catch(err => {
+      if (isDefinitiveSessionFailure(err)) clearAuthenticationCookies(ctx)
+      throw err
     })
 
-    const body: SessionBody = {
-      dte: DEVICE_EXPIRATION_SECONDS,
-      ste: sessionExpirySecondsFor(sessionState.deviceClass),
-      secure: COOKIE_OPTIONS.secure,
-      did: sessionState.did,
+    const body = buildSessionResponse(ctx, sessionState)
+
+    setAuthenticationCookies(ctx, {
       dt: sessionState.dt,
       st: sessionState.st,
-      sid: sessionState.sid,
-      uid: sessionState.uid,
-      session: sessionState.session,
-    }
-
-    // only set cookies via this API in test because otherwise tests would be annoying to write
-    if (isTest) {
-      setAuthenticationCookies(ctx, { dt: body.dt!, st: body.st! })
-    }
+      deviceClass: sessionState.deviceClass,
+    })
 
     ctx.json({ session: body })
   })
   .delete(async (ctx: Context) => {
-    // Invalidate the old session and issue a new one. The device token is preserved if valid;
-    // createDeviceAndSessionTokens always creates both tokens but the new device token is
-    // discarded when the client already has one (no createSessionToken-only path exists —
-    // the Lua script updates both records atomically).
-    let dt, st
-    if (ctx.request.is('json')) {
-      const routeKey = 'DELETE:/api/v1/session'
-      // See the PATCH handler above: this cast must stay inline here, not in a shared helper —
-      // the OpenAPI request-contract harvester can't attribute a cast shared by two routes.
-      let rawBody: SessionTokenBody
-      try {
-        rawBody = (await parseJsonBody(ctx, '100kb')) as SessionTokenBody
-      } catch (err) {
-        await ctx.applyRouteRateLimit(routeKey)
-        if (isHttpError(err) && err.status === 422) throw err
-        ctx.throw(422, 'Invalid body')
+    // Clear cookies even when parsing, rate limiting, or durable cleanup rejects.
+    clearAuthenticationCookies(ctx)
+    const cookieDt = ctx.cookies.get('dt')
+    const cookieSt = ctx.cookies.get('st')
+    let dt = cookieDt,
+      st = cookieSt
+    try {
+      if (ctx.request.is('json')) {
+        const routeKey = 'DELETE:/api/v1/session'
+        // See the PATCH handler above: this cast must stay inline here, not in a shared helper —
+        // the OpenAPI request-contract harvester can't attribute a cast shared by two routes.
+        let rawBody: SessionTokenBody
+        try {
+          rawBody = (await parseJsonBody(ctx, '100kb')) as SessionTokenBody
+        } catch (err) {
+          await ctx.applyRouteRateLimit(routeKey)
+          if (isHttpError(err) && err.status === 422) throw err
+          ctx.throw(422, 'Invalid body')
+        }
+        const candidate = toTokenBody(rawBody)
+        dt = typeof candidate.dt === 'string' ? candidate.dt : cookieDt
+        st = typeof candidate.st === 'string' ? candidate.st : cookieSt
+        await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
+      } else {
+        await ctx.applyRouteRateLimit('DELETE:/api/v1/session')
+        validateRequestContract(ctx, 'DELETE:/api/v1/session', { body: {} })
       }
-      ;({ dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody))
-    } else {
-      await ctx.applyRouteRateLimit('DELETE:/api/v1/session')
-      validateRequestContract(ctx, 'DELETE:/api/v1/session', { body: {} })
-      dt = ctx.cookies.get('dt')
-      st = ctx.cookies.get('st')
+
+      dt ??= ctx.cookies.get('dt')
+      st ??= ctx.cookies.get('st')
+      const sessionState = await resetSessionState({ deviceToken: dt, sessionToken: st })
+
+      const body = buildSessionResponse(ctx, sessionState)
+
+      clearAuthenticationCookies(ctx)
+
+      ctx.json({ session: body })
+    } catch (err) {
+      clearAuthenticationCookies(ctx)
+      await revokeSessionForLogout({ deviceToken: cookieDt, sessionToken: cookieSt }).catch(err =>
+        onError(err instanceof Error ? err : new Error(String(err))),
+      )
+      if (dt !== cookieDt || st !== cookieSt)
+        await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch(err =>
+          onError(err instanceof Error ? err : new Error(String(err))),
+        )
+      throw err
     }
-
-    const sessionState = await resetSessionState({
-      deviceToken: dt,
-      sessionToken: st,
-    })
-
-    const body: SessionBody = {
-      dte: DEVICE_EXPIRATION_SECONDS,
-      ste: sessionExpirySecondsFor(sessionState.deviceClass),
-      secure: COOKIE_OPTIONS.secure,
-      did: sessionState.did,
-      dt: sessionState.dt,
-      st: sessionState.st,
-      sid: sessionState.sid,
-      uid: sessionState.uid,
-      session: sessionState.session,
-    }
-
-    // only set cookies via this API in test because otherwise tests would be annoying to write
-    if (isTest) {
-      setAuthenticationCookies(ctx, { dt: body.dt!, st: body.st! })
-    }
-
-    ctx.json({ session: body })
   })
 
 // A JSON body that parsed successfully but isn't a plain object (null, an array, a string, a
@@ -134,6 +125,16 @@ app
 function toTokenBody(body: SessionTokenBody): SessionTokenBody {
   const isPlainObject = body !== null && typeof body === 'object' && !Array.isArray(body)
   return isPlainObject ? body : {}
+}
+
+function isDefinitiveSessionFailure(error: unknown): boolean {
+  if (!isHttpError(error) || error.status !== 401 || !('code' in error)) return false
+  return [
+    SESSION_RELOGIN_REQUIRED,
+    SESSION_REFRESH_REUSED,
+    SESSION_USER_AGENT_MISMATCH,
+    SESSION_JA4_MISMATCH,
+  ].includes(error.code as string)
 }
 
 // Shared by the PATCH and DELETE JSON-body branches, once each has already parsed its own body

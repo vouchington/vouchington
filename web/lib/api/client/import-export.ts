@@ -4,7 +4,7 @@ import type { PageInfo } from '@/types/api-responses'
 import type { RssFeedImportSummary, RssFeedImportSubmission } from '@/types/rss-feed-imports'
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
-import { clientFetch } from './raw-fetch'
+import { authRecoveryFetch } from './auth-recovery-fetch'
 import { ApiError, parseErrorResponseBody } from '@vouchington/api-client'
 
 /** The server bounds the request body (`import_max_body_bytes`), so the client sends it as is. */
@@ -102,7 +102,7 @@ export function exportRssFeeds(
 
 export async function preflightExport(url: string): Promise<void> {
   const separator = url.includes('?') ? '&' : '?'
-  const response = await clientFetch(`${url}${separator}preflight=1`, {
+  const response = await authRecoveryFetch(`${url}${separator}preflight=1`, {
     credentials: 'include',
   })
   if (response.ok) {

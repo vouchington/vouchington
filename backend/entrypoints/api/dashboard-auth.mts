@@ -1,7 +1,11 @@
 import type http from 'node:http'
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { parseCookie as parseCookieHeader } from 'cookie'
-import { isSessionRevoked, verifyDeviceAndSessionTokens } from '@services/jwt-session'
+import {
+  isSessionRevoked,
+  verifyDeviceAndSessionTokens,
+  assertSessionClientBinding,
+} from '@services/jwt-session'
 import { getPrivateUserByAny } from '@services/users/get'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
 
@@ -29,10 +33,15 @@ export async function isAdminDashboardRequest(req: http.IncomingMessage): Promis
     sessionToken: st,
   })
   if (!sessionData || !sessionData.uid) return false
+  try {
+    assertSessionClientBinding(sessionData, req.headers['user-agent'])
+  } catch {
+    return false
+  }
   if (
     await isSessionRevoked(sessionData.sid, {
       userId: sessionData.uid,
-      issuedAt: sessionData.iat,
+      issuedAt: sessionData.device_iat,
     })
   ) {
     return false

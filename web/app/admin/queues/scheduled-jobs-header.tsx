@@ -46,7 +46,7 @@ export function ScheduledJobsHeader({
         >
           <a
             data-pw='glidemq-dashboard-link'
-            href='/admin/mq-dashboard'
+            href='/session-renewal?next=%2Fadmin%2Fmq-dashboard'
             rel='nofollow noopener noreferrer'
             target='_blank'
           >

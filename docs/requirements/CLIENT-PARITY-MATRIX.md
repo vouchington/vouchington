@@ -216,3 +216,13 @@ route proof after generating the generic proof so its monotonic device counter r
 browser-challenge follow-up remains
 [vouchington-clients#486](https://github.com/vouchington/vouchington-clients/issues/486), with the
 producer landing first.
+
+## Browser session refresh
+
+Browser credentials use cookies, stable browser-family/platform binding, and optional trusted
+Cloudflare fingerprint binding. Renewal rotates the device credential while retaining its original
+expiry; replay requires signing in again. Only verified App Attest devices receive native session
+lifetimes. Swift and .NET retain JSON transport and must coordinate refresh across callers and
+recover through login when renewal fails. Native adoption is tracked in
+[vouchington-clients#487](https://github.com/vouchington/vouchington-clients/issues/487).
+The producer lands first. Device-bound session proof is a separate browser capability.

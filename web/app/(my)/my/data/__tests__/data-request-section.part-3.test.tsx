@@ -149,7 +149,11 @@ describe('DataRequestSection', () => {
     ).toBeInTheDocument()
     expect(mockOnSuccess).toHaveBeenCalledWith('Data export request already in progress')
     await waitFor(() => expect(MockEventSource.instances).toHaveLength(1))
-    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/v1/users/user-conflict-no-body/data-request')
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      '/api/v1/users/user-conflict-no-body/data-request',
+      undefined,
+    )
   })
 
   it('shows server error details when requesting an export fails', async () => {

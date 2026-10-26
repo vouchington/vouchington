@@ -1,9 +1,8 @@
 import { cookies, headers as getHeaders } from 'next/headers'
 import type { ServerHeaderContext } from '@vouchington/api-client'
-import { VOUCHA_BOT_SCORE_HEADER } from '@ts-shared/utils/bot-challenge'
 import { safeFeatureFlagCookiePart } from '@/lib/feature-flags/shared'
 import { buildWorkerSecretHeader } from '../worker-secret'
-import { buildWebClientInfoHeaders } from './client-info'
+import { buildWebClientInfoHeaders, withoutPrivateWorkerHeaders } from './client-info'
 
 type HeaderRecord = Record<string, string>
 
@@ -28,7 +27,7 @@ export async function resolveServerHeaders({
   }
 }
 
-/** Fetch that never forwards the Cloudflare Worker's private bot score from a caller. */
+/** Fetch that never forwards caller-supplied private Worker signals. */
 export const fetchWithoutPrivateWorkerHeaders: typeof fetch = (input, init) =>
   fetch(input, {
     ...init,
@@ -65,9 +64,11 @@ async function buildRequestIdHeader(): Promise<HeaderRecord> {
 async function buildForwardedIpHeaders(): Promise<HeaderRecord> {
   try {
     const headers = await getHeaders()
+    const userAgent = headers.get('user-agent')
     const forwardedFor = headers.get('x-forwarded-for')
     const connectingIp = headers.get('cf-connecting-ip')
     return {
+      ...(userAgent ? { 'user-agent': userAgent } : {}),
       ...(forwardedFor ? { 'x-forwarded-for': forwardedFor } : {}),
       ...(connectingIp ? { 'cf-connecting-ip': connectingIp } : {}),
     }
@@ -78,10 +79,4 @@ async function buildForwardedIpHeaders(): Promise<HeaderRecord> {
 
 function hasHeader(headers: HeaderRecord, name: string): boolean {
   return Object.keys(headers).some(headerName => headerName.toLowerCase() === name)
-}
-
-function withoutPrivateWorkerHeaders(headers: HeaderRecord): HeaderRecord {
-  return Object.fromEntries(
-    Object.entries(headers).filter(([name]) => name.toLowerCase() !== VOUCHA_BOT_SCORE_HEADER),
-  )
 }

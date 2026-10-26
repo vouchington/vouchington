@@ -39,9 +39,7 @@ type ApiTestServerGlobal = typeof globalThis & {
   [API_TEST_SERVER_MATCHER_KEY]?: typeof fn
 }
 
-// Exercise api-server's media-type enforcement and the client-information listener guard without
-// adding the origin guard: route tests intentionally construct cookie-authenticated requests
-// directly, while the dedicated origin-guard suites own browser-origin coverage.
+// Route tests use cookie auth directly; dedicated suites cover the origin guard.
 const { host: serverHost, port: serverPort } = await sharedApiTestServerAddress()
 export const apiTestServerPort = serverPort
 const testRequestIpState = globalThis as typeof globalThis & {
@@ -49,7 +47,7 @@ const testRequestIpState = globalThis as typeof globalThis & {
 }
 
 // Extend the supertest agent with authentication helper
-interface AuthenticatedAgent extends supertest.Agent {
+export interface AuthenticatedAgent extends supertest.Agent {
   authenticateAs: (user: PrivateUser) => Promise<void>
   setFeatureFlags: (overrides: FeatureFlags) => void
   /** The raw cookie string set by authenticateAs; useful for combining with additional cookies */
@@ -164,12 +162,8 @@ function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerSta
     ),
   )
   testServer.keepAliveTimeout = 30_000
-  // Listen on IPv6 loopback (::1) — macOS has a kernel-level limit on concurrent
-  // TCP connections to 127.0.0.1 that causes EADDRNOTAVAIL under parallel test load
-  // (e.g. 8 fork workers × multiple test files running simultaneously). ::1 does not
-  // have this restriction. Hosts without IPv6 (Claude Code cloud containers) fall back
-  // to 127.0.0.1. We await the 'listening' event so the address is known before the
-  // module's exports are used by any test.
+  // IPv6 loopback avoids macOS IPv4 port exhaustion; bind falls back to IPv4 where needed.
+  // Await listening so the address is known before tests import this module.
   const addressPromise = listenOnLoopbackEphemeralPort(testServer).then(address => {
     // Surface post-bind server errors immediately instead of emitting an unhandled event.
     testServer.on('error', err => {

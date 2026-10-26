@@ -18,8 +18,12 @@ export * from './invalidation.mts'
 export * from './revocation.mts'
 export * from './logout-cleanup-lease.mts'
 export * from './enrich.mts'
-export { listActiveUserSessions, registerAuthenticatedSession } from './user-sessions.mts'
+export * from './request-claims.mts'
+export { listActiveUserSessions } from './user-sessions.mts'
 export {
   revokeAllAuthenticatedSessions,
   revokeAuthenticatedSession,
 } from './user-session-revocation.mts'
+
+export { assertSessionClientBinding, isSessionClientBindingError } from './client-binding.mts'
+export { getSessionForLogout, revokeSessionForLogout } from './web-refresh.mts'

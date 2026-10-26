@@ -27,7 +27,7 @@ describe('DataRequestSection', () => {
 
     render(<DataRequestSection userId='user-immediate' />)
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/users/user-immediate/data-request')
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/users/user-immediate/data-request', undefined)
     expect(queueMicrotaskSpy).not.toHaveBeenCalled()
   })
 
@@ -67,12 +67,12 @@ describe('DataRequestSection', () => {
     expect(
       await screen.findByText('Your data export failed. Please try again.'),
     ).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/v1/users/user-1/data-request')
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/v1/users/user-1/data-request', undefined)
 
     rerender(<DataRequestSection userId='user-2' />)
 
     await screen.findByRole('link', { name: 'Download export' })
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/v1/users/user-2/data-request')
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/v1/users/user-2/data-request', undefined)
 
     await waitFor(() => {
       expect(screen.queryByText('Your data export failed. Please try again.')).toBeNull()

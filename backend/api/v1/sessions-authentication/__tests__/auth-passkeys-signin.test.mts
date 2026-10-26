@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import {
   legacyUuidV4,
@@ -19,12 +20,6 @@ import {
   overrideDynamicConfigFieldsForTest,
   closeScopedDynamicConfigContext,
 } from '@voucha/test-helpers/dynamic-config'
-
-function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {
-  const cookie = cookieHeader?.find(c => c.startsWith(`${name}=`))
-  const match = cookie?.match(/Max-Age=(\d+)/)
-  return match ? Number(match[1]) : undefined
-}
 
 /**
  * Create an anonymous (uid: null) device+session pair and set them on the agent.
@@ -135,8 +130,10 @@ describe('Discoverable Passkey Sign-In Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(SESSION_EXPIRATION_SECONDS)
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: SESSION_EXPIRATION_SECONDS,
+        maxRemainingSeconds: ATTESTED_SESSION_EXPIRATION_SECONDS,
+      })
     })
 
     it('preserves an edge-anon-issued attested device by minting a 30-day (not 2-day) st cookie', async () => {
@@ -162,8 +159,10 @@ describe('Discoverable Passkey Sign-In Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(SESSION_EXPIRATION_SECONDS)
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: SESSION_EXPIRATION_SECONDS,
+        maxRemainingSeconds: ATTESTED_SESSION_EXPIRATION_SECONDS,
+      })
     })
   })
 

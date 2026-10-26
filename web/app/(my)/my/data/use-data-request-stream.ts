@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useEffectEvent } from 'react'
-import { ApiError } from '@vouchington/api-client'
 import type { DataRequest } from '@/lib/api/client/users'
 import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-download-link-retry'
+import { createClosedStatusProbeRetry } from './data-request-stream-probe-retry'
+import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
+import { shouldKeepStreamReconnecting } from './data-request-stream-transport'
 import { loadDataRequest, type StreamPayload } from './data-request-utils'
 
 const TERMINAL_STATUSES = new Set(['ready', 'failed', 'expired'])
@@ -13,10 +15,6 @@ interface UseDataRequestStreamOptions {
   request: DataRequest | null
   applyRequest: (data: DataRequest | null) => void
   setError: (error: string | null) => void
-}
-
-function shouldKeepStreamReconnecting(request: DataRequest | null): boolean {
-  return !request || request.status === 'pending' || request.status === 'processing'
 }
 
 export function useDataRequestStream({
@@ -43,6 +41,8 @@ export function useDataRequestStream({
 
     let active = true
     const isCurrent = () => active && matchesCurrentIdentity(userId, requestId!)
+    let probeInFlight = false
+    const probeRetry = createClosedStatusProbeRetry()
     const downloadLinkRetry = createDownloadLinkRetry({
       isCurrent,
       load: () => loadDataRequest(userId),
@@ -50,9 +50,14 @@ export function useDataRequestStream({
       setError: message => setCurrentError(message),
     })
 
-    const es = new EventSource(
-      `/api/v1/users/${userId}/data-request/stream?request_id=${encodeURIComponent(requestId!)}`,
-    )
+    const streamUrl = `/api/v1/users/${userId}/data-request/stream?request_id=${encodeURIComponent(requestId!)}`
+    const stream = createRecoverableEventSource({
+      url: streamUrl,
+      eventName: 'status',
+      isCurrent,
+      onEvent: onStatus,
+      onError: onSseError,
+    })
 
     function onStatus(event: MessageEvent) {
       if (!isCurrent()) return
@@ -127,38 +132,51 @@ export function useDataRequestStream({
     // (the stream cycles on a short cap; see docs/development/runtime-timeouts.md) — is
     // recovered from durable state, not treated as user-facing failure. `EventSource`
     // reconnects natively as long as `close()` is not called, so a routine cycle stays warm.
-    function onSseError() {
-      if (!isCurrent()) return
+    function onSseError(source: EventSource) {
+      if (!isCurrent() || !stream.isCurrentSource(source) || probeInFlight || probeRetry.pending)
+        return
+      probeInFlight = true
       loadDataRequest(userId)
         .then(updated => {
-          if (!isCurrent()) return
+          if (!isCurrent() || !stream.isCurrentSource(source)) return
+          probeRetry.reset()
           // `!updated` (e.g. a 404 — the export was deleted mid-stream) falls through to the
           // same no-op as pending/processing: EventSource keeps reconnecting with no user-visible
           // feedback. Accepted trade-off, not an oversight — pre-dates this change.
-          if (shouldKeepStreamReconnecting(updated)) return
+          if (shouldKeepStreamReconnecting(updated)) {
+            // A 401 closes native EventSource permanently. The successful status probe above
+            // has recovered authentication, so replace only a closed stream. An ordinary drop
+            // stays CONNECTING and retains the browser's built-in reconnect behavior.
+            if (updated) stream.recoverClosed(source)
+            return
+          }
           if (needsDownloadLinkRetry(updated)) {
             downloadLinkRetry.schedule()
             return
           }
           applyCurrentRequest(updated)
-          es.close()
+          stream.close()
         })
         .catch(err => {
-          if (!isCurrent()) return
-          if (!(err instanceof ApiError) || err.status >= 500 || err.status === 429) return
+          if (!isCurrent() || !stream.isCurrentSource(source)) return
+          if (
+            probeRetry.handleFailure(err, source, () => {
+              if (isCurrent() && stream.isCurrentSource(source)) onSseError(source)
+            })
+          )
+            return
           setCurrentError('Failed to track export status. Please refresh.')
-          es.close()
+          stream.close()
+        })
+        .finally(() => {
+          probeInFlight = false
         })
     }
 
-    es.addEventListener('status', onStatus)
-    es.addEventListener('error', onSseError as EventListener)
-
     return () => {
       active = false
-      es.removeEventListener('status', onStatus)
-      es.removeEventListener('error', onSseError as EventListener)
-      es.close()
+      probeRetry.clear()
+      stream.close()
       downloadLinkRetry.clear()
     }
   }, [isStreamActive, requestId, userId])
