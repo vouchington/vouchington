@@ -15,6 +15,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   notifications: 5,
   'activitypub:outbound': 5,
   'activitypub:outbound-dispatch': 2,
+  'activitypub:outbound-recovery': 1,
   'activitypub:inbound': 4,
   'activitypub:cleanup': 1,
   'follower-distributions': 5,

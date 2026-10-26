@@ -41,8 +41,9 @@ Outbound ActivityPub distribution derives unfinished work from the current Follo
 generation and immutable post ballot transitions. A follower-page job carries its cursor; the
 source row records completion only after the final page's delivery jobs are admitted. Recovery
 re-admits the source activity and walks retained page receipts, safely reactivating terminal page
-jobs when a continuation failed. Vote recovery enumerates bounded pages of post IDs before
-probing the post-keyed ballot partitions, including empty pages between pending ballots. A
+jobs when a continuation failed. It also safely reactivates a retained terminal root. Vote
+recovery reads pending ballot transitions directly through their post-keyed index, so idle
+passes do not enumerate unrelated posts. A
 replaced Follow generation is superseded by the relation's current state; ballot transitions
 remain separate immutable events.
 

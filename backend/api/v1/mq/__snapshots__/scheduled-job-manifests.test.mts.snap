@@ -982,8 +982,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "paged-dispatch-activitypub",
         },
         "ordering": {
-          "concurrency": 2,
-          "key": "activitypub:outbound-dispatch",
+          "concurrency": 1,
+          "key": "activitypub:outbound-recovery",
         },
         "priority": 100,
       },
@@ -1018,8 +1018,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "paged-dispatch-activitypub",
         },
         "ordering": {
-          "concurrency": 2,
-          "key": "activitypub:outbound-dispatch",
+          "concurrency": 1,
+          "key": "activitypub:outbound-recovery",
         },
         "priority": 100,
       },

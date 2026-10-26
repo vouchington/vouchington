@@ -1,5 +1,6 @@
-import type { Job } from 'glide-mq'
+import type { Job, Queue } from 'glide-mq'
 import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { background } from '@queues/background/queues'
 import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import { ACTIVITYPUB_RECOVER_OUTBOUND_JOB } from '@queues/background/enqueues/activitypub-jobs'
@@ -9,6 +10,7 @@ import type {
 } from '@queues/background/enqueues/activitypub-domain'
 import {
   enqueueBulkDistributeActivity,
+  distributionPageJobId,
   getUndoFollowActivityId,
 } from '@queues/activitypub/enqueues/delivery'
 import {
@@ -18,16 +20,24 @@ import {
 
 const enqueueRecoveryContinuation = createBackgroundEnqueue(ACTIVITYPUB_RECOVER_OUTBOUND_JOB)
 
+type OutboundRecoveryDependencies = {
+  queue: Pick<Queue, 'name' | 'getJobCounts'>
+  enqueueBulk: typeof enqueueBulkDistributeActivity
+}
+
 export async function processRecoverOutboundDistributionJob(
   job: Pick<
     Job<RecoverOutboundDistributionData>,
     'data' | 'id' | 'name' | 'updateData' | 'moveToDelayed'
   >,
+  dependencies: Partial<OutboundRecoveryDependencies> = {},
 ): Promise<{ scanned: number; hasMore: boolean }> {
+  const queue = dependencies.queue ?? background
+  const enqueueBulk = dependencies.enqueueBulk ?? enqueueBulkDistributeActivity
   return processPagedDispatcher(job, {
     dispatcher: 'activitypub',
     cursorKey: 'lane,id',
-    target: background,
+    target: queue,
     targetName: 'background',
     readAndDispatch: async pageSize => {
       const page = await listPendingOutboundDistributionPage(
@@ -37,7 +47,12 @@ export async function processRecoverOutboundDistributionJob(
         job.data.throughPostId,
       )
       if (page.rows.length > 0) {
-        await enqueueBulkDistributeActivity(page.rows.map(toDistributionJob))
+        await enqueueBulkReactivatingFinished({
+          queue,
+          inputs: page.rows.map(toDistributionJob),
+          jobIdOf: distributionPageJobId,
+          enqueueBulk,
+        })
       }
       return {
         result: { scanned: page.rows.length, hasMore: page.next !== undefined },

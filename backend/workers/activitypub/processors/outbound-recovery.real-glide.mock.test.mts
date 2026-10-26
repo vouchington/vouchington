@@ -17,10 +17,19 @@ import {
 import { upsertPostElectionVotes } from '@services/elections-votes/post/votes-upsert'
 import { getUndoFollowActivityId } from '@queues/activitypub/enqueues/delivery'
 import { processRecoverOutboundDistributionJob } from './outbound-recovery.mts'
+import { assertTerminalActivityPubRootRecovery } from '@voucha/test-helpers/activitypub-terminal-root-recovery'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('outbound ActivityPub recovery with PostgreSQL and GlideMQ', () => {
+  it.each(['completed', 'failed'] as const)(
+    're-admits a retained %s distribution root from the scheduled Follow sweep',
+    terminalState => {
+      expect.hasAssertions()
+      return assertTerminalActivityPubRootRecovery(terminalState)
+    },
+  )
+
   it('re-enqueues a committed Follow with no original queue job and deduplicates a second sweep', async () => {
     const source = await createTestUserDirect()
     const target = await createTestUserDirect()

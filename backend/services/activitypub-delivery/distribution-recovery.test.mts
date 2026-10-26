@@ -9,7 +9,6 @@ import { listPendingOutboundDistributionPage } from './distribution-recovery.mts
 import { markActivityDistributionComplete } from './distribution-progress.mts'
 
 const FIRST_ID = '00000000-0000-0000-0000-000000000000'
-const LAST_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
 const FOLLOW_RELATION = getEntityRelationMetadataOrThrow({
   subjectType: 'user',
   predicate: 'follow',
@@ -118,7 +117,7 @@ describe('outbound ActivityPub recovery source', () => {
     ).toBe(false)
   })
 
-  it('advances across empty post pages and keeps every vote on a busy post', async () => {
+  it('skips an idle post window and pages pending ballots directly by post and vote id', async () => {
     const voter = await createTestUserDirect()
     const secondVoter = await createTestUserDirect()
     const emptyPostId = await insertTestPost({
@@ -140,23 +139,23 @@ describe('outbound ActivityPub recovery source', () => {
       'votes',
       `${emptyPostId}__${FIRST_ID}`,
       1,
+      emptyPostId,
     )
     expect(emptyPage.rows).toEqual([])
-    expect(emptyPage.next).toBe(`${emptyPostId}__${LAST_ID}`)
-    expect(emptyPage.throughPostId).toBeDefined()
+    expect(emptyPage.next).toBeUndefined()
+    expect(emptyPage.throughPostId).toBe(emptyPostId)
 
     const firstVotePage = await listPendingOutboundDistributionPage(
       'votes',
-      emptyPage.next,
+      `${emptyPostId}__${FIRST_ID}`,
       1,
-      emptyPage.throughPostId,
     )
     expect(firstVotePage.rows).toHaveLength(1)
     const firstVote = firstVotePage.rows[0]
     if (!firstVote || firstVote.source !== 'votes') throw new Error('Expected first vote')
     expect(firstVote).toMatchObject({ targetPostId: votedPostId })
     expect(firstVotePage.next).toBe(firstVote.cursor)
-    expect(firstVotePage.throughPostId).toBe(emptyPage.throughPostId)
+    expect(firstVotePage.throughPostId).toBeDefined()
 
     const secondVotePage = await listPendingOutboundDistributionPage(
       'votes',

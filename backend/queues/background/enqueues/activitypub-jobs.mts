@@ -25,6 +25,7 @@ const INBOX = {
 } as const
 const OUTBOUND_ORDERING = { key: 'activitypub:outbound' } as const
 const OUTBOUND_DISPATCH_ORDERING = { key: 'activitypub:outbound-dispatch' } as const
+const OUTBOUND_RECOVERY_ORDERING = { key: 'activitypub:outbound-recovery' } as const
 const INBOUND_ORDERING = { key: 'activitypub:inbound' } as const
 const CLEANUP_ORDERING = { key: 'activitypub:cleanup' } as const
 
@@ -48,7 +49,7 @@ export const ACTIVITYPUB_RECOVER_OUTBOUND_JOB =
   defineBackgroundJob<RecoverOutboundDistributionData>(DOMAIN, {
     name: 'recoverOutboundDistribution',
     priority: PRIORITY_DISPATCH,
-    ordering: OUTBOUND_DISPATCH_ORDERING,
+    ordering: OUTBOUND_RECOVERY_ORDERING,
     ...pagedDispatchJobOptions('activitypub'),
   })
 export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubInboxDeliveryJob>(

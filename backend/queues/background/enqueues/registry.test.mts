@@ -29,9 +29,10 @@ describe('background registry', () => {
     }
   })
 
-  it('reserves independent ActivityPub delivery and cleanup lanes', () => {
+  it('reserves independent ActivityPub dispatch, recovery, delivery, and cleanup lanes', () => {
     const key = (name: string) => getBackgroundJob(`activitypub.${name}`)?.options.ordering?.key
     expect(key('distributeActivity')).toBe('activitypub:outbound-dispatch')
+    expect(key('recoverOutboundDistribution')).toBe('activitypub:outbound-recovery')
     expect(key('deliverActivity')).toBe('activitypub:outbound')
     expect(key('processDelivery')).toBe('activitypub:inbound')
     expect(key('recoverDeliveries')).toBe('activitypub:inbound')
