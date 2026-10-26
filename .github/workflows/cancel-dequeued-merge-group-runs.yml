@@ -32,6 +32,6 @@ jobs:
     permissions:
       actions: write
       pull-requests: read
-    uses: vouchington/vouchington-tooling/.github/workflows/cancel-dequeued-merge-group-runs.yml@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+    uses: vouchington/vouchington-tooling/.github/workflows/cancel-dequeued-merge-group-runs.yml@b6e3f5d57965caf14afa2faa5b20256d738cffb3 # v0.74.1
     with:
       queue-base: main
