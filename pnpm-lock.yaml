@@ -3405,8 +3405,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: ^0.13.0
+        version: 0.13.0
 
   backend/queues/rss-feed-maintenance:
     dependencies:
@@ -16711,9 +16711,6 @@ packages:
   '@next/env@16.4.1':
     resolution: {integrity: sha512-5sUUrrSvs/2/2LnLoesybMGx12EtPB46fdZ6RhAw0XDGSPxU2LFyQBB7yuEiOFFJPKmBY6+q2jTr1/AMbnp0/g==}
 
-  '@next/env@16.4.2':
-    resolution: {integrity: sha512-nTUTFH7G5/J/fmpkjVLegOkqyKOP0CEsJcMsyO4UCYeN1su+YMW/MfaSErnJskL7XM+UDK6aTvslxsRCyya/sA==}
-
   '@next/env@16.4.3':
     resolution: {integrity: sha512-a7tz1QCcWWkwC/rPJcPMJk/UNRu9CFhDd3OHYE5hddbJrs8BqRTalxI6GlKCWEGzRLHN+S/B7a4PAHCtm25aBQ==}
 
@@ -25938,8 +25935,6 @@ snapshots:
 
   '@next/env@16.4.1': {}
 
-  '@next/env@16.4.2': {}
-
   '@next/env@16.4.3': {}
 
   '@next/swc-darwin-arm64@16.4.1':
@@ -33371,7 +33366,7 @@ snapshots:
 
   vite-plugin-storybook-nextjs@10.6.3(@typescript/typescript6@6.0.2)(next@16.4.3(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(rollup@4.63.4)(storybook@10.6.3(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.1))(supports-color@10.2.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)):
     dependencies:
-      '@next/env': 16.4.2
+      '@next/env': 16.4.3
       '@rollup/pluginutils': 5.4.0(rollup@4.63.4)
       magic-string: 0.30.21
       module-alias: 2.3.4
