@@ -37,10 +37,7 @@ export async function cleanupActivityPubInboxRequest(
   const identity = await getActivityPubInboxDeliveryIdentityForTest(activityId)
   const id = deliveryId ?? identity?.deliveryId
   if (!id) return 0
-  const removed = await removeActivityPubInboxJobsForDeliveryId(
-    id,
-    identity ? [identity.leaseToken] : [],
-  )
+  const removed = await removeActivityPubInboxJobsForDeliveryId(id, identity?.requestDigest)
   await deleteActivityPubInboxDeliveriesForTest([id])
   return removed
 }

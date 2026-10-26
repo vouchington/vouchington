@@ -148,7 +148,7 @@ export function buildUnboundedUnpartitionedTables(
       ],
       [
         'activitypub_inbox_delivery_work_items',
-        'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
+        'Bounded signed ActivityPub envelope storage (maximum envelopes exceed GlideMQ job data): terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
       ],
       [
         'ai_usage_provider_response_keys',

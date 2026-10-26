@@ -37,12 +37,6 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
       ? sql`delivery.verified_at IS NULL`
       : sql`delivery.verified_at IS NOT NULL`,
   )
-  query.append(sql`
-        AND (
-          delivery.failed_at IS NOT NULL
-          OR delivery.leased_at IS NULL
-          OR delivery.lease_expires_at <= clock_timestamp()
-        )`)
   if (deliveryIds) {
     query.append(sql` AND delivery.id = ANY(${deliveryIds}::uuid[])`)
   }

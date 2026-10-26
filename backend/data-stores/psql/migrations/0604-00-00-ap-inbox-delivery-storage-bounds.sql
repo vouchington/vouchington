@@ -1,4 +1,5 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- Keep retention projection in PostgreSQL: maximum-size signed envelopes cannot fit in a GlideMQ job.
 CREATE OR REPLACE FUNCTION fn_project_activitypub_inbox_delivery_retention()
 RETURNS TRIGGER
 LANGUAGE plpgsql

@@ -38,22 +38,10 @@ export function stubUnresolvableHostname(hostname: string) {
 
 export async function markActivityPubInboxDeliveryVerified(
   deliveryId: string,
-  leaseToken: string,
   remoteActorId: string,
 ) {
   return (
-    (await activityPubInboxDeliveryTransitions.verify(deliveryId, leaseToken, remoteActorId))
-      .outcome === 'applied'
-  )
-}
-
-export async function releaseActivityPubInboxDeliveryForRetry(
-  deliveryId: string,
-  leaseToken: string,
-  error: unknown,
-) {
-  return (
-    (await activityPubInboxDeliveryTransitions.release(deliveryId, leaseToken, error)).outcome ===
+    (await activityPubInboxDeliveryTransitions.verify(deliveryId, remoteActorId)).outcome ===
     'applied'
   )
 }

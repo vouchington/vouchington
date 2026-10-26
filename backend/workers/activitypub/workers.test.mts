@@ -12,9 +12,9 @@ function handlerFor(name: string) {
 }
 
 describe('ActivityPub background handlers', () => {
-  it('treats a stale delivery lease as an idempotent no-op on any attempt', async () => {
+  it('treats a missing delivery as an idempotent no-op on any attempt', async () => {
     const job = {
-      data: { deliveryId: randomUUID(), leaseToken: randomUUID() },
+      data: { deliveryId: randomUUID(), requestDigest: randomUUID() },
       attemptsMade: 4,
       opts: { attempts: 5 },
     } as unknown as Job

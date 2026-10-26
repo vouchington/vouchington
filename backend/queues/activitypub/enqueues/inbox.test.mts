@@ -4,7 +4,6 @@ import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
   enqueueActivityPubInboxDelivery,
   enqueueBulkActivityPubInboxDeliveries,
-  enqueueDelayedActivityPubInboxDelivery,
   enqueueCleanupExpiredActivityPubInboxDeliveries,
   enqueueRearmFailedActivityPubInboxDeliveriesContinuation,
   enqueueRecoverActivityPubInboxDeliveries,
@@ -12,10 +11,11 @@ import {
 import { activitypub } from '../queues.mts'
 
 describe('ActivityPub inbox enqueues', () => {
-  it('uses the durable delivery and attempt ids for both job and simple dedup ids', async () => {
-    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
-    const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
+  it('deduplicates the signed-request digest across repeated enqueues', async () => {
+    const data = { deliveryId: randomUUID(), requestDigest: randomUUID() }
+    const jobId = `activitypub-inbox__${data.requestDigest}`
     await enqueueActivityPubInboxDelivery(data)
+    expect(await enqueueActivityPubInboxDelivery(data)).toBeNull()
     const jobs = await readAllQueueJobs(activitypub)
     expect(jobs.find(job => job.id === jobId)).toMatchObject({
       id: jobId,
@@ -33,30 +33,13 @@ describe('ActivityPub inbox enqueues', () => {
   })
 
   it('preserves the same logical ids and uses recovery priority for recovered bulk jobs', async () => {
-    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
-    const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
+    const data = { deliveryId: randomUUID(), requestDigest: randomUUID() }
+    const jobId = `activitypub-inbox__${data.requestDigest}`
     const [job] = await enqueueBulkActivityPubInboxDeliveries([data])
     expect(job).toMatchObject({
       id: jobId,
       data,
       opts: { priority: 100, deduplication: { id: jobId, mode: 'simple' } },
-    })
-  })
-
-  it('keeps delayed deliveries at ordinary processing priority', async () => {
-    const data = { deliveryId: randomUUID(), leaseToken: randomUUID() }
-    const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
-
-    const job = await enqueueDelayedActivityPubInboxDelivery(data, 1_000)
-
-    expect(job).toMatchObject({
-      id: jobId,
-      data,
-      opts: {
-        delay: 1_000,
-        priority: 10,
-        deduplication: { id: jobId, mode: 'simple' },
-      },
     })
   })
 

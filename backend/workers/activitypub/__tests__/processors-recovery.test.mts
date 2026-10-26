@@ -7,11 +7,18 @@ const PAGE_SIZE = 3
 describe('ActivityPub inbox recovery processors', () => {
   it('bulk-enqueues only the recoverable deliveries returned by the recovery boundary', async () => {
     const deliveries = makeDeliveries(2)
-    const enqueueBulk = vi.fn<VitestLooseMock>().mockResolvedValue([])
+    const enqueueBulk = vi.fn<VitestLooseMock>().mockResolvedValue(deliveries)
 
     await expect(
-      recoverDeliveries({ claimRecoverable: async () => deliveries, enqueueBulk }),
-    ).resolves.toEqual({ enqueued: 2 })
+      recoverDeliveries(undefined, {
+        readRecoverable: async () => deliveries,
+        getFailure: async () => undefined,
+        exhaust: async () => ({ outcome: 'stale' }),
+        enqueueBulk,
+        enqueueContinuation: async () => null,
+        pageSize: () => PAGE_SIZE,
+      }),
+    ).resolves.toEqual({ enqueued: 2, hasMore: false })
     expect(enqueueBulk).toHaveBeenCalledWith(deliveries)
   })
 
@@ -39,7 +46,7 @@ describe('ActivityPub inbox recovery processors', () => {
       ] as const
     ).map(deliveryId => ({
       deliveryId,
-      leaseToken: randomUUID(),
+      requestDigest: randomUUID(),
     }))
     const { dependencies, rearmFailed, enqueueContinuation } = rearmBoundary([page])
 
@@ -89,6 +96,6 @@ function rearmBoundary(pages: ReturnType<typeof makeDeliveries>[]) {
 function makeDeliveries(count: number) {
   return Array.from({ length: count }, () => ({
     deliveryId: randomUUID(),
-    leaseToken: randomUUID(),
+    requestDigest: randomUUID(),
   }))
 }

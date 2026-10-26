@@ -9,12 +9,9 @@ describe('ActivityPub inbox transition implementation contract', () => {
   it('attaches the exact lifecycle contract entry to every callable transition', () => {
     expect({
       accept: activityPubInboxDeliveryTransitions.accept.contract,
-      'acknowledge-enqueue': activityPubInboxDeliveryTransitions.acknowledgeEnqueue.contract,
-      claim: activityPubInboxDeliveryTransitions.claim.contract,
+      load: activityPubInboxDeliveryTransitions.load.contract,
       verify: activityPubInboxDeliveryTransitions.verify.contract,
-      'admit-sender': activityPubInboxDeliveryTransitions.admitSender.contract,
-      defer: activityPubInboxDeliveryTransitions.defer.contract,
-      release: activityPubInboxDeliveryTransitions.release.contract,
+      admitSender: activityPubInboxDeliveryTransitions.admitSender.contract,
       exhaust: activityPubInboxDeliveryTransitions.exhaust.contract,
       expire: activityPubInboxDeliveryTransitions.expire.contract,
       reject: activityPubInboxDeliveryTransitions.reject.contract,

@@ -1,4 +1,5 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- The exact body remains here until final outcome; statement triggers enforce bounded retained storage.
 CREATE TABLE IF NOT EXISTS activitypub_inbox_delivery_storage_counters (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE,
   retained_rows BIGINT NOT NULL,

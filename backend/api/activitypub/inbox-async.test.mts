@@ -11,7 +11,7 @@ import { computeDigest } from '@vouchington/utils/http-signatures'
 import { activitypub } from '@queues/activitypub/queues'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
-  claimTestDelivery,
+  loadTestDelivery,
   registerActivityPubInboxAdmission,
   rejectTestDelivery,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
@@ -206,14 +206,14 @@ async function postSignedCreateAndClaimDelivery(input: {
     )
   })
   expect(job).toBeDefined()
-  const payload = job?.data as { deliveryId: string; leaseToken: string } | undefined
+  const payload = job?.data as { deliveryId: string; requestDigest: string } | undefined
   expect(payload).toEqual({
     deliveryId: expect.any(String),
-    leaseToken: expect.any(String),
+    requestDigest: expect.any(String),
   })
   if (!payload) throw new Error('Expected a durable ActivityPub inbox job payload')
 
-  const delivery = await claimTestDelivery(payload.deliveryId, payload.leaseToken)
+  const delivery = await loadTestDelivery(payload.deliveryId)
   expect(delivery).toMatchObject({
     requestMethod: 'POST',
     requestTarget: '/ap/inbox',
@@ -230,7 +230,7 @@ async function postSignedCreateAndClaimDelivery(input: {
   expect(delivery?.rawBody.equals(Buffer.from(body))).toBe(true)
 
   onTestFinished(async () => {
-    await rejectTestDelivery(payload.deliveryId, payload.leaseToken)
+    await rejectTestDelivery(payload.deliveryId)
   })
   return { delivery, remoteActor }
 }

@@ -27,6 +27,7 @@ const OUTBOUND_ORDERING = { key: 'activitypub:outbound' } as const
 const OUTBOUND_DISPATCH_ORDERING = { key: 'activitypub:outbound-dispatch' } as const
 const OUTBOUND_RECOVERY_ORDERING = { key: 'activitypub:outbound-recovery' } as const
 const INBOUND_ORDERING = { key: 'activitypub:inbound' } as const
+const RECOVERY_ORDERING = { key: 'activitypub:inbound-recovery' } as const
 const CLEANUP_ORDERING = { key: 'activitypub:cleanup' } as const
 
 export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<DistributeActivityData>(
@@ -56,17 +57,20 @@ export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubI
   DOMAIN,
   { name: 'processDelivery', priority: PRIORITY_TASK, ordering: INBOUND_ORDERING, ...INBOX },
 )
-export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
-  name: 'recoverDeliveries',
-  priority: PRIORITY_DISPATCH,
-  ordering: INBOUND_ORDERING,
-  ...INBOX,
-})
+export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<RearmFailedDeliveriesData>(
+  DOMAIN,
+  {
+    name: 'recoverDeliveries',
+    priority: PRIORITY_DISPATCH,
+    ordering: RECOVERY_ORDERING,
+    ...INBOX,
+  },
+)
 export const ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB =
   defineBackgroundJob<RearmFailedDeliveriesData>(DOMAIN, {
     name: 'rearmFailedDeliveries',
     priority: PRIORITY_DISPATCH,
-    ordering: INBOUND_ORDERING,
+    ordering: RECOVERY_ORDERING,
     ...INBOX,
   })
 export const ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {

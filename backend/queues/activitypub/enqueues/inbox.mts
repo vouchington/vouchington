@@ -1,3 +1,5 @@
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { background } from '@queues/background/queues'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
@@ -13,7 +15,7 @@ import type { ActivityPubInboxDeliveryJob } from '../types.mts'
 
 const enqueueDeliveryJob = createBackgroundEnqueue(ACTIVITYPUB_PROCESS_DELIVERY_JOB)
 
-export const enqueueBulkActivityPubInboxDeliveries = createBackgroundBulkEnqueue(
+const enqueueBulkDeliveryJobs = createBackgroundBulkEnqueue(
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
   // The bulk path re-enqueues recovered work, which ranks behind fresh deliveries.
   (data: ActivityPubInboxDeliveryJob) => ({
@@ -26,17 +28,58 @@ const enqueueRecoveryJob = createBackgroundEnqueue(ACTIVITYPUB_RECOVER_DELIVERIE
 const enqueueFailedBackfillJob = createBackgroundEnqueue(ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB)
 const enqueueCleanupJob = createBackgroundEnqueue(ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB)
 
-export function enqueueActivityPubInboxDelivery(
+export async function enqueueActivityPubInboxDelivery(
   data: ActivityPubInboxDeliveryJob,
 ): EnqueueReturnType {
-  return enqueueDeliveryJob(data, deliveryJobOptions(data))
+  const jobs = await enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs: [data],
+    jobIdOf: input => deliveryJobOptions(input).jobId,
+    enqueueBulk: async inputs => {
+      const job = await enqueueDeliveryJob(inputs[0]!, deliveryJobOptions(inputs[0]!))
+      return job ? [job] : []
+    },
+  })
+  return jobs[0] ?? null
 }
 
-export function enqueueDelayedActivityPubInboxDelivery(
+/** A terminal transport stall may bypass the domain processor's failure checkpoint. */
+export async function getActivityPubInboxDeliveryFailure(
   data: ActivityPubInboxDeliveryJob,
-  delayMs: number,
+): Promise<string | undefined> {
+  const job = await background.getJob(deliveryJobOptions(data).jobId!)
+  if (
+    !job ||
+    typeof job.data !== 'object' ||
+    job.data === null ||
+    !('deliveryId' in job.data) ||
+    job.data.deliveryId !== data.deliveryId ||
+    (await job.getState()) !== 'failed'
+  )
+    return undefined
+  return job.failedReason ?? 'ActivityPub inbox job failed outside its processor'
+}
+
+export function enqueueBulkActivityPubInboxDeliveries(inputs: ActivityPubInboxDeliveryJob[]) {
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs,
+    jobIdOf: data => deliveryJobOptions(data).jobId,
+    enqueueBulk: enqueueBulkDeliveryJobs,
+  })
+}
+
+export function enqueueRecoverActivityPubInboxDeliveriesContinuation(
+  afterId: string,
 ): EnqueueReturnType {
-  return enqueueDeliveryJob(data, { ...deliveryJobOptions(data), delay: delayMs })
+  return enqueueRecoveryJob(
+    { afterId },
+    {
+      jobId: `activitypub-inbox-recovery__${afterId}`,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )
 }
 
 export function enqueueRecoverActivityPubInboxDeliveries(): EnqueueReturnType {
@@ -86,7 +129,7 @@ export function enqueueCleanupExpiredActivityPubInboxDeliveries(): EnqueueReturn
 }
 
 function deliveryJobOptions(data: ActivityPubInboxDeliveryJob): Partial<JobOptions> {
-  const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
+  const jobId = `activitypub-inbox__${data.requestDigest}`
   return {
     jobId,
     deduplication: { id: jobId, mode: 'simple' },

@@ -1,7 +1,9 @@
+import { DelayedError, type Job } from 'glide-mq'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import {
   enqueueBulkActivityPubInboxDeliveries,
-  enqueueDelayedActivityPubInboxDelivery,
+  getActivityPubInboxDeliveryFailure,
+  enqueueRecoverActivityPubInboxDeliveriesContinuation,
   enqueueRearmFailedActivityPubInboxDeliveriesContinuation,
 } from '@queues/activitypub/enqueues/inbox'
 import {
@@ -13,7 +15,16 @@ import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/wor
 import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub/types'
 
 export type RecoverDeliveriesDependencies = {
-  claimRecoverable: () => ReturnType<typeof activityPubInboxDeliveryTransitions.recover>
+  getFailure: typeof getActivityPubInboxDeliveryFailure
+  exhaust: (
+    deliveryId: string,
+    error: unknown,
+  ) => ReturnType<typeof activityPubInboxDeliveryTransitions.exhaust>
+  readRecoverable: (
+    afterId?: string,
+  ) => ReturnType<typeof activityPubInboxDeliveryTransitions.recover>
+  enqueueContinuation: typeof enqueueRecoverActivityPubInboxDeliveriesContinuation
+  pageSize: () => number
   enqueueBulk: typeof enqueueBulkActivityPubInboxDeliveries
 }
 
@@ -25,7 +36,11 @@ export type RearmFailedDeliveriesDependencies = {
 }
 
 const recoverDeliveriesDependencies: RecoverDeliveriesDependencies = {
-  claimRecoverable: activityPubInboxDeliveryTransitions.recover,
+  getFailure: getActivityPubInboxDeliveryFailure,
+  exhaust: activityPubInboxDeliveryTransitions.exhaust,
+  readRecoverable: afterId => activityPubInboxDeliveryTransitions.recover(undefined, afterId),
+  enqueueContinuation: enqueueRecoverActivityPubInboxDeliveriesContinuation,
+  pageSize: () => getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size'),
   enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
 }
 
@@ -53,36 +68,50 @@ const cleanupExpiredDeliveriesDependencies: CleanupExpiredDeliveriesDependencies
 
 export async function processDelivery(
   data: ActivityPubInboxDeliveryJob,
-  options: { isFinalAttempt: boolean },
+  options: { isFinalAttempt: boolean; moveToDelayed: Job['moveToDelayed'] },
 ): Promise<void> {
   try {
-    const result = await processDurableActivityPubInboxDelivery(data.deliveryId, data.leaseToken)
+    const result = await processDurableActivityPubInboxDelivery(data.deliveryId)
     if (result.outcome !== 'deferred') return
 
-    await enqueueDelayedActivityPubInboxDelivery(
-      { deliveryId: result.deliveryId, leaseToken: result.leaseToken },
-      Math.max(0, result.deferredUntil.getTime() - Date.now()),
-    )
+    await options.moveToDelayed(result.deferredUntil.getTime())
   } catch (err) {
+    if (err instanceof DelayedError) throw err
     if (isTerminalProtocolError(err)) {
-      await activityPubInboxDeliveryTransitions.reject(data.deliveryId, data.leaseToken)
+      await activityPubInboxDeliveryTransitions.reject(data.deliveryId)
       throw new UnrecoverableError(err instanceof Error ? err.message : String(err))
     }
     if (options.isFinalAttempt) {
-      await activityPubInboxDeliveryTransitions.exhaust(data.deliveryId, data.leaseToken, err)
-    } else {
-      await activityPubInboxDeliveryTransitions.release(data.deliveryId, data.leaseToken, err)
+      await activityPubInboxDeliveryTransitions.exhaust(data.deliveryId, err)
     }
     throw err
   }
 }
 
 export async function recoverDeliveries(
+  afterId?: string,
   dependencies: RecoverDeliveriesDependencies = recoverDeliveriesDependencies,
-): Promise<{ enqueued: number }> {
-  const deliveries = await dependencies.claimRecoverable()
-  if (deliveries.length > 0) await dependencies.enqueueBulk(deliveries)
-  return { enqueued: deliveries.length }
+): Promise<{ enqueued: number; hasMore: boolean }> {
+  const deliveries = await dependencies.readRecoverable(afterId)
+  if (deliveries.length === 0) return { enqueued: 0, hasMore: false }
+  const pending = []
+  for (const delivery of deliveries) {
+    // oxlint-disable-next-line no-await-in-loop -- one bounded page limits terminal job lookups
+    const failure = await dependencies.getFailure(delivery)
+    if (failure === undefined) pending.push(delivery)
+    else {
+      // oxlint-disable-next-line no-await-in-loop -- checkpoint a terminal stall before continuing this bounded page
+      await dependencies.exhaust(delivery.deliveryId, new Error(failure))
+    }
+  }
+  const jobs = await dependencies.enqueueBulk(pending)
+  // ast-grep-ignore: pagination-no-exact-limit-has-next -- bounded page continuation ends on an empty page at an exact boundary
+  const hasMore = deliveries.length >= dependencies.pageSize()
+  if (hasMore) {
+    const lastId = deliveries.map(delivery => delivery.deliveryId).reduce((a, b) => (a > b ? a : b))
+    await dependencies.enqueueContinuation(lastId)
+  }
+  return { enqueued: jobs.length, hasMore }
 }
 
 /**

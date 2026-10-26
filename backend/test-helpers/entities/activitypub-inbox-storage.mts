@@ -3,6 +3,7 @@ import { onTestFinished } from 'vitest'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { computeActivityPubInboxRequestDigest } from '../../services/ap-inbox-activities/durable-delivery-transition-intake.mts'
 
 export async function cleanupActivityPubInboxStorageFixturesForTest(
   claimedActivityIds: readonly string[],
@@ -42,8 +43,7 @@ export async function expireActivityPubInboxDeliveryForTest(deliveryId: string):
   await write(sql`/* expireActivityPubInboxDeliveryForTest */
     UPDATE activitypub_inbox_delivery_work_items
     SET retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute',
-        received_at = CURRENT_TIMESTAMP - INTERVAL '2 hours',
-        dispatched_at = CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+        received_at = CURRENT_TIMESTAMP - INTERVAL '2 hours'
     WHERE id = ${deliveryId}
   `)
 }
@@ -51,33 +51,22 @@ export async function expireActivityPubInboxDeliveryForTest(deliveryId: string):
 export async function makeActivityPubInboxFailureExpiredForTest(deliveryId: string): Promise<void> {
   await write(sql`/* makeActivityPubInboxFailureExpiredForTest */
     UPDATE activitypub_inbox_delivery_work_items
-    SET leased_at = CURRENT_TIMESTAMP - INTERVAL '31 minutes',
-        lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 minute',
-        failed_at = CURRENT_TIMESTAMP - INTERVAL '8 days',
+    SET failed_at = CURRENT_TIMESTAMP - INTERVAL '8 days',
+        first_failed_at = CURRENT_TIMESTAMP - INTERVAL '8 days',
+        retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 day',
         last_error = 'expired'
     WHERE id = ${deliveryId}
   `)
 }
 
 export async function ageActivityPubInboxCleanupFixturesForTest(
-  activeDeliveryId: string,
-  staleDeliveryId: string,
-  idleDeliveryId: string,
+  ...deliveryIds: string[]
 ): Promise<void> {
   await write(sql`/* ageActivityPubInboxCleanupFixturesForTest */
     UPDATE activitypub_inbox_delivery_work_items
     SET received_at = CURRENT_TIMESTAMP - INTERVAL '2 hours',
-        retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 hour',
-        leased_at = CASE
-          WHEN id = ${activeDeliveryId} THEN CURRENT_TIMESTAMP
-          WHEN id = ${staleDeliveryId} THEN CURRENT_TIMESTAMP - INTERVAL '31 minutes'
-          ELSE NULL
-        END,
-        lease_expires_at = CASE
-          WHEN id = ${activeDeliveryId} THEN CURRENT_TIMESTAMP + INTERVAL '30 minutes'
-          WHEN id = ${staleDeliveryId} THEN CURRENT_TIMESTAMP - INTERVAL '1 minute'
-          ELSE NULL END
-    WHERE id IN (${activeDeliveryId}, ${staleDeliveryId}, ${idleDeliveryId})
+        retention_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 hour'
+    WHERE id = ANY(${deliveryIds}::uuid[])
   `)
 }
 
@@ -106,17 +95,18 @@ export async function insertActivityPubInboxDeliveryThenRollbackForTest(envelope
   senderHostname: string
 }): Promise<never> {
   {
+    const requestDigest = computeActivityPubInboxRequestDigest(envelope)
     await using transaction = await beginTransaction()
     await transaction(sql`/* insertActivityPubInboxDeliveryThenRollbackForTest */
         INSERT INTO activitypub_inbox_delivery_work_items (
           request_method, request_target, expected_host, signature_header, digest_header,
           date_header, raw_body, claimed_activity_id, claimed_activity_type,
-          claimed_actor_uri, sender_hostname
+          claimed_actor_uri, sender_hostname, request_digest
         ) VALUES (
           ${envelope.requestMethod}, ${envelope.requestTarget}, ${envelope.expectedHost},
           ${envelope.signatureHeader}, ${envelope.digestHeader}, ${envelope.dateHeader},
           ${envelope.rawBody}, ${envelope.claimedActivityId}, ${envelope.claimedActivityType},
-          ${envelope.claimedActorUri}, ${envelope.senderHostname}
+          ${envelope.claimedActorUri}, ${envelope.senderHostname}, ${requestDigest}
         )
       `)
     throw new Error('rollback')
@@ -147,20 +137,34 @@ export async function insertActivityPubInboxCapacityDeliveriesForTest(
     throw new Error('ActivityPub capacity fixtures require nonnegative integer sizes')
   if (count === 0) return []
   const suffix = randomUUID()
+  const rawBody = Buffer.alloc(bodyBytes, 'x')
+  const digests = Array.from({ length: count }, (_, index) =>
+    computeActivityPubInboxRequestDigest({
+      requestMethod: 'POST',
+      requestTarget: `/ap/inbox?fixture=${suffix}-${index + 1}`,
+      expectedHost: 'voucha.example',
+      signatureHeader: 'signature',
+      digestHeader: 'digest',
+      dateHeader: 'date',
+      contentTypeHeader: undefined,
+      rawBody,
+    }),
+  )
   const { rows } = await write<{
     id: string
   }>(sql`/* insertActivityPubInboxCapacityDeliveriesForTest */
     INSERT INTO activitypub_inbox_delivery_work_items (
       request_method, request_target, expected_host, signature_header, digest_header, date_header,
       raw_body, claimed_activity_id, claimed_activity_type, claimed_actor_uri, sender_hostname,
-      received_at, retention_expires_at
+      received_at, retention_expires_at, request_digest
     )
-    SELECT 'POST', '/ap/inbox', 'voucha.example', 'signature', 'digest', 'date',
+    SELECT 'POST', '/ap/inbox?fixture=' || ${suffix} || '-' || value, 'voucha.example', 'signature', 'digest', 'date',
            CONVERT_TO(REPEAT('x', ${bodyBytes}), 'UTF8'),
            'https://' || ${suffix} || '.example/activities/' || value,
            'Create', 'https://' || ${suffix} || '.example/users/alice', ${`${suffix}.example`},
            CASE WHEN ${expired} THEN CURRENT_TIMESTAMP - INTERVAL '2 hours' ELSE CURRENT_TIMESTAMP END,
-           CASE WHEN ${expired} THEN CURRENT_TIMESTAMP - INTERVAL '1 hour' ELSE CURRENT_TIMESTAMP + INTERVAL '1 hour' END
+           CASE WHEN ${expired} THEN CURRENT_TIMESTAMP - INTERVAL '1 hour' ELSE CURRENT_TIMESTAMP + INTERVAL '1 hour' END,
+           (${digests}::text[])[value]
     FROM generate_series(1, ${count}) AS value
     RETURNING id
   `)

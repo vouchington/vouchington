@@ -132,10 +132,6 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
     const delivery = accepted.value
     try {
       await enqueueActivityPubInboxDelivery(delivery)
-      await activityPubInboxDeliveryTransitions.acknowledgeEnqueue(
-        delivery.deliveryId,
-        delivery.leaseToken,
-      )
     } catch (err) {
       onError(err instanceof Error ? err : new Error(String(err)))
     }

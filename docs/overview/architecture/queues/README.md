@@ -44,7 +44,7 @@ flowchart LR
   follower page's dispatch receipt into its replacement job, so a completed page resumes its
   continuation without re-admitting that page's delivery jobs. Retention cleanup has its
   own lane independent of delivery backlogs to keep inbox capacity reclaimable under sustained
-  traffic. A domain that
+  traffic. Inbound recovery also has a separate lane so a flood of deliveries cannot delay repair. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
 - The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
   coordination, and content analysis. URL and referral crawls use the same hostname ordering key,
@@ -215,3 +215,13 @@ revocation; workers never resolve the recipient from the changed profile. Payloa
 and removed at their terminal outcome. Notification delivery is advisory: terminal delivery failure
 is accepted loss, since account state cannot reconstruct a prior delivery address. Post-commit
 admission failures are reported without changing the committed settings result.
+
+## ActivityPub inbox envelopes
+
+The inbox acknowledges an unknown signer before the worker fetches its key and verifies the
+signature. PostgreSQL retains the exact signed request because the accepted body and envelope can
+exceed GlideMQ's job-data limit. A digest of the signed request deduplicates intake and names the
+queue job; verification and sender-admission checkpoints avoid repeating completed checks.
+GlideMQ owns locks, retry attempts and sender delays. Final protocol outcomes delete the envelope
+atomically with the activity effect and replay marker. Bounded recovery pages enqueue missing jobs
+without changing live jobs, and failed deliveries require an explicit rearm.

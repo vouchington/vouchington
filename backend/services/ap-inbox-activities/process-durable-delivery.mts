@@ -16,20 +16,14 @@ import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
 export type ProcessDurableInboxResult =
   | { outcome: 'stale' }
   | { outcome: 'processed'; duplicate: boolean }
-  | {
-      outcome: 'deferred'
-      deliveryId: string
-      leaseToken: string
-      deferredUntil: Date
-    }
+  | { outcome: 'deferred'; deferredUntil: Date }
 
 export async function processDurableActivityPubInboxDelivery(
   deliveryId: string,
-  leaseToken: string,
 ): Promise<ProcessDurableInboxResult> {
-  const claimed = await activityPubInboxDeliveryTransitions.claim(deliveryId, leaseToken)
-  if (claimed.outcome === 'stale') return { outcome: 'stale' }
-  const delivery = claimed.value
+  const loaded = await activityPubInboxDeliveryTransitions.load(deliveryId)
+  if (loaded.outcome === 'stale') return { outcome: 'stale' }
+  const delivery = loaded.value
 
   if (!(await isFediverseInstanceApprovedByHostname(delivery.senderHostname))) {
     throw createHttpError(403, 'Instance no longer approved')
@@ -67,8 +61,8 @@ export async function processDurableActivityPubInboxDelivery(
   }
   if (
     !delivery.verifiedAt &&
-    (await activityPubInboxDeliveryTransitions.verify(deliveryId, leaseToken, remoteActor.id))
-      .outcome === 'stale'
+    (await activityPubInboxDeliveryTransitions.verify(deliveryId, remoteActor.id)).outcome ===
+      'stale'
   ) {
     return { outcome: 'stale' }
   }
@@ -80,25 +74,15 @@ export async function processDurableActivityPubInboxDelivery(
     )
     if (limited) {
       const deferredUntil = new Date(Date.now() + getActivityPubInboxWindowSeconds() * 1000)
-      const deferred = await activityPubInboxDeliveryTransitions.defer(
-        deliveryId,
-        leaseToken,
-        deferredUntil,
-      )
-      if (deferred.outcome === 'stale') return { outcome: 'stale' }
-      return { outcome: 'deferred', ...deferred.value, deferredUntil }
+      return { outcome: 'deferred', deferredUntil }
     }
-    if (
-      (await activityPubInboxDeliveryTransitions.admitSender(deliveryId, leaseToken)).outcome ===
-      'stale'
-    ) {
+    if ((await activityPubInboxDeliveryTransitions.admitSender(deliveryId)).outcome === 'stale') {
       return { outcome: 'stale' }
     }
   }
 
   const completed = await recordAndDispatchInboundActivity(remoteActor, activity, {
     deliveryId,
-    leaseToken,
   })
   if (completed.outcome === 'stale') return { outcome: 'stale' }
   const { duplicate } = completed

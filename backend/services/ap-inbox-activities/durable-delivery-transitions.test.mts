@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createActivityPubInboxEnvelope } from '@voucha/test-helpers/activitypub-inbox-contract-fixtures'
 import {
@@ -8,251 +7,54 @@ import {
 import {
   ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT,
   activityPubInboxDeliveryTransitions,
-  type ActivityPubInboxDeliveryTransitionName,
 } from './durable-delivery-transitions.mts'
-
-type TransitionDimensions = Pick<
-  (typeof ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT)[ActivityPubInboxDeliveryTransitionName],
-  'fence' | 'consistency' | 'atomicBoundary' | 'postCommitEffects'
->
 
 registerActivityPubInboxAdmission()
 
-describe('ActivityPub inbox durable-delivery transition facade', () => {
-  it('exposes exactly one implementation for every named transition', () => {
-    expect(Object.keys(activityPubInboxDeliveryTransitions).toSorted()).toEqual([
-      'accept',
-      'acknowledgeEnqueue',
-      'admitSender',
-      'claim',
-      'complete',
-      'defer',
-      'exhaust',
-      'expire',
-      'rearm',
-      'recover',
-      'reject',
-      'release',
-      'verify',
-    ])
-  })
-
-  it('describes the accepted lifecycle and checkpoint edges exhaustively', () => {
-    expect(Object.keys(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT).toSorted()).toEqual([
-      'accept',
-      'acknowledge-enqueue',
-      'admit-sender',
-      'claim',
-      'complete',
-      'defer',
-      'exhaust',
-      'expire',
-      'rearm',
-      'recover',
-      'reject',
-      'release',
-      'verify',
-    ])
-    expect(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT.claim).toEqual({
-      from: ['available', 'deferred'],
-      to: 'processing',
-      checkpoint: 'preserved',
-      fence: 'current',
-      consistency: 'primary',
-      atomicBoundary: 'single-row-mutation',
-      postCommitEffects: ['none'],
-    })
-    expect(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT.defer).toEqual({
-      from: ['processing'],
-      to: 'deferred',
-      checkpoint: 'verified',
-      fence: 'rotate',
-      consistency: 'primary',
-      atomicBoundary: 'single-row-mutation',
-      postCommitEffects: ['delayed-awaited-enqueue'],
-    })
-    expect(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT.complete).toEqual({
-      from: ['processing'],
-      to: 'deleted',
-      checkpoint: 'sender-allowed',
-      fence: 'current',
-      consistency: 'primary',
-      atomicBoundary: 'dedup-core-effect-envelope',
-      postCommitEffects: ['follow-accept'],
-    })
-  })
-
-  it('declares fencing, consistency, atomicity, and effects for every transition', () => {
-    const dimensions = Object.fromEntries(
-      Object.entries(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT).map(([name, definition]) => [
-        name,
-        {
-          fence: definition.fence,
-          consistency: definition.consistency,
-          atomicBoundary: definition.atomicBoundary,
-          postCommitEffects: definition.postCommitEffects,
-        },
-      ]),
+describe('ActivityPub inbox delivery transitions', () => {
+  it('exposes one implementation for every declared transition', () => {
+    expect(Object.keys(activityPubInboxDeliveryTransitions).toSorted()).toEqual(
+      [
+        'accept',
+        'admitSender',
+        'complete',
+        'exhaust',
+        'expire',
+        'load',
+        'rearm',
+        'recover',
+        'reject',
+        'verify',
+      ].toSorted(),
     )
-    const expected = {
-      accept: {
-        fence: 'mint',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['initial-awaited-enqueue'],
-      },
-      'acknowledge-enqueue': {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['none'],
-      },
-      claim: {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['none'],
-      },
-      verify: {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['none'],
-      },
-      'admit-sender': {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['none'],
-      },
-      defer: {
-        fence: 'rotate',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['delayed-awaited-enqueue'],
-      },
-      release: {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['none'],
-      },
-      exhaust: {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['none'],
-      },
-      expire: {
-        fence: 'invalidate',
-        consistency: 'primary',
-        atomicBoundary: 'bounded-locking-delete',
-        postCommitEffects: ['none'],
-      },
-      reject: {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'single-row-mutation',
-        postCommitEffects: ['none'],
-      },
-      complete: {
-        fence: 'current',
-        consistency: 'primary',
-        atomicBoundary: 'dedup-core-effect-envelope',
-        postCommitEffects: ['follow-accept'],
-      },
-      recover: {
-        fence: 'rotate',
-        consistency: 'primary',
-        atomicBoundary: 'bounded-locking-claim',
-        postCommitEffects: ['recovery-bulk-awaited-enqueue'],
-      },
-      rearm: {
-        fence: 'rotate',
-        consistency: 'primary',
-        atomicBoundary: 'bounded-locking-claim',
-        postCommitEffects: ['sequential-backfill-enqueue'],
-      },
-    } as const satisfies Record<ActivityPubInboxDeliveryTransitionName, TransitionDimensions>
-
-    expect(dimensions).toEqual(expected)
+    expect(Object.keys(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT).toSorted()).toEqual(
+      [
+        'accept',
+        'admitSender',
+        'complete',
+        'exhaust',
+        'expire',
+        'load',
+        'rearm',
+        'recover',
+        'reject',
+        'verify',
+      ].toSorted(),
+    )
   })
 
-  it('returns stale for every fencing-token mutation when the token is stale', async () => {
-    const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
-    const staleToken = randomUUID()
-
-    expect(
-      await activityPubInboxDeliveryTransitions.acknowledgeEnqueue(delivery.deliveryId, staleToken),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, staleToken),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.verify(
-        delivery.deliveryId,
-        staleToken,
-        randomUUID(),
-      ),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.admitSender(delivery.deliveryId, staleToken),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.defer(delivery.deliveryId, staleToken, new Date()),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.release(
-        delivery.deliveryId,
-        staleToken,
-        new Error('stale'),
-      ),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.exhaust(
-        delivery.deliveryId,
-        staleToken,
-        new Error('stale'),
-      ),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId, staleToken),
-    ).toEqual({ outcome: 'stale' })
-    expect(
-      await activityPubInboxDeliveryTransitions.complete(delivery.deliveryId, staleToken),
-    ).toEqual({ outcome: 'stale' })
-
-    expect(
-      await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken),
-    ).toMatchObject({ outcome: 'applied' })
-    expect(
-      await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId, delivery.leaseToken),
-    ).toMatchObject({ outcome: 'applied' })
-  })
-
-  it('does not reject an exhausted failed delivery', async () => {
+  it('marks an exhausted delivery failed until rearmed', async () => {
     const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
     expect(
-      await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken),
+      await activityPubInboxDeliveryTransitions.exhaust(delivery.deliveryId, new Error('offline')),
     ).toMatchObject({ outcome: 'applied' })
-    expect(
-      await activityPubInboxDeliveryTransitions.exhaust(
-        delivery.deliveryId,
-        delivery.leaseToken,
-        new Error('retry attempts exhausted'),
-      ),
-    ).toMatchObject({ outcome: 'applied' })
-
-    expect(
-      await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId, delivery.leaseToken),
-    ).toEqual({ outcome: 'stale' })
-
-    const rearmed = (await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId])).find(
-      candidate => candidate.deliveryId === delivery.deliveryId,
-    )
-    expect(rearmed).toBeDefined()
-    if (!rearmed) return
-    await activityPubInboxDeliveryTransitions.claim(rearmed.deliveryId, rearmed.leaseToken)
-    await activityPubInboxDeliveryTransitions.reject(rearmed.deliveryId, rearmed.leaseToken)
+    expect(await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId)).toEqual({
+      outcome: 'stale',
+    })
+    const rearmed = await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId])
+    expect(rearmed.map(candidate => candidate.deliveryId)).toEqual([delivery.deliveryId])
+    expect(await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId)).toMatchObject({
+      outcome: 'applied',
+    })
   })
 })

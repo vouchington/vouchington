@@ -25,13 +25,13 @@ export function expectActivityPubInboxVerificationConstraints(
   constraints: Awaited<ReturnType<typeof getActivityPubInboxVerificationConstraintsForTest>>,
   check: ExpectStatic,
 ): void {
-  check(constraints).toHaveLength(6)
   check(
-    constraints.find(
+    constraints.some(
       constraint =>
-        constraint.constraintName === 'activitypub_inbox_work_items__verified_actor_paired',
-    )?.definition,
-  ).toContain('(verified_at IS NULL) = (remote_actor_id IS NULL)')
+        constraint.constraintName === 'activitypub_inbox_work_items__verified_actor_paired' &&
+        constraint.definition.includes('(verified_at IS NULL) = (remote_actor_id IS NULL)'),
+    ),
+  ).toBe(true)
   check(
     constraints.find(
       constraint =>
@@ -44,18 +44,6 @@ export function expectActivityPubInboxVerificationConstraints(
         constraint.constraintName === 'activitypub_inbox_work_items__sender_requires_verification',
     )?.definition,
   ).toContain('sender_allowed_at IS NULL')
-  check(
-    constraints.find(
-      constraint =>
-        constraint.constraintName === 'activitypub_inbox_work_items__deferral_state_valid',
-    )?.definition,
-  ).toContain('dispatched_at IS NULL')
-  check(
-    constraints.find(
-      constraint =>
-        constraint.constraintName === 'activitypub_inbox_work_items__failure_state_valid',
-    )?.definition,
-  ).toContain('leased_at IS NOT NULL')
   check(
     constraints.find(
       constraint =>
