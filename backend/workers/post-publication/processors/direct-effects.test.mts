@@ -4,6 +4,7 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestPost,
+  insertTestRssFeedDirect,
   safeUsername,
 } from '@voucha/test-helpers'
 import { postPublicationQueue } from '@queues/post-publication/queues'
@@ -16,6 +17,7 @@ import type {
   PublicationCapturedKey,
 } from '@voucha/types/post-publication'
 import { processApplyPostPublicationEffects } from './direct-effects.mts'
+import { upsertRssFeedItems } from '../../../services/rss-feed-items/upsert.mts'
 
 function capturedJob(
   postId: string,
@@ -157,5 +159,34 @@ describe('direct post publication effects', () => {
     })
     expect(await caches.users_lookup.get(oldUsername)).toBeNull()
     expect(await caches.posts_lookup.get(oldPostSlug)).toBeNull()
+  })
+
+  it('discovers and invalidates a surviving RSS item after a feed scoped change commits', async () => {
+    const feed = await insertTestRssFeedDirect({})
+    const [item] = await upsertRssFeedItems(feed.id, [
+      {
+        guid: `live-effect-${randomUUID()}`,
+        link: `https://example.com/live-effect-${randomUUID()}`,
+        title: 'Surviving RSS item',
+      },
+    ])
+    if (!item) throw new Error('Expected source item')
+    await caches.rss_feed_items.set(item.id, 'stale item')
+    expect(await caches.rss_feed_items.get(item.id)).toBe('stale item')
+    const base = capturedJob(feed.id, [])
+    await expect(
+      processApplyPostPublicationEffects({
+        ...base,
+        postId: null,
+        scope: { type: 'rss_feed', id: feed.id },
+        continuation: {
+          kind: 'rss_feed_items',
+          subjectIds: [feed.id],
+          subjectIndex: 0,
+          after: null,
+        },
+      }),
+    ).resolves.toEqual({ affectedPosts: 0 })
+    expect(await caches.rss_feed_items.get(item.id)).toBeNull()
   })
 })

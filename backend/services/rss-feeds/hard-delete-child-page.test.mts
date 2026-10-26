@@ -32,8 +32,62 @@ import { hardDeleteRssFeedById } from './delete.mts'
 import { hardDeleteRssFeedChildPage } from './hard-delete-child-page.mts'
 import { finalizeHardDeleteRssFeed } from './hard-delete-finalize.mts'
 import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
+import {
+  insertTestRssFeedCategory,
+  getTestRssFeedCategories,
+} from '../../test-helpers/entities/rss-feed-categories.mts'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 
 describe('resumable RSS feed child removal', () => {
+  it('captures old category topics in bounded pages before deleting their references', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      rss_feed_hard_delete_capture_batch_size: 2,
+    })
+    onTestFinished(restore)
+    const nonce = createRandomString(10)
+    const parentTopic = await createTestTopic({
+      hostname: `rss-category-parent-${nonce}.example.com`,
+    })
+    const categoryTopic = await createTestTopic({
+      hostname: `rss-category-old-${nonce}.example.com`,
+    })
+    const feed = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      rss_feed_url: `https://rss-category-${nonce}.example.com/feed.xml`,
+      topic_id: parentTopic.id,
+      title: 'Bounded category preimage',
+    })
+    onTestFinished(() => deleteTestRssFeedRow(feed.id))
+    for (const index of [1, 2, 3])
+      await insertTestRssFeedCategory(feed.id, `old-category-${index}-${nonce}`, categoryTopic.id)
+    expect(await getTestRssFeedCategories(feed.id)).toHaveLength(3)
+    await hardDeleteRssFeedById(feed.id)
+
+    const first = await captureAddedPublicationEffectsForScope(feed.id, () =>
+      hardDeleteRssFeedChildPage(feed.id, 'feed_categories'),
+    )
+    expect(first.flatMap(job => job.keys)).toEqual(
+      expect.arrayContaining([
+        { kind: 'identity_rss_feed', uuidValue: feed.id },
+        { kind: 'impact_topic', uuidValue: categoryTopic.id },
+      ]),
+    )
+    expect(await getTestRssFeedCategories(feed.id)).toHaveLength(1)
+    const second = await runWithCapturedQueries(() =>
+      hardDeleteRssFeedChildPage(feed.id, 'feed_categories'),
+    )
+    expect(second.result).toEqual({ removed: 1, hasMore: false })
+    expectQueryOrder(second.queries, [
+      'hardDeleteRssFeedChildPage:parentTopicFootprint',
+      'hardDeleteRssFeedChildPage:categoryFootprint',
+      'lockTopicRssFeedAttachmentLifecycles',
+      'lockPostPublicationRssFeedScopes',
+      'hardDeleteRssFeedChildPage:feed',
+    ])
+    expect(await getTestRssFeedCategories(feed.id)).toEqual([])
+  })
+
   it('allows only marked feed history deletion while other ledger mutations stay rejected', async () => {
     const nonce = createRandomString(10)
     const user = await createTestUser()

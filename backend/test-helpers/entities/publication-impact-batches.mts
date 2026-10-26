@@ -84,7 +84,7 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
   rssFeedId: string
   topicId: string | null
   urlId: string
-}): Promise<{ postIds: string[]; storyIds: string[] }> {
+}): Promise<{ postIds: string[]; storyIds: string[]; itemIds: string[] }> {
   const storyIds = Array.from({ length: options.count }, () => uuidv7())
   const itemIds = Array.from({ length: options.count }, () => uuidv7())
   const postIds = Array.from({ length: options.count }, () => uuidv7())
@@ -139,5 +139,5 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       categoryId,
     ],
   )
-  return { postIds, storyIds }
+  return { postIds, storyIds, itemIds }
 }

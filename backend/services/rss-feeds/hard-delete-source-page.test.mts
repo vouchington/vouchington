@@ -18,8 +18,59 @@ import { postPublicationWorkConfig } from '@services/post-publication/work-limit
 import { createRssFeed } from './create.mts'
 import { hardDeleteRssFeedById } from './delete.mts'
 import { hardDeleteRssFeedSourcePage } from './hard-delete-source-page.mts'
+import { addRssFeedItemSource } from '@voucha/test-helpers/entities/rss-feed-items'
 
 describe('resumable RSS feed source removal', () => {
+  it('removes only the deleted feed edge when another feed still publishes the same story item', async () => {
+    const user = await createTestUser()
+    const nonce = createRandomString(10)
+    const topic = await createTestTopic({ hostname: `shared-item-${nonce}.example.com` })
+    const secondTopic = await createTestTopic({
+      hostname: `shared-item-second-${nonce}.example.com`,
+    })
+    const first = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      rss_feed_url: `https://shared-item-${nonce}.example.com/first.xml`,
+      topic_id: topic.id,
+      title: 'First shared source',
+    })
+    const second = await createRssFeed({
+      provenance: WEB_PROVENANCE,
+      skipRemoteValidation: true,
+      rss_feed_url: `https://shared-item-${nonce}.example.com/second.xml`,
+      topic_id: secondTopic.id,
+      title: 'Second shared source',
+    })
+    const url = await insertTestUrlDirect(user.id, `https://shared-item-${nonce}.example.com/story`)
+    if (!url) throw new Error('Expected shared story URL')
+    const { postIds, itemIds } = await insertTestStoryCategoryPublicationBatch({
+      count: 1,
+      categoryText: `shared-item-${nonce}`,
+      createdById: user.id,
+      rssFeedId: first.id,
+      topicId: topic.id,
+      urlId: url.id,
+    })
+    onTestFinished(() => hardDeleteTestPosts(postIds))
+    await addRssFeedItemSource(second.id, itemIds[0]!)
+    expect(await countTestFeedSources(first.id)).toBe(1)
+    expect(await countTestFeedSources(second.id)).toBe(1)
+
+    await hardDeleteRssFeedById(first.id)
+    const page = await hardDeleteRssFeedSourcePage(first.id)
+    expect(page.keys).toEqual(
+      expect.arrayContaining([
+        { kind: 'impact_rss_feed_item', uuidValue: itemIds[0] },
+        { kind: 'impact_post', uuidValue: postIds[0] },
+      ]),
+    )
+    expect(await countTestFeedSources(first.id)).toBe(0)
+    expect(await countTestFeedSources(second.id)).toBe(1)
+    expect(await countTestPosts(postIds)).toBe(1)
+    expect(await countTestPendingCategoryReconciliations(postIds)).toBe(1)
+  })
+
   it('captures each committed page while preserving shared story posts', async () => {
     const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
       rss_feed_hard_delete_capture_batch_size: 2,

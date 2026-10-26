@@ -59,4 +59,35 @@ describe('selectDirectPublicationEffects', () => {
     ])
     expect(result.topicIds).toEqual(['019c8a15-1da1-7000-8000-000000000006'])
   })
+
+  it('keeps every predelete scope when the affected post and its relations are gone', () => {
+    const ids = {
+      community: '019c8a15-1da1-7000-8000-000000000011',
+      author: '019c8a15-1da1-7000-8000-000000000012',
+      item: '019c8a15-1da1-7000-8000-000000000013',
+    }
+    const result = selectDirectPublicationEffects(
+      [
+        { kind: 'impact_community', uuidValue: ids.community },
+        { kind: 'impact_rss_feed_item', uuidValue: ids.item },
+        { kind: 'identity_author', uuidValue: ids.author },
+        { kind: 'identity_community', uuidValue: ids.community },
+        { kind: 'identity_topic_alias', textValue: 'old-topic-alias' },
+        { kind: 'identity_rss_feed', uuidValue: ids.item },
+        { kind: 'sitemap_target', postType: 'review', day: '2026-10-24' },
+      ],
+      [],
+    )
+    expect(result.posts).toEqual([])
+    expect(result.rssFeedItemIds).toEqual([ids.item])
+    expect(result.identityKeys).toEqual(
+      expect.arrayContaining([
+        { kind: 'community', value: ids.community },
+        { kind: 'author', value: ids.author },
+        { kind: 'topic_alias', value: 'old-topic-alias' },
+        { kind: 'rss_feed', value: ids.item },
+      ]),
+    )
+    expect(result.sitemapTargets).toEqual([{ postType: 'review', day: '2026-10-24' }])
+  })
 })
