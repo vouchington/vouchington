@@ -4,6 +4,7 @@ import { beginTransaction, createTestUser, insertTestUrlHostname } from '@voucha
 import { describe, expect, it } from 'vitest'
 import { blockHostname } from './block-hostname.mts'
 import {
+  advanceHostnameBlockCleanupProgress,
   getHostnameBlockCleanupOperationInTransaction,
   lockHostnameBlockCleanupOperation,
 } from './cleanup-operation.mts'
@@ -12,7 +13,7 @@ import { lockHostnameBlockSubdomainCandidatePage } from './lock-subdomain-candid
 import { insertVoteWeightPenalty } from '@services/vote-integrity/insert-vote-weight-penalty'
 
 describe('hostname block lock ordering', () => {
-  it('lets a root-lock owner insert penalty provenance while a repeated block waits', async () => {
+  it('lets a root-lock owner advance and insert penalty provenance while a repeat waits', async () => {
     const [administrator, creator] = await Promise.all([
       createTestUser({ administrator: true }),
       createTestUser({ username: `hostname-lock-creator-${randomToken()}` }),
@@ -39,6 +40,9 @@ describe('hostname block lock ordering', () => {
     })
     await rootLockDispatched.promise
 
+    await expect(
+      advanceHostnameBlockCleanupProgress(cleanupTransaction, admission.operation_id, 0),
+    ).resolves.toMatchObject({ progress: 1 })
     await expect(
       insertVoteWeightPenalty({
         userIds: [creator.id],

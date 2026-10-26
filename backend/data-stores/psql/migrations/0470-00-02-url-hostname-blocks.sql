@@ -125,21 +125,29 @@ CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_update()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM host.id FROM url_hostnames host
-  JOIN (
-    SELECT url_hostname_id AS id FROM prior_blocks
+  JOIN (WITH prior_active AS (
+    SELECT DISTINCT url_hostname_id AS id FROM prior_blocks
     WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), updated_active AS (
+    SELECT DISTINCT url_hostname_id AS id FROM updated_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  )
+    (SELECT id FROM prior_active EXCEPT SELECT id FROM updated_active)
     UNION
-    SELECT url_hostname_id AS id FROM updated_blocks
-    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+    (SELECT id FROM updated_active EXCEPT SELECT id FROM prior_active)
   ) affected ON affected.id = host.id
   ORDER BY host.id FOR UPDATE OF host;
 
-  WITH affected AS MATERIALIZED (
-    SELECT url_hostname_id AS id FROM prior_blocks
+  WITH prior_active AS MATERIALIZED (
+    SELECT DISTINCT url_hostname_id AS id FROM prior_blocks
     WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), updated_active AS MATERIALIZED (
+    SELECT DISTINCT url_hostname_id AS id FROM updated_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), affected AS MATERIALIZED (
+    (SELECT id FROM prior_active EXCEPT SELECT id FROM updated_active)
     UNION
-    SELECT url_hostname_id AS id FROM updated_blocks
-    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+    (SELECT id FROM updated_active EXCEPT SELECT id FROM prior_active)
   ), states AS MATERIALIZED (
     SELECT affected.id, EXISTS (
       SELECT 1 FROM url_hostname_blocks block
