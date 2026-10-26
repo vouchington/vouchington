@@ -58,7 +58,7 @@ function exclusiveEvidenceObjectsSql(noticeId: string, objectIds: readonly strin
 }
 
 /** Lock registry rows, then use a fresh statement to see references committed during lock waits. */
-export async function listCopyrightRetentionEvidenceKeys(
+async function listCopyrightRetentionEvidenceKeys(
   noticeId: string,
   transaction: TransactionQuery,
 ): Promise<{ id: string; key: string }[]> {
