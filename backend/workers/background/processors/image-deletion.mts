@@ -5,7 +5,12 @@ import type { ImageDeletionRecoveryData } from '@queues/background/enqueues/imag
 import { dispatchImageDeletionRecoveryPage } from '@services/images/recover-deletions'
 import type { Job } from 'glide-mq'
 
-export function processImageDeletionRecovery(job: Job<ImageDeletionRecoveryData>) {
+export function processImageDeletionRecovery(
+  job: Pick<
+    Job<ImageDeletionRecoveryData>,
+    'data' | 'id' | 'name' | 'updateData' | 'moveToDelayed'
+  >,
+) {
   return processPagedDispatcher(job, {
     dispatcher: 'images',
     cursorKey: 'id',

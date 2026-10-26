@@ -9,11 +9,11 @@ import { insertTestPostImage } from './entities/images-post-placements.mts'
 import { rejectQuery } from './injected-failures.mts'
 
 /** Identical post content makes paged and single-page deletion outcomes comparable. */
-export async function createImageDeletionFixture() {
+export async function createImageDeletionFixture(postCount = 3) {
   const user = await createTestUserDirect()
   const imageId = await insertTestImage(user!.id)
   const postIds: string[] = []
-  for (const ordinal of [0, 1, 2]) {
+  for (const ordinal of Array.from({ length: postCount }, (_, ordinal) => ordinal)) {
     const postId = await insertTestPost({
       title: `Image deletion ${ordinal}`,
       slug: `image-deletion-${randomUUID()}`,

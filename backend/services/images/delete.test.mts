@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   approveTestPost,
   countPostImageRevisions,
+  markImageQuarantinePending,
+  markTestImageUploadStaged,
   getPostModerationResetState,
   overrideDynamicConfigFieldsForTest,
   readAllQueueJobs,
@@ -21,9 +23,29 @@ import { background } from '@queues/background/queues'
 import { deleteImageById, processImageDeletionPage } from './delete.mts'
 import { getImageByAny, getImageByIdFromPrimary } from './get.mts'
 import { imagesWorkConfig } from './work-limits.mts'
+import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 
 describe('paged image deletion', () => {
   afterEach(() => vi.restoreAllMocks())
+
+  it('retains source storage and post state while a quarantine copy is unconfirmed', async () => {
+    const fixture = await createImageDeletionFixture(1)
+    const before = await getPostModerationResetState(fixture.postIds[0]!)
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    const storage = installOwnedUploadCleanupStorage([
+      image!.id,
+      image!.s3_key,
+      image!.sha_256!.toString('hex'),
+    ])
+    await markImageQuarantinePending(fixture.imageId)
+    await expect(
+      deleteImageById(fixture.imageId, { includeQuarantinePending: true }),
+    ).rejects.toThrow('Image quarantine copy is not confirmed')
+    await expect(getImageByAny(fixture.imageId)).resolves.toBeNull()
+    await expect(getPostModerationResetState(fixture.postIds[0]!)).resolves.toEqual(before)
+    await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(0)
+    expect(storage.calls).toEqual([])
+  })
 
   it('replays committed listener receipts under a smaller limit without a second post reset', async () => {
     const fixture = await createImageDeletionFixture()
@@ -85,6 +107,7 @@ describe('paged image deletion', () => {
   it('keeps a failed middle page fenced, resumes without resetting completed posts, and matches one-page deletion', async () => {
     const paged = await createImageDeletionFixture()
     const baseline = await createImageDeletionFixture()
+    await markTestImageUploadStaged(paged.imageId)
     const images = await Promise.all(
       [paged, baseline].map(fixture => getImageByIdFromPrimary(fixture.imageId)),
     )
@@ -117,6 +140,7 @@ describe('paged image deletion', () => {
           beginTransaction: failingImageDeletionTransaction(),
         }),
       ).rejects.toThrow('injected middle deletion page failure')
+      await expect(cleanupStagedUploadSource(paged.imageId)).resolves.toBe(false)
       await expect(getImageByAny(paged.imageId)).resolves.toBeNull()
       await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
         1, 0, 0,

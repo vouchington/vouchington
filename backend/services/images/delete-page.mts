@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import { enqueueBulkOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { enqueueImageDeletionPage } from '@queues/background/enqueues/image-deletion'
 import { resetPostClearance } from '@services/post-clearance'
@@ -63,11 +64,11 @@ export async function processImageDeletionPageWhileLocked(
     return
   }
   const { rows: pending } = await transaction<{
-    post_identity_id: string
+    post_id: string
   }>(sql`/* processImageDeletionPage:pending */
-    SELECT post_identity_id FROM image_deletion_post_updates WHERE image_id = ${imageId}
-    ORDER BY post_identity_id LIMIT ${limit}`)
-  let postIds = pending.map(row => row.post_identity_id)
+    SELECT post_id FROM image_deletion_post_updates WHERE image_id = ${imageId}
+    ORDER BY post_id LIMIT ${limit}`)
+  let postIds = pending.map(row => row.post_id)
   let cursor = image.deletion_post_cursor
   if (postIds.length === 0) {
     const pageQuery = sql`/* processImageDeletionPage:posts */ SELECT post_id FROM post_images WHERE image_id = ${imageId}`
@@ -76,11 +77,14 @@ export async function processImageDeletionPageWhileLocked(
     const { rows } = await transaction<{ post_id: string }>(pageQuery)
     postIds = rows.map(row => row.post_id)
     if (postIds.length === 0) {
-      await transaction(
-        sql`/* processImageDeletionPage:complete */ UPDATE images SET deletion_posts_completed_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
-      )
-      await transaction.commit()
-      await cleanupDeletedImageStorage(image)
+      await runSequentially([
+        () =>
+          transaction(
+            sql`/* processImageDeletionPage:complete */ UPDATE images SET deletion_posts_completed_at = CURRENT_TIMESTAMP WHERE id = ${imageId}`,
+          ),
+        () => transaction.commit(),
+        () => cleanupDeletedImageStorage(image),
+      ])
       return
     }
     await lockPostPublicationPostScopes(transaction, postIds)
@@ -116,32 +120,29 @@ export async function processImageDeletionPageWhileLocked(
     /* oxlint-enable no-await-in-loop */
     cursor = postIds.at(-1)!
     await transaction(
-      sql`/* processImageDeletionPage:receipt */ INSERT INTO image_deletion_post_updates (image_id, post_identity_id) SELECT ${imageId}, unnest(${postIds}::uuid[]) ON CONFLICT DO NOTHING`,
+      sql`/* processImageDeletionPage:receipt */ INSERT INTO image_deletion_post_updates (image_id, post_id) SELECT ${imageId}, unnest(${postIds}::uuid[]) ON CONFLICT DO NOTHING`,
     )
     await transaction(
       sql`/* processImageDeletionPage:advance */ UPDATE images SET deletion_post_cursor = ${cursor} WHERE id = ${imageId}`,
     )
   }
   await transaction.commit()
-  try {
+  const admitted = await admitDeletionEffect(async () => {
     await enqueueBulkOnPostUpdated(
       postIds.map(id => ({ id, contentChanged: true, clearanceAlreadyReset: true })),
     )
-  } catch (err) {
-    if (!options.reportAdmissionFailure) throw err
-    onError(err as Error)
-    return
-  }
+  }, options.reportAdmissionFailure)
+  if (!admitted) return
   await using admission = await startTransaction()
   await admission(
-    sql`/* processImageDeletionPage:acknowledge */ DELETE FROM image_deletion_post_updates WHERE image_id = ${imageId} AND post_identity_id = ANY(${postIds}::uuid[])`,
+    sql`/* processImageDeletionPage:acknowledge */ DELETE FROM image_deletion_post_updates WHERE image_id = ${imageId} AND post_id = ANY(${postIds}::uuid[])`,
   )
   const nextQuery = sql`/* processImageDeletionPage:remaining */ SELECT post_id FROM post_images WHERE image_id = ${imageId}`
   if (cursor) nextQuery.append(sql` AND post_id > ${cursor}`)
   nextQuery.append(sql` LIMIT 1`)
   const { rows: remaining } = await admission(nextQuery)
   const { rows: receipts } = await admission(
-    sql`/* processImageDeletionPage:remainingReceipts */ SELECT post_identity_id FROM image_deletion_post_updates WHERE image_id = ${imageId} LIMIT 1`,
+    sql`/* processImageDeletionPage:remainingReceipts */ SELECT post_id FROM image_deletion_post_updates WHERE image_id = ${imageId} LIMIT 1`,
   )
   const complete = remaining.length === 0 && receipts.length === 0
   if (complete)
@@ -150,12 +151,23 @@ export async function processImageDeletionPageWhileLocked(
     )
   await admission.commit()
   if (complete) await cleanupDeletedImageStorage(image)
-  else {
-    try {
+  else
+    await admitDeletionEffect(async () => {
       await enqueueImageDeletionPage(imageId, cursor, postIds.at(-1))
-    } catch (err) {
-      if (!options.reportAdmissionFailure) throw err
-      onError(err as Error)
-    }
+    }, options.reportAdmissionFailure)
+}
+
+/** CSAM admission failures retain the durable fence and receipt for maintenance recovery. */
+async function admitDeletionEffect(
+  admit: () => Promise<unknown>,
+  reportFailure: true | undefined,
+): Promise<boolean> {
+  try {
+    await admit()
+    return true
+  } catch (err) {
+    if (!reportFailure) throw err
+    onError(err as Error)
+    return false
   }
 }

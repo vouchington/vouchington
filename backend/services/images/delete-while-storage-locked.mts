@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import onError from '@modules/on-error'
+import { runSequentially } from '@modules/utils/run-sequentially'
 import {
   lockImageAssetMutation,
   prepublishImageDeliveryDenials,
@@ -21,13 +22,16 @@ export async function deleteImageByIdWhileStorageLocked(
       [imageId],
     )
     if (rows[0] && !rows[0].deleted_at) {
-      await prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true })
-      await transaction(
-        '/* deleteImageById:fence */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
-        [imageId],
-      )
-      await retireImagePlacementsForDeletedImage(imageId, transaction)
-      await retireImageSurfacePlacementsForDeletedImage(imageId, transaction)
+      await runSequentially([
+        () => prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true }),
+        () =>
+          transaction(
+            '/* deleteImageById:fence */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
+            [imageId],
+          ),
+        () => retireImagePlacementsForDeletedImage(imageId, transaction),
+        () => retireImageSurfacePlacementsForDeletedImage(imageId, transaction),
+      ])
     }
     await transaction.commit()
   }
