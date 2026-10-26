@@ -6,6 +6,8 @@ import {
   createTestProviderReAuthIdentity,
 } from '@voucha/test-helpers/entities/oauth-reauth'
 import { getTestOAuthAccountRaw } from '@voucha/test-helpers/entities/oauth-account-raw'
+import { connectTestOAuthAccount, insertTestOAuthAccount } from '@voucha/test-helpers'
+import { disconnectOAuthAccount } from '../../my/oauth-account.mts'
 import type { fetch as undiciFetch } from 'undici'
 import {
   createSignedJwt,
@@ -144,6 +146,39 @@ describe('provider assertion reauthentication', () => {
           credential,
         }),
       ).rejects.toMatchObject({ status: 401 })
+      await expect(
+        readProviderReAuthChallenge({ ...identity, flowId: started.flow_id }),
+      ).resolves.toEqual(context)
+    })
+
+    it('rejects a once-linked subject replaced before fresh proof completion', async () => {
+      const identity = await createTestProviderReAuthIdentity(provider)
+      const started = await beginSdkProviderReAuth(identity.userId, identity)
+      const context = await readProviderReAuthChallenge({ ...identity, flowId: started.flow_id })
+      const nonce =
+        provider === 'apple'
+          ? createHash('sha256').update(started.nonce).digest('hex')
+          : started.nonce
+      const credential = createTestProviderReAuthCredential(
+        provider,
+        context.providerUserId,
+        nonce,
+        clientId,
+        now,
+      )
+
+      await disconnectOAuthAccount(identity.userId, provider)
+      const replacementSubject = `replacement-${identity.flowId}`
+      await insertTestOAuthAccount(provider, replacementSubject)
+      await connectTestOAuthAccount(provider, identity.userId, replacementSubject)
+
+      await expect(
+        completeSdkProviderReAuth(identity.userId, {
+          ...identity,
+          flowId: started.flow_id,
+          credential,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
       await expect(
         readProviderReAuthChallenge({ ...identity, flowId: started.flow_id }),
       ).resolves.toEqual(context)

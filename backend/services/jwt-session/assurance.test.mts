@@ -16,6 +16,7 @@ import { refreshSessionState } from './flows.mts'
 import { markJwtStale } from './invalidation.mts'
 import { resolveRequestSessionClaims } from './request-claims.mts'
 import { isSessionRevoked } from './revocation.mts'
+import { assertOriginalMfaVerifiedAt } from './assurance.mts'
 import {
   createAuthenticatedTestSession,
   createVerifiedMfaTestSession,
@@ -24,6 +25,16 @@ import {
 const userAgent = 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36'
 
 describe('original MFA assurance continuity', () => {
+  it('rejects a malformed or future-dated original factor timestamp', () => {
+    const issuedAt = Math.floor(Date.now() / 1000)
+    expect(() => assertOriginalMfaVerifiedAt(issuedAt + 1, issuedAt)).toThrow(
+      'Session credentials must be renewed by signing in',
+    )
+    expect(() => assertOriginalMfaVerifiedAt('unverified', issuedAt)).toThrow(
+      'Session credentials must be renewed by signing in',
+    )
+  })
+
   it('uses fresh signed claims without a redundant account read', async () => {
     const user = await createTestUserDirect()
     const tokens = await createDeviceAndSessionTokens({ uid: user.id, did: v7() })
@@ -37,6 +48,25 @@ describe('original MFA assurance continuity', () => {
       { ...verified, sca: now + 30, rca: now + 60 },
       async () => {
         throw new Error('Fresh claims must not fetch the user')
+      },
+    )
+    expect(resolved.session?.uid).toBe(user.id)
+    expect(resolved.user).toBeUndefined()
+  })
+
+  it('keeps a verified session when only its soft cache expires before the recheck deadline', async () => {
+    const user = await createTestUserDirect()
+    const tokens = await createDeviceAndSessionTokens({ uid: user.id, did: v7() })
+    const verified = await verifyDeviceAndSessionTokens({
+      deviceToken: tokens.deviceToken.token,
+      sessionToken: tokens.sessionToken.token,
+    })
+    if (!verified) throw new Error('Expected the minted session pair')
+    const now = Math.floor(Date.now() / 1000)
+    const resolved = await resolveRequestSessionClaims(
+      { ...verified, sca: now - 1, rca: now + 60 },
+      async () => {
+        throw new Error('A live recheck deadline must not fetch the user')
       },
     )
     expect(resolved.session?.uid).toBe(user.id)

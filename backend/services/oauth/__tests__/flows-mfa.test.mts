@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { getAndDeleteLoginAttempt } from '@services/mfa/login-attempt'
 import { createTestUserDirect, insertTestTotpAuthenticator } from '@voucha/test-helpers'
-import { createOAuthFlowResultForUser } from '../flows.mts'
+import { prepareOAuthAccountPersistence } from '@services/oauth-accounts/prepared-account'
+import { getTestOAuthAccountRaw } from '@voucha/test-helpers/entities/oauth-account-raw'
+import { connectOAuthAccountFlow, createOAuthFlowResultForUser } from '../flows.mts'
 
 describe('createOAuthFlowResultForUser', () => {
   it('stores the requested login attempt for a user with MFA', async () => {
@@ -30,6 +32,36 @@ describe('createOAuthFlowResultForUser', () => {
       deviceId,
       sessionId,
       deviceClass: 'attested',
+    })
+  })
+})
+
+describe('deferred OAuth account connection', () => {
+  it('persists verified provider facts and links only the intended current user', async () => {
+    const user = await createTestUserDirect({ withEmail: true })
+    const providerUserId = `github-${randomUUID()}`
+    const prepared = prepareOAuthAccountPersistence('github', providerUserId, null, {
+      name: 'Verified provider name',
+    })
+
+    const result = await connectOAuthAccountFlow({
+      provider: 'github',
+      currentUserId: user.id,
+      prepared,
+    })
+
+    expect(result.account.provider_user_id).toBe(providerUserId)
+    expect(result.name).toBe('Verified provider name')
+    expect(await getTestOAuthAccountRaw('github', providerUserId)).toMatchObject({
+      user_id: user.id,
+    })
+
+    const refreshed = prepareOAuthAccountPersistence('github', providerUserId, null, {
+      name: 'Updated verified provider name',
+    })
+    await refreshed.persist()
+    expect(await getTestOAuthAccountRaw('github', providerUserId)).toMatchObject({
+      user_id: user.id,
     })
   })
 })
