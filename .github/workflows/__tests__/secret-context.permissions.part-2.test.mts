@@ -221,10 +221,14 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     const credentialedWorkflow = read('.github/workflows/tests-backend-credentialed.yml')
     const unitWorkflow = read('.github/workflows/tests-backend-unit.yml')
 
-    expect(credentialedWorkflow).toContain('\npermissions:\n  contents: read\n  id-token: write')
+    expect(jobSection(credentialedWorkflow, 'backend-credentialed-tests')).toContain(
+      '      id-token: write',
+    )
     expect(credentialedWorkflow).toContain('OPENAI_API_KEY:\n        required: false')
     expect(credentialedWorkflow).toContain('backend-credentialed-tests:')
-    expect(credentialedWorkflow).toContain('if: ${{ inputs.trusted_secret_context }}')
+    expect(credentialedWorkflow).toContain(
+      'if: ${{ !cancelled() && !failure() && inputs.trusted_secret_context }}',
+    )
     expect(credentialedWorkflow).toContain('AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}')
     expect(credentialedWorkflow).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
     expect(credentialedWorkflow).not.toContain('backend-aws-tests:')

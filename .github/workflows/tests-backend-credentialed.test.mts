@@ -24,6 +24,17 @@ function stepSection(job: string, stepName: string): string {
 }
 
 describe('backend credentialed test workflow', () => {
+  it('grants OIDC only to the credentialed test job', () => {
+    const parsed = load(workflow) as {
+      permissions: Record<string, string>
+      jobs: Record<string, { permissions: Record<string, string> }>
+    }
+
+    expect(parsed.permissions).not.toHaveProperty('id-token')
+    expect(parsed.jobs['prepare-postgres']!.permissions).not.toHaveProperty('id-token')
+    expect(parsed.jobs['backend-credentialed-tests']!.permissions['id-token']).toBe('write')
+  })
+
   it('combines the credentialed projects in one job', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
     expect(credentialedJob).toContain(
