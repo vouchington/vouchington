@@ -53,7 +53,10 @@ describe('cacheAdapter', () => {
     } finally {
       spy.mockRestore()
     }
-    const probe = new ValkeyCache({ prefix: 'fediverse-search:mastodon', ttlSeconds: 60 })
+    const probe = new ValkeyCache({
+      prefix: 'fediverse-search:mastodon',
+      ttlSeconds: 60,
+    })
     await expect(probe.get(key)).resolves.toEqual(first)
     const second = await wrapped.search(options)
 
@@ -102,7 +105,10 @@ describe('cacheAdapter', () => {
 
     // Write malformed JSON directly at the physical key `cacheAdapter` will read,
     // bypassing its serializer, to force a real decode failure — no mocking.
-    const probe = new ValkeyCache({ prefix: 'fediverse-search:mastodon', ttlSeconds: 60 })
+    const probe = new ValkeyCache({
+      prefix: 'fediverse-search:mastodon',
+      ttlSeconds: 60,
+    })
     await cacheValkeyClient.set(probe.getKey(stableSerialize(options)), 'not-json{')
 
     const bucket = await wrapped.search(options)

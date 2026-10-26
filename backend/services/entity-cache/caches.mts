@@ -73,7 +73,10 @@ export const caches = {
     prefix: 'post_elections',
     ttlSeconds: CACHE_TTLS_SECONDS.post_elections,
   }),
-  rss_feeds: new ValkeyCache({ prefix: 'rss_feeds', ttlSeconds: CACHE_TTLS_SECONDS.rss_feeds }),
+  rss_feeds: new ValkeyCache({
+    prefix: 'rss_feeds',
+    ttlSeconds: CACHE_TTLS_SECONDS.rss_feeds,
+  }),
   rss_feed_items: new EntityBloomCache('rss_feed_items', {
     prefix: 'rss_feed_items',
     ttlSeconds: CACHE_TTLS_SECONDS.rss_feed_items,
