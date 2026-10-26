@@ -38,4 +38,37 @@ describe('DBSC route rate limit', () => {
         .expect(200)
     }
   })
+
+  it('still caps repeated requests from one signed device session', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    const request = createRequest()
+      .set('x-forwarded-for', nextTestRequestIp())
+      .set('User-Agent', fixture.base.userAgent)
+      .set('Origin', origin)
+      .set('x-forwarded-proto', 'https')
+      .set('x-forwarded-host', 'dbsc.example')
+    const url = '/api/v1/auth/device-bound-sessions/refreshes'
+    for (let index = 0; index < 5; index++)
+      await request
+        .post(url)
+        .set('Cookie', `dt=${registered.dt}`)
+        .set('Sec-Secure-Session-Id', registered.sid)
+        .expect(403)
+    await request
+      .post(url)
+      .set('Cookie', `dt=${registered.dt}`)
+      .set('Sec-Secure-Session-Id', registered.sid)
+      .expect(429)
+  })
+
+  it('retains the shared IP cap for unsigned device credentials', async () => {
+    const request = createRequest()
+      .set('x-forwarded-for', nextTestRequestIp())
+      .set('Origin', origin)
+    const url = '/api/v1/auth/device-bound-sessions/refreshes'
+    for (let index = 0; index < 5; index++)
+      await request.post(url).set('Cookie', 'dt=unsigned').expect(400)
+    await request.post(url).set('Cookie', 'dt=unsigned').expect(429)
+  })
 })
