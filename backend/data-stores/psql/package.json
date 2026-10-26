@@ -36,7 +36,7 @@
     "@vouchington/utils": "^0.10.2",
     "pg": "^8.23.1",
     "sql-template-strings": "^2.2.2",
-    "vouchington-tooling": "^0.72.3"
+    "vouchington-tooling": "^0.73.0"
   },
   "devDependencies": {
     "no-mistakes": "^0.99.0",
