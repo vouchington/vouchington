@@ -2,8 +2,7 @@ import {
   renderPostToolReminder as renderReminder,
   type PostToolTmuxOptions,
 } from 'vouchington-tooling/tmux'
-import { hookToolName } from './codex-hooks/hook-payload.mts'
-import type { HookPayload } from './codex-hooks/types.mts'
+import { hookToolName, type HookPayload } from 'vouchington-tooling/command-policy'
 
 export function renderPostToolReminder(
   payload: HookPayload,

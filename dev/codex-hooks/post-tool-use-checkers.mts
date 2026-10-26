@@ -2,16 +2,11 @@ import { existsSync, readFileSync } from 'node:fs'
 import * as path from 'node:path'
 
 import { gitHeadPathExists, oxfmtFailure, playwrightSpecsContain } from './local-process.mts'
-export type PostToolUseWarning = { level: 'warn' | 'error'; message: string }
-
-export type Checker = {
-  matches: (filePath: string, worktreeRoot: string) => boolean
-  check: (filePath: string, worktreeRoot: string) => PostToolUseWarning[]
-}
+import type { PostToolUseChecker, PostToolUseWarning } from 'vouchington-tooling/command-policy'
 
 const FMT_EXTS = /\.(md|json|jsonc|yml|yaml|toml)$/
 
-export const autoFormatChecker: Checker = {
+export const autoFormatChecker: PostToolUseChecker = {
   matches: filePath => FMT_EXTS.test(filePath),
   check: (filePath, worktreeRoot) => {
     const fullPath = path.isAbsolute(filePath) ? filePath : path.resolve(worktreeRoot, filePath)
@@ -32,7 +27,7 @@ export const autoFormatChecker: Checker = {
 const INTERNAL_MOCK_RE =
   /vi\.mock\(\s*['"`]((@services|@queues|@data-stores)\/|.*\.\.(\/?\.\.)*\/(services|queues|data-stores)\/)/
 
-export const nonWebMockPolicyChecker: Checker = {
+export const nonWebMockPolicyChecker: PostToolUseChecker = {
   matches: (filePath, worktreeRoot) => {
     if (/\.(test\.mts|test\.ts)$/.test(filePath)) {
       const rel = path.relative(worktreeRoot, filePath)
@@ -62,7 +57,7 @@ export const nonWebMockPolicyChecker: Checker = {
 
 const DATA_PW_RE = /data-pw="([^"]+)"/g
 
-export const dataPwSpecChecker: Checker = {
+export const dataPwSpecChecker: PostToolUseChecker = {
   matches: (filePath, worktreeRoot) => {
     const rel = path.relative(worktreeRoot, filePath)
     return (
@@ -93,7 +88,7 @@ export const dataPwSpecChecker: Checker = {
   },
 }
 
-export const servicePackageChecker: Checker = {
+export const servicePackageChecker: PostToolUseChecker = {
   matches: (filePath, worktreeRoot) =>
     /^backend\/services\/[^/]+\/package\.json$/.test(path.relative(worktreeRoot, filePath)),
   check: (filePath, worktreeRoot) => {
@@ -103,3 +98,10 @@ export const servicePackageChecker: Checker = {
     return gitHeadPathExists(worktreeRoot, rel) ? [] : [{ level: 'warn' as const, message: msg }]
   },
 }
+
+export const productPostToolUseCheckers: readonly PostToolUseChecker[] = [
+  autoFormatChecker,
+  nonWebMockPolicyChecker,
+  dataPwSpecChecker,
+  servicePackageChecker,
+]

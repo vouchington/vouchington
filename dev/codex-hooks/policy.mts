@@ -1,172 +1,44 @@
 import {
-  commandsToInspectForGitPolicy,
-  commandsToInspectPreservingQuotes,
-  extractShellCommandSubstitutions,
-  gitInvocations,
-  isInteractiveRebaseContinue,
-  overridesConfig,
-} from 'vouchington-tooling/shell-parse'
-
-import {
-  findGitHubWorkflowBlock,
-  type GitHubWorkflowPolicyOptions,
-  hookCwd,
-  hookPayloadReferencesClairePath,
-  hookPayloadReferencesProtectedHookPath,
-  type BlockDecision,
-} from './policy-helpers.mts'
+  defineHookPolicy,
+  standardGitPatterns,
+  type CommandPolicy,
+} from 'vouchington-tooling/command-policy'
+import { renderPostToolReminder } from '../tmux-reminder-post-tool.mts'
 import {
   blockedDevServerPatterns,
   blockedHookBypassPatterns,
-  findBlockedGitInvocationReason,
-  findBlockedGitReason,
-  HOOKS_PATH_REASON,
 } from './policy/blocked-command-patterns.mts'
-import { DEFAULT_AUTOMATION_CONTEXT } from './policy/core.mts'
-import { findInteractiveMergeConfirm } from './policy/github-merge-authority.mts'
-import { extractToolCommand } from './hook-payload.mts'
 import {
-  type PreToolUseOptions,
-  renderConfirmDisposition,
-} from './policy/pre-tool-use-confirm-output.mts'
-import type { HookPayload } from './types.mts'
+  PROTECTED_HOOK_DIR_PREFIXES,
+  PROTECTED_HOOK_EXACT_FILES,
+} from './policy/protected-hook-paths.mts'
+import { stackPolicy } from './policy/stack-policy.mts'
+import { productPostToolUseCheckers } from './post-tool-use-checkers.mts'
 
-export type { PreToolUseOptions } from './policy/pre-tool-use-confirm-output.mts'
-
-export type { HookPayload } from './types.mts'
-
-// Every check that can block runs first; the interactive lone-merge confirm is the final return,
-// so a block anywhere in the command always beats the merge allow.
-export function findPreToolUseBlock(
-  payload: HookPayload,
-  options: GitHubWorkflowPolicyOptions = {},
-): BlockDecision | null {
-  const command = extractToolCommand(payload)
-  const automationContext = options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT
-  if (hookPayloadReferencesClairePath(payload, command)) {
-    return {
-      reason: 'Typo: .claire should be .claude.',
-    }
-  }
-  if (automationContext && hookPayloadReferencesProtectedHookPath(payload, command)) {
-    return {
-      reason:
-        'Cannot Edit/Write/apply_patch the permission-enforcement hooks (dev/codex-hooks/**, ' +
-        'dev/agent-policy.mts, dev/agent-policy/**, ' +
-        'dev/pr-description/**) ' +
-        'or execpolicy configuration (.codex/config.toml, .codex/rules/**, ' +
-        '.cursor/*.json) ' +
-        'during an autonomous CI run. This closes the mid-session self-mutation gap a pre-dispatch ' +
-        'diff gate cannot catch (#8009): a dispatched session could otherwise Edit/Write/apply_patch ' +
-        'these files and have a later gh pr merge run against the now-weakened, freshly-mutated ' +
-        'hook code. Interactive sessions are unaffected.',
-    }
-  }
-  if (command.startsWith('*** Begin Patch')) {
-    return null
-  }
-  if (!command) {
-    return null
-  }
-
-  const ghBlock = findGitHubWorkflowBlock(command, hookCwd(payload), options)
-  if (ghBlock !== null) {
-    return ghBlock
-  }
-
-  for (const commandToInspect of commandsToInspectForGitPolicy(command)) {
-    for (const { pattern, reason } of blockedHookBypassPatterns) {
-      if (pattern.test(commandToInspect)) {
-        return { reason }
-      }
-    }
-  }
-
-  for (const commandToInspect of commandsToInspectForGitPolicy(command)) {
-    for (const { pattern, reason } of blockedDevServerPatterns) {
-      if (pattern.test(commandToInspect)) {
-        return { reason }
-      }
-    }
-  }
-
-  if (/\bgit\b/.test(command)) {
-    for (const commandToInspect of commandsToInspectForGitPolicy(command)) {
-      if (isInteractiveRebaseContinue(commandToInspect)) {
-        return {
-          reason:
-            'Use "GIT_EDITOR=true git rebase --continue" so rebase continuation stays noninteractive.',
-        }
-      }
-
-      const reason = findBlockedGitReason(commandToInspect)
-      if (reason !== null) {
-        return { reason }
-      }
-    }
-    for (const commandToInspect of commandsToInspectPreservingQuotes(command)) {
-      for (const text of [
-        commandToInspect,
-        ...extractShellCommandSubstitutions(commandToInspect),
-      ]) {
-        for (const invocation of gitInvocations(text)) {
-          if (overridesConfig(invocation, 'core.hooksPath')) return { reason: HOOKS_PATH_REASON }
-          if (invocation.configOverrides.length === 0) continue
-          const reason = findBlockedGitInvocationReason(invocation)
-          if (reason !== null) return { reason }
-        }
-      }
-    }
-  }
-
-  return findInteractiveMergeConfirm(command, automationContext)
+const command: CommandPolicy = {
+  typoPaths: [{ segment: '.claire', reason: 'Typo: .claire should be .claude.' }],
+  protectedPaths: {
+    dirPrefixes: PROTECTED_HOOK_DIR_PREFIXES,
+    exactFiles: PROTECTED_HOOK_EXACT_FILES,
+    reason:
+      'Cannot Edit/Write/apply_patch the permission-enforcement hooks (dev/codex-hooks/**, ' +
+      'dev/agent-policy.mts, dev/agent-policy/**, dev/pr-description/**) or execpolicy ' +
+      'configuration (.codex/config.toml, .codex/rules/**, .cursor/*.json) during an autonomous ' +
+      'run. This closes the mid-session self-mutation gap: a dispatched session could otherwise ' +
+      'weaken the hook before a later merge command. Interactive sessions are unaffected.',
+  },
+  commandPatterns: [...blockedHookBypassPatterns, ...blockedDevServerPatterns],
+  gitPatterns: standardGitPatterns({
+    pullRebase: 'Use "./dev/rebase-onto-main"; git pull --rebase and git pull -r are banned.',
+  }),
+  rebaseContinueReason:
+    'Use "GIT_EDITOR=true git rebase --continue" so rebase continuation stays noninteractive.',
+  mergeGuidance: 'See docs/development/merge-authority.md.',
+  stack: stackPolicy,
 }
 
-/**
- * True when this process is running inside GitHub Actions automation, where merge authority is
- * never delegated to an agent. Interactive sessions (Claude or Codex, run by a human) may proceed
- * only through the separate explicit-confirmation path. See docs/development/merge-authority.md.
- */
-export function isAutomationContext(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.GITHUB_ACTIONS === 'true' || env.CI === 'true'
-}
-
-/**
- * True only when Claude Code marks this session attended. Claude Code sets
- * CLAUDE_CODE_SESSION_ATTENDED=1 for an interactive session and 0 for `claude -p` (including a
- * `claude -p` nested in an interactive session), and hook processes inherit it. A missing or
- * changed variable fails safe: no silent merge allow, so the harness prompts. See
- * docs/development/merge-authority.md.
- */
-export function isAttendedClaudeSession(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.CLAUDE_CODE_SESSION_ATTENDED === '1'
-}
-
-/**
- * What pre-tool-use.mts writes and exits with. Every runtime reads this one contract: exit 2 is the
- * block Claude, Codex, Cursor, and Grok all honor. Claude, Codex, and Grok surface the stderr
- * reason; Cursor surfaces the stdout JSON. Exit 0 with empty stdio is no opinion.
- */
-export type PreToolUseResult = { exitCode: 0 | 2; stderr: string; stdout: string }
-
-export function preToolUseOutput(
-  payload: HookPayload,
-  options: PreToolUseOptions = {},
-): PreToolUseResult {
-  const block = findPreToolUseBlock(payload, {
-    automationContext: options.automationContext,
-  })
-  if (block === null) {
-    return { exitCode: 0, stderr: '', stdout: '' }
-  }
-
-  if (block.disposition === 'confirm') {
-    return { exitCode: 0, stderr: '', stdout: renderConfirmDisposition(options) }
-  }
-
-  return {
-    exitCode: 2,
-    stderr: `${block.reason}\n`,
-    stdout: JSON.stringify({ decision: 'deny', reason: block.reason }),
-  }
-}
+export default defineHookPolicy({
+  command,
+  checkers: productPostToolUseCheckers,
+  reminder: ({ payload }) => renderPostToolReminder(payload),
+})

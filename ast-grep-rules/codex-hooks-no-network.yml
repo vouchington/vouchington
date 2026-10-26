@@ -40,49 +40,49 @@ examples:
       import { execFileSync } from 'node:child_process'
       execFileSync('git', ['remote', 'update'])
     isValid: false
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       import cp, { spawnSync } from 'node:child_process'
       cp.execSync('git fetch')
     isValid: false
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       const cp = require('child_process')
       cp.execFileSync('gh', ['api', 'repos/o/r'])
     isValid: false
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       import http from 'node:http'
     isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       const net = await import('node:net')
     isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       const childProcess = await import(`node:child_process`)
     isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       const childProcess = process.getBuiltinModule('node:child_process')
     isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       import { getBuiltinModule as loadBuiltin } from 'node:process'
       const childProcess = loadBuiltin('node:child_process')
     isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       import http2 from 'node:http2'
     isValid: false
-    file: 'dev/codex-hooks/policy/core.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       const response = await fetch('https://api.github.com/repos/o/r')
     isValid: false
-    file: 'dev/codex-hooks/policy/github-workflow.mts'
+    file: 'dev/codex-hooks/policy.mts'
   - code: |
       const execSync = (command: string) => command
       execSync('local calculation')
       const metadata = { shell: true }
     isValid: true
-    file: 'dev/codex-hooks/policy/github-configured-base.mts'
+    file: 'dev/codex-hooks/policy.mts'

@@ -1,5 +1,0 @@
-export * from './policy/core.mts'
-export * from './policy/claire-paths.mts'
-export * from './policy/github-options.mts'
-export * from './policy/github-workflow.mts'
-export * from './policy/protected-hook-paths.mts'

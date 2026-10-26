@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { PLAIN_FORCE_PUSH_REASON } from './codex-hooks/policy/blocked-command-patterns.mts'
+import { PLAIN_FORCE_PUSH_REASON } from 'vouchington-tooling/command-policy'
 import { gitPushAncestorCommand, plainForcePushReason } from './plain-force-push.mts'
 
 const repoRoot = resolve(import.meta.dirname, '..')

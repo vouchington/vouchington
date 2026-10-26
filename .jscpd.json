@@ -29,8 +29,6 @@
       "backend/types/lib-dom-absent.mts",
       "ci/validate-vitest-cli-timeouts.mts",
       "dev/agent-issue-labels/batch-issues.mts",
-      "dev/codex-hooks/post-tool-use.mts",
-      "dev/codex-hooks/pre-tool-use.mts",
       "dev/localization/local-catalog.mts",
       "dev/localization/local-smoke.mts",
       "dev/native-addon-readiness.mts",

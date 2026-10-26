@@ -1,20 +1,16 @@
-# Why "automation" means GitHub Actions
+# Automation contexts
 
 [Back to Merge Authority](merge-authority.md#why-automation-means-github-actions)
 
-All automation in this repo runs in GitHub Actions. That covers two contexts:
+The hook treats CI and unattended Claude sessions as automation. That includes GitHub Actions,
+GitLab CI, and `claude -p` even when the latter is launched from an interactive shell. The
+published runner classifies these contexts before evaluating Voucha's merge and protected-path
+rules. A missing attended signal gets no special interactive merge allow.
 
-- **Auto Harness CI** — every `harness-dispatch.yml`-routed prompt: `/fix`, `fix-main`,
-  dependabot auto-fix, `/shepherd`, and scheduled prompts (see
-  [docs/prompts/automation/](../prompts/README.md)).
+An attended local session authenticates with the human's own `gh` credentials. Its merge decision
+still requires a direct human request; the hook's silent allow only removes a duplicate tool prompt
+for a single plain merge after that request. The [decision flow](reference-merge-authority-decision-flow.md)
+shows which other commands receive no hook opinion.
 
-An interactive session (a human running Claude Code or Codex CLI locally, or driving
-`/pr-shepherd` from a chat session) is a different actor with a different credential: it
-authenticates as the human's own `gh` auth, never the CI write token. That distinction — not
-"agent vs. human" — is what the hook actually keys on, via
-`isAutomationContext(env) = env.GITHUB_ACTIONS === 'true' || env.CI === 'true'`.
-
-**If a merge is unexpectedly blocked (not allowed) in an interactive session:** the `CI`
-fallback is intentionally broad — some local tooling and shell profiles set `CI=true` outside of
-GitHub Actions, which is enough to trip `isAutomationContext` and hard-block the merge instead of
-allowing it. Check `echo $CI` in the session's shell before assuming the hook is misbehaving.
+If a merge is unexpectedly blocked in an attended local session, inspect the CI markers inherited
+by the hook process. Local tooling can set them too, and the automation block takes precedence.
