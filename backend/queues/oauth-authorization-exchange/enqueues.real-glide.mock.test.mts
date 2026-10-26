@@ -62,7 +62,8 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
       attempts: 1,
       removeOnComplete: 100,
       removeOnFail: 100,
-      priority: 1,
+      // Stable-ID recovery does not exercise priority scheduling or its promotion cadence.
+      priority: 0,
       deduplication: { id: authorizationId, mode: 'simple' as const },
     })
     let recoveryWorker: Worker<OAuthAuthorizationExchangeJobData> | undefined
