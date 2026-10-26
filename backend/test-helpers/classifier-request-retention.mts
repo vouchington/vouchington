@@ -10,9 +10,10 @@ export async function seedDeletedSubjectClassifierRequest(input: {
   classifierId: string
   subject: Subject
   settled: boolean
+  requestAt: Date
 }): Promise<{ identityId: string; requestId: string }> {
   const identityId = uuidv7()
-  const requestId = uuidv7()
+  const requestId = uuidv7({ msecs: input.requestAt.getTime() })
   if (input.subject === 'post') {
     await write(sql`/* seedDeletedClassifierPostIdentity */
       INSERT INTO retained_post_identities (id) VALUES (${identityId})`)
@@ -30,6 +31,18 @@ export async function seedDeletedSubjectClassifierRequest(input: {
       ${randomBytes(32)}, ${input.settled ? new Date() : null}
     )`)
   return { identityId, requestId }
+}
+
+export async function seedLivePostClassifierRequest(input: {
+  classifierId: string
+  postId: string
+  requestAt: Date
+}): Promise<string> {
+  const id = uuidv7({ msecs: input.requestAt.getTime() })
+  await write(sql`/* seedLivePostClassifierRequest */
+    INSERT INTO classifier_run_requests (id, classifier_id, post_id, input_sha256)
+    VALUES (${id}, ${input.classifierId}, ${input.postId}, ${randomBytes(32)})`)
+  return id
 }
 
 export async function readDeletedSubjectClassifierRequestFacts(input: {

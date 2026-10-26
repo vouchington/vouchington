@@ -12,10 +12,10 @@ describe('expired classifier DEFAULT lineage', () => {
   it('retires real result rows before snapshots, calls and batches in capped continuations', async () => {
     const fixture = await createClassifierFixture()
     const oldAt = new Date(Date.now() - 91 * DAY_MS)
-    const oldIds = await Promise.all([
-      seedOldClassifierDefaultDecision(fixture, oldAt),
-      seedOldClassifierDefaultDecision(fixture, oldAt),
-    ])
+    const oldIds = [
+      await seedOldClassifierDefaultDecision(fixture, oldAt),
+      await seedOldClassifierDefaultDecision(fixture, new Date(oldAt.getTime() + 1_000)),
+    ]
     const freshId = await seedOldClassifierDefaultDecision(fixture, new Date(Date.now() - DAY_MS))
     const options = {
       retentionDays: 90,
