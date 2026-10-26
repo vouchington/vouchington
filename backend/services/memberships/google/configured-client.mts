@@ -40,7 +40,7 @@ export function createConfiguredGooglePlaySubscriptionsV2Client(): GooglePlaySub
   )
 }
 
-export function createGooglePlaySubscriptionsV2Client(
+function createGooglePlaySubscriptionsV2Client(
   config: GooglePlayServiceAccountConfig,
   providerFetch: GooglePlayFetch,
 ): GooglePlaySubscriptionsV2Client {
@@ -54,8 +54,8 @@ export function createGooglePlaySubscriptionsV2Client(
   }
 }
 
-export type GooglePlayServiceAccountConfig = { clientEmail: string; privateKey: string }
-export function getGooglePlayServiceAccountConfig(): GooglePlayServiceAccountConfig {
+type GooglePlayServiceAccountConfig = { clientEmail: string; privateKey: string }
+function getGooglePlayServiceAccountConfig(): GooglePlayServiceAccountConfig {
   const clientEmail = requiredEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL')
   const privateKey = requiredEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY').replaceAll('\\n', '\n')
   if (!privateKey.includes('BEGIN PRIVATE KEY'))

@@ -1,35 +1,44 @@
 import { createHash, generateKeyPairSync, verify } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as httpDispatchers from '../../../modules/utils/http.mts'
 import {
-  createGooglePlaySubscriptionsV2Client,
-  getGooglePlayServiceAccountConfig,
+  createConfiguredGooglePlaySubscriptionsV2Client,
   GooglePlaySubscriptionLookupError,
 } from './configured-client.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
+type ExternalFetch = ReturnType<typeof httpDispatchers.getExternalFetch>
 const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
 const privateKeyPem = privateKey.export({ format: 'pem', type: 'pkcs8' })
-const config = {
-  clientEmail: 'play-tests@example.iam.gserviceaccount.com',
-  privateKey: privateKeyPem,
+const clientEmail = 'play-tests@example.iam.gserviceaccount.com'
+
+function configure(fetch: ExternalFetch, email = clientEmail): void {
+  vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', email)
+  vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', privateKeyPem.replaceAll('\n', '\\n'))
+  vi.spyOn(httpDispatchers, 'getExternalFetch').mockReturnValue(fetch)
 }
 
 describe('configured Google Play client', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
   it('requires a configured PEM service account', () => {
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', '')
-    expect(() => getGooglePlayServiceAccountConfig()).toThrow(
+    expect(() => createConfiguredGooglePlaySubscriptionsV2Client()).toThrow(
       'GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL is required',
     )
-    vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', config.clientEmail)
+    vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', clientEmail)
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', '')
-    expect(() => getGooglePlayServiceAccountConfig()).toThrow(
+    expect(() => createConfiguredGooglePlaySubscriptionsV2Client()).toThrow(
       'GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY is required',
     )
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', 'not a PEM key')
-    expect(() => getGooglePlayServiceAccountConfig()).toThrow('must be a PEM private key')
+    expect(() => createConfiguredGooglePlaySubscriptionsV2Client()).toThrow(
+      'must be a PEM private key',
+    )
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', privateKeyPem.replaceAll('\n', '\\n'))
-    expect(getGooglePlayServiceAccountConfig()).toEqual(config)
+    expect(() => createConfiguredGooglePlaySubscriptionsV2Client()).not.toThrow()
   })
 
   it('signs a scoped OAuth assertion, fetches and acknowledges encoded purchases, and caches the token', async () => {
@@ -44,7 +53,8 @@ describe('configured Google Play client', () => {
       if (url.endsWith(':acknowledge')) return new Response(null, { status: 204 })
       return Response.json({ subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE' })
     })
-    const client = createGooglePlaySubscriptionsV2Client(config, providerFetch)
+    configure(providerFetch)
+    const client = createConfiguredGooglePlaySubscriptionsV2Client()
     await expect(
       client.getSubscription({ packageName: 'ai.voucha/test', purchaseToken: 'purchase/one' }),
     ).resolves.toMatchObject({ subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE' })
@@ -63,7 +73,7 @@ describe('configured Google Play client', () => {
       typ: 'JWT',
     })
     expect(JSON.parse(Buffer.from(claims!, 'base64url').toString())).toMatchObject({
-      iss: config.clientEmail,
+      iss: clientEmail,
       aud: 'https://oauth2.googleapis.com/token',
       scope: 'https://www.googleapis.com/auth/androidpublisher',
     })
@@ -90,35 +100,45 @@ describe('configured Google Play client', () => {
   })
 
   it('rejects OAuth, subscription, and acknowledgement failures', async () => {
-    const failingConfig = { ...config, clientEmail: 'failures@example.iam.gserviceaccount.com' }
-    const failedToken = createGooglePlaySubscriptionsV2Client(
-      failingConfig,
-      async () => new Response(null, { status: 503 }),
-    )
+    const failingEmail = 'failures@example.iam.gserviceaccount.com'
+    const failedFetch = vi
+      .fn<ExternalFetch>()
+      .mockResolvedValue(new Response(null, { status: 503 }))
+    configure(failedFetch, failingEmail)
+    const failedToken = createConfiguredGooglePlaySubscriptionsV2Client()
     await expect(
       failedToken.getSubscription({ packageName: 'ai.voucha', purchaseToken: 'purchase' }),
     ).rejects.toThrow('Google OAuth token exchange failed with 503')
 
-    const malformedToken = createGooglePlaySubscriptionsV2Client(failingConfig, async () =>
-      Response.json({ access_token: 7, expires_in: '3600' }),
-    )
+    vi.restoreAllMocks()
+    const malformedFetch = vi
+      .fn<ExternalFetch>()
+      .mockResolvedValue(Response.json({ access_token: 7, expires_in: '3600' }))
+    configure(malformedFetch, failingEmail)
+    const malformedToken = createConfiguredGooglePlaySubscriptionsV2Client()
     await expect(
       malformedToken.getSubscription({ packageName: 'ai.voucha', purchaseToken: 'purchase' }),
     ).rejects.toThrow('Google OAuth token response is malformed')
 
-    const failedApi = createGooglePlaySubscriptionsV2Client(failingConfig, async input =>
+    vi.restoreAllMocks()
+    const failedApiFetch = vi.fn<ExternalFetch>(async input =>
       stringFromUnknown(input).endsWith('/token')
         ? Response.json({ access_token: 'short-lived', expires_in: 0 })
         : new Response(null, { status: 429 }),
     )
+    configure(failedApiFetch, failingEmail)
+    const failedApi = createConfiguredGooglePlaySubscriptionsV2Client()
     await expect(
       failedApi.getSubscription({ packageName: 'ai.voucha', purchaseToken: 'purchase' }),
     ).rejects.toThrow('Google Play subscriptionsv2 fetch failed with 429')
-    const invalidApi = createGooglePlaySubscriptionsV2Client(failingConfig, async input =>
+    vi.restoreAllMocks()
+    const invalidApiFetch = vi.fn<ExternalFetch>(async input =>
       stringFromUnknown(input).endsWith('/token')
         ? Response.json({ access_token: 'short-lived', expires_in: 0 })
         : new Response(null, { status: 404 }),
     )
+    configure(invalidApiFetch, failingEmail)
+    const invalidApi = createConfiguredGooglePlaySubscriptionsV2Client()
     await expect(
       invalidApi.getSubscription({ packageName: 'ai.voucha', purchaseToken: 'purchase' }),
     ).rejects.toMatchObject({
@@ -131,17 +151,27 @@ describe('configured Google Play client', () => {
       ['invalidValue', true],
       ['required', false],
     ] as const) {
-      const badRequestApi = createGooglePlaySubscriptionsV2Client(failingConfig, async input =>
+      vi.restoreAllMocks()
+      const badRequestApiFetch = vi.fn<ExternalFetch>(async input =>
         stringFromUnknown(input).endsWith('/token')
           ? Response.json({ access_token: 'short-lived', expires_in: 0 })
           : Response.json({ error: { errors: [{ reason }] } }, { status: 400 }),
       )
+      configure(badRequestApiFetch, failingEmail)
+      const badRequestApi = createConfiguredGooglePlaySubscriptionsV2Client()
       await expect(
         badRequestApi.getSubscription({ packageName: 'ai.voucha', purchaseToken: 'purchase' }),
       ).rejects.toMatchObject({ status: 400, reason, invalidPurchaseToken })
     }
+    vi.restoreAllMocks()
+    const failedAckFetch = vi.fn<ExternalFetch>(async input =>
+      stringFromUnknown(input).endsWith('/token')
+        ? Response.json({ access_token: 'short-lived', expires_in: 0 })
+        : new Response(null, { status: 429 }),
+    )
+    configure(failedAckFetch, failingEmail)
     await expect(
-      failedApi.acknowledgeSubscription({
+      createConfiguredGooglePlaySubscriptionsV2Client().acknowledgeSubscription({
         packageName: 'ai.voucha',
         subscriptionId: 'plus',
         purchaseToken: 'purchase',

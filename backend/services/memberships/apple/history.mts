@@ -16,7 +16,7 @@ export type AppleSubscriptionStatusClient = Pick<
   'getAllSubscriptionStatuses'
 >
 
-export type AppleTransactionHistoryClientConfig = {
+type AppleTransactionHistoryClientConfig = {
   applicationId: string
   environment: AppleMembershipProviderEnvironment
   issuerId: string
@@ -24,7 +24,7 @@ export type AppleTransactionHistoryClientConfig = {
   privateKey: string
 }
 
-export function createAppleTransactionHistoryClient(
+function createAppleTransactionHistoryClient(
   config: AppleTransactionHistoryClientConfig,
 ): AppStoreServerAPIClient {
   return new AppStoreServerAPIClient(
@@ -76,20 +76,12 @@ export async function fetchAppleTransactionHistory(
   throw new Error(`Apple transaction history exceeded ${MAX_HISTORY_PAGES} pages`)
 }
 
-export function getAuthoritativeAppleTransactionOrder(
-  signedTransactions: readonly string[],
-  signedTransaction: string,
-): number {
-  const order = signedTransactions.indexOf(signedTransaction)
-  if (order < 0) throw new Error('Apple transaction is absent from authoritative history')
-  return order
-}
-
 export function getLatestAuthoritativeAppleTransaction(
   signedTransactions: readonly string[],
   submittedTransaction: string,
 ): { providerOrder: number; signedTransactionInfo: string } {
-  getAuthoritativeAppleTransactionOrder(signedTransactions, submittedTransaction)
+  if (!signedTransactions.includes(submittedTransaction))
+    throw new Error('Apple transaction is absent from authoritative history')
   const signedTransactionInfo = signedTransactions.at(-1)
   if (!signedTransactionInfo) throw new Error('Apple transaction history was empty')
   return { providerOrder: signedTransactions.length - 1, signedTransactionInfo }
