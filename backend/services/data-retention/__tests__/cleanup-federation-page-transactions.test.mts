@@ -31,7 +31,8 @@ describe('replay cleanup page transactions', () => {
     expect(await cleanupCommittedReplayPagesForTest(ids)).toEqual({
       result: { deleted: 2, hasMore: false, continuationPosition: null },
       pageCount: 2,
-      lockBeforePage: [false, false],
+      previousPageTransactionActive: [false, false],
+      pageTransactionActive: [true, true],
       lockDuringPage: [true, true],
     })
   })

@@ -134,6 +134,7 @@ export async function readFederationRetentionFixtureStateForTest(
 ): Promise<{
   inboxActivityIds: string[]
   distributionActivityIds: string[]
+  completedDistributionActivityIds: string[]
   followerDistributionIds: string[]
   childRowCount: number
 }> {
@@ -152,9 +153,9 @@ export async function readFederationRetentionFixtureStateForTest(
      SELECT id FROM activitypub_inbox_activities WHERE id = ANY($1::uuid[]) ORDER BY id`,
     [inboxIds],
   )
-  const { rows: distributions } = await query<{ activity_id: string }>(
+  const { rows: distributions } = await query<{ activity_id: string; completed_at: Date | null }>(
     `/* readFederationRetentionDistributionFixturesForTest */
-     SELECT activity_id FROM activitypub_distribution_work_items
+     SELECT activity_id, completed_at FROM activitypub_distribution_work_items
      WHERE activity_id = ANY($1::uuid[]) ORDER BY activity_id`,
     [distributionIds],
   )
@@ -176,6 +177,9 @@ export async function readFederationRetentionFixtureStateForTest(
   return {
     inboxActivityIds: inbox.map(row => row.id),
     distributionActivityIds: distributions.map(row => row.activity_id),
+    completedDistributionActivityIds: distributions
+      .filter(row => row.completed_at !== null)
+      .map(row => row.activity_id),
     followerDistributionIds: followers.map(row => row.id),
     childRowCount: Number(children[0]?.count ?? 0),
   }

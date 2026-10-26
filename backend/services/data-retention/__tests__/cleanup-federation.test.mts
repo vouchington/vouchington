@@ -6,7 +6,6 @@ import {
   insertFederationRetentionFixturesForTest,
   insertFederationReplayDecoysForTest,
   insertTestPost,
-  prepareFederationDistributionReplayForTest,
   readFederationRetentionFixtureStateForTest,
   recordFederationInboxActivityReplayForTest,
   type FederationRetentionFixtureIds,
@@ -98,15 +97,11 @@ describe('federation retention', () => {
           fixtureIds.activeFollowerDistributionId,
           fixtureIds.currentFollowerDistributionId,
         ],
+        completedDistributionActivityIds: fixtureIds.expiredDistributionActivityIds.toSorted(),
         childRowCount: 2,
       })
 
-      await expect(
-        prepareFederationDistributionReplayForTest(
-          fixtureIds.expiredDistributionActivityIds[0]!,
-          sender.id,
-        ),
-      ).resolves.toEqual({ status: 'completed' })
+      // Check retained checkpoint facts, not admission of epoch IDs below a shared permanent floor.
 
       const second = await cleanupFederationRetentionForTest({
         batchSize: 1,
@@ -132,6 +127,7 @@ describe('federation retention', () => {
           fixtureIds.activeFollowerDistributionId,
           fixtureIds.currentFollowerDistributionId,
         ].toSorted(),
+        completedDistributionActivityIds: fixtureIds.expiredDistributionActivityIds.toSorted(),
         childRowCount: 0,
       })
       expect(
