@@ -107,7 +107,9 @@ jobs:
         run: pnpm exec vouchington docker-image-mirror --allow-registry ghcr.io/vouchington/dependency- --require-digest --allow-ref-expression '$''{{ needs.prepare.outputs.postgres_image }}'
         timeout-minutes: 2
       - name: Check live repository policies
-        run: node ci/check-repository-policy-scans.mts
+        run: |
+          pnpm exec vouchington workspace-registry-check
+          node ci/check-repository-policy-scans.mts
         timeout-minutes: 2
       - name: Check native localization resources
         run: node ci/check-live-native-resources.mts
