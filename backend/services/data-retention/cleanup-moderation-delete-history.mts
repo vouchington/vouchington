@@ -18,6 +18,12 @@ export async function deleteExpiredModerationHistory(
         DELETE FROM moderation_reports report
         WHERE report.id = ANY(${ids}::uuid[])
           AND report.reviewed_at < ${now}::timestamptz - interval '24 months'
+          AND NOT EXISTS (
+            SELECT 1 FROM conversations conversation
+            WHERE conversation.moderation_report_id = report.id
+              AND conversation.channel_type = 'mod_internal'
+              AND conversation.resolved_at IS NULL AND conversation.deleted_at IS NULL
+          )
       `))
       break
     case 'cases':
