@@ -27,14 +27,16 @@ async function performSetupFlow(page: Page, userId: string, name: string): Promi
     secret: string
   }
   await expect(page.getByTestId('totp-setup-qr-prompt')).toBeVisible()
-  const code = await generateTotpCode(page, setup.secret)
   const verification = page.waitForResponse(
     response =>
       new URL(response.url()).pathname === '/api/v1/auth/totp/setup/verification' &&
       response.request().method() === 'POST',
   )
-  await page.locator('input[inputmode="numeric"]').pressSequentially(code)
+  await page.getByTestId('setup-flow-confirm-identity').click()
   await confirmAccountChange(page, userId)
+  await expect(page.getByTestId('setup-flow-verify-and-save')).toBeVisible()
+  const freshCode = await generateTotpCode(page, setup.secret)
+  await page.locator('input[inputmode="numeric"]').pressSequentially(freshCode)
   await verification
   await expect(page.getByTestId(`totp-authenticator-item-${setup.authenticator.id}`)).toBeVisible()
   return setup.authenticator.id
@@ -75,7 +77,8 @@ test.describe('TOTP authenticator management', () => {
     await confirmAccountChange(page, userId)
     await setupResponse
     await expect(page.getByTestId('totp-setup-qr-prompt')).toBeVisible()
-    await expect(page.getByTestId('setup-flow-verify-and-save')).toBeDisabled()
+    await expect(page.getByTestId('setup-flow-confirm-identity')).toBeEnabled()
+    await expect(page.locator('input[inputmode="numeric"]')).toHaveCount(0)
     await page.getByTestId('setup-flow-verify-cancel').click()
     await expect(page.getByTestId('totp-add-authenticator-button')).toBeVisible()
   })

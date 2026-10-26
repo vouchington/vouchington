@@ -33,12 +33,14 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
   const [renameName, setRenameName] = useState('')
   const [setupData, setSetupData] = useState<TotpSetupData | null>(null)
   const [setupCode, setSetupCode] = useState('')
+  const [setupVerificationProof, setSetupVerificationProof] = useState<string | null>(null)
   const [setupName, setSetupName] = useState('')
   const authentication = useFreshAuthentication(mfaStatus)
   const reauthDialogOpen = authentication.dialogProps.open
 
   async function handleStartSetup(e: React.FormEvent) {
     e.preventDefault()
+    setSetupVerificationProof(null)
     const reAuthToken = await authentication.requestAuthentication()
     if (!reAuthToken) return
     setLoading(true)
@@ -58,21 +60,27 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
     }
   }
 
+  async function handleConfirmSetup() {
+    const proof = await authentication.requestAuthentication()
+    if (!proof) return
+    setSetupCode('')
+    setSetupVerificationProof(proof)
+  }
+
   async function handleVerifySetup(code: string) {
-    if (!setupData || code.length < 6) return
-    const reAuthToken = await authentication.requestAuthentication()
-    if (!reAuthToken) return
+    if (!setupData || !setupVerificationProof || code.length < 6) return
     setLoading(true)
     try {
       const result = await verifyTotpSetup<{ authenticator: TotpAuthenticator }>({
         authenticator_id: setupData.authenticator.id,
-        re_auth_token: reAuthToken,
+        re_auth_token: setupVerificationProof,
         code,
       })
       addAuthenticator(result.authenticator)
       setStep('list')
       setSetupData(null)
       setSetupCode('')
+      setSetupVerificationProof(null)
       setSetupName('')
       onSuccess(t('extracted.my.totpManager.authenticatorAddedSuccessfully_960de9d4'))
     } catch (err) {
@@ -84,6 +92,14 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleCancelSetup() {
+    setStep('list')
+    setSetupData(null)
+    setSetupCode('')
+    setSetupVerificationProof(null)
+    setSetupName('')
   }
 
   async function handleRename(authenticatorId: string) {
@@ -136,6 +152,7 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
     renameName,
     setupData,
     setupCode,
+    setupVerificationProof,
     setupName,
     reauthDialogOpen,
     setStep,
@@ -146,7 +163,9 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
     setSetupData,
     setSetupName,
     handleStartSetup,
+    handleConfirmSetup,
     handleVerifySetup,
+    handleCancelSetup,
     handleRename,
     handleRemoveClick: setConfirmingDeleteId,
     handleRemove,
