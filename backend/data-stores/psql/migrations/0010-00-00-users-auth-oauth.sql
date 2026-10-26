@@ -565,8 +565,6 @@ CREATE TABLE IF NOT EXISTS phone_number_login_tokens (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   consumed_at TIMESTAMPTZ,
-  invalidated_at TIMESTAMPTZ,
-  CHECK (consumed_at IS NULL OR invalidated_at IS NULL),
   UNIQUE (phone_number, token)
 );
 
@@ -579,7 +577,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_phone_number_login_tokens__active
   ON phone_number_login_tokens (phone_number, token)
-  WHERE consumed_at IS NULL AND invalidated_at IS NULL;
+  WHERE consumed_at IS NULL;
 
 -- index for user lookup by phone
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -587,7 +585,6 @@ CREATE INDEX IF NOT EXISTS idx_user_phone_numbers__phone
 ON user_phone_numbers (phone_number);
 
 COMMENT ON TABLE phone_number_login_tokens IS 'Short-lived tokens for phone-number-based login via SMS/voice.';
-COMMENT ON COLUMN phone_number_login_tokens.invalidated_at IS 'When a replacement code invalidated this unused token.';
 COMMENT ON COLUMN phone_number_login_tokens.phone_number IS 'The phone number this token was sent to.';
 COMMENT ON COLUMN phone_number_login_tokens.token IS 'Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user.';
 COMMENT ON COLUMN phone_number_login_tokens.consumed_at IS 'When the token was successfully consumed for phone-number login.';
