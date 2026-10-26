@@ -16,27 +16,9 @@ files:
   - '**/test-helpers/**/*.mts'
   - 'test-helpers/**/*.ts'
   - 'test-helpers/**/*.mts'
-# Frozen baseline. Cleanup PRs do not edit it. #2137 owns these files. #2145 deletes the list.
+# Remaining batch-boundary fixture cleanup is tracked by #2145.
 ignores:
-  - 'backend/services/account-data-requests/s3.no-data.mock.test.mts'
-  - 'backend/services/admin-imports/create-batch.test.mts'
-  - 'backend/services/crawler-referral-links/__tests__/dispatch.plans.real-glide.mock.test.mts'
-  - 'backend/services/crawls/dispatch-plans.mock.test.mts'
-  - 'backend/services/entity-relations/build-insert-query.test.mts'
-  - 'backend/services/images/s3.quarantine.no-data.mock.test.mts'
-  - 'backend/services/moderator-actions/record.test.mts'
   - 'backend/services/oauth-github/__tests__/friends-batching.mock.test.mts'
-  - 'backend/services/post-publication/capture-rss-feeds.test.mts'
-  - 'backend/services/post-publication/identity-keys.test.mts'
-  - 'backend/services/post-publication/public.test.mts'
-  - 'backend/services/post-publication/reconcile.hardening.test.mts'
-  - 'backend/services/post-publication/snapshot-retention.test.mts'
-  - 'backend/services/recently-viewed/store.test.mts'
-  - 'backend/services/referral-link-unfurl/dispatch-cap.real-glide.mock.test.mts'
-  - 'backend/services/rss-feeds/reconcile-item-language.test.mts'
-  - 'backend/services/stories/__tests__/story-post-related-url-projection.test.mts'
-  - 'backend/test-helpers/services/oauth/friends-batch-sync.mts'
-  - 'backend/workers/bloom-filters/__tests__/bloom-filter.multi-relation.generated.test.mts'
 rule:
   any:
     - pattern: 'Array.from({ length: $N })'
