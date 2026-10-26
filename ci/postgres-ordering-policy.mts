@@ -45,6 +45,7 @@ export const expectedCatalogOrderingRules = [
     name: 'production PostgreSQL locks use catalog key prefixes',
     rule: 'postgres-lock-ordering',
     scope: 'repository',
+    severity: 'error',
     options: { ...expectedCatalogOptions, ...executorOptions, unanalyzableSql: 'ignore' },
   },
 ]

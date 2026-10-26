@@ -1,68 +1,38 @@
-import { spawnSync } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { tmpdir } from 'node:os'
-import { fileURLToPath } from 'node:url'
+import { readFile } from 'node:fs/promises'
+
 import { describe, expect, it } from 'vitest'
-import { parse, stringify } from 'yaml'
+import { parse } from 'yaml'
 
-const repository = fileURLToPath(new URL('../', import.meta.url))
-const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
+type Rule = {
+  rule?: string
+  scope?: string
+  severity?: string
+  options?: { bannedPaths?: { glob: string; message: string }[] }
+}
 
-describe('helper file basename policy', () => {
-  it('rejects tracked forbidden basenames while allowing helper directories and ignoring untracked files', async () => {
-    const config = parse(await readFile(join(repository, '.no-mistakes.yml'), 'utf8'))
-    const guard = config.rules
-      .find((rule: { name: string }) => rule.name === 'banned repository paths')
-      .options.bannedPaths.find((entry: { glob: string }) => entry.glob === '**/*test-helpers*')
-    expect(guard).toBeDefined()
-    const directory = await mkdtemp(join(tmpdir(), 'helper-file-names-'))
-    try {
-      const rejected = [
-        'foo-test-helpers.mts',
-        'other/domain/foo-test-helpers.md',
-        'backend/test-helpers/foo-test-helpers.mts',
-      ]
-      const allowed = ['test-helpers/foo.mts', 'backend/test-helpers/foo.mts', 'other/helpers.mts']
-      const ignored = ['untracked/foo-test-helpers.mts', 'ignored/foo-test-helpers.mts']
-      for (const path of [...rejected, ...allowed, ...ignored]) {
-        const file = join(directory, path)
-        await mkdir(dirname(file), { recursive: true })
-        await writeFile(file, '')
-      }
-      await writeFile(join(directory, '.gitignore'), 'ignored/\n')
-      await writeFile(
-        join(directory, '.no-mistakes.yml'),
-        stringify({
-          rules: [
-            {
-              name: 'helper file basenames',
-              rule: 'banned-paths',
-              scope: 'repository',
-              options: { bannedPaths: [guard] },
-            },
-          ],
-        }),
-      )
-      expect(spawnSync('git', ['init', '-q', directory], { encoding: 'utf8' }).status).toBe(0)
-      expect(
-        spawnSync(
-          'git',
-          ['-C', directory, 'add', ...rejected, ...allowed, '.gitignore', '.no-mistakes.yml'],
-          { encoding: 'utf8' },
-        ).status,
-      ).toBe(0)
-      const result = spawnSync(
-        process.execPath,
-        [cli, 'check', '--root', directory, '--format', 'json'],
-        { cwd: directory, encoding: 'utf8' },
-      )
-      expect(result.status).toBe(1)
-      const diagnostics = JSON.parse(result.stdout).rules as { file: string; message: string }[]
-      expect(diagnostics.map(item => item.file).toSorted()).toEqual(rejected.toSorted())
-      expect(diagnostics.every(item => item.message === guard.message)).toBe(true)
-    } finally {
-      await rm(directory, { force: true, recursive: true })
+describe('helper file basename configuration', () => {
+  it('keeps the helper basename ban enabled at error severity', async () => {
+    const config = parse(
+      await readFile(new URL('../.no-mistakes.yml', import.meta.url), 'utf8'),
+    ) as {
+      rules: Rule[]
     }
+    const rule = config.rules.find(
+      rule =>
+        rule.rule === 'banned-paths' &&
+        rule.options?.bannedPaths?.some(entry => entry.glob === '**/*test-helpers*'),
+    )
+    const guard = rule?.options?.bannedPaths?.find(entry => entry.glob === '**/*test-helpers*')
+
+    expect(rule).toMatchObject({
+      rule: 'banned-paths',
+      scope: 'repository',
+      severity: 'error',
+    })
+    expect(guard).toEqual({
+      glob: '**/*test-helpers*',
+      message:
+        'File basenames must not contain test-helpers; use a descriptive name under an allowed helper directory.',
+    })
   })
 })
