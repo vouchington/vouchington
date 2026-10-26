@@ -135,7 +135,7 @@ export async function reconcileRssFeedItemCategorySnapshotRows(
       // remains pending if this enqueue fails, so the next reconciliation retries both the
       // notification prompt and its exact-generation acknowledgement.
       // eslint-disable-next-line no-await-in-loop -- each snapshot must enqueue before its own acknowledgement.
-      await enqueueBulkReconcileRssFeedItemNotifications([row.rss_feed_item_id])
+      await enqueueBulkReconcileRssFeedItemNotifications([row.rss_feed_item_id], row.generation)
       // eslint-disable-next-line no-await-in-loop -- a compare-and-delete must follow this item only.
       await acknowledgeRssFeedItemCategorySnapshot(row)
       reconciled += 1

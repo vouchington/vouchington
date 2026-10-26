@@ -11,11 +11,17 @@ import {
   enqueueBulkDeliverNotificationPushIntents,
   enqueueDeliverNotificationPushIntent,
   enqueueContinueNotificationPushIntentReconciliation,
+  enqueueContinueContentVisibility,
   type ReconcileNotificationPushIntentsData,
 } from '@queues/notifications/enqueues'
 import { listAvailableNotificationPushIntents } from '@services/notifications-push'
 import type { CreatedNotification } from '@services/notifications/reconcile-batches'
 import { getNotificationsWorkLimit } from '@services/notifications/work-limits'
+import {
+  reconcilePostContentNotificationVisibility,
+  reconcileRssFeedItemContentNotificationVisibility,
+} from '@services/notifications/content-visibility-writes'
+import type { ReconcileContentVisibilityData } from '@queues/background/enqueues/notifications-domain'
 
 type NotificationProcessorDependencies = {
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
@@ -92,6 +98,18 @@ export async function processReconcileRssFeedItemNotifications(
     onCreatedNotifications: created => dispatchCreatedNotificationPushes(created, dependencies),
   })
   return result
+}
+
+/** A continuation reads current eligibility again before updating its bounded page. */
+export async function processReconcileContentVisibility(data: ReconcileContentVisibilityData) {
+  const page =
+    data.postId !== undefined
+      ? await reconcilePostContentNotificationVisibility(data.postId, data.after)
+      : await reconcileRssFeedItemContentNotificationVisibility(data.rssFeedItemId, data.after)
+  if (page.nextCursor) {
+    await enqueueContinueContentVisibility({ ...data, after: page.nextCursor })
+  }
+  return page
 }
 
 export async function processReconcileNotificationPushIntents(

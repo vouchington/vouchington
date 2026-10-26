@@ -54,7 +54,7 @@ export async function handleOpenAIModerationOmniSingleJob(
         if (!attempt) return { success: true, applied: false }
         try {
           const result = await upsertPostOpenAIModeration(post, { readOnly: false, attempt })
-          await enqueueReconcilePostNotifications(post.id)
+          await enqueueReconcilePostNotifications(post.id, attempt.id)
 
           if (result.skipped) {
             /* v8 ignore start -- valid post rows require text content; service-level tests cover direct no-content handling */

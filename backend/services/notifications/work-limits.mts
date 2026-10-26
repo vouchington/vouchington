@@ -6,6 +6,7 @@ const defaultFields = {
   community_digest_window_batch_size: 25,
   reconcile_batch_size: 500,
   reconcile_recipient_page_size: 5000,
+  content_visibility_page_size: 500,
   push_intent_recovery_page_size: 100,
 }
 
@@ -15,6 +16,7 @@ export const notificationsWorkMaxValues = {
   community_digest_window_batch_size: 1000,
   reconcile_batch_size: 5000,
   reconcile_recipient_page_size: 50_000,
+  content_visibility_page_size: 5000,
   push_intent_recovery_page_size: 1000,
 }
 
@@ -25,6 +27,7 @@ export const notificationsWorkConfig = new DynamicConfig({
     community_digest_window_batch_size: 'number',
     reconcile_batch_size: 'number',
     reconcile_recipient_page_size: 'number',
+    content_visibility_page_size: 'number',
     push_intent_recovery_page_size: 'number',
   },
   defaultFields,

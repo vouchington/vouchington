@@ -3,11 +3,11 @@
 -- are cleared by an entity hard delete. They are not exposed through the API contract.
 
 CREATE INDEX IF NOT EXISTS idx_notifications__publication_post_id
-ON notifications (publication_post_id)
+ON notifications (publication_post_id, user_id, id)
 WHERE publication_post_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_notifications__publication_rss_feed_item_id
-ON notifications (publication_rss_feed_item_id)
+ON notifications (publication_rss_feed_item_id, user_id, id)
 WHERE publication_rss_feed_item_id IS NOT NULL;
 
 CREATE FUNCTION fn_update_notification_publication_target() RETURNS TRIGGER AS $$

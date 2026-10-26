@@ -20,9 +20,30 @@ export type ConversationMessageNotificationData = {
 export type DeliverNotificationPushData = { userId: string; notificationId: string }
 
 /** One page of post recipients; `afterUserId` is the last recipient of the previous page. */
-export type ReconcilePostNotificationsData = { postId: string; afterUserId?: string }
+export type ReconcilePostNotificationsData = {
+  postId: string
+  changeId: string
+  afterUserId?: string
+}
 /** One page of RSS feed item recipients; `afterUserId` is the last recipient of the previous page. */
-export type ReconcileRssFeedItemNotificationsData = { rssFeedItemId: string; afterUserId?: string }
+export type ReconcileRssFeedItemNotificationsData = {
+  rssFeedItemId: string
+  changeId: string
+  afterUserId?: string
+}
+export type ReconcileContentVisibilityData =
+  | {
+      postId: string
+      rssFeedItemId?: never
+      changeId: string
+      after: { userId: string; notificationId: string }
+    }
+  | {
+      postId?: never
+      rssFeedItemId: string
+      changeId: string
+      after: { userId: string; notificationId: string }
+    }
 
 export type ReconcileNotificationPushIntentsData = {
   scanBefore?: string

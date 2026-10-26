@@ -1,4 +1,5 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
+import { randomUUID } from 'node:crypto'
 import { enqueueBulkCreateRssFeedItemEmbeddings } from '@queues/bedrock-embeddings/enqueues'
 import { enqueueBulkAutotaggerRssFeedItems } from '@queues/ai-agents/enqueues/autotagger'
 import { enqueueBulkLanguageDetection } from '@queues/content-analysis/enqueues'
@@ -127,7 +128,9 @@ async function enqueueBulkAutotaggerRssFeedItemsInChunks(
 }
 
 async function enqueueRssFeedItemNotificationReconciliationInChunks(rssFeedItemIds: string[]) {
-  await enqueueChunks(rssFeedItemIds, enqueueBulkReconcileRssFeedItemNotifications)
+  await enqueueChunks(rssFeedItemIds, async chunk => {
+    await enqueueBulkReconcileRssFeedItemNotifications(chunk, randomUUID())
+  })
 }
 
 async function invalidateRssFeedItemsInChunks(rssFeedItemIds: string[]) {

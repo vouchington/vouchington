@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import { NOTIFICATIONS_RECONCILE_POST_JOB } from '@queues/background/enqueues/notifications-jobs'
@@ -62,7 +63,7 @@ describe('notifications background handler', () => {
         if (job?.data?.postId === postId) finished.reject(error)
       })
 
-      const [root] = (await enqueueReconcilePostNotifications(postId)) as Job[]
+      const [root] = (await enqueueReconcilePostNotifications(postId, randomUUID())) as Job[]
       expect(root!.opts.priority).toBe(NOTIFICATIONS_RECONCILE_POST_JOB.options.priority)
       await finished.promise
 

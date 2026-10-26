@@ -1,6 +1,5 @@
 import type { PoolClient } from '@data-stores/psql'
 import type { CreatedNotification, RecipientPageRange } from './reconcile-batches.mts'
-import { reconcilePostContentNotificationVisibility } from './content-visibility-writes.mts'
 import { getPostRouteSlug, truncateText } from './shared.mts'
 
 export type PostNotificationInsertInput = {
@@ -122,22 +121,11 @@ export async function insertPostNotificationsForRecipients(
 export async function prunePostNotificationsExceptRecipients(
   postId: string,
   isContentEligible: boolean,
-  isManualSendContentEligible: boolean,
   client: PoolClient,
   recipientTable: string,
   range: RecipientPageRange,
 ): Promise<number> {
-  // Content visibility spans the whole post, so only the first page applies it.
-  const prunedForContentVisibility =
-    range.afterUserId === null
-      ? await reconcilePostContentNotificationVisibility(
-          postId,
-          isContentEligible,
-          isManualSendContentEligible,
-          client,
-        )
-      : 0
-  if (!isContentEligible) return prunedForContentVisibility
+  if (!isContentEligible) return 0
 
   const { rowCount } = await client.query(
     `/* prunePostNotificationsExceptRecipients */
@@ -158,5 +146,5 @@ export async function prunePostNotificationsExceptRecipients(
   `,
     [postId, range.afterUserId, range.throughUserId],
   )
-  return prunedForContentVisibility + (rowCount ?? 0)
+  return rowCount ?? 0
 }

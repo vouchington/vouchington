@@ -1,16 +1,25 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { listNotifications } from '@services/notifications/list'
+import { notificationsWorkConfig } from '@services/notifications/work-limits'
 import { background } from '@queues/background/queues'
-import { NOTIFICATIONS_RECONCILE_POST_JOB } from '@queues/background/enqueues/notifications-jobs'
+import {
+  NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+  NOTIFICATIONS_RECONCILE_POST_JOB,
+} from '@queues/background/enqueues/notifications-jobs'
+import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import {
   createRandomString,
+  createTestManualPostNotification,
+  createTestPost,
   createTestUser,
+  getNotificationById,
   insertTestPost,
   setEntityRelationCreatedAt,
+  setPostModerationFlaggedForTest,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { notificationsHandlers } from './workers.mts'
@@ -18,6 +27,104 @@ import { notificationsHandlers } from './workers.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('notification worker paged dispatch', () => {
+  it('restarts the first visibility page for a new change while the old page chain is pending', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(notificationsWorkConfig, {
+        content_visibility_page_size: 1,
+      }),
+    )
+    const sender = await createTestUser()
+    const author = await createTestUser()
+    const post = await createTestPost({ user: author, privacy: 'public' })
+    const recipients = await Promise.all(Array.from({ length: 3 }, async () => createTestUser()))
+    const notificationIds = await Promise.all(
+      recipients.map(recipient =>
+        createTestManualPostNotification({
+          userId: recipient.id,
+          sentByUserId: sender.id,
+          postId: post.id,
+        }),
+      ),
+    )
+    const changeA = randomUUID()
+    const changeB = randomUUID()
+    const rootId = (changeId: string) =>
+      `notifications__reconcile-post__${post.id}__${changeId}__root`
+    const pageId = (changeId: string, after: { userId: string; notificationId: string }) =>
+      `notifications__content-visibility__post__${post.id}__${changeId}__${after.userId}__${after.notificationId}`
+    const rootHandler = notificationsHandlers.find(
+      candidate => candidate.job.name === NOTIFICATIONS_RECONCILE_POST_JOB.name,
+    )!
+    const pageHandler = notificationsHandlers.find(
+      candidate => candidate.job.name === NOTIFICATIONS_CONTENT_VISIBILITY_JOB.name,
+    )!
+    const ownedJobs: Array<Job> = []
+    onTestFinished(async () => {
+      await Promise.all(ownedJobs.map(job => job.remove()))
+    })
+    const getJob = async (id: string) => {
+      const job = await background.getJob(id)
+      if (!job) throw new Error(`Expected notification job ${id}`)
+      ownedJobs.push(job)
+      return job
+    }
+
+    await setPostModerationFlaggedForTest({ postId: post.id, flagged: true })
+    await enqueueReconcilePostNotifications(post.id, changeA)
+    // A replay of the same accepted change uses the same pending root.
+    await enqueueReconcilePostNotifications(post.id, changeA)
+    const rootA = await getJob(rootId(changeA))
+    await (rootHandler.handle as (job: Job) => Promise<unknown>)(rootA)
+    const firstPageA = (
+      (await background.getJob(rootA.id)) as Job<{
+        dispatchReceipt: {
+          result: { nextVisibilityCursor?: { userId: string; notificationId: string } }
+        }
+      }>
+    ).data.dispatchReceipt.result.nextVisibilityCursor
+    if (!firstPageA) throw new Error('Expected change A to enqueue a visibility continuation')
+    expect(await getNotificationById(firstPageA.notificationId)).toMatchObject({
+      delete_reason: 'system_pruned',
+    })
+    const pendingPageA = await getJob(pageId(changeA, firstPageA))
+
+    await setPostModerationFlaggedForTest({ postId: post.id, flagged: false })
+    await enqueueReconcilePostNotifications(post.id, changeB)
+    const rootB = await getJob(rootId(changeB))
+    expect(rootB.id).not.toBe(rootA.id)
+    expect(rootB.opts.ordering).toEqual(rootA.opts.ordering)
+    await (rootHandler.handle as (job: Job) => Promise<unknown>)(rootB)
+    expect(await getNotificationById(firstPageA.notificationId)).toMatchObject({ deleted_at: null })
+    const firstPageB = (
+      (await background.getJob(rootB.id)) as Job<{
+        dispatchReceipt: {
+          result: { nextVisibilityCursor?: { userId: string; notificationId: string } }
+        }
+      }>
+    ).data.dispatchReceipt.result.nextVisibilityCursor
+    if (!firstPageB) throw new Error('Expected change B to enqueue a visibility continuation')
+    expect(firstPageB).toEqual(firstPageA)
+
+    const pageA = await (
+      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
+    )(pendingPageA)
+    const pageB = await (
+      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
+    )(await getJob(pageId(changeB, firstPageB)))
+    if (!pageA.nextCursor || !pageB.nextCursor)
+      throw new Error('Expected both change chains to continue after the edit')
+    const finishA = await (
+      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
+    )(await getJob(pageId(changeA, pageA.nextCursor)))
+    const finishB = await (
+      pageHandler.handle as (job: Job) => Promise<{ nextCursor?: typeof firstPageA }>
+    )(await getJob(pageId(changeB, pageB.nextCursor)))
+    expect(finishA.nextCursor).toBeUndefined()
+    expect(finishB.nextCursor).toBeUndefined()
+    for (const id of notificationIds)
+      expect(await getNotificationById(id)).toMatchObject({ deleted_at: null })
+  })
+
   it('persists a page receipt and admits each recipient continuation through GlideMQ', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(pagedDispatchConfig, { notifications_page_size: 1 }),
@@ -50,9 +157,10 @@ describe('notification worker paged dispatch', () => {
     const handle = handler.handle as (
       job: Job<{ postId: string; afterUserId?: string }>,
     ) => Promise<{ created: number }>
+    const changeId = randomUUID()
     const root = await background.add(
       NOTIFICATIONS_RECONCILE_POST_JOB.name,
-      { postId },
+      { postId, changeId },
       {
         ...NOTIFICATIONS_RECONCILE_POST_JOB.options,
         jobId: `test-notification-page-${randomUUID()}`,
@@ -82,10 +190,9 @@ describe('notification worker paged dispatch', () => {
         (await background.getJob(current.id)) as Job<{ dispatchReceipt: { next?: unknown } }>
       ).data.dispatchReceipt.next as { postId: string; afterUserId: string } | undefined
       expect(next?.afterUserId).toBe(afterUserId)
-      const pageId = createHash('sha256')
-        .update(`${current.id}:${JSON.stringify(next)}`)
-        .digest('hex')
-      const continuation = await background.getJob(`${current.name}__page__${pageId}`)
+      const continuation = await background.getJob(
+        `notifications__reconcile-post__${postId}__${changeId}__${afterUserId}`,
+      )
       if (!continuation) throw new Error(`Expected continuation after ${afterUserId}`)
       ownedJobs.push(continuation)
       await handle(continuation as Job<{ postId: string; afterUserId?: string }>)

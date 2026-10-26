@@ -32,6 +32,7 @@ export type RecipientPageRange = {
 export type ReconcileNotificationsResult = {
   created: number
   pruned: number
+  nextVisibilityCursor?: { userId: string; notificationId: string }
   /** Present only when a full page may be followed by more recipients. */
   nextAfterUserId?: string
 }

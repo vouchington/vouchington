@@ -3,6 +3,7 @@ import { background } from '@queues/background/queues'
 import {
   enqueueContinueReconcilePostNotifications,
   enqueueContinueReconcileRssFeedItemNotifications,
+  enqueueContinueContentVisibility,
 } from '@queues/notifications/enqueues'
 import {
   backgroundHandler,
@@ -12,6 +13,7 @@ import {
 } from '@queues/background/enqueues/define-handler'
 import {
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
+  NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
   NOTIFICATIONS_APPLY_MEDIA_REGISTRY_RECORD_JOB,
   NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,
   NOTIFICATIONS_CONVERSATION_MESSAGE_JOB,
@@ -47,10 +49,22 @@ export const notificationsHandlers = [
       targetName: 'background',
       readAndDispatch: async pageSize => {
         const result = await processors.processReconcilePostNotifications({ ...job.data, pageSize })
+        if (result.nextVisibilityCursor)
+          await enqueueContinueContentVisibility({
+            postId: job.data.postId,
+            changeId: job.data.changeId,
+            after: result.nextVisibilityCursor,
+          })
         return {
           result,
           ...(result.nextAfterUserId
-            ? { next: { postId: job.data.postId, afterUserId: result.nextAfterUserId } }
+            ? {
+                next: {
+                  postId: job.data.postId,
+                  changeId: job.data.changeId,
+                  afterUserId: result.nextAfterUserId,
+                },
+              }
             : {}),
         }
       },
@@ -68,12 +82,19 @@ export const notificationsHandlers = [
           ...job.data,
           pageSize,
         })
+        if (result.nextVisibilityCursor)
+          await enqueueContinueContentVisibility({
+            rssFeedItemId: job.data.rssFeedItemId,
+            changeId: job.data.changeId,
+            after: result.nextVisibilityCursor,
+          })
         return {
           result,
           ...(result.nextAfterUserId
             ? {
                 next: {
                   rssFeedItemId: job.data.rssFeedItemId,
+                  changeId: job.data.changeId,
                   afterUserId: result.nextAfterUserId,
                 },
               }
@@ -82,6 +103,10 @@ export const notificationsHandlers = [
       },
       enqueueNext: enqueueContinueReconcileRssFeedItemNotifications,
     }),
+  ),
+  backgroundDataHandler(
+    NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+    processors.processReconcileContentVisibility,
   ),
   backgroundDataHandler(
     NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,

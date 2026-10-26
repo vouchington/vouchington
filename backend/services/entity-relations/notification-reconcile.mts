@@ -1,4 +1,5 @@
 import { registerPostCommitAction, type OwnedTransaction } from '@data-stores/psql'
+import { randomUUID } from 'node:crypto'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { EntityRelationMetadata } from './metadata.mts'
 import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
@@ -35,8 +36,10 @@ function getNotificationReconcileEnqueue(
 ): (() => EnqueueReturnType) | undefined {
   const plan = getNotificationReconcilePlan(relation, relations)
   if (!plan) return
-  if (plan.type === 'post') return () => enqueueBulkReconcilePostNotifications(plan.subjectIds)
-  return () => enqueueBulkReconcileRssFeedItemNotifications(plan.subjectIds)
+  const changeId = randomUUID()
+  if (plan.type === 'post')
+    return () => enqueueBulkReconcilePostNotifications(plan.subjectIds, changeId)
+  return () => enqueueBulkReconcileRssFeedItemNotifications(plan.subjectIds, changeId)
 }
 
 export function getNotificationReconcilePlan(
@@ -58,7 +61,7 @@ export function enqueueNotificationReconcileAfterDelete(
   if (relation.predicate !== 'category') return
 
   if (relation.subject_type === 'post' && relation.object_type === 'topic' && 'id' in subject) {
-    void enqueueBulkReconcilePostNotifications([subject.id])
+    void enqueueBulkReconcilePostNotifications([subject.id], randomUUID())
   }
 
   if (
@@ -67,6 +70,6 @@ export function enqueueNotificationReconcileAfterDelete(
     'id' in subject
   ) {
     /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-    void enqueueBulkReconcileRssFeedItemNotifications([subject.id])
+    void enqueueBulkReconcileRssFeedItemNotifications([subject.id], randomUUID())
   }
 }

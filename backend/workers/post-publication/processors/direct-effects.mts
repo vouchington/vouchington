@@ -110,9 +110,11 @@ async function processPublicationKeys(
     enqueueBulkUpdatePostDaySitemapsForReconciliation(selected.sitemapTargets),
     enqueueRefreshTopHashtags(),
     enqueueBulkRefreshPostMetricsById([...new Set([...postIds, ...currentPostIds])]),
-    postIds.length > 0 ? enqueueBulkReconcilePostNotifications(postIds) : Promise.resolve(),
+    postIds.length > 0
+      ? enqueueBulkReconcilePostNotifications(postIds, data.changeId)
+      : Promise.resolve(),
     selected.rssFeedItemIds.length > 0
-      ? enqueueBulkReconcileRssFeedItemNotifications(selected.rssFeedItemIds)
+      ? enqueueBulkReconcileRssFeedItemNotifications(selected.rssFeedItemIds, data.changeId)
       : Promise.resolve(),
   ])
   if (selected.sitemapTargets.some(target => target.postType === 'review'))

@@ -1,90 +1,141 @@
-import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DISPATCH } from '@queues/background/config'
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { getBackgroundOrderingConcurrency, PRIORITY_DISPATCH } from '@queues/background/config'
+import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import {
+  NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
   NOTIFICATIONS_RECONCILE_POST_JOB,
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
-import type { EnqueueReturnType } from '@voucha/types'
+import type {
+  ReconcileContentVisibilityData,
+  ReconcilePostNotificationsData,
+  ReconcileRssFeedItemNotificationsData,
+} from '@queues/background/enqueues/notifications-domain'
+import { background } from '@queues/background/queues'
+import type { JobOptions } from 'glide-mq'
 
-type ReconcilePostData = { postId: string; afterUserId?: string }
-type ReconcileRssFeedItemData = { rssFeedItemId: string; afterUserId?: string }
+const CONTINUATION = { priority: PRIORITY_DISPATCH, removeOnComplete: true, removeOnFail: true }
 
-/** A continuation is its own job: a page id never joins the debounce of the root reconcile. */
-const CONTINUATION = {
-  priority: PRIORITY_DISPATCH,
-  removeOnComplete: true,
-  removeOnFail: true,
-} as const
+function bulkOrdering(kind: 'post' | 'rss', entityId: string) {
+  return {
+    key: `notifications:bulk:${kind}:${entityId}`,
+    concurrency: getBackgroundOrderingConcurrency('notifications:bulk'),
+  }
+}
 
-const enqueueBulkReconcilePostNotificationJobs = createBackgroundBulkEnqueue(
+function postJobId(data: ReconcilePostNotificationsData): string {
+  return `notifications__reconcile-post__${data.postId}__${data.changeId}__${data.afterUserId ?? 'root'}`
+}
+
+function rssJobId(data: ReconcileRssFeedItemNotificationsData): string {
+  return `notifications__reconcile-rss-feed-item__${data.rssFeedItemId}__${data.changeId}__${data.afterUserId ?? 'root'}`
+}
+
+function visibilityJobId(data: ReconcileContentVisibilityData): string {
+  const kind = data.postId ? 'post' : 'rss'
+  const entityId = data.postId ?? data.rssFeedItemId
+  return `notifications__content-visibility__${kind}__${entityId}__${data.changeId}__${data.after.userId}__${data.after.notificationId}`
+}
+
+const enqueuePostJobs = createBackgroundBulkEnqueue(
   NOTIFICATIONS_RECONCILE_POST_JOB,
-  (data: ReconcilePostData) => ({
+  (data: ReconcilePostNotificationsData) => ({
     data,
     opts: {
-      deduplication: {
-        id: `processReconcilePostNotifications__${data.postId}`,
-        mode: 'debounce' as const,
-      },
+      jobId: postJobId(data),
+      ordering: bulkOrdering('post', data.postId),
+      ...(data.afterUserId ? CONTINUATION : {}),
     },
   }),
 )
-const enqueueReconcilePostContinuationJob = createBackgroundEnqueue(
-  NOTIFICATIONS_RECONCILE_POST_JOB,
-)
-
-const enqueueBulkReconcileRssFeedItemNotificationJobs = createBackgroundBulkEnqueue(
+const enqueueRssJobs = createBackgroundBulkEnqueue(
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
-  (data: ReconcileRssFeedItemData) => ({
+  (data: ReconcileRssFeedItemNotificationsData) => ({
     data,
     opts: {
-      deduplication: {
-        id: `processReconcileRssFeedItemNotifications__${data.rssFeedItemId}`,
-        mode: 'debounce' as const,
-      },
+      jobId: rssJobId(data),
+      ordering: bulkOrdering('rss', data.rssFeedItemId),
+      ...(data.afterUserId ? CONTINUATION : {}),
     },
   }),
 )
-const enqueueReconcileRssFeedItemContinuationJob = createBackgroundEnqueue(
-  NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
+const enqueueVisibilityJobs = createBackgroundBulkEnqueue(
+  NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+  (data: ReconcileContentVisibilityData) => ({
+    data,
+    opts: {
+      jobId: visibilityJobId(data),
+      ordering: bulkOrdering(data.postId ? 'post' : 'rss', data.postId ?? data.rssFeedItemId),
+      ...CONTINUATION,
+    },
+  }),
 )
 
-export function enqueueReconcilePostNotifications(postId: string): EnqueueReturnType {
-  return enqueueBulkReconcilePostNotifications([postId])
+/** Each accepted producer change gets a distinct root, including while a prior root is active. */
+export function enqueueReconcilePostNotifications(postId: string, changeId: string) {
+  return enqueueBulkReconcilePostNotifications([postId], changeId)
 }
 
-export function enqueueBulkReconcilePostNotifications(postIds: string[]): EnqueueReturnType {
-  return enqueueBulkReconcilePostNotificationJobs([...new Set(postIds)].map(postId => ({ postId })))
+export function enqueueBulkReconcilePostNotifications(postIds: string[], changeId: string) {
+  const inputs = [...new Set(postIds)].map(postId => ({ postId, changeId }))
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs,
+    jobIdOf: postJobId,
+    enqueueBulk: enqueuePostJobs,
+  })
 }
 
-/** Queues the next recipient page of one post's reconciliation, after the last user of this page. */
+function continuationOptions(options?: Partial<JobOptions>): Partial<JobOptions> | undefined {
+  if (!options) return undefined
+  // The dispatcher supplies retry and admission-fence options. The page's accepted change and
+  // cursor remain its stable identity, and every page stays on the item's serial bulk lane.
+  const { jobId: _jobId, ordering: _ordering, ...rest } = options
+  return rest
+}
+
 export function enqueueContinueReconcilePostNotifications(
-  data: ReconcilePostData,
-  options: Partial<JobOptions> = {},
-): EnqueueReturnType {
-  return enqueueReconcilePostContinuationJob(data, {
-    ...CONTINUATION,
-    jobId: `notifications__reconcile-post__${data.postId}__${data.afterUserId}`,
-    ...options,
+  data: ReconcilePostNotificationsData,
+  options?: Partial<JobOptions>,
+) {
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs: [data],
+    jobIdOf: postJobId,
+    enqueueBulk: inputs => enqueuePostJobs(inputs, continuationOptions(options)),
   })
 }
 
 export function enqueueBulkReconcileRssFeedItemNotifications(
   rssFeedItemIds: string[],
-): EnqueueReturnType {
-  return enqueueBulkReconcileRssFeedItemNotificationJobs(
-    [...new Set(rssFeedItemIds)].map(rssFeedItemId => ({ rssFeedItemId })),
-  )
+  changeId: string,
+) {
+  const inputs = [...new Set(rssFeedItemIds)].map(rssFeedItemId => ({ rssFeedItemId, changeId }))
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs,
+    jobIdOf: rssJobId,
+    enqueueBulk: enqueueRssJobs,
+  })
 }
 
-/** Queues the next recipient page of one RSS feed item's reconciliation. */
 export function enqueueContinueReconcileRssFeedItemNotifications(
-  data: ReconcileRssFeedItemData,
-  options: Partial<JobOptions> = {},
-): EnqueueReturnType {
-  return enqueueReconcileRssFeedItemContinuationJob(data, {
-    ...CONTINUATION,
-    jobId: `notifications__reconcile-rss-feed-item__${data.rssFeedItemId}__${data.afterUserId}`,
-    ...options,
+  data: ReconcileRssFeedItemNotificationsData,
+  options?: Partial<JobOptions>,
+) {
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs: [data],
+    jobIdOf: rssJobId,
+    enqueueBulk: inputs => enqueueRssJobs(inputs, continuationOptions(options)),
+  })
+}
+
+export function enqueueContinueContentVisibility(data: ReconcileContentVisibilityData) {
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs: [data],
+    jobIdOf: visibilityJobId,
+    enqueueBulk: enqueueVisibilityJobs,
   })
 }

@@ -1,4 +1,5 @@
 import { registerPostCommitAction, type TransactionQuery } from '@data-stores/psql'
+import { randomUUID } from 'node:crypto'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
 import {
@@ -26,12 +27,13 @@ export async function refreshPostCategoryVoteStatsInTransaction(
           enqueueTopHashtagRefresh: false,
         })
 
+  const notificationChangeId = randomUUID()
   registerPostCommitAction(query, async () => {
     await Promise.all([
       changedTargets.length > 0
         ? publishEntityRelationElectionVoteStats(changedTargets)
         : Promise.resolve(),
-      enqueueReconcilePostNotifications(postId),
+      enqueueReconcilePostNotifications(postId, notificationChangeId),
     ])
   })
 }

@@ -16,7 +16,7 @@ import {
 } from './reconcile-post-snapshot.mts'
 import { POST_NOTIFICATION_RECIPIENT_VISIBILITY } from './reconcile-post-recipient-visibility.mts'
 import { POST_NOTIFICATION_RECIPIENT_COMMUNITY_VISIBILITY } from './reconcile-post-recipient-community-visibility.mts'
-import { pruneMissingPostContentNotifications } from './content-visibility-writes.mts'
+import { reconcilePostContentNotificationVisibility } from './content-visibility-writes.mts'
 
 type ReconcilePostNotificationsResult = ReconcileNotificationsResult
 export async function reconcileNotificationsForPost(
@@ -25,9 +25,12 @@ export async function reconcileNotificationsForPost(
 ): Promise<ReconcilePostNotificationsResult> {
   try {
     const post = await getPostNotificationSnapshot(postId)
-    if (!post) return { created: 0, pruned: await pruneMissingPostContentNotifications(postId) }
+    if (!post) {
+      const visibility = await reconcilePostContentNotificationVisibility(postId)
+      return { created: 0, pruned: visibility.pruned, nextVisibilityCursor: visibility.nextCursor }
+    }
 
-    return await reconcileNotificationBatches(
+    const reconciled = await reconcileNotificationBatches(
       {
         batchQueryComment: 'selectPostNotificationRecipientBatch',
         createRecipients: (client, recipientTable, page) =>
@@ -38,7 +41,6 @@ export async function reconcileNotificationsForPost(
           prunePostNotificationsExceptRecipients(
             post.id,
             post.is_content_eligible,
-            post.is_manual_send_content_eligible,
             client,
             recipientTable,
             range,
@@ -46,6 +48,13 @@ export async function reconcileNotificationsForPost(
       },
       options,
     )
+    if (options.afterUserId) return reconciled
+    const visibility = await reconcilePostContentNotificationVisibility(postId)
+    return {
+      ...reconciled,
+      pruned: reconciled.pruned + visibility.pruned,
+      nextVisibilityCursor: visibility.nextCursor,
+    }
   } catch (err) {
     if (err instanceof Error) {
       const enrichedError = err as Error & {

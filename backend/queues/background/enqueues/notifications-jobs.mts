@@ -7,6 +7,7 @@ import {
   type CommunityActivityDigestBatchData,
   type CommunityActivityDigestScheduleData,
   type CommunityActivityDigestDispatchData,
+  type ReconcileContentVisibilityData,
   type ConversationMessageNotificationData,
   type CopyrightIntentData,
   type CopyrightSweepContinuation,
@@ -28,12 +29,14 @@ const BACKOFF = { type: 'exponential', delay: 1000, jitter: 0.5 } as const
 const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFail: 100 } as const
 const TASK = { priority: PRIORITY_TASK } as const
 const DISPATCH = { priority: PRIORITY_DISPATCH } as const
+const BULK_ORDERING = { key: 'notifications:bulk' } as const
 
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(
   DOMAIN,
   {
     name: 'processReconcilePostNotifications',
     ...DISPATCH,
+    ordering: BULK_ORDERING,
     ...pagedDispatchJobOptions('notifications'),
   },
 )
@@ -41,7 +44,17 @@ export const NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB =
   defineBackgroundJob<ReconcileRssFeedItemNotificationsData>(DOMAIN, {
     name: 'processReconcileRssFeedItemNotifications',
     ...DISPATCH,
+    ordering: BULK_ORDERING,
     ...pagedDispatchJobOptions('notifications'),
+  })
+export const NOTIFICATIONS_CONTENT_VISIBILITY_JOB =
+  defineBackgroundJob<ReconcileContentVisibilityData>(DOMAIN, {
+    name: 'processReconcileContentVisibility',
+    ...DISPATCH,
+    ordering: BULK_ORDERING,
+    attempts: 3,
+    removeOnComplete: 100,
+    removeOnFail: 100,
   })
 export const NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB =
   defineBackgroundJob<DeliverNotificationPushData>(DOMAIN, {
@@ -153,6 +166,7 @@ export const NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB =
 export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_RECONCILE_POST_JOB,
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
+  NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
   NOTIFICATIONS_DELETE_JOB,

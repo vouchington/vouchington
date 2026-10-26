@@ -78,6 +78,11 @@ work ahead of housekeeping.
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing
   reconciler, or a documented accepted loss. See [job replayability](../../../requirements/platform/JOB-REPLAYABILITY.md). Worker sizing is covered in [worker performance](../../../development/worker-performance.md).
+- **Notification visibility follows each accepted content change.** Publication and other producers
+  give reconciliation a distinct change identity. Post and RSS item visibility pages share an
+  ordering group per content item, read current eligibility for each page, and continue by
+  notification keyset. A newer change starts at the first notification, including when an older
+  continuation is in flight. The bulk group is separate from user-waiting notification work.
 - **Never enqueue and wait.** A request or job does not block on another job's result. Clients poll
   durable state; a job that needs a result calls the service directly.
 - **Post-commit effects wait for admission, not completion.** When a mutation promises a cache

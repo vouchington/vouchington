@@ -1,4 +1,5 @@
 import { getTopicsWorkLimit } from './work-limits.mts'
+import { randomUUID } from 'node:crypto'
 import onError from '@modules/on-error'
 import { read } from '@data-stores/psql'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
@@ -14,9 +15,12 @@ export async function invalidatePostsForTopicAliases(topicAliasIds: string[]): P
   try {
     const { postIds, hasMore, lastPostId } = await readAliasPostPage(topicAliasIds)
     if (postIds.length === 0) return
+    const notificationChangeId = randomUUID()
     await Promise.all([
       invalidate.posts(postIds),
-      awaitReportedEnqueueAdmission(() => enqueueBulkReconcilePostNotifications(postIds)),
+      awaitReportedEnqueueAdmission(() =>
+        enqueueBulkReconcilePostNotifications(postIds, notificationChangeId),
+      ),
     ])
     if (hasMore && lastPostId) {
       await awaitReportedEnqueueAdmission(() =>
@@ -34,7 +38,10 @@ export async function invalidatePostsForTopicAliasesPage(
 ): Promise<{ hasMore: boolean; lastPostId: string | null }> {
   const { postIds, hasMore, lastPostId } = await readAliasPostPage(topicAliasIds, afterPostId)
   if (postIds.length === 0) return { hasMore, lastPostId }
-  await Promise.all([invalidate.posts(postIds), enqueueBulkReconcilePostNotifications(postIds)])
+  await Promise.all([
+    invalidate.posts(postIds),
+    enqueueBulkReconcilePostNotifications(postIds, randomUUID()),
+  ])
   return { hasMore, lastPostId }
 }
 

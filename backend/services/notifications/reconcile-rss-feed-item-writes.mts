@@ -1,6 +1,5 @@
 import type { PoolClient } from '@data-stores/psql'
 import type { CreatedNotification, RecipientPageRange } from './reconcile-batches.mts'
-import { reconcileRssFeedItemContentNotificationVisibility } from './content-visibility-writes.mts'
 import { truncateText } from './shared.mts'
 
 export type RssFeedItemSnapshot = {
@@ -115,16 +114,7 @@ export async function pruneRssFeedItemNotificationsExceptRecipients(
   recipientTable: string,
   range: RecipientPageRange,
 ): Promise<number> {
-  // Content visibility spans the whole item, so only the first page applies it.
-  const prunedForContentVisibility =
-    range.afterUserId === null
-      ? await reconcileRssFeedItemContentNotificationVisibility(
-          rssFeedItemId,
-          isContentEligible,
-          client,
-        )
-      : 0
-  if (!isContentEligible) return prunedForContentVisibility
+  if (!isContentEligible) return 0
 
   const { rowCount } = await client.query(
     `/* pruneRssFeedItemNotificationsExceptRecipients */
@@ -145,5 +135,5 @@ export async function pruneRssFeedItemNotificationsExceptRecipients(
   `,
     [rssFeedItemId, range.afterUserId, range.throughUserId],
   )
-  return prunedForContentVisibility + (rowCount ?? 0)
+  return rowCount ?? 0
 }
