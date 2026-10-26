@@ -1,29 +1,33 @@
+import { createBulkEnqueueFunction, type PriorityQueue } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
-import { createBackgroundBulkEnqueue } from '../enqueues.mts'
 import { background } from '../queues.mts'
 import {
   COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB,
   type InvalidateCommunityMemberUserMetricsData,
 } from './communities-jobs.mts'
 
-const enqueueBulk = createBackgroundBulkEnqueue(
-  COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB,
-  (data: InvalidateCommunityMemberUserMetricsData) => ({
-    data,
-    opts: { jobId: communityMemberMetricInvalidationJobId(data) },
-  }),
-)
-
-export async function enqueueInvalidateCommunityMemberUserMetrics(
-  data: InvalidateCommunityMemberUserMetricsData,
-): Promise<unknown> {
-  return enqueueBulkReactivatingFinished({
-    queue: background,
-    inputs: [data],
-    jobIdOf: communityMemberMetricInvalidationJobId,
-    enqueueBulk,
+export function createCommunityMemberMetricEnqueue(queue: PriorityQueue<unknown>) {
+  const enqueueBulk = createBulkEnqueueFunction({
+    queue,
+    queueName: queue.name,
+    jobName: COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB.name,
+    defaults: COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB.options,
+    buildJob: (data: InvalidateCommunityMemberUserMetricsData) => ({
+      data,
+      opts: { jobId: communityMemberMetricInvalidationJobId(data) },
+    }),
   })
+  return (data: InvalidateCommunityMemberUserMetricsData): Promise<unknown> =>
+    enqueueBulkReactivatingFinished({
+      queue,
+      inputs: [data],
+      jobIdOf: communityMemberMetricInvalidationJobId,
+      enqueueBulk,
+    })
 }
+
+export const enqueueInvalidateCommunityMemberUserMetrics =
+  createCommunityMemberMetricEnqueue(background)
 
 export function communityMemberMetricInvalidationJobId(
   data: InvalidateCommunityMemberUserMetricsData,

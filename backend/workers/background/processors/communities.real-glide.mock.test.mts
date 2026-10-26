@@ -1,9 +1,13 @@
-import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
-import { enqueueInvalidateCommunityMemberUserMetrics } from '@queues/background/enqueues/communities'
+import {
+  closeAndUnregisterGlideMQInstance,
+  createQueue,
+  createWorker,
+} from '@data-stores/valkey-glide-mq'
+import { randomUUID } from 'node:crypto'
+import { getBackgroundOrderingConcurrency } from '@queues/background/config'
+import { createCommunityMemberMetricEnqueue } from '@queues/background/enqueues/communities'
 import { COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB } from '@queues/background/enqueues/communities-jobs'
-import { background } from '@queues/background/queues'
 import { communitiesWorkConfig } from '@services/communities/work-limits'
-import { updateCommunity } from '@services/communities/update'
 import { caches } from '@services/entity-cache/caches'
 import { getUserMetricsByAnyCached } from '@services/entity-fetch/metrics'
 import {
@@ -15,34 +19,61 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import type { Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { trackUserMetricsFills } from '../../../test-helpers/user-metrics-cache-fills.mts'
-import { BACKGROUND_HANDLERS } from './handlers.mts'
-import { createBackgroundWorker } from '../workers/create-worker.mts'
+import { createBackgroundProcessor } from '../processors.mts'
+import { createCommunitiesHandlers } from './communities.mts'
+import { buildHandlerMap } from './handler-map.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('community member metric invalidation background handler', () => {
-  it('walks bounded pages through the real worker and replays the same stable job ids', async () => {
+  it('walks bounded pages through the real worker and replays the same stable job ids', async ({
+    signal,
+  }) => {
     const restore = overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
       member_metric_invalidation_page_size: 1,
     })
     const owner = await createTestUser()
     const member = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id })
-    const ownerMembership = await insertTestCommunityMember({
+    await insertTestCommunityMember({
       communityId: community.id,
       userId: owner.id,
       role: 'owner',
     })
-    await insertTestCommunityMember({ communityId: community.id, userId: member.id })
-    await Promise.all([warmUserMetricsCache(owner.id), warmUserMetricsCache(member.id)])
+    const memberMembership = await insertTestCommunityMember({
+      communityId: community.id,
+      userId: member.id,
+    })
+    await warmUserMetricsCaches([owner.id, member.id])
 
     const firstPass = Promise.withResolvers<void>()
     const replay = Promise.withResolvers<void>()
+    const rejectPhasesOnAbort = () => {
+      const error = signal.reason ?? new Error('Community metric invalidation test aborted')
+      firstPass.reject(error)
+      replay.reject(error)
+    }
+    signal.addEventListener('abort', rejectPhasesOnAbort, { once: true })
+    void firstPass.promise.catch(() => {})
+    void replay.promise.catch(() => {})
     const completed: Job[] = []
-    const worker = createBackgroundWorker({
-      handlers: BACKGROUND_HANDLERS,
-      domains: ['communities'],
+    const queue = createQueue(`community-member-metrics-${randomUUID()}`, {
+      priorityKind: 'ranked',
+      orderingConcurrency: getBackgroundOrderingConcurrency,
     })
+    const enqueue = createCommunityMemberMetricEnqueue(queue)
+    const worker = createWorker(
+      queue.name,
+      createBackgroundProcessor(
+        buildHandlerMap(createCommunitiesHandlers(enqueue), ['communities']),
+      ),
+      {
+        concurrency: 1,
+        blockTimeout: 100,
+        promotionInterval: 100,
+        dedicatedCommandClient: true,
+      },
+    )
     worker.on('completed', job => {
       if (job.data.communityId !== community.id) return
       completed.push(job)
@@ -62,39 +93,54 @@ describe('community member metric invalidation background handler', () => {
 
     try {
       await worker.waitUntilReady()
-      await updateCommunity(owner, community.id, { visibility: 'private' }, ownerMembership)
+      const rootData = {
+        communityId: community.id,
+        generation: randomUUID(),
+        minimumReplayLsn: '0/0',
+        upperBoundMembershipId: memberMembership.id,
+      }
+      await enqueue(rootData)
       await firstPass.promise
 
       const firstIds = completed.map(job => job.id)
       expect(new Set(firstIds).size).toBe(3)
       expect(firstIds.filter(id => id.includes('__root'))).toHaveLength(1)
+      const ordering = COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB.options.ordering
+      if (!ordering) throw new Error('Community invalidation jobs must define ordering')
+      expect(completed.map(job => job.opts.ordering)).toEqual(
+        Array.from({ length: 3 }, () => ({
+          ...ordering,
+          concurrency: getBackgroundOrderingConcurrency(ordering.key),
+        })),
+      )
       await expect(caches.user_metrics.get(owner.id)).resolves.toBeNull()
       await expect(caches.user_metrics.get(member.id)).resolves.toBeNull()
 
-      const root = completed.find(job => job.id.includes('__root'))!
-      await enqueueInvalidateCommunityMemberUserMetrics(root.data)
+      await enqueue(rootData)
       await replay.promise
 
       expect(completed.slice(3).map(job => job.id)).toEqual(firstIds)
     } finally {
+      signal.removeEventListener('abort', rejectPhasesOnAbort)
       restore()
       await closeAndUnregisterGlideMQInstance(worker)
-      const owned = await background.searchJobs({
-        name: COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB.name,
-        data: { communityId: community.id },
-      })
-      await Promise.all(owned.map(job => job.remove()))
+      await queue.obliterate({ force: true })
+      await closeAndUnregisterGlideMQInstance(queue)
     }
   })
 })
 
-async function warmUserMetricsCache(userId: string): Promise<void> {
+async function warmUserMetricsCaches(userIds: string[]): Promise<void> {
   const pending: Promise<unknown>[] = []
   const stop = trackUserMetricsFills(caches.user_metrics, pending)
   try {
-    await expect(getUserMetricsByAnyCached(userId)).resolves.toMatchObject({
-      count: { communities_member: 1 },
-    })
+    await Promise.all(
+      userIds.map(userId =>
+        expect(getUserMetricsByAnyCached(userId)).resolves.toMatchObject({
+          count: { communities_member: 1 },
+        }),
+      ),
+    )
     await Promise.all(pending)
   } finally {
     stop()

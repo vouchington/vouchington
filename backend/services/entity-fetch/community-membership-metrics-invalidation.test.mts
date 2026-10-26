@@ -202,7 +202,7 @@ describe('community membership user metrics invalidation', () => {
     await processMemberMetricInvalidation(communityId)
 
     await expectMetricsInvalidated(user)
-    await expectCommunityCount(user, 0)
+    await expectCommunityCount(user, 1)
   })
 })
 

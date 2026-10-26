@@ -3,6 +3,7 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import { createHash } from 'node:crypto'
 import { enqueueInvalidateCommunityMemberUserMetrics } from '@queues/background/enqueues/communities'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
+import onError from '@modules/on-error'
 import type { InvalidateCommunityMemberUserMetricsData } from '@queues/background/enqueues/communities-jobs'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getCommunitiesWorkLimit } from '../work-limits.mts'
@@ -23,17 +24,20 @@ export async function invalidateCommunityMemberUserMetrics(...userIds: string[])
 
 export async function invalidateCommunityMemberUserMetricsPage(
   data: InvalidateCommunityMemberUserMetricsData,
-): Promise<{ invalidated: number; hasMore: boolean }> {
+): Promise<{
+  invalidated: number
+  nextPageData: InvalidateCommunityMemberUserMetricsData | null
+}> {
   const pageSize = getCommunitiesWorkLimit('member_metric_invalidation_page_size')
   const rows =
     (await readReplicaCommunityMemberMetricPage(data, pageSize)) ??
     (await readPrimaryCommunityMemberMetricPage(data, pageSize))
   await invalidateCommunityMemberUserMetrics(...rows.map(row => row.user_id))
   const last = rows.at(-1)
-  if (rows.length === pageSize && last) {
-    await enqueueInvalidateCommunityMemberUserMetrics({ ...data, afterMembershipId: last.id })
+  return {
+    invalidated: rows.length,
+    nextPageData: rows.length === pageSize && last ? { ...data, afterMembershipId: last.id } : null,
   }
-  return { invalidated: rows.length, hasMore: rows.length === pageSize }
 }
 
 export function communityMemberMetricInvalidationData(
@@ -50,19 +54,29 @@ export function communityMemberMetricInvalidationData(
   }
 }
 
-export function enqueueCommunityMemberMetricInvalidationBestEffort(
+export async function enqueueCommunityMemberMetricInvalidationBestEffort(
   communityId: string,
 ): Promise<void> {
-  return awaitReportedEnqueueAdmission(async () => {
-    const metadata = await captureCommunityMemberMetricInvalidationMetadata(communityId)
-    if (!metadata?.upperBoundMembershipId) return
-    await enqueueInvalidateCommunityMemberUserMetrics(
+  const metadata = await captureCommunityMemberMetricInvalidationMetadata(communityId).catch(
+    err => {
+      onError(
+        err instanceof Error
+          ? err
+          : new Error('Community invalidation metadata failed', { cause: err }),
+      )
+      return null
+    },
+  )
+  if (!metadata?.upperBoundMembershipId) return
+  const upperBoundMembershipId = metadata.upperBoundMembershipId
+  return awaitReportedEnqueueAdmission(() =>
+    enqueueInvalidateCommunityMemberUserMetrics(
       communityMemberMetricInvalidationData(communityId, {
         ...metadata,
-        upperBoundMembershipId: metadata.upperBoundMembershipId,
+        upperBoundMembershipId,
       }),
-    )
-  })
+    ),
+  )
 }
 
 async function readReplicaCommunityMemberMetricPage(
