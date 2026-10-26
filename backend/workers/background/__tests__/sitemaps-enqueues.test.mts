@@ -14,7 +14,6 @@ import {
   enqueueMonthlyBackfillArchiveContinuation,
   enqueueUpdateFamilySitemap,
   enqueueUpdateLandingPagesSitemapForReconciliation,
-  enqueueUpdatePostDaySitemapForReconciliation,
   enqueueUpdatePostsIndex,
   enqueueUpdatePostTypeIndex,
   enqueueUpdateRootIndex,
@@ -58,28 +57,6 @@ describe('enqueues.generated', () => {
         ttl: 60_000,
       },
     })
-  })
-
-  it('enqueueUpdatePostDaySitemapForReconciliation accepts every durable rebuild', async () => {
-    const day = `2099-${randomUUID()}`
-    await enqueueUpdatePostDaySitemapForReconciliation('discussion', day)
-    await enqueueUpdatePostDaySitemapForReconciliation('discussion', day)
-
-    const matchingJobs = (await readAllQueueJobs(sitemapsQueue)).filter(
-      job => (job.data as { postType?: string; day?: string }).day === day,
-    )
-
-    expect(matchingJobs).toHaveLength(2)
-    for (const job of matchingJobs) {
-      expect(job).toMatchObject({
-        name: 'sitemaps.processUpdatePostDaySitemap',
-        data: { postType: 'discussion', day },
-        opts: {
-          ordering: { key: 'sitemaps:post_day_past', concurrency: 1 },
-        },
-      })
-      expect(job.opts.deduplication).toBeUndefined()
-    }
   })
 
   it('enqueues a bulk of post-day rebuilds into the day lane, with or without a priority', async () => {
@@ -129,18 +106,6 @@ describe('enqueues.generated', () => {
     for (const job of [...typeIndex, ...postsIndex, ...rootIndex]) {
       expect(job.opts.ordering).toEqual({ key: 'sitemaps:indexes', concurrency: 1 })
     }
-  })
-
-  it('carries a priority on a reconciliation post-day rebuild', async () => {
-    const priority = 1_000 + Math.floor(Math.random() * 400)
-    const day = `2096-${randomUUID()}`
-    await enqueueUpdatePostDaySitemapForReconciliation('discussion', day, priority)
-
-    const jobs = (await readAllQueueJobs(sitemapsQueue)).filter(
-      job => (job.data as { day?: string }).day === day,
-    )
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0]!.opts.priority).toBe(priority)
   })
 
   it('accepts each reconciliation landing-pages rebuild despite the family throttle', async () => {

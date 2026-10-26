@@ -3,12 +3,10 @@ import {
   SITEMAPS_FAMILY_JOB,
   SITEMAPS_POST_DAY_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
-import type { SitemapPostType } from '@services/sitemaps/types'
 import { SITEMAPS_ORDERING } from '@queues/background/enqueues/sitemaps-ordering'
 import { getSitemapsOrderingKeyForDay } from '../config.mts'
 import type { PostDayJobData } from '../types.mts'
 
-const enqueueUpdatePostDaySitemapJob = createBackgroundEnqueue(SITEMAPS_POST_DAY_JOB)
 const enqueueBulkUpdatePostDaySitemapJobs = createBackgroundBulkEnqueue(
   SITEMAPS_POST_DAY_JOB,
   (data: PostDayJobData) => ({
@@ -17,23 +15,6 @@ const enqueueBulkUpdatePostDaySitemapJobs = createBackgroundBulkEnqueue(
   }),
 )
 const enqueueUpdateFamilySitemapJob = createBackgroundEnqueue(SITEMAPS_FAMILY_JOB)
-
-/**
- * Enqueues without deduplication so acknowledgement always follows a newly accepted durable job.
- * Ordering still serializes rebuilds for the target day lane.
- */
-export async function enqueueUpdatePostDaySitemapForReconciliation(
-  postType: SitemapPostType,
-  day: string,
-  priority?: number,
-): Promise<void> {
-  const data = { postType, day } satisfies PostDayJobData
-  const job = await enqueueUpdatePostDaySitemapJob(data, {
-    ...(priority === undefined ? {} : { priority }),
-    ordering: SITEMAPS_ORDERING[getSitemapsOrderingKeyForDay(day)],
-  })
-  if (!job) throw new Error('Publication reconciliation sitemap job was not accepted')
-}
 
 /** One bulk admission, without throttle deduplication, for captured publication days. */
 export async function enqueueBulkUpdatePostDaySitemapsForReconciliation(

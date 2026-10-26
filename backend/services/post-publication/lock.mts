@@ -1,9 +1,4 @@
-import {
-  advisoryLockPool,
-  beginTransaction,
-  withTransactionOptions,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { createTransactionLockOnce } from '@vouchington/postgres'
 import type { PostPublicationScope } from './types.mts'
@@ -94,67 +89,4 @@ export async function withTopicReferenceAttachmentFences<Result>(
   const result = await run(query)
   await query.commit()
   return result
-}
-
-export async function withPostPublicationReconciliationLock<Result>(
-  scopeKey: string,
-  operation: () => Promise<Result>,
-): Promise<Result> {
-  const client = await advisoryLockPool.connect()
-  let released = false
-  try {
-    await client.query(
-      '/* withPostPublicationReconciliationLock.lock */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
-      [scopeKey],
-    )
-    const result = await operation()
-    const { rows } = await client.query<{ unlocked: boolean }>(
-      '/* withPostPublicationReconciliationLock.unlock */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
-      [scopeKey],
-    )
-    if (!rows[0]?.unlocked)
-      throw new Error('Post publication reconciliation advisory lock was not held at release')
-    client.release()
-    released = true
-    return result
-  } finally {
-    if (!released) client.release(true)
-  }
-}
-
-/** Acquires distinct post keys in UUID order, preventing cross-scope deadlocks. */
-export async function withPostPublicationReconciliationLocks<Result>(
-  postIds: readonly string[],
-  operation: () => Promise<Result>,
-): Promise<Result> {
-  const keys = [...new Set(postIds)]
-    .toSorted()
-    .map(postId => postPublicationScopeLockKey({ type: 'post', postId }))
-  if (keys.length === 0) return operation()
-  const client = await advisoryLockPool.connect()
-  let released = false
-  try {
-    for (const key of keys) {
-      // oxlint-disable-next-line no-await-in-loop -- advisory keys must be acquired in total order.
-      await client.query(
-        '/* withPostPublicationReconciliationLocks.lock */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
-        [key],
-      )
-    }
-    const result = await operation()
-    for (const key of [...keys].toReversed()) {
-      // oxlint-disable-next-line no-await-in-loop -- release in reverse acquisition order.
-      const { rows } = await client.query<{ unlocked: boolean }>(
-        '/* withPostPublicationReconciliationLocks.unlock */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
-        [key],
-      )
-      if (!rows[0]?.unlocked)
-        throw new Error('Post publication reconciliation advisory lock was not held at release')
-    }
-    client.release()
-    released = true
-    return result
-  } finally {
-    if (!released) client.release(true)
-  }
 }
