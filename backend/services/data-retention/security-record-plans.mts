@@ -1,3 +1,5 @@
+import { calendarYearsAgo } from './security-retention-cutoff.mts'
+
 export type Source =
   | 'oauth_events'
   | 'oauth_native_mints'
@@ -43,7 +45,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
       return {
         table: 'oauth_native_session_token_mints',
         keyAt: 'target.occurred_at',
-        cutoffAt: twelveMonthsAgo(now),
+        cutoffAt: calendarYearsAgo(now, 1),
         predicate: 'target.id < $1::uuid',
         deletePredicate: `NOT EXISTS (
           SELECT 1 FROM user_legal_preservation_holds preservation_hold
@@ -55,9 +57,13 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
       return {
         table: 'oauth_authorization_server_events',
         keyAt: 'target.occurred_at',
-        cutoffAt: twelveMonthsAgo(now),
+        cutoffAt: calendarYearsAgo(now, 1),
         predicate: 'target.id < $1::uuid',
-        deletePredicate: `(
+        deletePredicate: `NOT EXISTS (
+          SELECT 1 FROM user_legal_preservation_holds preservation_hold
+          WHERE preservation_hold.account_user_id = target.user_id
+            AND preservation_hold.released_at IS NULL
+        ) AND (
           target.event_type <> 'consent_approved' OR NOT EXISTS (
             SELECT 1 FROM oauth_grant_retention_anchors anchor
             WHERE anchor.id = target.grant_id
@@ -93,7 +99,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
       return {
         table: 'oauth_grant_retention_anchors',
         keyAt: 'target.ended_at',
-        cutoffAt: twelveMonthsAgo(now),
+        cutoffAt: calendarYearsAgo(now, 1),
         predicate: 'target.ended_at < $1',
         deletePredicate: `NOT EXISTS (SELECT 1 FROM oauth_grants grant_row WHERE grant_row.id = target.id)
           AND NOT EXISTS (
@@ -163,7 +169,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
       return {
         table: 'copyright_decision_rationales',
         keyAt: 'target.created_at',
-        cutoffAt: new Date(now.getTime() - 1_095 * 86_400_000),
+        cutoffAt: calendarYearsAgo(now, 6),
         predicate: `target.id < $1::uuid AND target.rationale_ciphertext = 'erased'`,
         deletePredicate: 'fn_copyright_decision_rationale_retention_eligible(target, $2)',
         deletePredicateUsesCutoff: true,
@@ -172,28 +178,11 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
       return {
         table: 'copyright_decision_rationales',
         keyAt: 'target.created_at',
-        cutoffAt: new Date(now.getTime() - 1_095 * 86_400_000),
+        cutoffAt: calendarYearsAgo(now, 6),
         predicate: `target.id < $1::uuid AND target.copyright_notice_id IS NULL
           AND target.rationale_ciphertext <> 'erased'`,
         deletePredicate: 'fn_copyright_decision_rationale_retention_eligible(target, $2)',
         deletePredicateUsesCutoff: true,
       }
   }
-}
-
-function twelveMonthsAgo(now: Date): Date {
-  const year = now.getUTCFullYear() - 1
-  const month = now.getUTCMonth()
-  const day = Math.min(now.getUTCDate(), new Date(Date.UTC(year, month + 1, 0)).getUTCDate())
-  return new Date(
-    Date.UTC(
-      year,
-      month,
-      day,
-      now.getUTCHours(),
-      now.getUTCMinutes(),
-      now.getUTCSeconds(),
-      now.getUTCMilliseconds(),
-    ),
-  )
 }

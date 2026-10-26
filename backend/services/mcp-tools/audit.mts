@@ -124,7 +124,7 @@ export async function recordMcpCallAudit(
     await query(
       `/* recordMcpCallAudit:lockLegalCases */
        WITH target AS (
-         SELECT * FROM unnest($1::text[], $2::uuid[]) AS target(kind, target_id)
+         SELECT kind, target_id FROM unnest($1::text[], $2::uuid[]) AS target(kind, target_id)
        )
        SELECT notice.id FROM copyright_notices notice
        WHERE notice.id IN (

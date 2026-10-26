@@ -42,7 +42,10 @@ export async function cleanupSecuritySourcePageInTransaction(
     ? [cutoffId, cursor.cursor_id, batchSize + 1]
     : [plan.cutoffAt, cursor.cursor_at, cursor.cursor_id, batchSize + 1]
   const limitParameter = idKeyed ? '$3::integer' : '$4::integer'
-  const needsAccountLocks = source === 'copyright_rationales_noncase'
+  const needsAccountLocks =
+    source === 'copyright_rationales_noncase' ||
+    source === 'oauth_events' ||
+    source === 'oauth_native_mints'
   const page = await query<{ id: string; key_at: string }>(
     `/* listSecurityRetentionPage:${source} */
      SELECT target.id, (${plan.keyAt})::text AS key_at
@@ -55,10 +58,17 @@ export async function cleanupSecuritySourcePageInTransaction(
   const scanned = page.rows.slice(0, batchSize)
   let selected = scanned
   if (needsAccountLocks && scanned.length > 0) {
-    const lockedIds = await lockCopyrightRationaleRetentionPage(
-      query,
-      scanned.map(row => row.id),
-    )
+    const scannedIds = scanned.map(row => row.id)
+    const lockedIds =
+      source === 'copyright_rationales_noncase'
+        ? await lockCopyrightRationaleRetentionPage(query, scannedIds)
+        : await lockOAuthRetentionPageAccounts(
+            query,
+            source === 'oauth_events'
+              ? 'oauth_authorization_server_events'
+              : 'oauth_native_session_token_mints',
+            scannedIds,
+          )
     selected = scanned.filter(row => lockedIds.has(row.id))
   }
   if (source === 'oauth_events') {
@@ -102,4 +112,35 @@ export async function cleanupSecuritySourcePageInTransaction(
     [source, last?.key_at ?? null, last?.id ?? null],
   )
   return { deleted, hasMore }
+}
+
+/** Hold placement takes the same account advisory lock before inserting the hold. */
+async function lockOAuthRetentionPageAccounts(
+  query: TransactionQuery,
+  table: 'oauth_authorization_server_events' | 'oauth_native_session_token_mints',
+  ids: readonly string[],
+): Promise<ReadonlySet<string>> {
+  const accounts = await query<{ user_id: string }>(
+    `/* listOAuthRetentionPageAccounts */
+     SELECT DISTINCT user_id FROM ${table}
+     WHERE id = ANY($1::uuid[]) AND user_id IS NOT NULL ORDER BY user_id`,
+    [ids],
+  )
+  /* oxlint-disable no-await-in-loop -- advisory locks must follow one stable account order. */
+  for (const account of accounts.rows) {
+    // no-mistakes-disable-next-line query-reached-per-item: one sorted lock per distinct account in this bounded page
+    await query(
+      `/* lockOAuthRetentionPageAccount */
+       SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
+      [account.user_id],
+    )
+  }
+  /* oxlint-enable no-await-in-loop */
+  const locked = await query<{ id: string }>(
+    `/* lockOAuthRetentionPageRows */
+     SELECT id FROM ${table}
+     WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE SKIP LOCKED`,
+    [ids],
+  )
+  return new Set(locked.rows.map(row => row.id))
 }

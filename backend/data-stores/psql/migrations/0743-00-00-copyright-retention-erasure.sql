@@ -101,13 +101,19 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_erased_copyright_decision_rationale();
 COMMENT ON FUNCTION fn_reject_erased_copyright_decision_rationale() IS 'Serializes with case erasure and suppresses fresh legal rationale ciphertext after an erasure marker exists, without suppressing the security attempt.';
 
 -- Copyright rationale rows are bounded. Case-scoped rows retire only after the existing case
--- erasure has redacted them; noncase decisions retire after 1095 days of terminal inactivity.
+-- erasure has redacted them; noncase decisions retire after six calendar years of terminal inactivity.
 CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
   rationale copyright_decision_rationales,
   cutoff_at TIMESTAMPTZ
 )
 RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
-  SELECT uuid_extract_timestamp(rationale.id) < cutoff_at AND (
+  WITH retention_bound AS (
+    SELECT LEAST(
+      cutoff_at,
+      ((transaction_timestamp() AT TIME ZONE 'UTC') - INTERVAL '6 years') AT TIME ZONE 'UTC'
+    ) AS eligible_before_at
+  )
+  SELECT uuid_extract_timestamp(rationale.id) < retention_bound.eligible_before_at AND (
     (rationale.copyright_notice_id IS NOT NULL
       AND rationale.rationale_ciphertext = 'erased'
       AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure
@@ -125,33 +131,33 @@ RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
             WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id)
         AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
           WHERE review.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
-            AND review.decision = 'rejected' AND review.reviewed_at < cutoff_at)
+            AND review.decision = 'rejected' AND review.reviewed_at < retention_bound.eligible_before_at)
         AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery
           WHERE delivery.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id
-            AND (delivery.state IN ('pending', 'claimed') OR delivery.updated_at >= cutoff_at)))
+            AND (delivery.state IN ('pending', 'claimed') OR delivery.updated_at >= retention_bound.eligible_before_at)))
     ))
     OR (rationale.copyright_repeat_infringer_review_id IS NOT NULL
       AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews review
         WHERE review.id = rationale.copyright_repeat_infringer_review_id
           AND review.outcome IN ('no_action', 'warning', 'reinstatement')
-          AND review.outcome_at < cutoff_at
+          AND review.outcome_at < retention_bound.eligible_before_at
           AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds hold
             WHERE hold.account_user_id = review.account_user_id AND hold.released_at IS NULL)))
     OR (rationale.account_user_id IS NOT NULL
       AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews terminal_review
         WHERE terminal_review.account_user_id = rationale.account_user_id
           AND terminal_review.outcome = 'reinstatement'
-          AND terminal_review.outcome_at < cutoff_at)
+          AND terminal_review.outcome_at < retention_bound.eligible_before_at)
       AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds hold
         WHERE hold.account_user_id = rationale.account_user_id
-          AND (hold.released_at IS NULL OR hold.released_at >= cutoff_at))
+          AND (hold.released_at IS NULL OR hold.released_at >= retention_bound.eligible_before_at))
       AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents incident
         WHERE incident.account_user_id = rationale.account_user_id
-          AND (incident.is_operative OR incident.created_at >= cutoff_at))
+          AND (incident.is_operative OR incident.created_at >= retention_bound.eligible_before_at))
       AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews review
         WHERE review.account_user_id = rationale.account_user_id
-          AND (review.outcome IS NULL OR review.outcome_at >= cutoff_at)))
-  )
+          AND (review.outcome IS NULL OR review.outcome_at >= retention_bound.eligible_before_at)))
+  ) FROM retention_bound
 $$;
 
 CREATE OR REPLACE FUNCTION fn_reject_copyright_decision_rationale_mutation()
@@ -183,5 +189,5 @@ CREATE OR REPLACE TRIGGER trigger_copyright_decision_rationales_immutable
 BEFORE UPDATE OR DELETE ON copyright_decision_rationales
 FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation();
 
-COMMENT ON FUNCTION fn_copyright_decision_rationale_retention_eligible(copyright_decision_rationales, timestamptz) IS 'True after case erasure or after the approved 1095-day noncase terminal window, with open reviews and preservation holds excluded.';
+COMMENT ON FUNCTION fn_copyright_decision_rationale_retention_eligible(copyright_decision_rationales, timestamptz) IS 'True after case erasure or after the approved six-calendar-year noncase terminal window, bounded by the server clock even if the caller supplies a later cutoff, with open reviews and preservation holds excluded.';
 COMMENT ON FUNCTION fn_reject_copyright_decision_rationale_mutation() IS 'Permits only controlled case redaction or bounded retention deletion of eligible legal rationale.';

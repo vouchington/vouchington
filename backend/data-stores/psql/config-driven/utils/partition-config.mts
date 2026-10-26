@@ -159,4 +159,5 @@ for (const table of CLASSIFIER_RESULT_PARTITION_TABLES) {
 PARTITION_DROP_POLICIES['mcp_call_audit_events'] = {
   minimumRetentionDays: 366,
   legalBasis: 'articles/privacy-policy.md',
+  legalHoldAccountColumn: 'actor_user_id',
 }
