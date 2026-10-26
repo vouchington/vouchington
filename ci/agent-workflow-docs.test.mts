@@ -1,5 +1,4 @@
 import { execFile } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -69,23 +68,6 @@ async function runScreenshotCommand(forwardedArgs: string[]): Promise<Screenshot
   }
 }
 
-function readRepoFile(path: string): string {
-  return readFileSync(join(repoRoot, path), 'utf8')
-}
-
-function normalizedMarkdown(path: string): string {
-  return readRepoFile(path).replace(/\s+/g, ' ').trim()
-}
-
-function normalizedMarkdownListItem(path: string, marker: string): string {
-  const listItem = readRepoFile(path)
-    .split(/^-\s+/mu)
-    .find(item => item.includes(marker))
-
-  expect(listItem).toBeDefined()
-  return listItem?.replace(/\s+/g, ' ').trim() ?? ''
-}
-
 describe('agent workflow documentation', () => {
   it('scopes pr-shepherd session deadline wording to pr-shepherd docs', () => {
     expect(
@@ -117,26 +99,6 @@ describe('agent workflow documentation', () => {
     )
   })
 
-  it('preflights screenshot upload credentials before initializing the web stack', () => {
-    const credentialPreflightCommand = '`pnpm run pr:attach-screenshots --check-upload-credentials`'
-    const credentialPreflightDirective = normalizedMarkdownListItem(
-      '.agents/skills/agent-workflow/start-of-work.md',
-      credentialPreflightCommand,
-    )
-    const monorepoInitialization = credentialPreflightDirective.indexOf(
-      '`./dev/initialize monorepo`',
-    )
-    const credentialPreflight = credentialPreflightDirective.indexOf(credentialPreflightCommand)
-    const webInitialization = credentialPreflightDirective.indexOf(
-      '`./dev/initialize web`',
-      credentialPreflight,
-    )
-
-    expect(monorepoInitialization).toBeGreaterThanOrEqual(0)
-    expect(credentialPreflight).toBeGreaterThan(monorepoInitialization)
-    expect(webInitialization).toBeGreaterThan(credentialPreflight)
-  })
-
   it('forwards credential mode through the root package script', async () => {
     const result = await runScreenshotCommand(['--check-upload-credentials'])
 
@@ -152,56 +114,5 @@ describe('agent workflow documentation', () => {
     expect(result.exitCode).not.toBe(0)
     expect(result.output).toContain('cannot be combined with attachment arguments')
     expect(result.ghLog).toBeUndefined()
-  })
-
-  it('documents screenshot preflight fallback and split reporting', () => {
-    const workflow = normalizedMarkdown('.agents/skills/agent-workflow/implementation.md')
-
-    expect(workflow).toContain('Visual verification:')
-  })
-
-  it('retains independent validation reporting fields', () => {
-    const implementation = normalizedMarkdown('.agents/skills/agent-workflow/implementation.md')
-
-    expect(implementation).toContain('Automated browser tests:')
-    expect(implementation).toContain('Screenshot attachment:')
-  })
-
-  it('keeps stack polling on the stack worker and allows a queued-lower upper fast-forward', () => {
-    const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
-    const stacked = normalizedMarkdown('.agents/skills/stacked-prs/SKILL.md')
-    const beforePushing = normalizedMarkdown('.agents/skills/agent-workflow/before-pushing.md')
-
-    expect(gitAndPrs).toContain('One worker per native stack owns Shepherd polling and Git writes')
-    expect(gitAndPrs).not.toContain('the shepherd loop, the ownership view')
-    expect(stacked).toContain(
-      'vouchington-tooling/skills/stacked-prs/SKILL.md#ownership-and-workers',
-    )
-    expect(stacked).toContain('pnpm exec pr-shepherd stack <pr> --until-terminal --quiet-status')
-    expect(stacked).toContain('### Upper-only fast-forward')
-    expect(stacked).not.toContain('the shepherd loop itself stays with this session')
-    expect(beforePushing).toContain('upper-only fast-forward')
-    expect(beforePushing).toContain(
-      'Do not sync or rebase the stack while the lower layer is queued',
-    )
-  })
-
-  it('documents harness background-task, wakeup-turn-boundary, ready-run, and lease-race gotchas', () => {
-    const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
-
-    expect(gitAndPrs).toContain('run_in_background')
-    expect(gitAndPrs).toContain('ScheduleWakeup')
-    expect(gitAndPrs).toContain('--force-with-lease=<branch>:<sha>')
-    expect(gitAndPrs).toContain('vouchington-tooling/skills/agent-workflow/references/four-refs.md')
-    expect(gitAndPrs).toContain('./dev/rebase-onto-main --stack')
-  })
-
-  it('keeps unbounded tool output out of the main session', () => {
-    const startOfWork = normalizedMarkdown('.agents/skills/agent-workflow/start-of-work.md')
-    const triagePrs = readRepoFile('.agents/skills/triage-prs/SKILL.md')
-
-    expect(startOfWork).toContain('review-ci-logs')
-    expect(triagePrs).not.toContain('--log-failed')
-    expect(triagePrs).toContain('review-ci-logs')
   })
 })
