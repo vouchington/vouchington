@@ -95,7 +95,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         histories: emptyWindow,
         orphanedOAuthAccounts: emptyWindow,
         oauthFriendEdges: { now: new Date('1970-01-02T00:00:00.000Z') },
-        securityRecords: { batchSize: 1, maxBatches: 1, now: new Date('1974-01-02T00:00:00.000Z') },
+        securityRecords: { batchSize: 1, maxBatches: 1, now: new Date('1977-01-02T00:00:00.000Z') },
         expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
         expiredOAuthServerArtifacts: emptyWindow,
         expiredBlueskyLinkCompletions: emptyWindow,
