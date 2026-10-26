@@ -11,6 +11,7 @@ import {
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import { background } from '@queues/background/queues'
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
+import { enqueueActivityPubInboxDelivery } from '@queues/activitypub/enqueues/inbox'
 import { processDelivery } from '@workers/activitypub/processors/inbox'
 import {
   activityPubInboxDeliveryExistsOnPrimaryForTest,
@@ -79,7 +80,18 @@ describe('activitypub durable inbox through the production background processor'
     const actor = await createApprovedRemoteActor()
     const deliveredActivityId = `${actor.actorUri}/activities/${randomUUID()}`
     const delivered = await createSignedDelivery(actor, { activityId: deliveredActivityId })
-    await runJob(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivered, delivered.deliveryId)
+    const loaded = await activityPubInboxDeliveryTransitions.load(delivered.deliveryId)
+    if (loaded.outcome === 'stale') throw new Error('Expected the signed envelope')
+    const acceptedAgain = await activityPubInboxDeliveryTransitions.accept(loaded.value)
+    expect(acceptedAgain).toEqual({ outcome: 'applied', value: delivered })
+    const queued = await enqueueActivityPubInboxDelivery(delivered)
+    try {
+      expect(queued?.id).toBe(`activitypub-inbox__${delivered.requestDigest}`)
+      expect(await enqueueActivityPubInboxDelivery(delivered)).toBeNull()
+      await runJob(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivered, delivered.deliveryId)
+    } finally {
+      await queued?.remove()
+    }
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(deliveredActivityId)).toBe(false)
 
     const abandoned = await createSignedDelivery(actor)
