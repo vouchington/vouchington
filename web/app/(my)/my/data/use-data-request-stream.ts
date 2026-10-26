@@ -4,10 +4,8 @@ import { useEffect, useEffectEvent } from 'react'
 import { ApiError } from '@vouchington/api-client'
 import type { DataRequest } from '@/lib/api/client/users'
 import { createDownloadLinkRetry, needsDownloadLinkRetry } from './data-request-download-link-retry'
-import {
-  createDataRequestStreamTransport,
-  shouldKeepStreamReconnecting,
-} from './data-request-stream-transport'
+import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
+import { shouldKeepStreamReconnecting } from './data-request-stream-transport'
 import { loadDataRequest, type StreamPayload } from './data-request-utils'
 
 const TERMINAL_STATUSES = new Set(['ready', 'failed', 'expired'])
@@ -51,10 +49,11 @@ export function useDataRequestStream({
     })
 
     const streamUrl = `/api/v1/users/${userId}/data-request/stream?request_id=${encodeURIComponent(requestId!)}`
-    const stream = createDataRequestStreamTransport({
+    const stream = createRecoverableEventSource({
       url: streamUrl,
+      eventName: 'status',
       isCurrent,
-      onStatus,
+      onEvent: onStatus,
       onError: onSseError,
     })
 
