@@ -4,7 +4,6 @@ import { createRefundScanCase } from '../../../test-helpers/services/memberships
 import {
   createStripeRefundScanCallBudget,
   getDurableStripeRefundHistory,
-  StripeRefundScanContinuationError,
   wasSucceededStripeRefundObserved,
 } from './refund-scan.mts'
 
@@ -91,7 +90,7 @@ describe('durable Stripe refund scan', () => {
         callBudget: createStripeRefundScanCallBudget(1),
         listRefundsForPaymentPage,
       }),
-    ).rejects.toBeInstanceOf(StripeRefundScanContinuationError)
+    ).rejects.toThrow('Stripe refund scan requires another bounded reconciliation call')
 
     await expect(
       getDurableStripeRefundHistory({
@@ -231,7 +230,7 @@ describe('durable Stripe refund scan', () => {
         callBudget,
         listRefundsForPaymentPage,
       }),
-    ).rejects.toBeInstanceOf(StripeRefundScanContinuationError)
+    ).rejects.toThrow('Stripe refund scan requires another bounded reconciliation call')
     expect(calls).toBe(3)
   })
 })

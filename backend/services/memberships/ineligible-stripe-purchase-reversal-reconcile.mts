@@ -7,7 +7,7 @@ export async function reconcileFailedIneligiblePurchaseReversal(
     hasReceipt: boolean
     id: string
     providerRefundId?: string | null
-    qualifyingAllocationMinorUnits?: string | null
+    qualifyingAllocationMinorUnits: string
     remainingRefundableMinorUnits: string | null
   },
   observedRemainingMinorUnits: number,
@@ -49,13 +49,12 @@ export async function reconcileFailedIneligiblePurchaseReversal(
   return reconciled ? Number(reconciled.remainingRefundableMinorUnits) : currentRemainingMinorUnits
 }
 
-export function getObservedRemainingMinorUnits(
-  operation: { qualifyingAllocationMinorUnits?: string | null },
+function getObservedRemainingMinorUnits(
+  operation: { qualifyingAllocationMinorUnits: string },
   providerObservedRemainingMinorUnits: number,
   externallySatisfiedMinorUnits: number | undefined,
 ): number {
-  if (externallySatisfiedMinorUnits === undefined || !operation.qualifyingAllocationMinorUnits)
-    return providerObservedRemainingMinorUnits
+  if (externallySatisfiedMinorUnits === undefined) return providerObservedRemainingMinorUnits
   return Math.max(
     0,
     Number(operation.qualifyingAllocationMinorUnits) - externallySatisfiedMinorUnits,

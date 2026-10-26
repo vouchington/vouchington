@@ -1,21 +1,27 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestMembership, createTestUser } from '@voucha/test-helpers'
-import { getRefundOperationRetryStateForTest } from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
+import * as stripeRefunds from '@modules/stripe/refunds'
+import {
+  getRefundOperationRetryStateForTest,
+  getRefundReceiptCountForTest,
+  recordExpiredRefundAttemptForTest,
+} from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
 import {
   claimAdministratorRefundRequest,
   discoverRefundByOperationMetadata,
+  enrichRefundReconciliationAttemptProviderRefund,
   leaseDueRefundReconciliation,
-  reconcileLeasedRefundOperation,
   reconcileMembershipRefundOperation,
   recordRefundReconciliationAttempt,
   scheduleRefundReconciliationRetry,
-  type RefundReconciliationLease,
-  type RefundProviderOperations,
 } from './index.mts'
-import type { RefundReconciliationPolicy } from './reconcile-types.mts'
 
 describe('refund reconciliation retries', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('requires exact attempt metadata before accepting a discovered refund', async () => {
     const { attempt, lease } = await createAttempt()
     await expect(
@@ -72,13 +78,11 @@ describe('refund reconciliation retries', () => {
     const operation = await claimAdministratorRefundRequest(await request())
     const lease = await leaseDueRefundReconciliation(operation.id)
     if (!lease) throw new Error('Expected administrator reconciliation lease')
-    const createRefund = vi
-      .fn<RefundProviderOperations['createRefund']>()
-      .mockRejectedValue(new Error('Stripe network interruption'))
+    vi.spyOn(stripeRefunds, 'createStripeRefund').mockRejectedValue(
+      new Error('Stripe network interruption'),
+    )
 
-    await expect(
-      reconcileMembershipRefundOperation(lease, providerOperations({ createRefund })),
-    ).resolves.toBeUndefined()
+    await expect(reconcileMembershipRefundOperation(lease)).resolves.toBeUndefined()
     await expect(getRefundOperationRetryStateForTest(operation.id)).resolves.toEqual({
       due: true,
       failed: true,
@@ -105,7 +109,7 @@ describe('refund reconciliation retries', () => {
     await scheduleRefundReconciliationRetry(firstLease, new Date(Date.now() - 1), 'retry discovery')
     const retryLease = await leaseDueRefundReconciliation(operation.id)
     if (!retryLease) throw new Error('Expected retry reconciliation lease')
-    const createRefund = vi.fn<RefundProviderOperations['createRefund']>().mockResolvedValue({
+    const createRefund = vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue({
       amount: 700,
       charge: 'ch_new_attempt',
       currency: 'usd',
@@ -114,7 +118,7 @@ describe('refund reconciliation retries', () => {
       status: 'succeeded',
     } as never)
 
-    await reconcileMembershipRefundOperation(retryLease, providerOperations({ createRefund }))
+    await reconcileMembershipRefundOperation(retryLease)
     expect(createRefund).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey: `voucha-membership-refund-reconciliation:${operation.id}:${retryLease.attemptOrdinal}`,
@@ -142,54 +146,113 @@ describe('refund reconciliation retries', () => {
     ).rejects.toThrow('metadata scan lease is stale')
   })
 
-  it('retrieves an already known provider refund before creating another attempt', async () => {
-    const operation = await claimAdministratorRefundRequest(await request())
+  it('retrieves a refund recorded on a durable attempt without creating another', async () => {
+    const refundRequest = await request()
+    const operation = await claimAdministratorRefundRequest(refundRequest)
     const lease = await leaseDueRefundReconciliation(operation.id)
     if (!lease) throw new Error('Expected reconciliation lease')
-    const complete = vi.fn<RefundReconciliationPolicy<{ requestId: string }>['complete']>()
-    const getRefund = vi.fn<RefundProviderOperations['getRefund']>().mockResolvedValue({
+    const attempt = await recordRefundReconciliationAttempt(lease, `known-${randomUUID()}`)
+    const refundId = `re_known_${randomUUID()}`
+    await enrichRefundReconciliationAttemptProviderRefund(attempt.id, refundId)
+    const getRefund = vi.spyOn(stripeRefunds, 'getStripeRefund').mockResolvedValue({
       amount: 700,
-      charge: `ch_known_${randomUUID()}`,
+      charge: refundRequest.providerPaymentReference,
       currency: 'usd',
-      id: `re_known_${randomUUID()}`,
+      id: refundId,
       payment_intent: null,
       status: 'succeeded',
     } as never)
+    const createRefund = vi.spyOn(stripeRefunds, 'createStripeRefund')
 
-    await reconcileLeasedRefundOperation(
-      lease,
-      policy({ complete, knownProviderRefundId: () => `re_known_${randomUUID()}` }),
-      providerOperations({ getRefund }),
-    )
+    await reconcileMembershipRefundOperation(lease)
 
-    expect(getRefund).toHaveBeenCalledWith(expect.stringMatching(/^re_known_/))
-    expect(complete).toHaveBeenCalledWith(
-      lease,
-      { requestId: operation.id },
-      expect.objectContaining({ status: 'succeeded' }),
-    )
+    expect(getRefund).toHaveBeenCalledWith(refundId)
+    expect(createRefund).not.toHaveBeenCalled()
+    await expect(getRefundReceiptCountForTest(operation.id)).resolves.toBe(1)
+  })
+
+  it('recovers a provider refund after an expired attempt lost its create reply', async () => {
+    const refundRequest = await request()
+    const operation = await claimAdministratorRefundRequest(refundRequest)
+    const lease = await leaseDueRefundReconciliation(operation.id)
+    if (!lease) throw new Error('Expected reconciliation lease')
+    const attemptId = await recordExpiredRefundAttemptForTest(lease)
+    const headId = `re_head_${randomUUID()}`
+    const refundId = `re_recovered_${randomUUID()}`
+    const recoveredRefund: Awaited<ReturnType<typeof stripeRefunds.getStripeRefund>> = {
+      amount: 700,
+      balance_transaction: null,
+      charge: refundRequest.providerPaymentReference,
+      created: Math.floor(Date.now() / 1000),
+      currency: 'usd',
+      customer: null,
+      customer_account: null,
+      id: refundId,
+      lastResponse: { headers: {}, requestId: `req_${randomUUID()}`, statusCode: 200 },
+      metadata: {
+        membership_refund_attempt_id: attemptId,
+        membership_refund_operation_id: operation.id,
+      },
+      object: 'refund',
+      payment_intent: null,
+      payment_method: null,
+      reason: null,
+      receipt_number: null,
+      source_transfer_reversal: null,
+      status: 'succeeded',
+      transfer_reversal: null,
+    }
+    const listRefunds = vi
+      .spyOn(stripeRefunds, 'listStripeRefundsForPaymentPage')
+      .mockImplementation(async ({ startingAfter }) =>
+        startingAfter
+          ? {
+              hasMore: false,
+              nextCursor: undefined,
+              refunds: [recoveredRefund],
+            }
+          : {
+              hasMore: true,
+              nextCursor: headId,
+              refunds: [{ ...recoveredRefund, id: headId, metadata: {} }],
+            },
+      )
+    const getRefund = vi.spyOn(stripeRefunds, 'getStripeRefund').mockResolvedValue(recoveredRefund)
+    const createRefund = vi.spyOn(stripeRefunds, 'createStripeRefund')
+
+    await reconcileMembershipRefundOperation(lease)
+
+    expect(listRefunds).toHaveBeenNthCalledWith(1, {
+      chargeId: refundRequest.providerPaymentReference,
+      paymentIntentId: null,
+    })
+    expect(listRefunds).toHaveBeenNthCalledWith(2, {
+      chargeId: refundRequest.providerPaymentReference,
+      paymentIntentId: null,
+      startingAfter: headId,
+    })
+    expect(getRefund).toHaveBeenCalledWith(refundId)
+    expect(createRefund).not.toHaveBeenCalled()
+    await expect(getRefundReceiptCountForTest(operation.id)).resolves.toBe(1)
   })
 
   it.each(['failed', 'pending', 'mismatched'] as const)(
     'schedules a durable retry for a %s provider outcome',
     async outcome => {
-      const operation = await claimAdministratorRefundRequest(await request())
+      const refundRequest = await request()
+      const operation = await claimAdministratorRefundRequest(refundRequest)
       const lease = await leaseDueRefundReconciliation(operation.id)
       if (!lease) throw new Error('Expected reconciliation lease')
-      const createRefund = vi.fn<RefundProviderOperations['createRefund']>().mockResolvedValue({
+      const createRefund = vi.spyOn(stripeRefunds, 'createStripeRefund').mockResolvedValue({
         amount: outcome === 'mismatched' ? 699 : 700,
-        charge: `ch_${outcome}_${randomUUID()}`,
+        charge: refundRequest.providerPaymentReference,
         currency: 'usd',
         id: `re_${outcome}_${randomUUID()}`,
         payment_intent: null,
         status: outcome === 'failed' ? 'failed' : outcome === 'pending' ? 'pending' : 'succeeded',
       } as never)
 
-      await reconcileLeasedRefundOperation(
-        lease,
-        policy({ providerFailuresAreDurable: true }),
-        providerOperations({ createRefund }),
-      )
+      await reconcileMembershipRefundOperation(lease)
 
       expect(createRefund).toHaveBeenCalledOnce()
       await expect(getRefundOperationRetryStateForTest(operation.id)).resolves.toEqual({
@@ -204,45 +267,7 @@ describe('refund reconciliation retries', () => {
       )
     },
   )
-
-  it('returns a non-durable provider failure to its caller', async () => {
-    const operation = await claimAdministratorRefundRequest(await request())
-    const lease = await leaseDueRefundReconciliation(operation.id)
-    if (!lease) throw new Error('Expected reconciliation lease')
-    const createRefund = vi
-      .fn<RefundProviderOperations['createRefund']>()
-      .mockRejectedValue(new Error('provider connection reset'))
-
-    await expect(
-      reconcileLeasedRefundOperation(lease, policy(), providerOperations({ createRefund })),
-    ).rejects.toThrow('provider connection reset')
-  })
 })
-
-function policy(
-  overrides: Partial<RefundReconciliationPolicy<{ requestId: string }>> = {},
-): RefundReconciliationPolicy<{ requestId: string }> {
-  return {
-    complete: async () => 'completed',
-    createLookup: () => ({ chargeId: `ch_policy_${randomUUID()}` }),
-    getContext: async operationId => ({ requestId: operationId }),
-    lookup: () => ({ chargeId: null, paymentIntentId: `pi_policy_${randomUUID()}` }),
-    providerIdempotencyKey: (lease: RefundReconciliationLease) =>
-      `policy-refund-${lease.id}-${lease.attemptOrdinal}`,
-    ...overrides,
-  }
-}
-
-function providerOperations(
-  overrides: Partial<RefundProviderOperations>,
-): RefundProviderOperations {
-  return {
-    createRefund: vi.fn<RefundProviderOperations['createRefund']>(),
-    getRefund: vi.fn<RefundProviderOperations['getRefund']>(),
-    listRefundPage: vi.fn<RefundProviderOperations['listRefundPage']>(),
-    ...overrides,
-  }
-}
 
 async function createAttempt() {
   const operation = await claimAdministratorRefundRequest(await request())

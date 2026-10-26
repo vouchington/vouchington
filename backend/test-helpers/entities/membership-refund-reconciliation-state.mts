@@ -1,6 +1,27 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { claimMembershipOperationExecutionWork } from '../../services/memberships/operation-execution-work.mts'
+import type { RefundReconciliationLease } from '../../services/memberships/refund-reconciliation/types.mts'
+
+export async function recordExpiredRefundAttemptForTest(
+  lease: Pick<RefundReconciliationLease, 'id' | 'leaseToken' | 'attemptOrdinal'>,
+): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* recordExpiredRefundAttemptForTest */
+    INSERT INTO membership_refund_operation_attempts (
+      id, membership_operation_id, membership_provider_context_id, attempt_ordinal,
+      provider_idempotency_key, amount_minor_units, currency_code
+    ) SELECT uuidv7(INTERVAL '-24 hours'), operation.id, operation.membership_provider_context_id,
+      operation.reconciliation_attempt_ordinal,
+      ${`voucha-membership-refund-reconciliation:${lease.id}:${lease.attemptOrdinal}`},
+      operation.remaining_refundable_minor_units, operation.currency_code
+    FROM membership_operations operation
+    JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
+    WHERE operation.id = ${lease.id} AND work.lease_token = ${lease.leaseToken}
+      AND operation.reconciliation_attempt_ordinal = ${lease.attemptOrdinal}
+    RETURNING id`)
+  if (!rows[0]) throw new Error('Expected a claimed refund operation for an expired attempt')
+  return rows[0].id
+}
 
 export async function getRefundOperationLeaseTokenForTest(operationId: string): Promise<string> {
   const { rows } = await read<{ leaseToken: string }>(sql`/* getRefundMetadataScanLease */

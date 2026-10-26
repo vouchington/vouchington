@@ -9,7 +9,7 @@ export type MembershipPurchaseProvider =
   | 'google_play'
   | 'microsoft_store'
 
-export type MembershipPurchaseLaunch =
+type MembershipPurchaseLaunch =
   | { kind: 'stripe_checkout'; checkout_url: string }
   | { kind: 'apple_app_store'; product_id: string; app_account_token: string }
   | {
@@ -89,7 +89,7 @@ export function assertMatchingPurchaseIntent(row: PurchaseIntentRow, fingerprint
     throw createCodedError(409, 'Membership purchase is not eligible.', CONFLICT)
 }
 
-export function getNativeMembershipLaunch(
+function getNativeMembershipLaunch(
   row: Pick<
     PurchaseIntentRow,
     'id' | 'user_id' | 'provider' | 'provider_product_id' | 'base_plan_id' | 'offer_id' | 'sku_id'

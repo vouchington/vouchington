@@ -17,61 +17,39 @@ import {
 } from './provider-operations.mts'
 import { handleRefundProviderOutcome } from './retry-policy.mts'
 import type { RefundReconciliationPolicy } from './reconcile-types.mts'
-export type { RefundReconciliationPolicy } from './reconcile-types.mts'
-
-export type RefundProviderOperations = {
-  createRefund: typeof stripeRefunds.createStripeRefund
-  getRefund: typeof stripeRefunds.getStripeRefund
-  listRefundPage: typeof stripeRefunds.listStripeRefundsForPaymentPage
-}
 
 export async function reconcileMembershipRefundOperation(
   dispatch: RefundReconciliationDispatch,
-  operations: RefundProviderOperations = {
-    createRefund: stripeRefunds.createStripeRefund,
-    getRefund: stripeRefunds.getStripeRefund,
-    listRefundPage: stripeRefunds.listStripeRefundsForPaymentPage,
-  },
 ): Promise<void> {
   const lease = await getClaimedRefundReconciliationLease(dispatch)
   if (!lease) return
-  await reconcileLeasedRefundOperation(lease, administratorRefundPolicy, operations)
+  await reconcileLeasedRefundOperation(lease, administratorRefundPolicy)
 }
 
-export async function reconcileLeasedRefundOperation<Context>(
+async function reconcileLeasedRefundOperation<Context>(
   lease: RefundReconciliationLease,
   policy: RefundReconciliationPolicy<Context>,
-  operations: RefundProviderOperations,
 ): Promise<void> {
   try {
-    await reconcileLeasedRefundOperationProviderWork(lease, policy, operations)
+    await reconcileLeasedRefundOperationProviderWork(lease, policy)
   } catch (err) {
-    if (!(err instanceof RefundProviderOperationError) || !policy.providerFailuresAreDurable)
+    if (!(err instanceof RefundProviderOperationError))
       throw unwrapRefundProviderOperationError(err)
-    await handleRefundProviderOutcome(policy, lease, err.message)
+    await handleRefundProviderOutcome(lease, err.message)
   }
 }
 
 async function reconcileLeasedRefundOperationProviderWork<Context>(
   lease: RefundReconciliationLease,
   policy: RefundReconciliationPolicy<Context>,
-  operations: RefundProviderOperations,
 ): Promise<void> {
   const context = await policy.getContext(lease.id)
   if (!context) return
   let attempt = await getLatestRefundReconciliationAttempt(lease.id)
-  if (!attempt && policy.knownProviderRefundId?.(context)) {
-    attempt = await recordRefundReconciliationAttempt(
-      lease,
-      policy.providerIdempotencyKey(lease, null),
-    )
-    attempt = await enrichRefundReconciliationAttemptProviderRefund(
-      attempt.id,
-      policy.knownProviderRefundId(context)!,
-    )
-  }
   let refund = attempt?.providerRefundId
-    ? await callRefundProvider('retrieve', () => operations.getRefund(attempt!.providerRefundId!))
+    ? await callRefundProvider('retrieve', () =>
+        stripeRefunds.getStripeRefund(attempt!.providerRefundId!),
+      )
     : null
   if (!refund && attempt && (await needsRefundMetadataDiscovery(lease.id))) {
     const discovery = await discoverRefundByOperationMetadata(
@@ -79,13 +57,14 @@ async function reconcileLeasedRefundOperationProviderWork<Context>(
       lease.leaseToken,
       policy.lookup(context),
       async options => {
-        const page = await callRefundProvider('list', () => operations.listRefundPage(options))
+        const page = await callRefundProvider('list', () =>
+          stripeRefunds.listStripeRefundsForPaymentPage(options),
+        )
         return { ...page, nextCursor: page.nextCursor ?? null }
       },
     )
     if (discovery.outcome === 'pending') {
       await handleRefundProviderOutcome(
-        policy,
         lease,
         'Stripe refund metadata discovery page budget was exhausted',
       )
@@ -94,7 +73,9 @@ async function reconcileLeasedRefundOperationProviderWork<Context>(
     if (discovery.outcome === 'not_found') attempt = null
     refund =
       discovery.outcome === 'found'
-        ? await callRefundProvider('retrieve', () => operations.getRefund(discovery.refund.id))
+        ? await callRefundProvider('retrieve', () =>
+            stripeRefunds.getStripeRefund(discovery.refund.id),
+          )
         : null
   }
   if (refund && attempt && !attempt.providerRefundId)
@@ -112,7 +93,7 @@ async function reconcileLeasedRefundOperationProviderWork<Context>(
   }
   if (!refund) {
     refund = await callRefundProvider('create', () =>
-      operations.createRefund({
+      stripeRefunds.createStripeRefund({
         ...policy.createLookup(context),
         amountMinorUnits: lease.amount.amount,
         idempotencyKey: attempt.providerIdempotencyKey,
@@ -143,15 +124,11 @@ async function reconcileObservedRefund<Context>(
   policy: RefundReconciliationPolicy<Context>,
 ): Promise<void> {
   if (refund.status === 'failed' || refund.status === 'canceled') {
-    await handleRefundProviderOutcome(policy, lease, `Stripe refund is ${refund.status}`)
+    await handleRefundProviderOutcome(lease, `Stripe refund is ${refund.status}`)
     return
   }
   if (refund.status !== 'succeeded') {
-    await handleRefundProviderOutcome(
-      policy,
-      lease,
-      `Stripe refund is ${refund.status ?? 'pending'}`,
-    )
+    await handleRefundProviderOutcome(lease, `Stripe refund is ${refund.status ?? 'pending'}`)
     return
   }
   if (
@@ -160,7 +137,6 @@ async function reconcileObservedRefund<Context>(
     !isCurrencyCode(refund.currency)
   ) {
     await handleRefundProviderOutcome(
-      policy,
       lease,
       'Stripe refund amount or currency does not match the immutable request',
     )
@@ -169,7 +145,6 @@ async function reconcileObservedRefund<Context>(
   const completion = await policy.complete(lease, context, refund)
   if (completion === 'pending')
     await handleRefundProviderOutcome(
-      policy,
       lease,
       'Stripe refund succeeded but membership cancellation is pending',
     )
