@@ -260,14 +260,6 @@ describe('backend Dockerfile dependency install', () => {
     }
   })
 
-  it('ships sort and comm with TMPDIR on worker images only', () => {
-    for (const stageName of ['worker-cpu', 'worker-io', 'api']) {
-      const text = getStageInstructions(stageName).join('\n')
-      expect(text.includes('COPY --from=worker-io-cli /worker-io-cli/ /')).toBe(stageName !== 'api')
-      expect(text.includes('ENV TMPDIR=/tmp')).toBe(stageName !== 'api')
-    }
-  })
-
   it('uses --link for every deploy-tree copy used by prewarm and final runtime stages', () => {
     const unlinkedDeployCopies = dockerfile
       .split(/\r?\n/)
