@@ -40,9 +40,10 @@ describe('static-code-analysis workflow', () => {
     type Step = { name?: string; run?: string; if?: string; 'timeout-minutes'?: number }
     const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
     const steps = parsed.jobs['static-code-analysis']?.steps ?? []
-    const scans = steps.filter(step => step.run === 'node ci/check-repository-policy-scans.mts')
+    const scans = steps.filter(step => step.name === 'Check live repository policies')
 
     expect(scans).toHaveLength(1)
+    expect(scans[0]?.run?.split('\n')).toContain('node ci/check-repository-policy-scans.mts')
     expect(scans[0]?.if).toBeUndefined()
     expect(scans[0]?.['timeout-minutes']).toBeLessThanOrEqual(2)
     expect(steps.indexOf(scans[0]!)).toBeGreaterThan(
