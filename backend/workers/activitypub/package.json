@@ -40,6 +40,7 @@
     "@data-stores/valkey-core": "workspace:^",
     "@modules/http-signatures": "workspace:^",
     "@services/bookmarks": "workspace:^",
+    "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",

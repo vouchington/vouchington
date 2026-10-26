@@ -12739,6 +12739,9 @@ importers:
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../../services/elections-votes
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../../services/entity-relations
