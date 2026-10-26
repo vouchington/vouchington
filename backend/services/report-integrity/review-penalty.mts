@@ -3,17 +3,24 @@ import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { ReportAbusePenalty } from './get-penalties.mts'
 
+type ReportAbusePenaltyReviewDue = ReportAbusePenalty & { user_username: string | null }
+
 /** Oldest due active penalties form a bounded staff review queue. */
 export async function getReportAbusePenaltyReviewsDue(): Promise<{
-  results: ReportAbusePenalty[]
+  results: ReportAbusePenaltyReviewDue[]
   has_more: boolean
 }> {
-  const { rows } = await write<ReportAbusePenalty>(sql`/* getReportAbusePenaltyReviewsDue */
-    SELECT id, user_id, reason, source_flag_id, created_by_id, revoked_at,
-      revoked_by_id, reviewed_at, reviewed_by_id, review_due_at, created_at, updated_at
-    FROM report_abuse_penalties
-    WHERE revoked_at IS NULL AND review_due_at <= CURRENT_TIMESTAMP
-    ORDER BY review_due_at, id LIMIT 26
+  const { rows } =
+    await write<ReportAbusePenaltyReviewDue>(sql`/* getReportAbusePenaltyReviewsDue */
+    WITH due AS MATERIALIZED (
+      SELECT id, user_id, reason, source_flag_id, created_by_id, revoked_at, revoked_by_id, reviewed_at, reviewed_by_id, review_due_at, created_at, updated_at
+      FROM report_abuse_penalties
+      WHERE revoked_at IS NULL AND review_due_at <= CURRENT_TIMESTAMP
+      ORDER BY review_due_at, id LIMIT 26
+    )
+    SELECT due.id, due.user_id, due.reason, due.source_flag_id, due.created_by_id, due.revoked_at, due.revoked_by_id, due.reviewed_at, due.reviewed_by_id, due.review_due_at, due.created_at, due.updated_at, profile.username AS user_username
+    FROM due LEFT JOIN view_users_public profile ON profile.id = due.user_id
+    ORDER BY due.review_due_at, due.id
   `)
   return { results: rows.slice(0, 25), has_more: rows.length > 25 }
 }

@@ -119,7 +119,10 @@ export const nativeVoteIntegrityPenaltyApiFixtureCases = [
     method: 'GET',
     path: '/api/v1/vote-integrity/penalties/review-due',
     route: { routeTemplate: '/api/v1/vote-integrity/penalties/review-due' },
-    body: { results: [voteActivePenalty], has_more: false },
+    body: {
+      results: [{ ...voteActivePenalty, user_username: 'penalty-recipient' }],
+      has_more: false,
+    },
     migratedFrom,
   }),
   fixtureCase({

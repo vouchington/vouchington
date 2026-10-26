@@ -39920,6 +39920,217 @@
           "type": "object"
         }
       ]
+    },
+    "ReportAbusePenaltyReviewDue": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "review_due_at": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reviewed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "user_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "created_at",
+        "created_by_id",
+        "id",
+        "reason",
+        "review_due_at",
+        "reviewed_at",
+        "reviewed_by_id",
+        "revoked_at",
+        "revoked_by_id",
+        "source_flag_id",
+        "updated_at",
+        "user_id",
+        "user_username"
+      ],
+      "type": "object"
+    },
+    "VoteWeightPenaltyReviewDue": {
+      "additionalProperties": false,
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "penalty_multiplier": {
+          "type": "number"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "review_due_at": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reviewed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "source_flag_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "user_username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "created_at",
+        "created_by_id",
+        "id",
+        "penalty_multiplier",
+        "reason",
+        "review_due_at",
+        "reviewed_at",
+        "reviewed_by_id",
+        "revoked_at",
+        "revoked_by_id",
+        "source_flag_id",
+        "user_id",
+        "user_username"
+      ],
+      "type": "object"
     }
   },
   "operations": {
@@ -51003,7 +51214,7 @@
         },
         "results": {
           "items": {
-            "$ref": "#/components/schemas/ReportAbusePenalty"
+            "$ref": "#/components/schemas/ReportAbusePenaltyReviewDue"
           },
           "type": "array"
         }
@@ -51099,7 +51310,7 @@
         },
         "results": {
           "items": {
-            "$ref": "#/components/schemas/VoteWeightPenalty"
+            "$ref": "#/components/schemas/VoteWeightPenaltyReviewDue"
           },
           "type": "array"
         }

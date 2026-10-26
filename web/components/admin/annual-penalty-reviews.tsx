@@ -9,11 +9,11 @@ import { userHref } from '@/lib/links/entity-href'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type { IntegrityPenaltyRecord } from './use-integrity-penalties'
 
-type DuePenalty = IntegrityPenaltyRecord & { review_due_at: string }
+type DuePenalty = IntegrityPenaltyRecord & { review_due_at: string; user_username: string | null }
 
 export interface AnnualPenaltyReviewsProps<P extends DuePenalty> {
   getDue: () => Promise<{ results: P[]; has_more: boolean }>
-  review: (id: string) => Promise<{ penalty: P }>
+  review: (id: string) => Promise<unknown>
   revoke: (id: string) => Promise<unknown>
 }
 
@@ -135,12 +135,16 @@ export function AnnualPenaltyReviews<P extends DuePenalty>({
               className='flex flex-wrap items-center justify-between gap-3 py-3'
             >
               <div className='text-sm'>
-                <Link
-                  href={userHref({ id: penalty.user_id })}
-                  className='font-mono text-link hover:underline'
-                >
-                  {penalty.user_id}
-                </Link>
+                {penalty.user_username ? (
+                  <Link
+                    href={userHref({ id: penalty.user_id, username: penalty.user_username })}
+                    className='text-link hover:underline'
+                  >
+                    {penalty.user_username}
+                  </Link>
+                ) : (
+                  <span>{t('extracted.communities.communityMemberRow.unknownUser_0bca6947')}</span>
+                )}
                 <span className='ml-3'>{penalty.reason}</span>
                 <div className='text-muted-foreground'>
                   {t('moderation.penaltyReviews.due')}:{' '}

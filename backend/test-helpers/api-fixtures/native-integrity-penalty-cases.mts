@@ -119,7 +119,10 @@ export const nativeIntegrityPenaltyApiFixtureCases = [
     method: 'GET',
     path: '/api/v1/report-integrity/penalties/review-due',
     route: { routeTemplate: '/api/v1/report-integrity/penalties/review-due' },
-    body: { results: [reportActivePenalty], has_more: false },
+    body: {
+      results: [{ ...reportActivePenalty, user_username: 'penalty-recipient' }],
+      has_more: false,
+    },
     migratedFrom: ['backend/api/v1/report-integrity/penalties.mts'],
   }),
   fixtureCase({

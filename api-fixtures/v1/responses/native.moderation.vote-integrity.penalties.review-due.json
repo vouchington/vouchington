@@ -13,7 +13,8 @@
       "revoked_at": null,
       "revoked_by_id": null,
       "source_flag_id": "019f7000-0000-7000-8000-000000000020",
-      "user_id": "019f7000-0000-7000-8000-000000000002"
+      "user_id": "019f7000-0000-7000-8000-000000000002",
+      "user_username": "penalty-recipient"
     }
   ]
 }

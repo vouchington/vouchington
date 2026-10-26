@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { ReportIntegrityPenalty } from '@/types/report-integrity'
-import type { VoteIntegrityPenalty } from '@/types/vote-integrity'
+import type { ReportIntegrityPenaltyReviewDue } from '@/types/report-integrity'
+import type { VoteIntegrityPenaltyReviewDue } from '@/types/vote-integrity'
 
 vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => (key: string) => key,
@@ -9,9 +9,10 @@ vi.mock(import('@/lib/i18n/use-translations'), () => ({
 
 import { AnnualPenaltyReviews } from './annual-penalty-reviews'
 
-const duePenalty: ReportIntegrityPenalty = {
+const duePenalty: ReportIntegrityPenaltyReviewDue = {
   id: '018f6763-0a71-752d-b657-a06cf00dd401',
   user_id: '018f6763-0a71-752d-b657-a06cf00dd402',
+  user_username: 'penalty-recipient',
   reason: 'mass_report_campaign',
   source_flag_id: null,
   created_by_id: null,
@@ -27,13 +28,13 @@ const duePenalty: ReportIntegrityPenalty = {
 describe('AnnualPenaltyReviews', () => {
   it('shows a due penalty and removes it after a confirmed review', async () => {
     const getDue = vi
-      .fn<() => Promise<{ results: ReportIntegrityPenalty[]; has_more: boolean }>>()
+      .fn<() => Promise<{ results: ReportIntegrityPenaltyReviewDue[]; has_more: boolean }>>()
       .mockResolvedValueOnce({ results: [duePenalty], has_more: false })
       .mockResolvedValueOnce({ results: [], has_more: false })
     const review = vi
-      .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenalty }>>()
+      .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
       .mockResolvedValue({ penalty: duePenalty })
-    const revoke = vi.fn<(id: string) => Promise<{ penalty: ReportIntegrityPenalty }>>()
+    const revoke = vi.fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
 
     render(
       <AnnualPenaltyReviews
@@ -42,6 +43,9 @@ describe('AnnualPenaltyReviews', () => {
         revoke={revoke}
       />,
     )
+    const userLink = await screen.findByRole('link', { name: 'penalty-recipient' })
+    expect(userLink).toHaveAttribute('href', '/user/penalty-recipient')
+    expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
     fireEvent.click(
       await screen.findByRole('button', { name: 'moderation.penaltyReviews.confirm' }),
     )
@@ -51,15 +55,34 @@ describe('AnnualPenaltyReviews', () => {
     expect(getDue).toHaveBeenCalledTimes(2)
   })
 
+  it('keeps an unavailable profile unlinked without showing its UUID', async () => {
+    const getDue = vi.fn<
+      () => Promise<{ results: ReportIntegrityPenaltyReviewDue[]; has_more: boolean }>
+    >(async () => ({
+      results: [{ ...duePenalty, user_username: null }],
+      has_more: false,
+    }))
+    render(
+      <AnnualPenaltyReviews
+        getDue={getDue}
+        review={vi.fn<(id: string) => Promise<unknown>>()}
+        revoke={vi.fn<(id: string) => Promise<unknown>>()}
+      />,
+    )
+    await screen.findByText('extracted.communities.communityMemberRow.unknownUser_0bca6947')
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByText(duePenalty.user_id)).not.toBeInTheDocument()
+  })
+
   it('checks the due queue after a lost confirmation response', async () => {
     const getDue = vi
-      .fn<() => Promise<{ results: ReportIntegrityPenalty[]; has_more: boolean }>>()
+      .fn<() => Promise<{ results: ReportIntegrityPenaltyReviewDue[]; has_more: boolean }>>()
       .mockResolvedValueOnce({ results: [duePenalty], has_more: false })
       .mockResolvedValueOnce({ results: [], has_more: false })
     const review = vi
-      .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenalty }>>()
+      .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
       .mockRejectedValue(new Error('response lost'))
-    const revoke = vi.fn<(id: string) => Promise<{ penalty: ReportIntegrityPenalty }>>()
+    const revoke = vi.fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
 
     render(
       <AnnualPenaltyReviews
@@ -80,24 +103,24 @@ describe('AnnualPenaltyReviews', () => {
   })
 
   it('lets staff revoke due vote penalties of either reason after confirmation', async () => {
-    const ring: VoteIntegrityPenalty = {
+    const ring: VoteIntegrityPenaltyReviewDue = {
       ...duePenalty,
       penalty_multiplier: 0.25,
       reason: 'voting_ring',
     }
-    const referral: VoteIntegrityPenalty = {
+    const referral: VoteIntegrityPenaltyReviewDue = {
       ...ring,
       id: '018f6763-0a71-752d-b657-a06cf00dd403',
       reason: 'referral_link_in_post',
     }
     const getDue = vi
-      .fn<() => Promise<{ results: VoteIntegrityPenalty[]; has_more: boolean }>>()
+      .fn<() => Promise<{ results: VoteIntegrityPenaltyReviewDue[]; has_more: boolean }>>()
       .mockResolvedValueOnce({ results: [ring, referral], has_more: false })
       .mockResolvedValueOnce({ results: [ring], has_more: false })
       .mockResolvedValueOnce({ results: [], has_more: false })
-    const review = vi.fn<(id: string) => Promise<{ penalty: VoteIntegrityPenalty }>>()
+    const review = vi.fn<(id: string) => Promise<{ penalty: VoteIntegrityPenaltyReviewDue }>>()
     const revoke = vi
-      .fn<(id: string) => Promise<{ penalty: VoteIntegrityPenalty }>>()
+      .fn<(id: string) => Promise<{ penalty: VoteIntegrityPenaltyReviewDue }>>()
       .mockResolvedValueOnce({ penalty: { ...referral, revoked_at: '2026-01-02T00:00:00Z' } })
       .mockResolvedValueOnce({ penalty: { ...ring, revoked_at: '2026-01-02T00:00:00Z' } })
 

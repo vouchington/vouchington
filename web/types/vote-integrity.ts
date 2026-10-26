@@ -58,3 +58,7 @@ export interface VoteIntegrityPenaltiesResponse {
     source_flag_id: string | null
   }
 }
+
+export interface VoteIntegrityPenaltyReviewDue extends VoteIntegrityPenalty {
+  user_username: string | null
+}

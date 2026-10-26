@@ -45340,7 +45340,7 @@
     },
     "GET:/api/v1/report-integrity/penalties/review-due": {
       "bodyKind": "content",
-      "hash": "ea987fe13783732a174a0455bc2d82d9a239c9d972c8297ff97ca5df3ff74cad",
+      "hash": "219dd1978c6deb133b53dad97b99b24ddba5baaf3faf51ee5d22b0963b397d03",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -45535,6 +45535,146 @@
               }
             },
             "type": "object"
+          },
+          "ReportAbusePenaltyReviewDue": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "created_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "reason": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "review_due_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "reviewed_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "reviewed_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "source_flag_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -45550,7 +45690,7 @@
               "required": true,
               "schema": {
                 "items": {
-                  "name": "ReportAbusePenalty",
+                  "name": "ReportAbusePenaltyReviewDue",
                   "type": "ref"
                 },
                 "type": "array"
@@ -73372,7 +73512,7 @@
     },
     "GET:/api/v1/vote-integrity/penalties/review-due": {
       "bodyKind": "content",
-      "hash": "c70e2debad80124d394e918a3b206ec5dc307a2ba33e52a0de80259b36b60c5f",
+      "hash": "217813ff53ef6417511ff440c68dba8656e5fed7abb0821fd8eba81012bd1745",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -73589,6 +73729,138 @@
               }
             },
             "type": "object"
+          },
+          "VoteWeightPenaltyReviewDue": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "created_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "penalty_multiplier": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              },
+              "reason": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "review_due_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "reviewed_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "reviewed_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "source_flag_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_username": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
           }
         },
         "root": {
@@ -73604,7 +73876,7 @@
               "required": true,
               "schema": {
                 "items": {
-                  "name": "VoteWeightPenalty",
+                  "name": "VoteWeightPenaltyReviewDue",
                   "type": "ref"
                 },
                 "type": "array"
@@ -103960,7 +104232,7 @@
       "migratedFrom": ["backend/api/v1/report-integrity/penalties.mts"],
       "path": "/api/v1/report-integrity/penalties/review-due",
       "responseSchema": {
-        "hash": "375f4aba1cdd03fb9bcbae9bea6e6d6fd1742945312b32dfeae97e98721d7cf3",
+        "hash": "ff5ba83f7e9ff65cedc5a08abcca3c22b050c66064fd5d860b9142dc784046f7",
         "key": "native.moderation.report-integrity.penalties.review-due"
       },
       "route": {
@@ -104177,7 +104449,7 @@
       "migratedFrom": ["backend/api/v1/vote-integrity/penalties.mts"],
       "path": "/api/v1/vote-integrity/penalties/review-due",
       "responseSchema": {
-        "hash": "8eb2e59d0e89572fa4b86c30a7f4b2c52848f2b2d8263b677eff93cee1a8e783",
+        "hash": "20f31d68a6da511f8a4f1b9df13277ac2a4415ab5de2a65d25576fe9f7ed727b",
         "key": "native.moderation.vote-integrity.penalties.review-due"
       },
       "route": {

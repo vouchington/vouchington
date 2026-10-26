@@ -6,6 +6,7 @@ import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
+import { assertNotSuspended } from '@services/users'
 import { currentUserCanApplyReportAbusePenalty } from '@services/report-integrity/authorization'
 import {
   getReportAbusePenalties,
@@ -118,6 +119,7 @@ app.route('/api/v1/report-integrity/penalties/:id/reviews').post(async (ctx: Con
     currentUserCanApplyReportAbusePenalty,
     'POST:/api/v1/report-integrity/penalties/:id/reviews',
   )
+  assertNotSuspended(currentUser)
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'POST:/api/v1/report-integrity/penalties/:id/reviews', {
     path: ctx.params,

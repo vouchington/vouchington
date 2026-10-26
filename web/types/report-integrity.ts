@@ -55,3 +55,7 @@ export interface ReportIntegrityPenaltiesResponse {
   results: ReportIntegrityPenalty[]
   page_info: ReportIntegrityFlagsResponse['page_info']
 }
+
+export interface ReportIntegrityPenaltyReviewDue extends ReportIntegrityPenalty {
+  user_username: string | null
+}

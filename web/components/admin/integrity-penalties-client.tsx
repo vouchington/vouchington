@@ -30,7 +30,10 @@ interface IntegrityPenaltiesClientProps<P extends IntegrityPenaltyRecord> {
     results: P[]
     page_info: { has_next_page: boolean; end_cursor: string | null; start_cursor: string | null }
   }) => boolean
-  annualReviews?: Omit<AnnualPenaltyReviewsProps<P & { review_due_at: string }>, 'revoke'>
+  annualReviews?: Omit<
+    AnnualPenaltyReviewsProps<P & { review_due_at: string; user_username: string | null }>,
+    'revoke'
+  >
 }
 
 export function IntegrityPenaltiesClient<P extends IntegrityPenaltyRecord>(

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { AnnualPenaltyReviews } from '@/components/admin/annual-penalty-reviews'
-import type { VoteIntegrityPenalty } from '@/types/vote-integrity'
+import type { VoteIntegrityPenaltyReviewDue } from '@/types/vote-integrity'
 
 const meta = {
   title: 'Design System/Components/Admin Annual Penalty Reviews',
@@ -10,9 +10,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const ring: VoteIntegrityPenalty = {
+const ring: VoteIntegrityPenaltyReviewDue = {
   id: '018f6763-0a71-752d-b657-a06cf00dd401',
   user_id: '018f6763-0a71-752d-b657-a06cf00dd402',
+  user_username: 'review-recipient',
   penalty_multiplier: 0.25,
   reason: 'voting_ring',
   source_flag_id: '018f6763-0a71-752d-b657-a06cf00dd403',
@@ -25,7 +26,7 @@ const ring: VoteIntegrityPenalty = {
   created_at: '2025-01-01T00:00:00Z',
 }
 
-const referral: VoteIntegrityPenalty = {
+const referral: VoteIntegrityPenaltyReviewDue = {
   ...ring,
   id: '018f6763-0a71-752d-b657-a06cf00dd404',
   reason: 'referral_link_in_post',

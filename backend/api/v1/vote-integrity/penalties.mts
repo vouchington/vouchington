@@ -6,6 +6,7 @@ import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
+import { assertNotSuspended } from '@services/users'
 import { currentUserCanApplyVoteRingPenalty } from '@services/vote-integrity/authorization'
 import {
   getVoteWeightPenalties,
@@ -126,6 +127,7 @@ app.route('/api/v1/vote-integrity/penalties/:id/reviews').post(async (ctx: Conte
     currentUserCanApplyVoteRingPenalty,
     'POST:/api/v1/vote-integrity/penalties/:id/reviews',
   )
+  assertNotSuspended(currentUser)
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid penalty ID')
   validateRequestContract(ctx, 'POST:/api/v1/vote-integrity/penalties/:id/reviews', {
     path: ctx.params,

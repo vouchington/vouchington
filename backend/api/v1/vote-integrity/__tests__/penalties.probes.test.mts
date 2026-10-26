@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
+import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
+import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
+import { getVoteWeightPenaltyByIdFromPrimary } from '@services/vote-integrity'
 import {
   insertTestVoteWeightPenaltyRecord,
   setTestVoteWeightPenaltyReviewDueAt,
@@ -10,6 +12,29 @@ import {
 const path = '/api/v1/vote-integrity/penalties'
 
 describe('vote weight penalty review API', () => {
+  it('rejects a suspended administrator before recording a review', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const target = await createTestUser()
+    const penaltyId = await insertTestVoteWeightPenaltyRecord({
+      userId: target.id,
+      createdById: admin.id,
+    })
+    await setTestVoteWeightPenaltyReviewDueAt(penaltyId, new Date('2025-01-01T00:00:00Z'))
+    await suspendTestUser(admin.id)
+    try {
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      const response = await request.post(`${path}/${penaltyId}/reviews`).expect(403)
+      expect(response.body.code).toBe(ACCOUNT_SUSPENDED)
+      expect(await getVoteWeightPenaltyByIdFromPrimary(penaltyId)).toMatchObject({
+        reviewed_at: null,
+        reviewed_by_id: null,
+      })
+    } finally {
+      await unsuspendTestUser(admin.id)
+    }
+  })
+
   it('admits only administrators, reviews a due active penalty, and rejects replay', async () => {
     const [admin, member, target] = await Promise.all([
       createTestUser({ administrator: true }),
@@ -36,6 +61,11 @@ describe('vote weight penalty review API', () => {
     const adminRequest = createRequest()
     await adminRequest.authenticateAs(admin)
     const due = await adminRequest.get(`${path}/review-due`).expect(200)
+    expect(due.body.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: dueId, user_username: target.username }),
+      ]),
+    )
     expect(due.body.results.map((penalty: { id: string }) => penalty.id)).toContain(dueId)
     expect(due.body.results.map((penalty: { id: string }) => penalty.id)).not.toContain(futureId)
     await adminRequest.post(`${path}/invalid/reviews`).expect(422)
