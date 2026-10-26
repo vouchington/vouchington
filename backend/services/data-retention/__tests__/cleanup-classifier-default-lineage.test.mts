@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
 import {
@@ -11,17 +12,21 @@ const DAY_MS = 24 * 60 * 60 * 1000
 describe('expired classifier DEFAULT lineage', () => {
   it('retires real result rows before snapshots, calls and batches in capped continuations', async () => {
     const fixture = await createClassifierFixture()
-    const oldAt = new Date(Date.now() - 91 * DAY_MS)
+    const oldAt = new Date(Date.UTC(2000, 0, 1) + randomInt(20 * 365 * DAY_MS))
     const oldIds = [
       await seedOldClassifierDefaultDecision(fixture, oldAt),
       await seedOldClassifierDefaultDecision(fixture, new Date(oldAt.getTime() + 1_000)),
     ]
-    const freshId = await seedOldClassifierDefaultDecision(fixture, new Date(Date.now() - DAY_MS))
+    const freshId = await seedOldClassifierDefaultDecision(
+      fixture,
+      new Date(oldAt.getTime() + 3_000),
+    )
     const options = {
       retentionDays: 90,
       batchSize: 1,
       maxBatches: 1,
       lowerBoundDate: new Date(oldAt.getTime() - 1),
+      now: new Date(oldAt.getTime() + 90 * DAY_MS + 2_000),
     }
 
     expect(await readClassifierDefaultLineage(oldIds)).toEqual({
