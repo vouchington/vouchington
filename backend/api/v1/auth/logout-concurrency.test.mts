@@ -10,6 +10,15 @@ import * as notifications from '@services/notifications'
 import { upsertWebPushSubscription } from '@services/notifications'
 import { v7 } from 'uuid'
 
+function collapseLogoutBackoffDelay(): () => void {
+  const original = globalThis.setTimeout
+  const backoffMs = 250
+  const spy = vi.spyOn(globalThis, 'setTimeout').mockImplementation((handler, delay, ...args) => {
+    return original(handler, delay === backoffMs ? 0 : delay, ...args)
+  })
+  return () => spy.mockRestore()
+}
+
 describe('POST /api/v1/auth/logout concurrent replay', () => {
   afterEach(() => vi.restoreAllMocks())
 
@@ -52,7 +61,14 @@ describe('POST /api/v1/auth/logout concurrent replay', () => {
         .set('Cookie', [`dt=${tokens.deviceToken.token}`, `st=${tokens.sessionToken.token}`])
         .set('Sec-Fetch-Site', 'same-origin')
 
-    const blocked = await request().expect(500)
+    // Nineteen 250ms sleeps plus user setup exceed the 5s cap. Collapse only that poll.
+    const restoreTimers = collapseLogoutBackoffDelay()
+    let blocked
+    try {
+      blocked = await request().expect(500)
+    } finally {
+      restoreTimers()
+    }
     expect(blocked.headers['set-cookie']).toBeUndefined()
     await expect(isSessionRevoked(sid)).resolves.toBe(false)
 

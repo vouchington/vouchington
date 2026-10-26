@@ -6,6 +6,15 @@ import { admitLogoutCleanupScript, getJwtLogoutCleanupAdmissionKey } from './con
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { v7 } from 'uuid'
 
+function collapseLogoutBackoffDelay(): () => void {
+  const original = globalThis.setTimeout
+  const backoffMs = 250
+  const spy = vi.spyOn(globalThis, 'setTimeout').mockImplementation((handler, delay, ...args) => {
+    return original(handler, delay === backoffMs ? 0 : delay, ...args)
+  })
+  return () => spy.mockRestore()
+}
+
 describe('logout cleanup lease', () => {
   afterEach(() => vi.restoreAllMocks())
 
@@ -34,13 +43,20 @@ describe('logout cleanup lease', () => {
     const owner = await logoutCleanupLease.reserve(sid, 90, 'stalled-owner')
     expect(owner).toEqual({ state: 'reserved', token: 'stalled-owner' })
 
-    await expect(
-      runLogoutPushCleanupAndRevoke(
-        sid,
-        { userId: v7(), issuedAt: Math.floor(Date.now() / 1000) },
-        async () => {},
-      ),
-    ).rejects.toThrow('logout push cleanup is already in progress')
+    // Nineteen 250ms sleeps would consume the 5s cap before the recovery replay.
+    // Fake timers deadlock here: Valkey I/O and the client schedule real timers.
+    const restoreTimers = collapseLogoutBackoffDelay()
+    try {
+      await expect(
+        runLogoutPushCleanupAndRevoke(
+          sid,
+          { userId: v7(), issuedAt: Math.floor(Date.now() / 1000) },
+          async () => {},
+        ),
+      ).rejects.toThrow('logout push cleanup is already in progress')
+    } finally {
+      restoreTimers()
+    }
     await expect(isSessionRevoked(sid)).resolves.toBe(false)
 
     await logoutCleanupLease.release(sid, 'stalled-owner')
