@@ -40,9 +40,8 @@ export const getPostsByAnyBatch = async (
              unnest($4::int[]) AS input_order
     ),
     id_lookups AS (
-      SELECT vp.id, id_input.input_order
-      FROM view_posts vp
-      JOIN id_input ON vp.id = id_input.input_value
+      SELECT input_value AS id, input_order
+      FROM id_input
     ),
     slug_lookups AS (
       SELECT DISTINCT ON (slug_input.input_order) ps.post_id AS id, slug_input.input_order

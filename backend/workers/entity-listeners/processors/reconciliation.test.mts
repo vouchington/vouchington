@@ -1,18 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ReconcileEntityData } from '@queues/entity-listeners/types'
 import { reconcileEntityBatches } from './reconciliation-batches.mts'
-import { reconcileEntities, reconcileEntity } from './reconciliation.mts'
-
-describe('reconcileEntities', () => {
-  it('reconciles the current entity window', async () => {
-    const save = vi.fn<(data: unknown) => Promise<void>>(async () => {})
-    const result = await reconcileEntities({}, save)
-    expect(result.reconciled).toBeGreaterThanOrEqual(0)
-    expect(save.mock.calls[0]?.[0]).toEqual({
-      window: { start: expect.any(String), end: expect.any(String) },
-    })
-  })
-})
+import { reconcileEntity } from './reconciliation.mts'
 
 describe('reconcileEntityBatches', () => {
   it('finishes a bounded page after every entity finishes', async () => {

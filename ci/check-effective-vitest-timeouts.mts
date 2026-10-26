@@ -27,15 +27,12 @@ try {
   context = await createVitest({ root, watch: false, run: true, reporters: [] })
   for (const project of context.projects) {
     const guards = project.viteConfig.plugins.filter(
-      plugin => plugin.name === effectiveTimeoutCap().name,
+      plugin => plugin.name === effectiveTimeoutCap({ maxTimeoutMs: 5_000 }).name,
     )
     assert.equal(guards.length, 1, project.name)
     for (const field of ['testTimeout', 'hookTimeout'] as const) {
       const value = project.config[field]
-      assert.ok(
-        Number.isFinite(value) && value > 0 && value <= 30_000,
-        `${project.name}: resolved ${field}=${value}`,
-      )
+      assert.equal(value, 5_000, `${project.name}: resolved ${field}=${value}`)
     }
     assert.equal(project.browser, undefined, project.name)
     projects.push(project.name)
@@ -66,7 +63,7 @@ for (const project of projects) {
     selected = await createVitest({
       root,
       project: [project],
-      testTimeout: 30_001,
+      testTimeout: 5_001,
       reporters: [],
       watch: false,
       run: true,
@@ -87,9 +84,9 @@ for (const project of projects) {
   }
   assert.equal(rejected, true, project)
   assert.ok(String(rejection).includes(`Project ${project}: effective testTimeout`), project)
-  assert.ok(String(rejection).includes('received 30001'), project)
+  assert.ok(String(rejection).includes('received 5001'), project)
 }
-const profiles = await checkFiniteTimeoutProfiles(root)
+const profiles = await checkFiniteTimeoutProfiles(root, { maxTimeoutMs: 5_000 })
 process.stdout.write(
   `${JSON.stringify({ selectedProjects: projects, profiles, configFileControls })}\n`,
 )

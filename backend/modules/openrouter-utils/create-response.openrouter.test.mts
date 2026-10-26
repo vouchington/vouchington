@@ -5,6 +5,7 @@ import { createOpenRouterResponse } from './create-response.mts'
 // build, SSE parsing and the latch-and-stop policy are gated by recorded responses in
 // create-response.replay.no-data.mock.test.mts. See docs/development/tests.md#live-provider-smoke-checks.
 describe('OpenRouter Responses', () => {
+  // Allow the live provider call up to 30 seconds for external network and response latency.
   it('accepts the retained structured-output contract and returns billed metadata', async () => {
     if (!process.env.OPENROUTER_API_KEY?.trim()) {
       throw new Error('OPENROUTER_API_KEY is required for this credentialed test.')
@@ -39,5 +40,5 @@ describe('OpenRouter Responses', () => {
       cost: expect.any(Number),
     })
     expect(response.usage?.cost).toBeGreaterThanOrEqual(0)
-  })
+  }, 30_000)
 })

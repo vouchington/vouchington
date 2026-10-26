@@ -185,49 +185,23 @@ describe('Vitest timeout policy (#10762, #8078)', () => {
     hookTimeout: project.test?.hookTimeout,
   }))
 
-  // The owner caps every test and hook at 30 seconds, including explicit overrides.
-  // Keep this hard ceiling separate from the later five-second default rollout.
-  // Inclusive by design: 30 seconds is valid, so compare with `>`, never `>=`.
-  const TEST_TIMEOUT_CEILING_MS = 30_000
-  const HOOK_TIMEOUT_CEILING_MS = 30_000
-
-  it('declares an explicit testTimeout on every project (#10762)', () => {
-    const missing = projectTimeouts
-      .filter(project => project.testTimeout === undefined)
-      .map(project => project.name)
-    expect(missing).toEqual([])
+  it('defaults every project testTimeout to five seconds (#10762)', () => {
+    const mismatches = projectTimeouts
+      .filter(project => project.testTimeout !== 5_000)
+      .map(project => ({ name: project.name, testTimeout: project.testTimeout }))
+    expect(mismatches).toEqual([])
   })
 
-  it('declares an explicit hookTimeout on every project (#10762)', () => {
-    const missing = projectTimeouts
-      .filter(project => project.hookTimeout === undefined)
-      .map(project => project.name)
-    expect(missing).toEqual([])
+  it('defaults every project hookTimeout to five seconds (#10762)', () => {
+    const mismatches = projectTimeouts
+      .filter(project => project.hookTimeout !== 5_000)
+      .map(project => ({ name: project.name, hookTimeout: project.hookTimeout }))
+    expect(mismatches).toEqual([])
   })
 
   it('declares backstop testTimeout/hookTimeout at the root (#10762)', () => {
-    expect(rootConfig.test?.testTimeout).toBeDefined()
-    expect(rootConfig.test?.hookTimeout).toBeDefined()
-  })
-
-  it('never sets a project testTimeout above the ceiling', () => {
-    const overCap = projectTimeouts
-      .filter(
-        project =>
-          project.testTimeout !== undefined && project.testTimeout > TEST_TIMEOUT_CEILING_MS,
-      )
-      .map(project => ({ name: project.name, testTimeout: project.testTimeout }))
-    expect(overCap).toEqual([])
-  })
-
-  it('never sets a project hookTimeout above the ceiling', () => {
-    const overCap = projectTimeouts
-      .filter(
-        project =>
-          project.hookTimeout !== undefined && project.hookTimeout > HOOK_TIMEOUT_CEILING_MS,
-      )
-      .map(project => ({ name: project.name, hookTimeout: project.hookTimeout }))
-    expect(overCap).toEqual([])
+    expect(rootConfig.test?.testTimeout).toBe(5_000)
+    expect(rootConfig.test?.hookTimeout).toBe(5_000)
   })
 })
 

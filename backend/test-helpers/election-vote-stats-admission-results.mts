@@ -62,7 +62,7 @@ export async function completeOwnedElectionAdmissions(
     )
   await settleAll(votes.map(item => item.jobs))
 
-  const owned = new Map<'low' | 'high', Map<string, string>>([
+  const owned = new Map<'low' | 'high', Map<string, Job<{ electionId: string }>>>([
     ['low', new Map()],
     ['high', new Map()],
   ])
@@ -72,7 +72,7 @@ export async function completeOwnedElectionAdmissions(
       if (job.name !== VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name) continue
       const id = job.data.electionId
       const target = targets.get(id)
-      if (target) owned.get(target)!.set(job.id, id)
+      if (target) owned.get(target)!.set(job.id, job)
     }
     for (const id of item.ids) {
       const target = targets.get(id)
@@ -80,21 +80,34 @@ export async function completeOwnedElectionAdmissions(
         throw new Error(`Unowned deduplicated ${target} stats enqueue`)
     }
   }
-  const ownedJobs = [...owned.values()].flatMap(group => [...group])
+  const ownedJobs = [...owned.values()].flatMap(group => [...group.values()])
+  // All creation and vote admissions have settled. These exact returned jobs are the only ones
+  // promoted; no test producer enqueues again after this point, so throttle state is irrelevant.
+  await settleAll(
+    ownedJobs.map(async job => {
+      if ((await job.getState()) !== 'delayed') return
+      try {
+        await job.promote()
+      } catch (err) {
+        // The worker or delay timer can take the job between the state read and promotion.
+        if ((await job.getState()) === 'delayed') throw err
+      }
+    }),
+  )
   const completedJobs = await settleAll(
-    ownedJobs.map(async ([jobId, electionId]) => {
-      const result = await wait('election', jobId)
+    ownedJobs.map(async job => {
+      const result = await wait('election', job.id)
       if (result.failed)
-        throw new Error(`Stats job ${jobId} failed`, {
+        throw new Error(`Stats job ${job.id} failed`, {
           cause: Object.hasOwn(result, 'failureCause') ? result.failureCause : result.failedReason,
         })
-      return { jobId, target: targets.get(electionId)! }
+      return { jobId: job.id, target: targets.get(job.data.electionId)! }
     }),
   )
   return {
     targets: ready.targets,
     logicalAdmissions: { creation: creation.length, votes: votes.length },
-    ownedJobIds: ownedJobs.map(([id]) => id),
+    ownedJobIds: ownedJobs.map(job => job.id),
     completedJobs,
   }
 }

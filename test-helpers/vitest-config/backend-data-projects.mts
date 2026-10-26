@@ -4,9 +4,8 @@ import { backendNoDataUnitTestFiles } from './backend-core-projects.mts'
 const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
   isolate: false,
-  // These existing 30s data suites include real plan and lock-boundary queries. The
-  // five-second projects retain the default 2s SQL budget.
-  env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000' },
+  // Leave SQL attribution and cleanup headroom inside the project deadline.
+  env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000' },
   globalSetup: './test-helpers/vitest.setup.data-stores.mts',
   setupFiles: [
     // Must run before glide-mq-workers: that setup preloads workers that transitively
@@ -29,8 +28,8 @@ const backendDataStoreTestDefaults = {
     './backend/test-helpers/vitest.setup.request-query-profile.mts',
     './test-helpers/vitest.setup.fork-leak-detection.mts',
   ],
-  testTimeout: 30_000,
-  hookTimeout: 30_000,
+  testTimeout: 5_000,
+  hookTimeout: 5_000,
 }
 
 const backendMocksProject = {
@@ -151,8 +150,8 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       ],
       exclude: ['**/node_modules/**', '**/.git/**'],
       isolate: false,
-      testTimeout: 30_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {

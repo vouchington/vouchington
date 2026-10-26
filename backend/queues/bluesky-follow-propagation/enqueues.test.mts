@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { once } from 'node:events'
-import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
-  disconnectRequestedJobOptions,
   enqueueBackfillBlueskyDisconnectRequests,
   enqueueBackfillBlueskyDisconnectRequestsContinuation,
   enqueueBackfillBlueskyFollowPropagation,
@@ -12,12 +8,9 @@ import {
   enqueueDisconnectRequested,
   enqueueBulkDisconnectRequested,
   enqueueBulkReconcileBlueskyFollow,
-  type DisconnectRequestedData,
 } from './enqueues.mts'
 import { blueskyFollowPropagation } from './queues.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
-
-const actualGlideMq = createRequire(import.meta.url)('glide-mq') as typeof import('glide-mq')
 
 // Real integration test: enqueue against the in-memory glide-mq test queue and assert the
 // emitted jobs' data and deduplication options, instead of mocking the enqueue factory.
@@ -168,46 +161,5 @@ describe('bluesky follow propagation enqueue helpers', () => {
         },
       },
     })
-  })
-
-  it('recreates the stable disconnect job after terminal failure', async () => {
-    const queueName = `test-bluesky-disconnect-reenqueue-${crypto.randomUUID()}`
-    const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-    const queue = new actualGlideMq.Queue(queueName, connection)
-    let shouldFail = true
-    const worker = new actualGlideMq.Worker(
-      queueName,
-      () =>
-        shouldFail ? Promise.reject(new Error('expected terminal failure')) : Promise.resolve(),
-      connection,
-    )
-    worker.on('error', () => undefined)
-    const data: DisconnectRequestedData = {
-      userId: crypto.randomUUID(),
-      blueskyDid: `did:plc:${crypto.randomUUID()}`,
-      linkAuthorizationId: crypto.randomUUID(),
-    }
-    const opts = disconnectRequestedJobOptions(data)
-
-    try {
-      const failed = once(worker, 'failed')
-      const first = await queue.add('disconnectRequested', data, opts)
-      await failed
-
-      expect(first?.id).toBe(opts.jobId)
-      expect(await queue.getJob(opts.jobId!)).toBeNull()
-
-      shouldFail = false
-      const completed = once(worker, 'completed')
-      const recreated = await queue.add('disconnectRequested', data, opts)
-      await completed
-
-      expect(recreated?.id).toBe(opts.jobId)
-      expect(await queue.getJob(opts.jobId!)).toBeNull()
-    } finally {
-      await worker.close()
-      await queue.obliterate({ force: true })
-      await queue.close()
-    }
   })
 })

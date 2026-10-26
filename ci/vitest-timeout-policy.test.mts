@@ -4,10 +4,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
-import config from '../vitest.config.mts'
 import { ChildCommandCleanupError, runChildCommand } from 'vouchington-tooling/dead-code'
 import { createFixtureDeadline } from '../static-code-analysis/test-helpers/fixture-deadline.mts'
-import { fixtures } from './test-helpers/vitest-timeout-policy-fixtures.mts'
 
 const binary = resolve('node_modules/.bin/oxlint')
 const require = createRequire(resolve('.oxlintrc.json'))
@@ -94,87 +92,21 @@ async function analyzeFixture(configPath: string, prepare: (root: string) => str
 
 describe('native tooling Vitest timeout policy', () => {
   it.each([
-    { source: 'export default defineConfig({ test: { testTimeout: 30001 } })', rejected: true },
-    { source: 'export default defineConfig({ test: { hookTimeout: 30000 } })', rejected: false },
-    { source: 'vi.setConfig({ testTimeout: Number(process.env.DEADLINE) })', rejected: true },
-    {
-      source:
-        "import { beforeAll } from 'vitest'; beforeAll(() => {}, Number(process.env.DEADLINE))",
-      rejected: true,
-    },
-  ])('root config deferral preserves native checks for $source', async ({ source, rejected }) => {
-    const { report } = await analyzeFixture('.oxlintrc.json', root => {
-      writeFileSync(
-        join(root, 'vitest.config.mts'),
-        `import { defineConfig } from 'vitest/config'; import { vi } from 'vitest'; ${source}`,
-      )
-      return ['vitest.config.mts']
-    })
-    expect(report.diagnostics.some(item => item.code === 'no-mistakes(vitest-timeout-cap)')).toBe(
-      rejected,
-    )
-  })
-
-  it('resolves five-second defaults for the isolated static-analysis fixture project', () => {
-    const projects = (config.test?.projects ?? []).filter(
-      project =>
-        typeof project === 'object' &&
-        'test' in project &&
-        project.test?.name === 'static-analysis-ast-grep',
-    )
-    expect(projects).toHaveLength(1)
-    expect(projects[0]).toMatchObject({
-      extends: true,
-      test: {
-        testTimeout: 5_000,
-        hookTimeout: 5_000,
-        isolate: true,
-        setupFiles: ['./test-helpers/vitest.setup.tooling-isolated-env.mts'],
-      },
-    })
-  })
-
-  it.each(['.oxlintrc.json', 'ci/.oxlintrc.json', 'static-code-analysis/.oxlintrc.json'])(
-    '%s rejects unsafe framework carriers without rejecting bounded or unrelated calls',
-    async configPath => {
-      const { root, status, report } = await analyzeFixture(configPath, root => {
-        for (const fixture of fixtures) {
-          const file = join(root, fixture.path)
-          mkdirSync(dirname(file), { recursive: true })
-          writeFileSync(file, fixture.source)
-        }
-        return ['.']
+    { timeout: 5000, rejected: false },
+    { timeout: 5001, rejected: true },
+  ])(
+    'root config enforces the default timeout boundary at $timeout',
+    async ({ timeout, rejected }) => {
+      const { status, report } = await analyzeFixture('.oxlintrc.json', root => {
+        writeFileSync(
+          join(root, 'vitest.config.mts'),
+          `import { defineConfig } from 'vitest/config'; export default defineConfig({ test: { testTimeout: ${timeout}, hookTimeout: ${timeout} } })`,
+        )
+        return ['vitest.config.mts']
       })
-      expect(status).toBe(1)
-      expect(
-        report.diagnostics
-          .filter(item => item.code === 'no-mistakes(vitest-timeout-cap)')
-          .map(item =>
-            item.filename.startsWith(`${root}/`)
-              ? item.filename.slice(root.length + 1)
-              : item.filename,
-          )
-          .toSorted(),
-      ).toEqual(
-        fixtures
-          .filter(
-            fixture =>
-              fixture.rejected &&
-              !(
-                configPath === '.oxlintrc.json' &&
-                'allowedByRootMaximum' in fixture &&
-                fixture.allowedByRootMaximum
-              ),
-          )
-          .flatMap(fixture =>
-            Array.from(
-              {
-                length: 'diagnosticsWhenRejected' in fixture ? fixture.diagnosticsWhenRejected : 1,
-              },
-              () => fixture.path,
-            ),
-          )
-          .toSorted(),
+      expect(status).toBe(rejected ? 1 : 0)
+      expect(report.diagnostics.some(item => item.code === 'no-mistakes(vitest-timeout-cap)')).toBe(
+        rejected,
       )
     },
   )

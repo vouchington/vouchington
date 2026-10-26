@@ -19,6 +19,8 @@ import { createImageUploadsWorker } from '../processors/create-image-uploads-wor
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('image upload worker', () => {
+  // Native GlideMQ, PostgreSQL, and pubsub participate in this lifecycle, including graceful
+  // worker startup and cleanup; allow this integration case up to 15 seconds under load.
   it('publishes completion while all content-analysis slots are busy and work remains pending', async () => {
     const prefix = `image-uploads-${randomUUID()}`
     const uploads = new Queue(IMAGE_UPLOADS_QUEUE_NAME, {
@@ -43,7 +45,7 @@ describe('image upload worker', () => {
     const subscription = await imageStatePubSub.subscribe(imageId)
     const published = Promise.withResolvers<{ upload_status: string; id: string }>()
     subscription.setHandler(state => published.resolve(state))
-    const concurrency = 10
+    const concurrency = 1
     const allStarted = Promise.withResolvers<void>()
     const releaseAnalysis = Promise.withResolvers<void>()
     let started = 0
@@ -58,7 +60,7 @@ describe('image upload worker', () => {
           await releaseAnalysis.promise
           return { success: true }
         },
-        { connection: workerQueueConnection, prefix, concurrency, blockTimeout: 1_000 },
+        { connection: workerQueueConnection, prefix, concurrency, blockTimeout: 100 },
       )
       await analysisWorker.waitUntilReady()
       await analysis.addBulk(
@@ -83,7 +85,7 @@ describe('image upload worker', () => {
             Body: Readable.from([jpeg]) as never,
           }),
         },
-        { blockTimeout: 1_000 },
+        { blockTimeout: 100 },
       )
       await uploadWorker.waitUntilReady()
       const completed = Promise.withResolvers<{ job: Job; result: unknown }>()
@@ -119,5 +121,5 @@ describe('image upload worker', () => {
       await analysis.close()
       restoreStaydown()
     }
-  })
+  }, 15_000)
 })

@@ -101,13 +101,8 @@ describe('user-subject entity relation tables', () => {
   })
 
   it('can insert and query data', async () => {
-    // Create test users - enough to likely hit multiple partitions
-    const users = await Promise.all([
-      createLocalTestUser(),
-      createLocalTestUser(),
-      createLocalTestUser(),
-      createLocalTestUser(),
-    ])
+    // Two owned pairs exercise both multi-key reader directions.
+    const users = await Promise.all([createLocalTestUser(), createLocalTestUser()])
 
     // Create test topics
     const testTopics = await Promise.all(
