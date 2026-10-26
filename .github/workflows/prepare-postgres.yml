@@ -1,0 +1,94 @@
+name: Prepare Backend PostgreSQL
+
+on:
+  workflow_call:
+
+permissions:
+  actions: read
+  contents: read
+
+env:
+  NODE_ENV: test
+
+jobs:
+  prepare-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    services:
+      postgres:
+        image: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log'
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 30s
+          --health-start-interval 1s
+          --tmpfs /var/lib/postgresql:rw,size=1g
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Set service connection
+        timeout-minutes: 1
+        run: |
+          echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-backend
+        timeout-minutes: 6
+      - name: Check PostgreSQL SQL safety
+        run: pnpm exec squawk backend/data-stores/psql/migrations/*.sql backend/data-stores/psql/config-driven/*.sql backend/data-stores/psql/views/*.sql
+        timeout-minutes: 2
+      - name: Migrate and verify backend test database
+        working-directory: backend
+        timeout-minutes: 3
+        run: |
+          ENVIRONMENT=staging node data-stores/psql/migrate.mts
+          node scripts/data-retention/check-retained-relation-bootstrap.mts
+      - name: Check staging RSS fresh bootstrap
+        working-directory: backend
+        run: node data-stores/psql/check-staging-rss-bootstrap.mts
+        timeout-minutes: 1
+      - name: Upload retained relation bootstrap receipt
+        if: always()
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: retained-relation-bootstrap-prepared
+          path: artifacts/retained-relation-bootstrap.json
+          retention-days: 1
+          overwrite: true
+          if-no-files-found: ignore
+      # pg_dump/pg_restore reparses and flattens Boolean expression parentheses. Validate
+      # the canonical migration output before that semantically equivalent round trip.
+      - name: Check PostgreSQL schema snapshot is up to date
+        working-directory: backend
+        run: node data-stores/psql/schema-snapshot/generate.mts --check
+        timeout-minutes: 2
+      - name: Dump prepared PostgreSQL database
+        timeout-minutes: 2
+        run: |
+          docker run --rm --network host \
+            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
+            pg_dump --format=custom --no-owner --no-privileges "$DATABASE_URL" > "$RUNNER_TEMP/backend-postgres.dump"
+      - name: Upload prepared PostgreSQL database
+        timeout-minutes: 2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: backend-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend-postgres.dump
+          retention-days: 1
+          overwrite: true
+          if-no-files-found: error

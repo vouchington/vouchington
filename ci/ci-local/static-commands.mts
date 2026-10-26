@@ -24,7 +24,7 @@ export const staticCommands: CiLocalCommand[] = [
   workflowCommand(
     'squawk',
     'pnpm exec squawk backend/data-stores/psql/migrations/*.sql backend/data-stores/psql/config-driven/*.sql backend/data-stores/psql/views/*.sql',
-    'tests-postgres-schema.yml',
+    'prepare-postgres.yml',
   ),
   workflowCommand(
     'backend dependency-cruiser',

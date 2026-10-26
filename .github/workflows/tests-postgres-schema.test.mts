@@ -15,74 +15,21 @@ describe('PostgreSQL Schema Tests workflow', () => {
 
   it('serializes the destructive ActivityPub capacity project and reaps its process group', () => {
     const tests = workflow.indexOf('      - name: Run PostgreSQL schema tests')
-    const snapshot = workflow.indexOf(
-      '      - name: Check PostgreSQL schema snapshot is up to date',
-    )
-    const step = workflow.slice(tests, snapshot)
+    const report = workflow.indexOf('      - name: Upload PostgreSQL schema JUnit report')
+    const step = workflow.slice(tests, report)
 
     expect(tests).toBeGreaterThanOrEqual(0)
-    expect(snapshot).toBeGreaterThan(tests)
+    expect(report).toBeGreaterThan(tests)
     expect(step).toContain(
       'VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
     )
   })
 
-  it('runs Squawk after setup and before migrations and schema tests', () => {
-    const setup = workflow.indexOf('actions/setup-backend')
-    const squawk = workflow.indexOf('      - name: Check PostgreSQL SQL safety')
-    const migrate = workflow.indexOf('node data-stores/psql/migrate.mts')
-    const tests = workflow.indexOf(
-      'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
-    )
-
-    expect(setup).toBeGreaterThanOrEqual(0)
-    expect(squawk).toBeGreaterThan(setup)
-    expect(migrate).toBeGreaterThan(squawk)
-    expect(tests).toBeGreaterThan(migrate)
-    expect(workflow).toContain(
-      'pnpm exec squawk backend/data-stores/psql/migrations/*.sql backend/data-stores/psql/config-driven/*.sql backend/data-stores/psql/views/*.sql',
-    )
-  })
-
-  it('checks the staging RSS seed after one staging migration and before schema tests', () => {
-    const migrateStep = workflow.indexOf(
-      '      - working-directory: backend\n        env:\n          ENVIRONMENT: staging\n        run: node data-stores/psql/migrate.mts',
-    )
-    const check = workflow.indexOf('node data-stores/psql/check-staging-rss-bootstrap.mts')
+  it('checks the refreshed platform-stats snapshot before running Vitest', () => {
+    const platformStatsCheck = workflow.indexOf('node scripts/check-platform-stats-snapshot.mts')
     const schemaTests = workflow.indexOf('      - name: Run PostgreSQL schema tests')
 
-    expect(migrateStep).toBeGreaterThanOrEqual(0)
-    expect(check).toBeGreaterThan(migrateStep)
-    expect(schemaTests).toBeGreaterThan(check)
-    expect(workflow.match(/node data-stores\/psql\/migrate\.mts/gu)).toHaveLength(1)
-  })
-
-  it('checks the refreshed platform-stats snapshot before running Vitest', () => {
-    const migrateStep = workflow.indexOf('node data-stores/psql/migrate.mts')
-    const rssBootstrapCheck = workflow.indexOf(
-      'node data-stores/psql/check-staging-rss-bootstrap.mts',
-    )
-    const platformStatsCheck = workflow.indexOf('node scripts/check-platform-stats-snapshot.mts')
-    const schemaTests = workflow.indexOf(
-      'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
-    )
-
-    expect(migrateStep).toBeGreaterThanOrEqual(0)
-    expect(rssBootstrapCheck).toBeGreaterThan(migrateStep)
-    expect(platformStatsCheck).toBeGreaterThan(rssBootstrapCheck)
     expect(schemaTests).toBeGreaterThan(platformStatsCheck)
-  })
-
-  it('checks the schema snapshot after schema tests, even when Vitest is skipped', () => {
-    const tests = workflow.indexOf(
-      'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
-    )
-    const snapshotCheck = workflow.indexOf(
-      '      - name: Check PostgreSQL schema snapshot is up to date',
-    )
-    expect(snapshotCheck).toBeGreaterThan(tests)
-    expect(workflow.slice(snapshotCheck)).toContain('if: ${{ !cancelled() }}')
-    expect(workflow).toContain('node data-stores/psql/schema-snapshot/generate.mts --check')
   })
 
   it('runs the bounded native MV owner between bootstrap checks and Vitest on the same database', () => {
@@ -107,13 +54,13 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(nativeStep).toContain('ANALYTICS_BACKEND: local')
   })
 
-  it('converts the native V8 directory after the unchanged schema snapshot check', () => {
-    const snapshot = workflow.indexOf('node data-stores/psql/schema-snapshot/generate.mts --check')
+  it('converts the native V8 directory after schema tests finish', () => {
+    const tests = workflow.indexOf('      - name: Upload PostgreSQL schema JUnit report')
     const conversion = workflow.indexOf('      - name: Convert native materialized-view coverage')
     const publisher = workflow.indexOf('      - name: Preserve full native materialized-view LCOV')
     const conversionStep = workflow.slice(conversion, publisher)
 
-    expect(conversion).toBeGreaterThan(snapshot)
+    expect(conversion).toBeGreaterThan(tests)
     expect(publisher).toBeGreaterThan(conversion)
     expect(conversionStep).toContain('pnpm exec coverage-check native-v8-to-lcov')
     expect(conversionStep).toContain('--v8-dir "$RUNNER_TEMP/native-mv-v8"')

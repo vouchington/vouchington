@@ -135,7 +135,9 @@ describe('ci-local', () => {
       expect(stdout).toContain('set -a; source .env; set +a')
       expect(stdout).toContain('export READ_DATABASE_URL="$DATABASE_URL"')
       expect(stdout).toContain('pnpm --dir backend run db:clean')
-      expect(stdout).toContain('cd backend && node data-stores/psql/migrate.mts')
+      expect(stdout).toContain(
+        'cd backend && ENVIRONMENT=staging node data-stores/psql/migrate.mts',
+      )
       expect(stdout).toContain(
         'VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
       )

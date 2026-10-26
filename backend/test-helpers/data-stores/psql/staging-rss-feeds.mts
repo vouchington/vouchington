@@ -1,5 +1,7 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
+import { v7 } from 'uuid'
+import type { StagingRssFeed } from '../../../data-stores/psql/config-driven/utils/staging-rss-feeds.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -7,12 +9,28 @@ import {
   splitSqlStatements,
 } from '../../../data-stores/psql/migration-runner/sql-statements.mts'
 
-// Package-local helpers for the staging RSS feed seed test. Every read and write goes through one
-// borrowed transaction that the test rolls back, so the shared test database never keeps the
-// seeded feeds (a committed, enabled, never-fetched feed would be picked up by other suites).
-// Nothing here deletes or updates a row that already exists: tests share the database, so they
-// seed only feeds the database lacks and read the rest.
-
+// Owned fixtures roll back before another suite can crawl them; bootstrap rows remain untouched.
+export function createStagingRssFeedFixture(): StagingRssFeed {
+  const suffix = randomUUID()
+  const hostname = `staging-rss-${suffix}.example.com`
+  const pathname = '/feed/'
+  return {
+    url: `https://${hostname}${pathname}`,
+    hostname,
+    pathname,
+    title: `Staging RSS ${suffix}`,
+    slug: `staging-rss-${suffix}`,
+    ids: {
+      hostname: v7(),
+      url: v7(),
+      topic: v7(),
+      alias: v7(),
+      feed: v7(),
+      enablement: v7(),
+      discoverability: v7(),
+    },
+  }
+}
 export type SeededFeedRow = {
   url: string
   title: string
@@ -32,7 +50,6 @@ export type SeededFeedRow = {
   feed_type: string
   enablement_creator: string | null
 }
-
 export type SeededRowCounts = Record<
   | 'hostnames'
   | 'urls'
@@ -43,20 +60,17 @@ export type SeededRowCounts = Record<
   | 'discoverabilityChanges',
   number
 >
-
 export async function beginRolledBackSeedTransaction(): Promise<OwnedTransaction> {
   await loadSqlParserModule()
   return beginTransaction()
 }
-
 export async function applySeedSql(tx: OwnedTransaction, seedSql: string): Promise<void> {
   for (const statement of splitSqlStatements(seedSql))
     await tx(`/* applySeedSql */
 ${statement}`)
 }
 
-// Another topic that already owns the URL's active feed, like a feed an operator created through
-// the product. Its name and slug are random, so they never match the seed's natural keys.
+// An operator-created topic already owns the URL, under different natural keys.
 export async function insertActiveFeedUnderOtherTopic(
   tx: OwnedTransaction,
   feed: { url: string; hostname: string; pathname: string },
@@ -105,8 +119,7 @@ export async function insertActiveFeedUnderOtherTopic(
   return { topicSlug }
 }
 
-// Slugs of the publisher-type topics related to a topic, as relation__topic__publisher_type__topic
-// stores them (config-driven/0080-00-02-publisher-type-relations.sql).
+// Publisher types related by config-driven/0080-00-02-publisher-type-relations.sql.
 export async function readPublisherTypeSlugs(
   tx: OwnedTransaction,
   topicSlug: string,
@@ -122,7 +135,6 @@ export async function readPublisherTypeSlugs(
   )
   return rows.map(row => row.slug)
 }
-
 export async function readSeededFeeds(
   tx: OwnedTransaction,
   urls: readonly string[],
@@ -146,7 +158,6 @@ export async function readSeededFeeds(
   )
   return rows
 }
-
 export async function countSeededRows(
   tx: OwnedTransaction,
   feeds: ReadonlyArray<{ url: string; hostname: string; slug: string }>,
@@ -173,8 +184,7 @@ export async function countSeededRows(
   return rows[0]!
 }
 
-// A later change, like the product's updateRssFeedById: a default uuidv7() id sorts after the
-// seed's fixed id, so the AFTER INSERT sync trigger makes it the feed's current state.
+// A later UUIDv7 change becomes current through the AFTER INSERT sync trigger.
 export async function appendEnablementChange(
   tx: OwnedTransaction,
   url: string,

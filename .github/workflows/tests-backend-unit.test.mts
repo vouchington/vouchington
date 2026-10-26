@@ -107,15 +107,10 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')
   })
 
-  it('builds email templates and migrates each shard without owning backend smoke', () => {
-    // Email-templates build is folded into .github/actions/setup-backend. Each
-    // shard still owns that setup and migration; the standalone smoke workflow
-    // owns allocated-port API/worker smoke instead.
+  it('builds email templates without owning backend smoke', () => {
     const setupBackend = workflow.indexOf('actions/setup-backend')
-    const migration = workflow.indexOf('node data-stores/psql/migrate.mts')
 
     expect(setupBackend).toBeGreaterThanOrEqual(0)
-    expect(migration).toBeGreaterThan(setupBackend)
     expect(workflow).not.toContain('Allocate backend port')
     expect(workflow).not.toContain('./scripts/tests/smoke-test-server.sh')
     expect(workflow).not.toContain('./scripts/tests/smoke-test-worker.sh')
@@ -266,25 +261,5 @@ describe('backend uncredentialed Docker test workflow', () => {
   it('does not restore or save a remote Vite transform cache', () => {
     // A remote Vite cache round-trip once consumed a job's entire timeout budget.
     expect(workflow).not.toMatch(/actions\/cache\/(?:restore|save)|\.cache\/vite\/vitest/u)
-  })
-
-  // Real fresh-server acceptance belongs after migrate, before test/worker execution.
-  it('runs retained relation bootstrap acceptance exactly once between migrate and tests', () => {
-    const steps = stepsWorkflow.jobs?.['backend-tests']?.steps ?? []
-    const command = 'node scripts/data-retention/check-retained-relation-bootstrap.mts'
-    const matches = steps.filter(step => step.run === command)
-    expect(matches).toHaveLength(1)
-    expect(matches[0]?.if).toBeUndefined()
-    const migrate = steps.findIndex(step => step.run === 'node data-stores/psql/migrate.mts')
-    const acceptance = steps.findIndex(step => step.run === command)
-    const tests = steps.findIndex(step => step.name === 'Run backend tests')
-    expect(migrate).toBeGreaterThanOrEqual(0)
-    expect(acceptance).toBeGreaterThan(migrate)
-    expect(tests).toBeGreaterThan(acceptance)
-    const upload = steps.find(step => step.name === 'Upload retained relation bootstrap receipt')
-    expect(upload?.if).toBe('always()')
-    expect(upload?.with?.path).toBe('artifacts/retained-relation-bootstrap.json')
-    expect(upload?.with?.['retention-days']).toBe(1)
-    expect(upload?.with?.overwrite).toBe(true)
   })
 })

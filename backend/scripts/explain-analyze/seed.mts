@@ -60,6 +60,7 @@ import {
   seedUrls,
   seedTopicImportAttempts,
   seedUsers,
+  seedUserRoleLookups,
 } from './seed-data/core.mts'
 import { checkpointSeed, printRowCounts, runAnalyze } from './seed-data/maintenance.mts'
 import { seedOAuthClientVerification } from './seed-data/oauth-client-verification.mts'
@@ -97,6 +98,7 @@ import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/see
 async function main() {
   assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
   await seedUsers(20_000)
+  await seedUserRoleLookups()
   await seedAdminEmails()
   await seedTopicImportAttempts()
   await seedMembershipProducts()

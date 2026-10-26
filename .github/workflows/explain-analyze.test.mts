@@ -135,14 +135,12 @@ describe('stored-secret encryption key', () => {
 })
 
 describe('native pruning coverage artifacts', () => {
-  it('runs the real RSS tier snapshot contract after migration and publishes its producer coverage', () => {
+  it('runs the real RSS tier snapshot contract and publishes its producer coverage', () => {
     const { steps } = explainAnalyzeJob()
-    const migration = stepIndexRunning(steps, 'node data-stores/psql/migrate.mts')
     const rss = stepIndexRunning(steps, 'node backend/scripts/check-rss-feed-crawl-tiers.mts')
     const seed = stepIndexRunning(steps, 'node backend/scripts/seeds/dev-seed.mts')
     const converter = steps[stepIndexRunning(steps, 'pnpm exec coverage-check native-v8-to-lcov')]
 
-    expect(migration).toBeLessThan(rss)
     expect(rss).toBeLessThan(seed)
     expect(steps[rss]?.env?.NODE_DISABLE_COMPILE_CACHE).toBe('1')
     expect(steps[rss]?.env?.NODE_V8_COVERAGE).toBe(
