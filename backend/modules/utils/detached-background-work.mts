@@ -6,13 +6,18 @@ const storageGlobal = globalThis as typeof globalThis & {
   [DETACHED_BACKGROUND_WORK_KEY]?: AsyncLocalStorage<true>
 }
 storageGlobal[DETACHED_BACKGROUND_WORK_KEY] ??= new AsyncLocalStorage<true>()
-const detachedBackgroundWork = storageGlobal[DETACHED_BACKGROUND_WORK_KEY]
+const detachedBackgroundWorkStorage = storageGlobal[DETACHED_BACKGROUND_WORK_KEY]
 
 /** Mark cache refresh work without replacing any request, trace, or error-reporting context. */
-export function runDetachedBackgroundWork(refresh: () => Promise<void>): Promise<void> {
-  return detachedBackgroundWork.run(true, refresh)
+function runDetachedBackgroundWork(refresh: () => Promise<void>): Promise<void> {
+  return detachedBackgroundWorkStorage.run(true, refresh)
 }
 
-export function isDetachedBackgroundWork(): boolean {
-  return detachedBackgroundWork.getStore() === true
+function isDetachedBackgroundWork(): boolean {
+  return detachedBackgroundWorkStorage.getStore() === true
+}
+
+export const detachedBackgroundWork = {
+  run: runDetachedBackgroundWork,
+  isDetached: isDetachedBackgroundWork,
 }

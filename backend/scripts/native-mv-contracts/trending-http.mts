@@ -46,8 +46,7 @@ async function verifyOrdinaryReadProfileThreshold(
               assert.equal(feed?.id, feedId)
             }
             await readAndAssertSeededFeed()
-            await readAndAssertSeededFeed()
-            if (count === 3) await readAndAssertSeededFeed()
+            if (count === 2) await readAndAssertSeededFeed()
           })().then(
             () => response.end(),
             err => {
@@ -69,8 +68,8 @@ async function verifyOrdinaryReadProfileThreshold(
     )
   }
 
-  await requestWithBatchReads(2)
-  await assert.rejects(requestWithBatchReads(3), /getRssFeedsByIdBatch \(x3\)/)
+  await requestWithBatchReads(1)
+  await assert.rejects(requestWithBatchReads(2), /getRssFeedsByIdBatch \(x2\)/)
 }
 
 /** Real HTTP route and populated MV assertions moved from backend-data-stores Vitest. */

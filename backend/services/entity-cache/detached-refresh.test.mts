@@ -5,7 +5,7 @@ import {
   getOptionalRequestOrigin,
   runWithSessionRequestContext,
 } from '../../modules/request-client-info/index.mts'
-import { isDetachedBackgroundWork } from '@modules/utils/detached-background-work'
+import { detachedBackgroundWork } from '@modules/utils/detached-background-work'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { getTopicMetricsByAnyBatch } from '../topics/metrics-batch.mts'
 import { createRequestQueryProfile } from '../../test-helpers/query-profiles.mts'
@@ -21,7 +21,7 @@ describe('detached cache refresh', () => {
     try {
       await cache.set(key, { id: key }, 60)
       const cached = cache.cacheGetByAny(async () => {
-        refreshed.resolve(isDetachedBackgroundWork())
+        refreshed.resolve(detachedBackgroundWork.isDetached())
         return { id: key }
       })
       await expect(cached(key)).resolves.toEqual({ id: key })
@@ -110,7 +110,7 @@ describe('detached cache refresh', () => {
       sentryScope: ReturnType<typeof readTestSentryScope>
     }[] = []
     const fetchBatch = async (keys: string[]) => {
-      const detached = isDetachedBackgroundWork()
+      const detached = detachedBackgroundWork.isDetached()
       batches.push({
         keys,
         detached,

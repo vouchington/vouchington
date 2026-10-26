@@ -1,5 +1,5 @@
 import { createQueryProfiles } from '@vouchington/postgres/query-telemetry'
-import { isDetachedBackgroundWork } from '@modules/utils/detached-background-work'
+import { detachedBackgroundWork } from '@modules/utils/detached-background-work'
 
 /** The single test-side profiles instance; production code never profiles requests or workers. */
 export const {
@@ -8,7 +8,7 @@ export const {
   runIndependentWorker,
 } = createQueryProfiles({
   registryKey: Symbol.for('voucha.test.queryProfiles'),
-  isDetached: isDetachedBackgroundWork,
+  isDetached: detachedBackgroundWork.isDetached,
 })
 
 export type {
