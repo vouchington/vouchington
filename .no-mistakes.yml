@@ -3461,6 +3461,7 @@ rules:
   - name: Next.js redirect destinations resolve to App Router pages
     rule: nextjs-redirect-destinations
     scope: repository
+    severity: error
     options:
       configPath: web/next.config.ts
       appRoot: web/app
@@ -3470,6 +3471,7 @@ rules:
   - name: multi-row FOR UPDATE locks have a deterministic order
     rule: postgres-lock-ordering
     scope: repository
+    severity: error
     options:
       unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
@@ -3525,6 +3527,7 @@ rules:
   - name: production PostgreSQL locks use catalog key prefixes
     rule: postgres-lock-ordering
     scope: repository
+    severity: error
     options:
       unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
@@ -3562,6 +3565,7 @@ rules:
   - name: DML must not write PostgreSQL generated columns
     rule: postgres-no-generated-column-writes
     scope: repository
+    severity: error
     options:
       unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
@@ -3763,6 +3767,7 @@ rules:
   - name: runtime queries use cursor pagination
     rule: postgres-no-offset
     scope: repository
+    severity: error
     options:
       unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
@@ -3783,6 +3788,7 @@ rules:
   - name: runtime queries identify executed statements
     rule: postgres-require-query-annotation
     scope: repository
+    severity: error
     options:
       effort: low
       unanalyzableSql: advise
@@ -3801,6 +3807,7 @@ rules:
   - name: development runtime helper queries identify executed statements
     rule: postgres-require-query-annotation
     scope: repository
+    severity: error
     options:
       effort: low
       unanalyzableSql: advise
@@ -3817,6 +3824,7 @@ rules:
   - name: reject unsafe PostgreSQL query shapes
     rule: postgres-sql-shape-policy
     scope: repository
+    severity: error
     options:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
@@ -3856,6 +3864,7 @@ rules:
   - name: generated UUIDv7 timestamps are not query predicates
     rule: postgres-generated-column-predicates
     scope: repository
+    severity: error
     options:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
@@ -3925,6 +3934,7 @@ rules:
   - name: development-runtime helpers avoid generated UUIDv7 timestamp predicates
     rule: postgres-generated-column-predicates
     scope: repository
+    severity: error
     options:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
@@ -4096,6 +4106,7 @@ rules:
   - name: updated_at columns require their maintenance trigger
     rule: postgres-column-requires-trigger
     scope: repository
+    severity: error
     options:
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       requirements:
@@ -4112,6 +4123,7 @@ rules:
   - name: updated_at clock triggers preserve their required structure
     rule: postgres-column-requires-trigger
     scope: repository
+    severity: error
     options:
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       requirements:
@@ -4147,6 +4159,7 @@ rules:
     rule: postgres-no-generated-column-writes
     scope: repository
     exclude: ['**/test-helpers/**']
+    severity: error
     options:
       unanalyzableSql: ignore
       importSpecifier: '@data-stores/psql'
@@ -4209,6 +4222,7 @@ rules:
   - name: view reads constrain their lookup keys
     rule: postgres-required-predicates
     scope: repository
+    severity: error
     options:
       importSpecifier: '@data-stores/psql'
       executorFactoryNames:
