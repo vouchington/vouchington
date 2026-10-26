@@ -220,6 +220,11 @@
 - `batches`
 - `identities`
 - `versioned_identities`
+- `requests`
+- `topic_results`
+- `story_results`
+- `community_prompt_results`
+- `decision_candidates`
 
 ## `classifier_run_terminal_failure_kinds`
 
