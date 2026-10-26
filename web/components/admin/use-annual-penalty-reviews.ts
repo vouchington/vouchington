@@ -75,13 +75,11 @@ export function useAnnualPenaltyReviews<P extends DuePenalty>({
     setActionErrorId(null)
     try {
       await action(id)
-      const reconciled = await reconcile(id)
-      await refresh()
+      const [reconciled] = await Promise.all([reconcile(id), refresh()])
       if (!reconciled) setActionErrorId(id)
     } catch {
-      const reconciled = await reconcile(id)
-      // The response can be lost after commit. The due queue is the authoritative outcome.
-      const currentDue = await refresh()
+      // The response can be lost after commit. Both authoritative reads can proceed together.
+      const [reconciled, currentDue] = await Promise.all([reconcile(id), refresh()])
       if (!reconciled || !currentDue || currentDue.some(penalty => penalty.id === id))
         setActionErrorId(id)
     } finally {
