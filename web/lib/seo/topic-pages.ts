@@ -8,6 +8,7 @@ import { getSchemaOrgType } from './schema-org-types'
 import { getTopicDisplayTitle } from '@/lib/topics/display-name'
 import { buildPlacementImagePath } from '@/lib/utils/image-url'
 import type { Topic, TopicMetrics } from '@/types/topics'
+import { getEffectiveContentLanguage } from '@ts-shared/languages/content-languages'
 import type { Translator } from '@ts-shared/ui-messages'
 
 interface TopicSectionOptions {
@@ -25,11 +26,16 @@ export function createTopicSectionMetadata(
   if (topic.is_noindexed) return createNoIndexMetadata()
   const pagePath = `/${topicTypeSlug}/${topic.slug}/${section.path}`
 
+  // The meta description is the topic's own text. Open Graph locale follows that
+  // content language; the canonical path stays language-neutral.
   return createPageMetadata({
     title: `${getTopicDisplayTitle(topic)} ${section.label}`,
     description: createExcerpt(topic.html ?? topic.markdown),
     path: pagePath,
     imagePath: buildPlacementImagePath(topic.hero_image_placement ?? topic.logo_image_placement),
+    contentLanguage: getEffectiveContentLanguage({
+      detectedLanguage: topic.lingua_rs_detected_language,
+    }),
     ...(section.rssUrl ? { rssUrl: section.rssUrl } : {}),
   })
 }
