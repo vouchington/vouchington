@@ -12,6 +12,7 @@ import {
 import { createRssFeed } from '@services/rss-feeds/create'
 import { hardDeleteRssFeedById } from '@services/rss-feeds/delete'
 import { hardDeleteRssFeedChildPage } from '@services/rss-feeds/hard-delete-child-page'
+import { hardDeleteRssFeedSourcePage } from '@services/rss-feeds/hard-delete-source-page'
 import { RSS_FEED_HARD_DELETE_CHILD_PHASES } from '@queues/rss-feed-maintenance/types'
 import { processRecoverRssFeedHardDeletes } from '@services/rss-feeds/hard-delete-recovery'
 import {
@@ -64,6 +65,11 @@ describe('RSS feed deletion job chain', () => {
     expect(recovery.admitted).toBe(1)
 
     await processHardDeleteRssFeedSourcePage({ rssFeedId: feed.id })
+    expect(await hardDeleteRssFeedSourcePage(feed.id)).toEqual({
+      removed: 0,
+      hasMore: false,
+      keys: [],
+    })
     await processHardDeleteRssFeedChildPage({ rssFeedId: feed.id, phase: 'setting_changes' })
     await processHardDeleteRssFeedChildPage({ rssFeedId: feed.id, phase: 'setting_changes' })
     expect(await hardDeleteRssFeedChildPage(feed.id, 'setting_changes')).toEqual({
@@ -75,6 +81,11 @@ describe('RSS feed deletion job chain', () => {
     await processFinalizeHardDeleteRssFeed({ rssFeedId: feed.id })
     expect(await readTestRssFeedDeleteMarker(feed.id)).toBeNull()
     await processFinalizeHardDeleteRssFeed({ rssFeedId: feed.id })
+    expect(await hardDeleteRssFeedSourcePage(feed.id)).toEqual({
+      removed: 0,
+      hasMore: false,
+      keys: [],
+    })
   })
 
   it('continues a bounded history phase before advancing the next phase', async () => {

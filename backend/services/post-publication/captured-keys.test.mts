@@ -1,12 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import {
+  capturedPublicationKeys,
   hashCapturedPublicationKeys,
+  impactPublicationKeys,
   splitCapturedPublicationKeys,
   type PublicationCapturedKey,
 } from './captured-keys.mts'
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 
 describe('captured publication key hash', () => {
+  it('keeps an old feed identity even after a post loses its source and rejects empty impact IDs', () => {
+    const postId = crypto.randomUUID()
+    const feedId = crypto.randomUUID()
+    expect(
+      capturedPublicationKeys({
+        scope: { type: 'post', postId },
+        reason: 'post_deleted',
+        footprint: { priorRssFeedIds: [feedId] },
+      }),
+    ).toContainEqual({ kind: 'identity_rss_feed', uuidValue: feedId })
+    expect(() => impactPublicationKeys({ postIds: [''] })).toThrow(
+      'Post publication impact keys must be identifiers',
+    )
+  })
+
   it('is stable across source order and duplicate keys, but changes with a different old identity', () => {
     const first: PublicationCapturedKey = { kind: 'identity_post_slug', textValue: 'old-slug' }
     const second: PublicationCapturedKey = { kind: 'impact_topic', uuidValue: crypto.randomUUID() }

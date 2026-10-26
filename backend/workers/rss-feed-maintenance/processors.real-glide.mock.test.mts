@@ -54,6 +54,20 @@ async function runJob(name: string, data: Record<string, unknown>): Promise<unkn
 }
 
 describe('merged RSS feed maintenance worker with real GlideMQ', () => {
+  it('serves every hard-delete page job name through the live worker registry', async () => {
+    const rssFeedId = randomUUID()
+    await expect(
+      runJob('processHardDeleteRssFeedSourcePage', { rssFeedId }),
+    ).resolves.toBeUndefined()
+    await expect(
+      runJob('processHardDeleteRssFeedChildPage', {
+        rssFeedId,
+        phase: 'setting_changes',
+      }),
+    ).resolves.toBeUndefined()
+    await expect(runJob('processFinalizeHardDeleteRssFeed', { rssFeedId })).resolves.toBeUndefined()
+  })
+
   it('rejects malformed discoverability payloads and unknown job names', async () => {
     await expect(runJob('processEvaluateRssFeedDiscoverability', {})).rejects.toThrow(
       'RSS feed discoverability job .rssFeedId is required',

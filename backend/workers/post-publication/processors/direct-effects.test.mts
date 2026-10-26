@@ -95,11 +95,13 @@ describe('direct post publication effects', () => {
     const oldUsername = safeUsername('prior-publication-author')
     const oldCommunitySlug = `prior-publication-community-${suffix}`
     const oldPostSlug = `prior-publication-post-${suffix}`
+    const oldTopicAlias = `prior-publication-topic-${suffix}`
     const keys: PublicationCapturedKey[] = [
       { kind: 'impact_post', uuidValue: postId },
       { kind: 'identity_author_username', textValue: oldUsername },
       { kind: 'identity_community_slug', textValue: oldCommunitySlug },
       { kind: 'identity_post_slug', textValue: oldPostSlug },
+      { kind: 'identity_topic_alias', textValue: oldTopicAlias },
     ]
     const job = capturedJob(postId, keys)
 
@@ -108,16 +110,19 @@ describe('direct post publication effects', () => {
       caches.users_lookup.set(author.username, author.id),
       caches.posts_lookup.set(oldPostSlug, postId),
       caches.posts_lookup.set(currentSlug, postId),
+      caches.topics_lookup.set(oldTopicAlias, randomUUID()),
     ])
     expect(await caches.users_lookup.get(oldUsername)).toBe(author.id)
     expect(await caches.users_lookup.get(author.username)).toBe(author.id)
     expect(await caches.posts_lookup.get(oldPostSlug)).toBe(postId)
     expect(await caches.posts_lookup.get(currentSlug)).toBe(postId)
+    expect(await caches.topics_lookup.get(oldTopicAlias)).not.toBeNull()
 
     await expect(processApplyPostPublicationEffects(job)).resolves.toEqual({ affectedPosts: 1 })
     expect(await caches.users_lookup.get(oldUsername)).toBeNull()
     expect(await caches.users_lookup.get(author.username)).toBeNull()
     expect(await caches.posts_lookup.get(oldPostSlug)).toBeNull()
+    expect(await caches.topics_lookup.get(oldTopicAlias)).toBeNull()
 
     // Current post slugs are read in a separate bounded continuation.
     await expect(
