@@ -1,5 +1,5 @@
 import type { Job } from 'glide-mq'
-import { afterAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 
 import { enqueueGlideMqStats } from '@queues/heartbeat/enqueues'
 import type { HeartbeatData, HeartbeatResult } from '@queues/heartbeat/types'
@@ -8,6 +8,7 @@ import { heartbeat as heartbeatWorker } from './workers.mts'
 describe('heartbeat worker', () => {
   afterAll(async () => {
     await heartbeatWorker.close()
+    vi.resetModules()
   })
 
   it('publishes aggregate queue metrics before completing the heartbeat', async () => {
