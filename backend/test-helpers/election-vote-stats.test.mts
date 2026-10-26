@@ -116,6 +116,20 @@ describe('onceElectionVoteStatsCompleted', () => {
     expect(await rejected).toMatchObject({ message: deadlineError(data) })
   })
 
+  it('ignores an unrelated real failure and accepts the matching completion', async () => {
+    const data = target()
+    const completion = onceElectionVoteStatsCompleted(data, 1, 1_000)
+    const outcome = completion.catch((err: unknown) => err)
+    const unrelated = await addJob(
+      { electionId: `invalid-${crypto.randomUUID()}`, orderingKey: 'post' },
+      false,
+    )
+    await settleSharedBackgroundJobs()
+    expect(await unrelated.getState()).toBe('failed')
+    await addJob(data)
+    await expect(outcome).resolves.toBeUndefined()
+  })
+
   it('narrows real relation completions by relation table', async () => {
     const tables = entityRelationMetadatum.filter(metadata => metadata.election)
     const first = tables[0]!.table_name as EntityRelationElectionTable
@@ -138,7 +152,11 @@ describe('onceElectionVoteStatsCompleted', () => {
     const completedListeners = worker.listenerCount('completed')
     const failedListeners = worker.listenerCount('failed')
     const admissionListeners = queue.listenerCount('added')
-    const spy = vi.spyOn(queue, 'searchJobs').mockRejectedValueOnce(new Error('search boom'))
+    const searchJobs = queue.searchJobs
+    const spy = vi.spyOn(queue, 'searchJobs').mockImplementation(async options => {
+      if (options?.state === 'completed') throw new Error('search boom')
+      return Reflect.apply(searchJobs, queue, [options])
+    })
     try {
       await expect(onceElectionVoteStatsCompleted(target())).rejects.toThrow('search boom')
     } finally {
