@@ -56,7 +56,9 @@ jobs:
     needs: [shards]
     # Consumer of the shared web build; its cache key includes runner.arch, so it matches the producer.
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 23
+    # Shards aim to finish within 10 minutes. The step ceilings below cannot fire on a runner that
+    # stops responding, so this cap is what ends a wedged shard.
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
@@ -191,13 +193,11 @@ jobs:
         id: run-playwright
         # PLAYWRIGHT_EXECUTION_BUDGET_SECONDS (ci/playwright/shard-total.mts) sizes shards to about
         # 300s of average test time (about 350s for the heaviest); this ceiling adds a slow-runner
-        # tail on top of it. Merge-queue shards still recording passes were killed at 9 minutes
-        # with ~50 tests left at ~80 passes per 2.5 minutes (#1185), so 12 covers that tail.
-        # Assertion failures still fail the step.
-        # run-bounded kills the process group one minute under this ceiling. timeout-minutes did
-        # not: shard 5 stayed in this step until the 23-minute job cap and the log was dropped
-        # (run 37726973537, job 113148144881).
-        timeout-minutes: 12
+        # tail on top of it. Assertion failures still fail the step.
+        # run-bounded kills the process group one minute under this ceiling. Neither fired when
+        # shards 5 and 8 hung until the job cap with their logs dropped (runs 37726973537 and
+        # 40397368974), so the background sampler logs memory and the largest processes.
+        timeout-minutes: 9
         env:
           GIT_COMMIT: ${{ github.sha }}
           NEXT_PUBLIC_GIT_COMMIT: ${{ github.sha }}
@@ -210,7 +210,15 @@ jobs:
           PLAYWRIGHT_JUNIT_OUTPUT_FILE: test-report.junit.xml
         run: |
           set -euo pipefail
-          python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 660 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
+          if [ -r /proc/meminfo ]; then
+            (while sleep 30; do
+              awk '/^(MemAvailable|SwapFree):/ { printf "%s %d MiB ", $1, $2 / 1024 } END { print "" }' /proc/meminfo
+              ps -eo rss=,comm= --sort=-rss | head -3 | awk '{ printf "  %d MiB %s\n", $1 / 1024, $2 }'
+            done) &
+            sampler=$!
+            trap 'kill "$sampler" 2>/dev/null || true' EXIT
+          fi
+          python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 480 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD" && test_exit=0 || test_exit=$?
           # `trace: 'on-first-retry'` (playwright/config/shared-config.mts) writes a
           # trace.zip only for a test's first retry attempt, so its presence under
           # test-results/ is a direct signal that something retried in this shard —
