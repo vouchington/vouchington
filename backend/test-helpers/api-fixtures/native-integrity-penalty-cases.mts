@@ -8,6 +8,8 @@ import {
   reportRevokedPenalty,
   reportSecondPenaltyId,
   revokedAt,
+  reviewedAt,
+  nextReviewDueAt,
   terminalPage,
   userId,
 } from './native-integrity-penalty-data.mts'
@@ -109,6 +111,33 @@ export const nativeIntegrityPenaltyApiFixtureCases = [
       },
       penaltyId: reportPenaltyId,
       userId,
+    },
+    migratedFrom: ['backend/api/v1/report-integrity/penalties.mts'],
+  }),
+  fixtureCase({
+    id: 'native.moderation.report-integrity.penalties.review-due',
+    method: 'GET',
+    path: '/api/v1/report-integrity/penalties/review-due',
+    route: { routeTemplate: '/api/v1/report-integrity/penalties/review-due' },
+    body: { results: [reportActivePenalty], has_more: false },
+    migratedFrom: ['backend/api/v1/report-integrity/penalties.mts'],
+  }),
+  fixtureCase({
+    id: 'native.moderation.report-integrity.penalties.review',
+    method: 'POST',
+    path: `/api/v1/report-integrity/penalties/${reportPenaltyId}/reviews`,
+    route: {
+      routeTemplate: '/api/v1/report-integrity/penalties/:id/reviews',
+      pathParams: { id: reportPenaltyId },
+    },
+    body: {
+      penalty: {
+        ...reportActivePenalty,
+        reviewed_at: reviewedAt,
+        reviewed_by_id: adminId,
+        review_due_at: nextReviewDueAt,
+        updated_at: reviewedAt,
+      },
     },
     migratedFrom: ['backend/api/v1/report-integrity/penalties.mts'],
   }),

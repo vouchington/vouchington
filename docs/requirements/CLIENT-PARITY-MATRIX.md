@@ -65,6 +65,17 @@ their engineering parity can include classifier ranges. No member-facing route
 or MCP tool changes. Native adoption is tracked in
 [vouchington-clients#497](https://github.com/vouchington/vouchington-clients/issues/497).
 
+## Annual integrity penalty review
+
+Staff can inspect bounded queues of active report-abuse and vote-weight penalties due for
+annual review and confirm continued enforcement. The producer exposes
+`GET /api/v1/{report|vote}-integrity/penalties/review-due` and
+`POST /api/v1/{report|vote}-integrity/penalties/:id/reviews` to the same staff roles that
+can apply each penalty. Swift and .NET have existing integrity penalty surfaces, but neither
+renders this review queue yet. [Clients #492](https://github.com/vouchington/vouchington-clients/issues/492)
+owns native presentation, route consumption, and behavioral evidence; native parity stays
+dependent until that work is proven.
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending

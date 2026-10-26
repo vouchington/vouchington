@@ -11,6 +11,9 @@ export const voteSecondPenaltyId = '019f7000-0000-7000-8000-000000000202'
 export const voteRetainedPenaltyId = '019f7000-0000-7000-8000-000000000203'
 const createdAt = '2026-06-01T12:00:00.000Z'
 export const revokedAt = '2026-06-02T12:00:00.000Z'
+export const reviewDueAt = '2026-10-01T12:00:00.000Z'
+export const reviewedAt = '2026-10-23T12:00:00.000Z'
+export const nextReviewDueAt = '2027-10-23T12:00:00.000Z'
 
 export const reportActivePenalty = {
   id: reportPenaltyId,
@@ -20,6 +23,9 @@ export const reportActivePenalty = {
   created_by_id: adminId,
   revoked_at: null,
   revoked_by_id: null,
+  reviewed_at: null,
+  reviewed_by_id: null,
+  review_due_at: reviewDueAt,
   created_at: createdAt,
   updated_at: createdAt,
 }
@@ -40,6 +46,9 @@ export const voteActivePenalty = {
   created_by_id: adminId,
   revoked_at: null,
   revoked_by_id: null,
+  reviewed_at: null,
+  reviewed_by_id: null,
+  review_due_at: reviewDueAt,
   created_at: createdAt,
 }
 export const voteRevokedPenalty = {

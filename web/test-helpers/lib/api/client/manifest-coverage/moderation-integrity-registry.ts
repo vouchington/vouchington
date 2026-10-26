@@ -93,6 +93,14 @@ export const moderationIntegrityEndpointRegistry: Record<string, ManifestEndpoin
     method: 'DELETE',
     path: '/api/v1/report-integrity/penalties/019f7000-0000-7000-8000-000000000101',
   },
+  'native.moderation.report-integrity.penalties.review-due': {
+    method: 'GET',
+    path: '/api/v1/report-integrity/penalties/review-due',
+  },
+  'native.moderation.report-integrity.penalties.review': {
+    method: 'POST',
+    path: '/api/v1/report-integrity/penalties/019f7000-0000-7000-8000-000000000101/reviews',
+  },
   'native.moderation.vote-integrity.penalties.default': {
     method: 'GET',
     path: '/api/v1/vote-integrity/penalties',
@@ -125,5 +133,13 @@ export const moderationIntegrityEndpointRegistry: Record<string, ManifestEndpoin
   'native.moderation.vote-integrity.penalties.revoke': {
     method: 'DELETE',
     path: '/api/v1/vote-integrity/penalties/019f7000-0000-7000-8000-000000000201',
+  },
+  'native.moderation.vote-integrity.penalties.review-due': {
+    method: 'GET',
+    path: '/api/v1/vote-integrity/penalties/review-due',
+  },
+  'native.moderation.vote-integrity.penalties.review': {
+    method: 'POST',
+    path: '/api/v1/vote-integrity/penalties/019f7000-0000-7000-8000-000000000201/reviews',
   },
 }

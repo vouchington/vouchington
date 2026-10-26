@@ -1105,6 +1105,48 @@
       }
     },
     {
+      "id": "annual-integrity-penalty-review",
+      "title": "Staff annual review of active integrity penalties",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/MODERATION-FLOWS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/admin/annual-penalty-reviews.tsx",
+            "web/app/(report-integrity)/report-integrity/penalties/report-integrity-penalties-client.tsx",
+            "web/app/(vote-integrity)/vote-integrity/penalties/vote-integrity-penalties-client.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/admin/annual-penalty-reviews.mock.test.tsx",
+            "web/app/(report-integrity)/report-integrity/penalties/report-integrity-penalties-client.mock.test.tsx",
+            "web/app/(vote-integrity)/vote-integrity/penalties/vote-integrity-penalties-client.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET have existing integrity penalty screens but do not render annual due-review queues or confirmation actions. The producer lands first; native rendered and executable proof is dependent work.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/492"
+      }
+    },
+    {
       "id": "member-moderation-appeals",
       "title": "Member moderation cases and appeal submission",
       "domain": "Account",

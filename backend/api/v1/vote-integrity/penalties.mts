@@ -12,6 +12,8 @@ import {
   getVoteWeightPenaltiesByFlagIdFromPrimary,
   getVoteWeightPenaltyByIdFromPrimary,
   revokeVoteWeightPenalty,
+  getVoteWeightPenaltyReviewsDue,
+  reviewVoteWeightPenalty,
   type GetVoteWeightPenaltiesOptions,
 } from '@services/vote-integrity'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -25,6 +27,17 @@ const penaltiesQuery = defineQueryContract({
   source: queryEnum(['flag']),
   user_id: queryUuid(),
   source_flag_id: queryUuid(),
+})
+
+// GET /api/v1/vote-integrity/penalties/review-due
+app.route('/api/v1/vote-integrity/penalties/review-due').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyVoteRingPenalty,
+    'GET:/api/v1/vote-integrity/penalties/review-due',
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/penalties/review-due', {})
+  ctx.json(await getVoteWeightPenaltyReviewsDue())
 })
 
 // GET /api/v1/vote-integrity/penalties
@@ -103,5 +116,20 @@ app.route('/api/v1/vote-integrity/penalties/:id').delete(async (ctx: Context) =>
   validateRequestContract(ctx, 'DELETE:/api/v1/vote-integrity/penalties/:id', { path: ctx.params })
 
   const penalty = await revokeVoteWeightPenalty(ctx.params.id!, currentUser.id)
+  ctx.json({ penalty })
+})
+
+// POST /api/v1/vote-integrity/penalties/:id/reviews
+app.route('/api/v1/vote-integrity/penalties/:id/reviews').post(async (ctx: Context) => {
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyVoteRingPenalty,
+    'POST:/api/v1/vote-integrity/penalties/:id/reviews',
+  )
+  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid penalty ID')
+  validateRequestContract(ctx, 'POST:/api/v1/vote-integrity/penalties/:id/reviews', {
+    path: ctx.params,
+  })
+  const penalty = await reviewVoteWeightPenalty(ctx.params.id!, currentUser.id)
   ctx.json({ penalty })
 })

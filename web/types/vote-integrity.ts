@@ -44,6 +44,9 @@ export interface VoteIntegrityPenalty {
   created_by_id: string | null
   revoked_at: string | null
   revoked_by_id: string | null
+  reviewed_at: string | null
+  reviewed_by_id: string | null
+  review_due_at: string
   created_at: string
 }
 

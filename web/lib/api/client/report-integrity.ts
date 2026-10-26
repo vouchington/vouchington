@@ -59,3 +59,13 @@ export function revokeReportAbusePenalty<T>(penaltyId: string): Promise<T> {
     `/api/v1/report-integrity/penalties/${encodedIntegrityPathSegment(penaltyId)}`,
   )
 }
+
+export function getReportAbusePenaltyReviewsDue<T>(): Promise<T> {
+  return clientApi.get<T>('/api/v1/report-integrity/penalties/review-due')
+}
+
+export function reviewReportAbusePenalty<T>(penaltyId: string): Promise<T> {
+  return clientApi.post<T>(
+    `/api/v1/report-integrity/penalties/${encodedIntegrityPathSegment(penaltyId)}/reviews`,
+  )
+}

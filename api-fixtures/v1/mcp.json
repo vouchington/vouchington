@@ -34895,6 +34895,15 @@
                               }
                             ]
                           },
+                          "review_due_at": {
+                            "type": "string"
+                          },
+                          "reviewed_at": {
+                            "$ref": "#/$defs/S1"
+                          },
+                          "reviewed_by_id": {
+                            "$ref": "#/$defs/S1"
+                          },
                           "revoked_at": {
                             "$ref": "#/$defs/S1"
                           },
@@ -34916,6 +34925,9 @@
                           "created_by_id",
                           "id",
                           "reason",
+                          "review_due_at",
+                          "reviewed_at",
+                          "reviewed_by_id",
                           "revoked_at",
                           "revoked_by_id",
                           "source_flag_id",
@@ -35620,6 +35632,15 @@
                             }
                           ]
                         },
+                        "review_due_at": {
+                          "type": "string"
+                        },
+                        "reviewed_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "reviewed_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "revoked_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35641,6 +35662,9 @@
                         "created_by_id",
                         "id",
                         "reason",
+                        "review_due_at",
+                        "reviewed_at",
+                        "reviewed_by_id",
                         "revoked_at",
                         "revoked_by_id",
                         "source_flag_id",
@@ -35687,6 +35711,15 @@
                             }
                           ]
                         },
+                        "review_due_at": {
+                          "type": "string"
+                        },
+                        "reviewed_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "reviewed_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "revoked_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -35706,6 +35739,9 @@
                         "id",
                         "penalty_multiplier",
                         "reason",
+                        "review_due_at",
+                        "reviewed_at",
+                        "reviewed_by_id",
                         "revoked_at",
                         "revoked_by_id",
                         "source_flag_id",
@@ -35980,6 +36016,15 @@
                               }
                             ]
                           },
+                          "review_due_at": {
+                            "type": "string"
+                          },
+                          "reviewed_at": {
+                            "$ref": "#/$defs/S1"
+                          },
+                          "reviewed_by_id": {
+                            "$ref": "#/$defs/S1"
+                          },
                           "revoked_at": {
                             "$ref": "#/$defs/S1"
                           },
@@ -35999,6 +36044,9 @@
                           "id",
                           "penalty_multiplier",
                           "reason",
+                          "review_due_at",
+                          "reviewed_at",
+                          "reviewed_by_id",
                           "revoked_at",
                           "revoked_by_id",
                           "source_flag_id",
