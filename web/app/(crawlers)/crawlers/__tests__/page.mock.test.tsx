@@ -57,11 +57,12 @@ describe('CrawlersListPage', () => {
     mockGetCrawlers.mockResolvedValue({ results: [baseCrawler] })
     const { container } = render(await CrawlersListPage())
     expect(screen.getByText('Crawlers')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Hostname' })).toBeInTheDocument()
     expect(screen.getByText('fetch')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'crawler.example.com' })).toHaveAttribute(
       'href',
-      '/domain/crawler.example.com',
+      '/crawler/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
     )
     expect(screen.queryByText(/aaaaaaaa/)).not.toBeInTheDocument()
     expect(container.querySelector('[data-pw="page-content-wrapper"]')).toBeTruthy()

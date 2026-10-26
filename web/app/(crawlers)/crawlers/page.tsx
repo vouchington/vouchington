@@ -5,7 +5,7 @@ import { PageWithAside } from '@/components/page-with-aside'
 import { getCrawlers } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import { domainHref } from '@/lib/links/entity-href'
+import { createCrawlerPathname } from '@/lib/links/entity-href'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,7 +72,7 @@ export default async function CrawlersListPage() {
                   >
                     <td className='whitespace-nowrap px-4 py-3 font-mono text-xs text-muted-foreground'>
                       <Link
-                        href={domainHref(crawler.hostname)}
+                        href={createCrawlerPathname(crawler)}
                         prefetch={false}
                         className="after:absolute after:inset-0 after:content-[''] text-primary hover:underline"
                         data-pw='crawler-row'
