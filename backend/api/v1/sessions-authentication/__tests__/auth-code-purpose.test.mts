@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { emails } from '@queues/emails/queues'
+import { sentryCaptureExceptionMock } from '../../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
 import {
   assertEmailTokenRequestAllowed,
@@ -13,6 +15,50 @@ const reAuthEmailVerification = '/api/v1/auth/mfa/re-auth/email/verification'
 const reAuthTotpVerification = '/api/v1/auth/mfa/re-auth/totp/verification'
 
 describe('re-authentication code boundaries', () => {
+  it('keeps an issued re-authentication code usable when delivery admission fails', async () => {
+    const user = await createTestUser()
+    const req = createRequest()
+    await req.authenticateAs(user)
+    const failure = new Error('Owned re-authentication email admission failure')
+    const originalAdd = emails.add
+    let issuedCode: string | undefined
+    const spy = vi.spyOn(emails, 'add').mockImplementation((name, data, options) => {
+      if (
+        name === 'processSendReauthenticationToken' &&
+        typeof data === 'object' &&
+        data !== null &&
+        'input' in data &&
+        typeof data.input === 'object' &&
+        data.input !== null &&
+        'emailAddress' in data.input &&
+        data.input.emailAddress === user.email_address &&
+        'variables' in data &&
+        typeof data.variables === 'object' &&
+        data.variables !== null &&
+        'token' in data.variables &&
+        typeof data.variables.token === 'string'
+      ) {
+        issuedCode = data.variables.token
+        return Promise.reject(failure)
+      }
+      return originalAdd.call(emails, name, data, options)
+    })
+    try {
+      await req.post(reAuthEmailTokens).expect(200)
+      expect(issuedCode).toBeTruthy()
+      const verified = await req
+        .post(reAuthEmailVerification)
+        .send({ code: issuedCode })
+        .expect(200)
+      expect(verified.body.re_auth_token).toBeTruthy()
+      expect(
+        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+      ).toHaveLength(1)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('accepts re-authentication email codes but rejects a login code without consuming it', async () => {
     const user = await createTestUser()
     const req = createRequest()
