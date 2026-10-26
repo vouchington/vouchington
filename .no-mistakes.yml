@@ -1754,7 +1754,6 @@ rules:
       - 'backend/services/elections-votes/entity-relation/publication-capture.test.mts'
       - 'backend/services/elections-votes/entity-relation/vote-stats-batch-locks.test.mts'
       - 'backend/services/elections-votes/entity-relation/vote-stats-publication-lock.test.mts'
-      - 'backend/services/elections-votes/shared/request-lock.test.mts'
       - 'backend/services/moderation-analytics/moderation-transparency-rollup-lifecycle.test.mts'
       - 'backend/test-helpers/election-vote-stats.test.mts'
       - 'backend/test-helpers/polling.test.mts'
@@ -1813,7 +1812,6 @@ rules:
       - 'backend/test-helpers/post-delegated-fk-concurrency.mts'
       - 'backend/test-helpers/postgres-lock-wait.mts'
       - 'backend/test-helpers/services/jwt-session/concurrent-user-agent.mts'
-      - 'backend/test-helpers/services/posts/search/test-support.mts'
     options:
       roots:
         - glob:
