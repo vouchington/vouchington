@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
 import {
   getPublicBaseTableNamesForTest,
   isDeduplicatedEnqueue,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
 import { activitypub } from '@queues/activitypub/queues'
+import { scheduledJobManifest as activitypubScheduledJobManifest } from '@queues/activitypub/enqueues/schedules'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
 import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
@@ -146,6 +147,38 @@ describe('BACKFILL_REGISTRY', () => {
       name: 'activitypub.rearmFailedDeliveries',
     })
   })
+
+  it.each([
+    ['activitypub-outbound-follows', 'follows'],
+    ['activitypub-outbound-votes', 'votes'],
+  ] as const)('starts the %s recovery backfill with its domain source', async (id, source) => {
+    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === id)
+    if (!entry) throw new Error(`${id} backfill missing`)
+    const enqueued = await entry.trigger()
+    const job = await readEnqueuedJob(activitypub, enqueued)
+    onTestFinished(() => job.remove())
+    expect(job).toMatchObject({
+      name: 'activitypub.recoverOutboundDistribution',
+      data: { source },
+    })
+  })
+
+  it.each(['follows', 'votes'] as const)(
+    'starts the outbound %s recovery from its scheduled operator trigger',
+    async source => {
+      const operatorTrigger = activitypubScheduledJobManifest.jobs
+        .find(job => job.schedulerId === `activitypub-outbound-${source}-recovery`)
+        ?.operatorSurfaces.find(surface => surface.kind === 'scheduled-jobs')?.trigger
+      if (!operatorTrigger) throw new Error(`Expected ${source} scheduled operator trigger`)
+      const enqueued = await operatorTrigger()
+      const job = await readEnqueuedJob(activitypub, enqueued)
+      onTestFinished(() => job.remove())
+      expect(job).toMatchObject({
+        name: 'activitypub.recoverOutboundDistribution',
+        data: { source },
+      })
+    },
+  )
 
   it('recovers relation tally pages even when saved user weights are unchanged', async () => {
     const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'relation-election-updates')

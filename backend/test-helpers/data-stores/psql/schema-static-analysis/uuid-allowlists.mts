@@ -111,12 +111,12 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Ephemeral fencing token rotated for each queue dispatch lease; it intentionally identifies no durable relation.',
   ],
   [
-    'activitypub_distribution_work_items.lease_token',
-    'Opaque worker fencing token, not a relationship.',
+    'relation__user__follow__user.outbound_activitypub_distributed_activity_id',
+    'Stable outbound ActivityPub protocol identity for the current Follow or Undo generation.',
   ],
   [
-    'activitypub_distribution_work_items.cursor_remote_actor_id',
-    'Durable keyset cursor intentionally survives remote actor deletion so completed fan-out progress cannot rewind.',
+    'post_votes.outbound_activitypub_original_like_activity_id',
+    'Original outbound ActivityPub Like protocol identity stored with its Undo ballot event.',
   ],
   [
     'app_attestation_keys.did',

@@ -37,4 +37,14 @@ OAuth and family mutations retain a transactional dirty marker until recalculati
 recovery does not depend on publication success or a commit falling within an overlap. Its indexed
 recovery dispatcher reactivates a stable per-user job and restarts from the dirty set on each run.
 
+Outbound ActivityPub distribution derives unfinished work from the current Follow relation
+generation and immutable post ballot transitions. A follower-page job carries its cursor; the
+source row records completion only after the final page's delivery jobs are admitted. Recovery
+re-admits the source activity and walks retained page receipts, safely reactivating terminal page
+jobs when a continuation failed. It also safely reactivates a retained terminal root. Vote
+recovery reads pending ballot transitions directly through their post-keyed index, so idle
+passes do not enumerate unrelated posts. A
+replaced Follow generation is superseded by the relation's current state; ballot transitions
+remain separate immutable events.
+
 See also the [backend queue reference](../../overview/architecture/queues/README.md).

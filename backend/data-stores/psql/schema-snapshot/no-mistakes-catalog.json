@@ -1932,244 +1932,6 @@
       },
       "uniqueConstraints": {}
     },
-    "activitypub_distribution_work_items": {
-      "checkConstraints": {
-        "activitypub_distribution_work_items_attempt_count_check": {
-          "definition": "CHECK ((attempt_count >= 0))",
-          "validated": true
-        },
-        "activitypub_distribution_work_items_check": {
-          "definition": "CHECK (((lease_token IS NULL) = (leased_at IS NULL)))",
-          "validated": true
-        },
-        "activitypub_distribution_work_items_check1": {
-          "definition": "CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))",
-          "validated": true
-        },
-        "activitypub_distribution_work_items_check2": {
-          "definition": "CHECK ((lease_expires_at > leased_at))",
-          "validated": true
-        },
-        "activitypub_distribution_work_items_check3": {
-          "definition": "CHECK (((completed_at IS NULL) OR (lease_token IS NULL)))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "activity_id": {
-          "comment": "Stable UUID ActivityPub activity identity; one durable distribution cursor per activity.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "attempt_count": {
-          "comment": "Number of page processing claims, including recovery after lease expiry.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 8
-        },
-        "available_at": {
-          "comment": "Earliest time an unfinished page may be claimed.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9
-        },
-        "completed_at": {
-          "comment": "Set after the final follower page commits. Terminal checkpoints intentionally remain for replay protection.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4
-        },
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(activity_id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
-        "cursor_remote_actor_id": {
-          "comment": "Last remote follower whose page was committed. No foreign key: deleting that actor must not rewind a completed cursor.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3
-        },
-        "lease_expires_at": {
-          "comment": "Expiry of the current page lease; a successor rotates the fencing token.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
-        },
-        "lease_token": {
-          "comment": "Opaque worker fencing token; only its current owner may advance or release a page.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5
-        },
-        "leased_at": {
-          "comment": "Time the current page worker acquired its lease.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
-        },
-        "source_user_id": {
-          "comment": "Local actor that owns the outbound activity. Cascading deletion removes all of its durable delivery progress.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 11
-        }
-      },
-      "comment": "Durable outbound ActivityPub fan-out cursor. A committed cursor means delivery jobs through that remote actor were accepted by Valkey; completed rows are retained until their source user is deleted.",
-      "foreignKeys": {
-        "activitypub_distribution_work_items_source_user_id_fkey": {
-          "columns": ["source_user_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "activitypub_distribution_work_items_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX activitypub_distribution_work_items_pkey ON public.activitypub_distribution_work_items USING btree (activity_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "activity_id",
-              "descending": false,
-              "expression": "activity_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_activitypub_distribution_work_items__claim": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_distribution_work_items__claim ON public.activitypub_distribution_work_items USING btree (available_at, activity_id) WHERE (completed_at IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "available_at",
-              "descending": false,
-              "expression": "available_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "activity_id",
-              "descending": false,
-              "expression": "activity_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(completed_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_activitypub_distribution_work_items__source_user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_distribution_work_items__source_user_id ON public.activitypub_distribution_work_items USING btree (source_user_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "source_user_id",
-              "descending": false,
-              "expression": "source_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["activity_id"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_activitypub_distribution_work_items_updated_at": {
-          "definition": "CREATE TRIGGER trigger_activitypub_distribution_work_items_updated_at BEFORE UPDATE ON public.activitypub_distribution_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
-    },
     "activitypub_inbox_activities": {
       "checkConstraints": {},
       "columns": {
@@ -87344,7 +87106,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 14
         },
         "device_id": {
           "comment": "Opaque client device token with no durable owner row.",
@@ -87354,7 +87116,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "id": {
           "comment": null,
@@ -87364,7 +87126,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 6
         },
         "ip_address": {
           "comment": "Audit IP address captured with the ballot event.",
@@ -87374,7 +87136,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 10
+        },
+        "outbound_activitypub_distributed_at": {
+          "comment": "Set when all follower-page delivery jobs for this ballot event have been admitted.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
         },
         "outbound_activitypub_like_activity_id": {
           "comment": "Stable outbound ActivityPub Like protocol identity.",
@@ -87385,6 +87157,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 3
+        },
+        "outbound_activitypub_original_like_activity_id": {
+          "comment": "The positive Like identity undone by this negative ballot transition.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "post_id": {
           "comment": "Concrete ballot target in posts.",
@@ -87404,7 +87186,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 7
         },
         "score_is_neutral": {
           "comment": "Explicit neutral ballot provenance.",
@@ -87414,7 +87196,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 8
         },
         "score_is_semantic": {
           "comment": "Explicit semantic ballot provenance.",
@@ -87424,7 +87206,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "session_id": {
           "comment": "Opaque client session token with no durable owner row.",
@@ -87434,7 +87216,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 12
         },
         "user_agent_string_id": {
           "comment": "Shared bounded user-agent string captured with the ballot event.",
@@ -87444,7 +87226,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 13
         },
         "user_id": {
           "comment": "User who cast this ballot event.",
@@ -87485,6 +87267,38 @@
         }
       },
       "indexes": {
+        "idx_post_votes__activitypub_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__activitypub_pending ON ONLY public.post_votes USING btree (post_id, id) WHERE ((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id = id) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id = id) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_votes__post_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -109116,6 +108930,16 @@
           "nullable": false,
           "ordinalPosition": 2
         },
+        "outbound_activitypub_distributed_activity_id": {
+          "comment": "Current Follow or UndoFollow activity whose follower pages were admitted.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
         "outbound_activitypub_follow_activity_id": {
           "comment": "Stable outbound ActivityPub Follow protocol identity.",
           "dataType": "uuid",
@@ -109173,6 +108997,38 @@
         }
       },
       "indexes": {
+        "idx_relation__user__follow__user__activitypub_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__follow__user__activitypub_pending ON public.relation__user__follow__user USING btree (subject_id, object_id) WHERE ((outbound_activitypub_distributed_activity_id IS NULL) AND (outbound_activitypub_follow_activity_id IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((outbound_activitypub_distributed_activity_id IS NULL) AND (outbound_activitypub_follow_activity_id IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__follow__user__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,

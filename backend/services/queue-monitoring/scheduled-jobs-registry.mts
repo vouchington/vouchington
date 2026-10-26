@@ -4,6 +4,8 @@ import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
 
 export const SCHEDULED_JOB_API_ORDER = [
   'email-digests-api-key-expiry',
+  'activitypub-outbound-follows-recovery',
+  'activitypub-outbound-votes-recovery',
   'activitypub-inbox-recovery',
   'activitypub-inbox-cleanup',
   'ses-inbound-reconciliation',

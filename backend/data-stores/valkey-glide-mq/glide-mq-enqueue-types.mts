@@ -44,6 +44,7 @@ export type CreateBulkEnqueueFunctionOptions<
   defaults?: Partial<JobOptions>
   sensitive?: boolean
   buildJob: (input: TInput, index: number) => { data: TData; opts?: Partial<JobOptions> }
+  reactivatedData?: (data: TData, retainedData: unknown) => TData
   decorateError?: (
     error: ErrorWithReportingContext,
     context: EnqueueErrorContext<TCallContext>,

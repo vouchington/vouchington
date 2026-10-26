@@ -11,16 +11,30 @@ export function enqueueBulkRows(
   queue: BulkQueue,
   queueName: string,
   jobs: BulkJobs,
-  options: { prefix?: string; retry?: boolean },
+  options: {
+    prefix?: string
+    retry?: boolean
+    reactivatedData?: (
+      data: BulkJobs[number]['data'],
+      retainedData: unknown,
+    ) => BulkJobs[number]['data']
+  },
 ): ReturnType<Queue['addBulk']> {
   const enqueue = (rows: BulkJobs) =>
     options.retry !== false ? retryTransientEnqueue(() => queue.addBulk(rows)) : queue.addBulk(rows)
   if (!isPagedDispatchRow(queueName)) return enqueue(jobs)
+  const reactivatedData = options.reactivatedData
   return enqueueBulkReactivatingFinished({
     queue: { name: queue.name ?? queueName },
     prefix: options.prefix,
     inputs: jobs,
     jobIdOf: job => job.opts?.jobId,
     enqueueBulk: enqueue,
+    reactivatedInput: reactivatedData
+      ? (job, retainedData) => ({
+          ...job,
+          data: reactivatedData(job.data, retainedData),
+        })
+      : undefined,
   })
 }

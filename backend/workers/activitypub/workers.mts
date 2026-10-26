@@ -5,6 +5,7 @@ import {
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
   ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,
   ACTIVITYPUB_RECOVER_DELIVERIES_JOB,
+  ACTIVITYPUB_RECOVER_OUTBOUND_JOB,
 } from '@queues/background/enqueues/activitypub-jobs'
 import {
   backgroundHandler,
@@ -18,9 +19,11 @@ import {
   recoverDeliveries,
 } from './processors/inbox.mts'
 import { isFinalActivityPubInboxAttempt } from './processors/inbox-job.mts'
+import { processRecoverOutboundDistributionJob } from './processors/outbound-recovery.mts'
 
 export const activitypubHandlers = [
   backgroundHandler(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB, processDistributeActivityJob),
+  backgroundHandler(ACTIVITYPUB_RECOVER_OUTBOUND_JOB, processRecoverOutboundDistributionJob),
   backgroundHandler(ACTIVITYPUB_DELIVER_ACTIVITY_JOB, processDeliverActivityJob),
   backgroundHandler(ACTIVITYPUB_PROCESS_DELIVERY_JOB, job =>
     processDelivery(job.data, { isFinalAttempt: isFinalActivityPubInboxAttempt(job) }),

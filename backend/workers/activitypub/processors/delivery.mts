@@ -2,32 +2,27 @@ import { getActorKeyId } from '@modules/activitypub-uris'
 import { wrapHttpForRetry } from '@modules/queue-errors'
 import {
   buildActivityJson,
-  commitActivityDistributionPage,
+  canDistributeOutboundActivity,
   deliverActivityToInbox,
+  getOutboundActivityDeliveryCredentials,
   prepareActivityDistributionPage,
-  releaseActivityDistributionPage,
+  type OutboundActivityDeliveryDependencies,
+  type OutboundActivityEligibilityDependencies,
 } from '@services/activitypub-delivery'
-import { getActorPrivateKeyPem } from '@services/ap-actor-keys'
-import { isFederationEnabledForUser } from '@services/users'
 import {
   enqueueBulkDeliverActivity,
   type DeliverActivityData,
   type DistributeActivityData,
 } from '@queues/activitypub/enqueues/delivery'
 
-type DistributeActivityDependencies = {
+type DistributeActivityDependencies = OutboundActivityEligibilityDependencies & {
   enqueueBulkDeliverActivity: typeof enqueueBulkDeliverActivity
-  isFederationEnabledForUser: typeof isFederationEnabledForUser
   prepareActivityDistributionPage: typeof prepareActivityDistributionPage
-  commitActivityDistributionPage: typeof commitActivityDistributionPage
-  releaseActivityDistributionPage: typeof releaseActivityDistributionPage
 }
 
-type DeliverActivityDependencies = {
+type DeliverActivityDependencies = OutboundActivityDeliveryDependencies & {
   buildActivityJson: typeof buildActivityJson
   deliverActivityToInbox: typeof deliverActivityToInbox
-  getActorPrivateKeyPem: typeof getActorPrivateKeyPem
-  isFederationEnabledForUser: typeof isFederationEnabledForUser
 }
 
 function isUndoMissingOriginalActivityId(
@@ -38,10 +33,8 @@ function isUndoMissingOriginalActivityId(
   return typeof originalActivityId !== 'string' || originalActivityId.trim().length === 0
 }
 
-// Fans a social action out to a bounded page of the acting user's remote followers. The durable
-// cursor advances only after Valkey accepts that page's delivery jobs; continuation enqueues one
-// more ordered distribute job. An accepted Valkey enqueue followed by a failed cursor commit may
-// replay that page, so external delivery remains at-least-once.
+// Fans a social action out to a bounded page of the acting user's remote followers. The shared
+// paged dispatcher records the page admission before enqueueing the next cursor job.
 export async function distributeActivity(
   data: DistributeActivityData,
   dependencies?: Partial<DistributeActivityDependencies>,
@@ -49,70 +42,24 @@ export async function distributeActivity(
 ) {
   const deps = {
     enqueueBulkDeliverActivity,
-    isFederationEnabledForUser,
     prepareActivityDistributionPage,
-    commitActivityDistributionPage,
-    releaseActivityDistributionPage,
     ...dependencies,
   }
 
   if (isUndoMissingOriginalActivityId(data)) {
-    return { enqueued: 0, reason: 'missing-original-activity-id' as const }
+    return { enqueued: 0, completed: true, reason: 'missing-original-activity-id' as const }
   }
-  if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
-    return { enqueued: 0 }
-  }
-  // Follow/UndoFollow name a local target user in `object` (unlike Like/UndoLike, whose target is
-  // a post) — announcing "I followed/unfollowed X" to the source's remote audience discloses X's
-  // actor URI and follow edge even though X never opted into federation. Gate on the target's own
-  // opt-in, mirroring the existing inbound-Follow and GET /ap/users/:id gates.
-  //
-  // UndoFollow is gated on the target's opt-in the same as Follow — a deliberate choice, not an
-  // oversight. Gating on the target's *current* state (rather than tracking whether the original
-  // Follow was ever announced) means a target who opts out between being followed and unfollowed
-  // leaves a stale "still following" belief on the remote side (no retraction reaches them). The
-  // alternative — always emitting UndoFollow — is worse: a target who was *never* federated (Follow
-  // correctly suppressed) would have their identity disclosed for the first time by an UndoFollow
-  // with nothing to retract. Consistent gating never discloses a non-consenting target.
-  if (
-    (data.activityType === 'Follow' || data.activityType === 'UndoFollow') &&
-    !(await deps.isFederationEnabledForUser(data.targetUserId))
-  ) {
-    return { enqueued: 0 }
-  }
+  if (!(await canDistributeOutboundActivity(data, deps))) return { enqueued: 0, completed: true }
 
   const page = await deps.prepareActivityDistributionPage(
-    data.activityId,
     data.sourceUserId,
-    {},
+    data.cursor ?? null,
     pageSize,
   )
-  if (page.status === 'completed') return { enqueued: 0, completed: true }
-  if (page.status === 'busy') {
-    return { enqueued: 0, busy: true, retryAfterMs: page.retryAfterMs }
+  if (page.inboxUrls.length > 0) {
+    await deps.enqueueBulkDeliverActivity(page.inboxUrls.map(inboxUrl => ({ ...data, inboxUrl })))
   }
-
-  try {
-    if (page.inboxUrls.length > 0) {
-      await deps.enqueueBulkDeliverActivity(page.inboxUrls.map(inboxUrl => ({ ...data, inboxUrl })))
-    }
-  } catch (err) {
-    await deps.releaseActivityDistributionPage(data.activityId, page.leaseToken)
-    throw err
-  }
-
   const completed = !page.hasMore
-  const committed = await deps.commitActivityDistributionPage(
-    data.activityId,
-    data.sourceUserId,
-    page.expectedRemoteActorId,
-    page.nextRemoteActorId,
-    completed,
-    page.leaseToken,
-  )
-  if (!committed) {
-    return { enqueued: page.inboxUrls.length, completed: false, stale: true }
-  }
   return {
     enqueued: page.inboxUrls.length,
     completed,
@@ -134,31 +81,14 @@ export async function deliverActivity(
   const deps = {
     buildActivityJson,
     deliverActivityToInbox,
-    getActorPrivateKeyPem,
-    isFederationEnabledForUser,
     ...dependencies,
   }
 
   if (isUndoMissingOriginalActivityId(data)) {
     return { delivered: false, reason: 'missing-original-activity-id' as const }
   }
-  if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
-    return { delivered: false, reason: 'federation-disabled' as const }
-  }
-  // Re-check the target's opt-in here too, not just at distributeActivity's fan-out time — same
-  // toggle-race rationale as the source re-check above (the target could disable federation
-  // between enqueue and delivery).
-  if (
-    (data.activityType === 'Follow' || data.activityType === 'UndoFollow') &&
-    !(await deps.isFederationEnabledForUser(data.targetUserId))
-  ) {
-    return { delivered: false, reason: 'federation-disabled' as const }
-  }
-
-  const privateKeyPem = await deps.getActorPrivateKeyPem(data.sourceUserId)
-  if (!privateKeyPem) {
-    return { delivered: false, reason: 'missing-actor-keypair' as const }
-  }
+  const eligibility = await getOutboundActivityDeliveryCredentials(data, deps)
+  if ('reason' in eligibility) return { delivered: false, reason: eligibility.reason }
 
   const activity = deps.buildActivityJson(data)
   await deps
@@ -166,7 +96,7 @@ export async function deliverActivity(
       inboxUrl: data.inboxUrl,
       activity,
       keyId: getActorKeyId(data.sourceUserId),
-      privateKeyPem,
+      privateKeyPem: eligibility.privateKeyPem,
     })
     .catch(wrapHttpForRetry)
 

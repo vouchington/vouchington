@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { deliverActivityToInbox, type buildActivityJson } from '@services/activitypub-delivery'
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
+import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
 import { deliverActivity } from './delivery.mts'
 
@@ -27,6 +29,14 @@ const UNDO_FOLLOW_DATA: DeliverActivityData = {
   originalActivityId: 'activity-1',
   sourceUserId: 'user-1',
   targetUserId: 'user-2',
+  inboxUrl: 'https://a.example/inbox',
+}
+
+const LIKE_DATA: DeliverActivityData = {
+  activityId: 'activity-like',
+  activityType: 'Like',
+  sourceUserId: 'user-1',
+  targetPostId: 'post-1',
   inboxUrl: 'https://a.example/inbox',
 }
 
@@ -93,6 +103,26 @@ describe('deliverActivity', () => {
     const result = await deliverActivity(FOLLOW_DATA, deliverDeps())
 
     expect(result).toEqual({ delivered: false, reason: 'federation-disabled' })
+    expect(getActorPrivateKeyPemMock).not.toHaveBeenCalled()
+    expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
+  })
+
+  it('drops a queued Like when the post becomes private before delivery', async () => {
+    const author = await createTestUserDirect()
+    const postId = await insertTestPost({
+      createdById: author.id,
+      title: 'Private delivery target',
+      slug: `private-delivery-${randomUUID()}`,
+      markdown: 'Only the author can read this post.',
+      broadcast: 'users',
+      privacy: 'private',
+    })
+    await expect(
+      deliverActivity({ ...LIKE_DATA, targetPostId: postId }, deliverDeps()),
+    ).resolves.toEqual({
+      delivered: false,
+      reason: 'post-not-public',
+    })
     expect(getActorPrivateKeyPemMock).not.toHaveBeenCalled()
     expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
   })

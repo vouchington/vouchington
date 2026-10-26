@@ -39,6 +39,9 @@ export function createEntityRelationComments(metadata: EntityRelationMetadata): 
   if (metadata.table_name === 'relation__user__follow__user')
     columns.outbound_activitypub_follow_activity_id =
       'Stable outbound ActivityPub Follow protocol identity.'
+  if (metadata.table_name === 'relation__user__follow__user')
+    columns.outbound_activitypub_distributed_activity_id =
+      'Current Follow or UndoFollow activity whose follower pages were admitted.'
   if (metadata.election) {
     for (const direction of ['up', 'none', 'down']) {
       columns[`votes_score_${direction}`] = `Weighted ${direction} ballot tally for this relation.`
