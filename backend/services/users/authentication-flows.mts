@@ -1,4 +1,5 @@
 import createHttpError from 'http-errors'
+import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import {
   EmailDomainInvalidError,
@@ -53,7 +54,9 @@ export async function requestEmailAddressLoginToken(options: {
 
   try {
     const { token, emailAddress } = await createEmailAddressLoginToken(options.emailAddress)
-    void enqueueEmailAddressLoginToken(emailAddress, token, normalizeUiLocale(options.uiLocale))
+    await awaitReportedEnqueueAdmission(() =>
+      enqueueEmailAddressLoginToken(emailAddress, token, normalizeUiLocale(options.uiLocale)),
+    )
     return { emailAddress }
   } catch (err) {
     throw mapEmailAuthenticationError(err)

@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser, updateTestUserUiLocale } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getLatestEmailAddressLoginTokenHash,
+  readEnqueuedJob,
+  updateTestUserUiLocale,
+} from '@voucha/test-helpers'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
+import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
+import { emails } from '@queues/emails/queues'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 
 const newAddress = () => `tests+test-${Math.random().toString(36).slice(2, 10)}@voucha.ai`
 
@@ -29,18 +37,93 @@ describe('email address list and verification request', () => {
     })
   })
 
-  it('requests verification for a user without a UI locale', async () => {
+  it('requests verification without a UI locale after token commit and email admission', async () => {
     const user = await createTestUser()
     await updateTestUserUiLocale(user.id, null)
     const address = newAddress()
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request
-      .post('/api/v1/my/email-addresses')
-      .send({ email_address: address })
-      .expect(200)
-    expect(response.body.email_address).toBe(address)
+    const gate = holdQueueAdmission(
+      emails,
+      'processSendEmailVerificationToken',
+      data =>
+        typeof data === 'object' &&
+        data !== null &&
+        'input' in data &&
+        typeof data.input === 'object' &&
+        data.input !== null &&
+        'emailAddress' in data.input &&
+        data.input.emailAddress === address,
+    )
+    let entered = false
+    let settled = false
+    const responsePromise = Promise.resolve(
+      request.post('/api/v1/my/email-addresses').send({ email_address: address }).expect(200),
+    ).then(response => {
+      settled = true
+      return response
+    })
+    void responsePromise.catch(() => undefined)
+
+    try {
+      await gate.entered
+      entered = true
+      expect(await getLatestEmailAddressLoginTokenHash(address)).not.toBeNull()
+      expect(settled).toBe(false)
+      gate.release()
+      const response = await responsePromise
+      expect(response.body.email_address).toBe(address)
+      const job = await readEnqueuedJob(emails, await gate.admitted)
+      expect(job.data).toMatchObject({
+        input: { emailAddress: address },
+        variables: { token: expect.any(String), uiLocale: null },
+      })
+    } finally {
+      gate.release()
+      await responsePromise.catch(() => undefined)
+      if (entered) {
+        const admitted = await gate.admitted.catch(() => null)
+        await admitted?.remove()
+      }
+      gate.restore()
+    }
+  })
+
+  it('keeps a committed verification token successful when queue admission rejects', async () => {
+    const user = await createTestUser()
+    const address = newAddress()
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const failure = new Error('Owned email verification admission failure')
+    const originalAdd = emails.add
+    const spy = vi.spyOn(emails, 'add').mockImplementation((name, data, options) => {
+      if (
+        name === 'processSendEmailVerificationToken' &&
+        typeof data === 'object' &&
+        data !== null &&
+        'input' in data &&
+        typeof data.input === 'object' &&
+        data.input !== null &&
+        'emailAddress' in data.input &&
+        data.input.emailAddress === address
+      )
+        return Promise.reject(failure)
+      return originalAdd.call(emails, name, data, options)
+    })
+    try {
+      const response = await request
+        .post('/api/v1/my/email-addresses')
+        .send({ email_address: address })
+        .expect(200)
+      expect(response.body.email_address).toBe(address)
+      expect(await getLatestEmailAddressLoginTokenHash(address)).not.toBeNull()
+      expect(
+        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+      ).toHaveLength(1)
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('keeps the existing-address error for the current user', async () => {

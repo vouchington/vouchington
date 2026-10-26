@@ -1,4 +1,6 @@
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { emails } from '@queues/emails/queues'
+import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
@@ -7,6 +9,8 @@ import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns
 import {
   createUniqueTestEmail,
   createAppAttestAssertionHeaders,
+  getLatestEmailAddressLoginTokenHash,
+  readEnqueuedJob,
   useAppAttestBypassConfig,
 } from '@voucha/test-helpers'
 
@@ -77,20 +81,61 @@ describe('Email Address Authentication Routes', () => {
       expect(response.body.message).toContain('Invalid request body')
     })
 
-    it('accepts a null ui_locale', async () => {
+    it('accepts a null ui_locale after committing the token and admitting email', async () => {
       const emailAddress = createUniqueTestEmail('locale-null')
       const tokens = await createDeviceAndSessionTokens({ did: v7(), sid: v7() })
-      const response = await createRequest()
-        .post('/api/v1/auth/email-address/tokens')
-        .send({
-          emailAddress,
-          ui_locale: null,
-          dt: tokens.deviceToken.token,
-          st: tokens.sessionToken.token,
-        })
-        .expect(200)
+      const gate = holdQueueAdmission(
+        emails,
+        'processSendEmailAddressLoginToken',
+        data =>
+          typeof data === 'object' &&
+          data !== null &&
+          'input' in data &&
+          typeof data.input === 'object' &&
+          data.input !== null &&
+          'emailAddress' in data.input &&
+          data.input.emailAddress === emailAddress,
+      )
+      let entered = false
+      let settled = false
+      const responsePromise = Promise.resolve(
+        createRequest()
+          .post('/api/v1/auth/email-address/tokens')
+          .send({
+            emailAddress,
+            ui_locale: null,
+            dt: tokens.deviceToken.token,
+            st: tokens.sessionToken.token,
+          })
+          .expect(200),
+      ).then(response => {
+        settled = true
+        return response
+      })
+      void responsePromise.catch(() => undefined)
 
-      expect(response.body.email_address).toBe(emailAddress)
+      try {
+        await gate.entered
+        entered = true
+        expect(await getLatestEmailAddressLoginTokenHash(emailAddress)).not.toBeNull()
+        expect(settled).toBe(false)
+        gate.release()
+        const response = await responsePromise
+        expect(response.body.email_address).toBe(emailAddress)
+        const job = await readEnqueuedJob(emails, await gate.admitted)
+        expect(job.data).toMatchObject({
+          input: { emailAddress, uiLocale: null },
+          variables: { token: expect.any(String) },
+        })
+      } finally {
+        gate.release()
+        await responsePromise.catch(() => undefined)
+        if (entered) {
+          const admitted = await gate.admitted.catch(() => null)
+          await admitted?.remove()
+        }
+        gate.restore()
+      }
     })
 
     describe('App Attest bypass', () => {
