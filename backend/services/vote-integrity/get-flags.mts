@@ -8,20 +8,20 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { VoteIntegrityFlag } from './create-flag.mts'
 import type { IntegrityFlagStatus } from '@ts-shared/utils/moderation-catalogs'
-import { VOTE_INTEGRITY_FLAG_PROJECTION } from './flag-projection.mts'
+import { VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME } from './flag-projection.mts'
 
 export async function getVoteIntegrityFlagByIdFromPrimary(
   id: string,
-): Promise<VoteIntegrityFlag | null> {
+): Promise<(VoteIntegrityFlag & { hostname: string | null }) | null> {
   const query = sql`/* getVoteIntegrityFlagByIdFromPrimary */
     SELECT `
-  query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+  query.append(VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME)
   query.append(sql`
     FROM vote_integrity_flags
     WHERE id = ${id}
   `)
   const { rows } = await write(query)
-  return (rows[0] as VoteIntegrityFlag) ?? null
+  return (rows[0] as VoteIntegrityFlag & { hostname: string | null }) ?? null
 }
 
 export type GetVoteIntegrityFlagsOptions = {
@@ -32,7 +32,7 @@ export type GetVoteIntegrityFlagsOptions = {
 }
 
 export type GetVoteIntegrityFlagsResult = {
-  results: VoteIntegrityFlag[]
+  results: Array<VoteIntegrityFlag & { hostname: string | null }>
   page_info: PageInfo
 }
 
@@ -52,7 +52,7 @@ export async function getVoteIntegrityFlags(
 
   const query = sql`/* getVoteIntegrityFlags */
     SELECT `
-  query.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+  query.append(VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME)
   query.append(sql`
     FROM vote_integrity_flags
     WHERE TRUE
@@ -69,7 +69,7 @@ export async function getVoteIntegrityFlags(
   query.append(sql` ORDER BY id DESC LIMIT ${clampedLimit + 1}`)
 
   const { rows } = await read(query)
-  const flags = rows as VoteIntegrityFlag[]
+  const flags = rows as Array<VoteIntegrityFlag & { hostname: string | null }>
   const hasNextPage = flags.length > clampedLimit
   const results = hasNextPage ? flags.slice(0, clampedLimit) : flags
   return {

@@ -15,9 +15,9 @@ export function getEntityLabel(
       id: flag.topic_id.slice(0, 8),
     })
   }
-  if (flag.hostname_id) {
+  if (flag.hostname) {
     return t('extracted.flags.voteIntegrityFlagsTable.hostnameId_5d1a6f83', {
-      id: flag.hostname_id.slice(0, 8),
+      id: flag.hostname,
     })
   }
   if (flag.rss_feed_item_id) {

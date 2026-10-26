@@ -16,10 +16,14 @@ import sql from 'sql-template-strings'
 import { ENTITY_VOTE_TABLES, FLAG_ENTITY_FK_COLUMNS } from './config.mts'
 import type { VoteIntegrityFlag } from './create-flag.mts'
 import { insertVoteWeightPenalty } from './insert-vote-weight-penalty.mts'
-import { VOTE_INTEGRITY_FLAG_PROJECTION, voteIntegrityRelationTargets } from './flag-projection.mts'
+import {
+  VOTE_INTEGRITY_FLAG_PROJECTION,
+  VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME,
+  voteIntegrityRelationTargets,
+} from './flag-projection.mts'
 
 type ApplyRingPenaltyResult = {
-  flag: VoteIntegrityFlag
+  flag: VoteIntegrityFlag & { hostname: string | null }
   penalized_user_count: number
 }
 
@@ -119,8 +123,10 @@ export async function applyVoteRingPenalty(
     SET resolved_at = CURRENT_TIMESTAMP, resolved_by_id = ${adminUserId}, resolution = 'penalized'
     WHERE id = ${flagId} AND resolved_at IS NULL
     RETURNING `
-    resolutionQuery.append(VOTE_INTEGRITY_FLAG_PROJECTION)
-    const { rows: resolvedRows } = await query<VoteIntegrityFlag>(resolutionQuery)
+    resolutionQuery.append(VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME)
+    const { rows: resolvedRows } = await query<VoteIntegrityFlag & { hostname: string | null }>(
+      resolutionQuery,
+    )
     const resolvedFlag = resolvedRows[0]
     if (!resolvedFlag) throw createHttpError(409, 'Vote integrity flag is already resolved')
     await recordModeratorAction(

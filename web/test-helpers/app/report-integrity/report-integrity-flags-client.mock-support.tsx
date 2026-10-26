@@ -76,6 +76,7 @@ function makeFlag(overrides: Partial<FlagResult> = {}): FlagResult {
     post_id: null,
     reported_user_id: null,
     hostname_id: null,
+    hostname: null,
     rss_feed_item_id: null,
     flag_type: 'mass_report_suspected',
     reporter_count: 5,

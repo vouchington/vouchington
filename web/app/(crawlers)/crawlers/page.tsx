@@ -5,13 +5,14 @@ import { PageWithAside } from '@/components/page-with-aside'
 import { getCrawlers } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import { createCrawlerPathname } from '@/lib/links/entity-href'
+import { domainHref } from '@/lib/links/entity-href'
 
 export const dynamic = 'force-dynamic'
 
 type Crawler = {
   id: string
   hostname_id: string
+  hostname: string
   description: string
   crawler_type: string
   priority: number
@@ -26,7 +27,7 @@ export default async function CrawlersListPage() {
   const data = await getCrawlers<Crawler>({ limit: 100 })
   const { results: crawlers } = data
   const columns = [
-    t('extracted.crawlers.page.id_3843971d'),
+    t('extracted.crawlers.page.hostname_2db53355'),
     t('extracted.crawlers.page.type_baaddf70'),
     t('extracted.crawlers.page.priority_d60dbba0'),
     t('extracted.crawlers.page.description_526e0087'),
@@ -71,12 +72,12 @@ export default async function CrawlersListPage() {
                   >
                     <td className='whitespace-nowrap px-4 py-3 font-mono text-xs text-muted-foreground'>
                       <Link
-                        href={createCrawlerPathname(crawler)}
+                        href={domainHref(crawler.hostname)}
                         prefetch={false}
                         className="after:absolute after:inset-0 after:content-[''] text-primary hover:underline"
                         data-pw='crawler-row'
                       >
-                        {t('extracted.crawlers.page.id_4542e4bb', { id: crawler.id.slice(0, 8) })}
+                        {crawler.hostname}
                       </Link>
                     </td>
                     <td className='px-4 py-3 text-sm text-foreground'>{crawler.crawler_type}</td>

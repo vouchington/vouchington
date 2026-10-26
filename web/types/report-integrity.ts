@@ -14,6 +14,7 @@ export interface ReportIntegrityFlag {
   post_id: string | null
   reported_user_id: string | null
   hostname_id: string | null
+  hostname: string | null
   rss_feed_item_id: string | null
   flag_type: ReportIntegrityFlagType
   reporter_count: number

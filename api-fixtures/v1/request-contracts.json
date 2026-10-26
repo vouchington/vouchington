@@ -4133,6 +4133,9 @@
                   "description": {
                     "type": "string"
                   },
+                  "hostname": {
+                    "type": "string"
+                  },
                   "hostname_id": {
                     "type": "string"
                   },
@@ -4188,6 +4191,7 @@
                   "deleted_at",
                   "deleted_by",
                   "description",
+                  "hostname",
                   "hostname_id",
                   "id",
                   "link_hrefs_to_remove",
@@ -32174,6 +32178,16 @@
         "flag_type": {
           "const": "mass_report_suspected"
         },
+        "hostname": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "hostname_id": {
           "anyOf": [
             {
@@ -32261,6 +32275,7 @@
         "created_at",
         "details",
         "flag_type",
+        "hostname",
         "hostname_id",
         "id",
         "new_account_reporter_percent",
@@ -39288,6 +39303,16 @@
           "enum": ["ip_correlation", "velocity_spike"],
           "type": "string"
         },
+        "hostname": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "hostname_id": {
           "anyOf": [
             {
@@ -39374,6 +39399,7 @@
         "details",
         "entity_relation_id",
         "flag_type",
+        "hostname",
         "hostname_id",
         "id",
         "post_id",

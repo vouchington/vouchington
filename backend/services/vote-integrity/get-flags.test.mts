@@ -2,7 +2,12 @@ import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { decodeScopedUuidCursor, encodeCursor, encodeScopedUuidCursor } from '@modules/pagination'
-import { createTestUser, insertTestPost, insertTestVoteIntegrityFlag } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestPost,
+  insertTestUrlHostname,
+  insertTestVoteIntegrityFlag,
+} from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { getVoteIntegrityFlagByIdFromPrimary, getVoteIntegrityFlags } from './get-flags.mts'
 
@@ -50,6 +55,19 @@ describe('getVoteIntegrityFlags pagination compatibility', () => {
 
     await expect(getVoteIntegrityFlagByIdFromPrimary(flagId)).resolves.toMatchObject({
       id: flagId,
+    })
+  })
+
+  it('returns the natural hostname alongside the factual hostname id', async () => {
+    const hostname = `vote-integrity-${randomSuffix()}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const flagId = await insertTestVoteIntegrityFlag({ hostnameId })
+
+    const flags = await getVoteIntegrityFlags({ ids: [flagId] })
+    expect(flags.results[0]).toMatchObject({ hostname_id: hostnameId, hostname })
+    await expect(getVoteIntegrityFlagByIdFromPrimary(flagId)).resolves.toMatchObject({
+      hostname_id: hostnameId,
+      hostname,
     })
   })
 

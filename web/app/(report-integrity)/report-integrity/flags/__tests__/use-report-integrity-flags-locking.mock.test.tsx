@@ -44,6 +44,7 @@ function makeFlag(overrides: Record<string, unknown> = {}) {
     post_id: null,
     reported_user_id: 'user-1',
     hostname_id: null,
+    hostname: null,
     rss_feed_item_id: null,
     flag_type: 'mass_report_suspected' as const,
     reporter_count: 3,

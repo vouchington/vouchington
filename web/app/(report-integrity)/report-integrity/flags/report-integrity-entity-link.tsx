@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { createUserPathname } from '@/lib/links/entity-href'
+import { createUserPathname, domainHref } from '@/lib/links/entity-href'
 import type { ReportIntegrityFlag } from '@/types/report-integrity'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
@@ -31,13 +31,16 @@ export function EntityLink({ flag }: { flag: ReportIntegrityFlag }) {
       </Link>
     )
   }
-  if (flag.hostname_id)
+  if (flag.hostname)
     return (
-      <span>
+      <Link
+        href={domainHref(flag.hostname)}
+        className='hover:underline'
+      >
         {t('extracted.flags.reportIntegrityEntityLink.hostnameId_01111c78', {
-          id: flag.hostname_id.slice(0, 8),
+          id: flag.hostname,
         })}
-      </span>
+      </Link>
     )
   if (flag.rss_feed_item_id)
     return (
