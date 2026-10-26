@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto'
 import { beginTransaction, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
+import { enqueueProcessMembershipVerification } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { createMembershipVerification } from '../verifications.mts'
+import { loadVerification } from '../verification-read.mts'
 import {
   createConfiguredGooglePlaySubscriptionsV2Client,
   GooglePlaySubscriptionLookupError,
@@ -29,6 +31,16 @@ export async function reconcileGooglePlayRtdnNotification(options: {
   if (!event) return rejectNotification(context.evidenceId, 'invalid_google_rtdn')
   if ('kind' in event && event.kind === 'ignored')
     return rejectNotification(context.evidenceId, 'invalid_google_rtdn')
+  const eventLineage = await getKnownGooglePlayTokenLineage({
+    environment: context.environment,
+    applicationId: context.applicationId,
+    purchaseToken: event.purchaseToken,
+  })
+  if (
+    eventLineage?.boundUserId &&
+    (await finalizeExistingRtdnVerification(context, eventLineage.boundUserId, true))
+  )
+    return
   const purchaseToken =
     (await getLatestKnownGooglePlayPurchaseToken({
       environment: context.environment,
@@ -40,7 +52,7 @@ export async function reconcileGooglePlayRtdnNotification(options: {
     applicationId: context.applicationId,
     purchaseTokenDigest: createHash('sha256').update(purchaseToken).digest('hex'),
   })
-  if (known) return processBoundNotification(context, known.lineageId, known.userId, purchaseToken)
+  if (known) return processBoundNotification(context, known.userId, purchaseToken)
   const knownLineage = await getKnownGooglePlayTokenLineage({
     environment: context.environment,
     applicationId: context.applicationId,
@@ -48,12 +60,7 @@ export async function reconcileGooglePlayRtdnNotification(options: {
   })
   if (knownLineage) {
     if (!knownLineage.boundUserId) return
-    return processBoundNotification(
-      context,
-      knownLineage.lineageId,
-      knownLineage.boundUserId,
-      purchaseToken,
-    )
+    return processBoundNotification(context, knownLineage.boundUserId, purchaseToken)
   }
   let resolved: Awaited<ReturnType<typeof resolveGooglePlayTokenLineage>>
   try {
@@ -97,16 +104,15 @@ export async function reconcileGooglePlayRtdnNotification(options: {
       applicationId: context.applicationId,
       purchaseToken,
     })) ?? purchaseToken
-  await processBoundNotification(context, lineageId, userId, latestPurchaseToken)
+  await processBoundNotification(context, userId, latestPurchaseToken)
 }
 
 async function processBoundNotification(
   context: NotificationContext,
-  lineageId: string,
   userId: string,
   purchaseToken: string,
 ): Promise<void> {
-  const verification = await createMembershipVerification({
+  await createMembershipVerification({
     userId,
     provider: 'google_play',
     purchaseIntentId: null,
@@ -121,21 +127,38 @@ async function processBoundNotification(
   })
   // The canonical job owns provider calls and pacing. Receipt recovery reuses this verification
   // and finalizes the RTDN evidence only after its durable outcome exists.
-  const { rows: outcomes } = await write<{
-    verified_at: Date | null
-    conflicted_at: Date | null
-    rejected_at: Date | null
-    result_code: string | null
-  }>(sql`/* reconcileGooglePlayRtdnNotification.outcome */
-    SELECT verified_at, conflicted_at, rejected_at, result_code
-    FROM membership_verifications WHERE id = ${verification.id}`)
-  const outcome = outcomes[0]
-  if (outcome?.verified_at)
+  await finalizeExistingRtdnVerification(context, userId, false)
+}
+async function finalizeExistingRtdnVerification(
+  context: NotificationContext,
+  userId: string,
+  requeuePending: boolean,
+): Promise<boolean> {
+  const outcome = await loadVerification(write, userId, context.evidenceId)
+  if (!outcome) return false
+  if (
+    outcome.provider !== 'google_play' ||
+    outcome.environment !== context.environment ||
+    outcome.application_id !== context.applicationId
+  )
+    throw new Error('Google Play RTDN verification context does not match its durable event')
+  if (!outcome.verified_at && !outcome.conflicted_at && !outcome.rejected_at) {
+    if (requeuePending) await enqueueProcessMembershipVerification({ verificationId: outcome.id })
+    return true
+  }
+  if (outcome.verified_at) {
+    const { rows } = await write<{ lineageId: string | null }>(
+      sql`/* reconcileGooglePlayRtdnNotification.verifiedLineage */ SELECT evidence.membership_provider_lineage_id AS "lineageId" FROM membership_verifications verification INNER JOIN membership_provider_evidence_records evidence ON evidence.id = verification.membership_provider_evidence_record_id WHERE verification.id = ${outcome.id}`,
+    )
+    const lineageId = rows[0]?.lineageId
+    if (!lineageId) throw new Error('Verified Google Play RTDN has no durable lineage')
     await write(
       sql`/* reconcileGooglePlayRtdnNotification.complete */ UPDATE membership_provider_evidence_records SET membership_provider_lineage_id = ${lineageId}, verified_at = CURRENT_TIMESTAMP WHERE id = ${context.evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`,
     )
-  else if (outcome?.conflicted_at || outcome?.rejected_at)
+  } else {
     await rejectNotification(context.evidenceId, outcome.result_code ?? 'invalid_evidence')
+  }
+  return true
 }
 type NotificationContext = {
   evidenceId: string

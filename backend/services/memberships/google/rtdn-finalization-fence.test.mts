@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId } from '../get.mts'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import {
@@ -8,6 +9,7 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-play-memberships'
+import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
 import {
   getTestMembershipProviderEvidence,
   getTestMembershipProviderEvidenceTerminalState,
@@ -79,7 +81,7 @@ describe('Google Play RTDN finalization fence', () => {
       successorToken,
       onOldTokenFetch: async () => {
         oldTokenFetches += 1
-        if (oldTokenFetches !== 2) return
+        if (oldTokenFetches !== 1) return
         predecessorFinalFetch.resolve()
         await releasePredecessorFinalFetch.promise
       },
@@ -88,7 +90,28 @@ describe('Google Play RTDN finalization fence', () => {
       applicationId,
       rawBody: makeRtdnBody(applicationId, oldProductId, oldToken),
     })
-    const predecessor = reconcileGooglePlayRtdnNotification({ evidenceId: rtdnEvidenceId, client })
+    await reconcileGooglePlayRtdnNotification({ evidenceId: rtdnEvidenceId })
+    const predecessorVerificationId = await getTestPendingGooglePlayVerification({
+      userId: owner.id,
+      applicationId,
+    })
+    if (!predecessorVerificationId)
+      throw new Error('Google Play RTDN verification was not admitted')
+    expect(predecessorVerificationId).not.toBe(initial.id)
+    await expect(memberships.getJob(predecessorVerificationId)).resolves.toMatchObject({
+      id: predecessorVerificationId,
+      name: 'processMembershipVerification',
+      data: { verificationId: predecessorVerificationId },
+    })
+    await (await memberships.getJob(predecessorVerificationId))?.remove()
+    await reconcileGooglePlayRtdnNotification({ evidenceId: rtdnEvidenceId })
+    await expect(memberships.getJob(predecessorVerificationId)).resolves.toMatchObject({
+      id: predecessorVerificationId,
+      data: { verificationId: predecessorVerificationId },
+    })
+    const predecessor = processGooglePlayMembershipVerification(predecessorVerificationId, {
+      client,
+    })
 
     await predecessorFinalFetch.promise
     const successor = await createMembershipVerification({
@@ -109,6 +132,9 @@ describe('Google Play RTDN finalization fence', () => {
 
     releasePredecessorFinalFetch.resolve()
     await predecessor
+    await (await memberships.getJob(predecessorVerificationId))?.remove()
+    await reconcileGooglePlayRtdnNotification({ evidenceId: rtdnEvidenceId })
+    expect(oldTokenFetches).toBe(1)
 
     await expect(getTestMembershipProviderEvidence(rtdnEvidenceId)).resolves.toMatchObject({
       membership_provider_lineage_id: expect.any(String),
