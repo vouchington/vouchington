@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
@@ -6,6 +5,7 @@ import {
   createClassifierRunSchemaFixture,
   createCompletedClassifierDecisionBatchAt,
 } from '../../test-helpers/data-stores/psql/classifier-runs/schema-fixture.mts'
+import { runClassifierBorrowedTestTransaction } from '../../test-helpers/data-stores/psql/classifier-borrowed-transactions.mts'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
 import {
   readCompleteClassifierDecision,
@@ -106,16 +106,22 @@ describe('readCompleteClassifierDecisionIfExistsFromPrimary', () => {
     })
     await run.update({ outcomes_persisted_at: at })
 
-    await expect(readCompleteClassifierDecision(write, batchId, 'topic')).rejects.toThrow(
-      'outside the retention window',
-    )
     await expect(
-      readCompleteClassifierDecisionForActiveRun(write, run.id, batchId, 'topic'),
+      runClassifierBorrowedTestTransaction(query =>
+        readCompleteClassifierDecision(query, batchId, 'topic'),
+      ),
+    ).rejects.toThrow('outside the retention window')
+    await expect(
+      runClassifierBorrowedTestTransaction(query =>
+        readCompleteClassifierDecisionForActiveRun(query, run.id, batchId, 'topic'),
+      ),
     ).resolves.toMatchObject({ batchId, results: [] })
 
     await run.update({ completed_at: new Date() })
     await expect(
-      readCompleteClassifierDecisionForActiveRun(write, run.id, batchId, 'topic'),
+      runClassifierBorrowedTestTransaction(query =>
+        readCompleteClassifierDecisionForActiveRun(query, run.id, batchId, 'topic'),
+      ),
     ).rejects.toThrow('outside the retention window')
   })
 })
