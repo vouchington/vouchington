@@ -46,6 +46,7 @@
   "devDependencies": {
     "@queues/background": "workspace:^",
     "@queues/cache-purge": "workspace:^",
+    "@services/images": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -8593,6 +8593,9 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
+      '@services/images':
+        specifier: workspace:^
+        version: link:../images
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
