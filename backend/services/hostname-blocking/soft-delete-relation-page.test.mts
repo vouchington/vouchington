@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import sql from 'sql-template-strings'
 import {
   beginTransaction,
   countTestPostPublicationDirtyWorkForPostsWithReason,
@@ -9,6 +8,7 @@ import {
   insertTestPost,
   insertTestPostRelatedUrlBatch,
   insertTestTopicBatch,
+  insertTestTopicLandingPageUrlRelations,
   insertTestUrlDirect,
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
@@ -189,13 +189,11 @@ describe('bounded hostname block relation cleanup', () => {
       createdById: creator.id,
       prefix: `ordinary-relation-${randomToken()}`,
     })
-    await using fixtureQuery = await beginTransaction()
-    await fixtureQuery(sql`/* hostname cleanup ordinary relation fixture */
-      INSERT INTO relation__topic__landing_page__url (subject_id, object_id, created_by_id)
-      SELECT topic_id, ${url.id}, ${creator.id}
-      FROM unnest(${topicIds}::uuid[]) AS relation(topic_id)
-    `)
-    await fixtureQuery.commit()
+    await insertTestTopicLandingPageUrlRelations({
+      topicIds,
+      urlId: url.id,
+      createdById: creator.id,
+    })
 
     const operation = await createOperation(url.hostname.id, administrator.id, true)
     const tableIndex = getEntityRelationUrlTables().indexOf('relation__topic__landing_page__url')

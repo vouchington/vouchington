@@ -75,8 +75,18 @@ export function createHostnameBlockingEnqueues(queue: PriorityQueue<unknown>) {
 }
 
 const hostnameBlockingEnqueues = createHostnameBlockingEnqueues(background)
-export const enqueueOrReactivateHostnameBlockCleanups = hostnameBlockingEnqueues.enqueueCleanups
-export const enqueueHostnameBlockRecovery = hostnameBlockingEnqueues.enqueueRecovery
+
+export function enqueueOrReactivateHostnameBlockCleanups(
+  operations: HostnameBlockCleanupData[],
+): EnqueueReturnType {
+  return hostnameBlockingEnqueues.enqueueCleanups(operations)
+}
+
+export function enqueueHostnameBlockRecovery(
+  data: HostnameBlockRecoveryData = {},
+): EnqueueReturnType {
+  return hostnameBlockingEnqueues.enqueueRecovery(data)
+}
 
 function hostnameBlockCleanupJobId(data: HostnameBlockCleanupData): string {
   return `hostnameBlock__${data.blockId}__${data.progress}`

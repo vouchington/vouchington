@@ -41,3 +41,17 @@ export async function insertTestPostRelatedUrlBatch(options: {
     ],
   )
 }
+
+export async function insertTestTopicLandingPageUrlRelations(options: {
+  topicIds: string[]
+  urlId: string
+  createdById: string
+}): Promise<void> {
+  await write(
+    `/* insertTestTopicLandingPageUrlRelations */
+    INSERT INTO relation__topic__landing_page__url (subject_id, object_id, created_by_id)
+    SELECT topic_id, $2, $3
+    FROM unnest($1::uuid[]) AS relation(topic_id)`,
+    [options.topicIds, options.urlId, options.createdById],
+  )
+}
