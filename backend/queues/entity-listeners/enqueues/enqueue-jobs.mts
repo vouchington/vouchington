@@ -58,7 +58,9 @@ export const enqueueProcessPostCreated = createEntityEnqueue(ENTITY_LISTENERS_PO
 export const enqueueProcessPostUpdated = createEntityEnqueue(ENTITY_LISTENERS_POST_UPDATED_JOB)
 export const enqueueBulkProcessPostUpdated = createBackgroundBulkEnqueue(
   ENTITY_LISTENERS_POST_UPDATED_JOB,
-  (post: { id: string; contentChanged?: boolean }) => ({ data: post }),
+  (post: { id: string; contentChanged?: boolean; clearanceAlreadyReset?: boolean }) => ({
+    data: post,
+  }),
 )
 export const enqueueProcessPostDeleted = createEntityEnqueue(ENTITY_LISTENERS_POST_DELETED_JOB)
 export const enqueueProcessImageCreated = createEntityEnqueue(ENTITY_LISTENERS_IMAGE_CREATED_JOB)

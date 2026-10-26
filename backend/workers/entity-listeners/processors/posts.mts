@@ -88,9 +88,11 @@ export const processPostCreated = async (
 export const processPostUpdated = async ({
   id,
   contentChanged,
+  clearanceAlreadyReset,
 }: {
   id: string
   contentChanged?: boolean
+  clearanceAlreadyReset?: boolean
 }) => {
   const post = contentChanged
     ? await getPostModerationInput(id, { readOnly: false })
@@ -101,7 +103,9 @@ export const processPostUpdated = async ({
   const { content_sha256 } = createPostModerationContent(post)
   const moderationDeduplicationKey = makeModerationDeduplicationKey(post, content_sha256)
   if (contentChanged) {
-    const reset = await resetPostClearanceIfContentCurrent(id, content_sha256)
+    const reset = await resetPostClearanceIfContentCurrent(id, content_sha256, {
+      alreadyReset: clearanceAlreadyReset,
+    })
     if (!reset) return
     // The edited content gets its own durable C8 request; a published post only.
     await requestCommunityModerationRunForPost(id)

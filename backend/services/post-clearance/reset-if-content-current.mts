@@ -7,6 +7,7 @@ import { lockPostPublication } from '@services/post-publication'
 export async function resetPostClearanceIfContentCurrent(
   postId: string,
   contentSha256: Buffer,
+  { alreadyReset = false }: { alreadyReset?: boolean } = {},
 ): Promise<boolean> {
   let clearanceChanged = false
   await using query = await beginTransaction()
@@ -25,7 +26,8 @@ export async function resetPostClearanceIfContentCurrent(
       FOR UPDATE
     `)
     if (rows.length === 0) return false
-    clearanceChanged = await resetPostClearance(postId, null, { query })
+    // A durable producer reset must not be repeated when its listener admission is replayed.
+    if (!alreadyReset) clearanceChanged = await resetPostClearance(postId, null, { query })
     return true
   }
 }

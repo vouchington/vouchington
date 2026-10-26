@@ -77,6 +77,13 @@ page result before child admission, so a retry of a receipted parent reuses the 
 PostgreSQL cursor progress remains authoritative; a crash before the receipt can replay bounded,
 idempotent cleanup. Daily and operator seeds recover lost queue state or terminal failures.
 
+Image deletion fences delivery before processing posts that share the image. Each continuation
+commits a bounded page of post resets and deletion revisions with its cursor and pending listener
+admissions. Admission retries drain that receipt before mutating another page, so a lost queue
+acknowledgement cannot reset a post again. Image maintenance re-admits unfinished deletions;
+source storage and quarantined-image renders are removed only after the final page commits and
+its listener work is admitted. Quarantine deletion still requires a confirmed permanent copy.
+
 The data-retention schedule runs in deployed environments so staging exposes retention failures
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping.

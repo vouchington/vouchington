@@ -4,6 +4,7 @@ import { stageTestImagePlacementDeliveryRecordsForImageIds } from '@voucha/test-
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
 import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
+import { deleteImageById } from '@services/images/delete'
 import {
   createTestUserDirect,
   completeTestMediaDeliveryRecord,
@@ -20,8 +21,6 @@ import {
   setTestTopicSurfaceImages,
   softDeleteTopic,
   softDeleteUser,
-  restoreTestImageSurfacePlacementsAfterImageDeletion,
-  retireTestImageSurfacePlacementsForDeletedImage,
 } from '@voucha/test-helpers'
 
 describe('image surface placement lifecycle', () => {
@@ -112,21 +111,16 @@ describe('image surface placement lifecycle', () => {
     })
   })
 
-  it('keeps a profile use retired when its owner removes it during image-delete rollback', async () => {
+  it('keeps a deleted profile image retired when its owner removes it', async () => {
     const user = await createTestUserDirect()
     const imageId = await insertTestImage(user.id)
     await updateProfileImageId(user.id, imageId)
     const [initial] = await getTestImageSurfacePlacements({ userId: user.id })
     expect(initial).toBeDefined()
 
-    const retired = await retireTestImageSurfacePlacementsForDeletedImage(imageId)
-    expect(retired).toEqual([
-      { placementId: initial!.placement_id, revision: initial!.placement_revision + 1 },
-    ])
+    await deleteImageById(imageId)
 
     await updateProfileImageId(user.id, null)
-
-    await restoreTestImageSurfacePlacementsAfterImageDeletion(retired)
 
     await expect(getTestImageSurfacePlacements({ userId: user.id })).resolves.toMatchObject([
       {

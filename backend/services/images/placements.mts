@@ -13,8 +13,6 @@ export { getImagePlacementCopyrightOwner } from './placement-owner.mts'
 
 export type { CopyrightImagePlacement } from './placement-copyright-types.mts'
 
-export type ImagePlacementRetirement = { placementId: string; revision: number }
-
 export type CopyrightImagePlacementMutation =
   | { status: 'applied' | 'already_applied'; placement: CopyrightImagePlacement }
   | { status: 'stale' | 'deleted'; placement: CopyrightImagePlacement }
@@ -27,8 +25,8 @@ export function getImagePlacementKey(placementId: string): string {
 export async function retireImagePlacementsForDeletedImage(
   imageId: string,
   query: TransactionQuery,
-): Promise<Array<{ placementId: string; revision: number }>> {
-  const { rows } = await query<{ placement_id: string; revision: number }>(
+): Promise<void> {
+  await query(
     sql`/* retireImagePlacementsForDeletedImage */
       UPDATE media_placements placement
       SET retired_at = CURRENT_TIMESTAMP,
@@ -38,28 +36,8 @@ export async function retireImagePlacementsForDeletedImage(
       WHERE image_placement.placement_id = placement.id
         AND image_placement.image_id = ${imageId}
         AND placement.retired_at IS NULL
-      RETURNING placement.id AS placement_id, placement.revision
     `,
   )
-  return rows.map(row => ({ placementId: row.placement_id, revision: row.revision }))
-}
-
-export async function restoreImagePlacementsAfterImageDeletion(
-  placements: ImagePlacementRetirement[],
-  query: TransactionQuery,
-): Promise<void> {
-  for (const placement of placements) {
-    // oxlint-disable-next-line no-await-in-loop -- each revision fence protects its own prior deletion transition.
-    await query(sql`/* restoreImagePlacementsAfterImageDeletion */
-      UPDATE media_placements
-      SET retired_at = NULL,
-          retirement_reason = NULL,
-          revision = revision + 1
-      WHERE id = ${placement.placementId}
-        AND revision = ${placement.revision}
-        AND retirement_reason = 'asset_deleted'
-    `)
-  }
 }
 
 export async function getImagePlacementForCopyright(

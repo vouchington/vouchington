@@ -124,7 +124,9 @@ export async function processImageDeletionPageWhileLocked(
   }
   await transaction.commit()
   try {
-    await enqueueBulkOnPostUpdated(postIds.map(id => ({ id, contentChanged: true })))
+    await enqueueBulkOnPostUpdated(
+      postIds.map(id => ({ id, contentChanged: true, clearanceAlreadyReset: true })),
+    )
   } catch (err) {
     if (!options.reportAdmissionFailure) throw err
     onError(err as Error)
