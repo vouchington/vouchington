@@ -92,7 +92,7 @@ describe('statutory copyright restoration schedule', () => {
 
   it('materializes a due restore intent and stops listing its deadline', async () => {
     const { deadline } = await createCounterNoticedRestriction()
-    const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
+    const now = new Date(deadline.restoration_deadline_at.getTime() + 1)
     await expect(materializeListedDeadline(deadline.id, now)).resolves.toBe(1)
     await expect(readDueDeadlineIds(deadline.id, now)).resolves.toEqual([])
   })

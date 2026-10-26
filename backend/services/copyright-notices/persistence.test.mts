@@ -119,7 +119,7 @@ describe('copyright notice persistence', () => {
         restrictionId: restriction.id,
         deadlineId: deadline.id,
         expectedPlacementRevision: target.placement_revision,
-        now: new Date('2026-07-16T12:00:00.000Z'),
+        now: new Date(deadline.earliest_restoration_at.getTime() + 1),
       }),
     ).rejects.toThrow('Copyright restoration is not eligible')
     await completeCopyrightMandatoryHumanReview({
@@ -130,13 +130,23 @@ describe('copyright notice persistence', () => {
       rationale: 'The restriction remains appropriate after review.',
       reviewedAt: new Date('2026-07-02T12:00:00.000Z'),
     })
+    await expect(
+      createEligibleCopyrightRestoreIntent({
+        noticeId: notice.id,
+        targetId: target.id,
+        restrictionId: restriction.id,
+        deadlineId: deadline.id,
+        expectedPlacementRevision: target.placement_revision,
+        now: new Date(deadline.earliest_restoration_at.getTime() - 1),
+      }),
+    ).rejects.toThrow('Copyright restoration is not eligible')
     const intent = await createEligibleCopyrightRestoreIntent({
       noticeId: notice.id,
       targetId: target.id,
       restrictionId: restriction.id,
       deadlineId: deadline.id,
       expectedPlacementRevision: target.placement_revision,
-      now: new Date(deadline.earliest_restoration_at.getTime() + 86_400_000),
+      now: deadline.earliest_restoration_at,
     })
     expect(intent.action).toBe('restore')
   })
