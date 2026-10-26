@@ -13281,9 +13281,6 @@ importers:
       '@queues/image-uploads':
         specifier: workspace:^
         version: link:../../queues/image-uploads
-      '@services/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../services/bedrock-embeddings-batch
       '@services/language-detection':
         specifier: workspace:^
         version: link:../../services/language-detection

@@ -46,7 +46,6 @@
     "@queues/crawl-referral-links": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/image-uploads": "workspace:^",
-    "@services/bedrock-embeddings-batch": "workspace:^",
     "@services/language-detection": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "uuid": "^14.0.3"
