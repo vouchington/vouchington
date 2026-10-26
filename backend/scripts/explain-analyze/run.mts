@@ -2,6 +2,7 @@ import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
 import { runPublicationScopePageScenarios } from './run-scenarios/publication-scope-pages.mts'
+import { runNotificationVisibilityScenarios } from './run-scenarios/notification-visibility.mts'
 import { runDispatchWorkPlanScenarios } from './run-scenarios/dispatch-work-plans.mts'
 import { runMediaDeliveryReplayScenarios } from './run-scenarios/media-delivery-replay.mts'
 import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
@@ -95,6 +96,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
   // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
+  runNotificationVisibilityScenarios,
   runPublicationScopePageScenarios,
 ]
 

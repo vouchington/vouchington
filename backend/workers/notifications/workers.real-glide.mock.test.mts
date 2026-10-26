@@ -12,6 +12,7 @@ import {
 } from '@queues/background/enqueues/notifications-jobs'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import {
   createRandomString,
   createTestManualPostNotification,
@@ -23,6 +24,7 @@ import {
   setPostModerationFlaggedForTest,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import { notificationsHandlers } from './workers.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -179,6 +181,31 @@ describe('notification worker paged dispatch', () => {
     const handle = handler.handle as (
       job: Job<{ postId: string; afterUserId?: string }>,
     ) => Promise<{ created: number }>
+    const results = new Map<string, { created: number }>()
+    const harness = await startRealGlideBackgroundLifecycle({
+      queueNamePrefix: 'notification_dispatch_page',
+      connection: { connection: workerQueueConnection, prefix: workerQueuePrefix },
+      workerOptions: { blockTimeout: 100 },
+      processor: async job => {
+        const result = await handle(job as Job<{ postId: string; afterUserId?: string }>)
+        results.set(job.id, result)
+        return result
+      },
+    })
+    const execute = async (admitted: Job) => {
+      // Keep the real production admission for inspection; execute its immutable payload with
+      // the same identity on an isolated active worker so retained fence cleanup can yield.
+      const active = await harness.add(NOTIFICATIONS_RECONCILE_POST_JOB, admitted.data, {
+        ...admitted.opts,
+        jobId: admitted.id,
+        removeOnComplete: false,
+        removeOnFail: false,
+      })
+      expect(await harness.settled(active)).toBe('completed')
+      const retained = await harness.queue.getJob(active.id)
+      if (!retained) throw new Error('Expected the executed page receipt to remain')
+      return retained
+    }
     const changeId = randomUUID()
     const root = await background.add(
       NOTIFICATIONS_RECONCILE_POST_JOB.name,
@@ -194,31 +221,30 @@ describe('notification worker paged dispatch', () => {
       await Promise.all(ownedJobs.map(job => job.remove()))
     })
 
-    const first = await handle(root as Job<{ postId: string; afterUserId?: string }>)
+    const executedRoot = await execute(root)
+    const first = results.get(root.id)
     expect(first).toMatchObject({ created: 1 })
     const firstReceipt = (
-      (await background.getJob(root.id)) as Job<{
+      executedRoot as Job<{
         dispatchReceipt?: { next?: { afterUserId: string } }
       }>
     ).data.dispatchReceipt
     expect(firstReceipt?.next?.afterUserId).toBe(recipients.map(user => user.id).toSorted()[0])
-    await expect(handle(root as Job<{ postId: string; afterUserId?: string }>)).resolves.toEqual(
-      first,
-    )
+    await expect(
+      handle(executedRoot as Job<{ postId: string; afterUserId?: string }>),
+    ).resolves.toEqual(first)
 
-    let current = root
+    let current = executedRoot
     for (const afterUserId of recipients.map(user => user.id).toSorted()) {
-      const next = (
-        (await background.getJob(current.id)) as Job<{ dispatchReceipt: { next?: unknown } }>
-      ).data.dispatchReceipt.next as { postId: string; afterUserId: string } | undefined
+      const next = (current as Job<{ dispatchReceipt: { next?: unknown } }>).data.dispatchReceipt
+        .next as { postId: string; afterUserId: string } | undefined
       expect(next?.afterUserId).toBe(afterUserId)
       const continuation = await background.getJob(
         `notifications__reconcile-post__${postId}__${changeId}__${afterUserId}`,
       )
       if (!continuation) throw new Error(`Expected continuation after ${afterUserId}`)
       ownedJobs.push(continuation)
-      await handle(continuation as Job<{ postId: string; afterUserId?: string }>)
-      current = continuation
+      current = await execute(continuation)
     }
     const counts = await Promise.all(
       recipients.map(async user => (await listNotifications(user.id)).results.length),

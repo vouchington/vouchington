@@ -237,7 +237,10 @@ describe('topic alias post-cache invalidation', () => {
       expect(continuation?.data).toEqual({
         afterPostId: thirdPostId,
         topicAliasIds: [alias.id],
+        changeId: expect.any(String),
       })
+      const { changeId } = continuation!.data as { changeId: string }
+      await expectPostNotificationReconciliationEnqueued(invalidatedPostIds, changeId)
     } finally {
       restoreConfig()
     }
@@ -284,12 +287,12 @@ async function expectPostCachesInvalidated(postIds: string[]): Promise<void> {
 
 // The reconciliation job is prioritized, which `getJobs('waiting')` excludes until a worker
 // promotes it, so search every state by name and post id.
-async function expectPostNotificationReconciliationEnqueued(postIds: string[]): Promise<void> {
+async function expectPostNotificationReconciliationEnqueued(postIds: string[], changeId?: string) {
   const found = await Promise.all(
     postIds.map(postId =>
       notifications.searchJobs({
         name: 'notifications.processReconcilePostNotifications',
-        data: { postId },
+        data: { postId, ...(changeId ? { changeId } : {}) },
       }),
     ),
   )

@@ -24,7 +24,11 @@ export async function invalidatePostsForTopicAliases(topicAliasIds: string[]): P
     ])
     if (hasMore && lastPostId) {
       await awaitReportedEnqueueAdmission(() =>
-        enqueueContinueInvalidatingPostsForTopicAliases(topicAliasIds, lastPostId),
+        enqueueContinueInvalidatingPostsForTopicAliases(
+          topicAliasIds,
+          notificationChangeId,
+          lastPostId,
+        ),
       )
     }
   } catch (err) {
@@ -34,13 +38,14 @@ export async function invalidatePostsForTopicAliases(topicAliasIds: string[]): P
 
 export async function invalidatePostsForTopicAliasesPage(
   topicAliasIds: string[],
+  changeId: string,
   afterPostId?: string,
 ): Promise<{ hasMore: boolean; lastPostId: string | null }> {
   const { postIds, hasMore, lastPostId } = await readAliasPostPage(topicAliasIds, afterPostId)
   if (postIds.length === 0) return { hasMore, lastPostId }
   await Promise.all([
     invalidate.posts(postIds),
-    enqueueBulkReconcilePostNotifications(postIds, randomUUID()),
+    enqueueBulkReconcilePostNotifications(postIds, changeId),
   ])
   return { hasMore, lastPostId }
 }

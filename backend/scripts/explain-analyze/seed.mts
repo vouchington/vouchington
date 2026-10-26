@@ -1,6 +1,7 @@
 import { seedUploadCleanup } from './seed-data/upload-cleanup.mts'
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
 import { cleanupPublicationScopePages } from './seed-data/publication-scope-cleanup.mts'
+import { cleanupNotificationVisibility } from './seed-data/notification-visibility-cleanup.mts'
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedCommunitySearchFixtures } from './seed-data/community-search-fixtures.mts'
 import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
@@ -98,6 +99,7 @@ import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/see
 async function main() {
   assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
   await cleanupPublicationScopePages()
+  await cleanupNotificationVisibility()
   await seedUsers(20_000)
   await seedAdminEmails()
   await seedTopicImportAttempts()

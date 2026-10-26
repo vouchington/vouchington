@@ -1,4 +1,5 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createHash } from 'node:crypto'
 import type { EnqueueReturnType } from '@voucha/types'
 import {
   PRIORITY_DEFAULT,
@@ -9,7 +10,7 @@ import {
   TOPIC_ALIAS_ORDERING,
 } from '../config.mts'
 import { rssFeedMaintenance } from '../queues.mts'
-import type { TopicAliasJobs } from '../types.mts'
+import type { TopicAliasJobs, TopicAliasPostInvalidationData } from '../types.mts'
 
 const JOB_NAME: TopicAliasJobs = 'processTopicAliasesUpdate'
 
@@ -38,7 +39,7 @@ const enqueueReconcileTopicAliasCategoryMappingsJob = createEnqueueFunction<
 })
 
 const enqueueInvalidatePostsForTopicAliasesJob = createEnqueueFunction<
-  { afterPostId?: string; topicAliasIds: string[] },
+  TopicAliasPostInvalidationData,
   TopicAliasJobs
 >({
   queue: rssFeedMaintenance,
@@ -104,11 +105,18 @@ export const enqueueContinueTopicAliasCategoryMappingReconciliation = (
 
 export const enqueueContinueInvalidatingPostsForTopicAliases = (
   topicAliasIds: string[],
+  changeId: string,
   afterPostId: string,
 ): EnqueueReturnType =>
   enqueueInvalidatePostsForTopicAliasesJob(
-    { afterPostId, topicAliasIds },
-    { priority: PRIORITY_DEFAULT, ordering: TOPIC_ALIAS_ORDERING.post_invalidation },
+    { afterPostId, topicAliasIds, changeId },
+    {
+      priority: PRIORITY_DEFAULT,
+      ordering: TOPIC_ALIAS_ORDERING.post_invalidation,
+      jobId: `topic_alias_post_invalidation__${changeId}__${afterPostId}__${createHash('sha256')
+        .update(JSON.stringify([...new Set(topicAliasIds)].toSorted()))
+        .digest('hex')}`,
+    },
   )
 
 export const enqueueBulkTopicAliasesUpdate = (

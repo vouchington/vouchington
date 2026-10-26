@@ -1,4 +1,4 @@
-import { writePool } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { getPostNotificationSnapshot } from './reconcile-post-snapshot.mts'
 import { getRssFeedItemNotificationSnapshot } from './reconcile-rss-feed-item-snapshot.mts'
 import { getContentVisibilityPageLimit } from './work-limits.mts'
@@ -19,12 +19,13 @@ export async function reconcilePostContentNotificationVisibility(
   const post = await getPostNotificationSnapshot(postId)
   const pageSize = getContentVisibilityPageLimit()
   const cursorOperator = after ? '>' : '>='
-  const { rows } = await writePool.query<VisibilityPageRow>(
+  const { rows } = await write<VisibilityPageRow>(
     `/* reconcilePostContentNotificationVisibility */
       WITH target_page AS MATERIALIZED (
         SELECT notification.user_id, notification.id
         FROM notifications notification
         WHERE notification.publication_post_id = $1
+          AND notification.user_id >= $2::uuid
           AND (notification.user_id, notification.id) ${cursorOperator} ($2::uuid, $3::uuid)
         ORDER BY notification.user_id, notification.id
         LIMIT $6
@@ -76,12 +77,13 @@ export async function reconcileRssFeedItemContentNotificationVisibility(
   const item = await getRssFeedItemNotificationSnapshot(rssFeedItemId)
   const pageSize = getContentVisibilityPageLimit()
   const cursorOperator = after ? '>' : '>='
-  const { rows } = await writePool.query<VisibilityPageRow>(
+  const { rows } = await write<VisibilityPageRow>(
     `/* reconcileRssFeedItemContentNotificationVisibility */
       WITH target_page AS MATERIALIZED (
         SELECT notification.user_id, notification.id
         FROM notifications notification
         WHERE notification.publication_rss_feed_item_id = $1
+          AND notification.user_id >= $2::uuid
           AND (notification.user_id, notification.id) ${cursorOperator} ($2::uuid, $3::uuid)
         ORDER BY notification.user_id, notification.id
         LIMIT $5

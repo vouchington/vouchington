@@ -1,4 +1,9 @@
-import { beginTransaction, writePool, type PoolClient } from '@data-stores/psql'
+import {
+  beginTransaction,
+  writePool,
+  type PoolClient,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import { createTempTableName } from './reconcile-temp-tables.mts'
 import type {
   ContentVisibilityCursor,
@@ -29,11 +34,12 @@ export async function reconcileMembershipNotificationVisibility(
   const client = await writePool.connect()
   try {
     await using transaction = await beginTransaction({ client })
-    const { rows } = await client.query<{ user_id: string; id: string }>(
+    const { rows } = await transaction<{ user_id: string; id: string }>(
       `/* selectMembershipVisibilityTargetPage */
         SELECT notification.user_id, notification.id
         FROM notifications notification
         WHERE notification.${publicationColumn} = $1
+          AND notification.user_id >= $2::uuid
           AND (notification.user_id, notification.id) ${cursorOperator} ($2::uuid, $3::uuid)
         ORDER BY notification.user_id, notification.id
         LIMIT $4
@@ -47,11 +53,10 @@ export async function reconcileMembershipNotificationVisibility(
     )
     let pruned = 0
     if (rows.length > 0) {
-      const table = createTempTableName('temp_notification_membership_recipients')
-      await client.query(`/* createMembershipVisibilityRecipients */
-        CREATE TEMP TABLE ${table} (user_id UUID PRIMARY KEY) ON COMMIT DROP`)
-      await input.populateRecipients(client, table, [...new Set(rows.map(row => row.user_id))])
-      const { rowCount } = await client.query(
+      const table = await prepareMembershipRecipients(transaction, client, input, [
+        ...new Set(rows.map(row => row.user_id)),
+      ])
+      const { rowCount } = await transaction(
         `/* pruneMembershipVisibilityTargetPage */
           UPDATE notifications notification
           SET deleted_at = CURRENT_TIMESTAMP,
@@ -81,4 +86,17 @@ export async function reconcileMembershipNotificationVisibility(
   } finally {
     client.release()
   }
+}
+
+async function prepareMembershipRecipients(
+  query: TransactionQuery,
+  client: PoolClient,
+  input: MembershipVisibilityInput,
+  userIds: string[],
+): Promise<string> {
+  const table = createTempTableName('temp_notification_membership_recipients')
+  await query(`/* createMembershipVisibilityRecipients */
+    CREATE TEMP TABLE ${table} (user_id UUID PRIMARY KEY) ON COMMIT DROP`)
+  await input.populateRecipients(client, table, userIds)
+  return table
 }
