@@ -2422,8 +2422,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
       nodemailer:
-        specifier: ^10.1.5
-        version: 10.1.5
+        specifier: ^10.1.6
+        version: 10.1.6
     devDependencies:
       '@types/nodemailer':
         specifier: ^8.0.2
@@ -22672,8 +22672,8 @@ packages:
     resolution: {integrity: sha512-rnQn9Rzh8RAwcp42MVsIvxbsv6YZ2a2/av+uyJ/LPU1+2QSlrRgFsWWZTKenyRUqkIl8urOI0c4+CEcmFdsvQw==}
     engines: {node: '>=20.0.0'}
 
-  nodemailer@10.1.5:
-    resolution: {integrity: sha512-lftc1Fxos2mPXHChDaCtkyD9umvlLw1iMREXgXv6LAaJycVzJ8GcpE90o02B+AqnICq8zy8gzo8FrKEzXZhlGg==}
+  nodemailer@10.1.6:
+    resolution: {integrity: sha512-8j/UEmA4AXr51URr3Ob0h+RCBtr0NKJ76Y2P9wJT6Eu3dRyruj2ULh2e6aiKrGg8nlUj1oX6N5h8dHA82EouaQ==}
     engines: {node: '>=20.0.0'}
 
   nofilter@3.1.0:
@@ -31687,7 +31687,7 @@ snapshots:
 
   nodemailer@10.1.2: {}
 
-  nodemailer@10.1.5: {}
+  nodemailer@10.1.6: {}
 
   nofilter@3.1.0: {}
 
