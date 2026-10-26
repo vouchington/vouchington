@@ -3801,6 +3801,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../services/rss-feeds
+      '@services/sitemaps':
+        specifier: workspace:^
+        version: link:../services/sitemaps
       '@services/stories':
         specifier: workspace:^
         version: link:../services/stories
@@ -14493,6 +14496,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.1156.0
+        version: 3.1156.0
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

@@ -16,9 +16,10 @@ export function buildPostDayIndexRoutePath(postType: SitemapPostType, day: strin
 export function buildPostDayPageRoutePath(
   postType: SitemapPostType,
   day: string,
+  generationId: string,
   page: number,
 ): string {
-  return `sitemaps/${postType}/${day}/${page}.xml`
+  return `sitemaps/${postType}/${day}/${generationId}/${page}.xml`
 }
 
 export function buildStaticPagesRoutePath(): string {
@@ -29,8 +30,12 @@ export function buildFamilyIndexRoutePath(family: SitemapFamilyType): string {
   return `sitemaps/${family}.xml`
 }
 
-export function buildFamilyPageRoutePath(family: SitemapFamilyType, page: number): string {
-  return `sitemaps/${family}/${page}.xml`
+export function buildFamilyPageRoutePath(
+  family: SitemapFamilyType,
+  generationId: string,
+  page: number,
+): string {
+  return `sitemaps/${family}/${generationId}/${page}.xml`
 }
 
 export function buildRootSitemapStorageKey(): string {
@@ -49,12 +54,16 @@ export function buildFamilyIndexStorageKey(family: SitemapFamilyType): string {
   return `sitemaps/families/${family}.xml`
 }
 
-export function buildFamilyPageStorageKey(family: SitemapFamilyType, page: number): string {
-  return `families/${family}/${page}.xml`
+export function buildFamilyPageStorageKey(
+  family: SitemapFamilyType,
+  generationId: string,
+  page: number,
+): string {
+  return `families/${family}/${generationId}/${page}.xml`
 }
 
-export function buildFamilyMetaStorageKey(family: SitemapFamilyType): string {
-  return `families/${family}/_meta.json`
+export function buildFamilyProgressStorageKey(family: SitemapFamilyType): string {
+  return `families/${family}/_progress.json`
 }
 
 export function buildTypeIndexStorageKey(postType: SitemapPostType): string {
@@ -69,13 +78,14 @@ export function buildPostDayIndexStorageKey(postType: SitemapPostType, day: stri
 export function buildPostDayPageStorageKey(
   postType: SitemapPostType,
   day: string,
+  generationId: string,
   page: number,
 ): string {
   const parts = parseUtcDay(day)
-  return `posts/${parts.year}/${parts.month}/${parts.day}/${postType}/${page}.xml`
+  return `posts/${parts.year}/${parts.month}/${parts.day}/${postType}/${generationId}/${page}.xml`
 }
 
-export function buildPostDayMetaStorageKey(postType: SitemapPostType, day: string): string {
+export function buildPostDayProgressStorageKey(postType: SitemapPostType, day: string): string {
   const parts = parseUtcDay(day)
-  return `posts/${parts.year}/${parts.month}/${parts.day}/${postType}/_meta.json`
+  return `posts/${parts.year}/${parts.month}/${parts.day}/${postType}/_progress.json`
 }

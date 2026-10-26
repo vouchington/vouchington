@@ -1,5 +1,6 @@
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
+import { applyStoragePrefix } from './storage-prefix.mts'
 import type { TrackedDayRange } from './types.mts'
 
 const TRACKED_RANGE_CACHE_KEY = 'sitemaps:posts:tracked-range:v1'
@@ -13,7 +14,7 @@ export type TrackedDayRangeUpdate = {
 }
 
 export async function getTrackedDayRangeFromCache(): Promise<TrackedDayRange | null> {
-  const cached = await cacheValkeyClient.get(TRACKED_RANGE_CACHE_KEY)
+  const cached = await cacheValkeyClient.get(applyStoragePrefix(TRACKED_RANGE_CACHE_KEY))
   if (!cached) return null
 
   try {
@@ -24,7 +25,7 @@ export async function getTrackedDayRangeFromCache(): Promise<TrackedDayRange | n
 }
 
 export async function setTrackedDayRangeCache(range: TrackedDayRange): Promise<void> {
-  await cacheValkeyClient.set(TRACKED_RANGE_CACHE_KEY, JSON.stringify(range))
+  await cacheValkeyClient.set(applyStoragePrefix(TRACKED_RANGE_CACHE_KEY), JSON.stringify(range))
 }
 
 export async function updateTrackedDayRangeCache(
@@ -32,7 +33,7 @@ export async function updateTrackedDayRangeCache(
   fallbackRange?: TrackedDayRange | null,
 ): Promise<TrackedDayRangeUpdate | null> {
   const result = await cacheValkeyClient.invokeScript(upsertTrackedDayRangeScript, {
-    keys: [TRACKED_RANGE_CACHE_KEY],
+    keys: [applyStoragePrefix(TRACKED_RANGE_CACHE_KEY)],
     args: fallbackRange === undefined ? [day] : [day, JSON.stringify(fallbackRange)],
   })
 

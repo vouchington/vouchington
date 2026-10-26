@@ -89,6 +89,7 @@
     "@services/remote-actors": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/sitemaps": "workspace:^",
     "@services/stories": "workspace:^",
     "@services/topic-recommendations": "workspace:^",
     "@services/topics": "workspace:^",

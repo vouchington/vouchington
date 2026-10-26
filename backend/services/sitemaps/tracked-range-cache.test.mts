@@ -5,7 +5,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import { S3Buckets } from '@modules/aws'
@@ -14,20 +14,44 @@ import {
   setTrackedDayRangeCache,
   updateTrackedDayRangeCache,
 } from './tracked-range-cache.mts'
+import { applyStoragePrefix } from './storage-prefix.mts'
 import { getTrackedDayRange, markTrackedDay } from './storage.mts'
 
 describe('tracked-range-cache', () => {
-  const TRACKED_RANGE_CACHE_KEY = 'sitemaps:posts:tracked-range:v1'
+  let TRACKED_RANGE_CACHE_KEY: string
+  beforeEach(() => {
+    vi.stubEnv('SITEMAP_S3_PREFIX', `tracked-range-${randomUUID()}`)
+    TRACKED_RANGE_CACHE_KEY = applyStoragePrefix('sitemaps:posts:tracked-range:v1')
+  })
 
   afterEach(async () => {
     vi.restoreAllMocks()
     await cacheValkeyClient.unlink([TRACKED_RANGE_CACHE_KEY])
+    vi.unstubAllEnvs()
   })
 
   describe('tracked range cache', () => {
     it('leaves an absent range unchanged when no fallback is available', async () => {
       await expect(updateTrackedDayRangeCache('2026-05-10')).resolves.toBeNull()
       await expect(getTrackedDayRangeFromCache()).resolves.toBeNull()
+    })
+
+    it('keeps tracked ranges separate for each configured storage namespace', async () => {
+      const firstPrefix = process.env.SITEMAP_S3_PREFIX!
+      const firstRange = { earliestDay: '2026-05-01', latestDay: '2026-05-02' }
+      await setTrackedDayRangeCache(firstRange)
+      vi.stubEnv('SITEMAP_S3_PREFIX', `other-range-${randomUUID()}`)
+      const otherKey = applyStoragePrefix('sitemaps:posts:tracked-range:v1')
+      onTestFinished(async () => {
+        await cacheValkeyClient.unlink([otherKey])
+      })
+      await expect(getTrackedDayRangeFromCache()).resolves.toBeNull()
+      await updateTrackedDayRangeCache('2026-06-01', {
+        earliestDay: '2026-06-01',
+        latestDay: '2026-06-01',
+      })
+      vi.stubEnv('SITEMAP_S3_PREFIX', firstPrefix)
+      await expect(getTrackedDayRangeFromCache()).resolves.toEqual(firstRange)
     })
 
     it('returns previous and next ranges from one atomic Lua update', async () => {
@@ -135,7 +159,7 @@ describe('tracked-range-cache', () => {
       .mockResolvedValueOnce({
         Contents: discoveredDays.map(day => {
           const [year, month, date] = day.split('-')
-          return { Key: `posts/${year}/${month}/${date}/article/metadata.json` }
+          return { Key: applyStoragePrefix(`posts/${year}/${month}/${date}/article/metadata.json`) }
         }),
       } as never)
       .mockResolvedValueOnce({} as never)
@@ -150,7 +174,7 @@ describe('tracked-range-cache', () => {
     expect(calls[1]![0]).toBeInstanceOf(ListObjectsV2Command)
     expect((calls[2]![0] as PutObjectCommand).input).toMatchObject({
       Bucket: S3Buckets.sitemaps,
-      Key: 'sitemaps/meta/posts-tracked-range.json',
+      Key: applyStoragePrefix('sitemaps/meta/posts-tracked-range.json'),
       Body: JSON.stringify(range),
       ContentType: 'application/json; charset=utf-8',
     })

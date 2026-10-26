@@ -1,18 +1,25 @@
 import type { SitemapPostType, TrackedDayRange } from './types.mts'
 import { enumerateUtcDaysInclusive, getPreviousUtcDays } from '@ts-shared/utils/dates'
+import { getSitemapsWorkLimit } from './work-limits.mts'
 
 export function getNightlyBackfillEntries(
   now: Date,
   postTypes: readonly SitemapPostType[],
 ): Array<{ postType: SitemapPostType; day: string }> {
-  return buildEntries(getPreviousUtcDays(7, { baseDate: now }), postTypes)
+  return buildEntries(
+    getPreviousUtcDays(getSitemapsWorkLimit('nightly_backfill_days'), { baseDate: now }),
+    postTypes,
+  )
 }
 
 export function getWeeklyBackfillEntries(
   now: Date,
   postTypes: readonly SitemapPostType[],
 ): Array<{ postType: SitemapPostType; day: string }> {
-  return buildEntries(getPreviousUtcDays(30, { baseDate: now }), postTypes)
+  return buildEntries(
+    getPreviousUtcDays(getSitemapsWorkLimit('weekly_backfill_days'), { baseDate: now }),
+    postTypes,
+  )
 }
 
 export type MonthlyBackfillPage = {
@@ -37,7 +44,9 @@ export function getMonthlyBackfillPage(
   const empty = { entries: [], lastDay: null, hasMore: false }
   if (!trackedRange) return empty
 
-  const archiveEndDay = getPreviousUtcDays(31, { baseDate: now }).at(-1)
+  const archiveEndDay = getPreviousUtcDays(getSitemapsWorkLimit('weekly_backfill_days') + 1, {
+    baseDate: now,
+  }).at(-1)
   if (!archiveEndDay || trackedRange.earliestDay > archiveEndDay) return empty
 
   const startDay =

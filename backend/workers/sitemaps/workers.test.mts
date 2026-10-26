@@ -4,6 +4,7 @@ import { createSitemapsHandlers } from './workers.mts'
 
 function makeProcessors() {
   return {
+    processRetiredSitemapCleanup: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
     processUpdatePostDaySitemap: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
     processUpdatePostTypeIndex: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
     processUpdatePostsIndex: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
@@ -37,6 +38,7 @@ describe('sitemaps handler routing', () => {
     ).toEqual([
       'sitemaps.processMonthlyBackfillArchiveDispatcher',
       'sitemaps.processNightlyBackfillWeekDispatcher',
+      'sitemaps.processRetiredSitemapCleanup',
       'sitemaps.processUpdateFamilySitemap',
       'sitemaps.processUpdatePostDaySitemap',
       'sitemaps.processUpdatePostTypeIndex',
@@ -77,6 +79,8 @@ describe('sitemaps handler routing', () => {
   it('routes dispatcher jobs and hands the archive dispatcher its cursor', async () => {
     const processors = makeProcessors()
 
+    await run(processors, 'processRetiredSitemapCleanup')
+    expect(processors.processRetiredSitemapCleanup).toHaveBeenCalledWith()
     await run(processors, 'processNightlyBackfillWeekDispatcher')
     await run(processors, 'processWeeklyBackfillMonthDispatcher')
     await run(processors, 'processMonthlyBackfillArchiveDispatcher', { afterDay: '2026-01-31' })

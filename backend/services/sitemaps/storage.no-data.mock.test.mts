@@ -3,7 +3,7 @@ import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -16,11 +16,7 @@ vi.mock<typeof import('@aws-sdk/client-s3')>(import('@aws-sdk/client-s3'), async
   return sdk
 })
 
-import {
-  getSitemapFamilyManifest,
-  putSitemapFamilyManifest,
-  putSitemapObjectFile,
-} from './storage.mts'
+import { getSitemapFamilyManifest, putSitemapObjectFile } from './storage.mts'
 import { S3Buckets } from '@modules/aws'
 
 describe('sitemap storage', () => {
@@ -53,48 +49,60 @@ describe('sitemap storage', () => {
     expect(mocks.mockSend).toHaveBeenCalledOnce()
   })
 
-  it('loads family manifests from the family meta key as JSON', async () => {
+  it('loads the manifest committed atomically with the public family index', async () => {
     const manifest = {
       active_page_count: 3,
-      highest_written_page: 3,
+      generation_id: '11111111-1111-4111-8111-111111111111',
       generated_at: '2026-06-10T12:00:00.000Z',
-      content_hashes: { '1.xml': 'hash-1', 'index.xml': 'hash-index' },
+      content_hash: 'content-hash',
     }
     mocks.mockSend.mockResolvedValueOnce({
-      Body: {
-        transformToString: vi.fn<VitestLooseMock>().mockResolvedValue(JSON.stringify(manifest)),
-      },
+      Metadata: { 'sitemap-manifest': JSON.stringify(manifest) },
     } as never)
 
     await expect(getSitemapFamilyManifest('topics')).resolves.toEqual(manifest)
 
     expect(mocks.mockSend).toHaveBeenCalledOnce()
-    const command = mocks.mockSend.mock.calls[0]![0] as GetObjectCommand
+    const command = mocks.mockSend.mock.calls[0]![0] as HeadObjectCommand
     expect(command.input).toMatchObject({
       Bucket: S3Buckets.sitemaps,
-      Key: 'families/topics/_meta.json',
+      Key: 'sitemaps/families/topics.xml',
     })
   })
 
-  it('writes family manifests back to the family meta key as JSON', async () => {
+  it('writes XML and its compact publication manifest in one upload', async () => {
+    const file = createSitemapUploadFile()
     const manifest = {
-      active_page_count: 4,
-      highest_written_page: 4,
+      active_page_count: 1,
+      generation_id: '11111111-1111-4111-8111-111111111111',
       generated_at: '2026-06-10T12:00:00.000Z',
-      content_hashes: { '1.xml': 'hash-1', '2.xml': 'hash-2', 'index.xml': 'hash-index' },
+      content_hash: 'content-hash',
     }
+    captureUnreadSitemapBody(false)
+    try {
+      await putSitemapObjectFile('sitemaps/families/topics.xml', file.filePath, {
+        contentType: 'application/xml; charset=utf-8',
+        contentEncoding: 'gzip',
+        manifest,
+      })
+      const command = mocks.mockSend.mock.calls[0]![0] as PutObjectCommand
+      expect(command.input).toMatchObject({
+        Key: 'sitemaps/families/topics.xml',
+        ContentType: 'application/xml; charset=utf-8',
+        ContentEncoding: 'gzip',
+        Metadata: { 'sitemap-manifest': JSON.stringify(manifest) },
+      })
+      expect(Buffer.byteLength(JSON.stringify(manifest))).toBeLessThan(2048)
+    } finally {
+      await rm(file.directory, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a public index whose publication metadata is missing', async () => {
     mocks.mockSend.mockResolvedValueOnce({} as never)
-
-    await putSitemapFamilyManifest('topics', manifest)
-
-    expect(mocks.mockSend).toHaveBeenCalledOnce()
-    const command = mocks.mockSend.mock.calls[0]![0] as PutObjectCommand
-    expect(command.input).toMatchObject({
-      Bucket: S3Buckets.sitemaps,
-      Key: 'families/topics/_meta.json',
-      Body: JSON.stringify(manifest),
-      ContentType: 'application/json; charset=utf-8',
-    })
+    await expect(getSitemapFamilyManifest('topics')).rejects.toThrow(
+      'Published sitemap index is missing its manifest',
+    )
   })
 
   it('destroys an unread file upload stream when send resolves without reading', async () => {
