@@ -72776,7 +72776,7 @@
         "idx_notifications__publication_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id) WHERE (publication_post_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id, user_id, id) WHERE (publication_post_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -72784,6 +72784,24 @@
               "column": "publication_post_id",
               "descending": false,
               "expression": "publication_post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -72799,7 +72817,7 @@
         "idx_notifications__publication_rss_feed_item_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id) WHERE (publication_rss_feed_item_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id, user_id, id) WHERE (publication_rss_feed_item_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -72807,6 +72825,24 @@
               "column": "publication_rss_feed_item_id",
               "descending": false,
               "expression": "publication_rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
