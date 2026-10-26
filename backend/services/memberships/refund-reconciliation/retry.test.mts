@@ -5,6 +5,7 @@ import * as stripeRefunds from '@modules/stripe/refunds'
 import {
   getRefundOperationRetryStateForTest,
   getRefundReceiptCountForTest,
+  recordExpiredRefundAttemptForTest,
 } from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
 import {
   claimAdministratorRefundRequest,
@@ -165,6 +166,71 @@ describe('refund reconciliation retries', () => {
 
     await reconcileMembershipRefundOperation(lease)
 
+    expect(getRefund).toHaveBeenCalledWith(refundId)
+    expect(createRefund).not.toHaveBeenCalled()
+    await expect(getRefundReceiptCountForTest(operation.id)).resolves.toBe(1)
+  })
+
+  it('recovers a provider refund after an expired attempt lost its create reply', async () => {
+    const refundRequest = await request()
+    const operation = await claimAdministratorRefundRequest(refundRequest)
+    const lease = await leaseDueRefundReconciliation(operation.id)
+    if (!lease) throw new Error('Expected reconciliation lease')
+    const attemptId = await recordExpiredRefundAttemptForTest(lease)
+    const headId = `re_head_${randomUUID()}`
+    const refundId = `re_recovered_${randomUUID()}`
+    const recoveredRefund: Awaited<ReturnType<typeof stripeRefunds.getStripeRefund>> = {
+      amount: 700,
+      balance_transaction: null,
+      charge: refundRequest.providerPaymentReference,
+      created: Math.floor(Date.now() / 1000),
+      currency: 'usd',
+      customer: null,
+      customer_account: null,
+      id: refundId,
+      lastResponse: { headers: {}, requestId: `req_${randomUUID()}`, statusCode: 200 },
+      metadata: {
+        membership_refund_attempt_id: attemptId,
+        membership_refund_operation_id: operation.id,
+      },
+      object: 'refund',
+      payment_intent: null,
+      payment_method: null,
+      reason: null,
+      receipt_number: null,
+      source_transfer_reversal: null,
+      status: 'succeeded',
+      transfer_reversal: null,
+    }
+    const listRefunds = vi
+      .spyOn(stripeRefunds, 'listStripeRefundsForPaymentPage')
+      .mockImplementation(async ({ startingAfter }) =>
+        startingAfter
+          ? {
+              hasMore: false,
+              nextCursor: undefined,
+              refunds: [recoveredRefund],
+            }
+          : {
+              hasMore: true,
+              nextCursor: headId,
+              refunds: [{ ...recoveredRefund, id: headId, metadata: {} }],
+            },
+      )
+    const getRefund = vi.spyOn(stripeRefunds, 'getStripeRefund').mockResolvedValue(recoveredRefund)
+    const createRefund = vi.spyOn(stripeRefunds, 'createStripeRefund')
+
+    await reconcileMembershipRefundOperation(lease)
+
+    expect(listRefunds).toHaveBeenNthCalledWith(1, {
+      chargeId: refundRequest.providerPaymentReference,
+      paymentIntentId: null,
+    })
+    expect(listRefunds).toHaveBeenNthCalledWith(2, {
+      chargeId: refundRequest.providerPaymentReference,
+      paymentIntentId: null,
+      startingAfter: headId,
+    })
     expect(getRefund).toHaveBeenCalledWith(refundId)
     expect(createRefund).not.toHaveBeenCalled()
     await expect(getRefundReceiptCountForTest(operation.id)).resolves.toBe(1)
