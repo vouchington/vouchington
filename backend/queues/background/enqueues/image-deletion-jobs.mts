@@ -1,3 +1,4 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { PRIORITY_DISPATCH } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
@@ -17,10 +18,15 @@ export const IMAGE_DELETION_PAGE_JOB = defineBackgroundJob<ImageDeletionPageData
     priority: PRIORITY_DISPATCH,
   },
 )
-export type ImageDeletionRecoveryData = { afterId: string; throughId: string }
+export type ImageDeletionRecoveryData = {
+  imageIds?: readonly string[]
+  afterId?: string
+  throughId?: string
+}
 export const IMAGE_DELETION_RECOVER_JOB = defineBackgroundJob<ImageDeletionRecoveryData>(
   IMAGE_DELETION_DOMAIN,
   {
+    ...pagedDispatchJobOptions('images'),
     name: 'recover',
     priority: PRIORITY_DISPATCH,
     ordering: { key: 'image-deletion:recovery' },

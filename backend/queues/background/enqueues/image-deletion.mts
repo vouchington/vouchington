@@ -5,7 +5,8 @@ import {
   type ImageDeletionPageData,
   type ImageDeletionRecoveryData,
 } from './image-deletion-jobs.mts'
-import { createBackgroundBulkEnqueue } from '../enqueues.mts'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '../enqueues.mts'
+import type { JobOptions } from 'glide-mq'
 import { background } from '../queues.mts'
 
 export function getImageDeletionPageJobId(
@@ -28,25 +29,22 @@ export async function enqueueImageDeletionPage(
   cursor: string | null,
   admittedThrough?: string,
 ): Promise<void> {
+  await enqueueImageDeletionPages([{ imageId, cursor, admittedThrough }])
+}
+
+export async function enqueueImageDeletionPages(inputs: ImageDeletionPageData[]): Promise<void> {
   await enqueueBulkReactivatingFinished({
     queue: background,
-    inputs: [{ imageId, cursor, admittedThrough }],
+    inputs,
     jobIdOf: data => getImageDeletionPageJobId(data.imageId, data.cursor, data.admittedThrough),
     enqueueBulk: enqueuePages,
   })
 }
 
-const recoveryJobId = (data: ImageDeletionRecoveryData) =>
-  `image-deletion-recovery-${data.throughId}-${data.afterId}`
-const enqueueRecovery = createBackgroundBulkEnqueue(
-  IMAGE_DELETION_RECOVER_JOB,
-  (data: ImageDeletionRecoveryData) => ({ data, opts: { jobId: recoveryJobId(data) } }),
-)
-export async function enqueueImageDeletionRecovery(data: ImageDeletionRecoveryData): Promise<void> {
-  await enqueueBulkReactivatingFinished({
-    queue: background,
-    inputs: [data],
-    jobIdOf: recoveryJobId,
-    enqueueBulk: enqueueRecovery,
-  })
+const enqueueRecovery = createBackgroundEnqueue(IMAGE_DELETION_RECOVER_JOB)
+export async function enqueueImageDeletionRecovery(
+  data: ImageDeletionRecoveryData = {},
+  options?: Partial<JobOptions>,
+): Promise<void> {
+  await enqueueRecovery(data, options)
 }

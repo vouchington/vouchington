@@ -84,33 +84,28 @@ export async function processImageDeletionPageWhileLocked(
       return
     }
     await lockPostPublicationPostScopes(transaction, postIds)
+    /* oxlint-disable no-await-in-loop -- the bounded page uses one transaction connection and each post revision depends on its preceding reset */
     for (const postId of postIds) {
       // no-mistakes-disable-next-line query-reached-per-item: the DynamicConfig-bounded page must preserve each locked post clearance transition and its publication capture atomically
-      // oxlint-disable-next-line no-await-in-loop -- each bounded post mutation uses the same transaction connection
       const clearanceChanged = await resetPostClearance(postId, null, { query: transaction })
       // no-mistakes-disable-next-line query-reached-per-item: moderation content must be read after this bounded page post resets clearance on the transaction connection
-      // oxlint-disable-next-line no-await-in-loop -- moderation input must observe the preceding clearance reset
       const post = await getPostModerationInput(postId, { query: transaction })
       if (!post) continue
       const { content_sha256 } = createPostModerationContent(post)
-      // oxlint-disable-next-line no-await-in-loop -- hash and revision commit atomically with this post reset
       await transaction(
         sql`/* processImageDeletionPage:rehash */ UPDATE posts SET llm_moderation_content_sha256 = ${content_sha256} WHERE id = ${postId}`,
       )
       if (!clearanceChanged) {
         // no-mistakes-disable-next-line query-reached-per-item: each bounded locked post needs its own atomic publication-change capture
-        // oxlint-disable-next-line no-await-in-loop -- publication capture commits with the bounded post mutation
         await recordPostPublicationChange(transaction, {
           scope: { type: 'post', postId },
           reason: 'post_content_reset',
         })
       }
-      // oxlint-disable-next-line no-await-in-loop -- revision snapshot must use this locked post's current ordered attachments
       const { rows: attachments } = await transaction<{ image_id: string }>(
         sql`/* processImageDeletionPage:attachments */ SELECT image_id FROM post_images WHERE post_id = ${postId} ORDER BY order_index`,
       )
       // no-mistakes-disable-next-line query-reached-per-item: one history revision per bounded locked post commits with the page cursor
-      // oxlint-disable-next-line no-await-in-loop -- one revision commits atomically with the durable cursor
       await createImageDeletionPostRevision(
         postId,
         attachments.map(row => row.image_id),
@@ -118,6 +113,7 @@ export async function processImageDeletionPageWhileLocked(
         { query: transaction },
       )
     }
+    /* oxlint-enable no-await-in-loop */
     cursor = postIds.at(-1)!
     await transaction(
       sql`/* processImageDeletionPage:receipt */ INSERT INTO image_deletion_post_updates (image_id, post_identity_id) SELECT ${imageId}, unnest(${postIds}::uuid[]) ON CONFLICT DO NOTHING`,

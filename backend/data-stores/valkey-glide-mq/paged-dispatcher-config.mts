@@ -8,7 +8,10 @@ export type PagedDispatcher =
   | 'elections'
   | 'notifications'
   | 'activitypub'
+  | 'images'
 const defaultFields = {
+  images_page_size: 100,
+  images_backoff_ms: 300000,
   hostnames_page_size: 500,
   hostnames_backoff_ms: 300000,
   rss_page_size: 500,
