@@ -54,11 +54,44 @@ describe('createSentryServerInitOptions', () => {
     const event = { request: { url: 'https://example.com/x?token=secret' } } as never
 
     expect(
-      await options.beforeSend?.(event, { originalException: new ApiError('Bad', 400) }),
+      await options.beforeSend?.(event, {
+        originalException: new ApiError('Bad', 400, {
+          request_id: '11111111-1111-4111-8111-111111111111',
+        }),
+      }),
     ).toBeNull()
     expect(
       await options.beforeSend?.(event, { originalException: new ApiError('Boom', 500) }),
     ).toEqual({
+      request: { url: 'https://example.com/x' },
+    })
+  })
+
+  it('tags a 5xx ApiError with the gateway request id and ignores other request id text', async () => {
+    const options = createSentryServerInitOptions({ NODE_ENV: 'production' })
+    const requestId = '11111111-1111-4111-8111-111111111111'
+    const event = {
+      tags: { surface: 'post' },
+      request: { url: 'https://example.com/x?token=secret' },
+    } as never
+
+    expect(
+      await options.beforeSend?.(event, {
+        originalException: new ApiError('Boom', 500, {
+          request_id: requestId,
+          code: 'INTERNAL_ERROR',
+        }),
+      }),
+    ).toEqual({
+      tags: { surface: 'post', request_id: requestId },
+      request: { url: 'https://example.com/x' },
+    })
+    expect(
+      await options.beforeSend?.(event, {
+        originalException: new ApiError('Boom', 500, { request_id: 'person@example.test' }),
+      }),
+    ).toEqual({
+      tags: { surface: 'post' },
       request: { url: 'https://example.com/x' },
     })
   })

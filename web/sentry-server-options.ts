@@ -1,13 +1,14 @@
 import type * as Sentry from '@sentry/nextjs'
 import { createVouchaSentryInitOptions } from '@ts-shared/utils/sentry-init-options'
 import { isExpectedApiError } from '@vouchington/api-client'
+import { withApiErrorRequestId } from './sentry-api-error-request-id'
 
 type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>
 
 export function createSentryServerInitOptions(
   envVars: NodeJS.ProcessEnv = process.env,
 ): SentryInitOptions {
-  return {
+  return withApiErrorRequestId({
     ...createVouchaSentryInitOptions({
       dsn: envVars.SENTRY_DSN,
       environment: envVars.ENVIRONMENT,
@@ -24,5 +25,5 @@ export function createSentryServerInitOptions(
     // @sentry/nextjs registers its own global TracerProvider by default. With OTEL_ENABLED=1 the
     // server runs under the dev/otel-register.mts preload, which owns the provider and OTLP export.
     ...(envVars.OTEL_ENABLED === '1' && { enableOpenTelemetrySetup: false }),
-  }
+  })
 }

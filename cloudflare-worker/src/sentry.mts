@@ -55,7 +55,8 @@ export function captureWorkerException(
   if (tags.routeTarget) filteredTags.routeTarget = tags.routeTarget
   if (tags.botTier) filteredTags.botTier = tags.botTier
   if (tags.countryCode) filteredTags.countryCode = tags.countryCode
-  if (tags.requestId) filteredTags.requestId = tags.requestId
+  // Backend and web search this correlation id as request_id.
+  if (tags.requestId) filteredTags.request_id = tags.requestId
 
   captureException(
     error,
