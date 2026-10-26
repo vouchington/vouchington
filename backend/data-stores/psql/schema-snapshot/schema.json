@@ -133516,11 +133516,14 @@
     "user_sessions": {
       "checkConstraints": {
         "user_sessions_check": "CHECK ((num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) = ANY (ARRAY[0, 4])))",
-        "user_sessions_check1": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
+        "user_sessions_check1": "CHECK ((num_nonnulls(previous_device_token_digest, previous_device_token_grace_expires_at) = ANY (ARRAY[0, 2])))",
+        "user_sessions_check2": "CHECK (((previous_device_token_digest IS NULL) OR (device_token_digest IS NOT NULL)))",
+        "user_sessions_check3": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
         "user_sessions_device_name_check": "CHECK ((TRIM(BOTH FROM device_name) = device_name))",
         "user_sessions_device_name_check1": "CHECK ((char_length(device_name) <= 255))",
         "user_sessions_device_token_binding_check": "CHECK (((device_token_binding IS NULL) OR (jsonb_typeof(device_token_binding) = 'object'::text)))",
-        "user_sessions_device_token_digest_check": "CHECK (((device_token_digest IS NULL) OR (device_token_digest ~ '^[a-f0-9]{64}$'::text)))"
+        "user_sessions_device_token_digest_check": "CHECK (((device_token_digest IS NULL) OR (device_token_digest ~ '^[a-f0-9]{64}$'::text)))",
+        "user_sessions_previous_device_token_digest_check": "CHECK (((previous_device_token_digest IS NULL) OR (previous_device_token_digest ~ '^[a-f0-9]{64}$'::text)))"
       },
       "columns": {
         "authentication_origin": {
@@ -133542,7 +133545,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "device_id": {
@@ -133575,7 +133578,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "jsonb"
         },
         "device_token_digest": {
@@ -133597,7 +133600,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "device_token_issued_at": {
@@ -133608,7 +133611,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "expires_at": {
@@ -133655,6 +133658,28 @@
           "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
+        "previous_device_token_digest": {
+          "collation": null,
+          "comment": "Immediately preceding signed device credential digest, accepted only during a bounded lost-response grace window under the session row lock.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "text"
+        },
+        "previous_device_token_grace_expires_at": {
+          "collation": null,
+          "comment": "Deadline for idempotent replay of the immediately preceding device credential; older reuse revokes the session.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
+          "type": "timestamp with time zone"
+        },
         "revoked_at": {
           "collation": null,
           "comment": "When the session was revoked. NULL means active.",
@@ -133674,7 +133699,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "user_agent_string_id": {
