@@ -94,8 +94,8 @@ export async function reconcilePendingImageQuarantines(
 async function markImageQuarantinePending(imageId: string): Promise<boolean> {
   await using transaction = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- retain the image fence before edge denial, then admit quarantine only after denial succeeds
-  await lockImageAssetMutation(transaction, { imageIds: [imageId] })
-  await prepublishImageDeliveryDenials(imageId, { query: transaction })
+  await lockImageAssetMutation(transaction, { imageIds: [imageId], imageOnly: true })
+  await prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true })
   const { rows } = await transaction(sql`/* markImageQuarantinePending */
     UPDATE images
     SET quarantine_pending_at = COALESCE(quarantine_pending_at, NOW())

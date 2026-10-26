@@ -15,13 +15,13 @@ export async function deleteImageByIdWhileStorageLocked(
 ) {
   async function fence() {
     await using transaction = await (options.beginTransaction ?? beginTransaction)()
-    await lockImageAssetMutation(transaction, { imageIds: [imageId] })
+    await lockImageAssetMutation(transaction, { imageIds: [imageId], imageOnly: true })
     const { rows } = await transaction<{ deleted_at: Date | null }>(
       `/* deleteImageById:fence */ SELECT deleted_at FROM images WHERE id = $1 FOR UPDATE`,
       [imageId],
     )
     if (rows[0] && !rows[0].deleted_at) {
-      await prepublishImageDeliveryDenials(imageId, { query: transaction })
+      await prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true })
       await transaction(
         '/* deleteImageById:fence */ UPDATE images SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
         [imageId],
