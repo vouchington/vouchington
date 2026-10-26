@@ -24,6 +24,7 @@ export function SessionRenewal({
   const t = useTranslations()
   const [attempt, setAttempt] = useState(0)
   const [failed, setFailed] = useState(false)
+  const [proofRequired, setProofRequired] = useState(false)
   useEffect(() => {
     let active = true
     async function renew() {
@@ -38,8 +39,9 @@ export function SessionRenewal({
           err.status === 403 &&
           err.code === 'DBSC_PROOF_REQUIRED'
         )
-          // In-scope dashboard navigation lets the browser perform its registered-key refresh.
-          navigate(next)
+          // A missing browser key cannot renew here. Let the user try the in-scope target
+          // explicitly, so returning to this page cannot start a navigation loop.
+          setProofRequired(true)
         else setFailed(true)
       }
     }
@@ -48,6 +50,20 @@ export function SessionRenewal({
       active = false
     }
   }, [attempt, navigate, next, renewSession])
+
+  if (proofRequired)
+    return (
+      <div className='flex min-h-screen flex-col items-center justify-center gap-4'>
+        <p role='alert'>{t('extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda')}</p>
+        <Button onClick={() => navigate(next)}>{t('extracted.app.error.tryAgain_d8b8392e')}</Button>
+        <Button
+          variant='outline'
+          onClick={() => navigate(buildLoginHref({ next }))}
+        >
+          {t('extracted.components.navbar.signIn_bcc0bcc9')}
+        </Button>
+      </div>
+    )
 
   if (failed)
     return (
