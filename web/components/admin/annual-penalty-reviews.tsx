@@ -1,99 +1,40 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { userHref } from '@/lib/links/entity-href'
 import { formatUtcDate } from '@ts-shared/utils/format'
-import type { IntegrityPenaltyRecord } from './use-integrity-penalties'
-
-type DuePenalty = IntegrityPenaltyRecord & { review_due_at: string; user_username: string | null }
-
-export interface AnnualPenaltyReviewsProps<P extends DuePenalty> {
-  getDue: () => Promise<{ results: P[]; has_more: boolean }>
-  review: (id: string) => Promise<unknown>
-  revoke: (id: string) => Promise<unknown>
-}
+import {
+  useAnnualPenaltyReviews,
+  type DuePenalty,
+  type AnnualPenaltyReviewsProps,
+} from './use-annual-penalty-reviews'
+export type { AnnualPenaltyReviewsProps } from './use-annual-penalty-reviews'
 
 /** A visible, bounded staff queue for active penalties whose annual review is due. */
 export function AnnualPenaltyReviews<P extends DuePenalty>({
   getDue,
   review,
   revoke,
+  reconcile,
 }: AnnualPenaltyReviewsProps<P>) {
   const t = useTranslations()
   const locale = useUiLocale()
-  const [due, setDue] = useState<P[]>([])
-  const [hasMore, setHasMore] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [pendingId, setPendingId] = useState<string | null>(null)
-  const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null)
-  const [error, setError] = useState(false)
-  const [actionErrorId, setActionErrorId] = useState<string | null>(null)
-
-  const refresh = useCallback(async (): Promise<P[] | null> => {
-    setLoading(true)
-    try {
-      const result = await getDue()
-      setDue(result.results)
-      setHasMore(result.has_more)
-      setError(false)
-      return result.results
-    } catch {
-      setError(true)
-      return null
-    } finally {
-      setLoading(false)
-    }
-  }, [getDue])
-
-  useEffect(() => {
-    let active = true
-    getDue()
-      .then(result => {
-        if (!active) return
-        setDue(result.results)
-        setHasMore(result.has_more)
-        setError(false)
-      })
-      .catch(() => {
-        if (active) setError(true)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [getDue])
-
-  async function applyAction(id: string, action: (id: string) => Promise<unknown>) {
-    if (pendingId) return
-    setConfirmingRevokeId(null)
-    setPendingId(id)
-    setActionErrorId(null)
-    try {
-      await action(id)
-      await refresh()
-    } catch {
-      // The response can be lost after commit. The due queue is the authoritative outcome.
-      const currentDue = await refresh()
-      if (!currentDue || currentDue.some(penalty => penalty.id === id)) setActionErrorId(id)
-    } finally {
-      setPendingId(null)
-    }
-  }
-
-  function revokePenalty(id: string) {
-    if (pendingId) return
-    if (confirmingRevokeId !== id) {
-      setConfirmingRevokeId(id)
-      return
-    }
-    void applyAction(id, revoke)
-  }
+  const {
+    due,
+    nextCursor,
+    loading,
+    pendingId,
+    confirmingRevokeId,
+    error,
+    actionErrorId,
+    refresh,
+    applyAction,
+    loadMore,
+    revokePenalty,
+  } = useAnnualPenaltyReviews({ getDue, review, revoke, reconcile })
 
   return (
     <section
@@ -122,6 +63,14 @@ export function AnnualPenaltyReviews<P extends DuePenalty>({
           className='mt-3 text-sm text-destructive'
         >
           {t('moderation.penaltyReviews.loadFailed')}
+        </p>
+      ) : null}
+      {actionErrorId && !due.some(penalty => penalty.id === actionErrorId) ? (
+        <p
+          role='alert'
+          className='mt-3 text-sm text-destructive'
+        >
+          {t('extracted.flags.integrityPenalties.resultUncertain_e24ec07b')}
         </p>
       ) : null}
       {!loading && !error && due.length === 0 ? (
@@ -187,8 +136,14 @@ export function AnnualPenaltyReviews<P extends DuePenalty>({
           ))}
         </ul>
       ) : null}
-      {hasMore ? (
-        <p className='mt-3 text-sm text-muted-foreground'>{t('moderation.penaltyReviews.more')}</p>
+      {nextCursor ? (
+        <Button
+          variant='outline'
+          disabled={loading || pendingId !== null}
+          onClick={loadMore}
+        >
+          {t('extracted.communities.communityAgentPromptHistory.loadMore_ac8991ef')}
+        </Button>
       ) : null}
     </section>
   )

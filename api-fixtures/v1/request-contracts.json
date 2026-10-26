@@ -44857,7 +44857,22 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/report-integrity/penalties/review-due": {},
+    "GET:/api/v1/report-integrity/penalties/review-due": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 25,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/reports": {
       "query": {
         "properties": {
@@ -46323,7 +46338,22 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/vote-integrity/penalties/review-due": {},
+    "GET:/api/v1/vote-integrity/penalties/review-due": {
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 25,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/web-search": {
       "query": {
         "properties": {
@@ -51209,17 +51239,17 @@
     "GET:/api/v1/report-integrity/penalties/review-due": {
       "additionalProperties": false,
       "properties": {
-        "has_more": {
-          "type": "boolean"
-        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/ReportAbusePenaltyReviewDue"
           },
           "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
         }
       },
-      "required": ["has_more", "results"],
+      "required": ["page_info", "results"],
       "type": "object"
     },
     "GET:/api/v1/rss-feed-items": {
@@ -51305,17 +51335,17 @@
     "GET:/api/v1/vote-integrity/penalties/review-due": {
       "additionalProperties": false,
       "properties": {
-        "has_more": {
-          "type": "boolean"
-        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/VoteWeightPenaltyReviewDue"
           },
           "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
         }
       },
-      "required": ["has_more", "results"],
+      "required": ["page_info", "results"],
       "type": "object"
     },
     "PATCH:/api/v1/hostnames/:id": {

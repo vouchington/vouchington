@@ -142,4 +142,32 @@ export const moderationIntegrityEndpointRegistry: Record<string, ManifestEndpoin
     method: 'POST',
     path: '/api/v1/vote-integrity/penalties/019f7000-0000-7000-8000-000000000201/reviews',
   },
+  'native.moderation.report-integrity.penalties.review-due.page-1': {
+    method: 'GET',
+    path: '/api/v1/report-integrity/penalties/review-due',
+    query: { limit: '1' },
+  },
+  'native.moderation.report-integrity.penalties.review-due.page-2': {
+    method: 'GET',
+    path: '/api/v1/report-integrity/penalties/review-due',
+    query: {
+      after:
+        'eyJ0aW1lc3RhbXAiOiIyMDI2LTEwLTAxVDEyOjAwOjAwLjAwMDAwMFoiLCJpZCI6IjAxOWY3MDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMSIsInNjb3BlIjoicmVwb3J0LWludGVncml0eTpwZW5hbHR5LXJldmlld3M6ZHVlOmFzYyJ9',
+      limit: '1',
+    },
+  },
+  'native.moderation.vote-integrity.penalties.review-due.page-1': {
+    method: 'GET',
+    path: '/api/v1/vote-integrity/penalties/review-due',
+    query: { limit: '1' },
+  },
+  'native.moderation.vote-integrity.penalties.review-due.page-2': {
+    method: 'GET',
+    path: '/api/v1/vote-integrity/penalties/review-due',
+    query: {
+      after:
+        'eyJ0aW1lc3RhbXAiOiIyMDI2LTEwLTAxVDEyOjAwOjAwLjAwMDAwMFoiLCJpZCI6IjAxOWY3MDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSIsInNjb3BlIjoidm90ZS1pbnRlZ3JpdHk6cGVuYWx0eS1yZXZpZXdzOmR1ZTphc2MifQ',
+      limit: '1',
+    },
+  },
 }

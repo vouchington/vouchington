@@ -60,8 +60,13 @@ export function revokeVoteWeightPenalty<T>(id: string): Promise<T> {
   return clientApi.delete<T>(`/api/v1/vote-integrity/penalties/${encodedIntegrityPathSegment(id)}`)
 }
 
-export function getVoteWeightPenaltyReviewsDue<T>(): Promise<T> {
-  return clientApi.get<T>('/api/v1/vote-integrity/penalties/review-due')
+export function getVoteWeightPenaltyReviewsDue<T>(params?: {
+  after?: string
+  limit?: number
+}): Promise<T> {
+  return clientApi.get<T>('/api/v1/vote-integrity/penalties/review-due', {
+    searchParams: { after: params?.after, limit: params?.limit?.toString() },
+  })
 }
 
 export function reviewVoteWeightPenalty<T>(penaltyId: string): Promise<T> {

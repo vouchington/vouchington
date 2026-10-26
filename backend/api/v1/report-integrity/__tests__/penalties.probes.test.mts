@@ -1,3 +1,4 @@
+import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -42,11 +43,24 @@ describe('report abuse penalty review API', () => {
       createTestUser(),
     ])
     const dueId = await insertTestReportAbusePenalty({ userId: target.id, createdById: admin.id })
+    const laterDueId = await insertTestReportAbusePenalty({
+      userId: target.id,
+      createdById: admin.id,
+    })
     const futureId = await insertTestReportAbusePenalty({
       userId: target.id,
       createdById: admin.id,
     })
-    await setTestReportAbusePenaltyReviewDueAt(dueId, new Date('2025-01-01T00:00:00Z'))
+    const prefix = new Date(946684800000 + Number.parseInt(target.id.slice(-8), 16))
+      .toISOString()
+      .slice(0, -1)
+    await setTestReportAbusePenaltyReviewDueAt(dueId, `${prefix}001Z`)
+    await setTestReportAbusePenaltyReviewDueAt(laterDueId, `${prefix}002Z`)
+    const after = encodeScopedPreciseTimestampCursor(
+      `${prefix}000Z`,
+      dueId,
+      'report-integrity:penalty-reviews:due:asc',
+    )
     await setTestReportAbusePenaltyReviewDueAt(futureId, new Date('2030-01-01T00:00:00Z'))
 
     await createRequest().get(`${path}/review-due`).expect(401)
@@ -57,7 +71,19 @@ describe('report abuse penalty review API', () => {
 
     const adminRequest = createRequest()
     await adminRequest.authenticateAs(admin)
-    const due = await adminRequest.get(`${path}/review-due`).expect(200)
+    const due = await adminRequest.get(`${path}/review-due`).query({ after, limit: 1 }).expect(200)
+    expect(due.body.results).toHaveLength(1)
+    expect(due.body.page_info).toMatchObject({
+      has_next_page: true,
+      end_cursor: expect.any(String),
+      start_cursor: expect.any(String),
+    })
+    expect(due.body).not.toHaveProperty('has_more')
+    const next = await adminRequest
+      .get(`${path}/review-due`)
+      .query({ after: due.body.page_info.end_cursor, limit: 1 })
+      .expect(200)
+    expect(next.body.results.map((row: { id: string }) => row.id)).toEqual([laterDueId])
     expect(due.body.results).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: dueId, user_username: target.username }),
@@ -72,7 +98,10 @@ describe('report abuse penalty review API', () => {
     expect(reviewed.body.penalty).toMatchObject({ id: dueId, reviewed_by_id: admin.id })
     expect(new Date(reviewed.body.penalty.review_due_at).getTime()).toBeGreaterThan(Date.now())
     await adminRequest.post(`${path}/${dueId}/reviews`).expect(404)
-    const remaining = await adminRequest.get(`${path}/review-due`).expect(200)
+    const remaining = await adminRequest
+      .get(`${path}/review-due`)
+      .query({ after, limit: 1 })
+      .expect(200)
     expect(remaining.body.results.map((penalty: { id: string }) => penalty.id)).not.toContain(dueId)
   }, 30_000)
 })

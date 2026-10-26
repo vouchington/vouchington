@@ -33,7 +33,11 @@ const referral: VoteIntegrityPenaltyReviewDue = {
   source_flag_id: null,
 }
 
-const getDue = fn(async () => ({ results: [ring, referral], has_more: false }))
+const getDue = fn(async () => ({
+  results: [ring, referral],
+  page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+}))
+const reconcile = fn<(id: string) => Promise<boolean>>(async () => true)
 const review = fn(async (id: string) => ({ penalty: id === ring.id ? ring : referral }))
 const revoke = fn(async (id: string) => ({ penalty: id === ring.id ? ring : referral }))
 
@@ -41,6 +45,7 @@ export const DueVotePenalties: Story = {
   render: () => (
     <main className='min-h-screen bg-background p-6 text-foreground'>
       <AnnualPenaltyReviews
+        reconcile={reconcile}
         getDue={getDue}
         review={review}
         revoke={revoke}

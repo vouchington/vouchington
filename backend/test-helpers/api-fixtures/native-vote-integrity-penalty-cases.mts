@@ -2,6 +2,7 @@ import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-
 import {
   adminId,
   penaltyCursor,
+  penaltyReviewCursor,
   revokedAt,
   reviewedAt,
   nextReviewDueAt,
@@ -121,7 +122,7 @@ export const nativeVoteIntegrityPenaltyApiFixtureCases = [
     route: { routeTemplate: '/api/v1/vote-integrity/penalties/review-due' },
     body: {
       results: [{ ...voteActivePenalty, user_username: 'penalty-recipient' }],
-      has_more: false,
+      page_info: terminalPage(penaltyReviewCursor('vote', votePenaltyId)),
     },
     migratedFrom,
   }),

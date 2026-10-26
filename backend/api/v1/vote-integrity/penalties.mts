@@ -23,6 +23,10 @@ const penaltiesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
+const reviewsParser = createPaginationParser({
+  cursor: { type: 'precise_timestamp' },
+  limit: { min: 1, default: 25, max: 25 },
+})
 const penaltiesQuery = defineQueryContract({
   status: queryEnum(['active', 'revoked']),
   source: queryEnum(['flag']),
@@ -37,8 +41,12 @@ app.route('/api/v1/vote-integrity/penalties/review-due').get(async (ctx: Context
     currentUserCanApplyVoteRingPenalty,
     'GET:/api/v1/vote-integrity/penalties/review-due',
   )
-  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/penalties/review-due', {})
-  ctx.json(await getVoteWeightPenaltyReviewsDue())
+  apiQuery('GET:/api/v1/vote-integrity/penalties/review-due', reviewsParser)
+  const { after, limit } = parseRuntimePagination(reviewsParser, ctx.query)
+  const query = prepareQueryForValidation(ctx.query, reviewsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/penalties/review-due', { query })
+  ctx.json(await getVoteWeightPenaltyReviewsDue({ after, limit }))
 })
 
 // GET /api/v1/vote-integrity/penalties

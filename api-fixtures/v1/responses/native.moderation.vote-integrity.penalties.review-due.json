@@ -1,5 +1,9 @@
 {
-  "has_more": false,
+  "page_info": {
+    "end_cursor": null,
+    "has_next_page": false,
+    "start_cursor": "eyJ0aW1lc3RhbXAiOiIyMDI2LTEwLTAxVDEyOjAwOjAwLjAwMDAwMFoiLCJpZCI6IjAxOWY3MDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSIsInNjb3BlIjoidm90ZS1pbnRlZ3JpdHk6cGVuYWx0eS1yZXZpZXdzOmR1ZTphc2MifQ"
+  },
   "results": [
     {
       "created_at": "2026-06-01T12:00:00.000Z",

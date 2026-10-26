@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import {
+  encodeScopedPreciseTimestampCursor,
+  decodeScopedPreciseTimestampCursor,
+} from '@modules/pagination'
 import { createTestUser, softDeleteTestUserAndWaitBeforeCommit } from '@voucha/test-helpers'
 import {
   insertTestVoteWeightPenaltyRecord,
@@ -14,9 +18,19 @@ describe('vote weight penalty annual review', () => {
       userId: target.id,
       createdById: staff.id,
     })
-    await setTestVoteWeightPenaltyReviewDueAt(penaltyId, new Date('2025-01-01T00:00:00Z'))
+    const prefix = new Date(946684800000 + Number.parseInt(target.id.slice(-8), 16))
+      .toISOString()
+      .slice(0, -1)
+    await setTestVoteWeightPenaltyReviewDueAt(penaltyId, `${prefix}001Z`)
+    const after = encodeScopedPreciseTimestampCursor(
+      `${prefix}000Z`,
+      penaltyId,
+      'vote-integrity:penalty-reviews:due:asc',
+    )
 
-    expect((await getVoteWeightPenaltyReviewsDue()).results.map(row => row.id)).toContain(penaltyId)
+    expect((await getVoteWeightPenaltyReviewsDue({ after })).results.map(row => row.id)).toContain(
+      penaltyId,
+    )
     const reviewed = await reviewVoteWeightPenalty(penaltyId, staff.id)
     expect(reviewed).toMatchObject({ id: penaltyId, reviewed_by_id: staff.id })
     expect(reviewed.reviewed_at).not.toBeNull()
@@ -24,9 +38,9 @@ describe('vote weight penalty annual review', () => {
     await expect(reviewVoteWeightPenalty(penaltyId, staff.id)).rejects.toMatchObject({
       status: 404,
     })
-    expect((await getVoteWeightPenaltyReviewsDue()).results.map(row => row.id)).not.toContain(
-      penaltyId,
-    )
+    expect(
+      (await getVoteWeightPenaltyReviewsDue({ after })).results.map(row => row.id),
+    ).not.toContain(penaltyId)
   })
 
   it('keeps a due penalty with an unlinked soft-deleted profile', async () => {
@@ -35,11 +49,69 @@ describe('vote weight penalty annual review', () => {
       userId: target.id,
       createdById: target.id,
     })
-    await setTestVoteWeightPenaltyReviewDueAt(penaltyId, new Date('2025-01-01T00:00:00Z'))
+    const prefix = new Date(946684800000 + Number.parseInt(target.id.slice(-8), 16))
+      .toISOString()
+      .slice(0, -1)
+    await setTestVoteWeightPenaltyReviewDueAt(penaltyId, `${prefix}001Z`)
+    const after = encodeScopedPreciseTimestampCursor(
+      `${prefix}000Z`,
+      penaltyId,
+      'vote-integrity:penalty-reviews:due:asc',
+    )
     await softDeleteTestUserAndWaitBeforeCommit(target.id, Promise.resolve())
 
-    expect((await getVoteWeightPenaltyReviewsDue()).results).toEqual(
+    expect((await getVoteWeightPenaltyReviewsDue({ after })).results).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: penaltyId, user_username: null })]),
     )
+  })
+  it('navigates tied deadlines without rounding away PostgreSQL microseconds', async () => {
+    const target = await createTestUser()
+    const firstId = await insertTestVoteWeightPenaltyRecord({
+      userId: target.id,
+      createdById: target.id,
+    })
+    const secondId = await insertTestVoteWeightPenaltyRecord({
+      userId: target.id,
+      createdById: target.id,
+    })
+    const thirdId = await insertTestVoteWeightPenaltyRecord({
+      userId: target.id,
+      createdById: target.id,
+    })
+    // Randomized fixture position keeps concurrent dirty-database runs independent.
+    const prefix = new Date(946684800000 + Number.parseInt(target.id.slice(-8), 16))
+      .toISOString()
+      .slice(0, -1)
+    const firstTimestamp = `${prefix}001Z`
+    const tiedTimestamp = `${prefix}002Z`
+    await setTestVoteWeightPenaltyReviewDueAt(firstId, firstTimestamp)
+    await setTestVoteWeightPenaltyReviewDueAt(secondId, tiedTimestamp)
+    await setTestVoteWeightPenaltyReviewDueAt(thirdId, tiedTimestamp)
+    const scope = 'vote-integrity:penalty-reviews:due:asc'
+    const start = encodeScopedPreciseTimestampCursor(`${prefix}000Z`, firstId, scope)
+    const first = await getVoteWeightPenaltyReviewsDue({ after: start, limit: 1 })
+    expect(first.results.map(row => row.id)).toEqual([firstId])
+    expect(first.page_info.has_next_page).toBe(true)
+    expect(
+      decodeScopedPreciseTimestampCursor(first.page_info.end_cursor!, scope, 'Invalid test cursor')
+        .timestamp,
+    ).toBe(firstTimestamp)
+    const second = await getVoteWeightPenaltyReviewsDue({
+      after: first.page_info.end_cursor!,
+      limit: 1,
+    })
+    const orderedTies = [secondId, thirdId].toSorted()
+    expect(second.results.map(row => row.id)).toEqual([orderedTies[0]])
+    const third = await getVoteWeightPenaltyReviewsDue({
+      after: second.page_info.end_cursor!,
+      limit: 1,
+    })
+    expect(third.results.map(row => row.id)).toEqual([orderedTies[1]])
+    await expect(
+      getVoteWeightPenaltyReviewsDue({
+        after: encodeScopedPreciseTimestampCursor(firstTimestamp, firstId, 'other-review-queue'),
+        limit: 1,
+      }),
+    ).rejects.toThrow('Invalid penalty review cursor')
   })
 })

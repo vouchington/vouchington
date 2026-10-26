@@ -1126,6 +1126,7 @@
           ],
           "behaviorTests": [
             "web/components/admin/annual-penalty-reviews.mock.test.tsx",
+            "web/components/admin/use-annual-penalty-reviews.mock.test.tsx",
             "web/app/(report-integrity)/report-integrity/penalties/report-integrity-penalties-client.mock.test.tsx",
             "web/app/(vote-integrity)/vote-integrity/penalties/vote-integrity-penalties-client.mock.test.tsx"
           ]
@@ -1142,7 +1143,7 @@
         }
       },
       "gap": {
-        "summary": "Swift and .NET have existing integrity penalty screens but do not render annual due-review queues or confirmation actions. The producer lands first; native rendered and executable proof is dependent work.",
+        "summary": "Swift and .NET have existing integrity penalty screens but do not render annual due-review queues, opaque cursor continuation, or confirmation actions. The producer lands first; native rendered and executable proof is dependent work.",
         "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/492"
       }
     },

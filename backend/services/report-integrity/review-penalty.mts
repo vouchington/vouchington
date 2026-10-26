@@ -1,28 +1,55 @@
 import { write } from '@data-stores/psql'
+import {
+  decodeScopedPreciseTimestampCursor,
+  encodeScopedPreciseTimestampCursor,
+} from '@modules/pagination'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { ReportAbusePenalty } from './get-penalties.mts'
 
 type ReportAbusePenaltyReviewDue = ReportAbusePenalty & { user_username: string | null }
 
-/** Oldest due active penalties form a bounded staff review queue. */
-export async function getReportAbusePenaltyReviewsDue(): Promise<{
-  results: ReportAbusePenaltyReviewDue[]
-  has_more: boolean
-}> {
-  const { rows } =
-    await write<ReportAbusePenaltyReviewDue>(sql`/* getReportAbusePenaltyReviewsDue */
+/** One bounded, independently navigable page of due active penalties. */
+export async function getReportAbusePenaltyReviewsDue(
+  options: { after?: string; limit?: number } = {},
+) {
+  const limit = options.limit ?? 25
+  if (!Number.isInteger(limit) || limit < 1 || limit > 25)
+    throw createHttpError(422, 'Invalid limit')
+  const scope = 'report-integrity:penalty-reviews:due:asc'
+  const after = options.after
+    ? decodeScopedPreciseTimestampCursor(options.after, scope, 'Invalid penalty review cursor')
+    : undefined
+  const query = sql`/* getReportAbusePenaltyReviewsDue */
     WITH due AS MATERIALIZED (
-      SELECT id, user_id, reason, source_flag_id, created_by_id, revoked_at, revoked_by_id, reviewed_at, reviewed_by_id, review_due_at, created_at, updated_at
+      SELECT id, user_id, reason, source_flag_id, created_by_id, revoked_at, revoked_by_id, reviewed_at, reviewed_by_id, review_due_at, created_at, updated_at,
+        to_char(review_due_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_timestamp
       FROM report_abuse_penalties
-      WHERE revoked_at IS NULL AND review_due_at <= CURRENT_TIMESTAMP
-      ORDER BY review_due_at, id LIMIT 26
+      WHERE revoked_at IS NULL AND review_due_at <= CURRENT_TIMESTAMP`
+  if (after)
+    query.append(
+      sql` AND (review_due_at, id) > (${after.timestamp}::timestamptz, ${after.id}::uuid)`,
     )
-    SELECT due.id, due.user_id, due.reason, due.source_flag_id, due.created_by_id, due.revoked_at, due.revoked_by_id, due.reviewed_at, due.reviewed_by_id, due.review_due_at, due.created_at, due.updated_at, profile.username AS user_username
+  query.append(sql`
+      ORDER BY review_due_at, id LIMIT ${limit + 1}
+    )
+    SELECT due.id, due.user_id, due.reason, due.source_flag_id, due.created_by_id, due.revoked_at, due.revoked_by_id, due.reviewed_at, due.reviewed_by_id, due.review_due_at, due.created_at, due.updated_at, profile.username AS user_username, due.cursor_timestamp
     FROM due LEFT JOIN view_users_public profile ON profile.id = due.user_id
     ORDER BY due.review_due_at, due.id
   `)
-  return { results: rows.slice(0, 25), has_more: rows.length > 25 }
+  const { rows } = await write<ReportAbusePenaltyReviewDue & { cursor_timestamp: string }>(query)
+  const page = rows.slice(0, limit)
+  const cursorFor = (row: (typeof page)[number]) =>
+    encodeScopedPreciseTimestampCursor(row.cursor_timestamp, row.id, scope)
+  const last = page.at(-1)
+  return {
+    results: page.map(({ cursor_timestamp: _, ...penalty }) => penalty),
+    page_info: {
+      has_next_page: rows.length > limit,
+      start_cursor: page[0] ? cursorFor(page[0]) : null,
+      end_cursor: rows.length > limit && last ? cursorFor(last) : null,
+    },
+  }
 }
 
 /** Confirm that an active penalty remains warranted, scheduling its next annual review. */

@@ -20,22 +20,61 @@ describe('integrity penalty review client helpers', () => {
   afterEach(() => vi.clearAllMocks())
 
   it('loads the report abuse review queue from the staff endpoint', async () => {
-    const response = { results: [{ id: 'report-penalty-1' }], has_more: false }
+    const response = {
+      results: [{ id: 'report-penalty-1' }],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
     await expectApiWrapperCall({
       mock: mockGet,
       response,
       call: () => getReportAbusePenaltyReviewsDue<typeof response>(),
-      expectedArgs: ['/api/v1/report-integrity/penalties/review-due'],
+      expectedArgs: [
+        '/api/v1/report-integrity/penalties/review-due',
+        { searchParams: { after: undefined, limit: undefined } },
+      ],
     })
   })
 
   it('loads the vote weight review queue from the staff endpoint', async () => {
-    const response = { results: [{ id: 'vote-penalty-1' }], has_more: false }
+    const response = {
+      results: [{ id: 'vote-penalty-1' }],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
     await expectApiWrapperCall({
       mock: mockGet,
       response,
       call: () => getVoteWeightPenaltyReviewsDue<typeof response>(),
-      expectedArgs: ['/api/v1/vote-integrity/penalties/review-due'],
+      expectedArgs: [
+        '/api/v1/vote-integrity/penalties/review-due',
+        { searchParams: { after: undefined, limit: undefined } },
+      ],
+    })
+  })
+
+  it('passes opaque continuation and bounded page size to both review queues', async () => {
+    const response = {
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
+    const options = { after: 'opaque-review-position', limit: 10 }
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response,
+      call: () => getReportAbusePenaltyReviewsDue<typeof response>(options),
+      expectedArgs: [
+        '/api/v1/report-integrity/penalties/review-due',
+        { searchParams: { after: options.after, limit: '10' } },
+      ],
+    })
+    mockGet.mockClear()
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response,
+      call: () => getVoteWeightPenaltyReviewsDue<typeof response>(options),
+      expectedArgs: [
+        '/api/v1/vote-integrity/penalties/review-due',
+        { searchParams: { after: options.after, limit: '10' } },
+      ],
     })
   })
 

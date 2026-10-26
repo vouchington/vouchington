@@ -28,9 +28,24 @@ const duePenalty: ReportIntegrityPenaltyReviewDue = {
 describe('AnnualPenaltyReviews', () => {
   it('shows a due penalty and removes it after a confirmed review', async () => {
     const getDue = vi
-      .fn<() => Promise<{ results: ReportIntegrityPenaltyReviewDue[]; has_more: boolean }>>()
-      .mockResolvedValueOnce({ results: [duePenalty], has_more: false })
-      .mockResolvedValueOnce({ results: [], has_more: false })
+      .fn<
+        () => Promise<{
+          results: ReportIntegrityPenaltyReviewDue[]
+          page_info: {
+            has_next_page: boolean
+            start_cursor: string | null
+            end_cursor: string | null
+          }
+        }>
+      >()
+      .mockResolvedValueOnce({
+        results: [duePenalty],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
+      .mockResolvedValueOnce({
+        results: [],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
     const review = vi
       .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
       .mockResolvedValue({ penalty: duePenalty })
@@ -38,6 +53,7 @@ describe('AnnualPenaltyReviews', () => {
 
     render(
       <AnnualPenaltyReviews
+        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
         getDue={getDue}
         review={review}
         revoke={revoke}
@@ -57,13 +73,21 @@ describe('AnnualPenaltyReviews', () => {
 
   it('keeps an unavailable profile unlinked without showing its UUID', async () => {
     const getDue = vi.fn<
-      () => Promise<{ results: ReportIntegrityPenaltyReviewDue[]; has_more: boolean }>
+      () => Promise<{
+        results: ReportIntegrityPenaltyReviewDue[]
+        page_info: {
+          has_next_page: boolean
+          start_cursor: string | null
+          end_cursor: string | null
+        }
+      }>
     >(async () => ({
       results: [{ ...duePenalty, user_username: null }],
-      has_more: false,
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     }))
     render(
       <AnnualPenaltyReviews
+        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
         getDue={getDue}
         review={vi.fn<(id: string) => Promise<unknown>>()}
         revoke={vi.fn<(id: string) => Promise<unknown>>()}
@@ -76,9 +100,24 @@ describe('AnnualPenaltyReviews', () => {
 
   it('checks the due queue after a lost confirmation response', async () => {
     const getDue = vi
-      .fn<() => Promise<{ results: ReportIntegrityPenaltyReviewDue[]; has_more: boolean }>>()
-      .mockResolvedValueOnce({ results: [duePenalty], has_more: false })
-      .mockResolvedValueOnce({ results: [], has_more: false })
+      .fn<
+        () => Promise<{
+          results: ReportIntegrityPenaltyReviewDue[]
+          page_info: {
+            has_next_page: boolean
+            start_cursor: string | null
+            end_cursor: string | null
+          }
+        }>
+      >()
+      .mockResolvedValueOnce({
+        results: [duePenalty],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
+      .mockResolvedValueOnce({
+        results: [],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
     const review = vi
       .fn<(id: string) => Promise<{ penalty: ReportIntegrityPenaltyReviewDue }>>()
       .mockRejectedValue(new Error('response lost'))
@@ -86,6 +125,7 @@ describe('AnnualPenaltyReviews', () => {
 
     render(
       <AnnualPenaltyReviews
+        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
         getDue={getDue}
         review={review}
         revoke={revoke}
@@ -114,10 +154,28 @@ describe('AnnualPenaltyReviews', () => {
       reason: 'referral_link_in_post',
     }
     const getDue = vi
-      .fn<() => Promise<{ results: VoteIntegrityPenaltyReviewDue[]; has_more: boolean }>>()
-      .mockResolvedValueOnce({ results: [ring, referral], has_more: false })
-      .mockResolvedValueOnce({ results: [ring], has_more: false })
-      .mockResolvedValueOnce({ results: [], has_more: false })
+      .fn<
+        () => Promise<{
+          results: VoteIntegrityPenaltyReviewDue[]
+          page_info: {
+            has_next_page: boolean
+            start_cursor: string | null
+            end_cursor: string | null
+          }
+        }>
+      >()
+      .mockResolvedValueOnce({
+        results: [ring, referral],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
+      .mockResolvedValueOnce({
+        results: [ring],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
+      .mockResolvedValueOnce({
+        results: [],
+        page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+      })
     const review = vi.fn<(id: string) => Promise<{ penalty: VoteIntegrityPenaltyReviewDue }>>()
     const revoke = vi
       .fn<(id: string) => Promise<{ penalty: VoteIntegrityPenaltyReviewDue }>>()
@@ -126,6 +184,7 @@ describe('AnnualPenaltyReviews', () => {
 
     render(
       <AnnualPenaltyReviews
+        reconcile={vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)}
         getDue={getDue}
         review={review}
         revoke={revoke}
@@ -162,5 +221,57 @@ describe('AnnualPenaltyReviews', () => {
     await screen.findByText('moderation.penaltyReviews.empty')
     expect(review).not.toHaveBeenCalled()
     expect(getDue).toHaveBeenCalledTimes(3)
+  })
+  it('loads a later page without requiring a decision and preserves it after review', async () => {
+    const later = {
+      ...duePenalty,
+      id: '018f6763-0a71-752d-b657-a06cf00dd499',
+      user_username: 'later-recipient',
+    }
+    const firstPage = {
+      results: [duePenalty],
+      page_info: { has_next_page: true, start_cursor: 'first', end_cursor: 'next' },
+    }
+    const lastPage = {
+      results: [later],
+      page_info: { has_next_page: false, start_cursor: 'last', end_cursor: null },
+    }
+    const getDue = vi
+      .fn<
+        NonNullable<
+          Parameters<typeof AnnualPenaltyReviews<ReportIntegrityPenaltyReviewDue>>[0]['getDue']
+        >
+      >()
+      .mockResolvedValueOnce(firstPage)
+      .mockResolvedValueOnce(lastPage)
+      .mockResolvedValueOnce(firstPage)
+      .mockResolvedValueOnce({ ...lastPage, results: [] })
+    const review = vi.fn<(id: string) => Promise<unknown>>().mockResolvedValue({})
+    const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
+    render(
+      <AnnualPenaltyReviews
+        getDue={getDue}
+        review={review}
+        revoke={review}
+        reconcile={reconcile}
+      />,
+    )
+    await screen.findByText('penalty-recipient')
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'extracted.communities.communityAgentPromptHistory.loadMore_ac8991ef',
+      }),
+    )
+    await screen.findByText('later-recipient')
+    expect(getDue).toHaveBeenNthCalledWith(2, { after: 'next' })
+    expect(screen.getByText('penalty-recipient')).toBeInTheDocument()
+    const laterRow = screen.getByText('later-recipient').closest('li')!
+    fireEvent.click(
+      within(laterRow).getByRole('button', { name: 'moderation.penaltyReviews.confirm' }),
+    )
+    await waitFor(() => expect(reconcile).toHaveBeenCalledWith(later.id))
+    await waitFor(() => expect(screen.queryByText('later-recipient')).not.toBeInTheDocument())
+    expect(screen.getByText('penalty-recipient')).toBeInTheDocument()
+    expect(getDue).toHaveBeenNthCalledWith(4, { after: 'next' })
   })
 })

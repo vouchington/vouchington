@@ -60,8 +60,13 @@ export function revokeReportAbusePenalty<T>(penaltyId: string): Promise<T> {
   )
 }
 
-export function getReportAbusePenaltyReviewsDue<T>(): Promise<T> {
-  return clientApi.get<T>('/api/v1/report-integrity/penalties/review-due')
+export function getReportAbusePenaltyReviewsDue<T>(params?: {
+  after?: string
+  limit?: number
+}): Promise<T> {
+  return clientApi.get<T>('/api/v1/report-integrity/penalties/review-due', {
+    searchParams: { after: params?.after, limit: params?.limit?.toString() },
+  })
 }
 
 export function reviewReportAbusePenalty<T>(penaltyId: string): Promise<T> {

@@ -1,8 +1,10 @@
+import { nativeIntegrityPenaltyReviewPaginationCases } from './native-integrity-penalty-review-pagination-cases.mts'
 import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-fixture-case.mts'
 import { nativeVoteIntegrityPenaltyApiFixtureCases } from './native-vote-integrity-penalty-cases.mts'
 import {
   adminId,
   penaltyCursor,
+  penaltyReviewCursor,
   reportActivePenalty,
   reportPenaltyId,
   reportRevokedPenalty,
@@ -121,7 +123,7 @@ export const nativeIntegrityPenaltyApiFixtureCases = [
     route: { routeTemplate: '/api/v1/report-integrity/penalties/review-due' },
     body: {
       results: [{ ...reportActivePenalty, user_username: 'penalty-recipient' }],
-      has_more: false,
+      page_info: terminalPage(penaltyReviewCursor('report', reportPenaltyId)),
     },
     migratedFrom: ['backend/api/v1/report-integrity/penalties.mts'],
   }),
@@ -145,4 +147,5 @@ export const nativeIntegrityPenaltyApiFixtureCases = [
     migratedFrom: ['backend/api/v1/report-integrity/penalties.mts'],
   }),
   ...nativeVoteIntegrityPenaltyApiFixtureCases,
+  ...nativeIntegrityPenaltyReviewPaginationCases,
 ]

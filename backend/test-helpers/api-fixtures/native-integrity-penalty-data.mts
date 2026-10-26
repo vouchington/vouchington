@@ -1,4 +1,4 @@
-import { encodeScopedUuidCursor } from '@modules/pagination'
+import { encodeScopedUuidCursor, encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 
 export const adminId = '019f7000-0000-7000-8000-000000000001'
 export const userId = '019f7000-0000-7000-8000-000000000002'
@@ -83,4 +83,12 @@ export function penaltyCursor(
 
 export function terminalPage(startCursor: string) {
   return { has_next_page: false, start_cursor: startCursor, end_cursor: null }
+}
+
+export function penaltyReviewCursor(domain: 'report' | 'vote', id: string): string {
+  return encodeScopedPreciseTimestampCursor(
+    reviewDueAt.replace('.000Z', '.000000Z'),
+    id,
+    `${domain}-integrity:penalty-reviews:due:asc`,
+  )
 }
