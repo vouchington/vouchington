@@ -103,7 +103,7 @@ describe('Google Play notification admission through the shared provider lease',
           () => processGooglePlayNotification({ evidenceId: job.data.evidenceId }),
           { leaseNamespace },
         ),
-      { ...connection, concurrency: 1, blockTimeout: 1_000 },
+      { ...connection, concurrency: 1, blockTimeout: 1_000, promotionInterval: 100 },
     )
     let heldLease: MembershipVerificationExecutionLease | null = null
 
