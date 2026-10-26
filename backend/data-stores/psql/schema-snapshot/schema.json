@@ -2317,33 +2317,6 @@
           "ready": true,
           "unique": true,
           "valid": true
-        },
-        "idx_activitypub_inbox_activities__retention": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_activities__retention ON public.activitypub_inbox_activities USING btree (received_at, id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "received_at",
-              "descending": false,
-              "expression": "received_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
         }
       },
       "partition": null,
@@ -3441,39 +3414,12 @@
         }
       }
     },
-    "activitypub_replay_retention_cursors": {
-      "checkConstraints": {
-        "activitypub_replay_retention_cursors_check": "CHECK (((cursor_at IS NULL) = (cursor_position IS NULL)))",
-        "activitypub_replay_retention_cursors_check1": "CHECK (((upper_bound_at IS NULL) = (upper_bound_position IS NULL)))",
-        "activitypub_replay_retention_cursors_check2": "CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_at IS NULL) AND (upper_bound_at IS NULL))))",
-        "activitypub_replay_retention_cursors_check3": "CHECK (((sweep_cutoff_at IS NULL) OR (upper_bound_at IS NOT NULL)))"
-      },
+    "activitypub_replay_rejection_floors": {
+      "checkConstraints": {},
       "columns": {
-        "cursor_at": {
-          "collation": null,
-          "comment": "Timestamp component of the last processed key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "cursor_position": {
-          "collation": null,
-          "comment": "UUID component of the last processed key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
         "is_outbound": {
           "collation": null,
-          "comment": "False for inbox, true for completed outbound replay ledger.",
+          "comment": "False for signed inbound activity, true for outbound distribution activity.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -3484,18 +3430,7 @@
         },
         "rejection_floor_at": {
           "collation": null,
-          "comment": "Monotonic admission floor advanced before an inbox or outbound replay identity is purged; independent of sweep pagination and current policy.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "sweep_cutoff_at": {
-          "collation": null,
-          "comment": "Fixed maximum-activity-age cutoff for one cleanup pass.",
+          "comment": "Durable admission floor advanced atomically with ledger deletion, including across age-policy changes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -3506,46 +3441,24 @@
         },
         "updated_at": {
           "collation": null,
-          "comment": "Last time this replay sweep cursor advanced.",
+          "comment": "Last time this admission boundary advanced.",
           "defaultExpression": "CURRENT_TIMESTAMP",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
-        },
-        "upper_bound_at": {
-          "collation": null,
-          "comment": "Timestamp component of the captured pass high-water key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        },
-        "upper_bound_position": {
-          "collation": null,
-          "comment": "UUID component of the captured pass high-water key.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "uuid"
         }
       },
-      "comment": "Persisted keyset and high-water positions for bounded inbox and completed outbound replay-ledger cleanup.",
+      "comment": "Monotonic admission boundaries retained after expired ActivityPub replay-ledger rows are deleted.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
-        "activitypub_replay_retention_cursors_pkey": {
+        "activitypub_replay_rejection_floors_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX activitypub_replay_retention_cursors_pkey ON public.activitypub_replay_retention_cursors USING btree (is_outbound)",
+          "definition": "CREATE UNIQUE INDEX activitypub_replay_rejection_floors_pkey ON public.activitypub_replay_rejection_floors USING btree (is_outbound)",
           "includedColumns": [],
           "keys": [
             {
@@ -3571,7 +3484,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_activitypub_replay_retention_cursors_updated_at": "CREATE TRIGGER trigger_activitypub_replay_retention_cursors_updated_at BEFORE UPDATE ON public.activitypub_replay_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_activitypub_replay_rejection_floors_updated_at": "CREATE TRIGGER trigger_activitypub_replay_rejection_floors_updated_at BEFORE UPDATE ON public.activitypub_replay_rejection_floors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -44170,107 +44083,6 @@
           "definition": "UNIQUE (recipient_user_id, delivery_id)"
         }
       }
-    },
-    "follower_distribution_retention_cursors": {
-      "checkConstraints": {
-        "follower_distribution_retention_cursors_check": "CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_distribution_position IS NULL) AND (sweep_upper_bound_distribution_position IS NULL))))",
-        "follower_distribution_retention_cursors_check1": "CHECK (((sweep_cutoff_at IS NULL) OR (sweep_upper_bound_distribution_position IS NOT NULL)))",
-        "follower_distribution_retention_cursors_check2": "CHECK (((cursor_distribution_position IS NULL) OR (cursor_distribution_position <= sweep_upper_bound_distribution_position)))",
-        "follower_distribution_retention_cursors_is_singleton_check": "CHECK (is_singleton)"
-      },
-      "columns": {
-        "cursor_distribution_position": {
-          "collation": null,
-          "comment": "Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "is_singleton": {
-          "collation": null,
-          "comment": "Checked true key permits one cleanup cursor.",
-          "defaultExpression": "true",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "boolean"
-        },
-        "sweep_cutoff_at": {
-          "collation": null,
-          "comment": "Fixed UUIDv7 age cutoff captured when the cleanup pass starts; NULL means idle.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "sweep_upper_bound_distribution_position": {
-          "collation": null,
-          "comment": "Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "uuid"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": "Last time the bounded sweep cursor advanced.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "timestamp with time zone"
-        }
-      },
-      "comment": "One persisted keyset position and fixed cutoff for terminal follower-distribution retention.",
-      "foreignKeys": {},
-      "growth": "bounded",
-      "indexes": {
-        "follower_distribution_retention_cursors_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX follower_distribution_retention_cursors_pkey ON public.follower_distribution_retention_cursors USING btree (is_singleton)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "is_singleton",
-              "descending": false,
-              "expression": "is_singleton",
-              "nullsFirst": false,
-              "opclass": "bool_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["is_singleton"],
-        "definition": "PRIMARY KEY (is_singleton)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_follower_distribution_retention_cursors_updated_at": "CREATE TRIGGER trigger_follower_distribution_retention_cursors_updated_at BEFORE UPDATE ON public.follower_distribution_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
     },
     "follower_distribution_selected_recipients": {
       "checkConstraints": {},

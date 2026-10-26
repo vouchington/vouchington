@@ -30,7 +30,6 @@ _none_
 
 - `activitypub_inbox_activities_pkey`: `CREATE UNIQUE INDEX activitypub_inbox_activities_pkey ON public.activitypub_inbox_activities USING btree (id)`
 - `idx_activitypub_inbox_activities__activity_id`: `CREATE UNIQUE INDEX idx_activitypub_inbox_activities__activity_id ON public.activitypub_inbox_activities USING btree (activity_id)`
-- `idx_activitypub_inbox_activities__retention`: `CREATE INDEX idx_activitypub_inbox_activities__retention ON public.activitypub_inbox_activities USING btree (received_at, id)`
 
 **Triggers:**
 _none_
