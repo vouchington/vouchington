@@ -34,7 +34,7 @@ async function collectCandidates(maxRows: number, after?: EntityReconciliationCa
 }
 
 const indexes = [
-  'idx_communities__updated_at_id_active',
+  'idx_communities__updated_at_id',
   'rss_feed_items_default_updated_at_id_idx',
   'idx_api_keys__updated_at_id_active',
   'idx_blocklisted_domains__updated_at_domain_source_id',

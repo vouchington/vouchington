@@ -20,7 +20,7 @@ import type { Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { trackUserMetricsFills } from '../../../test-helpers/user-metrics-cache-fills.mts'
 import { createBackgroundProcessor } from '../processors.mts'
-import { createCommunitiesHandlers } from './communities.mts'
+import { createCommunitiesHandlers } from './communities-handler-factory.mts'
 import { buildHandlerMap } from './handler-map.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())

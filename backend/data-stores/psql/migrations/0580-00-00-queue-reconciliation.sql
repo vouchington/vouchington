@@ -11,8 +11,8 @@ CREATE INDEX IF NOT EXISTS idx_urls__updated_at_id_active
 ON urls (updated_at, (id::text));
 
 -- Bloom repair reads only the existing reconciliation window; old rows stay outside each range.
-CREATE INDEX IF NOT EXISTS idx_communities__updated_at_id_active
-ON communities (updated_at, (id::text)) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_communities__updated_at_id
+ON communities (updated_at, (id::text));
 
 CREATE INDEX IF NOT EXISTS idx_rss_feed_items__updated_at_id_active
 ON rss_feed_items (updated_at, (id::text)) WHERE deleted_at IS NULL;
