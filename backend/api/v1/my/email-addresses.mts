@@ -12,6 +12,7 @@ import {
   verifyEmailVerificationToken,
 } from '@services/my/email-address-verification'
 import { enqueueSendEmailVerificationToken } from '@queues/emails/enqueues'
+import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { createPaginationParser, decodeScopedTierCursor, encodeCursor } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
@@ -74,11 +75,13 @@ app.route('/api/v1/my/email-addresses').post(async (ctx: Context) => {
     body.email_address,
   )
 
-  ctx.json({ email_address: normalizedEmail })
-  void enqueueSendEmailVerificationToken(
-    { emailAddress: normalizedEmail },
-    { token, uiLocale: currentUser.ui_locale ?? null },
+  await awaitReportedEnqueueAdmission(() =>
+    enqueueSendEmailVerificationToken(
+      { emailAddress: normalizedEmail },
+      { token, uiLocale: currentUser.ui_locale ?? null },
+    ),
   )
+  ctx.json({ email_address: normalizedEmail })
 })
 
 // POST /api/v1/my/email-addresses/:email/verifications — confirm verification code
