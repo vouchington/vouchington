@@ -14,6 +14,8 @@ export interface SessionDeviceAuthorityRow {
   expires_at: Date
   revoked_at: Date | null
   device_token_digest: string | null
+  previous_device_token_digest: string | null
+  previous_device_token_grace_expires_at: Date | null
   device_token_encrypted: string | null
   device_token_issued_at: Date | null
   device_token_binding: SessionClientBinding | null
@@ -27,7 +29,9 @@ export async function readSessionDeviceAuthority(
 ): Promise<SessionDeviceAuthorityRow | null> {
   const statement = sql`/* readSessionDeviceAuthority */
     SELECT s.id, s.user_id, s.device_id, s.authentication_origin, s.expires_at, s.revoked_at,
-      s.device_token_digest, s.device_token_encrypted, s.device_token_issued_at, s.device_token_binding
+      s.device_token_digest, s.previous_device_token_digest,
+      s.previous_device_token_grace_expires_at, s.device_token_encrypted,
+      s.device_token_issued_at, s.device_token_binding
     FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sid} AND u.deleted_at IS NULL`
   if (lock) statement.append(' FOR UPDATE OF s')

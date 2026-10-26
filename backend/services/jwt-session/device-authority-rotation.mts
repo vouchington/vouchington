@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { encryptSecret } from '@modules/token-secrets'
+import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { signDeviceJwt, verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { SESSION_REFRESH_REUSED } from '@modules/on-error/error-codes'
 import { createCodedError } from '@vouchington/sentry'
@@ -45,7 +45,37 @@ export async function rotateAuthenticatedDeviceToken(options: {
     (device.client === 'native' && device.dc !== 'attested')
   )
     throw sessionReloginRequired()
-  if (row.device_token_digest !== hashDeviceToken(options.deviceToken)) {
+  const presentedDigest = hashDeviceToken(options.deviceToken)
+  if (
+    presentedDigest === row.previous_device_token_digest &&
+    row.previous_device_token_grace_expires_at &&
+    row.previous_device_token_grace_expires_at.getTime() > Date.now() &&
+    device.iat === Math.floor(row.device_token_issued_at.getTime() / 1000) &&
+    device.exp === Math.floor(row.expires_at.getTime() / 1000)
+  ) {
+    const currentToken = decryptSecret(
+      row.device_token_encrypted!,
+      deviceTokenSecretPurpose(options.sid),
+    )
+    const currentDevice = await verifyDeviceJwt(currentToken)
+    if (
+      !currentDevice ||
+      hashDeviceToken(currentToken) !== row.device_token_digest ||
+      currentDevice.refresh_uid !== options.uid ||
+      currentDevice.refresh_sid !== options.sid ||
+      currentDevice.did !== options.did ||
+      currentDevice.client !== device.client ||
+      currentDevice.dc !== device.dc ||
+      currentDevice.ua_hash !== device.ua_hash ||
+      currentDevice.ja4_hash !== device.ja4_hash ||
+      currentDevice.iat !== device.iat ||
+      currentDevice.exp !== device.exp
+    )
+      throw sessionReloginRequired()
+    await query.commit()
+    return currentToken
+  }
+  if (row.device_token_digest !== presentedDigest) {
     await query(sql`/* rotateAuthenticatedDeviceToken */
       UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP
       WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
@@ -75,7 +105,9 @@ export async function rotateAuthenticatedDeviceToken(options: {
     issuedAt: Math.floor(row.device_token_issued_at.getTime() / 1000),
   })
   await query(sql`/* rotateAuthenticatedDeviceToken */
-    UPDATE user_sessions SET device_token_digest = ${hashDeviceToken(token)},
+    UPDATE user_sessions SET previous_device_token_digest = ${presentedDigest},
+      previous_device_token_grace_expires_at = CURRENT_TIMESTAMP + INTERVAL '60 seconds',
+      device_token_digest = ${hashDeviceToken(token)},
       device_token_encrypted = ${encryptSecret(token, deviceTokenSecretPurpose(options.sid))},
       last_seen_at = CURRENT_TIMESTAMP
     WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)

@@ -112,7 +112,9 @@ export async function mintAuthenticatedDeviceAuthority(options: {
     const expiresAt = new Date((options.issuedAt + DEVICE_EXPIRATION_SECONDS) * 1000)
     const token = await signDeviceJwt(payload, { expiresIn: expiresAt, issuedAt: options.issuedAt })
     await query(sql`/* mintAuthenticatedDeviceAuthority */
-    UPDATE user_sessions SET device_token_digest = ${hashDeviceToken(token)},
+    UPDATE user_sessions SET previous_device_token_digest = NULL,
+      previous_device_token_grace_expires_at = NULL,
+      device_token_digest = ${hashDeviceToken(token)},
       device_token_encrypted = ${encryptSecret(token, deviceTokenSecretPurpose(options.sid))},
       device_token_issued_at = ${new Date(options.issuedAt * 1000)},
       device_token_binding = ${JSON.stringify(binding)}::jsonb, expires_at = ${expiresAt}

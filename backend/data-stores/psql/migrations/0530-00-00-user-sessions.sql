@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   expires_at TIMESTAMPTZ NOT NULL,
   revoked_at TIMESTAMPTZ,
   device_token_digest TEXT,
+  previous_device_token_digest TEXT,
+  previous_device_token_grace_expires_at TIMESTAMPTZ,
   device_token_encrypted TEXT,
   device_token_issued_at TIMESTAMPTZ,
   device_token_binding JSONB,
@@ -26,6 +28,9 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) IN (0, 4)),
   CHECK (device_token_digest IS NULL OR device_token_digest ~ '^[a-f0-9]{64}$'),
+  CHECK (num_nonnulls(previous_device_token_digest, previous_device_token_grace_expires_at) IN (0, 2)),
+  CHECK (previous_device_token_digest IS NULL OR previous_device_token_digest ~ '^[a-f0-9]{64}$'),
+  CHECK (previous_device_token_digest IS NULL OR device_token_digest IS NOT NULL),
   CHECK (device_token_binding IS NULL OR jsonb_typeof(device_token_binding) = 'object'),
   CHECK (device_token_issued_at IS NULL OR device_token_issued_at < expires_at),
   CHECK (TRIM(device_name) = device_name),
@@ -68,6 +73,8 @@ COMMENT ON COLUMN user_sessions.expires_at IS 'Original device credential expiry
 COMMENT ON COLUMN user_sessions.revoked_at IS 'When the session was revoked. NULL means active.';
 
 COMMENT ON COLUMN user_sessions.device_token_digest IS 'SHA-256 digest of the current signed device credential. Row-locked compare-and-set rotation detects reuse without storing plaintext credentials.';
+COMMENT ON COLUMN user_sessions.previous_device_token_digest IS 'Immediately preceding signed device credential digest, accepted only during a bounded lost-response grace window under the session row lock.';
+COMMENT ON COLUMN user_sessions.previous_device_token_grace_expires_at IS 'Deadline for idempotent replay of the immediately preceding device credential; older reuse revokes the session.';
 COMMENT ON COLUMN user_sessions.device_token_encrypted IS 'Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.';
 COMMENT ON COLUMN user_sessions.device_token_issued_at IS 'Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.';
 COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document.';

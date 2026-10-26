@@ -3,6 +3,7 @@ import { v7 } from 'uuid'
 import { verifyDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { createTestUserDirect, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
+import { expireTestPreviousDeviceTokenGrace } from '@voucha/test-helpers/entities/device-authority'
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
 import { refreshSessionState } from './flows.mts'
@@ -82,7 +83,7 @@ describe('durable device credential authority', () => {
     ).rejects.toMatchObject({ code: 'SESSION_JA4_MISMATCH' })
   })
 
-  it('revokes the session on concurrent reuse and retains revocation without its cache marker', async () => {
+  it('returns the same rotated credential for one concurrent lost-response replay', async () => {
     const user = await createTestUserDirect()
     const initial = await createDeviceAndSessionTokens({
       uid: user.id,
@@ -96,12 +97,13 @@ describe('durable device credential authority', () => {
         fetchUser: getTestPrivateUserById,
       })
     const outcomes = await Promise.allSettled([renew(), renew()])
-    expect(outcomes.filter(outcome => outcome.status === 'fulfilled')).toHaveLength(1)
-    const rejected = outcomes.find(
-      outcome => outcome.status === 'rejected',
-    ) as PromiseRejectedResult
-    expect(rejected.reason).toMatchObject({ code: 'SESSION_REFRESH_REUSED' })
+    expect(outcomes.every(outcome => outcome.status === 'fulfilled')).toBe(true)
+    const renewed = outcomes as PromiseFulfilledResult<Awaited<ReturnType<typeof renew>>>[]
+    expect(renewed[0]!.value.dt).toBe(renewed[1]!.value.dt)
     const sid = initial.sessionToken.payload.sid
+    expect((await readSessionDeviceAuthority(sid))!.revoked_at).toBeNull()
+    await expireTestPreviousDeviceTokenGrace(user.id, sid)
+    await expect(renew()).rejects.toMatchObject({ code: 'SESSION_REFRESH_REUSED' })
     expect((await readSessionDeviceAuthority(sid))!.revoked_at).toBeInstanceOf(Date)
     await sessionValkeyClient.del([getJwtRevokedKey(sid)])
     await expect(

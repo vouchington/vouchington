@@ -31,9 +31,7 @@ export function setAuthenticationCookies(
   })
   ctx.cookies.set('st', st, {
     ...COOKIE_OPTIONS,
-    // An absolute expiry prevents response transit or exact replay from keeping the cookie
-    // after the signed JWT expires. Chrome can then use its bound-session refresh URL.
-    expires: getSessionTokenCookieExpiry(st, deviceClass),
+    maxAge: getSessionTokenCookieMaxAge(st, deviceClass),
   })
 }
 
@@ -53,9 +51,14 @@ export function getDeviceTokenCookieMaxAge(deviceToken: string): number {
   )
 }
 
-function getSessionTokenCookieExpiry(sessionToken: string, deviceClass?: DeviceClass): Date {
+function getSessionTokenCookieMaxAge(sessionToken: string, deviceClass?: DeviceClass): number {
   const session = decodeSessionJwt(sessionToken)
   const signedExpiryMs = (session?.exp ?? 0) * 1000
-  const maximumExpiryMs = Date.now() + sessionExpirySecondsFor(deviceClass, session?.client) * 1000
-  return new Date(Math.min(signedExpiryMs, maximumExpiryMs))
+  return Math.max(
+    0,
+    Math.min(
+      sessionExpirySecondsFor(deviceClass, session?.client),
+      Math.floor((signedExpiryMs - Date.now()) / 1000),
+    ),
+  )
 }

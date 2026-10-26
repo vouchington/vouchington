@@ -28,7 +28,7 @@ export function createAuthRecoveryFetch(
         try {
           renewed = await renewBrowserSession()
         } catch (err) {
-          redirectToLogin()
+          if (isDefinitiveRenewalFailure(err)) redirectToLogin()
           throw err
         }
         // A verified anonymous renewal has no identity to recover. Preserve the original 401.
@@ -86,6 +86,15 @@ function isReloginError(error: unknown): boolean {
     'SESSION_RELOGIN_REQUIRED',
     'SESSION_REFRESH_REUSED',
   ].some(code => isErrorCode(error, code))
+}
+
+function isDefinitiveRenewalFailure(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    isReloginError({ code: error.code })
+  )
 }
 
 function isBotChallenge(

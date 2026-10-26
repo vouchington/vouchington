@@ -1,4 +1,10 @@
 import { isHttpError } from 'http-errors'
+import {
+  SESSION_JA4_MISMATCH,
+  SESSION_REFRESH_REUSED,
+  SESSION_RELOGIN_REQUIRED,
+  SESSION_USER_AGENT_MISMATCH,
+} from '@modules/on-error/error-codes'
 import { buildSessionResponse } from './session-response.mts'
 import { getTrustedClientJa4 } from '@modules/request-client-info/cloudflare-signals'
 import app from '../../app.mts'
@@ -47,7 +53,7 @@ app
       userAgent: ctx.req.headers['user-agent'],
       ja4: getTrustedClientJa4(ctx.req),
     }).catch(err => {
-      clearAuthenticationCookies(ctx)
+      if (isDefinitiveSessionFailure(err)) clearAuthenticationCookies(ctx)
       throw err
     })
 
@@ -119,6 +125,16 @@ app
 function toTokenBody(body: SessionTokenBody): SessionTokenBody {
   const isPlainObject = body !== null && typeof body === 'object' && !Array.isArray(body)
   return isPlainObject ? body : {}
+}
+
+function isDefinitiveSessionFailure(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return false
+  return [
+    SESSION_RELOGIN_REQUIRED,
+    SESSION_REFRESH_REUSED,
+    SESSION_USER_AGENT_MISMATCH,
+    SESSION_JA4_MISMATCH,
+  ].includes(error.code as string)
 }
 
 // Shared by the PATCH and DELETE JSON-body branches, once each has already parsed its own body

@@ -86,6 +86,31 @@ describe('application auth recovery fetch', () => {
     expect(window.location.assign).toHaveBeenCalledTimes(1)
   })
 
+  it('preserves cookies and does not navigate when renewal fails transiently', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(errorResponse(401, 'AUTH_REQUIRED'))
+      .mockResolvedValueOnce(errorResponse(503, 'UPSTREAM_UNAVAILABLE'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createAuthRecoveryFetch()('/api/v1/posts')).rejects.toMatchObject({ status: 503 })
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/posts', '/api/v1/session'])
+    expect(window.location.assign).not.toHaveBeenCalled()
+  })
+
+  it('does not clean up a session after a renewal transport error', async () => {
+    const transportError = new TypeError('connection closed')
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(errorResponse(401, 'AUTH_REQUIRED'))
+      .mockRejectedValueOnce(transportError)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createAuthRecoveryFetch()('/api/v1/posts')).rejects.toBe(transportError)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(window.location.assign).not.toHaveBeenCalled()
+  })
+
   it('does not navigate to login for a replay transport failure after successful renewal', async () => {
     const transportError = new TypeError('connection closed')
     const fetchMock = vi

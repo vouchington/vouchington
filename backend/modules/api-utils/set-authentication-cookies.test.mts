@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { setAuthenticationCookies, COOKIE_OPTIONS } from './set-authentication-cookies.mts'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
-  SESSION_EXPIRATION_SECONDS,
   signDeviceJwt,
   signSessionJwt,
 } from '@ts-shared/session-jwt'
@@ -93,7 +92,7 @@ describe('setAuthenticationCookies', () => {
     expect(dtOptions.maxAge).toBeLessThanOrEqual(remainingSeconds)
   })
 
-  it('st cookie expires at the signed expiry after delayed issuance or exact replay', async () => {
+  it('st cookie retains only the remaining signed lifetime after delayed issuance or exact replay', async () => {
     const { ctx, calls } = makeCookiesSpy()
     const now = Math.floor(Date.now() / 1000)
     const expiry = now + 120
@@ -108,8 +107,9 @@ describe('setAuthenticationCookies', () => {
     )
     setAuthenticationCookies(ctx, { dt: 'device-token', st })
     const stOptions = calls.find(c => c[0] === 'st')![2]
-    expect(stOptions.expires).toEqual(new Date(expiry * 1000))
-    expect(stOptions.maxAge).toBeUndefined()
+    expect(stOptions.maxAge).toBeGreaterThanOrEqual(118)
+    expect(stOptions.maxAge).toBeLessThanOrEqual(120)
+    expect(stOptions.expires).toBeUndefined()
   })
 
   it('st cookie cannot outlive the attested session limit', async () => {
@@ -129,13 +129,8 @@ describe('setAuthenticationCookies', () => {
       deviceClass: 'attested',
     })
     const stOptions = calls.find(c => c[0] === 'st')![2]
-    expect((stOptions.expires as Date).getTime()).toBeLessThanOrEqual(
-      Date.now() + ATTESTED_SESSION_EXPIRATION_SECONDS * 1000,
-    )
-    expect((stOptions.expires as Date).getTime()).toBeGreaterThan(
-      Date.now() + SESSION_EXPIRATION_SECONDS * 1000,
-    )
-    expect(stOptions.maxAge).toBeUndefined()
+    expect(stOptions.maxAge).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
+    expect(stOptions.expires).toBeUndefined()
   })
 
   it('dt cookie lifetime cannot be extended by deviceClass', async () => {

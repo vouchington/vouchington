@@ -8,15 +8,15 @@ let renewalInFlight: Promise<boolean> | undefined
 export function renewBrowserSession(): Promise<boolean> {
   renewalInFlight ??= renewWithBrowserLock()
     .catch(async err => {
-      // Cleanup never renews credentials or depends on their fingerprint. If the origin is
-      // unavailable, login still provides the recovery path when connectivity returns.
-      await fetch('/api/v1/session', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-        signal: AbortSignal.timeout(10_000),
-      }).catch(reportCleanupFailure)
+      if (requiresSessionCleanup(err)) {
+        await fetch('/api/v1/session', {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+          signal: AbortSignal.timeout(10_000),
+        }).catch(reportCleanupFailure)
+      }
       throw err
     })
     .finally(() => {
@@ -63,4 +63,14 @@ async function renewWithBrowserLock(): Promise<boolean> {
 
 function reportCleanupFailure(error: unknown): void {
   console.error('Session cleanup failed', error)
+}
+
+function requiresSessionCleanup(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false
+  return [
+    'SESSION_RELOGIN_REQUIRED',
+    'SESSION_REFRESH_REUSED',
+    'SESSION_USER_AGENT_MISMATCH',
+    'SESSION_JA4_MISMATCH',
+  ].includes(error.code ?? '')
 }
