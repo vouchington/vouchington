@@ -15,7 +15,7 @@ describe('onVerificationSessionVerified', () => {
     resetEventVerifiedDoubles()
   })
 
-  it('no-ops and revokes verified_identities when final user UPDATE matches 0 rows', async () => {
+  it('no-ops and discards the newly inserted fingerprint when final user UPDATE matches 0 rows', async () => {
     mockBeginTransaction.mockReset()
     mockBeginTransaction
       .mockImplementationOnce(async () => {
@@ -38,7 +38,7 @@ describe('onVerificationSessionVerified', () => {
           .mockResolvedValueOnce(makeQueryResult([{ identity_fingerprint: 'fingerprint' }])) // permanent hash inserted
           .mockResolvedValueOnce(makeQueryResult()) // live account link inserted
           .mockResolvedValueOnce(makeQueryResult([])) // UPDATE users → 0 rows (concurrent race)
-          .mockResolvedValue(makeQueryResult()) // revoke verified_identities
+          .mockResolvedValue(makeQueryResult()) // discard unverified fingerprint
         return createTransactionResource(query as never)
       })
     await onVerificationSessionVerifiedForTest('evt_1', {

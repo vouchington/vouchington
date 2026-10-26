@@ -1,6 +1,11 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
+import {
+  applyRetentionLimits,
+  getRetentionCutoffDate,
+  normalizeRetentionDays,
+} from './cleanup-options.mts'
+import type { DataRetentionLimits } from './config.mts'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 
@@ -10,6 +15,34 @@ export type MembershipOperationalCleanupOptions = {
   retentionDays?: number
   lowerBoundDate?: Date
   now?: Date
+}
+
+export type MembershipRetentionSelection = {
+  deliveredMembershipEntitlementEffects: boolean
+  endedMembershipRenewalNotices: boolean
+  terminalGooglePlayAcknowledgments: boolean
+}
+
+/** Continue only membership families that exceeded the previous run's cap. */
+export async function runMembershipOperationalCleanupPage(
+  limits: DataRetentionLimits,
+  selection: MembershipRetentionSelection,
+) {
+  const options = applyRetentionLimits(limits, undefined)
+  const deliveredMembershipEntitlementEffects = selection.deliveredMembershipEntitlementEffects
+    ? await cleanupDeliveredMembershipEntitlementEffects(options)
+    : { deleted: 0, hasMore: false }
+  const endedMembershipRenewalNotices = selection.endedMembershipRenewalNotices
+    ? await cleanupEndedMembershipRenewalNotices(options)
+    : { deleted: 0, hasMore: false }
+  const terminalGooglePlayAcknowledgments = selection.terminalGooglePlayAcknowledgments
+    ? await cleanupTerminalGooglePlayAcknowledgments(options)
+    : { deleted: 0, hasMore: false }
+  return {
+    deliveredMembershipEntitlementEffects,
+    endedMembershipRenewalNotices,
+    terminalGooglePlayAcknowledgments,
+  }
 }
 
 type CursorKind = 'entitlement_effects' | 'renewal_notices' | 'google_acknowledgments'

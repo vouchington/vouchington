@@ -11,6 +11,8 @@ import {
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { v7 } from 'uuid'
 import { onVerificationSessionVerified } from '../event-completion.mts'
+import { runVerifiedIdentityTransaction } from '../event-completion-txn.mts'
+import { beginTransactionWithLostVerificationStatus } from '@voucha/test-helpers/services/identity-verification/verification-status-race'
 
 type VerificationResult = {
   documentNumber?: string
@@ -75,6 +77,49 @@ describe('onVerificationSessionVerified', () => {
     expect(state?.verification_status).toBe('verified')
     expect(state?.pending_verification_session_id).toBeNull()
     expect(await countVerifiedIdentities(user.id)).toBe(1)
+    expect(await getStoredVerifiedIdentityHash(fingerprint)).toEqual(
+      Buffer.from(fingerprint, 'hex'),
+    )
+  })
+
+  it('discards an unverified new fingerprint after a lost final update so a later attempt can verify', async () => {
+    const user = await createTestUser()
+    const fingerprint = makeFingerprint()
+    const firstSession = `vs_${v7()}`
+    await setUserVerificationFields(user.id, {
+      verificationStatus: 'identity_pending',
+      pendingVerificationSessionId: firstSession,
+    })
+
+    const outcome = await runVerifiedIdentityTransaction(
+      firstSession,
+      user.id,
+      fingerprint,
+      'Alice',
+      'Smith',
+      'Alice Smith',
+      { beginTransaction: beginTransactionWithLostVerificationStatus(user.id) },
+    )
+    expect(outcome).toBe('noop')
+    expect((await getUserVerificationState(user.id))?.verification_status).toBe('failed')
+    expect(await countVerifiedIdentities(user.id)).toBe(0)
+    expect(await getStoredVerifiedIdentityHash(fingerprint)).toBeNull()
+
+    const secondSession = `vs_${v7()}`
+    await setUserVerificationFields(user.id, {
+      verificationStatus: 'identity_pending',
+      pendingVerificationSessionId: secondSession,
+    })
+    expect(
+      await runVerifiedIdentityTransaction(
+        secondSession,
+        user.id,
+        fingerprint,
+        'Alice',
+        'Smith',
+        'Alice Smith',
+      ),
+    ).toBe('verified')
     expect(await getStoredVerifiedIdentityHash(fingerprint)).toEqual(
       Buffer.from(fingerprint, 'hex'),
     )

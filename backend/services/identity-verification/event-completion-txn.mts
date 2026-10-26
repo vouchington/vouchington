@@ -129,17 +129,18 @@ export async function runVerifiedIdentityTransaction(
         AND pending_verification_session_id = ${sessionId}
     `)
 
-    // If the user row was not updated (concurrent lifecycle event changed the status
-    // between the guard check and this UPDATE), deactivate the identity record we just
-    // inserted to avoid an orphaned active record attached to a non-verified account.
+    // A lifecycle change after the guard means this document was never verified. Remove
+    // only the fingerprint inserted by this transaction so a later real verification can
+    // use it. Fingerprints from earlier successful verifications must remain retained.
     if (!updatedRows) {
-      await query(sql`/* onVerificationSessionVerified:revoke */
+      await query(sql`/* onVerificationSessionVerified:discard-unverified */
         WITH removed AS (
           DELETE FROM verified_identity_account_links
           WHERE provider_session_id = ${sessionId} AND user_id = ${userId}
+            AND identity_fingerprint = ${insertedRows[0]!.identity_fingerprint}
           RETURNING identity_fingerprint
         )
-        UPDATE verified_identities SET revoked_at = CURRENT_TIMESTAMP
+        DELETE FROM verified_identities
         WHERE identity_fingerprint IN (SELECT identity_fingerprint FROM removed)
       `)
       return 'noop' as const

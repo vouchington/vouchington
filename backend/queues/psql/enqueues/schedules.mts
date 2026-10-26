@@ -39,7 +39,8 @@ import {
   RECONCILE_VOTE_DRIFT_SCHEDULER_ID,
   RECONCILE_VOTE_DRIFT_CRON,
   PRIORITY_DEFAULT,
-  PSQL_RETRY_OPTS,
+  DATA_RETENTION_RETRY_OPTIONS,
+  DATA_RETENTION_ORDERING,
   QUEUE_NAME,
 } from '../config.mts'
 import {
@@ -50,7 +51,7 @@ import {
 } from '../enqueues.mts'
 
 const SCHEDULE_OPTS = {
-  ...PSQL_RETRY_OPTS,
+  ...DATA_RETENTION_RETRY_OPTIONS,
   removeOnComplete: 100,
   removeOnFail: 100,
   priority: PRIORITY_DEFAULT,
@@ -59,6 +60,7 @@ const SCHEDULE_OPTS = {
 const DATA_RETENTION_SCHEDULE_OPTS = () =>
   ({
     ...SCHEDULE_OPTS,
+    ordering: DATA_RETENTION_ORDERING,
     priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
   }) satisfies JobOptions
 

@@ -8,6 +8,7 @@ export type PsqlJobs =
   | 'cleanupPartitions'
   | 'dataRetentionCleanup'
   | 'moderationRetentionCleanup'
+  | 'continueMembershipOperationalCleanup'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -42,4 +43,10 @@ export type ModerationRetentionJobData = {
     hasMore: boolean
     remainingKinds: ModerationRecordCleanupKind[]
   }
+}
+
+export type MembershipRetentionContinuationData = {
+  deliveredMembershipEntitlementEffects: boolean
+  endedMembershipRenewalNotices: boolean
+  terminalGooglePlayAcknowledgments: boolean
 }

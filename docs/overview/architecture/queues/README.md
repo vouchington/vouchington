@@ -79,8 +79,10 @@ idempotent cleanup. Daily and operator seeds recover lost queue state or termina
 
 The data-retention schedule runs in deployed environments so staging exposes retention failures
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
-work ahead of housekeeping. Membership retention pages persist their position, and a capped run
-with more eligible rows enqueues another retention job so the backlog drains between schedules.
+work ahead of housekeeping. Membership retention pages persist their position. A capped run
+continues only the membership families with more eligible rows, keeping the backlog draining
+between schedules without replaying unrelated cleanup work. The scheduled run and its
+continuations share an ordering lane so they do not compete for the same cursor.
 
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against

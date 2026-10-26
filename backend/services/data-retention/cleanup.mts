@@ -29,6 +29,7 @@ import {
   cleanupDeliveredMembershipEntitlementEffects,
   cleanupEndedMembershipRenewalNotices,
   cleanupTerminalGooglePlayAcknowledgments,
+  runMembershipOperationalCleanupPage,
   type MembershipOperationalCleanupOptions,
 } from './cleanup-membership-operational.mts'
 import {
@@ -82,6 +83,7 @@ export {
   cleanupDeliveredMembershipEntitlementEffects,
   cleanupEndedMembershipRenewalNotices,
   cleanupTerminalGooglePlayAcknowledgments,
+  runMembershipOperationalCleanupPage,
 }
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 export { cleanupOldPendingNotificationPushIntents }

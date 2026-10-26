@@ -5,7 +5,12 @@ import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
-import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
+import {
+  dataRetentionConfig,
+  getDataRetentionLimits,
+  type DataRetentionLimits,
+} from '@services/data-retention/config'
+import { runMembershipOperationalCleanupPage } from '@services/data-retention'
 import type { PartitionDropOutcome } from '@data-stores/psql/migration-runner/monthly-partitions'
 
 const cleanupPartitions = vi.fn<() => Promise<PartitionDropOutcome[]>>()
@@ -18,6 +23,12 @@ const runMigrations = vi.fn<() => Promise<void>>()
 const runViews = vi.fn<() => Promise<void>>()
 import processPsql from '../processors.mts'
 
+const emptyMembershipResult = {
+  deliveredMembershipEntitlementEffects: { hasMore: false },
+  endedMembershipRenewalNotices: { hasMore: false },
+  terminalGooglePlayAcknowledgments: { hasMore: false },
+}
+
 describe('processPsql', () => {
   it.each([
     ['runMigrations', runMigrations],
@@ -29,6 +40,8 @@ describe('processPsql', () => {
     ['reconcileVoteDrift', reconcileVoteDrift],
   ] as const)('calls %s when selected', async (jobName, processor) => {
     processor.mockReset()
+    if (jobName === 'dataRetentionCleanup')
+      dataRetentionCleanup.mockResolvedValue(emptyMembershipResult as never)
 
     await processPsql(jobName, undefined, {
       cleanupPartitions,
@@ -45,6 +58,7 @@ describe('processPsql', () => {
 
   it('passes the data-retention-config limits to every retention cleanup', async () => {
     dataRetentionCleanup.mockReset()
+    dataRetentionCleanup.mockResolvedValue(emptyMembershipResult as never)
     overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
       batch_size: 7,
       max_batches_per_run: 3,
@@ -66,11 +80,6 @@ describe('processPsql', () => {
     'admits a retention continuation for %s remaining work',
     async (remaining, expected) => {
       const parentJobId = `membership-retention-test__${randomUUID()}`
-      const childJobId = `data-retention-continuation__${createHash('sha256').update(parentJobId).digest('hex')}`
-      onTestFinished(async () => {
-        const child = await psqlQueue.getJob(childJobId)
-        await child?.remove()
-      })
       const result = {
         deliveredMembershipEntitlementEffects: {
           hasMore: remaining === 'deliveredMembershipEntitlementEffects',
@@ -80,6 +89,22 @@ describe('processPsql', () => {
           hasMore: remaining === 'terminalGooglePlayAcknowledgments',
         },
       }
+      const selection = {
+        deliveredMembershipEntitlementEffects: result.deliveredMembershipEntitlementEffects.hasMore,
+        endedMembershipRenewalNotices: result.endedMembershipRenewalNotices.hasMore,
+        terminalGooglePlayAcknowledgments: result.terminalGooglePlayAcknowledgments.hasMore,
+      }
+      const identity = JSON.stringify([
+        parentJobId,
+        selection.deliveredMembershipEntitlementEffects,
+        selection.endedMembershipRenewalNotices,
+        selection.terminalGooglePlayAcknowledgments,
+      ])
+      const childJobId = `membership-retention__${createHash('sha256').update(identity).digest('hex').slice(0, 32)}`
+      onTestFinished(async () => {
+        const child = await psqlQueue.getJob(childJobId)
+        await child?.remove()
+      })
       await processPsql(
         'dataRetentionCleanup',
         undefined,
@@ -88,6 +113,11 @@ describe('processPsql', () => {
       )
       const child = await psqlQueue.getJob(childJobId)
       expect(child !== null).toBe(expected)
+      expect(child?.name).toBe(expected ? 'continueMembershipOperationalCleanup' : undefined)
+      expect(child?.data).toEqual(expected ? selection : undefined)
+      expect(child?.opts.ordering).toEqual(
+        expected ? { key: 'data_retention', concurrency: 1 } : undefined,
+      )
       const retryOptions = child?.opts
         ? { attempts: child.opts.attempts, backoff: child.opts.backoff }
         : null
@@ -98,6 +128,40 @@ describe('processPsql', () => {
       )
     },
   )
+
+  it('continues only selected membership families and forwards the next unfinished selection', async () => {
+    const firstJobId = `membership-retention-test__${randomUUID()}`
+    const selected = {
+      deliveredMembershipEntitlementEffects: true,
+      endedMembershipRenewalNotices: false,
+      terminalGooglePlayAcknowledgments: true,
+    }
+    const next = {
+      deliveredMembershipEntitlementEffects: { hasMore: false },
+      endedMembershipRenewalNotices: { hasMore: false },
+      terminalGooglePlayAcknowledgments: { hasMore: true },
+    }
+    const cleanupPage = vi.fn<typeof runMembershipOperationalCleanupPage>(async () => next as never)
+    const nextSelection = {
+      deliveredMembershipEntitlementEffects: false,
+      endedMembershipRenewalNotices: false,
+      terminalGooglePlayAcknowledgments: true,
+    }
+    const childIdentity = JSON.stringify([firstJobId, false, false, true])
+    const childJobId = `membership-retention__${createHash('sha256').update(childIdentity).digest('hex').slice(0, 32)}`
+    onTestFinished(async () => {
+      const child = await psqlQueue.getJob(childJobId)
+      await child?.remove()
+    })
+    await processPsql(
+      'continueMembershipOperationalCleanup',
+      selected,
+      { membershipRetentionCleanupPage: cleanupPage },
+      firstJobId,
+    )
+    expect(cleanupPage).toHaveBeenCalledExactlyOnceWith(getDataRetentionLimits(), selected)
+    expect((await psqlQueue.getJob(childJobId))?.data).toEqual(nextSelection)
+  })
 
   it('waits for stored retention limits to load on a cold start', async () => {
     await dataRetentionConfig.waitForInitialization()
@@ -112,7 +176,7 @@ describe('processPsql', () => {
     const initialized = Promise.withResolvers<void>()
     vi.spyOn(dataRetentionConfig, 'waitForInitialization').mockReturnValue(initialized.promise)
     dataRetentionCleanup.mockReset()
-    dataRetentionCleanup.mockResolvedValue()
+    dataRetentionCleanup.mockResolvedValue(emptyMembershipResult as never)
 
     const processing = processPsql('dataRetentionCleanup', undefined, {
       dataRetentionCleanup: dataRetentionCleanup as never,

@@ -2,9 +2,10 @@ import { createWorker } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import type {
+  MembershipRetentionContinuationData,
+  ModerationRetentionJobData,
   PsqlJobs,
   RefreshMaterializedViewData,
-  ModerationRetentionJobData,
 } from '@queues/psql/types'
 import { QUEUE_NAME } from '@queues/psql/config'
 import processPsql from './processors.mts'
@@ -19,7 +20,7 @@ export const psql = createWorker(
         ? processModerationRetentionCleanup(job as Job<ModerationRetentionJobData>)
         : processPsql(
             job.name as PsqlJobs,
-            job.data as Partial<RefreshMaterializedViewData>,
+            job.data as Partial<RefreshMaterializedViewData & MembershipRetentionContinuationData>,
             undefined,
             job.id,
           ),
