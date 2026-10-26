@@ -82,6 +82,7 @@ async function runFixture(fixture: ClassifierGoldenFixture): Promise<FixtureOutc
 
 // Real Anthropic calls (credentialed project `backend-anthropic`); fails without a credential.
 describe('autotagger agent golden regression set on Anthropic Haiku 5.5', () => {
+  // no-mistakes-timeout-reason: live Anthropic fixture response latency
   it('reports the candidates the synthetic fixtures expect and no others', async () => {
     const outcomes: FixtureOutcome[] = []
     // A few at a time: the SDK does not retry, so a burst of requests could trip a rate limit.

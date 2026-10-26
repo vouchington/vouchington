@@ -8,6 +8,7 @@ import { callCopyrightSubmissionGuidanceModel } from './model.mts'
 // and parsing are gated by recorded responses in model.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('copyright submission guidance on Anthropic Haiku 5.5', () => {
+  // no-mistakes-timeout-reason: live Anthropic network request latency
   it('returns closed advisory guidance for a counter-notice', async () => {
     const result = await callCopyrightSubmissionGuidanceModel(
       'counter_notice',
@@ -26,5 +27,5 @@ describe('copyright submission guidance on Anthropic Haiku 5.5', () => {
     expect(
       calcCostMicrounits('anthropic', result.model, result.serviceTier, result.usage),
     ).not.toBeNull()
-  })
+  }, 30_000)
 })

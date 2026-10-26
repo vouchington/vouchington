@@ -17,6 +17,7 @@ describe('posts.openai', () => {
     return Math.random().toString(36).slice(2, 10)
   }
 
+  // no-mistakes-timeout-reason: live OpenAI API request latency
   it(
     'upsertPostOpenAIModeration makes real API call and creates moderation',
     /* no-mistakes: integration=openai */

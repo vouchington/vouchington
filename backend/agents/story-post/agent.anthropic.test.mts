@@ -8,6 +8,7 @@ import { callStoryPostModel } from './agent.mts'
 // and parsing are gated by recorded responses in agent.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('story post on Anthropic Haiku 5.5', () => {
+  // no-mistakes-timeout-reason: live Anthropic network request latency
   it('returns a title and a non-blank markdown summary', async () => {
     const result = await callStoryPostModel(
       'Story title: Storm hits coast\nPublished: 2026-10-01\n\nSource articles:\nArticle 1:\nTitle: Storm makes landfall\nSummary: A storm made landfall overnight, cutting power to 40,000 homes.',
@@ -20,5 +21,5 @@ describe('story post on Anthropic Haiku 5.5', () => {
     expect(
       calcCostMicrounits('anthropic', result.model, result.serviceTier, result.usage),
     ).not.toBeNull()
-  })
+  }, 30_000)
 })

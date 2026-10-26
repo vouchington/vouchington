@@ -8,6 +8,7 @@ import { callCopyrightAppealRecommendationModel } from './model.mts'
 // and parsing are gated by recorded responses in model.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('copyright appeal recommendation on Anthropic Haiku 5.5', () => {
+  // no-mistakes-timeout-reason: live Anthropic network request latency
   it('returns a bounded advisory recommendation', async () => {
     const result = await callCopyrightAppealRecommendationModel(
       JSON.stringify({
@@ -23,5 +24,5 @@ describe('copyright appeal recommendation on Anthropic Haiku 5.5', () => {
     expect(
       calcCostMicrounits('anthropic', result.model, result.serviceTier, result.usage),
     ).not.toBeNull()
-  })
+  }, 30_000)
 })
