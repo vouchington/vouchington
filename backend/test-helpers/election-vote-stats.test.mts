@@ -1,225 +1,155 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
 import { BACKGROUND_QUEUE_NAME } from '../queues/background/config.mts'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
-import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
-import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
+import {
+  getSharedBackgroundWorker,
+  settleSharedBackgroundJobs,
+} from '../../test-helpers/shared-background-worker.mts'
 import { onceElectionVoteStatsCompleted } from './election-vote-stats.mts'
-import type { EntityRelationElectionTable } from '../queues/vote-aggregation/enqueues/types-elections.mts'
+import { entityRelationMetadatum } from '../types/entities/entity-relations-metadata.mts'
+import type {
+  EntityRelationElectionTable,
+  ElectionJobInput,
+} from '../queues/vote-aggregation/enqueues/types-elections.mts'
 
-const QUEUE_NAME = BACKGROUND_QUEUE_NAME
-const JOB_NAME = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
-const electionsWorker = getSharedBackgroundWorker()
-// The queue is the shared `background` queue: remove only the jobs this file added.
+const queue = getOrCreateQueue(BACKGROUND_QUEUE_NAME)
 const addedJobIds = new Set<string>()
+const target = (): ElectionJobInput => ({ electionId: crypto.randomUUID(), orderingKey: 'post' })
 
-function electionTarget(electionId: string) {
-  return { electionId, orderingKey: 'post' as const }
+async function addJob(data: ElectionJobInput, delayed = true) {
+  const job = await queue.enqueue(VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name, data, {
+    delay: delayed ? 60_000 : 0,
+    attempts: 1,
+  })
+  if (!job) throw new Error('Election fixture was unexpectedly deduplicated')
+  addedJobIds.add(job.id)
+  return job
 }
 
-type EmittableWorker = { emit(event: string, ...args: unknown[]): boolean }
-
-function emitOnWorker(event: string, ...args: unknown[]): void {
-  ;(electionsWorker as unknown as EmittableWorker).emit(event, ...args)
-}
-
-async function flushMicrotasks(): Promise<void> {
-  await new Promise<void>(resolve => setImmediate(resolve))
-}
-
-async function addCompletedJob(electionId: string): Promise<void> {
-  const queue = getOrCreateQueue(QUEUE_NAME)
-  const job = await queue.enqueue(JOB_NAME, electionTarget(electionId))
-  addedJobIds.add(job!.id)
-  const record = queue.jobs.get(job!.id)
-  record!.state = 'completed'
-}
-
-async function addFailedJob(electionId: string, failedReason: string): Promise<void> {
-  const queue = getOrCreateQueue(QUEUE_NAME)
-  const job = await queue.enqueue(JOB_NAME, electionTarget(electionId))
-  addedJobIds.add(job!.id)
-  const record = queue.jobs.get(job!.id)
-  record!.state = 'failed'
-  record!.failedReason = failedReason
-}
+const deadlineError = (data: ElectionJobInput) =>
+  `Elections vote-stats completion for election ${data.electionId} did not settle within 50ms`
 
 describe('onceElectionVoteStatsCompleted', () => {
-  // This module's queue is a process-wide singleton (getOrCreateQueue), so completed jobs from one
-  // test are still visible to the next test's searchJobs scan unless removed here.
-  afterEach(() => {
-    const queue = getOrCreateQueue(QUEUE_NAME)
-    for (const id of addedJobIds) queue.jobs.delete(id)
+  afterEach(async () => {
+    await settleSharedBackgroundJobs()
+    for (const id of addedJobIds) await (await queue.getJob(id))?.remove()
     addedJobIds.clear()
   })
 
-  it('resolves when the matching job already completed before the listener registered', async () => {
-    const electionId = crypto.randomUUID()
-    await addCompletedJob(electionId)
-
-    await expect(
-      onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500),
-    ).resolves.toBeUndefined()
+  it('observes a real completion admitted after listener registration and releases its delay', async () => {
+    const data = target()
+    const completion = onceElectionVoteStatsCompleted(data, 1, 1_000)
+    const job = await addJob(data)
+    await completion
+    expect(await job.getState()).toBe('completed')
   })
 
-  it('rejects with a timeout when only a non-matching election completes', async () => {
-    const electionId = crypto.randomUUID()
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 50)
-    const promiseRejection = promise.catch((err: unknown) => err)
-    await flushMicrotasks()
-    emitOnWorker('completed', { name: JOB_NAME, data: electionTarget(crypto.randomUUID()) })
+  it('promotes an already admitted delayed job', async () => {
+    const data = target()
+    const job = await addJob(data)
+    await onceElectionVoteStatsCompleted(data, 1, 1_000)
+    expect(await job.getState()).toBe('completed')
+  })
 
-    await expect(promiseRejection).resolves.toMatchObject({
-      message: `onceElectionVoteStatsCompleted timed out after 50ms waiting for election ${electionId}`,
+  it('finds a real completion that preceded registration', async () => {
+    const data = target()
+    const job = await addJob(data, false)
+    await settleSharedBackgroundJobs()
+    expect(await job.getState()).toBe('completed')
+    await onceElectionVoteStatsCompleted(data, 1, 1_000)
+  })
+
+  it('reports a real processor failure through live events and the terminal scan', async () => {
+    // PostgreSQL rejects this UUID in the real election processor.
+    const data: ElectionJobInput = {
+      electionId: `invalid-${crypto.randomUUID()}`,
+      orderingKey: 'post',
+    }
+    const live = onceElectionVoteStatsCompleted(data, 1, 1_000)
+    const rejected = live.catch((err: unknown) => err)
+    const job = await addJob(data)
+    expect(await rejected).toMatchObject({
+      message: expect.stringContaining(
+        `Elections vote-stats job for election ${data.electionId} failed:`,
+      ),
     })
-  })
-
-  it('resolves once the matching job completes via a live worker event', async () => {
-    const electionId = crypto.randomUUID()
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500)
-    await flushMicrotasks()
-    emitOnWorker('completed', { name: JOB_NAME, data: electionTarget(electionId) })
-
-    await expect(promise).resolves.toBeUndefined()
-  })
-
-  it('rejects when the matching job fails, rather than waiting for the timeout', async () => {
-    const electionId = crypto.randomUUID()
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500)
-    const promiseRejection = promise.catch((err: unknown) => err)
-    await flushMicrotasks()
-    emitOnWorker('failed', { name: JOB_NAME, data: electionTarget(electionId) }, new Error('boom'))
-
-    await expect(promiseRejection).resolves.toMatchObject({
-      message: `Elections vote-stats job for election ${electionId} failed: boom`,
-    })
-  })
-
-  it('resolves for count > 1 once a pre-completed job and a live completion together satisfy it', async () => {
-    const electionId = crypto.randomUUID()
-    await addCompletedJob(electionId)
-
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 2, 500)
-    await flushMicrotasks()
-    emitOnWorker('completed', { name: JOB_NAME, data: electionTarget(electionId) })
-
-    await expect(promise).resolves.toBeUndefined()
-  })
-
-  it('does not reject on a non-matching failed event, and still resolves on the matching completion', async () => {
-    const electionId = crypto.randomUUID()
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500)
-    await flushMicrotasks()
-    emitOnWorker(
-      'failed',
-      { name: JOB_NAME, data: electionTarget(crypto.randomUUID()) },
-      new Error('unrelated failure'),
+    expect(await job.getState()).toBe('failed')
+    await expect(onceElectionVoteStatsCompleted(data, 1, 50)).rejects.toThrow(deadlineError(data))
+    // A different target ownership key has not consumed this failure; use a second real job.
+    const other = { ...data, electionId: `invalid-${crypto.randomUUID()}` }
+    const failed = await addJob(other, false)
+    await settleSharedBackgroundJobs()
+    expect(await failed.getState()).toBe('failed')
+    await expect(onceElectionVoteStatsCompleted(other, 1, 1_000)).rejects.toThrow(
+      `Elections vote-stats job for election ${other.electionId} failed:`,
     )
-    emitOnWorker('completed', { name: JOB_NAME, data: electionTarget(electionId) })
-
-    await expect(promise).resolves.toBeUndefined()
   })
 
-  it('rejects when the pre-count completed-jobs search itself fails, rather than waiting for the timeout', async () => {
-    const electionId = crypto.randomUUID()
-    const queue = getOrCreateQueue(QUEUE_NAME)
-    const searchJobsSpy = vi
-      .spyOn(queue, 'searchJobs')
-      .mockRejectedValueOnce(new Error('search boom'))
-
-    await expect(
-      onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500),
-    ).rejects.toThrow('search boom')
-
-    searchJobsSpy.mockRestore()
+  it('counts precompleted and live jobs once each', async () => {
+    const data = target()
+    await addJob(data, false)
+    await settleSharedBackgroundJobs()
+    const completion = onceElectionVoteStatsCompleted(data, 2, 1_000)
+    const job = await addJob(data)
+    await completion
+    expect(await job.getState()).toBe('completed')
   })
 
-  it('rejects immediately when the matching job already failed before the listener registered', async () => {
-    const electionId = crypto.randomUUID()
-    await addFailedJob(electionId, 'boom')
-
-    await expect(
-      onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500),
-    ).rejects.toThrow(`Elections vote-stats job for election ${electionId} failed: boom`)
+  it('does not reuse a consumed completion and accepts a new job for the same target', async () => {
+    const data = target()
+    await addJob(data)
+    await onceElectionVoteStatsCompleted(data, 1, 1_000)
+    await expect(onceElectionVoteStatsCompleted(data, 1, 50)).rejects.toThrow(deadlineError(data))
+    const completion = onceElectionVoteStatsCompleted(data, 1, 1_000)
+    await addJob(data)
+    await completion
   })
 
-  it('does not resolve a later call off a completion an earlier call for the same election already consumed', async () => {
-    const electionId = crypto.randomUUID()
-    await addCompletedJob(electionId)
-    await expect(
-      onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500),
-    ).resolves.toBeUndefined()
-
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 50)
-    const promiseRejection = promise.catch((err: unknown) => err)
-    await flushMicrotasks()
-
-    await expect(promiseRejection).resolves.toMatchObject({
-      message: `onceElectionVoteStatsCompleted timed out after 50ms waiting for election ${electionId}`,
-    })
+  it('ignores another election and ordering key after their real jobs finish', async () => {
+    const data = target()
+    const completion = onceElectionVoteStatsCompleted(data, 1, 50)
+    const rejected = completion.catch((err: unknown) => err)
+    await addJob(target(), false)
+    await addJob({ electionId: data.electionId, orderingKey: 'topic' }, false)
+    await settleSharedBackgroundJobs()
+    expect(await rejected).toMatchObject({ message: deadlineError(data) })
   })
 
-  it('resolves a later call once a genuinely new job completes, unblocked by the earlier consumed job', async () => {
-    const electionId = crypto.randomUUID()
-    await addCompletedJob(electionId)
-    await expect(
-      onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500),
-    ).resolves.toBeUndefined()
-
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 500)
-    await flushMicrotasks()
-    emitOnWorker('completed', {
-      id: crypto.randomUUID(),
-      name: JOB_NAME,
-      data: electionTarget(electionId),
-    })
-
-    await expect(promise).resolves.toBeUndefined()
+  it('narrows real relation completions by relation table', async () => {
+    const tables = entityRelationMetadatum.filter(metadata => metadata.election)
+    const first = tables[0]!.table_name as EntityRelationElectionTable
+    const second = tables[1]!.table_name as EntityRelationElectionTable
+    const data: ElectionJobInput = {
+      electionId: crypto.randomUUID(),
+      orderingKey: 'entity_relation',
+      relationTable: first,
+    }
+    const completion = onceElectionVoteStatsCompleted(data, 1, 1_000)
+    await addJob({ ...data, relationTable: second }, false)
+    await settleSharedBackgroundJobs()
+    const job = await addJob(data)
+    await completion
+    expect(await job.getState()).toBe('completed')
   })
 
-  it('narrows entity_relation completions by relationTable', async () => {
-    const electionId = crypto.randomUUID()
-    const match = onceElectionVoteStatsCompleted(
-      {
-        electionId,
-        orderingKey: 'entity_relation',
-        relationTable: 'my_table' as EntityRelationElectionTable,
-      },
-      1,
-      500,
-    )
-    await flushMicrotasks()
-    emitOnWorker('completed', {
-      name: JOB_NAME,
-      data: {
-        electionId,
-        orderingKey: 'entity_relation',
-        relationTable: 'other_table',
-      },
-    })
-    emitOnWorker('completed', {
-      name: JOB_NAME,
-      data: {
-        electionId,
-        orderingKey: 'entity_relation',
-        relationTable: 'my_table',
-      },
-    })
-
-    await expect(match).resolves.toBeUndefined()
+  it('rejects a terminal search failure and removes listeners', async () => {
+    const worker = getSharedBackgroundWorker()
+    const completedListeners = worker.listenerCount('completed')
+    const failedListeners = worker.listenerCount('failed')
+    const admissionListeners = queue.listenerCount('added')
+    const spy = vi.spyOn(queue, 'searchJobs').mockRejectedValueOnce(new Error('search boom'))
+    try {
+      await expect(onceElectionVoteStatsCompleted(target())).rejects.toThrow('search boom')
+    } finally {
+      spy.mockRestore()
+    }
+    expect(worker.listenerCount('completed')).toBe(completedListeners)
+    expect(worker.listenerCount('failed')).toBe(failedListeners)
+    expect(queue.listenerCount('added')).toBe(admissionListeners)
   })
 
-  it('does not match a different election ordering key sharing the same id', async () => {
-    const electionId = crypto.randomUUID()
-    const promise = onceElectionVoteStatsCompleted(electionTarget(electionId), 1, 50)
-    const outcome = promise.catch((err: unknown) => err)
-    await flushMicrotasks()
-    emitOnWorker('completed', {
-      name: JOB_NAME,
-      data: { electionId, orderingKey: 'topic' },
-    })
-
-    await expect(outcome).resolves.toMatchObject({
-      message: `onceElectionVoteStatsCompleted timed out after 50ms waiting for election ${electionId}`,
-    })
+  it('does not wait when no completions are requested', async () => {
+    await expect(onceElectionVoteStatsCompleted(target(), 0)).resolves.toBeUndefined()
   })
 })
