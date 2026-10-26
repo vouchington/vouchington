@@ -73,30 +73,40 @@ WHERE topic_aliases.topic_id IS NULL AND EXCLUDED.topic_id IS NOT NULL;`)
   const amexContentHash = topicContentHash('Amex Referral Program')
   parts.push(`
 -- The Amex all-cards parent is application invariant data, independent of sample CSV imports.
-INSERT INTO topics (
-  name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via
+-- Do not attempt an INSERT for an existing slug: its BEFORE INSERT identity trigger runs
+-- even when ON CONFLICT would skip the update.
+WITH existing AS (SELECT id FROM topics WHERE slug = 'amex-referral-program'),
+updated AS (
+  UPDATE topics SET
+    name = 'Amex Referral Program',
+    topic_type = 'referral_program',
+    bedrock_nova_multimodal_v1_content_sha256 = decode('${amexContentHash}', 'hex'),
+    deleted_at = NULL
+  WHERE id = (SELECT id FROM existing)
+    AND (name IS DISTINCT FROM 'Amex Referral Program'
+      OR topic_type IS DISTINCT FROM 'referral_program'
+      OR bedrock_nova_multimodal_v1_content_sha256 IS DISTINCT FROM decode('${amexContentHash}', 'hex')
+      OR deleted_at IS NOT NULL)
+  RETURNING id
+),
+inserted AS (
+  INSERT INTO topics (name, slug, topic_type, bedrock_nova_multimodal_v1_content_sha256, created_via)
+  SELECT 'Amex Referral Program', 'amex-referral-program', 'referral_program', decode('${amexContentHash}', 'hex'), 'system'
+  WHERE NOT EXISTS (SELECT 1 FROM existing)
+  RETURNING id
 )
-VALUES (
-  'Amex Referral Program', 'amex-referral-program', 'referral_program',
-  decode('${amexContentHash}', 'hex'), 'system'
-)
-ON CONFLICT (slug) DO UPDATE SET
-  name = EXCLUDED.name,
-  topic_type = EXCLUDED.topic_type,
-  bedrock_nova_multimodal_v1_content_sha256 = EXCLUDED.bedrock_nova_multimodal_v1_content_sha256,
-  deleted_at = NULL
-WHERE topics.name IS DISTINCT FROM EXCLUDED.name
-  OR topics.topic_type IS DISTINCT FROM EXCLUDED.topic_type
-  OR topics.bedrock_nova_multimodal_v1_content_sha256 IS DISTINCT FROM EXCLUDED.bedrock_nova_multimodal_v1_content_sha256
-  OR topics.deleted_at IS NOT NULL;
+SELECT id FROM updated UNION ALL SELECT id FROM inserted;
+
+UPDATE referral_program_topics SET
+  enabled_at = COALESCE(enabled_at, CURRENT_TIMESTAMP),
+  disabled_at = NULL
+WHERE topic_id = (SELECT id FROM topics WHERE slug = 'amex-referral-program')
+  AND (enabled_at IS NULL OR disabled_at IS NOT NULL);
 
 INSERT INTO referral_program_topics (topic_id)
-SELECT id FROM topics WHERE slug = 'amex-referral-program'
-ON CONFLICT (topic_id) DO UPDATE SET
-  enabled_at = COALESCE(referral_program_topics.enabled_at, EXCLUDED.enabled_at),
-  disabled_at = NULL
-WHERE referral_program_topics.enabled_at IS NULL
-  OR referral_program_topics.disabled_at IS NOT NULL;
+SELECT topic.id FROM topics topic
+WHERE topic.slug = 'amex-referral-program'
+  AND NOT EXISTS (SELECT 1 FROM referral_program_topics program WHERE program.topic_id = topic.id);
 
 INSERT INTO referral_program_link_validation_rule_sets (slug, user_help_text)
 VALUES ('amex_referral', 'Share your Amex referral link from your card account')
