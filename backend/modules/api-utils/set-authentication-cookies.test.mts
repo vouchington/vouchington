@@ -4,6 +4,7 @@ import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   SESSION_EXPIRATION_SECONDS,
   signDeviceJwt,
+  signSessionJwt,
 } from '@ts-shared/session-jwt'
 
 function makeCookiesSpy() {
@@ -92,23 +93,49 @@ describe('setAuthenticationCookies', () => {
     expect(dtOptions.maxAge).toBeLessThanOrEqual(remainingSeconds)
   })
 
-  it('st cookie uses maxAge of SESSION_EXPIRATION_SECONDS', () => {
+  it('st cookie expires at the signed expiry after delayed issuance or exact replay', async () => {
     const { ctx, calls } = makeCookiesSpy()
-    setAuthenticationCookies(ctx, { dt: 'device-token', st: 'session-token' })
+    const now = Math.floor(Date.now() / 1000)
+    const expiry = now + 120
+    const st = await signSessionJwt(
+      {
+        did: '0194a541-7b19-7ccf-9afa-7087b692841c',
+        sid: '0194a541-7b19-7ccf-9afa-7087b692841d',
+        uid: null,
+        client: 'web',
+      },
+      { issuedAt: now - 480, expiresIn: expiry },
+    )
+    setAuthenticationCookies(ctx, { dt: 'device-token', st })
     const stOptions = calls.find(c => c[0] === 'st')![2]
-    expect(stOptions.maxAge).toBe(SESSION_EXPIRATION_SECONDS)
+    expect(stOptions.expires).toEqual(new Date(expiry * 1000))
+    expect(stOptions.maxAge).toBeUndefined()
   })
 
-  it('st cookie uses maxAge of ATTESTED_SESSION_EXPIRATION_SECONDS for an attested device', () => {
+  it('st cookie cannot outlive the attested session limit', async () => {
     const { ctx, calls } = makeCookiesSpy()
+    const now = Math.floor(Date.now() / 1000)
+    const st = await signSessionJwt(
+      {
+        did: '0194a541-7b19-7ccf-9afa-7087b692841c',
+        sid: '0194a541-7b19-7ccf-9afa-7087b692841d',
+        uid: null,
+      },
+      { issuedAt: now, expiresIn: now + ATTESTED_SESSION_EXPIRATION_SECONDS + 120 },
+    )
     setAuthenticationCookies(ctx, {
       dt: 'device-token',
-      st: 'session-token',
+      st,
       deviceClass: 'attested',
     })
     const stOptions = calls.find(c => c[0] === 'st')![2]
-    expect(stOptions.maxAge).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-    expect(stOptions.maxAge).not.toBe(SESSION_EXPIRATION_SECONDS)
+    expect((stOptions.expires as Date).getTime()).toBeLessThanOrEqual(
+      Date.now() + ATTESTED_SESSION_EXPIRATION_SECONDS * 1000,
+    )
+    expect((stOptions.expires as Date).getTime()).toBeGreaterThan(
+      Date.now() + SESSION_EXPIRATION_SECONDS * 1000,
+    )
+    expect(stOptions.maxAge).toBeUndefined()
   })
 
   it('dt cookie lifetime cannot be extended by deviceClass', async () => {
