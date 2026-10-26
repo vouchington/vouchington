@@ -1,6 +1,7 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
+import { MODERATION_APPEAL_HISTORY_RETENTION_MONTHS } from '@services/moderation-appeals/config'
 import type { ModerationCleanupKind } from './cleanup-moderation-kinds.mts'
 
 /** Delete only terminal records after their window; the candidate ids are one locked keyset page. */
@@ -42,7 +43,7 @@ export async function deleteExpiredModerationHistory(
       ;({ rowCount } = await query(sql`/* deleteExpiredModerationHistory:appeals */
         DELETE FROM moderation_appeals appeal
         WHERE appeal.id = ANY(${ids}::uuid[])
-          AND appeal.resolved_at < ${now}::timestamptz - interval '24 months'
+          AND appeal.resolved_at < ${now}::timestamptz - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS})
       `))
       break
     case 'disputes':

@@ -5,12 +5,11 @@ import { getModerationCleanupCandidates } from './cleanup-moderation-candidates.
 import { deleteExpiredModerationHistory } from './cleanup-moderation-delete-history.mts'
 import { deleteExpiredModerationSanctions } from './cleanup-moderation-delete-sanctions.mts'
 import { assertPositiveInteger } from './normalize-positive-integer.mts'
-import {
-  MODERATION_CLEANUP_KINDS,
-  type ModerationCleanupKind,
-} from './cleanup-moderation-kinds.mts'
+import { MODERATION_CLEANUP_KINDS } from '@voucha/types/entities/moderation-retention'
+import type { ModerationCleanupKind } from './cleanup-moderation-kinds.mts'
 
 export type ModerationRecordCleanupOptions = {
+  kinds?: readonly ModerationCleanupKind[]
   batchSize: number
   maxBatches: number
   lowerBoundDate?: Date
@@ -21,9 +20,10 @@ export type ModerationRecordCleanupOptions = {
 export type ModerationRecordCleanupResult = {
   deleted: number
   hasMore: boolean
+  remainingKinds: ModerationCleanupKind[]
 }
 
-/** Each stream owns a durable UUIDv7 position; a daily run processes at most its configured pages. */
+/** Each stream owns a durable UUIDv7 position; one job processes at most its configured pages. */
 export async function cleanupModerationRecords(
   options: ModerationRecordCleanupOptions,
 ): Promise<ModerationRecordCleanupResult> {
@@ -31,8 +31,11 @@ export async function cleanupModerationRecords(
   const maxBatches = assertPositiveInteger(options.maxBatches, 'maxBatches')
   const now = options.now ?? new Date()
   let deleted = 0
-  let hasMore = false
-  for (const kind of MODERATION_CLEANUP_KINDS) {
+  const remainingKinds: ModerationCleanupKind[] = []
+  const kinds = MODERATION_CLEANUP_KINDS.filter(
+    kind => !options.kinds || options.kinds.includes(kind),
+  )
+  for (const kind of kinds) {
     let kindHasMore = false
     for (let batch = 0; batch < maxBatches; batch += 1) {
       // no-mistakes-disable-next-line query-reached-per-item: fifteen fixed streams, with one bounded page transaction and durable checkpoint per step
@@ -41,9 +44,9 @@ export async function cleanupModerationRecords(
       kindHasMore = result.hasMore
       if (!result.hasMore) break
     }
-    hasMore ||= kindHasMore
+    if (kindHasMore) remainingKinds.push(kind)
   }
-  return { deleted, hasMore }
+  return { deleted, hasMore: remainingKinds.length > 0, remainingKinds }
 }
 
 async function cleanupModerationRecordPage(
@@ -51,7 +54,7 @@ async function cleanupModerationRecordPage(
   batchSize: number,
   now: Date,
   options: ModerationRecordCleanupOptions,
-): Promise<ModerationRecordCleanupResult> {
+): Promise<{ deleted: number; hasMore: boolean }> {
   await using transaction = await beginTransaction()
   await transaction(sql`/* cleanupModerationRecordPage.ensureCursor */
     INSERT INTO moderation_record_cleanup_cursors (kind)

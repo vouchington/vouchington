@@ -1,19 +1,3 @@
-export const MODERATION_CLEANUP_KINDS = [
-  'judgements',
-  'training_feedbacks',
-  'appeals',
-  'disputes',
-  'warnings',
-  'suspensions',
-  'bans',
-  'reports',
-  'cases',
-  'actions',
-  'integrity_flags',
-  'report_penalties',
-  'vote_penalties',
-  'notes',
-  'applications',
-] as const
+import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 
-export type ModerationCleanupKind = (typeof MODERATION_CLEANUP_KINDS)[number]
+export type ModerationCleanupKind = FiniteValue<'moderation_record_cleanup_kinds'>

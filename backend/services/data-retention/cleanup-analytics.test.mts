@@ -110,7 +110,6 @@ describe('cleanupAnalyticsLocalFiles', () => {
         webPushSubscriptionTombstones: emptyWindow,
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
-        moderationRecords: emptyWindow,
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -128,7 +127,6 @@ describe('cleanupAnalyticsLocalFiles', () => {
       expiredTopicImportAttempts: { deleted: 0, hasMore: false },
       oldPendingNotificationPushIntents: { deleted: 0, hasMore: false, continuation: null },
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
-      moderationRecords: { deleted: 0, hasMore: false },
       terminalStripeEventWork: { deleted: 0, hasMore: false, cursorId: null },
       abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false, cursorId: null },
       emailAddressLoginTokens: { deleted: 0, hasMore: false, continuation: null },

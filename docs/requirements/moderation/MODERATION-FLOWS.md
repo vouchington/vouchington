@@ -39,8 +39,9 @@ feed. It applies the shared delay, cohort suppression, and rounding before data 
 ## Record lifecycle
 
 Operational moderation history is retained only while it can support an open decision, an appeal,
-or a staff audit. The daily retention worker walks each record family in small, resumable pages;
-terminal records become eligible according to their own lifecycle. Pending decisions, active
+or a staff audit. A daily queue seed walks each record family in bounded, resumable jobs;
+unfinished families continue immediately without restarting families that have finished.
+Terminal records become eligible according to their own lifecycle. Pending decisions, active
 suspensions, bans, and penalties remain available until their lifecycle ends. Warnings follow their
 own retention window.
 

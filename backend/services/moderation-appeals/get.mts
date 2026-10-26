@@ -2,7 +2,11 @@ import { assertNever } from '@modules/utils/assert-never'
 import { query as executeQuery, read, type QueryOptions } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
-import { APPEAL_SLA_HOURS, type ModerationAppealStatus } from './config.mts'
+import {
+  APPEAL_SLA_HOURS,
+  MODERATION_APPEAL_HISTORY_RETENTION_MONTHS,
+  type ModerationAppealStatus,
+} from './config.mts'
 import type { ModerationAppealResponse } from './types.mts'
 import { APPEAL_JOINS, APPEAL_SELECT } from './get-query.mts'
 
@@ -90,7 +94,7 @@ export async function listModerationAppeals(
   if (appellantUserId) {
     query.append(sql` AND ma.appellant_user_id = ${appellantUserId}`)
     query.append(sql`
-      AND (ma.resolved_at IS NULL OR ma.resolved_at >= CURRENT_TIMESTAMP - interval '24 months')
+      AND (ma.resolved_at IS NULL OR ma.resolved_at >= CURRENT_TIMESTAMP - make_interval(months => ${MODERATION_APPEAL_HISTORY_RETENTION_MONTHS}))
     `)
   }
   if (beforeId) {

@@ -48,3 +48,9 @@ replaced Follow generation is superseded by the relation's current state; ballot
 remain separate immutable events.
 
 See also the [backend queue reference](../../overview/architecture/queues/README.md).
+
+Moderation-history cleanup checkpoints each bounded record-family page in PostgreSQL. Its queue
+receipt stores the result before admitting a deterministic, distinct child, and each continuation
+contains only unfinished families. Retained child jobs collapse ordinary admission retries; job
+trimming or a crash before the receipt can replay bounded, idempotent cleanup. A scheduled or
+operator seed restarts from durable cursor state after queue loss or a terminal failure.

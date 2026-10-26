@@ -28,6 +28,7 @@
     "@queues/background-cpu": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
+    "@queues/psql": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",

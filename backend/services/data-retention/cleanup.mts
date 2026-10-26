@@ -13,12 +13,7 @@ import {
   deleteOldReferralAttributionBatch,
   deleteOrphanedOAuthAccountBatch,
 } from './cleanup-batches.mts'
-import {
-  getModerationRecordCleanupLimits,
-  getTopicImportAttemptDeletionBatchSize,
-  type DataRetentionLimits,
-} from './config.mts'
-import { cleanupModerationRecords } from './cleanup-moderation-records.mts'
+import { getTopicImportAttemptDeletionBatchSize, type DataRetentionLimits } from './config.mts'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -108,7 +103,6 @@ type ExpiryCleanupOptions = Pick<
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
 type DataRetentionCleanupOptions = {
-  moderationRecords?: { lowerBoundDate?: Date; upperBoundDate?: Date; now?: Date }
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
@@ -141,7 +135,6 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
-  moderationRecords: { deleted: number; hasMore: boolean }
   retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
   retainedMediaBindings: RetainedMediaBindingCleanupPage
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
@@ -215,10 +208,6 @@ export async function runDataRetentionCleanup(
   const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
     withLimits(options.terminalNotificationPushIntents),
   )
-  const moderationRecords = await cleanupModerationRecords({
-    ...getModerationRecordCleanupLimits(),
-    ...options.moderationRecords,
-  })
   const terminalStripeEventWork = await cleanupTerminalStripeEventWork(
     withLimits(options.terminalStripeEventWork),
   )
@@ -264,7 +253,6 @@ export async function runDataRetentionCleanup(
   await cleanupAnalyticsLocalFiles()
 
   return {
-    moderationRecords,
     retainedRelationIdentities,
     retainedMediaBindings,
     retainedIdentityRoots,

@@ -1,3 +1,5 @@
+import type { ModerationRecordCleanupKind } from '@voucha/types/entities/moderation-retention'
+
 export type PsqlJobs =
   | 'runMigrations'
   | 'runViews'
@@ -5,6 +7,7 @@ export type PsqlJobs =
   | 'createPartitions'
   | 'cleanupPartitions'
   | 'dataRetentionCleanup'
+  | 'moderationRetentionCleanup'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -28,4 +31,15 @@ export type PsqlAdminJobType = (typeof PSQL_ADMIN_JOB_TYPES)[number]
 
 export type RefreshMaterializedViewData = {
   viewName: string
+}
+
+export type ModerationRetentionJobData = {
+  rootJobId?: string
+  hop?: number
+  remainingKinds?: ModerationRecordCleanupKind[]
+  receipt?: {
+    deleted: number
+    hasMore: boolean
+    remainingKinds: ModerationRecordCleanupKind[]
+  }
 }
