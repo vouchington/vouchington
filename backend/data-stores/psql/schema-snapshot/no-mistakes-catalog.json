@@ -78252,10 +78252,6 @@
     },
     "phone_number_login_tokens": {
       "checkConstraints": {
-        "phone_number_login_tokens_check": {
-          "definition": "CHECK (((consumed_at IS NULL) OR (invalidated_at IS NULL)))",
-          "validated": true
-        },
         "phone_number_login_tokens_phone_number_check": {
           "definition": "CHECK ((char_length(phone_number) <= 255))",
           "validated": true
@@ -78312,16 +78308,6 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "invalidated_at": {
-          "comment": "When a replacement code invalidated this unused token.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
-        },
         "phone_number": {
           "comment": "The phone number this token was sent to.",
           "dataType": "text",
@@ -78359,7 +78345,7 @@
         "idx_phone_number_login_tokens__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE ((consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (consumed_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -78382,7 +78368,7 @@
             }
           ],
           "live": true,
-          "predicate": "((consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "predicate": "(consumed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": true,

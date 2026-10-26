@@ -74322,7 +74322,6 @@
     },
     "phone_number_login_tokens": {
       "checkConstraints": {
-        "phone_number_login_tokens_check": "CHECK (((consumed_at IS NULL) OR (invalidated_at IS NULL)))",
         "phone_number_login_tokens_phone_number_check": "CHECK ((char_length(phone_number) <= 255))",
         "phone_number_login_tokens_phone_number_check1": "CHECK ((phone_number = lower(phone_number)))",
         "phone_number_login_tokens_phone_number_check2": "CHECK ((phone_number = TRIM(BOTH FROM phone_number)))",
@@ -74363,17 +74362,6 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
-        },
-        "invalidated_at": {
-          "collation": null,
-          "comment": "When a replacement code invalidated this unused token.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
         },
         "phone_number": {
           "collation": null,
@@ -74416,7 +74404,7 @@
         "idx_phone_number_login_tokens__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE ((consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (consumed_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -74434,7 +74422,7 @@
               "opclass": "text_ops"
             }
           ],
-          "predicate": "((consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "predicate": "(consumed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": true,

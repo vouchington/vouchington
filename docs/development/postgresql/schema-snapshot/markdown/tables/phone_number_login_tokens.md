@@ -6,15 +6,14 @@ Short-lived tokens for phone-number-based login via SMS/voice.
 
 Not partitioned — growth: bounded.
 
-| Column           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                    |
-| ---------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
-| `id`             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                            |
-| `phone_number`   | `text`                     | no       |                              |          |           |           | The phone number this token was sent to.                                                   |
-| `token`          | `text`                     | no       |                              |          |           |           | Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user. |
-| `created_at`     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                            |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                            |
-| `consumed_at`    | `timestamp with time zone` | yes      |                              |          |           |           | When the token was successfully consumed for phone-number login.                           |
-| `invalidated_at` | `timestamp with time zone` | yes      |                              |          |           |           | When a replacement code invalidated this unused token.                                     |
+| Column         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                    |
+| -------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
+| `id`           | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                            |
+| `phone_number` | `text`                     | no       |                              |          |           |           | The phone number this token was sent to.                                                   |
+| `token`        | `text`                     | no       |                              |          |           |           | Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user. |
+| `created_at`   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                            |
+| `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                            |
+| `consumed_at`  | `timestamp with time zone` | yes      |                              |          |           |           | When the token was successfully consumed for phone-number login.                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -25,7 +24,6 @@ Not partitioned — growth: bounded.
 
 **Check constraints:**
 
-- `phone_number_login_tokens_check`: `CHECK (((consumed_at IS NULL) OR (invalidated_at IS NULL)))`
 - `phone_number_login_tokens_phone_number_check`: `CHECK ((char_length(phone_number) <= 255))`
 - `phone_number_login_tokens_phone_number_check1`: `CHECK ((phone_number = lower(phone_number)))`
 - `phone_number_login_tokens_phone_number_check2`: `CHECK ((phone_number = TRIM(BOTH FROM phone_number)))`
@@ -38,7 +36,7 @@ _none_
 
 **Indexes:**
 
-- `idx_phone_number_login_tokens__active`: `CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE ((consumed_at IS NULL) AND (invalidated_at IS NULL))`
+- `idx_phone_number_login_tokens__active`: `CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (consumed_at IS NULL)`
 - `phone_number_login_tokens_phone_number_token_key`: `CREATE UNIQUE INDEX phone_number_login_tokens_phone_number_token_key ON public.phone_number_login_tokens USING btree (phone_number, token)`
 - `phone_number_login_tokens_pkey`: `CREATE UNIQUE INDEX phone_number_login_tokens_pkey ON public.phone_number_login_tokens USING btree (id)`
 - `phone_number_login_tokens_token_key`: `CREATE UNIQUE INDEX phone_number_login_tokens_token_key ON public.phone_number_login_tokens USING btree (token)`
