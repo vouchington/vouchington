@@ -14,6 +14,8 @@ import { processPostCreated, processPostDeleted, processPostUpdated } from './po
 import { processTopicCreated } from './topics.mts'
 import { processUrlCreated } from './urls.mts'
 import { processAutoFollowReferrer, processUserCreated, processUserUpdated } from './users.mts'
+import { enqueueInvalidateCommunityMemberUserMetrics } from '@queues/background/enqueues/communities'
+import { communityMemberMetricInvalidationData } from '@services/communities/members/invalidate-user-metrics'
 
 type ReconcileEntityDependencies = {
   processImageCreated: typeof processImageCreated
@@ -25,6 +27,7 @@ type ReconcileEntityDependencies = {
   processUrlCreated: typeof processUrlCreated
   processUserCreated: typeof processUserCreated
   processUserUpdated: typeof processUserUpdated
+  enqueueInvalidateCommunityMemberUserMetrics: typeof enqueueInvalidateCommunityMemberUserMetrics
 }
 
 const RECONCILE_ENTITY_DEPENDENCIES: ReconcileEntityDependencies = {
@@ -37,6 +40,7 @@ const RECONCILE_ENTITY_DEPENDENCIES: ReconcileEntityDependencies = {
   processUrlCreated,
   processUserCreated,
   processUserUpdated,
+  enqueueInvalidateCommunityMemberUserMetrics,
 }
 
 export async function reconcileEntities(
@@ -111,6 +115,16 @@ export async function reconcileEntity(
       await dependencies.processImageCreated({ id: data.entityId })
       return
     case 'community':
+      await repairReconciledBloomKeys(data)
+      if (data.communityInvalidation?.upperBoundMembershipId) {
+        await dependencies.enqueueInvalidateCommunityMemberUserMetrics(
+          communityMemberMetricInvalidationData(data.entityId, {
+            ...data.communityInvalidation,
+            upperBoundMembershipId: data.communityInvalidation.upperBoundMembershipId,
+          }),
+        )
+      }
+      return
     case 'rss_feed_item':
     case 'post_slug':
     case 'api_key':

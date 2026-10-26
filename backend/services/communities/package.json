@@ -36,6 +36,7 @@
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/email-digests": "workspace:^",
     "@queues/emails": "workspace:^",
@@ -68,7 +69,6 @@
     "valkyries": "^0.13.0"
   },
   "devDependencies": {
-    "@queues/background": "workspace:^",
     "@queues/cache-purge": "workspace:^",
     "@services/moderation-ai-config": "workspace:^",
     "@services/rss-feeds": "workspace:^",

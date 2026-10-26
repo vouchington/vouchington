@@ -161,6 +161,14 @@ still marked, so the queue is not a second source of truth and there is no dead-
   cap. A quota-delayed type releases that lease before deferral, leaving other ready types eligible.
 - **Fan-out is paged.** Dispatchers and backfills enqueue one bounded page and continue through a
   cursor, so no run reads unbounded rows and priority stays meaningful.
+- **Community member cache invalidation is paged.** Visibility, roster-visibility, archive and
+  deletion mutations admit a post-commit dispatcher instead of loading every member on the request
+  path. Each job invalidates one fixed-bound membership page and admits its cursor continuation.
+  The post-commit admission fixes the membership upper bound and records a writer WAL position.
+  Each job uses the replica only after it has replayed that position, otherwise that bounded page
+  reads the writer, so lag cannot create a skipped keyset gap. The entity-listener reconciliation
+  window re-admits missed roots from the community's durable row generation, including deleted
+  communities.
 - **A paged import survives a lost dispatcher.** User RSS and admin topic imports share the
   `background` queue, each import with its own dispatcher chain, so a large import never starves a
   small one. A dispatcher can be lost, so a scheduled sweep re-dispatches unfinished imports whose

@@ -32,6 +32,30 @@ describe('reconciliation continuation contract', () => {
       parseEntityJob('reconcileEntity', { ...candidate, createdInWindow: 'yes' }),
     ).toThrow(/createdInWindow must be a boolean/)
   })
+  it('carries the community invalidation generation and replica barrier', () => {
+    const candidate = {
+      entityType: 'community',
+      entityId: 'synthetic-community',
+      changedAtEpochUs: '1782864000000001',
+      communityInvalidation: {
+        xmin: '42',
+        updatedAt: '2026-07-01 00:00:00.000001+00',
+        minimumReplayLsn: '0/16B6C50',
+        upperBoundMembershipId: '00000000-0000-7000-8000-000000000001',
+      },
+    }
+    expect(parseEntityJob('reconcileEntity', candidate).data).toEqual(candidate)
+    expect(parseReconciliationDispatch({ window, after: candidate })).toEqual({
+      window,
+      after: candidate,
+    })
+    expect(() =>
+      parseEntityJob('reconcileEntity', {
+        ...candidate,
+        communityInvalidation: { ...candidate.communityInvalidation, xmin: 42 },
+      }),
+    ).toThrow(/xmin must be a string/)
+  })
   it.each([
     [],
     { unexpected: true },

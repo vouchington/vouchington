@@ -12,6 +12,13 @@ import { removeMember } from '@services/communities/members/remove'
 import { updateMemberRole } from '@services/communities/members/update-role'
 import type { CommunityMember } from '@services/communities/types'
 import { updateCommunity } from '@services/communities/update'
+import { setCommunityArchiveState } from '@services/communities/archive'
+import { invalidateCommunityMemberUserMetricsPage } from '@services/communities/members/invalidate-user-metrics'
+import {
+  COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB,
+  type InvalidateCommunityMemberUserMetricsData,
+} from '@queues/background/enqueues/communities-jobs'
+import { background } from '@queues/background/queues'
 import type { PrivateUser } from '@services/users/types'
 import {
   createTestUser,
@@ -24,6 +31,8 @@ import { trackUserMetricsFills } from '../../test-helpers/user-metrics-cache-fil
 import { getUserMetricsByAnyCached } from './metrics.mts'
 import { getCommunityOrThrow } from '@services/communities/get'
 import { loadCommunityWithViewer } from '@services/communities/load-with-viewer'
+import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 
 describe('community membership user metrics invalidation', () => {
   it('invalidates metrics when creating a community owner membership', async () => {
@@ -133,6 +142,7 @@ describe('community membership user metrics invalidation', () => {
     await warmUserMetricsCache(user, 1)
 
     await updateCommunity(owner, communityId, { visibility: 'private' }, ownerMembership)
+    await processMemberMetricInvalidation(communityId)
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 0)
@@ -150,6 +160,7 @@ describe('community membership user metrics invalidation', () => {
       { member_roster_visibility: 'users' },
       ownerMembership,
     )
+    await processMemberMetricInvalidation(communityId)
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 0)
@@ -162,11 +173,60 @@ describe('community membership user metrics invalidation', () => {
     await warmUserMetricsCache(user, 1)
 
     await deleteCommunity(owner, communityId, ownerMembership)
+    await processMemberMetricInvalidation(communityId)
+
+    await expectMetricsInvalidated(user)
+    await expectCommunityCount(user, 0)
+  })
+
+  it('reports metadata admission failures without rejecting a committed visibility change', async () => {
+    const { communityId, owner, ownerMembership } = await createOwnedCommunity()
+    const failure = await withPostgresPoolQueryFailureForTest(
+      '/* captureCommunityMemberMetricInvalidationMetadata */',
+      () => updateCommunity(owner, communityId, { visibility: 'private' }, ownerMembership),
+    )
+    expect(failure.result.visibility).toBe('private')
+    await expect(getCommunityOrThrow(communityId)).resolves.toMatchObject({ visibility: 'private' })
+    expect(
+      sentryCaptureExceptionMock.mock.calls.filter(([reported]) => reported === failure.error),
+    ).toHaveLength(1)
+  })
+
+  it('invalidates member metrics when a community is archived', async () => {
+    const { communityId, owner, ownerMembership } = await createOwnedCommunity()
+    const user = await createTestUser()
+    await insertTestCommunityMember({ communityId, userId: user.id })
+    await warmUserMetricsCache(user, 1)
+
+    await setCommunityArchiveState(owner, communityId, true, ownerMembership)
+    await processMemberMetricInvalidation(communityId)
 
     await expectMetricsInvalidated(user)
     await expectCommunityCount(user, 0)
   })
 })
+
+async function processMemberMetricInvalidation(
+  communityId: string,
+  expectedPages = 1,
+): Promise<void> {
+  for (let page = 0; page < expectedPages; page += 1) {
+    // Each processor awaits continuation admission, so this is a deterministic lookup, not polling.
+    const jobs = await background.searchJobs({
+      name: COMMUNITY_MEMBER_METRIC_INVALIDATION_JOB.name,
+      data: { communityId },
+    })
+    expect(jobs).toHaveLength(1)
+    const job = jobs[0]!
+    try {
+      await invalidateCommunityMemberUserMetricsPage(
+        job.data as InvalidateCommunityMemberUserMetricsData,
+      )
+    } finally {
+      await job.remove()
+    }
+  }
+}
 
 async function createOwnedCommunity(
   visibility: 'public' | 'private' = 'public',

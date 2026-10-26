@@ -51,6 +51,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'hostname-blocking:dispatcher': 1,
   'topic-merge:tasks': 1,
   'topic-merge:dispatcher': 1,
+  'communities:member-metric-invalidation': 1,
 } as const
 
 export function getBackgroundOrderingLimits(key: string): {

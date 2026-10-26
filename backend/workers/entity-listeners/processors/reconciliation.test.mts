@@ -98,6 +98,7 @@ describe('reconcileEntity', () => {
       processUrlCreated: vi.fn<VitestLooseMock>(),
       processUserCreated: vi.fn<VitestLooseMock>(),
       processUserUpdated: vi.fn<VitestLooseMock>(),
+      enqueueInvalidateCommunityMemberUserMetrics: vi.fn<VitestLooseMock>(),
     }
 
     await reconcileEntity(

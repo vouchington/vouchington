@@ -9,19 +9,19 @@ import type { CommunityMember } from './types.mts'
 import { writeCommunityUpdate } from './community-update-returning.mts'
 import { updateCommunity, type UpdateCommunityInput } from './update.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
+import { enqueueCommunityMemberMetricInvalidationBestEffort } from './members/invalidate-user-metrics.mts'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordPostPublicationChange } from '@services/post-publication'
 
 type UpdateCommunityAndSetArchiveStateDependencies = {
   invalidateCommunities: typeof invalidate.communities
-  invalidateAllCommunityMemberUserMetrics: typeof invalidateAllCommunityMemberUserMetrics
+  enqueueCommunityMemberMetricInvalidationBestEffort: typeof enqueueCommunityMemberMetricInvalidationBestEffort
 }
 
 const updateCommunityAndSetArchiveStateDependencies: UpdateCommunityAndSetArchiveStateDependencies =
   {
     invalidateCommunities: invalidate.communities,
-    invalidateAllCommunityMemberUserMetrics,
+    enqueueCommunityMemberMetricInvalidationBestEffort,
   }
 
 export async function archiveCommunity(
@@ -97,9 +97,15 @@ export async function setCommunityArchiveState(
     : await unarchiveCommunity(communityId, options)
   const updated = written ?? (await getCommunity(communityId, { ...options, readOnly: false }))
   assert(updated, 404, 'Community not found after archive update')
-  if (!options?.query) {
-    await invalidate.communities(currentCommunity, updated)
-    if (Boolean(currentCommunity.archived_at) !== Boolean(updated.archived_at)) {
+  if (!options?.query && !options?.client) {
+    const archiveChanged = Boolean(currentCommunity.archived_at) !== Boolean(updated.archived_at)
+    await Promise.all([
+      invalidate.communities(currentCommunity, updated),
+      archiveChanged
+        ? enqueueCommunityMemberMetricInvalidationBestEffort(communityId)
+        : Promise.resolve(),
+    ])
+    if (archiveChanged) {
       void enqueueRefreshTopHashtags()
     }
   }
@@ -134,10 +140,12 @@ export async function updateCommunityAndSetArchiveState(
   await transaction.commit()
   await Promise.all([
     (dependencies.invalidateCommunities ?? invalidate.communities)(currentCommunity, updated),
-    input.visibility !== undefined || input.member_roster_visibility !== undefined
+    input.visibility !== undefined ||
+    input.member_roster_visibility !== undefined ||
+    Boolean(currentCommunity.archived_at) !== Boolean(updated.archived_at)
       ? (
-          dependencies.invalidateAllCommunityMemberUserMetrics ??
-          invalidateAllCommunityMemberUserMetrics
+          dependencies.enqueueCommunityMemberMetricInvalidationBestEffort ??
+          enqueueCommunityMemberMetricInvalidationBestEffort
         )(communityId)
       : Promise.resolve(),
   ])

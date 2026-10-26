@@ -35,6 +35,8 @@ export const backgroundWorkEntries3 = [
         'Embedded first posts chunk size for communities processing.',
       recovery_page_size: 'Recovery page size for communities processing.',
       summary_email_batch_size: 'Summary email batch size for communities processing.',
+      member_metric_invalidation_page_size:
+        'Active memberships processed by one community metric invalidation job.',
     },
   }),
   defineBoundedWorkNamespace({

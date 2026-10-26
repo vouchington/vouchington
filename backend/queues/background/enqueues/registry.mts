@@ -10,6 +10,7 @@ import {
   BLUESKY_FOLLOW_PROPAGATION_JOBS,
 } from './bluesky-follow-propagation-jobs.mts'
 import { CACHE_PURGE_DOMAIN, CACHE_PURGE_JOBS } from './cache-purge-jobs.mts'
+import { COMMUNITIES_DOMAIN, COMMUNITIES_JOBS } from './communities-jobs.mts'
 import { EMAIL_DIGESTS_DOMAIN } from './email-digests-domain.mts'
 import { EMAIL_DIGESTS_JOBS } from './email-digests-jobs.mts'
 import { ENTITY_LISTENERS_DOMAIN, ENTITY_LISTENERS_JOBS } from './entity-listeners-jobs.mts'
@@ -77,6 +78,7 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   MODERATION_SIGNALS_DOMAIN,
   HOSTNAME_BLOCKING_DOMAIN,
   TOPIC_MERGE_DOMAIN,
+  COMMUNITIES_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
@@ -106,6 +108,7 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...MODERATION_SIGNALS_JOBS,
   ...HOSTNAME_BLOCKING_JOBS,
   ...TOPIC_MERGE_JOBS,
+  ...COMMUNITIES_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))
