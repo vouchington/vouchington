@@ -191,7 +191,10 @@ or Valkey state is lost; queue retention does not authorize an outcome. Recovery
 upper UUID bound and continues by verification ID in job data, so a failing early verification cannot
 starve later rows. Repeated scheduled sweeps revisit earlier IDs to cover out-of-order commits.
 Verification tasks and recovery pages use separate concurrency lanes so externally submitted
-purchases cannot occupy the dispatcher lane. Provider throttles defer their lane for the stated wait.
+purchases cannot occupy the dispatcher lane. Each verification retains its job and deduplication
+identity while pending purchases and provider throttles delay that job. Per-verification ordering
+isolates these waits; a token-owned Valkey execution lease enforces the global provider-call cap
+and is released before deferral, so a delayed purchase cannot block unrelated verifications.
 
 ## Related architecture
 

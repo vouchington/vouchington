@@ -24,6 +24,13 @@ import {
 } from './verification-finalization.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
+export class GooglePlayPurchasePendingError extends Error {
+  constructor() {
+    super('Google Play purchase is pending')
+    this.name = 'GooglePlayPurchasePendingError'
+  }
+}
+
 /** Worker authority: fetches subscriptionsv2, then persists/projections its normalized source state. */
 export async function processGooglePlayMembershipVerification(
   verificationId: string,
@@ -86,7 +93,7 @@ export async function processGooglePlayMembershipVerification(
       if (result.bindablePending) {
         await persistPendingGooglePlaySource(fresh, resolved, finalizeQuery)
         await finalizeQuery.commit()
-        throw new Error('Google Play purchase is pending')
+        throw new GooglePlayPurchasePendingError()
       }
       return await reject(fresh, result.reasonCode, finalizeQuery)
     }

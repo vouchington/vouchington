@@ -509,11 +509,11 @@
         "native.memberships.verification-status.rejected.default",
         "native.memberships.verification-status.verified.default"
       ],
-      "hash": "21ec9923bf6d6c94db0cad278c3fffae3a162cd517ab2394c02b35f4404b043b"
+      "hash": "ce35abe77051c5bb1467f5f15d2b9859ce26ce2910c05de270d339495e82285d"
     },
     "GET:/api/v1/memberships/me": {
       "fixtureIds": ["native.memberships.me.default", "native.memberships.me.lifecycle.default"],
-      "hash": "90e098d0124f7ebf50283324cfbab2148755cbc46470008b5a3d18127345c856"
+      "hash": "5910ef62694aa1df91da2071e2489603ca2a6bc69f35f042c0bfbf7716194386"
     },
     "GET:/api/v1/memberships/plans": {
       "fixtureIds": ["native.memberships.plans.default"],
@@ -1309,7 +1309,7 @@
     },
     "POST:/api/v1/membership-verifications": {
       "fixtureIds": ["native.memberships.verification.pending.default"],
-      "hash": "28e1573f8a1e979aee45c2f7bb7049edc7efe0392f3d3b1b7792270ddb22616e"
+      "hash": "170e88eeb1ff1b36b47a05f9a8c34d50af4bb0c8e15c5349b49e9c3eb0a84a2b"
     },
     "POST:/api/v1/memberships/microsoft-store/service-tickets": {
       "fixtureIds": ["native.memberships.microsoft.service-tickets.default"],
@@ -2063,7 +2063,7 @@
     },
     "native.memberships.me.lifecycle.default": {
       "fixtureIds": ["native.memberships.me.lifecycle.default"],
-      "hash": "407793829c6e4ae2265ed3fbcdf5c8ac35319003c80d1bbc35852d90cd242114"
+      "hash": "43211da3859fa2e59a2591024d3f2b3070877a793052c5729fb1e5501a865e4c"
     },
     "native.memberships.microsoft.service-tickets.default": {
       "fixtureIds": ["native.memberships.microsoft.service-tickets.default"],

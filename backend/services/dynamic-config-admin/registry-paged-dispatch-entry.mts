@@ -30,8 +30,8 @@ export const membershipVerificationQueueRegistryEntry = defineBoundedWorkNamespa
   label: 'Membership verification queue',
   maxValues: membershipVerificationQueueMaxValues,
   descriptions: {
-    verification_concurrency:
-      'Global concurrency for externally submitted membership verifications.',
+    verification_concurrency: 'Global provider-execution concurrency for membership verifications.',
     dispatch_concurrency: 'Global concurrency for pending verification recovery pages.',
+    verification_retry_minutes: 'Delay before checking a pending provider purchase again.',
   },
 })

@@ -15,7 +15,6 @@ import {
   enqueueReconcileMembershipRefundOperation,
   enqueueSyncMembershipPauseCollection,
 } from '@queues/memberships/enqueues'
-import { processMembershipVerification } from '@services/memberships/process-verification'
 import { recoverAppleNotifications } from './apple-notification-recovery.mts'
 import {
   processGooglePlayNotification,
@@ -31,12 +30,13 @@ import { processMicrosoftStoreSource, recoverMicrosoftStoreSources } from './mic
 import { processSendRenewalPriceIncreaseEmail } from './send-renewal-price-increase-email.mts'
 import { processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
 import { recoverMembershipVerifications } from './verification-recovery.mts'
+import { processMembershipVerificationJob } from './process-verification-job.mts'
 
 type MembershipJobProcessors = {
   deliverMembershipEntitlementEffects: typeof deliverPendingMembershipEntitlementEffects
   expireElapsedMemberships: typeof expireElapsedMembershipsBatch
   processAppleNotification: typeof reconcileAppleNotification
-  processMembershipVerification: typeof processMembershipVerification
+  processMembershipVerificationJob: typeof processMembershipVerificationJob
   processRenewalNotificationCheckDispatcher: typeof processRenewalNotificationCheckDispatcher
   processSendRenewalPriceIncreaseEmail: typeof processSendRenewalPriceIncreaseEmail
   processStripeEvent: typeof processStripeEvent
@@ -63,7 +63,7 @@ const PROCESSORS: MembershipJobProcessors = {
   deliverMembershipEntitlementEffects: deliverPendingMembershipEntitlementEffects,
   expireElapsedMemberships: expireElapsedMembershipsBatch,
   processAppleNotification: reconcileAppleNotification,
-  processMembershipVerification,
+  processMembershipVerificationJob,
   processRenewalNotificationCheckDispatcher,
   processSendRenewalPriceIncreaseEmail,
   processStripeEvent,
@@ -116,7 +116,7 @@ async function dispatchMembershipJob(job: Job, processors: MembershipJobProcesso
       await processors.expireElapsedMemberships()
       return
     case 'processMembershipVerification':
-      await processors.processMembershipVerification(job.data.verificationId)
+      await processors.processMembershipVerificationJob(job)
       return
     case 'processAppleNotification':
       await processors.processAppleNotification(job.data)

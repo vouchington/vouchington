@@ -24,7 +24,6 @@ export async function getMembershipPendingState(userId: string) {
       provider: MembershipPurchaseProvider
       status: MembershipVerificationStatus
       reason_code: MembershipVerificationReasonCode | null
-      next_processing_at: Date | null
     }>(sql`/* getMembershipPendingState.verifications */
       SELECT verification.id, provider_context.provider,
         CASE
@@ -33,7 +32,7 @@ export async function getMembershipPendingState(userId: string) {
           WHEN rejected_at IS NOT NULL THEN 'rejected'
           ELSE 'pending'
         END AS status,
-        result_code AS reason_code, NULL::timestamptz AS next_processing_at
+        result_code AS reason_code
       FROM membership_verifications verification
       INNER JOIN membership_provider_contexts provider_context ON provider_context.id = verification.membership_provider_context_id
       WHERE user_id = ${userId}

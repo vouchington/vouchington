@@ -29,21 +29,28 @@ describe('membership verifications', () => {
     const user = await createTestUser()
     const first = await createTestPendingMembershipVerification(user.id)
     const second = await createTestPendingMembershipVerification(user.id)
+    // Exact UUID intervals isolate this global sweep from other parallel tests' pending rows.
+    const [beforeFirst, beforeSecond] = [first, second].map(id =>
+      (BigInt(`0x${id.replaceAll('-', '')}`) - 1n)
+        .toString(16)
+        .padStart(32, '0')
+        .replace(/^(........)(....)(....)(....)(............)$/u, '$1-$2-$3-$4-$5'),
+    )
     await expect(
-      findRecoverableMembershipVerificationIds({ after: first, through: second, limit: 1 }),
+      findRecoverableMembershipVerificationIds({ after: beforeSecond, through: second, limit: 1 }),
     ).resolves.toEqual([second])
     await expect(getMembershipPendingState(user.id)).resolves.toMatchObject({
       verifications: expect.arrayContaining([
-        expect.objectContaining({ id: first, status: 'pending', next_processing_at: null }),
+        { id: first, provider: 'apple_app_store', status: 'pending', reason_code: null },
       ]),
     })
     await completeMembershipVerification(first)
     await expect(
-      findRecoverableMembershipVerificationIds({ after: first, through: second, limit: 1 }),
-    ).resolves.toEqual([second])
+      findRecoverableMembershipVerificationIds({ after: beforeFirst, through: first, limit: 1 }),
+    ).resolves.toEqual([])
     await expect(getMembershipPendingState(user.id)).resolves.toMatchObject({
       verifications: expect.arrayContaining([
-        expect.objectContaining({ id: first, status: 'verified', next_processing_at: null }),
+        { id: first, provider: 'apple_app_store', status: 'verified', reason_code: 'verified' },
       ]),
     })
   })

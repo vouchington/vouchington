@@ -24050,6 +24050,9 @@
               "const": "missing_account_token"
             },
             {
+              "const": "provider_unavailable"
+            },
+            {
               "const": "purchase_pending"
             },
             {

@@ -3,6 +3,8 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import {
+  MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
+  membershipVerificationDispatchOrdering,
   membershipVerificationOrdering,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
@@ -71,7 +73,7 @@ export function enqueueRecoverMembershipVerifications(
   return enqueueRecoverMembershipVerificationsJob(data, {
     jobId,
     priority: PRIORITY_DISPATCHER,
-    ordering: membershipVerificationOrdering(true),
+    ordering: membershipVerificationDispatchOrdering(),
     deduplication: {
       id: 'membership-verification-recovery',
       mode: 'throttle',
@@ -85,8 +87,9 @@ function verificationJobOptions(data: ProcessMembershipVerificationData): Partia
   const jobId = data.verificationId
   return {
     jobId,
+    lockDuration: MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
     priority: PRIORITY_DEFAULT,
-    ordering: membershipVerificationOrdering(),
+    ordering: membershipVerificationOrdering(data.verificationId),
     deduplication: { id: jobId, mode: 'simple' },
   }
 }

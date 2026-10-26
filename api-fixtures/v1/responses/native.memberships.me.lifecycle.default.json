@@ -25,16 +25,20 @@
     "verifications": [
       {
         "id": "00000000-0000-7000-8000-000000000809",
-        "next_processing_at": null,
         "provider": "google_play",
         "reason_code": "competing_direct_source",
         "status": "conflict"
       },
       {
         "id": "00000000-0000-7000-8000-000000000810",
-        "next_processing_at": null,
         "provider": "microsoft_store",
         "reason_code": "wrong_account",
+        "status": "rejected"
+      },
+      {
+        "id": "00000000-0000-7000-8000-000000000815",
+        "provider": "google_play",
+        "reason_code": "provider_unavailable",
         "status": "rejected"
       }
     ]

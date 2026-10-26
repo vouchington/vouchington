@@ -101,7 +101,7 @@ describe('membership verification recovery with real PostgreSQL and GlideMQ', ()
         opts: {
           removeOnComplete: true,
           removeOnFail: true,
-          ordering: { key: 'memberships:verification', concurrency: expect.any(Number) },
+          ordering: { key: `memberships:verification:${verification.id}`, concurrency: 1 },
         },
       })
       await completeMembershipVerification(verification.id)

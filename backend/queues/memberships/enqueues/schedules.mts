@@ -5,7 +5,7 @@ import {
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import {
-  membershipVerificationOrdering,
+  membershipVerificationDispatchOrdering,
   APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS,
   MEMBERSHIP_ENTITLEMENT_EFFECTS_INTERVAL_MS,
   MEMBERSHIP_GRANT_EXPIRY_INTERVAL_MS,
@@ -158,7 +158,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
       data: {},
       opts: {
         ...pagedDispatchJobOptions('memberships'),
-        ordering: membershipVerificationOrdering(true),
+        ordering: membershipVerificationDispatchOrdering(),
         removeOnComplete: 100,
         removeOnFail: 100,
         priority: PRIORITY_DISPATCHER,

@@ -2088,6 +2088,10 @@
         {
           "table": "B",
           "surface": "plans / memberships / billing"
+        },
+        {
+          "table": "B",
+          "surface": "membership verification outcomes without queue scheduling timestamps"
         }
       ],
       "clients": {
@@ -2110,7 +2114,7 @@
         }
       },
       "gap": {
-        "summary": "Native clients present plan status but lack store billing and management."
+        "summary": "Native clients present plan status but lack store billing and management. Swift and .NET must drop next_processing_at from membership overview models and fixture expectations and accept the provider_unavailable verification reason."
       }
     },
     {

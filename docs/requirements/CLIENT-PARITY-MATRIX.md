@@ -24,6 +24,17 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Membership verification outcomes
+
+The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.
+Web drops `next_processing_at` from its response type and shared fixtures; Swift and .NET must drop
+it from response models and fixture expectations and accept the `provider_unavailable` reason for
+rejected verifications.
+
+REST membership overview and verification reads expose domain outcomes. Queue retry timing is internal;
+clients must not infer a retry deadline from a pending verification. The producer contract lands before
+the dependent native model and fixture changes. This adds no native UI parity claim.
+
 ## Hostname identity in presentation
 
 On crawler and integrity screens, hostname links and labels use the hostname string. Their reads
