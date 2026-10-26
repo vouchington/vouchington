@@ -77,8 +77,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
@@ -1482,8 +1482,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/sentry':
         specifier: ^0.4.0
         version: 0.4.0(@sentry/browser@11.9.0)(@sentry/core@11.9.0)(@sentry/node@11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
@@ -3874,8 +3874,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
@@ -4155,8 +4155,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(@anthropic-ai/sdk@0.137.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.88)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
         specifier: ^0.10.0
         version: 0.10.0
@@ -4256,8 +4256,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -5470,8 +5470,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/sentry':
         specifier: ^0.4.0
         version: 0.4.0(@sentry/browser@11.9.0)(@sentry/core@11.9.0)(@sentry/node@11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
@@ -6050,8 +6050,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7862,8 +7862,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -8626,8 +8626,8 @@ importers:
         specifier: workspace:^
         version: link:../notifications
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -8702,8 +8702,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9417,8 +9417,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -10785,8 +10785,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -11709,8 +11709,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/sentry':
         specifier: ^0.4.0
         version: 0.4.0(@sentry/browser@11.9.0)(@sentry/core@11.9.0)(@sentry/node@11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
@@ -12494,8 +12494,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@4.6.5))
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/rate-limit':
         specifier: ^0.3.0
         version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.12.0)
@@ -14921,8 +14921,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.18
-        version: 0.0.18
+        specifier: ^0.1.0
+        version: 0.1.0
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -20287,8 +20287,8 @@ packages:
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.18':
-    resolution: {integrity: sha512-5zN6OHwHq/NMAvPT6W2r/AutH180H5cqRrOwVi3sNPAoQQ3ATfLieHKb/qY+bPU5YQFr/WXN1e2r5PogEoJhnA==}
+  '@vouchington/postgres@0.1.0':
+    resolution: {integrity: sha512-Uv2lSMIvkJrV92oHTO5J1i498PwXClKcSKiKGNsy+J0EU79fdeP5yZ2mE9qDGVCQeogKj7T+FpNI3EuTgb0hiw==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.2.0':
@@ -29220,7 +29220,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.18':
+  '@vouchington/postgres@0.1.0':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.1

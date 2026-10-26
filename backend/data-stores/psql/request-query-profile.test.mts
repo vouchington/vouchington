@@ -32,7 +32,7 @@ describe('request query profile baseline', () => {
     expect(profile.summarize().totalQueries).toBe(1)
   })
 
-  it('guards the profiled trending request at exactly two RSS batch queries', async () => {
+  it('rejects repeated awaited RSS batch queries on the trending route', async () => {
     const { profileRequestQueries } =
       await import('../../test-helpers/api/request-query-profile.mts')
     const { withRequestQueryProfileGuard } =
@@ -59,7 +59,9 @@ describe('request query profile baseline', () => {
         )
         res.emit('finish')
       })
-    await expect(serve('/api/v1/rss-feeds/trending?limit=30', 2)).resolves.toBeUndefined()
+    await expect(serve('/api/v1/rss-feeds/trending?limit=30', 2)).rejects.toThrow(
+      'GET /api/v1/rss-feeds/trending: getRssFeedsByIdBatch (x2)',
+    )
     await expect(serve('/api/v1/rss-feeds/trending', 3)).rejects.toThrow(
       'GET /api/v1/rss-feeds/trending: getRssFeedsByIdBatch (x3)',
     )

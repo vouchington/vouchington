@@ -370,14 +370,6 @@
     ]
   },
   {
-    "annotation": "getRssFeedsByIdBatch",
-    "maxCount": 2,
-    "reason": "A mixed stale-hit and true-miss RSS feed batch can issue one refresh-ahead SQL batch and one miss SQL batch for disjoint feed IDs in this route; no third batch is expected",
-    "permanent": true,
-    "code": "backend/services/entity-fetch/rss-feeds.mts:12",
-    "routes": ["GET /api/v1/rss-feeds/trending"]
-  },
-  {
     "annotation": "getTopicAliasesForMergeRevision",
     "maxCount": null,
     "reason": "The destination alias list is read again after the alias move and source-slug insert, so the merge revision's after snapshot includes those writes.",
@@ -397,13 +389,6 @@
       "POST /api/v1/my/import/topics",
       "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
     ]
-  },
-  {
-    "annotation": "getTopicMetricsByAnyBatch",
-    "routes": ["GET /api/v1/fediverse/instances"],
-    "maxCount": 2,
-    "reason": "One cached metrics call launches disjoint stale-hit refresh and cold-miss batches. The detached refresh inherits request AsyncLocalStorage until issue 3754 separates its attribution (backend/api/v1/fediverse/instances.mts:146; backend/services/entity-fetch/get.mts:50-51).",
-    "issue": 3754
   },
   {
     "annotation": "getTopicsByAnyBatch",

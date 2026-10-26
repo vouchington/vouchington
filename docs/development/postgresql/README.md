@@ -41,6 +41,10 @@ one stderr line per request.
 - **Serial depth:** the largest set of non-overlapping query intervals, i.e. round trips on the
   critical path (`Promise.all` counts once, but not on a transaction client). "Round Trips" cells in
   `docs/requirements/api/**` mean serial depth. Depth is reported, not enforced.
+- **Detached cache refresh:** a stale cache hit may start SQL that the response does not await.
+  It retains request tracing and error-reporting context, and appears in total query diagnostics,
+  but does not contribute to request repeats or serial depth. SQL for a cold cache miss remains
+  awaited and is included in both analyses.
 - Valkey commands have no command hook and are not covered. Worker repeats are not enforced.
 
 ### Enforcement and the baseline
