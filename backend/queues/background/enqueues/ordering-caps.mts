@@ -1,6 +1,8 @@
 import { orderingMaxValue } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 
 export const BACKGROUND_ORDERING_CAPS = {
+  'image-deletion': 2,
+  'image-deletion:recovery': 1,
   'ses-inbound': 1,
   'openai-moderation': 5,
   'post-mentions': 5,

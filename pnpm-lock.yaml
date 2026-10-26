@@ -13041,6 +13041,9 @@ importers:
       '@services/fediverse-instances':
         specifier: workspace:^
         version: link:../../services/fediverse-instances
+      '@services/images':
+        specifier: workspace:^
+        version: link:../../services/images
       '@services/queue-domain-controls':
         specifier: workspace:^
         version: link:../../services/queue-domain-controls

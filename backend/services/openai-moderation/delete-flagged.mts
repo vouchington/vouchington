@@ -42,13 +42,10 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
 
     // The durable pending marker blocks all application reads before S3 is touched. Never remove
     // source objects or metadata unless the permanent quarantine copy is confirmed above.
-    await deleteImageById(image.id, true, { includeQuarantinePending: true })
-
-    try {
-      await deleteKnownImageRenders(image)
-    } catch (err) {
-      onError(err as Error)
-    }
+    await deleteImageById(image.id, {
+      includeQuarantinePending: true,
+      reportAdmissionFailure: true,
+    })
 
     try {
       await recordImageAutoRemoval(imageId, { reason: 'openai_image_quarantine_csam' })
@@ -108,13 +105,4 @@ async function markImageQuarantinePending(imageId: string): Promise<boolean> {
   `)
   await transaction.commit()
   return rows.length > 0
-}
-
-async function deleteKnownImageRenders(image: { id: string; s3_key: string }): Promise<void> {
-  const keys = new Set([image.s3_key, image.id])
-  const results = await Promise.allSettled([...keys].map(key => imageS3.deleteImageRenders(key)))
-  const errors = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
-  if (errors.length > 0) {
-    throw new AggregateError(errors, `Failed to delete renders for image ${image.id}`)
-  }
 }

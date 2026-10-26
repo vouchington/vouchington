@@ -26,6 +26,7 @@
     "@queues/post-publication": "workspace:^",
     "@queues/ses-inbound": "workspace:^",
     "@services/fediverse-instances": "workspace:^",
+    "@services/images": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",
     "@vouchington/queue-errors": "^0.2.0",
     "@workers/account-lifecycle": "workspace:^",
