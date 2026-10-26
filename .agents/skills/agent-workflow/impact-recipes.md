@@ -11,6 +11,21 @@ config, framework, and environment; reserve single-file calls for focused post-b
 Validate with the full suites of the touched areas: `<project-a>` and `<project-b>` stand for each
 owning Vitest project in `ci/vitest/project-ownership.mts`, matching what CI runs.
 
+## Composite Action Runtime Data
+
+Composite-action YAML can be runtime input to test setup, outside the TypeScript import graph.
+When changing `.github/actions/start-valkey/action.yml`, preserve the `VALKEY_IMAGE` configuration
+read by `test-helpers/vitest.global-setup.platform-stats-cache.mts` and include its existing consumer
+test alongside the GitHub Actions checks:
+
+```sh
+pnpm exec vitest run --project ci-tools test-helpers/vitest.global-setup.platform-stats-cache.mock.test.mts
+```
+
+The workflow test must also retain this configuration contract; testing only literal Docker command
+arguments misses the setup reader. Search other action YAML changes for runtime readers before
+selecting tests rather than assuming the import graph covers them.
+
 ## Endpoint Migration
 
 Use this when changing a URL, hostname, origin, endpoint path, or credential-shaped URL literal.
