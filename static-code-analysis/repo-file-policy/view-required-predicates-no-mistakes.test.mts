@@ -28,6 +28,15 @@ describe('view lookup predicate configuration', () => {
     ) as {
       rules: Rule[]
     }
+    const catalog = JSON.parse(
+      await readFile(
+        new URL(
+          '../../backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    ) as { views: Record<string, { materialized: boolean }> }
     const rule = config.rules.find(
       (rule): rule is ViewRule =>
         rule.rule === 'postgres-required-predicates' &&
@@ -51,6 +60,12 @@ describe('view lookup predicate configuration', () => {
         unanalyzableSql: 'ignore',
       },
     })
+    expect(rule.options.relations.map(relation => relation.table).toSorted()).toEqual(
+      Object.entries(catalog.views)
+        .filter(([name, view]) => name.startsWith('view_') && !view.materialized)
+        .map(([name]) => name)
+        .toSorted(),
+    )
     expect(rule.options.relations).toEqual([
       { table: 'view_community_list_items', requireColumns: ['community_id'] },
       { table: 'view_community_metrics', requireColumns: ['id'] },
