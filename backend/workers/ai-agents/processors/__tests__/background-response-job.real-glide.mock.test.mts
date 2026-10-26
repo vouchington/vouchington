@@ -29,9 +29,12 @@ describe('AI job replay of provider response states', () => {
   beforeEach(() => vi.stubEnv('OPENAI_API_KEY', 'owned-replay-state-provider-fixture'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it.each(['active', 'provider-unavailable'] as const)(
+  it.each([
+    ['active', 1],
+    ['provider-unavailable', 0],
+  ] as const)(
     'delays a replay with a persisted response when the provider is %s',
-    async providerState => {
+    async (providerState, cancelCount) => {
       const name = `ai_replay_${providerState}_${randomUUID()}`
       const queue = new Queue<AIAgentJobData>(name, connection)
       const events = new QueueEvents(name, { ...connection, lastEventId: '0', blockTimeout: 1_000 })
@@ -70,8 +73,7 @@ describe('AI job replay of provider response states', () => {
         expect(await admitted.getState()).toBe('delayed')
         expect((await queue.getJob(admitted.id))?.data.backgroundResponses).toEqual([response])
         expect(retrieve).toHaveBeenCalledOnce()
-        if (providerState === 'active') expect(cancel).toHaveBeenCalledOnce()
-        else expect(cancel).not.toHaveBeenCalled()
+        expect(cancel).toHaveBeenCalledTimes(cancelCount)
         expect(create).not.toHaveBeenCalled()
       } finally {
         await worker.close(true)
