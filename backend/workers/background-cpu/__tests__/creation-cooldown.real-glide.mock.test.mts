@@ -100,9 +100,24 @@ describe('creation admission on real GlideMQ', () => {
     try {
       const topicDefinition = requireBackgroundCpuJob('bedrock-embeddings.create_topics')
       const imageDefinition = requireBackgroundCpuJob('bedrock-embeddings.create_images')
+      let imageAttempts = 0
+      const handlers = BACKGROUND_CPU_HANDLERS.map(handler =>
+        handler.job.name === imageDefinition.name
+          ? {
+              ...handler,
+              handle: () => {
+                imageAttempts += 1
+                if (imageAttempts === 1)
+                  throwRateLimited(3_000, new Error('Bedrock throttled'), {
+                    RateLimitError: Worker.RateLimitError,
+                  })
+              },
+            }
+          : handler,
+      )
       const firstWorker = await owned.createWorker(() =>
         createBackgroundCpuWorker({
-          handlers: BACKGROUND_CPU_HANDLERS,
+          handlers,
           domains: ['bedrock-embeddings'],
           prefix: owned.options.prefix,
           concurrency: 1,
@@ -123,21 +138,6 @@ describe('creation admission on real GlideMQ', () => {
       if (!topic) throw new Error('Expected topic creation job')
       await uploadEntered.promise
 
-      let imageAttempts = 0
-      const handlers = BACKGROUND_CPU_HANDLERS.map(handler =>
-        handler.job.name === imageDefinition.name
-          ? {
-              ...handler,
-              handle: () => {
-                imageAttempts += 1
-                if (imageAttempts === 1)
-                  throwRateLimited(3_000, new Error('Bedrock throttled'), {
-                    RateLimitError: Worker.RateLimitError,
-                  })
-              },
-            }
-          : handler,
-      )
       const secondWorker = await owned.createWorker(() =>
         createBackgroundCpuWorker({
           handlers,
