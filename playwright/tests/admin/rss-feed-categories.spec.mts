@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { loginAsAdmin } from '../../helpers/auth.mts'
+import { loginAsTestUser as loginAsAdmin } from '../../helpers/auth.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
 // Seeded by backend/scripts/seeds/playwright-test-data/rss-feed-categories.mts

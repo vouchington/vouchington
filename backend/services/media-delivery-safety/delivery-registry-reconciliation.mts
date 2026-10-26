@@ -4,7 +4,6 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
-import { stageImagePlacementDeliveryRecordPage } from './delivery-registry-staging-page.mts'
 
 export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   actorUserId?: string
@@ -116,22 +115,6 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     hasMore: locked.length === limit,
     after: locked.length ? encodeScopedUuidCursor(locked.at(-1)!.id, scope) : undefined,
   }
-}
-
-/** @public Scoped reconciliation seam exercised against real PostgreSQL delivery records. */
-export async function stageCurrentImagePlacementDeliveryRecordsForImageIds(
-  imageIds: readonly string[],
-): Promise<number> {
-  if (imageIds.length === 0) return 0
-  return stageAllCurrentImagePlacementDeliveryRecords(imageIds)
-}
-
-/** Snapshot staging is advisory; the publisher repeats the proof under retained locks. */
-export async function stageAllCurrentImagePlacementDeliveryRecords(
-  imageIds?: readonly string[],
-): Promise<number> {
-  const page = await stageImagePlacementDeliveryRecordPage({ imageIds })
-  return page.staged
 }
 
 export { stageImagePlacementDeliveryRecordPage } from './delivery-registry-staging-page.mts'

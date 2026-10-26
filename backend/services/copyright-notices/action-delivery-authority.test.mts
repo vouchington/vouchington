@@ -12,7 +12,7 @@ import {
   stageImagePlacementDeliveryRecord,
   processMediaDeliveryRegistryRecord,
 } from '@services/media-delivery-safety'
-import { stageAllCurrentImagePlacementDeliveryRecords } from '@services/media-delivery-safety/delivery-registry-reconciliation'
+import { stageTestImagePlacementDeliveryRecordsForImageIds } from '@voucha/test-helpers/media-delivery-recovery'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import {
   beginTransaction,
@@ -146,11 +146,11 @@ describe('copyright action persisted delivery authority', () => {
     const stableGeneration = edge.records.get(deliveryKey)!.generation
     const current = await getImagePlacementForCopyright(scene.target.placement_id)
     if (!current) throw new Error('Copyright placement missing')
-    await stageAllCurrentImagePlacementDeliveryRecords([current.imageId])
+    await stageTestImagePlacementDeliveryRecordsForImageIds([current.imageId])
     await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
       'not_claimed',
     )
-    await stageAllCurrentImagePlacementDeliveryRecords([current.imageId])
+    await stageTestImagePlacementDeliveryRecordsForImageIds([current.imageId])
     await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
       'not_claimed',
     )

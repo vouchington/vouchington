@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
-import { loginAsAdmin, loginAsTestUser, loginAsUser } from '../../helpers/auth.mts'
+import { loginAsTestUser, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import {
   createTestUser,
@@ -82,7 +82,7 @@ test.describe('Post Archive', () => {
       postType: 'discussion',
     })
 
-    await loginAsAdmin(page)
+    await loginAsTestUser(page)
     await navigateTo(page, `/discussion/${postId}/edit`)
     await page.getByTestId('post-form-advanced-toggle').click()
 

@@ -1,5 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { loginAsAdmin } from '../../helpers/auth.mts'
+import { loginAsTestUser as loginAsAdmin } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 
 async function logout(page: import('../../helpers/test.mts').Page) {

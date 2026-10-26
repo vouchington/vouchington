@@ -7,7 +7,7 @@ import {
   reviewPendingTestModerationReportsByPostSlugPrefixes,
   reviewPendingTestModerationReportsByReporterUsernamePrefixes,
 } from '../../../backend/test-helpers/index.mts'
-import { loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
+import { loginAsTestUser as loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, openRadixDropdown, randomSuffix } from 'vouchington-tooling/playwright'
 
 let reportId = ''

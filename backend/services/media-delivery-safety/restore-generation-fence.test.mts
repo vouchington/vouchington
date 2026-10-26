@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from './delivery-registry-reconciliation.mts'
 import {
   beginTransaction,
   getTestMediaDeliveryRecord,
@@ -8,7 +7,10 @@ import {
 } from '@voucha/test-helpers'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import { advanceTestDeliveryPlacementRevision } from '@voucha/test-helpers/entities/media-delivery-repair'
-import { fenceTestMediaDeliveryRegistry } from '@voucha/test-helpers/media-delivery-recovery'
+import {
+  fenceTestMediaDeliveryRegistry,
+  stageTestImagePlacementDeliveryRecordsForImageIds,
+} from '@voucha/test-helpers/media-delivery-recovery'
 import { createTestDeliverySurface } from '@voucha/test-helpers/media-delivery-surface'
 import {
   processMediaDeliveryRegistryRecord,
@@ -136,7 +138,7 @@ describe('coordinated reset and restore generation safety', () => {
 
     // Restored authority still says allow, yet nothing reopens the completed row while paused.
     await expect(
-      stageCurrentImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
+      stageTestImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
     ).resolves.toBe(0)
     await expect(
       processMediaDeliveryRegistryRecord(held.mediaDeliveryRegistryRecordId),
@@ -170,7 +172,7 @@ describe('coordinated reset and restore generation safety', () => {
     await advanceTestDeliveryPlacementRevision(transaction, held.tuple.placementId)
     await transaction.commit()
     await expect(
-      stageCurrentImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
+      stageTestImagePlacementDeliveryRecordsForImageIds([held.tuple.imageId]),
     ).resolves.toBeGreaterThan(0)
     await expect(
       processMediaDeliveryRegistryRecord(held.mediaDeliveryRegistryRecordId),
@@ -192,9 +194,9 @@ describe('coordinated reset and restore generation safety', () => {
     const { tuple, deliveryKey, mediaDeliveryRegistryRecordId } = await publishedSurface()
     edge.records.clear()
 
-    await expect(
-      stageCurrentImagePlacementDeliveryRecordsForImageIds([tuple.imageId]),
-    ).resolves.toBe(0)
+    await expect(stageTestImagePlacementDeliveryRecordsForImageIds([tuple.imageId])).resolves.toBe(
+      0,
+    )
     await expect(processMediaDeliveryRegistryRecord(mediaDeliveryRegistryRecordId)).resolves.toBe(
       'not_claimed',
     )

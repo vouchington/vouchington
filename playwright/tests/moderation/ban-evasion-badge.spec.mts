@@ -8,7 +8,11 @@ import {
   getTestActiveCommunityBan,
   reviewPendingTestModerationReportsByNotePrefixes,
 } from '../../../backend/test-helpers/index.mts'
-import { loginAsAdmin, loginAsUser, createSiteModeratorUser } from '../../helpers/auth.mts'
+import {
+  loginAsTestUser as loginAsAdmin,
+  loginAsUser,
+  createSiteModeratorUser,
+} from '../../helpers/auth.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 

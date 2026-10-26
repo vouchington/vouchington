@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { stageCurrentImagePlacementDeliveryRecordsForImageIds } from '@services/media-delivery-safety/delivery-registry-reconciliation'
+import { stageTestImagePlacementDeliveryRecordsForImageIds } from '@voucha/test-helpers/media-delivery-recovery'
 import { createProfileLink, deleteProfileLink } from './profile-links.mts'
 import { updateProfileImageId } from './identity.mts'
 import { stageImagePlacementDeliveryRecord } from '@services/media-delivery-safety'
@@ -152,7 +152,7 @@ describe('image surface placement lifecycle', () => {
       }),
     ).toBe(false)
 
-    await stageCurrentImagePlacementDeliveryRecordsForImageIds([imageId])
+    await stageTestImagePlacementDeliveryRecordsForImageIds([imageId])
     const recordId = await getTestMediaDeliveryRegistryRecordId({
       placementId: placement!.placement_id,
       revision: placement!.placement_revision,

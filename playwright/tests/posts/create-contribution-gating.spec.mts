@@ -1,5 +1,5 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
+import { loginAsTestUser as loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import {
   createTestUserWithAge,

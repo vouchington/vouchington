@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  stageCurrentImagePlacementDeliveryRecordsForImageIds,
-  stageAllCurrentImagePlacementDeliveryRecords,
-} from './delivery-registry-reconciliation.mts'
+import { stageTestImagePlacementDeliveryRecordsForImageIds } from '@voucha/test-helpers/media-delivery-recovery'
 import {
   createTestUserDirect,
   getTestImageSurfacePlacements,
@@ -84,7 +81,7 @@ describe('scoped media delivery reconciliation', () => {
       next_attempt_at: expect.any(String),
     })
 
-    expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
+    expect(await stageTestImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
     expect(await getTestMediaDeliveryRecord(selected.mediaDeliveryRegistryRecordId)).toMatchObject({
       desired_state: 'allow',
     })
@@ -119,7 +116,7 @@ describe('scoped media delivery reconciliation', () => {
       next_attempt_at: expect.any(String),
     })
 
-    expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
+    expect(await stageTestImagePlacementDeliveryRecordsForImageIds([selected.imageId])).toBe(1)
     expect(await getTestMediaDeliveryRecord(selected.mediaDeliveryRegistryRecordId)).toMatchObject({
       desired_state: 'withheld',
     })
@@ -129,8 +126,7 @@ describe('scoped media delivery reconciliation', () => {
     const selectedBefore = await getTestMediaDeliveryRecordSnapshot(
       selected.mediaDeliveryRegistryRecordId,
     )
-    expect(await stageCurrentImagePlacementDeliveryRecordsForImageIds([])).toBe(0)
-    expect(await stageAllCurrentImagePlacementDeliveryRecords([])).toBe(0)
+    expect(await stageTestImagePlacementDeliveryRecordsForImageIds([])).toBe(0)
     expect(
       await getTestMediaDeliveryRecordSnapshot(selected.mediaDeliveryRegistryRecordId),
     ).toEqual(selectedBefore)

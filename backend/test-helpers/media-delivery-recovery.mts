@@ -8,6 +8,7 @@ import {
   failExpiredExhaustedMediaDeliveryRegistryRecords,
   getMediaDeliveryRegistryScanBefore,
   listRecoverableMediaDeliveryRegistryIds,
+  stageImagePlacementDeliveryRecordPage,
   stageImagePlacementDeliveryRecord,
 } from '../services/media-delivery-safety/index.mts'
 
@@ -126,4 +127,11 @@ export function scopedTestMediaRecoveryDependencies(recordIds: readonly string[]
     failExpiredExhaustedMediaDeliveryRegistryRecords: (now: string) =>
       failExpiredExhaustedMediaDeliveryRegistryRecords(now, recordIds),
   }
+}
+
+/** Call the real bounded page for fixtures owned by these image IDs. */
+export async function stageTestImagePlacementDeliveryRecordsForImageIds(
+  imageIds: readonly string[],
+): Promise<number> {
+  return (await stageImagePlacementDeliveryRecordPage({ imageIds })).staged
 }

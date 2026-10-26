@@ -21,9 +21,6 @@ export async function loginAsTestUser(
   await loginAsUser(page, TEST_USER_ID, dependencies)
 }
 
-/** @alias loginAsTestUser — semantic alias; the seeded test user is admin-capable. */
-export const loginAsAdmin = loginAsTestUser
-
 // Creates device + session JWTs directly and injects them as cookies, bypassing
 // the email login API and MFA check. This prevents concurrent loginAsTestUser
 // calls from clearing passkeys inserted by a concurrent passkeys test.
