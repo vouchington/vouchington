@@ -187,6 +187,7 @@ export function useIntegrityPenalties<P extends IntegrityPenaltyRecord>(
     penalties,
     reconcile,
     reconciliationRequired,
+    removedIds,
     revokeWithConfirmation,
     scopeAvailable,
     selectedStatus,

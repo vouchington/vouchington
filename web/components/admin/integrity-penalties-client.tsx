@@ -32,7 +32,7 @@ interface IntegrityPenaltiesClientProps<P extends IntegrityPenaltyRecord> {
   }) => boolean
   annualReviews?: Omit<
     AnnualPenaltyReviewsProps<P & { review_due_at: string; user_username: string | null }>,
-    'revoke' | 'reconcile'
+    'revoke' | 'reconcile' | 'excludedIds'
   >
 }
 
@@ -68,6 +68,7 @@ function IntegrityPenaltiesClientInner<P extends IntegrityPenaltyRecord>(
       {props.annualReviews && props.initialStatus === 'active' && props.available !== false ? (
         <AnnualPenaltyReviews
           {...props.annualReviews}
+          excludedIds={state.removedIds}
           revoke={props.revoke}
           reconcile={state.reconcile}
         />

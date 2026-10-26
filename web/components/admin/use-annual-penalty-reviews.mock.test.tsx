@@ -59,6 +59,7 @@ describe('annual review reconciliation with the active table', () => {
         return (
           <>
             <AnnualPenaltyReviews
+              excludedIds={state.removedIds}
               initialDuePage={annualInitialData}
               getDue={getDue}
               review={revoke}
@@ -118,6 +119,7 @@ describe('annual review reconciliation with the active table', () => {
       return (
         <>
           <AnnualPenaltyReviews
+            excludedIds={state.removedIds}
             initialDuePage={annualInitialData}
             getDue={getDue}
             review={revoke}
@@ -193,4 +195,52 @@ describe('annual review reconciliation with the active table', () => {
     expect(screen.getByText('server-first-page')).toBeInTheDocument()
     expect(getDue).not.toHaveBeenCalled()
   })
+  it.each([false, true])(
+    'removes a table-revoked penalty from both surfaces, lost response: %s',
+    async lostResponse => {
+      const duePenalty = {
+        ...penalty,
+        id: '019f7000-0000-7000-8000-000000000181',
+        user_id: '019f7000-0000-7000-8000-000000000182',
+        review_due_at: '2025-01-01T00:00:00Z',
+        user_username: 'table-revoke-recipient',
+      }
+      const revoked = { ...duePenalty, revoked_at: '2026-01-01T00:00:00Z' }
+      const initialDuePage = { ...initialData, results: [duePenalty] }
+      const revoke = vi.fn<(id: string) => Promise<{ penalty: typeof duePenalty }>>(async () => {
+        if (lostResponse) throw new Error('response lost after commit')
+        return { penalty: revoked }
+      })
+      const getById = vi
+        .fn<(id: string) => Promise<{ penalty: typeof duePenalty }>>()
+        .mockResolvedValue({ penalty: revoked })
+      const getDue = vi.fn<() => Promise<typeof initialDuePage>>()
+      render(
+        <IntegrityPenaltiesClient
+          domain='report'
+          endpoint='/api/v1/report-integrity/penalties'
+          initialData={initialDuePage}
+          initialStatus='active'
+          flagsPath='/report-integrity/flags'
+          penaltiesPath='/report-integrity/penalties'
+          multiplier={() => null}
+          getById={getById}
+          revoke={revoke}
+          annualReviews={{ initialDuePage, getDue, review: revoke }}
+        />,
+      )
+      const queue = screen.getByRole('link', { name: 'table-revoke-recipient' }).closest('section')!
+      const table = screen.getByRole('table')
+      fireEvent.click(within(table).getByRole('button', { name: 'Revoke' }))
+      fireEvent.click(within(table).getByRole('button', { name: 'Confirm revoke' }))
+      await waitFor(() =>
+        expect(screen.queryByText('table-revoke-recipient')).not.toBeInTheDocument(),
+      )
+      expect(within(queue).queryByRole('listitem')).not.toBeInTheDocument()
+      expect(within(queue).getByText('No penalties are due for review.')).toBeInTheDocument()
+      expect(getDue).not.toHaveBeenCalled()
+      expect(revoke).toHaveBeenCalledOnce()
+      expect(getById.mock.calls).toEqual(lostResponse ? [[duePenalty.id]] : [])
+    },
+  )
 })

@@ -24,6 +24,7 @@ const duePenalty: ReportIntegrityPenaltyReviewDue = {
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T00:00:00Z',
 }
+const excludedIds: ReadonlySet<string> = new Set()
 const terminalInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
 
 describe('AnnualPenaltyReviews', () => {
@@ -37,6 +38,7 @@ describe('AnnualPenaltyReviews', () => {
     const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
     render(
       <AnnualPenaltyReviews
+        excludedIds={excludedIds}
         initialDuePage={{ results: [duePenalty], page_info: terminalInfo }}
         getDue={getDue}
         review={review}
@@ -63,6 +65,7 @@ describe('AnnualPenaltyReviews', () => {
     const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
     render(
       <AnnualPenaltyReviews
+        excludedIds={excludedIds}
         initialDuePage={{
           results: [{ ...duePenalty, user_username: null }],
           page_info: terminalInfo,
@@ -91,6 +94,7 @@ describe('AnnualPenaltyReviews', () => {
     const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
     render(
       <AnnualPenaltyReviews
+        excludedIds={excludedIds}
         initialDuePage={{ results: [duePenalty], page_info: terminalInfo }}
         getDue={getDue}
         review={revoke}
@@ -131,6 +135,7 @@ describe('AnnualPenaltyReviews', () => {
     const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
     render(
       <AnnualPenaltyReviews
+        excludedIds={excludedIds}
         initialDuePage={{ results: [ring, referral], page_info: terminalInfo }}
         getDue={getDue}
         review={revoke}
@@ -176,6 +181,7 @@ describe('AnnualPenaltyReviews', () => {
     const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
     render(
       <AnnualPenaltyReviews
+        excludedIds={excludedIds}
         initialDuePage={first}
         getDue={getDue}
         review={action}
@@ -220,6 +226,7 @@ describe('AnnualPenaltyReviews', () => {
     const reconcile = vi.fn<(id: string) => Promise<boolean>>().mockResolvedValue(true)
     const view = render(
       <AnnualPenaltyReviews
+        excludedIds={excludedIds}
         initialDuePage={first}
         getDue={getDue}
         review={action}
@@ -235,6 +242,7 @@ describe('AnnualPenaltyReviews', () => {
     await screen.findByText('old-page-two')
     view.rerender(
       <AnnualPenaltyReviews
+        excludedIds={excludedIds}
         initialDuePage={nextServerPage}
         getDue={getDue}
         review={action}

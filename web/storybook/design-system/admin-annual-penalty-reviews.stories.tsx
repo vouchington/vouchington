@@ -45,6 +45,7 @@ export const DueVotePenalties: Story = {
   render: () => (
     <main className='min-h-screen bg-background p-6 text-foreground'>
       <AnnualPenaltyReviews
+        excludedIds={new Set<string>()}
         reconcile={reconcile}
         initialDuePage={{
           results: [ring, referral],

@@ -11,6 +11,7 @@ export type DuePenalty = IntegrityPenaltyRecord & {
 }
 
 export interface AnnualPenaltyReviewsProps<P extends DuePenalty> {
+  excludedIds: ReadonlySet<string>
   initialDuePage: { results: P[]; page_info: PageInfo }
   getDue: (options?: {
     after?: string
@@ -23,6 +24,7 @@ export interface AnnualPenaltyReviewsProps<P extends DuePenalty> {
 
 export function useAnnualPenaltyReviews<P extends DuePenalty>({
   getDue,
+  excludedIds,
   initialDuePage,
   revoke,
   reconcile,
@@ -113,7 +115,7 @@ export function useAnnualPenaltyReviews<P extends DuePenalty>({
   }
 
   return {
-    due,
+    due: due.filter(penalty => !excludedIds.has(penalty.id)),
     nextCursor,
     loading,
     pendingId,

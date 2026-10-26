@@ -25,6 +25,7 @@ export function AnnualPenaltyReviews<P extends DuePenalty>(props: AnnualPenaltyR
 
 function AnnualPenaltyReviewsInner<P extends DuePenalty>({
   getDue,
+  excludedIds,
   initialDuePage,
   review,
   revoke,
@@ -44,7 +45,7 @@ function AnnualPenaltyReviewsInner<P extends DuePenalty>({
     applyAction,
     loadMore,
     revokePenalty,
-  } = useAnnualPenaltyReviews({ initialDuePage, getDue, review, revoke, reconcile })
+  } = useAnnualPenaltyReviews({ initialDuePage, excludedIds, getDue, review, revoke, reconcile })
 
   return (
     <section
