@@ -19,7 +19,7 @@ describe('repo-file-policy', () => {
     expect(result.errors).toEqual([expect.stringContaining('not inside a git repository')])
   })
 
-  it('allows ALTER TABLE ADD CONSTRAINT in a migration SQL file', { timeout: 10_000 }, async () => {
+  it('allows ALTER TABLE ADD CONSTRAINT in a migration SQL file', async () => {
     const dir = await makeRepo()
     await track(
       dir,
