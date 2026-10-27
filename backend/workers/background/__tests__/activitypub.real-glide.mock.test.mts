@@ -4,7 +4,7 @@ import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { getActorUri } from '@modules/activitypub-uris'
-import { mintUUIDv7 } from '@modules/utils/ids'
+import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { generateRsaSha256KeyPair, verifySignature } from '@modules/http-signatures'
 import {
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
