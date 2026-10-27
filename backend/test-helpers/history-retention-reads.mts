@@ -23,13 +23,6 @@ export async function reserveHistoryRetentionFixtureIds(kind: HistoryKind): Prom
   return ids
 }
 
-export async function resetHistoryCursorForTest(kind: HistoryKind): Promise<void> {
-  await write(sql`/* resetHistoryCursorForTest */
-    UPDATE history_retention_cursors
-    SET cursor_id = NULL, sweep_cutoff_id = NULL, is_sweep_complete = FALSE
-    WHERE cleanup_name = ${kind}::history_retention_cleanup_names`)
-}
-
 export async function positionHistoryCursorForTest(kind: HistoryKind, before: Date): Promise<void> {
   const cursorId = getMinUUIDv7ForDate(before)
   await write(sql`/* positionHistoryCursorForTest */

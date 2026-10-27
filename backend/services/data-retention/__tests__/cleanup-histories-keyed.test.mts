@@ -26,7 +26,9 @@ import {
   readHistoryCursor,
   readRemainingHistoryIds,
   reserveHistoryRetentionFixtureIds,
-  resetHistoryCursorForTest,
+  positionHistoryCursorForTest,
+  restoreHistoryCursorForTest,
+  snapshotHistoryCursorForTest,
 } from '@voucha/test-helpers/history-retention-reads'
 import { cleanupHistory } from '../cleanup-histories.mts'
 
@@ -48,15 +50,24 @@ function afterUtcMonths(base: Date, months: number, milliseconds = 0): Date {
 describe('bounded per-key history retention', () => {
   it('resumes a persisted raw cursor under its frozen sweep end', async () => {
     const lock = await acquireHistoryRetentionSweepTestLock()
-    const oldBase = new Date('1990-04-01T00:00:00.000Z')
+    const kind = 'dynamic_configuration_revisions'
+    const priorCursor = await snapshotHistoryCursorForTest(kind)
+    const { base: oldBase, lowerBoundDate, upperBoundDate } = createHistoryRetentionWindow(20)
     const key = `retention-cursor-${crypto.randomUUID()}`
     const ids: string[] = []
     try {
+      await positionHistoryCursorForTest(kind, lowerBoundDate)
       ids.push(...(await insertConfigHistoryBatch(key, oldBase, 3)))
-      const firstNow = new Date('1991-04-01T00:00:00.010Z')
-      const pageOptions = { batchSize: 1, maxBatches: 1, now: firstNow }
+      const pageOptions = {
+        batchSize: 1,
+        maxBatches: 1,
+        now: afterUtcMonths(oldBase, 12, 10),
+        lowerBoundDate,
+        upperBoundDate,
+        persistentCursorForTest: true,
+      }
 
-      expect(await cleanupHistory('dynamic_configuration_revisions', pageOptions)).toEqual({
+      expect(await cleanupHistory(kind, pageOptions)).toEqual({
         scanned: 1,
         changed: 0,
         hasMore: true,
@@ -67,8 +78,8 @@ describe('bounded per-key history retention', () => {
 
       const lateId = await insertConfigHistoryAt(key, new Date(oldBase.getTime() + 11))
       ids.push(lateId)
-      const laterOptions = { ...pageOptions, now: new Date('1992-04-01T00:00:00.010Z') }
-      expect(await cleanupHistory('dynamic_configuration_revisions', laterOptions)).toEqual({
+      const laterOptions = { ...pageOptions, now: afterUtcMonths(oldBase, 12, 100) }
+      expect(await cleanupHistory(kind, laterOptions)).toEqual({
         scanned: 1,
         changed: 0,
         hasMore: true,
@@ -77,7 +88,7 @@ describe('bounded per-key history retention', () => {
         cursor_id: ids[1],
         sweep_cutoff_id: firstCursor?.sweep_cutoff_id,
       })
-      expect(await cleanupHistory('dynamic_configuration_revisions', laterOptions)).toEqual({
+      expect(await cleanupHistory(kind, laterOptions)).toEqual({
         scanned: 1,
         changed: 0,
         hasMore: false,
@@ -87,7 +98,7 @@ describe('bounded per-key history retention', () => {
         sweep_cutoff_id: null,
       })
       expect(
-        await cleanupHistory('dynamic_configuration_revisions', {
+        await cleanupHistory(kind, {
           ...laterOptions,
           batchSize: 10,
         }),
@@ -97,7 +108,7 @@ describe('bounded per-key history retention', () => {
         await cleanupHistoryFixtureIds('dynamic_configuration_revisions', ids)
       } finally {
         try {
-          await resetHistoryCursorForTest('dynamic_configuration_revisions')
+          await restoreHistoryCursorForTest(kind, priorCursor)
         } finally {
           await lock.release()
         }
