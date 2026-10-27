@@ -1,4 +1,5 @@
 import { runStoryProjectionWorkScenarios } from './run-scenarios/story-projection-work.mts'
+import { runImageQuarantineScenarios } from './run-scenarios/image-quarantine.mts'
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
@@ -58,6 +59,7 @@ import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-c
 const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runSitemapPageScenarios,
   runStoryProjectionWorkScenarios,
+  runImageQuarantineScenarios,
   runBloomReconciliationScenarios,
   runMaterializedViewRefreshScenarios,
   runHostnameBlocklistScenario,

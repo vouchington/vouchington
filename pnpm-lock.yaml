@@ -3771,6 +3771,9 @@ importers:
       '@services/oauth-authorization-server':
         specifier: workspace:^
         version: link:../services/oauth-authorization-server
+      '@services/openai-moderation':
+        specifier: workspace:^
+        version: link:../services/openai-moderation
       '@services/platform-stats':
         specifier: workspace:^
         version: link:../services/platform-stats
@@ -3876,6 +3879,9 @@ importers:
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
+      '@workers/openai-moderation':
+        specifier: workspace:^
+        version: link:../workers/openai-moderation
       '@workers/rss-feeds':
         specifier: workspace:^
         version: link:../workers/rss-feeds

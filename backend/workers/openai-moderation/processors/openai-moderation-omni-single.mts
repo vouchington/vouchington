@@ -42,7 +42,7 @@ type OpenAIModerationJobData = { id?: string; afterId?: string } & PostModeratio
 
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
-  scope?: { postIds?: readonly string[]; imageIds?: readonly string[] },
+  scope?: { postIds?: readonly string[] },
 ): Promise<unknown> {
   try {
     switch (job.name) {
@@ -100,7 +100,7 @@ export async function handleOpenAIModerationOmniSingleJob(
           enqueueContinuation: enqueueBackfillImageModerationContinuation,
         })
       case OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.name:
-        return await reconcilePendingImageQuarantines(scope?.imageIds)
+        return await reconcilePendingImageQuarantines()
       case OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.name: {
         const postIds = scope?.postIds ?? job.data.postIds
         const reconciliation = await reconcilePostModerationWork(

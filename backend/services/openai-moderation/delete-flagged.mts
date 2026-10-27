@@ -66,10 +66,7 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
   return true
 }
 
-export async function reconcilePendingImageQuarantines(
-  imageIds?: readonly string[],
-): Promise<{ reconciled: number }> {
-  if (imageIds?.length === 0) return { reconciled: 0 }
+export async function listPendingImageQuarantinePage(): Promise<Array<{ id: string }>> {
   const IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE = getOpenaiModerationWorkLimit(
     'image_quarantine_batch_size',
   )
@@ -78,11 +75,16 @@ export async function reconcilePendingImageQuarantines(
     FROM images
     WHERE quarantine_pending_at IS NOT NULL
       AND deleted_at IS NULL
-      AND (${imageIds ?? null}::uuid[] IS NULL OR id = ANY(${imageIds ?? null}::uuid[]))
     ORDER BY quarantine_pending_at, id
     LIMIT ${IMAGE_QUARANTINE_RECONCILIATION_BATCH_SIZE}
   `)
 
+  return rows
+}
+
+export async function processPendingImageQuarantinePage(
+  rows: readonly { id: string }[],
+): Promise<{ reconciled: number }> {
   let reconciled = 0
   for (const { id } of rows) {
     // oxlint-disable-next-line no-await-in-loop -- bounded retries avoid concurrent duplicate quarantine transfers for the same source image
