@@ -1,69 +1,50 @@
-import { describe, expect, it } from 'vitest'
-import { registerClientCredentialEnvCases } from '@voucha/test-helpers/aws-client-credential-env-cases'
-import { buildS3Buckets, getS3ClientCredentials } from './s3.mts'
-
-const ENV_KEYS = [
-  'AWS_ACCESS_KEY_ID',
-  'AWS_SECRET_ACCESS_KEY',
-  'AWS_SESSION_TOKEN',
-  'S3_AWS_ACCESS_KEY_ID',
-  'S3_AWS_SECRET_ACCESS_KEY',
-  'S3_AWS_SESSION_TOKEN',
-  'NODE_ENV',
-  'VITEST',
-  'S3_BUCKET_IMAGES',
-  'S3_BUCKET_IMAGE_UPLOADS',
-] as const
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setupCredentialEnv } from '@voucha/test-helpers/modules/aws/credentials-fixtures'
+import { getS3ClientCredentials } from './credentials.mts'
 
 describe('getS3ClientCredentials', () => {
-  registerClientCredentialEnvCases({
-    envKeys: ENV_KEYS,
-    readCredentials: getS3ClientCredentials,
-    serviceName: 'S3',
-    accessKeyEnv: 'S3_AWS_ACCESS_KEY_ID',
-    secretAccessKeyEnv: 'S3_AWS_SECRET_ACCESS_KEY',
-    testAccessKeyId: 'test-s3-access-key-id',
-    testSecretAccessKey: 'test-s3-secret-access-key',
-    configuredAccessKeyId: 'real-s3-key',
-    configuredSecretAccessKey: 'real-s3-secret',
+  const { setEnv } = setupCredentialEnv()
+
+  it('uses configured credentials including their session token', () => {
+    setEnv('S3_AWS_ACCESS_KEY_ID', 'real-s3-key')
+    setEnv('S3_AWS_SECRET_ACCESS_KEY', 'real-s3-secret')
+    setEnv('S3_AWS_SESSION_TOKEN', 'owned-session-token')
+
+    expect(getS3ClientCredentials()).toEqual({
+      accessKeyId: 'real-s3-key',
+      secretAccessKey: 'real-s3-secret',
+      sessionToken: 'owned-session-token',
+    })
+  })
+
+  it('requires credentials for local S3-backed features', () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('ENVIRONMENT', 'development')
+
+    expect(() => getS3ClientCredentials()).toThrow(
+      expect.objectContaining({
+        message: expect.stringContaining('S3 credentials are not configured'),
+        status: 503,
+      }),
+    )
+  })
+
+  it('uses IAM task roles in deployed environments', () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    expect(getS3ClientCredentials()).toBeUndefined()
   })
 })
 
-describe('buildS3Buckets', () => {
-  const injected = {
-    S3_BUCKET_IMAGES: 'runtime-images',
-    S3_BUCKET_IMAGE_UPLOADS: 'runtime-image-uploads',
-    S3_BUCKET_SITEMAPS: 'runtime-sitemaps',
-    S3_BUCKET_RENDERS: 'runtime-renders',
-    S3_BUCKET_ASSETS: 'runtime-assets',
-    S3_BUCKET_CRAWLS: 'runtime-crawls',
-    S3_BUCKET_USER_EXPORTS: 'runtime-user-exports',
-    S3_BUCKET_QUARANTINE: 'runtime-quarantine',
-  }
-
-  it('uses only injected runtime bucket names outside tests', () => {
-    expect(buildS3Buckets({ ...injected, ENVIRONMENT: 'staging' })).toEqual({
-      images: 'runtime-images',
-      imageUploads: 'runtime-image-uploads',
-      sitemaps: 'runtime-sitemaps',
-      renders: 'runtime-renders',
-      assets: 'runtime-assets',
-      crawls: 'runtime-crawls',
-      userExports: 'runtime-user-exports',
-      quarantine: 'runtime-quarantine',
-    })
+describe('S3 runtime configuration', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 
-  it('fails without every injected bucket outside tests', () => {
-    expect(() =>
-      buildS3Buckets({ ...injected, S3_BUCKET_IMAGES: '', ENVIRONMENT: 'staging' }),
-    ).toThrow('Missing S3_BUCKET_IMAGES')
-  })
+  it('rejects a missing required bucket at module initialization', async () => {
+    vi.stubEnv('S3_BUCKET_IMAGES', ' ')
+    vi.resetModules()
 
-  it('uses identifier-free synthetic buckets in Vitest', () => {
-    expect(buildS3Buckets({ NODE_ENV: 'test' })).toMatchObject({
-      images: 'test-images',
-      renders: 'test-renders',
-    })
+    await expect(import('./s3.mts')).rejects.toThrow('Missing S3_BUCKET_IMAGES')
   })
 })

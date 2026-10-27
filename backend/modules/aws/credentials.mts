@@ -1,3 +1,5 @@
+import createHttpError from 'http-errors'
+
 export function hasS3Credentials(env: NodeJS.ProcessEnv = process.env): boolean {
   return Boolean(findS3Credentials(env))
 }
@@ -167,4 +169,27 @@ function getFirstNonEmptyEnvValue(...values: Array<string | undefined>) {
   }
 
   return undefined
+}
+
+export function getS3ClientCredentials() {
+  if (hasS3Credentials()) {
+    return getS3Credentials()
+  }
+
+  // Deployed staging/production uses OpenTofu-managed IAM task roles.
+  const environment = process.env.ENVIRONMENT?.trim()
+  if (environment === 'staging' || environment === 'production') {
+    return undefined
+  }
+
+  throw createMissingS3CredentialsError()
+}
+
+function createMissingS3CredentialsError(): Error & { status: 503 } {
+  const localSetupMessage =
+    'S3 credentials are not configured. S3-backed features such as image uploads, sitemap/crawl storage, and user exports require S3_AWS_ACCESS_KEY_ID and S3_AWS_SECRET_ACCESS_KEY in ~/voucha.env, then ./dev/initialize web.'
+  const deployedMessage = 'Missing S3 credentials'
+  const message = process.env.NODE_ENV === 'development' ? localSetupMessage : deployedMessage
+
+  return createHttpError(503, message)
 }

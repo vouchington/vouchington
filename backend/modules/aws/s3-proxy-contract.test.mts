@@ -1,9 +1,18 @@
 import { S3Client, paginateListObjectsV2 } from '@aws-sdk/client-s3'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { installS3TestCredentials } from '@voucha/test-helpers/s3-test-environment'
 import { AWS_REGION } from './config.mts'
 import { S3Buckets, S3ImagesClient } from './s3.mts'
 
 describe('S3ImagesClient proxy contract', () => {
+  let restoreCredentials: () => void
+
+  beforeEach(() => {
+    restoreCredentials = installS3TestCredentials()
+  })
+
+  afterEach(() => restoreCredentials())
+
   it('is not an instanceof S3Client, since the lazy Proxy only implements a get trap', () => {
     expect(S3ImagesClient instanceof S3Client).toBe(false)
   })
