@@ -193,8 +193,11 @@ bounded dispatcher and does not recalculate weights or change administrator over
 
 RSS alias category recovery resumes from mismatched category rows. An alias dirty generation is
 acknowledged only after both item and feed mappings finish; capped pages chain through the existing
-maintenance queue. Community digest catch-up likewise chains bounded weekly-window pages while
-retaining the original closed-window target.
+maintenance queue. Community digest recovery admits a bounded set of closed windows after its
+sent-through cursor. Each window retains recipient-page progress on its GlideMQ job, yields under
+backpressure, and advances the cursor only after the last page. Native job identities suppress
+concurrent duplicate admission; recipient notification keys and delivery receipts make recovery
+safe after a terminal job is re-admitted.
 
 ### Upload maintenance continuation
 

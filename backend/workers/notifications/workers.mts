@@ -18,7 +18,6 @@ import {
   NOTIFICATIONS_DELETE_JOB,
   NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
-  NOTIFICATIONS_DIGEST_BATCH_JOB,
   NOTIFICATIONS_DIGEST_DISPATCH_JOB,
   NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
   NOTIFICATIONS_FOLLOW_JOB,
@@ -105,17 +104,13 @@ export const notificationsHandlers = [
     NOTIFICATIONS_CONVERSATION_MESSAGE_JOB,
     processors.processConversationMessageNotification,
   ),
-  backgroundDataHandler(
+  backgroundHandler(
     NOTIFICATIONS_DIGEST_DISPATCH_JOB,
     processors.processCommunityActivityDigestDispatch,
   ),
   backgroundDataHandler(
     NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
     processCommunityActivityDigestScheduleTick,
-  ),
-  backgroundDataHandler(
-    NOTIFICATIONS_DIGEST_BATCH_JOB,
-    processors.processCommunityActivityDigestBatch,
   ),
   backgroundDataHandler(
     NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,

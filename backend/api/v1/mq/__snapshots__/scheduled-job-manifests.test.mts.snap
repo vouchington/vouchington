@@ -944,8 +944,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 5,
-          "key": "notifications",
+          "concurrency": 1,
+          "key": "notifications:digest-schedule",
         },
         "priority": 100,
         "removeOnComplete": 100,

@@ -1,27 +1,32 @@
-import { createOwnedSqlFixtureLifetime } from './owned-sql-fixture-lifetime.mts'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { advisoryLockPool, write } from '@data-stores/psql'
+import { beginTransaction, read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
+import { insertTestCommunity } from './entities/communities.mts'
+import { insertTestCommunityMember } from './entities/community-members.mts'
+import { createOwnedSqlFixtureLifetime } from './owned-sql-fixture-lifetime.mts'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
 
-export type TestCommunityActivityDigestWorkItem = {
-  window_starts_at: Date
-  window_ends_at: Date
-  lease_token: string | null
-  lease_expires_at: Date | null
-  completed_at: Date | null
-  attempt_count: number
-}
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 
 const DIGEST_LOCK_NAMESPACE = 2_135_042
 const DIGEST_LOCK_KEY = 1
 
-export async function withTestCommunityActivityDigestLock<T>(
-  run: (owner: ReturnType<typeof createOwnedSqlFixtureLifetime>) => Promise<T>,
+/** Owns one rollback-only singleton projection and each admitted SQL operation. */
+export async function withTestCommunityActivityDigestCursor<T>(
+  sentThrough: Date | null,
+  run: (
+    query: QueryExecutor,
+    owner: ReturnType<typeof createOwnedSqlFixtureLifetime>,
+  ) => Promise<T>,
 ): Promise<T> {
   let lock: Awaited<ReturnType<typeof acquireTestPostgresAdvisoryLock>> | undefined
+  let transaction: Awaited<ReturnType<typeof beginTransaction>> | undefined
   const owner = createOwnedSqlFixtureLifetime(async () => {
-    await lock?.release()
+    try {
+      await transaction?.[Symbol.asyncDispose]()
+    } finally {
+      await lock?.release()
+    }
   })
   return owner.withBody(async () => {
     await owner.prepare(async () => {
@@ -30,91 +35,72 @@ export async function withTestCommunityActivityDigestLock<T>(
         key: DIGEST_LOCK_KEY,
         timeout: '20s',
       })
+      transaction = await beginTransaction()
     })
-    return run(owner)
+    const query = new Proxy(transaction!, {
+      apply(target, thisArgument, parameters: Parameters<QueryExecutor>) {
+        return owner.run(() => Reflect.apply(target, thisArgument, parameters))
+      },
+    })
+    if (sentThrough) {
+      await query(sql`/* withTestCommunityActivityDigestCursor:seed */
+        INSERT INTO community_activity_digest_cursors (is_singleton, sent_through_at)
+        VALUES (TRUE, ${sentThrough})
+        ON CONFLICT (is_singleton) DO UPDATE SET sent_through_at = EXCLUDED.sent_through_at`)
+    } else {
+      await query(sql`/* withTestCommunityActivityDigestCursor:vacate */
+        DELETE FROM community_activity_digest_cursors WHERE is_singleton`)
+    }
+    return run(query, owner)
   })
 }
 
-export async function addTestCommunityActivityDigestWeeks(
-  start: Date,
-  weeks: number,
-): Promise<Date> {
-  const { rows } = await write<{ window_starts_at: Date }>(sql`
-    /* addTestCommunityActivityDigestWeeks */
-    SELECT ${start}::timestamptz + (${weeks} * INTERVAL '7 days') AS window_starts_at
+export function getTestCommunityActivityDigestQueueConnection() {
+  return { connection: workerQueueConnection, prefix: workerQueuePrefix }
+}
+
+export async function readTestCommunityActivityDigestCursor(query: QueryExecutor): Promise<Date> {
+  const { rows } = await query<{ sent_through_at: Date }>(sql`
+    /* readTestCommunityActivityDigestCursor */
+    SELECT sent_through_at FROM community_activity_digest_cursors WHERE is_singleton`)
+  if (!rows[0]) throw new Error('Expected digest cursor singleton')
+  return rows[0].sent_through_at
+}
+
+export async function readTestCommunityActivityDigestDelivery(userId: string, windowStart: Date) {
+  const { rows } = await read<{ notification_count: number; intent_count: number }>(sql`
+    /* readTestCommunityActivityDigestDelivery */
+    SELECT COUNT(DISTINCT n.id)::integer AS notification_count,
+      COUNT(DISTINCT i.notification_id)::integer AS intent_count
+    FROM notifications n
+    LEFT JOIN notification_push_intents i ON i.user_id = n.user_id AND i.notification_id = n.id
+    WHERE n.user_id = ${userId}::uuid
+      AND n.event_key = ${`community-activity-digest:${windowStart.toISOString()}`}
   `)
-  return rows[0]!.window_starts_at
+  return rows[0] ?? { notification_count: 0, intent_count: 0 }
 }
 
-export async function readNextTestCommunityActivityDigestWindowStart(): Promise<Date> {
-  const { rows } = await write<{ window_starts_at: Date }>(sql`
-    /* readNextTestCommunityActivityDigestWindowStart */
-    SELECT COALESCE(
-      max(window_starts_at) + INTERVAL '7 days',
-      '2400-01-06T00:00:00.000Z'::timestamptz
-    ) AS window_starts_at
-    FROM community_activity_digest_work_items
-  `)
-  return rows[0]!.window_starts_at
+export function beforeTestDigestUserId(userId: string): string {
+  const hex = (BigInt(`0x${userId.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
-export async function insertTestCommunityActivityDigestWorkItem(windowStart: Date): Promise<void> {
-  await write(sql`
-    /* insertTestCommunityActivityDigestWorkItem */
-    INSERT INTO community_activity_digest_work_items (window_starts_at, window_ends_at)
-    VALUES (${windowStart}, ${windowStart}::timestamptz + INTERVAL '7 days')
-    ON CONFLICT (window_starts_at) DO NOTHING
-  `)
+/** Adjacent UUIDv7 identities bound a recipient page to only this fixture's users. */
+export async function createTestDigestAdjacentUsers(): Promise<[string, string]> {
+  const prefix = uuidv7().slice(0, -1)
+  const first = `${prefix}0`
+  const second = `${prefix}1`
+  await write(sql`/* createTestDigestAdjacentUsers */
+    INSERT INTO users (id) VALUES (${first}::uuid), (${second}::uuid)`)
+  return [first, second]
 }
 
-export async function readTestCommunityActivityDigestWorkItem(
-  windowStart: Date,
-): Promise<TestCommunityActivityDigestWorkItem | null> {
-  const { rows } = await advisoryLockPool.query<TestCommunityActivityDigestWorkItem>(sql`
-    /* readTestCommunityActivityDigestWorkItem */
-    SELECT window_starts_at, window_ends_at, lease_token, lease_expires_at, completed_at, attempt_count
-    FROM community_activity_digest_work_items
-    WHERE window_starts_at = ${windowStart}
-  `)
-  return rows[0] ?? null
-}
-
-export async function deleteOwnedTestCommunityActivityDigestWorkItem(
-  windowStart: Date,
-): Promise<boolean> {
-  const { rowCount } = await write(sql`
-    /* deleteOwnedTestCommunityActivityDigestWorkItem */
-    DELETE FROM community_activity_digest_work_items
-    WHERE window_starts_at = ${windowStart}
-      AND completed_at IS NULL
-      AND lease_token IS NULL
-  `)
-  return rowCount === 1
-}
-
-export async function getTestCommunityActivityDigestWorkItems(): Promise<
-  TestCommunityActivityDigestWorkItem[]
-> {
-  const { rows } = await write<TestCommunityActivityDigestWorkItem>(
-    allowUnannotatedQuery(sql`
-    SELECT window_starts_at, window_ends_at, lease_token, lease_expires_at, completed_at, attempt_count
-    FROM community_activity_digest_work_items
-    ORDER BY window_starts_at
-  `),
-  )
-  return rows
-}
-
-export async function expireTestCommunityActivityDigestWorkItemLease(
-  windowStart: Date,
-  leaseToken: string,
-): Promise<void> {
-  await write(
-    allowUnannotatedQuery(sql`
-    UPDATE community_activity_digest_work_items
-    SET leased_at = clock_timestamp() - INTERVAL '2 seconds',
-      lease_expires_at = clock_timestamp() - INTERVAL '1 second'
-    WHERE window_starts_at = ${windowStart} AND lease_token = ${leaseToken}
-  `),
-  )
+export async function addTestDigestMember(userId: string, now: Date): Promise<void> {
+  const community = await insertTestCommunity({ createdById: userId })
+  await insertTestCommunityMember({
+    communityId: community.id,
+    userId,
+    role: 'owner',
+    createdAt: now,
+  })
 }

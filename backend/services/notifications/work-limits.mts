@@ -3,7 +3,7 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   community_digest_recipient_batch_size: 250,
-  community_digest_window_batch_size: 25,
+  community_digest_windows_per_run: 25,
   reconcile_batch_size: 500,
   reconcile_recipient_page_size: 5000,
   push_intent_recovery_page_size: 100,
@@ -12,7 +12,7 @@ const defaultFields = {
 /** Hard ceilings for the current runtime configuration contract. */
 export const notificationsWorkMaxValues = {
   community_digest_recipient_batch_size: 2500,
-  community_digest_window_batch_size: 1000,
+  community_digest_windows_per_run: 1000,
   reconcile_batch_size: 5000,
   reconcile_recipient_page_size: 50_000,
   push_intent_recovery_page_size: 1000,
@@ -22,7 +22,7 @@ export const notificationsWorkConfig = new DynamicConfig({
   key: 'notifications-work-config',
   fieldTypes: {
     community_digest_recipient_batch_size: 'number',
-    community_digest_window_batch_size: 'number',
+    community_digest_windows_per_run: 'number',
     reconcile_batch_size: 'number',
     reconcile_recipient_page_size: 'number',
     push_intent_recovery_page_size: 'number',

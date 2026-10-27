@@ -15,6 +15,8 @@ export const BACKGROUND_ORDERING_CAPS = {
   'oauth-authorization-exchange': 4,
   'oauth-authorization-exchange:dispatcher': 1,
   notifications: 5,
+  'notifications:digest-windows': 1,
+  'notifications:digest-schedule': 1,
   'activitypub:outbound': 5,
   'activitypub:outbound-dispatch': 2,
   'activitypub:outbound-recovery': 1,
@@ -49,5 +51,9 @@ export function getBackgroundOrderingLimits(key: string): {
   const configKey = key
   const defaultValue = BACKGROUND_ORDERING_CAPS[configKey as keyof typeof BACKGROUND_ORDERING_CAPS]
   if (defaultValue === undefined) throw new Error(`Unregistered background ordering key: ${key}`)
-  return { configKey, defaultValue, maxValue: orderingMaxValue(defaultValue) }
+  return {
+    configKey,
+    defaultValue,
+    maxValue: orderingMaxValue(defaultValue),
+  }
 }
