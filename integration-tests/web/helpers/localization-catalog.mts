@@ -6,8 +6,7 @@ import { compileCatalogDirectory } from '../../../backend/services/localization/
 export async function prepareLocalizationCatalog(): Promise<void> {
   const directory = mkdtempSync(join(tmpdir(), 'voucha-web-integration-localization-'))
   process.once('exit', () => rmSync(directory, { recursive: true, force: true }))
-  process.env.LOCALIZATION_SQLITE_PATH = await compileCatalogDirectory(
-    'localization/catalog',
-    join(directory, 'catalog.sqlite'),
-  )
+  const output = join(directory, 'catalog.sqlite')
+  await compileCatalogDirectory('localization/catalog', output)
+  process.env.LOCALIZATION_SQLITE_PATH = output
 }

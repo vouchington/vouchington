@@ -1672,9 +1672,6 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../../services/jwt-session
-      '@services/localization':
-        specifier: workspace:^
-        version: link:../../services/localization
       '@services/post-classifier':
         specifier: workspace:^
         version: link:../../services/post-classifier
