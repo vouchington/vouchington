@@ -182,17 +182,3 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
   `)
   return 'recorded'
 }
-
-/** True when `ai_usage_provider_response_keys` already reserves this provider response id. */
-export async function hasRecordedAiUsageResponseId(responseId: string): Promise<boolean> {
-  const { rows } = await write<{ exists: boolean }>(sql`/* hasRecordedAiUsageResponseId */
-    SELECT EXISTS (
-      SELECT 1
-      FROM ai_usage_provider_response_keys
-      WHERE response_id = ${responseId}
-    ) AS exists
-  `)
-  const result = rows[0]
-  if (!result) throw new Error('hasRecordedAiUsageResponseId query returned no result row')
-  return result.exists
-}
