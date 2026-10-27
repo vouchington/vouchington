@@ -16,8 +16,7 @@ export async function spendSecurityPageBudget<Source>(
   /* oxlint-disable no-await-in-loop -- each page commits its own cursor and bounded deletion. */
   for (let spent = 0; spent < budget && pending.length > 0; spent++) {
     const source = pending[cursor]!
-    const page = await cleanupPage(source) // no-mistakes-disable-line query-reached-per-item: maxBatches caps pages; each owns a locked cursor and one indexed batchSize+1 page
-    deleted += page.deleted
+    const page = await cleanupPage(source)    deleted += page.deleted
     if (page.hasMore) cursor++
     else pending.splice(cursor, 1)
     if (cursor >= pending.length) cursor = 0
