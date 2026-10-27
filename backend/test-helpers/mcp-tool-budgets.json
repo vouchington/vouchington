@@ -1211,11 +1211,11 @@
       },
       "read_report_integrity": {
         "measured": {
-          "list": 3386,
-          "core": 1020
+          "list": 4416,
+          "core": 1162
         },
         "max": {
-          "list": 4000,
+          "list": 5000,
           "core": 2000
         }
       },
@@ -1241,21 +1241,21 @@
       },
       "lift_integrity_penalty": {
         "measured": {
-          "list": 2583,
-          "core": 646
+          "list": 3267,
+          "core": 868
         },
         "max": {
-          "list": 3000,
+          "list": 4000,
           "core": 1000
         }
       },
       "read_vote_integrity": {
         "measured": {
-          "list": 3649,
-          "core": 1061
+          "list": 4691,
+          "core": 1203
         },
         "max": {
-          "list": 4000,
+          "list": 5000,
           "core": 2000
         }
       },
