@@ -9,9 +9,13 @@ status line, plugins, marketplaces, and MCP servers. vouchington-machines writes
 again ([contract](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md)).
 Keeping it out of the checkout lets Claude Code cloud sessions, which have no OS sandbox, start here.
 
-This repository keeps project policy only: the PreToolUse hooks, `permissions.allow` and `deny`,
-Codex `prefix_rule`s, worktree setup, and the one sandbox key it must own, `sandbox.excludedCommands`
-for its own `dev/` scripts (each as an exact entry plus a ` *` twin). A project permission allow is
+This repository keeps project policy only: the PreToolUse hooks, `permissions.allow` and `deny`
+for this repository's commands and contribution rules, Codex `prefix_rule`s, worktree setup, and
+the one sandbox key it must own, `sandbox.excludedCommands` for its own `dev/` scripts (each as an
+exact entry plus a ` *` twin). Host-safety denies (`sudo`, `rm -rf` of `/`, `~` or `.`, pipe-to-shell,
+credential paths) and general read-only preapprovals are machine policy, so every repository gets
+them. The project only review-skips deleting its own agent worktrees and Rust `target/`
+directories, and denies any `rm` with a `..` that could climb out of them. A project permission allow is
 not an OS sandbox exemption, but `decision="allow"` prefixes in `.codex/rules/default.rules` do run
 outside Codex's sandbox without a prompt, so keep them narrow. `git rebase`, `git stash`,
 `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are deliberately not pre-approved, so

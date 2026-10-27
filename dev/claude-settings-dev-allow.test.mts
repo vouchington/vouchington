@@ -129,3 +129,33 @@ describe('Claude review-skip for the rebase lifecycle', () => {
     expect(plainForcePushReason(command)).toBe(PLAIN_FORCE_PUSH_REASON)
   })
 })
+
+// Host-wide rm safety (`/`, `~`, `.`) is machine policy in vouchington-machines. The project
+// review-skips only deleting its own agent worktrees and Rust target/ directories, and the `..`
+// deny refuses a path that climbs out of them.
+describe('Claude review-skip for worktree and target/ cleanup', () => {
+  it.each([
+    'rm -rf .worktrees/agents-fix-123',
+    'rm -rf .claude/worktrees/snuggly-munching-locket',
+    'rm -rf .codex/worktrees/abc',
+    'rm -rf target',
+    'rm -rf backend/native/target',
+  ])('allows %s without review', command => {
+    expect(isAllowed(command)).toBe(true)
+    expect(isDenied(command)).toBe(false)
+  })
+
+  it.each(['rm -rf .worktrees/other', 'rm -rf .', 'rm -rf /', 'rm -rf ~', 'rm -rf backend'])(
+    'keeps %s on review',
+    command => {
+      expect(isAllowed(command)).toBe(false)
+    },
+  )
+
+  it.each(['rm -rf .claude/worktrees/../..', 'rm -rf .worktrees/agents-x/../../backend'])(
+    'denies the path escape %s',
+    command => {
+      expect(isDenied(command)).toBe(true)
+    },
+  )
+})
