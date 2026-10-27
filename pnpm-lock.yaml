@@ -11710,7 +11710,7 @@ importers:
         version: link:../urls-domains-blacklist
       '@vouchington/queue-errors':
         specifier: ^0.2.0
-        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.2.0(glide-mq@0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
