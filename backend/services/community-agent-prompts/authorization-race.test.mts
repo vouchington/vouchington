@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
@@ -9,8 +9,8 @@ import {
   lockTestCommunityMemberForUpdate,
   removeTestCommunityMember,
   updateTestCommunityMemberRole,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { deleteCommunityAgentPrompt } from './delete.mts'
 import { getCommunityAgentPrompt } from './get.mts'
 import { updateCommunityAgentPrompt } from './update.mts'
@@ -18,38 +18,48 @@ import { updateCommunityAgentPrompt } from './update.mts'
 describe('community agent prompt authorization races', () => {
   it('does not update a prompt after the creator membership is removed while waiting for its lock', async () => {
     const { community, creator, prompt } = await createActiveCreatorPrompt()
-    const { holder, releaseRemoval } = holdCreatorRowLockUntilMembershipRemoval(
-      community.id,
-      creator.id,
+    const holder = holdCreatorRowLockUntilMembershipRemoval(community.id, creator.id)
+    const holderProcessId = await holder.ready
+    await withTestOwnedPostgresWait(
+      {
+        pool: 'write',
+        holderProcessId,
+        lock: { kind: 'transaction' },
+        queryMarker: 'getLockedActiveCommunityMember',
+        releaseHolder: holder.release,
+      },
+      async waitForLock => {
+        const update = updateCommunityAgentPrompt(creator, prompt, { prompt: 'Raced update' })
+        const rejection = update.catch((err: unknown) => err)
+        await waitForLock(update)
+        await holder.release()
+        await expect(rejection).resolves.toMatchObject({ status: 403 })
+        expect((await getCommunityAgentPrompt(prompt.id))?.prompt).toBe(prompt.prompt)
+      },
     )
-    await holder.ready
-
-    const update = updateCommunityAgentPrompt(creator, prompt, { prompt: 'Raced update' })
-    const updateRejection = update.catch((err: unknown) => err)
-    await waitForTestPostgresLockWaiter(await holder.processId, 'getLockedActiveCommunityMember')
-    releaseRemoval.resolve()
-    await holder.done
-
-    await expect(updateRejection).resolves.toMatchObject({ status: 403 })
-    expect((await getCommunityAgentPrompt(prompt.id))?.prompt).toBe(prompt.prompt)
   })
 
   it('does not delete a prompt after the creator membership is removed while waiting for its lock', async () => {
     const { community, creator, prompt } = await createActiveCreatorPrompt()
-    const { holder, releaseRemoval } = holdCreatorRowLockUntilMembershipRemoval(
-      community.id,
-      creator.id,
+    const holder = holdCreatorRowLockUntilMembershipRemoval(community.id, creator.id)
+    const holderProcessId = await holder.ready
+    await withTestOwnedPostgresWait(
+      {
+        pool: 'write',
+        holderProcessId,
+        lock: { kind: 'transaction' },
+        queryMarker: 'getLockedActiveCommunityMember',
+        releaseHolder: holder.release,
+      },
+      async waitForLock => {
+        const deletion = deleteCommunityAgentPrompt(creator, prompt)
+        const rejection = deletion.catch((err: unknown) => err)
+        await waitForLock(deletion)
+        await holder.release()
+        await expect(rejection).resolves.toMatchObject({ status: 403 })
+        expect(await getCommunityAgentPrompt(prompt.id)).not.toBeNull()
+      },
     )
-    await holder.ready
-
-    const deletion = deleteCommunityAgentPrompt(creator, prompt)
-    const deletionRejection = deletion.catch((err: unknown) => err)
-    await waitForTestPostgresLockWaiter(await holder.processId, 'getLockedActiveCommunityMember')
-    releaseRemoval.resolve()
-    await holder.done
-
-    await expect(deletionRejection).resolves.toMatchObject({ status: 403 })
-    expect(await getCommunityAgentPrompt(prompt.id)).not.toBeNull()
   })
 })
 
@@ -67,21 +77,34 @@ async function createActiveCreatorPrompt() {
 }
 
 function holdCreatorRowLockUntilMembershipRemoval(communityId: string, creatorId: string) {
-  const ready = Promise.withResolvers<void>()
+  const ready = Promise.withResolvers<number>()
   const releaseRemoval = Promise.withResolvers<void>()
-  const processId = Promise.withResolvers<number>()
-  const done = removeCreatorMembershipAfterLock()
+  let released: Promise<void> | undefined
+  let done: Promise<void>
+  let cleanupReported = false
+  const release = async () => {
+    try {
+      await (released ??= (async () => {
+        releaseRemoval.resolve()
+        await done
+      })())
+    } finally {
+      cleanupReported = true
+    }
+  }
+  onTestFinished(() => (cleanupReported ? undefined : release()))
+  done = removeCreatorMembershipAfterLock()
+  void done.catch(ready.reject)
 
   async function removeCreatorMembershipAfterLock(): Promise<void> {
     await using query = await beginTransaction()
-    processId.resolve(await getTestPostgresBackendProcessId(query))
+    const processId = await getTestPostgresBackendProcessId(query)
     const options = { query }
     await lockTestCommunityMemberForUpdate(communityId, creatorId, options)
-    ready.resolve()
+    ready.resolve(processId)
     await releaseRemoval.promise
     await removeTestCommunityMember(communityId, creatorId, options)
-
     await query.commit()
   }
-  return { holder: { ready: ready.promise, done, processId: processId.promise }, releaseRemoval }
+  return { ready: ready.promise, release }
 }

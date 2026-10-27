@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { withTestOwnedAdvisoryWait } from '@voucha/test-helpers/advisory-client-lock-observer'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestUserDirect,
@@ -174,12 +174,11 @@ describe('durable Bluesky disconnect', () => {
       key: user.id,
     })
     managed = true
-    await withTestOwnedAdvisoryWait(
+    await withTestOwnedPostgresWait(
       {
         holderProcessId: requestHolderProcessId,
         pool: 'advisory',
-        namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE,
-        key: user.id,
+        lock: { kind: 'advisory', namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE, key: user.id },
         queryMarker: 'withBlueskyDisconnectLock:lock',
         releaseHolder,
       },

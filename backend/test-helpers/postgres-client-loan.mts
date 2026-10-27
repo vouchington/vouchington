@@ -1,24 +1,22 @@
 import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
-import { observeTestAdvisoryLockNotice } from './postgres-advisory-lock-notice.mts'
+import {
+  observeTestAdvisoryLockNotice,
+  observeTestTransactionLockNotice,
+} from './postgres-advisory-lock-notice.mts'
 
-export type TestAdvisoryLockIdentity = {
-  holderProcessId: number
-  key: string
-  namespace?: number
-}
-
-export type TestOwnedAdvisoryWaitOptions = TestAdvisoryLockIdentity & {
-  pool: 'advisory' | 'write'
-  queryMarker: string
-  requestId?: string
-  releaseHolder: () => PromiseLike<void>
-}
+import type {
+  TestHeldPostgresLock,
+  TestOwnedPostgresWaitOptions,
+} from './postgres-client-lock-identity.mts'
 
 /** Restore a real borrowed client's settings before its synchronous release reaches the pool. */
-export function createTestAdvisoryClientLoan(client: PoolClient, lockTag: string) {
+export function createTestPostgresClientLoan(client: PoolClient, lock: TestHeldPostgresLock) {
   const descriptor = Object.getOwnPropertyDescriptor(client, 'release')
   const release = client.release
-  const observation = observeTestAdvisoryLockNotice(client, lockTag)
+  const observation =
+    lock.kind === 'advisory'
+      ? observeTestAdvisoryLockNotice(client, lock.tag)
+      : observeTestTransactionLockNotice(client, lock.transactionId)
   const ended = trackTestPostgresClientEnd(client)
   let requested = false
   let finishing: Promise<void> | undefined
@@ -50,7 +48,7 @@ export function createTestAdvisoryClientLoan(client: PoolClient, lockTag: string
     enumerable: descriptor?.enumerable ?? true,
     writable: true,
     value: function (this: PoolClient, ...args: Parameters<PoolClient['release']>) {
-      if (requested) throw new Error('Observed advisory client was released more than once')
+      if (requested) throw new Error('Observed PostgreSQL client was released more than once')
       requested = true
       void finish(this, args).catch(() => {})
     },
@@ -74,7 +72,7 @@ export function trackTestPostgresClientEnd(client: PoolClient) {
   return { promise: ended.promise, close: () => client.off('end', onEnd) }
 }
 
-export async function discardTestAdvisoryClient(
+export async function discardTestPostgresClient(
   client: PoolClient,
   ended = trackTestPostgresClientEnd(client),
 ): Promise<void> {
@@ -87,7 +85,7 @@ export async function discardTestAdvisoryClient(
 }
 
 /** Own the ordinary observer checkout, including a borrow that finishes during cleanup. */
-export function reserveTestAdvisoryObserver(targetPool: TestOwnedAdvisoryWaitOptions['pool']) {
+export function reserveTestPostgresObserver(targetPool: TestOwnedPostgresWaitOptions['pool']) {
   const pool = targetPool === 'write' ? advisoryLockPool : writePool
   let client: PoolClient | undefined
   let ended: ReturnType<typeof trackTestPostgresClientEnd> | undefined
@@ -107,7 +105,7 @@ export function reserveTestAdvisoryObserver(targetPool: TestOwnedAdvisoryWaitOpt
       return (released ??= (async () => {
         await ready.catch(() => undefined)
         if (!client) return
-        if (discard) await discardTestAdvisoryClient(client, ended)
+        if (discard) await discardTestPostgresClient(client, ended)
         else {
           ended?.close()
           client.release()
@@ -115,50 +113,4 @@ export function reserveTestAdvisoryObserver(targetPool: TestOwnedAdvisoryWaitOpt
       })())
     },
   }
-}
-
-export async function getTestOwnedAdvisoryLockTag(
-  observer: PoolClient,
-  identity: TestAdvisoryLockIdentity,
-): Promise<string> {
-  const { rows } = await observer.query<{ lock_tag: string }>(
-    `/* getTestOwnedAdvisoryLockTag */
-      SELECT 'advisory lock [' || database::text || ',' || classid::text || ',' ||
-        objid::text || ',' || objsubid::text || ']' AS lock_tag
-      FROM pg_locks
-      WHERE pid = $1 AND locktype = 'advisory' AND granted AND mode = 'ExclusiveLock'
-        AND database = (SELECT oid FROM pg_database WHERE datname = current_database())
-        AND (($3::integer IS NULL AND objsubid = 1
-          AND classid::bigint = ((hashtextextended($2, 0) >> 32) & 4294967295)
-          AND objid::bigint = (hashtextextended($2, 0) & 4294967295))
-        OR ($3::integer IS NOT NULL AND objsubid = 2
-          AND classid::bigint = ($3::bigint & 4294967295)
-          AND objid::bigint = (hashtext($2)::bigint & 4294967295)))
-      LIMIT 2`,
-    [identity.holderProcessId, identity.key, identity.namespace ?? null],
-  )
-  if (rows.length !== 1 || !rows[0])
-    throw new Error('Owned holder did not report exactly the expected advisory lock')
-  return rows[0].lock_tag
-}
-
-/** One ownership snapshot, admitted only after the exact native lock-wait notice. */
-export async function assertTestOwnedAdvisoryWait(
-  observer: PoolClient,
-  waiterProcessId: number,
-  holderProcessId: number,
-  queryMarker: string,
-): Promise<void> {
-  const { rows } = await observer.query<{ waiting: boolean }>(
-    `/* assertTestOwnedAdvisoryWait */
-      SELECT EXISTS (
-        SELECT 1 FROM pg_stat_activity
-        WHERE pid = $1 AND datname = current_database()
-          AND state = 'active' AND wait_event_type = 'Lock'
-          AND position($3 IN query) > 0 AND $2 = ANY(pg_blocking_pids(pid))
-      ) AS waiting`,
-    [waiterProcessId, holderProcessId, queryMarker],
-  )
-  if (!rows[0]?.waiting)
-    throw new Error('Native advisory notice did not match the owned holder and real query')
 }
