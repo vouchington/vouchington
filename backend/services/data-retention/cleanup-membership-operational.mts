@@ -1,11 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  applyRetentionLimits,
-  getRetentionCutoffDate,
-  normalizeRetentionDays,
-} from './cleanup-options.mts'
-import type { DataRetentionLimits } from './config.mts'
+import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 
