@@ -12549,6 +12549,9 @@ importers:
       '@queues/post-publication':
         specifier: workspace:^
         version: link:../queues/post-publication
+      '@queues/psql':
+        specifier: workspace:^
+        version: link:../queues/psql
       '@sentry/node':
         specifier: ^11.9.0
         version: 11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29))

@@ -100,7 +100,6 @@ export async function processImageDeletionPageWhileLocked(
         sql`/* processImageDeletionPage:rehash */ UPDATE posts SET llm_moderation_content_sha256 = ${content_sha256} WHERE id = ${postId}`,
       )
       if (!clearanceChanged) {
-        // no-mistakes-disable-next-line query-reached-per-item: each bounded locked post needs its own atomic publication-change capture
         await recordPostPublicationChange(transaction, {
           scope: { type: 'post', postId },
           reason: 'post_content_reset',
