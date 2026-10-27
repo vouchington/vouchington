@@ -268,7 +268,7 @@ describe('AI background response recovery with real GlideMQ', () => {
       await expect(
         findAiUsageRecordForAgent(response.agentSlug, { inputTokens: 13, outputTokens: 5 }),
       ).resolves.not.toBeNull()
-      expect((await queue.getJob(admitted.id))?.data.backgroundResponses).toEqual([response])
+      expect((await queue.getJob(admitted.id))?.data.backgroundResponses).toEqual([])
       expect(retrieve).toHaveBeenCalledOnce()
       const cleanup = await queue.add('reconcile-background-responses', {
         phase: 'cleanup',
@@ -286,6 +286,7 @@ describe('AI background response recovery with real GlideMQ', () => {
         },
       )
       await expect(queue.getJob(admitted.id)).resolves.toBeNull()
+      expect(retrieve).toHaveBeenCalledOnce()
       retrieve.mockRestore()
     } finally {
       await queue.obliterate({ force: true })

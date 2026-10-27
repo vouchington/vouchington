@@ -181,4 +181,62 @@ describe('retained AI response sweeps with real GlideMQ', () => {
       await queue.close()
     }
   })
+
+  it('settles a retained response once so a second sweep makes no provider call', async () => {
+    const name = `ai_response_settled_once_${randomUUID()}`
+    const queue = new Queue<AIAgentJobData>(name, connection)
+    const response = pendingResponse()
+    const admitted = await queue.add(
+      'report-judgement',
+      { backgroundResponses: [response] } as AIAgentJobData,
+      { attempts: 1, removeOnFail: false },
+    )
+    if (!admitted) throw new Error('Expected an admitted job')
+    const failed = Promise.withResolvers<void>()
+    const worker = new Worker<AIAgentJobData>(
+      name,
+      async () => {
+        throw new UnrecoverableError('test terminal failure')
+      },
+      { ...connection, blockTimeout: 1_000 },
+    )
+    worker.on('failed', failedJob => {
+      if (failedJob?.id === admitted.id) failed.resolve()
+    })
+    worker.on('error', failed.reject)
+    try {
+      await waitForRealGlideEvent(failed.promise, `AI settled-once failure ${admitted.id}`)
+    } finally {
+      await worker.close(true)
+    }
+    try {
+      vi.mocked(retrieveOpenAIResponse).mockReset()
+      vi.mocked(retrieveOpenAIResponse).mockResolvedValue(
+        makeSdkTextResponse('done', { id: response.responseId, usage: undefined }),
+      )
+      const sweep = async () => {
+        const job = await queue.add('reconcile-background-responses', {
+          phase: 'failed',
+          failedOffset: 0,
+          sweepId: randomUUID(),
+          page: 0,
+        })
+        if (!job) throw new Error('Expected a sweep job')
+        await processReconcileBackgroundResponses(job as Job<ReconcileBackgroundResponsesJobData>, {
+          queue,
+          enqueuePage: data => queue.add('reconcile-background-responses', data),
+        })
+      }
+      await sweep()
+      expect(retrieveOpenAIResponse).toHaveBeenCalledTimes(1)
+      const retained = await queue.getJob(admitted.id)
+      expect(retained?.data.backgroundResponses).toEqual([])
+
+      await sweep()
+      expect(retrieveOpenAIResponse).toHaveBeenCalledTimes(1)
+    } finally {
+      await queue.obliterate({ force: true })
+      await queue.close()
+    }
+  })
 })

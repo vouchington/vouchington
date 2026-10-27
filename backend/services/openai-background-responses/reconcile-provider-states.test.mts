@@ -69,14 +69,17 @@ describe('OpenAI background response recovery states', () => {
     },
   )
 
-  it('settles a completed response without usage without recording a bill', async () => {
-    const row = candidate()
-    retrieve.mockResolvedValueOnce(
-      makeSdkTextResponse('done', { id: row.responseId, usage: undefined }),
-    )
+  it('settles a completed response without usage and latches unknown spend', async () => {
+    await withReservedAiUsageDay(1_000_000, async day => {
+      const row = { ...candidate(), createdAt: new Date() }
+      retrieve.mockResolvedValueOnce(
+        makeSdkTextResponse('done', { id: row.responseId, usage: undefined }),
+      )
 
-    await expect(reconcileBackgroundResponse(row)).resolves.toBe('no-usage')
-    await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
+      await expect(reconcileBackgroundResponse(row)).resolves.toBe('no-usage')
+      await expect(getAccountingUncertaintySource(day)).resolves.toBe('unknown_billed_attempt')
+      await expect(countAiUsageRecordsForResponseId(row.responseId)).resolves.toBe(0)
+    })
   })
 
   it('keeps an invalid ledger write retryable until corrected provider usage records once', async () => {

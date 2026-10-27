@@ -1,15 +1,14 @@
 import type { Job, Queue } from 'glide-mq'
 import onError from '@modules/on-error'
 import { removeTerminalJobsWhen } from '@data-stores/valkey-glide-mq/terminal-job-removal'
-import { hasRecordedAiUsageResponseId } from '@services/ai-usage'
-import { reconcileBackgroundResponse } from '@services/openai-background-responses'
 import { getBackgroundResponseReconcilePageSize } from '@queues/ai-agents/config'
 import { enqueueReconcileBackgroundResponsesPage } from '@queues/ai-agents/enqueues/reconcile-background-responses'
+import { failedAiJobHasNoPendingResponses } from '@queues/ai-agents/enqueues/failed-job-recovery'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type { AIAgentJobData, ReconcileBackgroundResponsesJobData } from '@queues/ai-agents/types'
 import pMap from 'p-map'
+import { settleFailedJobResponses } from './settle-failed-job-responses.mts'
 
-const RECONCILE_CONCURRENCY = 5
 const FAILED_JOB_VISIBILITY_COUNT = 100
 
 type ReconcileJob = Job<ReconcileBackgroundResponsesJobData>
@@ -38,28 +37,12 @@ export async function processReconcileBackgroundResponses(
   const offset = job.data.failedOffset ?? 0
   const pageSize = getBackgroundResponseReconcilePageSize()
   const failed = await deps.queue.getJobs('failed', offset, offset + pageSize - 1)
-  // The job may be retried while this sweep runs. Keep its payload untouched: the response key
-  // is the accounting fence, and the active worker will clear its own pending IDs. Flatten the
-  // page so the OpenAI retrieve/cancel limit is five across all retained jobs.
-  await pMap(
-    failed.flatMap(failedJob =>
-      (failedJob.data.backgroundResponses ?? []).map(response => ({
-        response,
-        mode: reconciliationMode(failedJob),
-      })),
-    ),
-    async ({ response, mode }) => {
-      try {
-        await reconcileBackgroundResponse(
-          { ...response, createdAt: new Date(response.createdAt) },
-          mode,
-        )
-      } catch (err) {
-        reportReconcileFailure(err)
-      }
-    },
-    { concurrency: RECONCILE_CONCURRENCY },
-  )
+  // The job may be retried while this sweep runs. Settling rewrites a payload only while the job
+  // is still failed, and the active worker clears its own pending IDs. Sequential jobs keep the
+  // OpenAI retrieve/cancel limit at five.
+  await pMap(failed, failedJob => settleFailedJobResponses(deps.queue, failedJob), {
+    concurrency: 1,
+  })
   const removedStableJobs = await pMap(
     failed,
     async failedJob => {
@@ -70,7 +53,7 @@ export async function processReconcileBackgroundResponses(
         return await removeTerminalJobsWhen<AIAgentJobData>(
           deps.queue,
           [failedJob.id],
-          canRemoveFailedJob,
+          failedAiJobHasNoPendingResponses,
         )
       } catch (err) {
         reportReconcileFailure(err)
@@ -105,10 +88,11 @@ async function cleanSettledFailedJobs(
   const pageSize = Math.min(getBackgroundResponseReconcilePageSize(), excess - offset)
   const failed = await deps.queue.getJobs('failed', offset, offset + pageSize - 1)
   if (failed.length === 0) return
+  await pMap(failed, entry => settleFailedJobResponses(deps.queue, entry), { concurrency: 1 })
   const removed = await removeTerminalJobsWhen<AIAgentJobData>(
     deps.queue,
     failed.map(entry => entry.id),
-    canRemoveFailedJob,
+    failedAiJobHasNoPendingResponses,
   )
   const nextOffset = offset + failed.length - removed
   const remainingExcess = Math.max(
@@ -125,35 +109,6 @@ async function cleanSettledFailedJobs(
   }
 }
 
-async function canRemoveFailedJob(entry: Job<AIAgentJobData>): Promise<boolean> {
-  const settled = await pMap(
-    entry.data.backgroundResponses ?? [],
-    async response => {
-      try {
-        if (await hasRecordedAiUsageResponseId(response.responseId)) return true
-        const result = await reconcileBackgroundResponse(
-          { ...response, createdAt: new Date(response.createdAt) },
-          reconciliationMode(entry),
-        )
-        return result !== 'still-active' && result !== 'accounting-uncertain'
-      } catch (err) {
-        reportReconcileFailure(err)
-        return false
-      }
-    },
-    { concurrency: RECONCILE_CONCURRENCY },
-  )
-  return settled.every(Boolean)
-}
-
-function reportReconcileFailure(err: unknown): void {
-  onError(
-    err instanceof Error
-      ? err
-      : new Error('Background response reconciliation failed', { cause: err }),
-  )
-}
-
 function hasReactivatableStableId(job: Job<AIAgentJobData>): boolean {
   if (job.name === 'report-judgement') {
     return 'run_id' in job.data && job.data.run_id != null
@@ -164,8 +119,4 @@ function hasReactivatableStableId(job: Job<AIAgentJobData>): boolean {
     job.name === 'appeal-resolution' ||
     job.name === 'recover-background-response'
   )
-}
-
-function reconciliationMode(job: Job<AIAgentJobData>): 'worker' | 'inline' {
-  return job.name === 'recover-background-response' ? 'inline' : 'worker'
 }

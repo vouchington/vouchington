@@ -58,6 +58,11 @@ export async function reconcileBackgroundResponse(
     model = completed.model
     serviceTier = completed.service_tier ?? undefined
     if (!usage) {
+      // A completed call was billed, but without usage its cost is unknown.
+      await latchAccountingUncertainty({
+        requestDay: getUtcDayFromDate(candidate.createdAt),
+        source: 'unknown_billed_attempt',
+      })
       return 'no-usage'
     }
   } catch (err) {
