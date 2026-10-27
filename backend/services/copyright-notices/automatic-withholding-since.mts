@@ -14,7 +14,7 @@ export type AutomaticWithholdingWindow = { enabled: boolean; since: Date | null 
  * The current on-period starts at the timestamp projected with the switch update. This field
  * survives retention of old audit revisions; malformed or absent values fail closed.
  */
-export async function findSwitchOnTime(): Promise<Date | null> {
+async function findSwitchOnTime(): Promise<Date | null> {
   await copyrightConfig.waitForInitialization()
   const value = copyrightConfig.getFields().automaticProvisionalWithholdingSince
   if (typeof value !== 'string' || value === '') return null

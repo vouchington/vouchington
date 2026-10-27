@@ -4,7 +4,6 @@ import {
   useAutomaticWithholdingSwitch,
 } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import {
-  findSwitchOnTime,
   getAutomaticEnforcementSince,
   getAutomaticWithholdingWindow,
 } from './automatic-withholding-since.mts'
@@ -17,7 +16,6 @@ describe('the current automatic withholding on-period', () => {
     for (const value of ['', 'not-a-date', '2024-06-01']) {
       const restore = await overrideAutomaticWithholdingSinceForTest(value)
       try {
-        await expect(findSwitchOnTime()).resolves.toBeNull()
         await expect(getAutomaticWithholdingWindow()).resolves.toEqual({
           enabled: true,
           since: null,
@@ -41,7 +39,6 @@ describe('the current automatic withholding on-period', () => {
     const at = new Date(instant)
     const restore = await overrideAutomaticWithholdingSinceForTest(at)
     try {
-      await expect(findSwitchOnTime()).resolves.toEqual(at)
       await expect(getAutomaticWithholdingWindow()).resolves.toEqual({ enabled: true, since: at })
     } finally {
       restore()
