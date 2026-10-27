@@ -27,6 +27,11 @@ export const ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT = {
     to: 'pending',
     atomicBoundary: 'bounded-update',
   },
+  releaseUnadmittedRecoveryRequeues: {
+    from: ['pending'],
+    to: 'pending',
+    atomicBoundary: 'bounded-update',
+  },
   exhaustRecoveryRequeues: { from: ['pending'], to: 'failed', atomicBoundary: 'bounded-update' },
   rearm: { from: ['failed'], to: 'pending', atomicBoundary: 'bounded-locking-update' },
   expire: { from: ['pending', 'failed'], to: 'deleted', atomicBoundary: 'bounded-locking-delete' },

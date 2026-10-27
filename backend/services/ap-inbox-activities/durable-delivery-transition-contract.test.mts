@@ -17,6 +17,10 @@ describe('ActivityPub inbox transition implementation contract', () => {
       reject: activityPubInboxDeliveryTransitions.reject.contract,
       complete: activityPubInboxDeliveryTransitions.complete.contract,
       recover: activityPubInboxDeliveryTransitions.recover.contract,
+      reserveRecoveryRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues.contract,
+      releaseUnadmittedRecoveryRequeues:
+        activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues.contract,
+      exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues.contract,
       rearm: activityPubInboxDeliveryTransitions.rearm.contract,
     }).toEqual(ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT)
   })

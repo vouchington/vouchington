@@ -40,7 +40,10 @@ export const activityPubInboxDeliveryTransitions = {
   exhaustRecoveryRequeues: Object.assign(exhaustActivityPubInboxRecoveryRequeues, {
     contract: contract.exhaustRecoveryRequeues,
   }),
-  releaseUnadmittedRecoveryRequeues: releaseUnadmittedActivityPubInboxRecoveryRequeues,
+  releaseUnadmittedRecoveryRequeues: Object.assign(
+    releaseUnadmittedActivityPubInboxRecoveryRequeues,
+    { contract: contract.releaseUnadmittedRecoveryRequeues },
+  ),
   rearm: Object.assign(rearmFailedActivityPubInboxDeliveries, { contract: contract.rearm }),
   expire: Object.assign(expireActivityPubInboxDeliveries, { contract: contract.expire }),
 } as const

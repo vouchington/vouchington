@@ -26,7 +26,11 @@ export type RecoverDeliveriesDependencies = {
   reserveRequeues: (
     deliveryIds: readonly string[],
   ) => ReturnType<typeof activityPubInboxDeliveryTransitions.reserveRecoveryRequeues>
-  releaseUnadmittedRequeues: typeof activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues
+  releaseUnadmittedRequeues: (
+    ...args: Parameters<
+      typeof activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues
+    >
+  ) => ReturnType<typeof activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues>
   exhaustRecoveryRequeues: (
     deliveryIds: readonly string[],
   ) => ReturnType<typeof activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues>
