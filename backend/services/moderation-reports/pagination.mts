@@ -1,7 +1,7 @@
 import type { ModerationReportStatus } from './config.mts'
 import type { ModerationReportSort } from './sort-sql.mts'
 
-export function encodeReportCursor(
+function encodeReportCursor(
   report: {
     cursor_report_count?: number
     cursor_severity_rank?: number
