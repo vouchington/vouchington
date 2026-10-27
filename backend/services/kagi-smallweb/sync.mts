@@ -41,8 +41,13 @@ export async function dispatchKagiSmallWeb(
     let directory: string | undefined
     try {
       directory = await createFeedListDirectory()
-      await prepareFeedListDiff(fetched.lists, directory)
-      const result = await enqueueFeedListPage(directory, cursor, pageSize, fetched.incomplete)
+      const result = await stageFeedListPage(
+        fetched.lists,
+        directory,
+        cursor,
+        pageSize,
+        fetched.incomplete,
+      )
       if (result.hasMore) return { ...result, commitValidators: fetched.commitValidators }
       await fetched.commitValidators()
       return result
@@ -56,6 +61,17 @@ export async function dispatchKagiSmallWeb(
       await forgetFeedListValidators(FEED_LIST_SOURCES.map(source => source.name))
     throw err
   }
+}
+
+async function stageFeedListPage(
+  lists: FeedListChunkSource[],
+  directory: string,
+  cursor: string | undefined,
+  pageSize: number,
+  incomplete: boolean,
+): Promise<DispatchKagiSmallWebResult> {
+  await prepareFeedListDiff(lists, directory)
+  return enqueueFeedListPage(directory, cursor, pageSize, incomplete)
 }
 
 async function enqueueFeedListPage(
