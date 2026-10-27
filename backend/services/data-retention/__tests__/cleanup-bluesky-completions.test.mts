@@ -21,6 +21,7 @@ import {
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('runDataRetentionCleanup', () => {
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('returns per-cleanup deletion summaries', async () => {
     const moderationLock = await acquireModerationOperationRetentionTestLock()
     onTestFinished(() => moderationLock.release())

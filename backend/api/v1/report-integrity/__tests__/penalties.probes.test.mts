@@ -97,6 +97,7 @@ describe('report abuse penalty review API', () => {
     }
   })
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('admits only administrators, reviews a due active penalty, and rejects replay', async () => {
     const [admin, member, target] = await Promise.all([
       createTestUser({ administrator: true }),

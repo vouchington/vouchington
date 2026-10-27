@@ -34,7 +34,6 @@ import {
   completeUserDeletionForTest,
   getUserDeletionRequestForTest,
 } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
-
 import { providerTableConfigs } from '@services/oauth/providers'
 
 import {
@@ -190,6 +189,7 @@ describe('retention day validation', () => {
 })
 
 describe('cleanupSoftDeletedUsers', () => {
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('hard-deletes soft-deleted users older than retentionDays', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
@@ -203,6 +203,7 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(await getTestUserRaw(user.id)).toBeNull()
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('does NOT delete recently soft-deleted users', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
@@ -216,6 +217,7 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(await getTestUserRaw(user.id)).not.toBeNull()
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('keeps a retention-eligible user while its durable deletion request is incomplete', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
@@ -227,6 +229,7 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(await getTestUserRaw(user.id)).not.toBeNull()
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('hard-deletes retention-eligible users after durable deletion completion and without a request', async () => {
     const window = createTestRetentionWindow()
     const [completedRequestUser, legacyUser] = await Promise.all([

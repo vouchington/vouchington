@@ -164,7 +164,7 @@
     "oxlint-tsgolint": "^7.0.2005",
     "picomatch": "^4.0.4",
     "playwright": "^1.64.1",
-    "pr-shepherd": "^1.0.0",
+    "pr-shepherd": "^1.1.1",
     "squawk-cli": "^2.70.0",
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
