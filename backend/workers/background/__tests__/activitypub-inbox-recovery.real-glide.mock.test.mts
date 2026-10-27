@@ -9,6 +9,7 @@ import {
   removeFailedActivityPubInboxDelivery,
 } from '@queues/activitypub/enqueues/inbox'
 import { recoverDeliveries } from '@workers/activitypub/processors/inbox'
+import { activityPubInboxRecoveryClockPastEnqueueGrace } from '@workers/activitypub/processors/inbox-enqueue-grace'
 import { registerActivityPubInboxAdmission } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import {
   createApprovedRemoteActor,
@@ -135,8 +136,8 @@ describe('ActivityPub inbox recovery through real GlideMQ', () => {
       expect(await harness.settled(failed)).toBe('failed')
       expect(await (await harness.queue.getJob(jobId))?.getState()).toBe('failed')
 
-      // GlideMQ's numeric retention trims the shared failed set, including jobs whose own
-      // removeOnFail is false. The later id sorts after the inbox id even on a timestamp tie.
+      // GlideMQ's numeric retention trims the shared failed set. The later id sorts after
+      // the inbox id even on a timestamp tie.
       const unrelated = await harness.add(
         ACTIVITYPUB_PROCESS_DELIVERY_JOB,
         { deliveryId: randomUUID(), requestDigest: randomUUID() },
@@ -177,6 +178,7 @@ describe('ActivityPub inbox recovery through real GlideMQ', () => {
           }),
         enqueueContinuation: async () => null,
         pageSize: () => 2,
+        now: () => activityPubInboxRecoveryClockPastEnqueueGrace(delivery.deliveryId),
       }
       for (let attempt = 0; attempt < 5; attempt += 1) {
         expect(await recoverDeliveries(undefined, recoveryDependencies)).toEqual({

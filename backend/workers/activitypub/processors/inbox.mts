@@ -7,6 +7,7 @@ import {
 } from '@queues/activitypub/enqueues/inbox'
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
 import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/work-limits'
+import { isInsideActivityPubInboxEnqueueGrace } from './inbox-enqueue-grace.mts'
 export { cleanupExpiredDeliveries } from './inbox-cleanup.mts'
 export { processDelivery } from './inbox-delivery.mts'
 
@@ -34,6 +35,7 @@ export type RecoverDeliveriesDependencies = {
   exhaustRecoveryRequeues: (
     deliveryIds: readonly string[],
   ) => ReturnType<typeof activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues>
+  now?: () => number
 }
 
 export type RearmFailedDeliveriesDependencies = {
@@ -69,10 +71,17 @@ export async function recoverDeliveries(
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const deliveries = await dependencies.readRecoverable(afterId)
   if (deliveries.length === 0) return { enqueued: 0, hasMore: false }
+  const nowMs = dependencies.now?.() ?? Date.now()
   const replacementCandidates = []
   for (const delivery of deliveries) {
     // oxlint-disable-next-line no-await-in-loop -- one bounded page limits terminal job lookups
     const status = await dependencies.getJobStatus(delivery)
+    if (
+      status.state === 'missing' &&
+      isInsideActivityPubInboxEnqueueGrace(delivery.deliveryId, nowMs)
+    ) {
+      continue
+    }
     if (
       status.state === 'missing' ||
       status.state === 'completed' ||

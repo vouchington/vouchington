@@ -26,7 +26,7 @@ describe('ActivityPub inbox enqueues', () => {
         backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
         priority: 10,
         removeOnComplete: 100,
-        removeOnFail: false,
+        removeOnFail: 100,
         deduplication: { id: jobId, mode: 'simple' },
       },
     })

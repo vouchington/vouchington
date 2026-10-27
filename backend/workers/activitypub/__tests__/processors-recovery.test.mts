@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
+import { INBOX_RECOVERY_ENQUEUE_GRACE_MS } from '@queues/activitypub/config'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { rearmFailedDeliveries, recoverDeliveries } from '../processors/inbox.mts'
 
 const PAGE_SIZE = 3
@@ -113,6 +115,42 @@ describe('ActivityPub inbox recovery processors', () => {
       cause: admissionError,
     })
     expect(releaseUnadmittedRequeues).toHaveBeenCalledWith([])
+  })
+
+  it('does not spend a replacement on an envelope still inside the enqueue grace', async () => {
+    const nowMs = 1_700_000_000_000
+    const recent = {
+      deliveryId: timestampToUuidv7LowerBound(nowMs - 1_000),
+      requestDigest: randomUUID(),
+    }
+    const ready = {
+      deliveryId: timestampToUuidv7LowerBound(nowMs - INBOX_RECOVERY_ENQUEUE_GRACE_MS),
+      requestDigest: randomUUID(),
+    }
+    const reserveRequeues = vi
+      .fn<VitestLooseMock>()
+      .mockImplementation(async (deliveryIds: string[]) => new Map(deliveryIds.map(id => [id, 1])))
+    const enqueueBulk = vi
+      .fn<VitestLooseMock>()
+      .mockResolvedValue([{ id: `activitypub-inbox__${ready.requestDigest}` }])
+
+    await expect(
+      recoverDeliveries(undefined, {
+        readRecoverable: async () => [ready, recent],
+        getJobStatus: async () => ({ state: 'missing' }),
+        reserveRequeues,
+        releaseUnadmittedRequeues: async () => undefined,
+        exhaustRecoveryRequeues: async () => undefined,
+        removeFailed: async () => false,
+        exhaust: async () => ({ outcome: 'stale' }),
+        enqueueBulk,
+        enqueueContinuation: async () => null,
+        pageSize: () => PAGE_SIZE,
+        now: () => nowMs,
+      }),
+    ).resolves.toEqual({ enqueued: 1, hasMore: false })
+    expect(reserveRequeues).toHaveBeenCalledWith([ready.deliveryId])
+    expect(enqueueBulk).toHaveBeenCalledWith([ready])
   })
 
   it('re-arms one short page of failed deliveries without a continuation', async () => {

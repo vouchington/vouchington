@@ -115,6 +115,30 @@ describe('activitypub durable inbox through the production background processor'
     }
   })
 
+  it('completes a rejected delivery without retaining a failed job', async () => {
+    const actor = await createApprovedRemoteActor()
+    const delivery = await createSignedDelivery(actor, { corruptSignature: true })
+    const harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      bodies: {
+        [ACTIVITYPUB_PROCESS_DELIVERY_JOB.name]: (current: Job) =>
+          processDelivery(current.data, {
+            isFinalAttempt: true,
+            moveToDelayed: timestamp => current.moveToDelayed(timestamp),
+          }),
+      },
+    })
+    try {
+      const added = await harness.add(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivery, { attempts: 1 })
+      expect(await harness.settled(added)).toBe('completed')
+      expect(await (await harness.queue.getJob(added.id))?.getState()).toBe('completed')
+      expect(await loadTestDelivery(delivery.deliveryId)).toBeNull()
+    } finally {
+      await harness.close()
+    }
+  })
+
   it('checkpoints a terminal transport failure before continuing the bounded recovery page', async () => {
     const actor = await createApprovedRemoteActor()
     const delivery = await createSignedDelivery(actor)

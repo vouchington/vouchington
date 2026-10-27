@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import type { Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { INBOX_RECOVERY_ENQUEUE_GRACE_MS } from '@queues/activitypub/config'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
+import { reassignActivityPubInboxDeliveryIdForTest } from '@voucha/test-helpers/entities/activitypub-inbox'
+import { deleteActivityPubInboxDeliveriesForTest } from '@voucha/test-helpers/entities/activitypub-inbox-storage'
 import {
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
   ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,
@@ -24,6 +28,13 @@ function handlerFor(name: string) {
   return activitypubHandlers.find(handler => handler.job.name === name)!
 }
 
+/** A unique UUIDv7 whose timestamp is already outside the enqueue grace. */
+function activityPubInboxDeliveryIdPastEnqueueGrace(nowMs = Date.now()): string {
+  const bound = timestampToUuidv7LowerBound(nowMs - INBOX_RECOVERY_ENQUEUE_GRACE_MS - 1)
+  const suffix = randomUUID().replaceAll('-', '')
+  return `${bound.slice(0, 15)}${suffix.slice(0, 3)}-8${suffix.slice(3, 6)}-${suffix.slice(6, 18)}`
+}
+
 describe('ActivityPub background handlers', () => {
   it('treats a missing delivery as an idempotent no-op on any attempt', async () => {
     const job = {
@@ -44,18 +55,21 @@ describe('ActivityPub background handlers', () => {
       }),
     )
     const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
-    const continuationId = `activitypub-inbox-recovery__${delivery.deliveryId}`
+    const agedId = activityPubInboxDeliveryIdPastEnqueueGrace()
+    onTestFinished(() => deleteActivityPubInboxDeliveriesForTest([agedId]))
+    await reassignActivityPubInboxDeliveryIdForTest(delivery.deliveryId, agedId)
+    const continuationId = `activitypub-inbox-recovery__${agedId}`
     onTestFinished(async () => {
       await (await background.getJob(`activitypub-inbox__${delivery.requestDigest}`))?.remove()
       await (await background.getJob(continuationId))?.remove()
     })
-    const job = { data: { afterId: uuidBefore(delivery.deliveryId) } } as unknown as Job
+    const job = { data: { afterId: uuidBefore(agedId) } } as unknown as Job
     await expect(handlerFor(ACTIVITYPUB_RECOVER_DELIVERIES_JOB.name).handle(job)).resolves.toEqual({
       enqueued: 1,
       hasMore: true,
     })
     expect((await background.getJob(continuationId))?.data).toEqual({
-      afterId: delivery.deliveryId,
+      afterId: agedId,
     })
   })
 

@@ -1,5 +1,4 @@
 import { DelayedError, type Job } from 'glide-mq'
-import { UnrecoverableError } from '@vouchington/queue-errors'
 import {
   activityPubInboxDeliveryTransitions,
   processDurableActivityPubInboxDelivery,
@@ -19,7 +18,14 @@ export async function processDelivery(
     if (err instanceof DelayedError) throw err
     if (isTerminalProtocolError(err)) {
       await activityPubInboxDeliveryTransitions.reject(data.deliveryId)
-      throw new UnrecoverableError(err instanceof Error ? err.message : String(err))
+      console.info(
+        JSON.stringify({
+          event: 'activitypub_inbox_delivery_rejected',
+          deliveryId: data.deliveryId,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      )
+      return
     }
     if (options.isFinalAttempt) {
       await activityPubInboxDeliveryTransitions.exhaust(data.deliveryId, err)

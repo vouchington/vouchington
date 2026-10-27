@@ -223,8 +223,12 @@ signature. PostgreSQL retains the exact signed request because the accepted body
 exceed GlideMQ's job-data limit. A digest of the signed request deduplicates intake and names the
 queue job; verification and sender-admission checkpoints avoid repeating completed checks.
 GlideMQ owns locks, retry attempts and sender delays. Final protocol outcomes delete the envelope
-atomically with the activity effect and replay marker. Only a newly inserted envelope admits work
-from the HTTP route; exact duplicate requests await recovery. Bounded recovery pages leave live
+atomically with the activity effect and replay marker. A terminal protocol rejection completes
+the queue job after that delete, and failed-job retention stays the shared bound, so a rejected
+request does not retain a failed record. Only a newly inserted envelope admits work
+from the HTTP route; exact duplicate requests await recovery. Recovery skips an envelope whose
+UUIDv7 id is still inside the short enqueue grace, so it does not spend a replacement while the
+HTTP handler is still admitting the job. Bounded recovery pages leave live
 jobs alone, checkpoint retained terminal failures, and cap replacement jobs on each envelope so
 queue-wide failed-record trimming cannot reset its failure budget. Failed deliveries require an
 explicit rearm, which starts a new recovery budget. A crash between a database reservation and

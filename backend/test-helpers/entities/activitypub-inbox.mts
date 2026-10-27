@@ -51,6 +51,18 @@ export async function ageActivityPubInboxDeliveryReceivedAtForTest(
   `)
 }
 
+/** Move one owned envelope onto another id. Callers use this to age a UUIDv7 timestamp. */
+export async function reassignActivityPubInboxDeliveryIdForTest(
+  deliveryId: string,
+  nextId: string,
+): Promise<void> {
+  await write(sql`/* reassignActivityPubInboxDeliveryIdForTest */
+    UPDATE activitypub_inbox_envelopes
+    SET id = ${nextId}::uuid
+    WHERE id = ${deliveryId}::uuid
+  `)
+}
+
 export async function activityPubInboxDeliveryExistsOnPrimaryForTest(
   claimedActivityId: string,
 ): Promise<boolean> {

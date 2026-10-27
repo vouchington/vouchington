@@ -59,9 +59,9 @@ export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubI
     name: 'processDelivery',
     priority: PRIORITY_TASK,
     ordering: INBOUND_ORDERING,
+    // Keep the shared failed-record bound. Terminal protocol rejections complete the
+    // job, so a sender cannot grow this set by forcing a rejection.
     ...INBOX,
-    // Recovery needs the failed record to checkpoint a terminal stall before re-admission.
-    removeOnFail: false,
   },
 )
 export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<RearmFailedDeliveriesData>(

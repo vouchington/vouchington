@@ -80,7 +80,7 @@ describe('ActivityPub inbox processor', () => {
           throw new Error('Unexpected deferral')
         },
       }),
-    ).rejects.toBeInstanceOf(UnrecoverableError)
+    ).resolves.toBeUndefined()
     expect(await loadTestDelivery(delivery.deliveryId)).toBeNull()
   })
 
@@ -97,7 +97,7 @@ describe('ActivityPub inbox processor', () => {
           throw new Error('Unexpected deferral')
         },
       }),
-    ).rejects.toBeInstanceOf(UnrecoverableError)
+    ).resolves.toBeUndefined()
     expect(await loadTestDelivery(delivery.deliveryId)).toBeNull()
   })
 
@@ -115,7 +115,7 @@ describe('ActivityPub inbox processor', () => {
           throw new Error('Unexpected deferral')
         },
       }),
-    ).rejects.toBeInstanceOf(UnrecoverableError)
+    ).resolves.toBeUndefined()
     expect(await loadTestDelivery(delivery.deliveryId)).toBeNull()
   })
 
@@ -166,7 +166,7 @@ describe('ActivityPub inbox processor', () => {
           throw new Error('Unexpected deferral')
         },
       }),
-    ).rejects.toBeInstanceOf(UnrecoverableError)
+    ).resolves.toBeUndefined()
     expect(await loadTestDelivery(delivery.deliveryId)).toBeNull()
   })
 
