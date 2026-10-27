@@ -13401,6 +13401,10 @@
           "definition": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
           "validated": true
         },
+        "classifier_run_identities_configuration_sha256_check": {
+          "definition": "CHECK ((octet_length(configuration_sha256) = 32))",
+          "validated": true
+        },
         "classifier_run_identities_input_sha256_check": {
           "definition": "CHECK ((octet_length(input_sha256) = 32))",
           "validated": true
@@ -13417,6 +13421,16 @@
           "nullable": false,
           "ordinalPosition": 2
         },
+        "configuration_sha256": {
+          "comment": "Canonical configuration digest in the immutable run deduplication key.",
+          "dataType": "bytea",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -13425,7 +13439,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "id": {
           "comment": null,
@@ -13700,7 +13714,7 @@
         "uq_classifier_run_identities__post": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__post ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, post_id, input_sha256) NULLS NOT DISTINCT WHERE (post_id IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__post ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, post_id, input_sha256, configuration_sha256) NULLS NOT DISTINCT WHERE (post_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -13738,6 +13752,15 @@
               "nullsFirst": false,
               "opclass": "pg_catalog.bytea_ops",
               "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "configuration_sha256",
+              "descending": false,
+              "expression": "configuration_sha256",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bytea_ops",
+              "orderingSupported": true
             }
           ],
           "live": true,
@@ -13750,7 +13773,7 @@
         "uq_classifier_run_identities__rss_feed_item": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256) NULLS NOT DISTINCT WHERE (rss_feed_item_id IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256, configuration_sha256) NULLS NOT DISTINCT WHERE (rss_feed_item_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -13785,6 +13808,15 @@
               "column": "input_sha256",
               "descending": false,
               "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bytea_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "configuration_sha256",
+              "descending": false,
+              "expression": "configuration_sha256",
               "nullsFirst": false,
               "opclass": "pg_catalog.bytea_ops",
               "orderingSupported": true

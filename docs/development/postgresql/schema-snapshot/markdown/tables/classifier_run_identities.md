@@ -6,15 +6,16 @@ Bounded classifier deduplication cache; never authorizes a deleted subject.
 
 Not partitioned — growth: bounded.
 
-| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                   |
-| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                           |
-| `classifier_id`     | `uuid`                     | no       |                              |          |           |           | Classifier named in the immutable run deduplication key.                                                  |
-| `prompt_version_id` | `uuid`                     | yes      |                              |          |           |           | Real prompt-version relation in the deduplication key; NULL for classifier runs without a prompt version. |
-| `post_id`           | `uuid`                     | yes      |                              |          |           |           | Retained post identity in the deduplication key; never grants live-post access.                           |
-| `rss_feed_item_id`  | `uuid`                     | yes      |                              |          |           |           | Retained feed-item identity in the deduplication key; never grants live-item access.                      |
-| `input_sha256`      | `bytea`                    | no       |                              |          |           |           | Exact content digest in the immutable run deduplication key.                                              |
-| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                           |
+| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                   |
+| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                           |
+| `classifier_id`        | `uuid`                     | no       |                              |          |           |           | Classifier named in the immutable run deduplication key.                                                  |
+| `prompt_version_id`    | `uuid`                     | yes      |                              |          |           |           | Real prompt-version relation in the deduplication key; NULL for classifier runs without a prompt version. |
+| `post_id`              | `uuid`                     | yes      |                              |          |           |           | Retained post identity in the deduplication key; never grants live-post access.                           |
+| `rss_feed_item_id`     | `uuid`                     | yes      |                              |          |           |           | Retained feed-item identity in the deduplication key; never grants live-item access.                      |
+| `input_sha256`         | `bytea`                    | no       |                              |          |           |           | Exact content digest in the immutable run deduplication key.                                              |
+| `configuration_sha256` | `bytea`                    | no       |                              |          |           |           | Canonical configuration digest in the immutable run deduplication key.                                    |
+| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -24,6 +25,7 @@ _none_
 **Check constraints:**
 
 - `chk_classifier_run_identities__one_subject`: `CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))`
+- `classifier_run_identities_configuration_sha256_check`: `CHECK ((octet_length(configuration_sha256) = 32))`
 - `classifier_run_identities_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 
 **Foreign keys:**
@@ -41,8 +43,8 @@ _none_
 - `idx_classifier_run_identities__prompt_classifier`: `CREATE INDEX idx_classifier_run_identities__prompt_classifier ON public.classifier_run_identities USING btree (prompt_version_id, classifier_id) WHERE (prompt_version_id IS NOT NULL)`
 - `idx_classifier_run_identities__rss_feed_item`: `CREATE INDEX idx_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (rss_feed_item_id, id) WHERE (rss_feed_item_id IS NOT NULL)`
 - `pk_classifier_run_identities`: `CREATE UNIQUE INDEX pk_classifier_run_identities ON public.classifier_run_identities USING btree (id)`
-- `uq_classifier_run_identities__post`: `CREATE UNIQUE INDEX uq_classifier_run_identities__post ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, post_id, input_sha256) NULLS NOT DISTINCT WHERE (post_id IS NOT NULL)`
-- `uq_classifier_run_identities__rss_feed_item`: `CREATE UNIQUE INDEX uq_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256) NULLS NOT DISTINCT WHERE (rss_feed_item_id IS NOT NULL)`
+- `uq_classifier_run_identities__post`: `CREATE UNIQUE INDEX uq_classifier_run_identities__post ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, post_id, input_sha256, configuration_sha256) NULLS NOT DISTINCT WHERE (post_id IS NOT NULL)`
+- `uq_classifier_run_identities__rss_feed_item`: `CREATE UNIQUE INDEX uq_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256, configuration_sha256) NULLS NOT DISTINCT WHERE (rss_feed_item_id IS NOT NULL)`
 
 **Triggers:**
 _none_
