@@ -96,7 +96,7 @@ describe('copyright retention erasure spec and legal-record guards', () => {
       }
       throw setupError
     }
-  }, 30_000)
+  })
 
   afterAll(() => {
     const restore = restoreWithholding

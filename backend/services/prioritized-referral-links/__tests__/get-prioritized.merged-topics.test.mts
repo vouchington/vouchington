@@ -51,7 +51,7 @@ describe('getPrioritizedReferralLinks merged topics', () => {
       pathname: '/ref/%',
     })
     referralProgramId = fixture.referralProgramId
-  }, 30_000)
+  })
 
   it('stops counting contributions on a linked topic once it is merged', async () => {
     const suffix = createRandomString(8)
@@ -104,5 +104,5 @@ describe('getPrioritizedReferralLinks merged topics', () => {
     expect(afterLink!.contribution_rank).toBe(3)
     expect(afterLink!.review_post_id).toBeNull()
     expect(afterLink!.review_avg_rating).toBeNull()
-  }, 30_000)
+  })
 })

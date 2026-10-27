@@ -272,7 +272,7 @@ describe('delete', () => {
     await expect(listTestPostPublicationImpactTopicIds(work.id)).resolves.toEqual(
       [feed.topic_id as string, topic.id].toSorted(),
     )
-  }, 30_000)
+  })
 
   it('hardDeleteRssFeedByIdAsCurrentUser throws 403 for non-admin', async () => {
     const feed = await createFeed('hard-auth-fail')

@@ -15,12 +15,12 @@ describe('renderMarkdownBatch', () => {
 
     expect(result['1']).toContain('<h1>Hello</h1>')
     expect(result['2']).toContain('<strong>Bold</strong>')
-  }, 30_000)
+  })
 
   it('handles empty markdown array', async () => {
     const result = await renderMarkdownBatch([])
     expect(result).toEqual({})
-  }, 30_000)
+  })
 
   it('handles entities with empty markdown', async () => {
     const entities = [
@@ -33,7 +33,7 @@ describe('renderMarkdownBatch', () => {
     expect(result['1']).toBe('')
     expect(result['2']).toBe('')
     expect(result['3']).toContain('Valid content')
-  }, 30_000)
+  })
 
   it('resolves @username mentions using real DB users', async () => {
     const username = `testbatch${randomHex()}`
@@ -44,7 +44,7 @@ describe('renderMarkdownBatch', () => {
 
     expect(result['1']).toContain(`href="/user/${user!.username}"`)
     expect(result['1']).toContain('md-link-user')
-  }, 30_000)
+  })
 
   it('resolves #topic mentions using real DB topics', async () => {
     const slug = `test-batch-topic-${randomHex()}`
@@ -60,7 +60,7 @@ describe('renderMarkdownBatch', () => {
 
     expect(result['1']).toContain(`href="/topics/${slug}"`)
     expect(result['1']).toContain('md-link-topic')
-  }, 30_000)
+  })
 
   it('batches mention resolution across all entities', async () => {
     const usernameA = `testbatch${randomHex()}`
@@ -77,7 +77,7 @@ describe('renderMarkdownBatch', () => {
     expect(result['1']).toContain(`href="/user/${userA!.username}"`)
     expect(result['2']).toContain(`href="/user/${userB!.username}"`)
     expect(result['2']).toContain(`href="/user/${userA!.username}"`)
-  }, 30_000)
+  })
 
   it('leaves unresolved mentions as plain text', async () => {
     const entities = [{ id: '1', markdown: 'Hello @nonexistentuser999xyz' }]
@@ -86,7 +86,7 @@ describe('renderMarkdownBatch', () => {
     // Unresolved mention should appear as raw text (not a link)
     expect(result['1']).not.toContain('<a ')
     expect(result['1']).toContain('@nonexistentuser999xyz')
-  }, 30_000)
+  })
 
   it('renders admin entities with allowHtml and dofollow links', async () => {
     const adminId = 'admin-batch-test-1'
@@ -106,7 +106,7 @@ describe('renderMarkdownBatch', () => {
     // Non-admin entity: HTML escaped, nofollow
     expect(result['2']).toContain('&lt;b&gt;user&lt;/b&gt;')
     expect(result['2']).toContain('nofollow')
-  }, 30_000)
+  })
 
   it('renders all with nofollow when no adminUserIds provided', async () => {
     const entities = [
@@ -117,7 +117,7 @@ describe('renderMarkdownBatch', () => {
 
     expect(result['1']).toContain('nofollow')
     expect(result['2']).toContain('nofollow')
-  }, 30_000)
+  })
 
   it('proxies external images for both admin and non-admin', async () => {
     const adminId = 'admin-proxy-test-1'
@@ -133,5 +133,5 @@ describe('renderMarkdownBatch', () => {
     expect(result['1']).not.toContain('https://example.com/admin.jpg')
     expect(result['2']).toContain('/sideload/')
     expect(result['2']).not.toContain('https://example.com/user.jpg')
-  }, 30_000)
+  })
 })

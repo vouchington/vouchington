@@ -16,7 +16,7 @@ describe('Passkeys Service', () => {
   beforeAll(async () => {
     const user = await createTestUser()
     userId = user!.id
-  }, 15_000)
+  })
   describe('getPasskeysByUserId', () => {
     it('returns empty array for user with no passkeys', async () => {
       const { results: passkeys } = await getPasskeysByUserId(userId)

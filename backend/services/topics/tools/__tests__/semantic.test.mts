@@ -37,7 +37,7 @@ describe('toolsSearchTopicsSemantic', () => {
     mockGetCachedSearchEmbedding.mockReset().mockResolvedValue(queryEmbedding)
   })
 
-  it('limits results to specified limit', { timeout: 30_000 }, async () => {
+  it('limits results to specified limit', async () => {
     const user = await createTestUser()
     const topics = await Promise.all([
       createTestTopic({ user: user, name: uniqueTopicName('Topic A') }),
@@ -57,7 +57,7 @@ describe('toolsSearchTopicsSemantic', () => {
     expect(results.length).toBeLessThanOrEqual(2)
   })
 
-  it('respects max limit of 25', { timeout: 30_000 }, async () => {
+  it('respects max limit of 25', async () => {
     const user = await createTestUser()
     const topics = await Promise.all(
       Array.from({ length: 26 }, (_, index) =>
@@ -76,7 +76,7 @@ describe('toolsSearchTopicsSemantic', () => {
     expect(results.length).toBe(25)
   })
 
-  it('excludes merged topics from semantic search results', { timeout: 30_000 }, async () => {
+  it('excludes merged topics from semantic search results', async () => {
     const admin = await createTestUser({ administrator: true })
     const source = await createTestTopic({ user: admin, name: uniqueTopicName('Merged Source') })
     const destination = await createTestTopic({

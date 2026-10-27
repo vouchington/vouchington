@@ -157,13 +157,13 @@ describe('database integration', () => {
     await insertEmailAddressLoginToken(email, token, false)
 
     await expect(validateEmailAddress(email)).rejects.toThrow(EmailDomainInvalidError)
-  }, 15_000)
+  })
 
   it('does not let a consumed token substitute for an associated address', async () => {
     const email = `test-consumed-${Date.now()}@invalid-but-consumed.test`
     await insertEmailAddressLoginToken(email, `TEST-${Date.now()}`, true)
     await expect(validateEmailAddress(email)).rejects.toThrow(EmailDomainInvalidError)
-  }, 15_000)
+  })
 
   it('handles uppercase email with early return', async () => {
     const email = `TEST-LOGGED-${Date.now()}@INVALID.TEST`

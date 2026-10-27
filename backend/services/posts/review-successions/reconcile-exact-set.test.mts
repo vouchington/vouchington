@@ -130,7 +130,7 @@ describe('review succession exact-topic routing', () => {
     await expect(reconcileReviewSuccessionsForPostIds([first.changedPostIds[0]!])).resolves.toEqual(
       { changedPostIds: reviewIds.slice(0, 2) },
     )
-  }, 30_000)
+  })
 
   async function createReview(
     topicIds: readonly string[],

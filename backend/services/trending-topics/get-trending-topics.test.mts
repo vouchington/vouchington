@@ -232,7 +232,7 @@ describe('getTrendingTopics - limit clamping', () => {
       expect(finalPage.page_info.has_next_page).toBe(false)
       expect(finalPage.page_info.end_cursor).toBeNull()
     })
-  }, 30_000)
+  })
 })
 describe('getTrendingTopics - merged topic filter', () => {
   it('excludes merged topics from trending results', async () => {

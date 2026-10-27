@@ -33,7 +33,7 @@ describe('createOfficialReferralLink', () => {
       pathname: '/refer/%',
     })
     referralProgramId = fixture.referralProgramId
-  }, 30_000)
+  })
 
   it('admin can create an official referral link', async () => {
     const suffix = Math.random().toString(36).slice(7)

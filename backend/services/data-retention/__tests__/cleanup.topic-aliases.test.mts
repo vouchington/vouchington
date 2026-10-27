@@ -33,5 +33,5 @@ describe('cleanupSoftDeletedUsers topic aliases', () => {
     expect(await getTestUserRaw(user.id)).toBeNull()
     expect(await getTestTopicCreatedById(topicId)).toBe(DELETED_USER_ID)
     expect(await getTopicAliasIdForTest(alias)).not.toBeNull()
-  }, 30_000)
+  })
 })

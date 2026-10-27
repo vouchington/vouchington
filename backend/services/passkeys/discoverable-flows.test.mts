@@ -75,7 +75,7 @@ describe('discoverable passkey flows', () => {
     await expect(
       verifyDiscoverable(deviceId, { id: `nonexistent-${suffix}-7` }),
     ).rejects.toMatchObject({ status: 429 })
-  }, 30_000)
+  })
 
   it('rejects empty deviceId while creating options', async () => {
     await expect(getDiscoverablePasskeyAuthenticationOptions('')).rejects.toMatchObject({
@@ -184,7 +184,7 @@ describe('discoverable passkey flows', () => {
       status: 401,
       message: 'Passkey sign-in failed',
     })
-  }, 15_000)
+  })
 })
 
 function verifyDiscoverable(deviceId: string, response: unknown, sessionId = `sid-${deviceId}`) {

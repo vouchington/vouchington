@@ -79,7 +79,7 @@ describe('fetch.permanent-error', () => {
 
     await expect(fetchRssFeedForTest(feed.id, 0)).rejects.toThrow(CrawlerRateLimitError)
     expect(mockCrawlerRss).not.toHaveBeenCalled()
-  }, 30_000)
+  })
 
   it('assertRssFetchHostnameNotRateLimited falls back to the raw feed URL for malformed analytics labels', async () => {
     const hostnameId = `malformed-rss-url-${crypto.randomUUID()}`
@@ -89,7 +89,7 @@ describe('fetch.permanent-error', () => {
     await expect(assertRssFetchHostnameNotRateLimited(hostnameId, 'http://[::1')).rejects.toThrow(
       CrawlerRateLimitError,
     )
-  }, 30_000)
+  })
 
   it('fetchRssFeed records a domain rate-limit lock when CrawlerRss returns a rate-limit error', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -104,7 +104,7 @@ describe('fetch.permanent-error', () => {
 
     const remainingMs = await getDomainRateLimitRemainingMs(hostnameId)
     expect(remainingMs).toBeGreaterThan(0)
-  }, 30_000)
+  })
 
   it('fetchRssFeed soft-deletes the feed when parseFeed throws (invalid XML)', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -118,7 +118,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).not.toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed soft-deletes the feed on CrawlerInvalidContentTypeError', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -137,7 +137,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).not.toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed soft-deletes the feed on CrawlerHttpClientError 404', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -151,7 +151,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).not.toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed does NOT soft-delete on feed-configured unreliable CrawlerHttpClientError 404', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -166,7 +166,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed does NOT soft-delete on hostname-configured unreliable CrawlerHttpClientError 404', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -182,7 +182,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed soft-deletes when feed empty unreliable statuses override hostname 404', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -199,7 +199,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).not.toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed does NOT soft-delete on CrawlerHttpClientError 429 (transient)', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -213,7 +213,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed does NOT soft-delete on CrawlerServerError 500 (transient)', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -227,7 +227,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed does NOT soft-delete on CrawlerRateLimitError (transient)', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -241,7 +241,7 @@ describe('fetch.permanent-error', () => {
 
     const deletedAt = await getRssFeedDeletedAt(feed.id)
     expect(deletedAt).toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed idempotent: second invocation exits early after soft-delete', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -262,5 +262,5 @@ describe('fetch.permanent-error', () => {
     // Second call: getRssFeedByIdToFetch returns null → early exit, no crash
     const result = await fetchRssFeedForTest(feed.id, 0)
     expect(result).toEqual([])
-  }, 30_000)
+  })
 })
