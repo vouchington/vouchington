@@ -1,46 +1,9 @@
-import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
-import { setTimeout as delay } from 'node:timers/promises'
+import { beginTransaction, writePool, type PoolClient, type QueryExecutor } from '@data-stores/psql'
+import { onTestFinished } from 'vitest'
+import { observeTestTransactionLockNotice } from '../../postgres-advisory-lock-notice.mts'
 import sql from 'sql-template-strings'
 
-export async function runConcurrentTestMembershipProductValidation<T>(
-  validate: (query: QueryExecutor) => Promise<T>,
-): Promise<T> {
-  const firstValidationLocked = Promise.withResolvers<void>()
-  const releaseFirstValidation = Promise.withResolvers<void>()
-  const firstValidation = holdFirstValidation()
-
-  async function holdFirstValidation(): Promise<T> {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    const result = await validate(query)
-    firstValidationLocked.resolve()
-    await releaseFirstValidation.promise
-    await transaction.commit()
-    return result
-  }
-
-  await firstValidationLocked.promise
-  const secondValidation = runSecondValidation()
-
-  async function runSecondValidation(): Promise<T> {
-    await using transaction = await beginTransaction()
-    const result = await validate(transaction)
-    await transaction.commit()
-    return result
-  }
-  try {
-    const completedWhileFirstHeld = await Promise.race([
-      secondValidation.then(() => true),
-      delay(5_000).then(() => false),
-    ])
-    if (!completedWhileFirstHeld)
-      throw new Error('Concurrent membership product validation was blocked')
-  } finally {
-    releaseFirstValidation.resolve()
-    await Promise.all([firstValidation, secondValidation])
-  }
-  return secondValidation
-}
+export { runConcurrentTestMembershipProductValidation } from '../../membership-product-validation.mts'
 
 export async function runConcurrentTestRetainedMembershipProductReconciliation<T>(options: {
   membershipSourceId: string
@@ -49,26 +12,33 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
 }): Promise<[T, T]> {
   const firstValidated = Promise.withResolvers<void>()
   const secondValidated = Promise.withResolvers<void>()
-  const firstUserLocked = Promise.withResolvers<void>()
+  const firstUserLocked = Promise.withResolvers<string>()
   const secondUserLockRequested = Promise.withResolvers<void>()
   const allowSourceStateUpdate = Promise.withResolvers<void>()
-  const secondBackendProcessId = Promise.withResolvers<number>()
+  const lockObservation =
+    Promise.withResolvers<ReturnType<typeof observeTestTransactionLockNotice>>()
   void firstUserLocked.promise.catch(() => {})
   void secondUserLockRequested.promise.catch(() => {})
-  void secondBackendProcessId.promise.catch(() => {})
+  void lockObservation.promise.catch(() => {})
 
   const first = runFirstReconciliation()
 
   async function runFirstReconciliation(): Promise<T> {
-    await using transaction = await beginTransaction()
-    const query = transaction
     try {
+      await using transaction = await beginTransaction()
+      const query = transaction
       const result = await options.validate(query)
       firstValidated.resolve()
       await secondValidated.promise
       await query(sql`/* runConcurrentTestRetainedMembershipProductReconciliation:first user lock */
           SELECT id FROM users WHERE id = ${options.userId} FOR UPDATE`)
-      firstUserLocked.resolve()
+      const { rows } = await query<{ transaction_id: string }>(
+        sql`/* runConcurrentTestRetainedMembershipProductReconciliation:first transaction identity */
+          SELECT pg_current_xact_id()::text AS transaction_id`,
+      )
+      const transactionId = rows[0]?.transaction_id
+      if (!transactionId) throw new Error('Membership user-lock holder has no transaction identity')
+      firstUserLocked.resolve(transactionId)
       await allowSourceStateUpdate.promise
       await query(sql`/* runConcurrentTestRetainedMembershipProductReconciliation:first source lock */
           SELECT id FROM membership_sources WHERE id = ${options.membershipSourceId} FOR UPDATE`)
@@ -87,18 +57,18 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
 
   let second: Promise<T> | undefined
   async function runSecondReconciliation(): Promise<T> {
-    await using transaction = await beginTransaction()
-    const query = transaction
+    let client: PoolClient | undefined
+    let observation: ReturnType<typeof observeTestTransactionLockNotice> | undefined
+    let failure: { reason: unknown } | undefined
     try {
-      const { rows } = await query(
-        sql`/* runConcurrentTestRetainedMembershipProductReconciliation:backend pid */
-            SELECT pg_backend_pid() AS process_id`,
-      )
-      secondBackendProcessId.resolve((rows[0] as { process_id: number }).process_id)
-      const result = await options.validate(query)
+      client = await writePool.connect()
+      await using transaction = await beginTransaction({ client })
+      const result = await options.validate(transaction)
       secondValidated.resolve()
-      await firstUserLocked.promise
-      const userLock = query(
+      observation = observeTestTransactionLockNotice(client, await firstUserLocked.promise)
+      await observation.ready
+      lockObservation.resolve(observation)
+      const userLock = transaction(
         sql`/* runConcurrentTestRetainedMembershipProductReconciliation:second user lock */
             SELECT id FROM users WHERE id = ${options.userId} FOR UPDATE`,
       )
@@ -107,21 +77,28 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
       await transaction.commit()
       return result
     } catch (err) {
-      secondBackendProcessId.reject(err)
+      failure = { reason: err }
       secondValidated.reject(err)
       secondUserLockRequested.reject(err)
+      lockObservation.reject(err)
       throw err
+    } finally {
+      if (client) await releaseMembershipProductContender(client, observation, failure)
     }
   }
 
+  onTestFinished(async () => {
+    allowSourceStateUpdate.resolve()
+    await Promise.allSettled(second ? [first, second] : [first])
+  })
   try {
     await firstValidated.promise
     second = runSecondReconciliation()
-
+    const secondOutcome = Promise.allSettled([second])
     await secondValidated.promise
     await firstUserLocked.promise
     await secondUserLockRequested.promise
-    await waitForTestPostgresLock(secondBackendProcessId.promise)
+    await (await lockObservation.promise).wait(secondOutcome)
     allowSourceStateUpdate.resolve()
     return await Promise.all([first, second])
   } finally {
@@ -130,17 +107,26 @@ export async function runConcurrentTestRetainedMembershipProductReconciliation<T
   }
 }
 
-async function waitForTestPostgresLock(processId: Promise<number>): Promise<void> {
-  const pid = await processId
-  for (let attempt = 0; attempt < 500; attempt++) {
-    const { rows } = await write(sql`/* waitForTestPostgresLock */
-      SELECT wait_event_type = 'Lock' AS is_waiting
-      FROM pg_stat_activity
-      WHERE pid = ${pid}`)
-    if ((rows[0] as { is_waiting: boolean } | undefined)?.is_waiting) return
-    await delay(10)
+async function releaseMembershipProductContender(
+  client: PoolClient,
+  observation: ReturnType<typeof observeTestTransactionLockNotice> | undefined,
+  failure: { reason: unknown } | undefined,
+): Promise<void> {
+  try {
+    await observation?.close()
+  } catch (err) {
+    client.release(
+      err instanceof Error ? err : new Error('Membership contender cleanup failed', { cause: err }),
+    )
+    if (failure)
+      throw new AggregateError(
+        [failure.reason, err],
+        'Membership reconciliation and observer cleanup failed',
+        { cause: err },
+      )
+    throw err
   }
-  throw new Error('Concurrent membership product reconciliation did not wait on the user lock')
+  client.release()
 }
 
 export async function withTestMembershipUserLocked<T>(
