@@ -1,3 +1,4 @@
+import { onTestFinished } from 'vitest'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { lockImageDeliveryMutation } from '../services/media-delivery-safety/delivery-lock.mts'
 import { lockPostPublication } from '../services/post-publication/lock.mts'
@@ -19,21 +20,18 @@ export async function withHeldDelegatedThreadFenceForTest<Result>(
   await lockDelegatedPostThread(query, postId, actorId)
   const pending = operation()
   void pending.catch(() => undefined)
-  let timer: ReturnType<typeof setTimeout> | undefined
+  let cleanup: Promise<void> | undefined
+  const releaseAndDrain = () => {
+    cleanup ??= query.rollback().finally(async () => {
+      await pending.catch(() => undefined)
+    })
+    return cleanup
+  }
+  onTestFinished(releaseAndDrain)
   try {
-    return await Promise.race([
-      pending,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error('Foreign-key insert blocked by delegated fences')),
-          5000,
-        )
-      }),
-    ])
+    return await pending
   } finally {
-    clearTimeout(timer)
-    await query.rollback()
-    await pending.catch(() => undefined)
+    await releaseAndDrain()
   }
 }
 
