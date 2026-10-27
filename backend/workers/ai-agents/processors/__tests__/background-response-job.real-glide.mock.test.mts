@@ -4,6 +4,7 @@ import { Job, Queue, QueueEvents, Worker } from 'glide-mq'
 import { Responses } from 'openai/resources/responses/responses'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import {
   makeSdkResponse,
@@ -87,46 +88,47 @@ describe('AI job replay of provider response states', () => {
     },
   )
 
-  it('finishes a previously completed processor after a no-usage response settles', async () => {
-    const name = `ai_replay_completed_${randomUUID()}`
-    const queue = new Queue<AIAgentJobData>(name, connection)
-    const response = pendingResponse()
-    const retrieve = vi
-      .spyOn(Responses.prototype, 'retrieve')
-      .mockResolvedValueOnce(
-        makeSdkTextResponse('done', { id: response.responseId, usage: undefined }),
+  it('finishes a previously completed processor after a no-usage response settles', async () =>
+    withReservedAiUsageDay(1_000_000, async () => {
+      const name = `ai_replay_completed_${randomUUID()}`
+      const queue = new Queue<AIAgentJobData>(name, connection)
+      const response = pendingResponse()
+      const retrieve = vi
+        .spyOn(Responses.prototype, 'retrieve')
+        .mockResolvedValueOnce(
+          makeSdkTextResponse('done', { id: response.responseId, usage: undefined }),
+        )
+      const create = vi.spyOn(Responses.prototype, 'create')
+      const completed = Promise.withResolvers<void>()
+      const worker = new Worker<AIAgentJobData>(
+        name,
+        (job: Job<AIAgentJobData>) => processAIAgentWorkerJob(job),
+        { ...connection, blockTimeout: 1_000 },
       )
-    const create = vi.spyOn(Responses.prototype, 'create')
-    const completed = Promise.withResolvers<void>()
-    const worker = new Worker<AIAgentJobData>(
-      name,
-      (job: Job<AIAgentJobData>) => processAIAgentWorkerJob(job),
-      { ...connection, blockTimeout: 1_000 },
-    )
-    worker.on('completed', () => completed.resolve())
-    worker.on('failed', (_job, err) => completed.reject(err))
-    worker.on('error', completed.reject)
-    try {
-      const admitted = await queue.add(
-        'story-post',
-        {
-          post_id: randomUUID(),
-          backgroundResponses: [response],
-          backgroundResponseProcessorCompleted: true,
-        },
-        { removeOnFail: false },
-      )
-      if (!admitted) throw new Error('Expected an admitted job')
-      await waitForRealGlideEvent(completed.promise, `AI completed replay ${admitted.id}`)
-      expect((await queue.getJob(admitted.id))?.data.backgroundResponses).toEqual([])
-      expect(retrieve).toHaveBeenCalledOnce()
-      expect(create).not.toHaveBeenCalled()
-    } finally {
-      await worker.close(true)
-      await queue.obliterate({ force: true })
-      await queue.close()
-      retrieve.mockRestore()
-      create.mockRestore()
-    }
-  })
+      worker.on('completed', () => completed.resolve())
+      worker.on('failed', (_job, err) => completed.reject(err))
+      worker.on('error', completed.reject)
+      try {
+        const admitted = await queue.add(
+          'story-post',
+          {
+            post_id: randomUUID(),
+            backgroundResponses: [response],
+            backgroundResponseProcessorCompleted: true,
+          },
+          { removeOnFail: false },
+        )
+        if (!admitted) throw new Error('Expected an admitted job')
+        await waitForRealGlideEvent(completed.promise, `AI completed replay ${admitted.id}`)
+        expect((await queue.getJob(admitted.id))?.data.backgroundResponses).toEqual([])
+        expect(retrieve).toHaveBeenCalledOnce()
+        expect(create).not.toHaveBeenCalled()
+      } finally {
+        await worker.close(true)
+        await queue.obliterate({ force: true })
+        await queue.close()
+        retrieve.mockRestore()
+        create.mockRestore()
+      }
+    }))
 })
