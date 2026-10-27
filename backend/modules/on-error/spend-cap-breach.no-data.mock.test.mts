@@ -38,8 +38,8 @@ const breachContext = {
   reason: 'cap_exceeded' as const,
 }
 
-// lastSpendCapBreachReportedAt is module-level throttle state -- vi.resetModules() plus a dynamic
-// import per test gives each test a fresh, unthrottled instance.
+// The throttle is module-level state, so vi.resetModules() plus a dynamic import gives each test a
+// fresh instance.
 describe('recordSpendCapBreach', () => {
   beforeEach(() => {
     vi.resetModules()
