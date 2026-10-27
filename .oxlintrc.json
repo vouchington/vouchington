@@ -74,9 +74,15 @@
         ]
       }
     ],
+    // requireReason stays off until every long timeout carries a reason comment (#2111).
     "no-mistakes/vitest-timeout-cap": [
       "error",
-      { "defaultMax": 5000, "overrideMax": 30000, "unknownValues": "finding" }
+      {
+        "defaultMax": 5000,
+        "overrideMax": 30000,
+        "unknownValues": "finding",
+        "requireReason": false
+      }
     ],
     "import/consistent-type-specifier-style": "off", // Policy: Both inline and separate type imports are supported.
     "import/exports-last": "off", // Policy: Exports remain next to the declarations they describe.
@@ -1311,6 +1317,7 @@
             "defaultMax": 5000,
             "overrideMax": 30000,
             "unknownValues": "finding",
+            "requireReason": false,
             "configUnknownValues": "defer-to-runner"
           }
         ]
@@ -1330,7 +1337,12 @@
       "rules": {
         "no-mistakes/vitest-timeout-cap": [
           "error",
-          { "defaultMax": 5000, "overrideMax": 30000, "unknownValues": "finding" }
+          {
+            "defaultMax": 5000,
+            "overrideMax": 30000,
+            "unknownValues": "finding",
+            "requireReason": false
+          }
         ]
       }
     },
@@ -1340,7 +1352,12 @@
       "rules": {
         "no-mistakes/vitest-timeout-cap": [
           "error",
-          { "defaultMax": 5000, "overrideMax": 30000, "unknownValues": "finding" }
+          {
+            "defaultMax": 5000,
+            "overrideMax": 30000,
+            "unknownValues": "finding",
+            "requireReason": false
+          }
         ]
       }
     },

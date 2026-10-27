@@ -20,7 +20,12 @@
   "rules": {
     "no-mistakes/vitest-timeout-cap": [
       "error",
-      { "defaultMax": 5000, "overrideMax": 30000, "unknownValues": "finding" }
+      {
+        "defaultMax": 5000,
+        "overrideMax": 30000,
+        "unknownValues": "finding",
+        "requireReason": false
+      }
     ],
     "no-console": "off",
     "no-void": "off",
