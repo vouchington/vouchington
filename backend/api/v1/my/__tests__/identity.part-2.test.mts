@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { createTestAccountChangeProof } from '@voucha/test-helpers/account-change'
 import {
   createTestUser,
   insertTestOAuthAccount,
@@ -18,6 +19,7 @@ import { connectOAuthAccountToUser } from '@services/oauth'
 
 import { updateUserFields } from '@services/users/update-fields'
 import { hasVerifiedNonDisposableEmail } from '@services/contribution-gating'
+import { getConfiguredOAuthProviders } from '../../../../services/oauth-accounts/configuration.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -41,8 +43,10 @@ describe('DELETE /api/v1/my/email-addresses/:email', () => {
       (e: { is_primary: boolean }) => e.is_primary,
     )
 
+    const reAuthToken = await createTestAccountChangeProof(user.id, request)
     await request
       .delete(`/api/v1/my/email-addresses/${encodeURIComponent(primaryEmail.email_address)}`)
+      .send({ re_auth_token: reAuthToken })
       .expect(400)
   })
 
@@ -55,14 +59,17 @@ describe('DELETE /api/v1/my/email-addresses/:email', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
+    const verifyProof = await createTestAccountChangeProof(user.id, request)
     await request
       .post(`/api/v1/my/email-addresses/${encodeURIComponent(secondEmail)}/verifications`)
-      .send({ token })
+      .send({ token, re_auth_token: verifyProof })
       .expect(200)
 
     // Remove it
+    const deleteProof = await createTestAccountChangeProof(user.id, request)
     await request
       .delete(`/api/v1/my/email-addresses/${encodeURIComponent(secondEmail)}`)
+      .send({ re_auth_token: deleteProof })
       .expect(204)
 
     const response = await request.get('/api/v1/my/email-addresses').expect(200)
@@ -150,7 +157,7 @@ describe('GET /api/v1/users/:id - display_account visibility based on use_displa
   })
 })
 
-describe('DELETE /api/v1/my/email-addresses/:email (with X account)', () => {
+describe('DELETE /api/v1/my/email-addresses/:email (with unconfigured X account)', () => {
   let user: PrivateUser
   let xUserId: string
 
@@ -161,7 +168,8 @@ describe('DELETE /api/v1/my/email-addresses/:email (with X account)', () => {
     await connectTestOAuthAccount('x', user.id, xUserId)
   })
 
-  it('allows removing the only email and invalidates warmed eligibility', async () => {
+  it('keeps the only sign-in method when X is not configured', async () => {
+    expect(getConfiguredOAuthProviders()).not.toContain('x')
     const request = createRequest()
     await request.authenticateAs(user)
 
@@ -172,10 +180,12 @@ describe('DELETE /api/v1/my/email-addresses/:email (with X account)', () => {
       (e: { is_primary: boolean }) => e.is_primary,
     )
 
+    const reAuthToken = await createTestAccountChangeProof(user.id, request)
     await request
       .delete(`/api/v1/my/email-addresses/${encodeURIComponent(primaryEmail.email_address)}`)
-      .expect(204)
+      .send({ re_auth_token: reAuthToken })
+      .expect(400)
 
-    await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(false)
+    await expect(hasVerifiedNonDisposableEmail(user.id)).resolves.toBe(true)
   })
 })

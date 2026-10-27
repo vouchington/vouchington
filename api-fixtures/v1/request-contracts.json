@@ -11039,8 +11039,12 @@
     "GET:/api/v1/reports/:id/judgements/:runId": {
       "additionalProperties": false,
       "properties": {
-        "completed": { "type": "boolean" },
-        "judgement_id": { "type": ["string", "null"] }
+        "completed": {
+          "type": "boolean"
+        },
+        "judgement_id": {
+          "type": ["string", "null"]
+        }
       },
       "required": ["completed", "judgement_id"],
       "type": "object"
@@ -11789,6 +11793,9 @@
       "properties": {
         "email_address": {
           "type": "string"
+        },
+        "re_auth_token": {
+          "type": "string"
         }
       },
       "required": ["email_address"],
@@ -11797,8 +11804,14 @@
     "AddHouseholdInvitationBody": {
       "additionalProperties": false,
       "properties": {
-        "relationship": { "maxLength": 64, "type": "string" },
-        "user": { "minLength": 1, "type": "string" }
+        "relationship": {
+          "maxLength": 64,
+          "type": "string"
+        },
+        "user": {
+          "minLength": 1,
+          "type": "string"
+        }
       },
       "required": ["user"],
       "type": "object"
@@ -12824,6 +12837,9 @@
         },
         "handle": {
           "type": "string"
+        },
+        "re_auth_token": {
+          "type": "string"
         }
       },
       "required": ["handle"],
@@ -12841,6 +12857,9 @@
         },
         "purpose": {
           "enum": ["authenticate", "connect"],
+          "type": "string"
+        },
+        "re_auth_token": {
           "type": "string"
         }
       },
@@ -21378,43 +21397,124 @@
     "HouseholdInvitation": {
       "additionalProperties": false,
       "properties": {
-        "accepted_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "created_at": { "type": "string" },
-        "declined_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "household_id": { "type": "string" },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "declined_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "household_id": {
+          "type": "string"
+        },
         "household_owner": {
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
-            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+            "id": {
+              "type": "string"
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
           },
           "required": ["id", "username"],
           "type": "object"
         },
-        "id": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
         "invited_by": {
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
-            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+            "id": {
+              "type": "string"
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
           },
           "required": ["id", "username"],
           "type": "object"
         },
-        "invited_by_id": { "type": "string" },
+        "invited_by_id": {
+          "type": "string"
+        },
         "invited_user": {
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
-            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+            "id": {
+              "type": "string"
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
           },
           "required": ["id", "username"],
           "type": "object"
         },
-        "invited_user_id": { "type": "string" },
-        "relationship": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "revoked_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "updated_at": { "type": "string" }
+        "invited_user_id": {
+          "type": "string"
+        },
+        "relationship": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        }
       },
       "required": [
         "accepted_at",
@@ -21436,9 +21536,13 @@
     "HouseholdInvitationPage": {
       "additionalProperties": false,
       "properties": {
-        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "results": {
-          "items": { "$ref": "#/components/schemas/HouseholdInvitation" },
+          "items": {
+            "$ref": "#/components/schemas/HouseholdInvitation"
+          },
           "type": "array"
         }
       },
@@ -21447,7 +21551,11 @@
     },
     "HouseholdInvitationResponse": {
       "additionalProperties": false,
-      "properties": { "invitation": { "$ref": "#/components/schemas/HouseholdInvitation" } },
+      "properties": {
+        "invitation": {
+          "$ref": "#/components/schemas/HouseholdInvitation"
+        }
+      },
       "required": ["invitation"],
       "type": "object"
     },
@@ -24090,6 +24198,10 @@
                   "type": "string"
                 }
               ]
+            },
+            "mfa": {
+              "const": true,
+              "type": "boolean"
             }
           },
           "required": ["did", "sid", "uid"],
@@ -24141,6 +24253,10 @@
                       "type": "string"
                     }
                   ]
+                },
+                "mfa": {
+                  "const": true,
+                  "type": "boolean"
                 }
               },
               "required": ["did", "sid", "uid"],
@@ -33875,6 +33991,10 @@
               "type": "string"
             }
           ]
+        },
+        "mfa": {
+          "const": true,
+          "type": "boolean"
         }
       },
       "required": ["did", "sid", "uid"],
@@ -33940,6 +34060,9 @@
       "properties": {
         "is_primary": {
           "const": true
+        },
+        "re_auth_token": {
+          "type": "string"
         }
       },
       "required": ["is_primary"],
@@ -38338,6 +38461,9 @@
       "properties": {
         "token": {
           "type": "string"
+        },
+        "re_auth_token": {
+          "type": "string"
         }
       },
       "required": ["token"],
@@ -39654,9 +39780,194 @@
         "user_id"
       ],
       "type": "object"
+    },
+    "OAuthProviderConnectRequest": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "nonce": {
+              "type": "string"
+            },
+            "token": {
+              "type": "string"
+            },
+            "userData": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "re_auth_token": {
+              "type": "string"
+            }
+          },
+          "required": ["token"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "credential": {
+              "type": "string"
+            },
+            "re_auth_token": {
+              "type": "string"
+            }
+          },
+          "required": ["credential"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "codeVerifier": {
+              "type": "string"
+            },
+            "redirectUri": {
+              "type": "string"
+            },
+            "re_auth_token": {
+              "type": "string"
+            }
+          },
+          "required": ["code", "redirectUri"],
+          "type": "object"
+        }
+      ]
     }
   },
   "operations": {
+    "POST:/api/v1/auth/re-auth/passkeys/options": {
+      "body": {
+        "type": "object",
+        "properties": {
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["passkey_id"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/verification": {
+      "body": {
+        "type": "object",
+        "properties": {
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "response": {
+            "type": "object"
+          }
+        },
+        "required": ["passkey_id", "flow_id", "response"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/challenges": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["apple", "google"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/verification": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["apple", "google"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "credential": {
+            "type": "string"
+          }
+        },
+        "required": ["flow_id", "credential"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/authorizations": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["facebook", "x", "linkedin", "microsoft", "github"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "callback_mode": {
+            "type": "string",
+            "enum": ["web", "native"]
+          },
+          "completion_proof_challenge": {
+            "type": "string"
+          }
+        },
+        "required": ["callback_mode"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/proofs": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["facebook", "x", "linkedin", "microsoft", "github"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["flow_id"],
+        "additionalProperties": false
+      }
+    },
     "DELETE:/api/v1/admin/oauth-clients/:id/verification": {
       "path": {
         "properties": {
@@ -39679,6 +39990,17 @@
         "type": "object"
       }
     },
+    "DELETE:/api/v1/auth/bluesky/link": {
+      "body": {
+        "type": "object",
+        "properties": {
+          "re_auth_token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "DELETE:/api/v1/auth/oauth/:provider/connect": {
       "path": {
         "properties": {
@@ -39688,6 +40010,15 @@
         },
         "required": ["provider"],
         "type": "object"
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "re_auth_token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "DELETE:/api/v1/auth/passkeys/:id": {
@@ -40114,7 +40445,14 @@
     },
     "DELETE:/api/v1/households/:id/invitations/:invitationId": {
       "path": {
-        "properties": { "id": { "type": "string" }, "invitationId": { "type": "string" } },
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "invitationId": {
+            "type": "string"
+          }
+        },
         "required": ["id", "invitationId"],
         "type": "object"
       }
@@ -40250,6 +40588,15 @@
         },
         "required": ["email"],
         "type": "object"
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "re_auth_token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "DELETE:/api/v1/my/landing-pages/:pageId": {
@@ -42948,14 +43295,25 @@
     },
     "GET:/api/v1/households/:id/invitations": {
       "path": {
-        "properties": { "id": { "type": "string" } },
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
         "required": ["id"],
         "type": "object"
       },
       "query": {
         "properties": {
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" }
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
         },
         "type": "object"
       }
@@ -43370,8 +43728,15 @@
     "GET:/api/v1/my/household-invitations": {
       "query": {
         "properties": {
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" }
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
         },
         "type": "object"
       }
@@ -43661,10 +44026,24 @@
     "GET:/api/v1/my/topic-claims": {
       "query": {
         "properties": {
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" },
-          "topic_ids": { "items": { "type": "string" }, "type": "array" },
-          "verified_only": { "type": "boolean" }
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "topic_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "verified_only": {
+            "type": "boolean"
+          }
         },
         "type": "object"
       }
@@ -44860,10 +45239,21 @@
       },
       "query": {
         "properties": {
-          "active_only": { "type": "boolean" },
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" },
-          "mine_only": { "type": "boolean" }
+          "active_only": {
+            "type": "boolean"
+          },
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mine_only": {
+            "type": "boolean"
+          }
         },
         "type": "object"
       }
@@ -46782,17 +47172,6 @@
         "type": "object"
       }
     },
-    "POST:/api/v1/auth/mfa/re-auth/tokens/verification": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "re_auth_token": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      }
-    },
     "POST:/api/v1/auth/mfa/re-auth/totp/verification": {
       "body": {
         "additionalProperties": false,
@@ -46876,7 +47255,10 @@
           "name": {
             "type": "string"
           },
-          "response": {}
+          "response": {},
+          "re_auth_token": {
+            "type": "string"
+          }
         },
         "type": "object"
       }
@@ -46886,6 +47268,9 @@
         "additionalProperties": false,
         "properties": {
           "name": {
+            "type": "string"
+          },
+          "re_auth_token": {
             "type": "string"
           }
         },
@@ -46900,6 +47285,9 @@
             "type": "string"
           },
           "code": {
+            "type": "string"
+          },
+          "re_auth_token": {
             "type": "string"
           }
         },
@@ -48480,8 +48868,18 @@
       }
     },
     "POST:/api/v1/households/:id/invitations": {
-      "body": { "$ref": "#/components/schemas/AddHouseholdInvitationBody" },
-      "path": { "properties": { "id": { "type": "string" } }, "required": ["id"], "type": "object" }
+      "body": {
+        "$ref": "#/components/schemas/AddHouseholdInvitationBody"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
     },
     "POST:/api/v1/households/:id/memberships": {
       "body": {
@@ -48811,17 +49209,33 @@
       }
     },
     "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
-      "body": { "additionalProperties": false, "properties": {}, "type": "object" },
+      "body": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "path": {
-        "properties": { "invitationId": { "type": "string" } },
+        "properties": {
+          "invitationId": {
+            "type": "string"
+          }
+        },
         "required": ["invitationId"],
         "type": "object"
       }
     },
     "POST:/api/v1/my/household-invitations/:invitationId/decline": {
-      "body": { "additionalProperties": false, "properties": {}, "type": "object" },
+      "body": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "path": {
-        "properties": { "invitationId": { "type": "string" } },
+        "properties": {
+          "invitationId": {
+            "type": "string"
+          }
+        },
         "required": ["invitationId"],
         "type": "object"
       }
@@ -49291,8 +49705,12 @@
     "GET:/api/v1/reports/:id/judgements/:runId": {
       "path": {
         "properties": {
-          "id": { "type": "string" },
-          "runId": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          }
         },
         "required": ["id", "runId"],
         "type": "object"
@@ -49791,7 +50209,7 @@
     },
     "PUT:/api/v1/auth/oauth/:provider/connect": {
       "body": {
-        "$ref": "#/components/schemas/OAuthProviderRequest"
+        "$ref": "#/components/schemas/OAuthProviderConnectRequest"
       },
       "path": {
         "properties": {
@@ -50442,7 +50860,9 @@
     "GET:/api/v1/my/topic-claims": {
       "additionalProperties": false,
       "properties": {
-        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/TopicClaimWithState"
@@ -50516,7 +50936,9 @@
     "GET:/api/v1/topics/:idOrSlug/claims": {
       "additionalProperties": false,
       "properties": {
-        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/TopicClaimWithState"
@@ -50665,8 +51087,12 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "import": { "$ref": "#/components/schemas/UserRssFeedImportSummary" },
-        "status_url": { "type": "string" }
+        "import": {
+          "$ref": "#/components/schemas/UserRssFeedImportSummary"
+        },
+        "status_url": {
+          "type": "string"
+        }
       },
       "required": ["import", "status_url"]
     },

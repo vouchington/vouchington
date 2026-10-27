@@ -64,7 +64,7 @@ export const GENERAL_FINITE_VALUES = {
     'refresh_reuse_detected',
   ],
   oauth_authorization_providers: ['facebook', 'x', 'github', 'linkedin', 'microsoft', 'google'],
-  oauth_authorization_purposes: ['authenticate', 'connect'],
+  oauth_authorization_purposes: ['authenticate', 'connect', 're_auth'],
   oauth_authorization_statuses: [
     'pending',
     'callback_received',

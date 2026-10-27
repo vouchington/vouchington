@@ -1,5 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
+import { confirmAccountChange } from '../../helpers/account-confirmation.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { addVerifiedEmailForUser } from '../../../backend/test-helpers/entities/email-addresses.mts'
 import {
@@ -14,6 +15,7 @@ import { mintTestNativeSessionMcpGrant } from '@voucha/test-helpers/services/oau
 test.describe('My Identity page test ids', () => {
   test('email manager controls', async ({ page }) => {
     const user = await withCleanUser(page)
+    await insertTestTotpAuthenticator(user.id, randomSuffix())
     await addVerifiedEmailForUser(user.id, `tests+pw-secondary-${randomSuffix()}@voucha.ai`)
     await navigateTo(page, '/my/identity')
 
@@ -34,6 +36,7 @@ test.describe('My Identity page test ids', () => {
         response.request().method() === 'POST',
     )
     await page.getByTestId('add-email-form-send-verification-code').click()
+    await confirmAccountChange(page, user.id)
     expect((await verificationRequested).ok()).toBe(true)
     await expect(page.getByTestId('verify-email-form-verify')).toBeVisible()
     await expect(page.getByTestId('verify-email-form-cancel')).toBeVisible()
@@ -106,6 +109,18 @@ test.describe('My Identity page test ids', () => {
         body: JSON.stringify({ email_address: 'tests+pw-reauth@voucha.ai' }),
       }),
     )
+    await page.route('**/api/v1/auth/re-auth/methods', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          has_totp: true,
+          has_email: true,
+          has_passkey: true,
+          providers: ['apple', 'google', 'facebook', 'x', 'github', 'linkedin', 'microsoft'],
+        }),
+      }),
+    )
     await navigateTo(page, '/my/identity')
 
     const item = page.getByTestId(`totp-authenticator-item-${totp.id}`)
@@ -113,6 +128,14 @@ test.describe('My Identity page test ids', () => {
     await item.getByTestId('totp-remove-confirm-button').click()
 
     await expect(page.getByTestId('method-selector-authenticator-app')).toBeVisible()
+    await expect(page.getByTestId('method-selector-apple')).toBeVisible()
+    await expect(page.getByTestId('method-selector-google')).toBeVisible()
+    await expect(page.getByTestId('method-selector-facebook')).toBeVisible()
+    await expect(page.getByTestId('method-selector-x')).toBeVisible()
+    await expect(page.getByTestId('method-selector-github')).toBeVisible()
+    await expect(page.getByTestId('method-selector-linkedin')).toBeVisible()
+    await expect(page.getByTestId('method-selector-microsoft')).toBeVisible()
+    await expect(page.getByTestId('method-selector-passkey')).toBeVisible()
     await expect(page.getByTestId('verification-panes-totp-verify')).toBeVisible()
     await page.getByTestId('method-selector-email-verification').click()
     await page.getByTestId('verification-panes-email-send-code').click()

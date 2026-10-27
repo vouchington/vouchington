@@ -2,11 +2,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { WebIntegrationClient } from '../../helpers/client.mts'
 
-import { SEEDED_IDS, TEST_USER_EMAIL, TEST_USER_ID } from '../../helpers/constants.mts'
+import { PLAYWRIGHT_CHROME_UA, SEEDED_IDS, TEST_USER_ID } from '../../helpers/constants.mts'
 
 import { expectNoServerErrors, expectSecurityHeaders } from '../../helpers/assertions.mts'
 
-import { createTestAuthCookies } from '../../helpers/auth.mts'
+import {
+  generateTestTotpCode,
+  generateTestTotpSecret,
+  insertTestTotpAuthenticator,
+} from '../../../../backend/test-helpers/entities/totp.mts'
 
 import '../route-baseline.mts'
 import '../owner-private-route-redirects.mts'
@@ -83,29 +87,66 @@ describe('web', () => {
   })
 
   describe('authentication', () => {
-    it('logs in through the worker and refreshes an authenticated session payload', async () => {
-      const loginResponse = await client.login()
+    it('completes administrator MFA through the worker and refreshes that session', async () => {
+      const secret = generateTestTotpSecret()
+      await insertTestTotpAuthenticator(TEST_USER_ID, 'web-integration-login', undefined, secret)
+      const browserHeaders = { 'Sec-Fetch-Site': 'same-origin' }
+      const loginResponse = await client.login({
+        userAgent: PLAYWRIGHT_CHROME_UA,
+        headers: browserHeaders,
+      })
       expect(loginResponse.status).toBe(200)
       expectSecurityHeaders(loginResponse, false)
 
       const loginBody = (await loginResponse.json()) as {
-        user: {
-          email_address: string
-          id: string
-        }
+        mfa_required: boolean
+        login_attempt_id: string
       }
-      expect(loginBody.user.id).toBe(TEST_USER_ID)
-      expect(loginBody.user.email_address).toBe(TEST_USER_EMAIL)
-      expect(loginResponse.headers.get('set-cookie')).toBeTruthy()
+      expect(loginBody.mfa_required).toBe(true)
+      expect(loginBody.login_attempt_id).toEqual(expect.any(String))
 
-      const authCookies = await createTestAuthCookies(TEST_USER_ID, 'node')
+      const verifiedResponse = await client.request('/api/v1/auth/mfa/totp/verification', {
+        method: 'POST',
+        userAgent: PLAYWRIGHT_CHROME_UA,
+        headers: { 'Content-Type': 'application/json', ...browserHeaders },
+        body: {
+          login_attempt_id: loginBody.login_attempt_id,
+          code: generateTestTotpCode(secret),
+        },
+      })
+      expect(verifiedResponse.status).toBe(200)
+      const verifiedBody = (await verifiedResponse.json()) as {
+        user: { id: string }
+        session: { uid: string | null; mfa_at?: number }
+      }
+      expect(verifiedBody.user.id).toBe(TEST_USER_ID)
+      expect(verifiedBody.session.uid).toBe(TEST_USER_ID)
+      expect(verifiedBody.session.mfa_at).toEqual(expect.any(Number))
+      expect(verifiedResponse.headers.get('set-cookie')).toBeTruthy()
+
+      const dt = client.getCookie('dt')
+      const st = client.getCookie('st')
+      expect(dt).toBeTruthy()
+      expect(st).toBeTruthy()
+
       const sessionResponse = await client.request('/api/v1/session', {
         method: 'PATCH',
+        userAgent: PLAYWRIGHT_CHROME_UA,
         headers: {
           'Content-Type': 'application/json',
+          ...browserHeaders,
         },
-        body: authCookies,
+        body: {},
       })
+      const sessionTrace = await client.getTraceRequests(
+        sessionResponse.headers.get('x-request-id'),
+      )
+      const patchTrace = sessionTrace.find(
+        request => request.method === 'PATCH' && request.path === '/api/v1/session',
+      )
+      expect(patchTrace).toBeDefined()
+      expect(patchTrace?.cookieHeader?.includes(`dt=${dt}`)).toBe(true)
+      expect(patchTrace?.cookieHeader?.includes(`st=${st}`)).toBe(true)
       expect(sessionResponse.status).toBe(200)
       expectSecurityHeaders(sessionResponse, false)
 

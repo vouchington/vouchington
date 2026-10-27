@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.4d4b81f552accaa1'
+export const WEB_CHROME_SELECTOR = 'web.chrome.4a8b061239afae1b'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.50730295d8eb2790", hasMembership: true },
@@ -175,7 +175,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/links", selectorId: "web.route.6ae53c18c06e579f.5138620e5b9d43df", hasMembership: true },
   { pattern: "/links/create", selectorId: "web.route.656c605003c503b4.06afbe3372d3180a", hasMembership: true },
   { pattern: "/list/[id]", selectorId: "web.route.00443fb21ab666b4.b9d0b9d965f2bd21", hasMembership: true },
-  { pattern: "/login", selectorId: "web.route.60f46fe966c31a6b.23060acb20ea0533", hasMembership: true },
+  { pattern: "/login", selectorId: "web.route.60f46fe966c31a6b.2e98783ef724941f", hasMembership: true },
   { pattern: "/memberships/grants", selectorId: "web.route.d6e41cc32db0397b.3654f350444f501e", hasMembership: true },
   { pattern: "/messages", selectorId: "web.route.6224befb41ec714a.5234cfeb2916c8da", hasMembership: true },
   { pattern: "/messages/[conversationId]", selectorId: "web.route.c1241f29dcbae441.a33bf0dda466d04e", hasMembership: true },
@@ -202,7 +202,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/friend-recommendations", selectorId: "web.route.152c17db7413ea00.6c579e73b3a39d3b", hasMembership: true },
   { pattern: "/my/friend-recommendations/dismissed", selectorId: "web.route.60f207314e53a26a.61b9a7012e2fdecb", hasMembership: true },
   { pattern: "/my/household", selectorId: "web.route.e2f822599ce44122.2814365314357c57", hasMembership: true },
-  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.929dc979c2b31e88", hasMembership: true },
+  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.49cee65d7c114170", hasMembership: true },
   { pattern: "/my/identity-verification", selectorId: "web.route.3fb2cb5869f8593d.70be8089e933beb4", hasMembership: true },
   { pattern: "/my/landing-page/[slug]", selectorId: "web.route.10215e7b127df690.8da980c352943cc2", hasMembership: true },
   { pattern: "/my/landing-page/[slug]/analytics", selectorId: "web.route.a65ef95358e6ac23.7f7f577e1884df86", hasMembership: true },

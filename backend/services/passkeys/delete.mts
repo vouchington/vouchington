@@ -1,3 +1,4 @@
+import { assertUserHasSignInMethod } from '@services/oauth-accounts/sign-in-methods'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -8,12 +9,13 @@ export async function deletePasskey(
   passkeyId: string,
   lockedUserTransaction?: TransactionQuery,
 ): Promise<void> {
-  // MFA protection already holds the active-user fence and all factor row locks.
+  // MFA protection already holds the active-user fence and owning user row lock.
   if (lockedUserTransaction) {
     const { rowCount } = await lockedUserTransaction(
       sql`/* deletePasskey */ DELETE FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId}`,
     )
     assert(rowCount === 1, 404, 'Passkey not found')
+    await assertUserHasSignInMethod(currentUserId, lockedUserTransaction)
     await markPasskeyVoteWeightDirty(currentUserId, lockedUserTransaction)
     // enqueue deferred to caller so it runs after the outer transaction commits
   } else {
@@ -23,6 +25,7 @@ export async function deletePasskey(
       sql`/* deletePasskey */ DELETE FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId}`,
     )
     assert(rowCount === 1, 404, 'Passkey not found')
+    await assertUserHasSignInMethod(currentUserId, query)
     await markPasskeyVoteWeightDirty(currentUserId, query)
     await query.commit()
     await enqueueRecalculateUserVoteWeightBestEffort(currentUserId)

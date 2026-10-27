@@ -42,6 +42,7 @@ export async function upgradeVerifiedNativeSession(options: {
       row.device_token_digest !== hashDeviceToken(options.deviceToken) ||
       !row.device_token_issued_at ||
       row.device_token_binding?.client !== 'web' ||
+      device.mfa_at !== row.device_token_binding.mfa_at ||
       device.ua_hash !== row.device_token_binding.ua_hash ||
       device.ja4_hash !== row.device_token_binding.ja4_hash ||
       device.iat !== Math.floor(row.device_token_issued_at.getTime() / 1000) ||
@@ -50,7 +51,7 @@ export async function upgradeVerifiedNativeSession(options: {
       throw sessionReloginRequired()
     const user = await options.fetchUser(options.uid, query)
     if (!user || user.id !== options.uid) throw sessionReloginRequired()
-    const claims = await getEnrichedSessionClaims(user)
+    const claims = await getEnrichedSessionClaims(user, { mfaVerifiedAt: device.mfa_at })
     await query(sql`/* upgradeVerifiedNativeSession */
       UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP, last_seen_at = CURRENT_TIMESTAMP
       WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
@@ -59,6 +60,7 @@ export async function upgradeVerifiedNativeSession(options: {
       query,
       did: options.did,
       uid: options.uid,
+      mfaVerifiedAt: device.mfa_at,
       ...claims,
       authOrigin: row.authentication_origin,
       deviceClass: 'attested',

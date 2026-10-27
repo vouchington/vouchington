@@ -4,6 +4,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { oauthAuthorizationBrokerConfig } from '@services/oauth'
 import {
+  connectTestOAuthAccount,
   createTestUser,
   insertTestOAuthAccount,
   overrideDynamicConfigFieldsForTest,
@@ -242,6 +243,7 @@ describe('OAuth broker routes', () => {
     const completionToken = randomBytes(32).toString('base64url')
     const providerUserId = `broker-auth-route-${randomUUID()}`
     await insertTestOAuthAccount('facebook', providerUserId, `tests+${providerUserId}@voucha.ai`)
+    await connectTestOAuthAccount('facebook', user.id, providerUserId)
     const now = new Date()
     const flowId = await insertTestOAuthAuthorization({
       provider: 'facebook',

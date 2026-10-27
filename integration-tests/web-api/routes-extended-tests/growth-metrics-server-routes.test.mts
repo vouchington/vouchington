@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { isCurrencyCode } from '@ts-shared/money'
 import * as serverRoutes from '@/lib/api/server'
 import { installRoutesExtendedHarness } from '../../test-helpers/routes-extended-harness.mts'
-import { createWebApiTestCookieHeader } from '../routes.mts'
+import { createWebApiMfaTestCookieHeader } from '../routes.mts'
 
 const proofNow = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
 
@@ -104,7 +104,7 @@ describe('routes-extended', () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(proofNow)
       try {
-        const headers = await createWebApiTestCookieHeader(harness.admin.id)
+        const headers = await createWebApiMfaTestCookieHeader(harness.admin.id)
         const metrics = await serverRoutes.getGrowthMetrics({
           range: 'today',
           headers,

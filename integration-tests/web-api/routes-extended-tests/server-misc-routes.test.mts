@@ -13,6 +13,7 @@ import {
 import {
   createWebApiTestServer,
   createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../routes.mts'
 import type { CookieHeader } from '../routes-extended.mts'
@@ -46,7 +47,7 @@ describe('server-misc-routes', () => {
     await createTestMembership({ user_id: user.id, plan: 'plus' })
 
     userCookieHeader = await createWebApiTestCookieHeader(user.id)
-    adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
 
     const lp = await createTestLandingPage(user.id, `Test LP ${randomUUID()}`)
     landingPageId = lp.landingPageId

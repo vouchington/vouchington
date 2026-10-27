@@ -1,5 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('route localization availability', () => {
@@ -10,7 +10,7 @@ test.describe('route localization availability', () => {
   })
 
   test.describe('admin', () => {
-    test.use({ storageState: AUTH_STATE })
+    test.use({ storageState: ADMIN_AUTH_STATE })
 
     test('AI costs renders in English without a browser error', async ({ page }) => {
       await navigateTo(page, '/admin/ai-costs')

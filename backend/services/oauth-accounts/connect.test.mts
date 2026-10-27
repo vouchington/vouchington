@@ -86,7 +86,7 @@ describe('connectOAuthAccountToUser', () => {
 
       await expect(
         connectOAuthAccountToUser('github', user.id, providerUserId),
-      ).rejects.toMatchObject({ code: '23514' })
+      ).rejects.toMatchObject({ status: 404 })
       await expect(getTestOAuthAccountRaw('github', providerUserId)).resolves.toMatchObject({
         user_id: null,
       })
@@ -127,7 +127,7 @@ describe('connectOAuthAccountToUser', () => {
       releaseDeletion.resolve()
 
       await expect(deleting).resolves.toBeUndefined()
-      await expect(pendingConnection).resolves.toMatchObject({ code: '23514' })
+      await expect(pendingConnection).resolves.toMatchObject({ status: 404 })
       await expect(getTestOAuthAccountRaw('github', providerUserId)).resolves.toMatchObject({
         user_id: null,
       })

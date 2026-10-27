@@ -32,19 +32,27 @@ describe('TOTP authenticator client helpers', () => {
   it('setupTotp posts the setup request', async () => {
     mockPost.mockResolvedValue({ authenticator: { id: 'a-1' }, secret: 'ABC', uri: 'otpauth://x' })
 
-    await setupTotp({ name: 'Work phone' })
+    await setupTotp({ name: 'Work phone', re_auth_token: 'setup-proof' })
 
-    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/totp', { name: 'Work phone' })
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/totp', {
+      name: 'Work phone',
+      re_auth_token: 'setup-proof',
+    })
   })
 
   it('verifyTotpSetup posts the verification code', async () => {
     mockPost.mockResolvedValue({ authenticator: { id: 'a-1' } })
 
-    await verifyTotpSetup({ authenticator_id: 'a-1', code: '123456' })
+    await verifyTotpSetup({
+      authenticator_id: 'a-1',
+      code: '123456',
+      re_auth_token: 'verify-proof',
+    })
 
     expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/totp/setup/verification', {
       authenticator_id: 'a-1',
       code: '123456',
+      re_auth_token: 'verify-proof',
     })
   })
 
@@ -80,15 +88,7 @@ describe('TOTP authenticator client helpers', () => {
     expect(mockPatch).toHaveBeenCalledWith('/api/v1/auth/totp/a-1', { name: 'New name' })
   })
 
-  it('deleteTotpAuthenticator deletes without a re-auth token', async () => {
-    mockDelete.mockResolvedValue(undefined)
-
-    await deleteTotpAuthenticator('a-1')
-
-    expect(mockDelete).toHaveBeenCalledWith('/api/v1/auth/totp/a-1', { body: undefined })
-  })
-
-  it('deleteTotpAuthenticator forwards a re-auth token when provided', async () => {
+  it('deleteTotpAuthenticator forwards its required re-auth token', async () => {
     mockDelete.mockResolvedValue(undefined)
 
     await deleteTotpAuthenticator('a-1', 'reauth-token')

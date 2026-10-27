@@ -59,6 +59,10 @@ export const enqueueSendEmailVerificationToken =
     'processSendEmailVerificationToken',
   )
 
+export const enqueueSendAccountSecurityEmail = createEnqueueFunction<Record<string, never>>(
+  'processSendAccountSecurityEmail',
+)
+
 export const enqueueSendWelcomeEmail =
   createEnqueueFunction<ProcessSendWelcomeEmailVariables>('processSendWelcomeEmail')
 

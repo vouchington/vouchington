@@ -25,6 +25,7 @@ export const EMAIL_CLASSIFICATIONS: Record<EmailType, EmailClassificationEntry> 
   processSendDataExportReadyEmail: { classification: 'transactional' },
   processSendEmailVerificationToken: { classification: 'transactional' },
   processSendReauthenticationToken: { classification: 'transactional' },
+  processSendAccountSecurityEmail: { classification: 'transactional' },
   processSendWelcomeEmail: { classification: 'transactional' },
   processSendCommunityApplicationDecisionEmail: { classification: 'transactional' },
   processSendCommunityRoleChangeEmail: { classification: 'transactional' },

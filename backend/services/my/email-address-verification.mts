@@ -1,4 +1,8 @@
-import { read, beginTransaction } from '@data-stores/psql'
+import {
+  runWithTransaction,
+  registerPostCommitAction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { validateEmailAddress } from '@services/email-address-validator'
@@ -15,8 +19,9 @@ import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
 async function assertEmailAddressAvailableForUser(
   userId: string,
   normalizedEmail: string,
+  query: TransactionQuery,
 ): Promise<void> {
-  const { rows } = await read<{
+  const { rows } = await query<{
     existing_user_id: string | null
     already_added: boolean
   }>(sql`/* assertEmailAddressAvailableForUser */
@@ -41,29 +46,20 @@ async function assertEmailAddressAvailableForUser(
 export async function createEmailVerificationToken(
   userId: string,
   emailAddress: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<{ token: string; normalizedEmail: string }> {
   const validated = await validateEmailAddress(emailAddress)
   const normalized = validated.toLowerCase()
-  await assertEmailAddressAvailableForUser(userId, normalized)
-
   const token = createLoginToken()
   const tokenHash = hashToken('email-address-verification-token', token)
 
-  await using query = await beginTransaction()
-  await query(
-    sql`/* createEmailVerificationToken */ SELECT fn_lock_active_user_for_mutation(${userId})`,
-  )
-  await query(sql`/* createEmailVerificationToken */
-      INSERT INTO email_address_login_tokens (email_address, token, user_id, purpose)
-      VALUES (${normalized}, ${tokenHash}, ${userId}, 'email_verification')
-      ON CONFLICT (user_id, email_address) WHERE purpose = 'email_verification'
-      DO UPDATE SET
-        id = uuidv7(),
-        token = ${tokenHash},
-        consumed_at = NULL,
-        invalidated_at = NULL
-    `)
-  await query.commit()
+  await runWithTransaction(options.query, async query => {
+    await query(
+      sql`/* createEmailVerificationToken */ SELECT fn_lock_active_user_for_mutation(${userId})`,
+    )
+    await assertEmailAddressAvailableForUser(userId, normalized, query)
+    return persistEmailVerificationToken(userId, normalized, tokenHash, query)
+  })
 
   return { token, normalizedEmail: normalized }
 }
@@ -72,24 +68,28 @@ export async function verifyEmailVerificationToken(
   userId: string,
   emailAddress: string,
   token: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   const normalized = emailAddress.toLowerCase().trim()
   const normalizedToken = token.toUpperCase().trim()
   const tokenHash = hashToken('email-address-verification-token', normalizedToken)
 
-  await invalidateVerifiedEmailCache(userId).catch(onError)
-
-  await verifyTokenAndPrimeEmailCache(userId, normalized, tokenHash)
-
-  void enqueueOnUserUpdated(userId)
+  await runWithTransaction(options.query, async query => {
+    await verifyTokenAndAddEmailAddress(userId, normalized, tokenHash, query)
+    registerPostCommitAction(query, async () => {
+      await invalidateVerifiedEmailCache(userId).catch(onError)
+      await primeVerifiedEmailCache(userId).catch(onError)
+      void enqueueOnUserUpdated(userId)
+    })
+  })
 }
 
-async function verifyTokenAndPrimeEmailCache(
+async function verifyTokenAndAddEmailAddress(
   userId: string,
   normalizedEmailAddress: string,
   normalizedToken: string,
+  query: TransactionQuery,
 ): Promise<void> {
-  await using query = await beginTransaction()
   await query(
     sql`/* verifyEmailVerificationToken */ SELECT fn_lock_active_user_for_mutation(${userId})`,
   )
@@ -125,7 +125,22 @@ async function verifyTokenAndPrimeEmailCache(
       )
       ON CONFLICT (user_id, email_address) DO NOTHING
   `)
-  await query.commit()
+}
 
-  await primeVerifiedEmailCache(userId).catch(onError)
+async function persistEmailVerificationToken(
+  userId: string,
+  normalized: string,
+  tokenHash: string,
+  query: TransactionQuery,
+): Promise<void> {
+  await query(sql`/* createEmailVerificationToken */
+      INSERT INTO email_address_login_tokens (email_address, token, user_id, purpose)
+      VALUES (${normalized}, ${tokenHash}, ${userId}, 'email_verification')
+      ON CONFLICT (user_id, email_address) WHERE purpose = 'email_verification'
+      DO UPDATE SET
+        id = uuidv7(),
+        token = ${tokenHash},
+        consumed_at = NULL,
+        invalidated_at = NULL
+    `)
 }

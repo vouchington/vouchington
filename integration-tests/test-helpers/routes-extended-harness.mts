@@ -16,6 +16,7 @@ import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
   createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../web-api/routes.mts'
 
@@ -102,7 +103,7 @@ export function installRoutesExtendedHarness(
     harness.user = user
     harness.admin = admin
     harness.userCookieHeader = await createWebApiTestCookieHeader(user.id)
-    harness.adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    harness.adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
 
     harness.topic = await createTestTopic({ user: admin })
 

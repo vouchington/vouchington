@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 
 // The 6 user-selectable topic types in the edit picker (rss_feed is excluded because
@@ -23,7 +23,7 @@ const REMOVED_TYPE_VALUES = [
 ] as const
 
 test.describe('Topic types consolidation', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
   test.describe.configure({ mode: 'serial' })
 
   test('topic type picker offers exactly the 6 user-selectable types', async ({ page }) => {

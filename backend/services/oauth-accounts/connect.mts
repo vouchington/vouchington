@@ -37,6 +37,13 @@ export async function connectOAuthAccountToUser(
 }
 
 const activeConnectionUser = Symbol('activeOAuthAccountConnectionUser')
+const lockedConnectionUser = Symbol('lockedOAuthAccountConnectionUser')
+
+export type LockedOAuthAccountConnectionUser = {
+  readonly [lockedConnectionUser]: true
+  readonly query: TransactionQuery
+  readonly userId: string
+}
 
 type ActiveOAuthAccountConnectionUser = {
   readonly [activeConnectionUser]: true
@@ -89,18 +96,40 @@ export async function connectOAuthAccountToActiveUser(
   }
 }
 
-export async function assertOAuthAccountConnectionUserActive(
+export async function lockOAuthAccountConnectionUser(
   query: TransactionQuery,
   userId: string,
-): Promise<ActiveOAuthAccountConnectionUser> {
+): Promise<LockedOAuthAccountConnectionUser> {
   // Deletion takes this advisory lock before the user row; keep the same lock order.
-  await query('/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1)', [
-    userId,
-  ])
+  try {
+    await query(
+      '/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1)',
+      [userId],
+    )
+  } catch (err) {
+    if (['23514', 'P0002'].includes((err as { code?: string }).code ?? ''))
+      throw createHttpError(404, 'User not found', { cause: err })
+    throw err
+  }
   await query(
     '/* lockOAuthAccountConnectionUserRow */ SELECT id FROM users WHERE id = $1 FOR UPDATE',
     [userId],
   )
+  return Object.freeze({ [lockedConnectionUser]: true as const, query, userId })
+}
+
+export async function assertOAuthAccountConnectionUserActive(
+  query: TransactionQuery,
+  userId: string,
+): Promise<ActiveOAuthAccountConnectionUser> {
+  const user = await lockOAuthAccountConnectionUser(query, userId)
+  return assertLockedOAuthAccountConnectionUserActive(user)
+}
+
+export async function assertLockedOAuthAccountConnectionUserActive(
+  user: LockedOAuthAccountConnectionUser,
+): Promise<ActiveOAuthAccountConnectionUser> {
+  const { query, userId } = user
   // A suspension insert's users FK conflicts with FOR UPDATE. Read in a fresh statement after
   // obtaining the row lock so a suspension that committed while we waited is visible.
   const { rows } = await query<{ suspended: boolean }>(

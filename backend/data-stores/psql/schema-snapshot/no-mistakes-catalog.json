@@ -1000,7 +1000,7 @@
       "values": ["facebook", "x", "github", "linkedin", "microsoft", "google"]
     },
     "oauth_authorization_purposes": {
-      "values": ["authenticate", "connect"]
+      "values": ["authenticate", "connect", "re_auth"]
     },
     "oauth_authorization_result_kinds": {
       "values": ["authenticated", "mfa_required", "connected"]
@@ -9123,7 +9123,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "callback_claimed_at": {
           "comment": "First successful provider callback claiming the exact DID for this authorization.",
@@ -9133,7 +9133,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "callback_mode": {
           "comment": "web for cookie-bound browser attachment; native for proof-bound custom-scheme completion.",
@@ -9143,7 +9143,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "claimed_did": {
           "comment": "DID exclusively claimed by the first successful provider callback for this authorization.",
@@ -9153,7 +9153,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "completion_proof_challenge": {
           "comment": "Native-only base64url SHA-256 challenge. The app retains the verifier; an intercepted custom-scheme bearer token is insufficient to attach.",
@@ -9163,7 +9163,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "created_at": {
           "comment": null,
@@ -9173,7 +9173,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "expired_at": {
           "comment": "Unattached authorization generation permanently expired after its deadline.",
@@ -9183,7 +9183,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "expires_at": {
           "comment": "Authorization deadline. Cleanup uses this timestamp and status, never UUID ordering.",
@@ -9193,7 +9193,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "handle": {
           "comment": "Handle supplied when authorization began; display-only because Bluesky DIDs are authoritative, and scrubbed when the authorization becomes terminal.",
@@ -9203,7 +9203,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "handoff_ready_at": {
           "comment": "Native proof-bound completion became available after the provider callback.",
@@ -9213,7 +9213,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "id": {
           "comment": null,
@@ -9225,6 +9225,16 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "initiating_session_id": {
+          "comment": "Authenticated initiating session. A retained or null history reference never authorizes pending credential persistence or first attachment.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
         "rejected_at": {
           "comment": "Unattached authorization generation permanently rejected.",
           "dataType": "timestamp with time zone",
@@ -9233,7 +9243,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "revoked_at": {
           "comment": "Previously attached authorization generation permanently revoked.",
@@ -9243,7 +9253,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "status": {
           "comment": "Generated current lifecycle derived exclusively from ordered authorization timestamps.",
@@ -9253,7 +9263,7 @@
           "generatedExpression": "\nCASE\n    WHEN (revoked_at IS NOT NULL) THEN 'revoked'::bluesky_link_authorization_statuses\n    WHEN (expired_at IS NOT NULL) THEN 'expired'::bluesky_link_authorization_statuses\n    WHEN (rejected_at IS NOT NULL) THEN 'rejected'::bluesky_link_authorization_statuses\n    WHEN (attached_at IS NOT NULL) THEN 'attached'::bluesky_link_authorization_statuses\n    WHEN (handoff_ready_at IS NOT NULL) THEN 'handoff_ready'::bluesky_link_authorization_statuses\n    WHEN (callback_claimed_at IS NOT NULL) THEN 'callback_claimed'::bluesky_link_authorization_statuses\n    ELSE 'pending'::bluesky_link_authorization_statuses\nEND",
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "updated_at": {
           "comment": null,
@@ -9263,7 +9273,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "user_id": {
           "comment": "Voucha user who authenticated the begin request and exclusively owns this authorization lifecycle.",
@@ -9278,6 +9288,14 @@
       },
       "comment": "Durable Bluesky OAuth link state machine. UUIDs identify generations but are never compared for lifecycle causality; status transitions and timestamp expiry are authoritative.",
       "foreignKeys": {
+        "bluesky_link_authorizations_initiating_session_id_fkey": {
+          "columns": ["initiating_session_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_sessions",
+          "validated": true
+        },
         "bluesky_link_authorizations_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -9361,6 +9379,29 @@
           ],
           "live": true,
           "predicate": "(status = ANY (ARRAY['pending'::bluesky_link_authorization_statuses, 'callback_claimed'::bluesky_link_authorization_statuses, 'handoff_ready'::bluesky_link_authorization_statuses]))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_bluesky_link_authorizations__initiating_session_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_bluesky_link_authorizations__initiating_session_id ON public.bluesky_link_authorizations USING btree (initiating_session_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "initiating_session_id",
+              "descending": false,
+              "expression": "initiating_session_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -75602,7 +75643,7 @@
           "validated": true
         },
         "oauth_authorizations_check1": {
-          "definition": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = 'connect'::oauth_authorization_purposes) AND (initiating_user_id IS NOT NULL))))",
+          "definition": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = ANY (ARRAY['connect'::oauth_authorization_purposes, 're_auth'::oauth_authorization_purposes])) AND (initiating_user_id IS NOT NULL))))",
           "validated": true
         },
         "oauth_authorizations_check2": {
@@ -75634,7 +75675,7 @@
           "validated": true
         },
         "oauth_authorizations_purpose_check": {
-          "definition": "CHECK ((purpose = ANY (ARRAY['authenticate'::oauth_authorization_purposes, 'connect'::oauth_authorization_purposes])))",
+          "definition": "CHECK ((purpose = ANY (ARRAY['authenticate'::oauth_authorization_purposes, 'connect'::oauth_authorization_purposes, 're_auth'::oauth_authorization_purposes])))",
           "validated": true
         },
         "oauth_authorizations_redirect_uri_check": {
@@ -75872,7 +75913,7 @@
           "ordinalPosition": 8
         },
         "initiating_user_id": {
-          "comment": "Required owner for connect flows and NULL for authenticate flows.",
+          "comment": "Required owner for connect and re_auth flows; NULL for authenticate flows.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -75932,7 +75973,7 @@
           "ordinalPosition": 2
         },
         "purpose": {
-          "comment": "authenticate creates or resumes a Voucha session; connect links the provider account to the authenticated initiating user.",
+          "comment": "authenticate creates or resumes a Voucha session; connect links an account; re_auth verifies an already-linked provider without linking or creating a session.",
           "dataType": "oauth_authorization_purposes",
           "defaultExpression": null,
           "generated": null,
@@ -76961,7 +77002,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "id": {
           "comment": null,
@@ -76975,6 +77016,16 @@
         },
         "last_used_at": {
           "comment": "Time at which the grant most recently issued or refreshed tokens.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10
+        },
+        "mfa_verified_at": {
+          "comment": "Consent was approved by a session that completed MFA or passkey authentication; required for staff resource access.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
@@ -77001,7 +77052,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "scopes": {
           "comment": "Latest canonical scope set consented for this client and resource.",
@@ -77031,7 +77082,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "user_id": {
           "comment": "User who consented to the delegated grant.",
@@ -140663,6 +140714,10 @@
     },
     "user_sessions": {
       "checkConstraints": {
+        "user_sessions_account_change_proof_hash_check": {
+          "definition": "CHECK (((account_change_proof_hash IS NULL) OR (account_change_proof_hash ~ '^[A-F0-9]{64}$'::text)))",
+          "validated": true
+        },
         "user_sessions_check": {
           "definition": "CHECK ((num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) = ANY (ARRAY[0, 4])))",
           "validated": true
@@ -140676,10 +140731,18 @@
           "validated": true
         },
         "user_sessions_check3": {
-          "definition": "CHECK (((device_bound_session_binding IS NULL) OR ((device_token_digest IS NOT NULL) AND (device_token_binding @> '{\"client\": \"web\"}'::jsonb) AND (jsonb_typeof(device_bound_session_binding) = 'object'::text))))",
+          "definition": "CHECK (((mfa_verified_at IS NULL) OR (device_token_binding IS NOT NULL)))",
           "validated": true
         },
         "user_sessions_check4": {
+          "definition": "CHECK ((num_nonnulls(account_change_proof_hash, account_change_proof_expires_at) = ANY (ARRAY[0, 2])))",
+          "validated": true
+        },
+        "user_sessions_check5": {
+          "definition": "CHECK (((device_bound_session_binding IS NULL) OR ((device_token_digest IS NOT NULL) AND (device_token_binding @> '{\"client\": \"web\"}'::jsonb) AND (jsonb_typeof(device_bound_session_binding) = 'object'::text))))",
+          "validated": true
+        },
+        "user_sessions_check6": {
           "definition": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
           "validated": true
         },
@@ -140695,6 +140758,10 @@
           "definition": "CHECK (((device_token_binding IS NULL) OR (jsonb_typeof(device_token_binding) = 'object'::text)))",
           "validated": true
         },
+        "user_sessions_device_token_binding_check1": {
+          "definition": "CHECK (((device_token_binding IS NULL) OR (NOT (device_token_binding ? 'mfa_at'::text))))",
+          "validated": true
+        },
         "user_sessions_device_token_digest_check": {
           "definition": "CHECK (((device_token_digest IS NULL) OR (device_token_digest ~ '^[a-f0-9]{64}$'::text)))",
           "validated": true
@@ -140705,6 +140772,26 @@
         }
       },
       "columns": {
+        "account_change_proof_expires_at": {
+          "comment": "Expiry of the one outstanding SID-owned account-change proof.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20
+        },
+        "account_change_proof_hash": {
+          "comment": "Hash of the one outstanding SID-owned account-change proof; cleared transactionally with the mutation.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19
+        },
         "authentication_origin": {
           "comment": "Server-controlled sign-in provenance; native is set only by native OTP or verified native OAuth broker completion.",
           "dataType": "user_session_authentication_origins",
@@ -140723,7 +140810,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 21
         },
         "device_bound_session_binding": {
           "comment": "Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.",
@@ -140733,7 +140820,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "device_id": {
           "comment": "JWT device ID (dt.did) associated with this session.",
@@ -140756,7 +140843,7 @@
           "ordinalPosition": 5
         },
         "device_token_binding": {
-          "comment": "Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document.",
+          "comment": "Original client family and optional browser User-Agent/JA4 hashes. The completed MFA time is stored only in mfa_verified_at and reconstructed for signed credential replay.",
           "dataType": "jsonb",
           "defaultExpression": null,
           "generated": null,
@@ -140835,6 +140922,16 @@
           "nullable": false,
           "ordinalPosition": 8
         },
+        "mfa_verified_at": {
+          "comment": "Typed original completed MFA time from the signed device binding, used for durable session assurance checks.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17
+        },
         "previous_device_token_digest": {
           "comment": "Immediately preceding signed device credential digest, accepted only during a bounded lost-response grace window under the session row lock.",
           "dataType": "text",
@@ -140873,7 +140970,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19
+          "ordinalPosition": 22
         },
         "user_agent_string_id": {
           "comment": "Normalized user-agent row for the raw browser user-agent captured for this session.",

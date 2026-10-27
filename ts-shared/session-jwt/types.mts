@@ -44,6 +44,7 @@ export interface DeviceTokenPayload extends jose.JWTPayload {
   did: string
   dc?: DeviceClass
   client?: SessionClient
+  mfa_at?: number // Original completed MFA or UV-verified sign-in: Unix epoch seconds.
   ua_hash?: string
   ja4_hash?: string
   refresh_uid?: string
@@ -55,6 +56,7 @@ export interface SessionTokenPayload extends jose.JWTPayload {
   sid: string
   uid: string | null
   client?: SessionClient
+  mfa_at?: number // Original completed MFA or UV-verified sign-in: Unix epoch seconds.
   ua_hash?: string
   ja4_hash?: string
   // Present only when uid is non-null (authenticated sessions)
@@ -65,4 +67,10 @@ export interface SessionTokenPayload extends jose.JWTPayload {
   rca?: number // recheck-after: Unix epoch seconds — re-read user from DB after this time
   sca?: number // session-check-after: Unix epoch seconds — check Valkey for revocation/staleness
   uil?: string | null // preferred UI locale from supported UI catalogs (e.g. 'en')
+}
+
+export function isOptionalMfaVerifiedAt(value: unknown): value is number | undefined {
+  return (
+    value === undefined || (typeof value === 'number' && Number.isSafeInteger(value) && value > 0)
+  )
 }

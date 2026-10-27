@@ -1,12 +1,12 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 import { createTestLandingPage } from '../../../backend/test-helpers/index.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'
 
 test.describe('Admin landing page analytics', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   let landingPageId = ''
 

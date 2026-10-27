@@ -3,6 +3,7 @@ import { WebIntegrationClient } from '../helpers/client.mts'
 import { parseHtml } from '../helpers/html-assertions.mts'
 import { PLAYWRIGHT_CHROME_UA, SEEDED_IDS, TEST_USER_USERNAME } from '../helpers/constants.mts'
 import {
+  authenticateAdminWithVerifiedMfa,
   authenticateTestUserWithDirectSessionTokens,
   expectManualRedirectPath,
 } from '../helpers/routing-assertions.mts'
@@ -104,7 +105,7 @@ describe('web route tests', () => {
     })
 
     it('authenticated edit pages load for supported post types', async () => {
-      await authenticateTestUserWithDirectSessionTokens(client)
+      await authenticateAdminWithVerifiedMfa(client)
 
       const review = await client.loadPage(
         `/review/${SEEDED_IDS.review}/edit`,

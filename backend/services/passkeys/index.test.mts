@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createTestUser, createTestUserDirect, insertTestPasskey } from '@voucha/test-helpers'
+import { createTestUser, insertTestPasskey } from '@voucha/test-helpers'
 import {
   getPasskeysByUserId,
   getPasskeyCredentialIdsByUserId,
@@ -115,11 +115,11 @@ describe('Passkeys Service', () => {
     it('allows deleting the last passkey (passkeys are MFA-only)', async () => {
       // Passkeys are MFA-only — users always have a primary auth method (email/OAuth)
       // so deleting the last passkey must never be blocked
-      const passkeyOnlyUser = await createTestUserDirect()
+      const emailUser = await createTestUser()
       const suffix = `last-passkey-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-      const passkey = await insertTestPasskey(passkeyOnlyUser!.id, suffix)
+      const passkey = await insertTestPasskey(emailUser!.id, suffix)
 
-      await expect(deletePasskey(passkeyOnlyUser!.id, passkey.id)).resolves.toBeUndefined()
+      await expect(deletePasskey(emailUser!.id, passkey.id)).resolves.toBeUndefined()
     })
   })
 

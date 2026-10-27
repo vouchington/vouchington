@@ -1315,6 +1315,7 @@
 
 - `authenticate`
 - `connect`
+- `re_auth`
 
 ## `oauth_authorization_result_kinds`
 

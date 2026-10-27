@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { createRandomString, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
-import { addUserRole } from '../users/roles-permissions.mts'
 import { getPrivateUserByAny } from '../users/get.mts'
 import {
   createTopicRecommendation,
@@ -61,8 +60,7 @@ describe('searchTopicRecommendations', () => {
 
   it('narrows a user’s recommendations by status', async () => {
     const author = await createAuthor()
-    const admin = await createTestUser()
-    await addUserRole(admin.id, 'administrator')
+    const admin = await createTestUser({ administrator: true })
     const reviewer = await getPrivateUserByAny(admin.id, { readOnly: false })
     const pending = await submit(author)
     const rejected = await submit(author)

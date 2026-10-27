@@ -1,3 +1,4 @@
+import { assertOriginalMfaVerifiedAt } from './assurance.mts'
 import { randomUUID } from 'node:crypto'
 import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -35,6 +36,7 @@ export async function mintAuthenticatedDeviceAuthority(options: {
   credentialReplay?: boolean
   deviceRenewal?: 'verified-native-attestation'
 }) {
+  assertOriginalMfaVerifiedAt(options.binding.mfa_at, options.issuedAt)
   return runWithTransaction(options.query, async query => {
     await lockSessionDeviceAuthority(query, options.uid, options.sid)
     const [revoked, cutoff] = await sessionValkeyClient.mget([
@@ -65,6 +67,7 @@ export async function mintAuthenticatedDeviceAuthority(options: {
         !device ||
         device.did !== options.did ||
         device.client !== row.device_token_binding?.client ||
+        device.mfa_at !== row.device_token_binding?.mfa_at ||
         device.ua_hash !==
           (row.device_token_binding?.client === 'web'
             ? row.device_token_binding.ua_hash
@@ -101,6 +104,7 @@ export async function mintAuthenticatedDeviceAuthority(options: {
       }
     }
     const binding = row.device_token_binding ?? options.binding
+    const { mfa_at: originalMfaAt, ...durableBinding } = binding
     const payload: DeviceTokenPayload = {
       did: options.did,
       jti: randomUUID(),
@@ -117,7 +121,9 @@ export async function mintAuthenticatedDeviceAuthority(options: {
       device_token_digest = ${hashDeviceToken(token)},
       device_token_encrypted = ${encryptSecret(token, deviceTokenSecretPurpose(options.sid))},
       device_token_issued_at = ${new Date(options.issuedAt * 1000)},
-      device_token_binding = ${JSON.stringify(binding)}::jsonb, expires_at = ${expiresAt}
+      device_token_binding = ${JSON.stringify(durableBinding)}::jsonb,
+      mfa_verified_at = ${originalMfaAt === undefined ? null : new Date(originalMfaAt * 1000)},
+      expires_at = ${expiresAt}
     WHERE id = ${options.sid} AND user_id = ${options.uid} AND revoked_at IS NULL`)
     return {
       token,

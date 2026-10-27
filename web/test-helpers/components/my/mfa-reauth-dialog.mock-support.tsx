@@ -40,18 +40,6 @@ export function MfaReauthDialogMock({
 }
 
 // oxlint-disable-next-line react/only-export-components -- test double, never fast-refreshed
-export class ApiError extends Error {
-  status: number
-  code?: string
-  constructor(message: string, status: number, code?: string) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.code = code
-  }
-}
-
-// oxlint-disable-next-line react/only-export-components -- test double, never fast-refreshed
 export function mfaReauthOnErrorModule() {
   return {
     default: vi.fn<VitestLooseMock>(),
@@ -67,4 +55,17 @@ export const mfaReauthStatus = {
   has_mfa: true,
   has_password: false,
   recovery_codes_remaining: 0,
+}
+
+// oxlint-disable-next-line react/only-export-components -- hook stand-in for tests outside the fresh-auth flow
+export function useFreshAuthenticationMock() {
+  return {
+    requestAuthentication: async () => 'reauth-token',
+    dialogProps: {
+      open: false,
+      mfaStatus: mfaReauthStatus,
+      onClose: () => {},
+      onVerified: (_token: string) => {},
+    },
+  }
 }

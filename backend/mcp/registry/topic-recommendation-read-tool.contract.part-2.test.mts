@@ -13,7 +13,6 @@ import {
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
 import { createTopicAliases } from '@services/topics/aliases'
-import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
 
 type TestUser = Awaited<ReturnType<typeof createTestUser>>
@@ -55,8 +54,7 @@ const list = async (who: McpContractCaller, args: Record<string, unknown> = {}) 
 describe('list_my_topic_recommendations text provenance — real DB', () => {
   it('fences an administrator’s edit even after the submitter edits another field', async () => {
     const author = asCaller(await createTestUser())
-    const admin = await createTestUser()
-    await addUserRole(admin.id, 'administrator')
+    const admin = await createTestUser({ administrator: true })
     const reviewer = (await getPrivateUserByAny(admin.id, { readOnly: false }))!
     const recommendation = await submit(author)
 
@@ -85,8 +83,7 @@ describe('list_my_topic_recommendations text provenance — real DB', () => {
 
   it('fences the stored approval error an administrator\u2019s alias put in the message', async () => {
     const author = asCaller(await createTestUser())
-    const admin = await createTestUser()
-    await addUserRole(admin.id, 'administrator')
+    const admin = await createTestUser({ administrator: true })
     const reviewer = (await getPrivateUserByAny(admin.id, { readOnly: false }))!
     const recommendation = await submit(author)
     const alias = `${INJECTION} ${createRandomString(8).toLowerCase()}`

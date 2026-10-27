@@ -1,6 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import {
   createTestUser,
@@ -125,7 +125,7 @@ test.describe('User Warnings — /my/warnings page', () => {
 })
 
 test.describe('User Warnings — Admin Panel', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin panel shows warnings section and items', async ({ page }) => {
     await navigateTo(page, `/user/${targetUserId}/admin`)
@@ -199,7 +199,7 @@ test.describe('User Warnings — Admin Panel', () => {
 })
 
 test.describe('User Warnings — Report Warn Button', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('report row shows warn button for user reports', async ({ page }) => {
     await navigateTo(page, '/reports?cluster=none&sort=created_at_desc&limit=100')
@@ -211,7 +211,7 @@ test.describe('User Warnings — Report Warn Button', () => {
 })
 
 test.describe('User Warnings — Mod Queue Warn Button', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('mod queue report card shows warn button', async ({ page }) => {
     await loginAsUser(page, modQueueOwnerId)

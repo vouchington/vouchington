@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { createTestAccountChangeActor } from '@voucha/test-helpers/account-change'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
 import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
@@ -86,7 +87,6 @@ describe('OAuth authorization completion', () => {
       },
       cleanup,
     )
-
     await expect(
       completeOAuthAuthorization({
         flowId,
@@ -96,7 +96,6 @@ describe('OAuth authorization completion', () => {
         sessionId,
       }),
     ).rejects.toMatchObject({ status: 401 })
-
     const durableResult = await completeOAuthAuthorizationTransaction({
       flowId,
       completionToken,
@@ -108,7 +107,6 @@ describe('OAuth authorization completion', () => {
     if (durableResult.kind !== 'authenticated') throw new Error('Expected authentication')
     cleanup.userIds.push(durableResult.userId)
     expect(await getActiveTestUserSessions(durableResult.userId)).toEqual([])
-
     const first = await completeOAuthAuthorization({
       flowId,
       completionToken,
@@ -156,8 +154,9 @@ describe('OAuth authorization completion', () => {
     const user = await createTestUser()
     const userId = user.id
     cleanup.userIds.push(userId)
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
+    const actor = await createTestAccountChangeActor(user.id)
+    const deviceId = actor.session.did
+    const sessionId = actor.session.sid
     const completionToken = randomBytes(32).toString('base64url')
     const proofVerifier = randomBytes(32).toString('base64url')
     const account = await createOAuthAccount('facebook', cleanup)
@@ -188,15 +187,17 @@ describe('OAuth authorization completion', () => {
       }),
     ).rejects.toMatchObject({ status: 401 })
 
+    const otherUser = await createTestUser()
+    const otherActor = await createTestAccountChangeActor(otherUser.id)
     await expect(
       completeOAuthAuthorization({
         flowId,
         completionToken,
         completionTokenSource: 'body',
         completionProofVerifier: proofVerifier,
-        currentUserId: randomUUID(),
-        deviceId,
-        sessionId,
+        currentUserId: otherUser.id,
+        deviceId: otherActor.session.did,
+        sessionId: otherActor.session.sid,
       }),
     ).rejects.toMatchObject({ status: 403 })
 
@@ -260,8 +261,9 @@ describe('OAuth authorization completion', () => {
       Date,
     )
 
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
+    const actor = await createTestAccountChangeActor(connectedUser.id)
+    const deviceId = actor.session.did
+    const sessionId = actor.session.sid
     const completionToken = randomBytes(32).toString('base64url')
     const account = await createOAuthAccount('github', cleanup)
     const flowId = await insertCompletionReadyAuthorization(

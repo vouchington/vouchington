@@ -2400,7 +2400,7 @@
 {"id":"copy.extracted.my.landingPagesManagerSections.createUsername_182e7a51","value":"Criar nome de usuário"},
 {"id":"copy.extracted.my.landingPagesManagerSections.goToIdentitySettings_5a82930e","value":"Ir para configurações de Identidade"},
 {"id":"copy.extracted.my.mfaReauthDialog.reAuthenticate_3887afa4","value":"Reautenticar"},
-{"id":"copy.extracted.my.mfaReauthDialog.verifyYourIdentityToRemoveYour_e7d1fbdb","value":"Verifique sua identidade para remover seu último método de segurança."},
+{"id":"copy.extracted.my.mfaReauthDialog.verifyYourIdentityToRemoveYour_e7d1fbdb","value":"Verifique sua identidade para alterar suas opções de login."},
 {"id":"copy.extracted.my.mfaStatusBanner.addAPasskeyOrAuthenticatorApp_5d0aa9aa","value":"Adicione uma chave de acesso ou aplicativo autenticador abaixo para habilitar autenticação multifator."},
 {"id":"copy.extracted.my.mfaStatusBanner.multiFactorAuthentication_0ed4c5fa","value":"Autenticação multifator"},
 {"id":"copy.extracted.my.mfaStatusBanner.off_ca7981b4","value":"Desativada"},

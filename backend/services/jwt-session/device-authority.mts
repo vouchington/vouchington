@@ -1,3 +1,4 @@
+import { isOptionalMfaVerifiedAt } from '@ts-shared/session-jwt'
 import { createHash } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
@@ -18,6 +19,7 @@ export interface SessionDeviceAuthorityRow {
   previous_device_token_grace_expires_at: Date | null
   device_token_encrypted: string | null
   device_token_issued_at: Date | null
+  mfa_verified_at: Date | null
   device_token_binding: SessionClientBinding | null
   device_bound_session_binding: unknown
 }
@@ -32,14 +34,18 @@ export async function readSessionDeviceAuthority(
     SELECT s.id, s.user_id, s.device_id, s.authentication_origin, s.expires_at, s.revoked_at,
       s.device_token_digest, s.previous_device_token_digest,
       s.previous_device_token_grace_expires_at, s.device_token_encrypted,
-      s.device_token_issued_at, s.device_token_binding, s.device_bound_session_binding
+      s.device_token_issued_at, s.mfa_verified_at, s.device_token_binding,
+      s.device_bound_session_binding
     FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sid} AND u.deleted_at IS NULL`
   if (lock) statement.append(' FOR UPDATE OF s')
   const { rows } = await query(statement)
   const row = (rows[0] as SessionDeviceAuthorityRow | undefined) ?? null
   if (row?.device_token_binding)
-    row.device_token_binding = parseSessionClientBinding(row.device_token_binding)
+    row.device_token_binding = parseSessionClientBinding(
+      row.device_token_binding,
+      row.mfa_verified_at,
+    )
   return row
 }
 
@@ -98,18 +104,21 @@ export function deviceTokenSecretPurpose(sid: string): string {
   return `user-session-device-token:${sid}`
 }
 
-function parseSessionClientBinding(value: unknown): SessionClientBinding {
+function parseSessionClientBinding(value: unknown, verifiedAt: Date | null): SessionClientBinding {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
     throw sessionReloginRequired()
   const binding = value as Record<string, unknown>
   if (Object.keys(binding).some(key => !['client', 'ua_hash', 'ja4_hash'].includes(key)))
     throw sessionReloginRequired()
+  const mfaAt = verifiedAt === null ? undefined : verifiedAt.getTime() / 1000
+  if (!isOptionalMfaVerifiedAt(mfaAt)) throw sessionReloginRequired()
+  const assurance = mfaAt === undefined ? {} : { mfa_at: mfaAt }
   if (
     binding.client === 'native' &&
     binding.ua_hash === undefined &&
     binding.ja4_hash === undefined
   )
-    return { client: 'native' }
+    return { client: 'native', ...assurance }
   if (
     binding.client !== 'web' ||
     typeof binding.ua_hash !== 'string' ||
@@ -120,6 +129,7 @@ function parseSessionClientBinding(value: unknown): SessionClientBinding {
     throw sessionReloginRequired()
   return {
     client: 'web',
+    ...assurance,
     ua_hash: binding.ua_hash,
     ...(binding.ja4_hash !== undefined && { ja4_hash: binding.ja4_hash }),
   }

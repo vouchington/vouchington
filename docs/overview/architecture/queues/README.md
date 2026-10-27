@@ -201,3 +201,12 @@ an active pass. Separate retained sweeps can revisit a row between passes: locki
 image lifecycle locks, and idempotent storage deletion keep those effects replayable, while
 extraction admission deduplicates in-flight work. Recovery advances only after its bounded page
 is admitted.
+
+### Account security notifications
+
+Account security notifications use the existing event-triggered email queue. The producer captures
+the old primary before a settings mutation and enqueues that direct address after session
+revocation; workers never resolve the recipient from the changed profile. Payloads are sensitive
+and removed at their terminal outcome. Notification delivery is advisory: terminal delivery failure
+is accepted loss, since account state cannot reconstruct a prior delivery address. Post-commit
+admission failures are reported without changing the committed settings result.

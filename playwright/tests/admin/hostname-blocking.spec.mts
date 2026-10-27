@@ -1,10 +1,10 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix as rand } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestUrlHostname } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin Hostname Blocking', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin can block a hostname via PATCH API and it appears in blocked list', async ({
     page,

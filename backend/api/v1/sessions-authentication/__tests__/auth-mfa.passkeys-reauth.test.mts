@@ -56,6 +56,7 @@ describe('MFA API Routes', () => {
 
       const attemptId = await createLoginAttempt({
         userId: passkeyUser.id,
+        firstFactor: { type: 'email', emailAddress: passkeyUser.email_address! },
         deviceId: v7(),
         sessionId: v7(),
       })
@@ -110,7 +111,12 @@ describe('MFA API Routes', () => {
     })
 
     it('rejects passkey verification after the MFA failure threshold is reached', async () => {
-      const attempt = { userId: v7(), deviceId: v7(), sessionId: v7() }
+      const attempt = {
+        firstFactor: { type: 'email' as const, emailAddress: 'tests+schema@voucha.ai' },
+        userId: v7(),
+        deviceId: v7(),
+        sessionId: v7(),
+      }
       const attemptId = await createLoginAttempt(attempt)
 
       for (const expectedLimited of [false, false, false, false, false, false, true]) {
@@ -247,48 +253,5 @@ describe('MFA API Routes', () => {
       for (let i = 0; i < 6; i++) await countTotpReAuthAttempt(totpUser.id)
       await expect(countTotpReAuthAttempt(totpUser.id)).rejects.toMatchObject({ status: 429 })
     }, 20_000)
-  })
-
-  describe('POST /api/v1/auth/mfa/re-auth/tokens/verification', () => {
-    it('returns 401 without auth', async () => {
-      const req = createRequest()
-      await req
-        .post('/api/v1/auth/mfa/re-auth/tokens/verification')
-        .send({ re_auth_token: 'some-token' })
-        .expect(401)
-    })
-
-    it('returns 415 without JSON content-type', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req
-        .post('/api/v1/auth/mfa/re-auth/tokens/verification')
-        .set('Content-Type', 'text/plain')
-        .send('not json')
-        .expect(415)
-    })
-
-    it('returns 422 without re_auth_token', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      const res = await req
-        .post('/api/v1/auth/mfa/re-auth/tokens/verification')
-        .send({})
-        .expect(422)
-
-      expect(res.body.code).toBe('MFA_REAUTH_REQUIRED')
-    })
-
-    it('returns 401 for expired/invalid token', async () => {
-      const req = createRequest()
-      await req.authenticateAs(user)
-
-      await req
-        .post('/api/v1/auth/mfa/re-auth/tokens/verification')
-        .send({ re_auth_token: 'invalid-token' })
-        .expect(401)
-    })
   })
 })

@@ -1,7 +1,8 @@
 import { OAuthProtocolError } from '@vouchington/oauth-server'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
-import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { createTestUser, createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { createVerifiedMfaTestSession } from '@voucha/test-helpers/authenticated-session'
 import { setTestOAuthArtifactExpiry } from '@voucha/test-helpers/entities/oauth-authorization-server'
 import { assignTestOAuthClientOwner } from '@voucha/test-helpers/entities/oauth-client-management'
 import {
@@ -93,7 +94,10 @@ describe('OAuth consent', () => {
   ] as const)(
     'preserves administrator consent for metadata clients on the %s resource',
     async (audience, scope) => {
-      const administrator = await createTestUserDirect({ administrator: true })
+      const administrator = await createTestUser({ administrator: true })
+      const assuredSession = await createVerifiedMfaTestSession(administrator.id)
+      const mfaVerifiedAt = assuredSession.sessionToken.payload.mfa_at
+      expect(mfaVerifiedAt).toEqual(expect.any(Number))
       const pending = await createTestPendingOAuthAuthorization(administrator, { audience, scope })
       const view = await getOAuthAuthorizationRequestForUser(
         administrator.id,
@@ -107,6 +111,7 @@ describe('OAuth consent', () => {
           pending.requestId,
           'approve',
           pending.bindingHash,
+          mfaVerifiedAt,
         ),
       ).resolves.toMatchObject({ redirect_uri: expect.stringContaining('code=') })
       await expect(

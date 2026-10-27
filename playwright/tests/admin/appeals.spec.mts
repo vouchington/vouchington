@@ -1,6 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { DESKTOP_VIEWPORT, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import {
   createTestUser,
@@ -45,7 +45,7 @@ test.beforeAll(async () => {
 })
 
 test.describe('Appeals — staff view', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   // Separate appeal seeded for the lifecycle test so it isn't mutated by the visibility test
   // (fullyParallel: true means both tests can run concurrently)

@@ -99591,7 +99591,8 @@
       "migratedFrom": [],
       "path": "/api/v1/my/email-addresses",
       "requestBody": {
-        "email_address": " Tests+Native-User@Voucha.ai "
+        "email_address": " Tests+Native-User@Voucha.ai ",
+        "re_auth_token": "fresh-auth-fixture"
       },
       "responseSchema": {
         "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d",
@@ -99615,6 +99616,7 @@
       "migratedFrom": [],
       "path": "/api/v1/my/email-addresses/tests%2Bnative-user%40voucha.ai/verifications",
       "requestBody": {
+        "re_auth_token": "fresh-auth-fixture",
         "token": "ABCD1234"
       },
       "responseSchema": {

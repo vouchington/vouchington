@@ -17,6 +17,7 @@ import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
   createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../web-api/routes.mts'
 
@@ -118,7 +119,7 @@ export function installClientContentRouteHarness(
     await setUserVerificationFields(verifiedUser.id, { verificationStatus: 'verified' })
     harness.userId = user.id
     harness.userCookieHeader = await createWebApiTestCookieHeader(user.id)
-    harness.adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    harness.adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
     harness.verifiedUserCookieHeader = await createWebApiTestCookieHeader(verifiedUser.id)
 
     const topic = await createTestTopic({ user: admin })

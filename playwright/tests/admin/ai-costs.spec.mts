@@ -1,13 +1,13 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestAiUsageRecord } from '../../../backend/test-helpers/index.mts'
 
 // Seeded playwright community owned by the test admin user.
 const PLAYWRIGHT_COMMUNITY_ID = '019c0000-0000-7000-8000-000000000010'
 
 test.describe('Admin AI Costs', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeAll(async () => {
     protectPlaywrightHookTimeouts(test.info())

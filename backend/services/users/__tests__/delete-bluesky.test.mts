@@ -18,6 +18,7 @@ import {
   setTestBlueskyLinkCompletionExpiresAt,
 } from '@voucha/test-helpers/entities/bluesky-linked-accounts'
 import { createNativeBlueskyLinkCompletion } from '@voucha/test-helpers/bluesky-native-completion-fixtures'
+import { createTestAccountChangeActor } from '@voucha/test-helpers/account-change'
 import { finalizeNativeBlueskyAccountLink } from '@services/bluesky-accounts'
 import { v7 } from 'uuid'
 import { deleteUser } from '../delete.mts'
@@ -200,12 +201,14 @@ describe('deleteUser Bluesky cleanup', () => {
 
   it('serializes deletion against native completion consumption', async () => {
     const user = await createTestUser()
+    const actor = await createTestAccountChangeActor(user.id)
     const flowId = v7()
     const pending = await insertTestBlueskyLinkedAccount({
       userId: null,
       linkingUserId: user.id,
       authorizationId: flowId,
       nativeFlowId: flowId,
+      initiatingSessionId: actor.session.sid,
     })
     const token = await createNativeBlueskyLinkCompletion({
       flowId,
@@ -218,6 +221,7 @@ describe('deleteUser Bluesky cleanup', () => {
       deleteUser(user, user),
       finalizeNativeBlueskyAccountLink(
         user.id,
+        actor.session,
         flowId,
         token,
         getTestBlueskyCompletionProofVerifier(flowId),

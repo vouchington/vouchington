@@ -166,7 +166,7 @@ describe('index.creation', () => {
     const did = v7()
     const user = await createTestUserDirect()
     const uid = user.id
-    const roles = ['administrator']
+    const roles = ['moderator']
     const result = await createDeviceAndSessionTokens({
       did,
       uid,

@@ -28,6 +28,21 @@ describe('parseEmailJob', () => {
     }
   })
 
+  it('keeps account-security notices free of attacker-supplied template variables', () => {
+    expect(
+      parseEmailJob('processSendAccountSecurityEmail', {
+        input: address,
+        variables: {},
+      }),
+    ).toMatchObject({ name: 'processSendAccountSecurityEmail', variables: {} })
+    expect(() =>
+      parseEmailJob('processSendAccountSecurityEmail', {
+        input: address,
+        variables: { link: 'https://wrong.example.test' },
+      }),
+    ).toThrow(/unexpected property link/)
+  })
+
   it('accepts exactly one copyright delivery intent identifier', () => {
     expect(parseEmailJob('processSendCopyrightNoticeEmail', { intentId: 'intent' })).toEqual({
       kind: 'copyright',

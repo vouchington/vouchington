@@ -1,13 +1,13 @@
 import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestCrawler } from '../../helpers/insert-test-crawler.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 // Seeded crawler for read-only tests
 const SEEDED_CRAWLER_ID = '019c64e6-3000-7000-8000-000000000001'
 
 test.describe('Admin Crawlers list', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('should show crawlers list page with heading and table', async ({ page }) => {
     await navigateTo(page, '/crawlers')
@@ -42,7 +42,7 @@ test.describe('Admin Crawlers list', () => {
 })
 
 test.describe('Admin Crawlers', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
   test.describe.configure({ mode: 'serial' })
 
   let crawlerId: string

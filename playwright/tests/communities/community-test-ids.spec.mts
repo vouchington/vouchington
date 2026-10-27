@@ -1,5 +1,5 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { loginAsUser, withCleanUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser, loginAsUser, withCleanUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import {
   createTestUser,
@@ -117,7 +117,8 @@ test.describe('Community interactive controls', () => {
 
   test('private application shows the form for each question state', async ({ page }) => {
     // Staff can view a private community before joining it.
-    await withCleanUser(page, { administrator: true })
+    const staff = await withCleanUser(page, { administrator: true })
+    await loginAsMfaUser(page, staff.id)
     await navigateTo(page, `/communities/${privateSlug}`)
     await expect(page.getByTestId('join-button-apply-to-join')).toBeVisible()
     await navigateTo(page, `/communities/${privateSlug}/apply`)
