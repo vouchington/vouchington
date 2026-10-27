@@ -33,9 +33,11 @@ BEGIN
     'report_deescalate',
     'report_integrity_flag_review',
     'report_integrity_penalty_apply',
+    'report_integrity_penalty_review',
     'report_integrity_penalty_revoke',
     'vote_integrity_flag_review',
     'vote_integrity_penalty_apply',
+    'vote_integrity_penalty_review',
     'vote_integrity_penalty_revoke',
     'vote_weight_set',
     'vote_weight_reset',
@@ -79,12 +81,12 @@ CREATE TABLE IF NOT EXISTS moderator_actions (
   community_id uuid REFERENCES communities (id) ON DELETE SET NULL,
   moderation_transparency_community_id uuid,
   -- guardrails-disable-next-line uuid-must-be-key
-  actor_user_id uuid REFERENCES users (id) ON DELETE SET NULL,
+  actor_user_id uuid REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   action_type moderator_action_types NOT NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   post_id uuid REFERENCES posts (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
-  target_user_id uuid REFERENCES users (id) ON DELETE SET NULL,
+  target_user_id uuid REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   -- guardrails-disable-next-line uuid-must-be-key
   report_id uuid REFERENCES moderation_reports (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
@@ -137,18 +139,18 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__actor__id
 CREATE INDEX IF NOT EXISTS idx_moderator_actions__agent_moderation_target
   ON moderator_actions (agent_moderation_post_id, agent_moderation_id);
 
-COMMENT ON TABLE moderator_actions IS 'Unified log of moderator/admin actions. Scheduled-job, backfill and queue actions are deleted after 90 days; other actions after 24 months.';
+COMMENT ON TABLE moderator_actions IS 'Unified log of moderator/admin actions. Scheduled-job, backfill and queue actions are deleted after 90 days; integrity penalty review actions after six years; other actions after 24 months.';
 
 COMMENT ON COLUMN moderator_actions.community_id IS 'Community scope; NULL for global/platform-level actions.';
 COMMENT ON COLUMN moderator_actions.moderation_transparency_community_id IS 'Immutable community scope stamped at action creation for global-transparency exclusion.';
 
-COMMENT ON COLUMN moderator_actions.actor_user_id IS 'Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).';
+COMMENT ON COLUMN moderator_actions.actor_user_id IS 'Moderator/admin who took the action; retained user identity preserves attribution after account deletion and grants no authority.';
 
 COMMENT ON COLUMN moderator_actions.action_type IS 'Type of moderation action taken.';
 
 COMMENT ON COLUMN moderator_actions.post_id IS 'Target post or comment (ON DELETE SET NULL for audit persistence).';
 
-COMMENT ON COLUMN moderator_actions.target_user_id IS 'Target user for bans, suspensions, warnings, member actions.';
+COMMENT ON COLUMN moderator_actions.target_user_id IS 'Target user identity for bans, suspensions, warnings, member actions and integrity penalty reviews; survives account deletion without granting authority.';
 
 COMMENT ON COLUMN moderator_actions.report_id IS 'Target moderation report for resolve/dismiss actions.';
 
@@ -158,9 +160,9 @@ COMMENT ON COLUMN moderator_actions.community_application_id IS 'Target communit
 
 COMMENT ON COLUMN moderator_actions.topic_claim_id IS 'Target topic ownership claim for verification, rejection, or revocation.';
 COMMENT ON COLUMN moderator_actions.report_integrity_flag_id IS 'Target report-integrity flag whose review was changed.';
-COMMENT ON COLUMN moderator_actions.report_abuse_penalty_id IS 'Target report-abuse penalty applied or revoked.';
+COMMENT ON COLUMN moderator_actions.report_abuse_penalty_id IS 'Target report-abuse penalty applied, reviewed or revoked.';
 COMMENT ON COLUMN moderator_actions.vote_integrity_flag_id IS 'Target vote-integrity flag whose review was changed.';
-COMMENT ON COLUMN moderator_actions.vote_weight_penalty_id IS 'Target vote-weight penalty applied or revoked.';
+COMMENT ON COLUMN moderator_actions.vote_weight_penalty_id IS 'Target vote-weight penalty applied, reviewed or revoked.';
 COMMENT ON COLUMN moderator_actions.agent_moderation_id IS 'Target agent moderation whose staff vote was changed; paired with its post owner.';
 COMMENT ON COLUMN moderator_actions.agent_moderation_post_id IS 'Post owner required by the partitioned agent-moderation target foreign key.';
 COMMENT ON COLUMN moderator_actions.oauth_client_id IS 'Target OAuth client whose verification was changed.';

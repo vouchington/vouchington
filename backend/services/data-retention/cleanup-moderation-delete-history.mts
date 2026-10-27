@@ -60,7 +60,15 @@ export async function deleteExpiredModerationHistory(
           AND (
             ((action.scheduled_job_key IS NOT NULL OR action.backfill_key IS NOT NULL OR action.queue_name IS NOT NULL)
               AND action.id < ${systemActionUpperId(now)}::uuid)
-            OR (action.id < fn_min_uuidv7(${now}::timestamptz - interval '24 months'))
+            OR (action.action_type IN ('report_integrity_penalty_review', 'vote_integrity_penalty_review')
+              AND action.id < fn_min_uuidv7(${now}::timestamptz - interval '6 years')
+              AND NOT EXISTS (
+                SELECT 1 FROM user_legal_preservation_holds preservation_hold
+                WHERE preservation_hold.account_user_id = action.target_user_id
+                  AND preservation_hold.released_at IS NULL
+              ))
+            OR (action.action_type NOT IN ('report_integrity_penalty_review', 'vote_integrity_penalty_review')
+              AND action.id < fn_min_uuidv7(${now}::timestamptz - interval '24 months'))
           )
       `))
       break

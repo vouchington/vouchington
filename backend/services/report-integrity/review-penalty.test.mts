@@ -5,12 +5,19 @@ import {
   encodeScopedPreciseTimestampCursor,
   decodeScopedPreciseTimestampCursor,
 } from '@modules/pagination'
-import { createTestUser, softDeleteTestUserAndWaitBeforeCommit } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  getModeratorActionRowsForTest,
+  hardDeleteTestUser,
+  softDeleteTestUserAndWaitBeforeCommit,
+} from '@voucha/test-helpers'
 import {
   insertTestReportAbusePenalty,
   setTestReportAbusePenaltyReviewDueAt,
 } from '@voucha/test-helpers/entities/report-integrity'
 import { getReportAbusePenaltyReviewsDue, reviewReportAbusePenalty } from './review-penalty.mts'
+import { getReportAbusePenaltyByIdFromPrimary } from './get-penalties.mts'
+import { withRejectedStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
 
 describe('report abuse penalty annual review', () => {
   it('uses the configured default and maximum for direct due-review reads', async () => {
@@ -74,6 +81,93 @@ describe('report abuse penalty annual review', () => {
     expect(
       (await getReportAbusePenaltyReviewsDue({ after })).results.map(row => row.id),
     ).not.toContain(penaltyId)
+  })
+
+  it('retains both annual review decisions and the first reviewer after account purge', async () => {
+    const firstReviewer = await createTestUser()
+    const secondReviewer = await createTestUser()
+    const target = await createTestUser()
+    const penaltyId = await insertTestReportAbusePenalty({
+      userId: target.id,
+      createdById: firstReviewer.id,
+    })
+    const firstDue = new Date('2001-01-01T00:00:00.000Z')
+    const secondDue = new Date('2002-01-01T00:00:00.000Z')
+    await setTestReportAbusePenaltyReviewDueAt(penaltyId, firstDue)
+
+    const first = await reviewReportAbusePenalty(penaltyId, firstReviewer.id)
+    await setTestReportAbusePenaltyReviewDueAt(penaltyId, secondDue)
+    const second = await reviewReportAbusePenalty(penaltyId, secondReviewer.id)
+    await expect(reviewReportAbusePenalty(penaltyId, secondReviewer.id)).rejects.toMatchObject({
+      status: 404,
+    })
+
+    const reviewActions = (await getModeratorActionRowsForTest({ targetUserId: target.id }))
+      .filter(action => action.action_type === 'report_integrity_penalty_review')
+      .toReversed()
+    expect(reviewActions).toHaveLength(2)
+    expect(reviewActions.map(action => [action.actor_user_id, action.metadata])).toEqual([
+      [
+        firstReviewer.id,
+        {
+          before: { review_due_at: firstDue.toISOString() },
+          after: { review_due_at: first.review_due_at.toISOString() },
+        },
+      ],
+      [
+        secondReviewer.id,
+        {
+          before: { review_due_at: secondDue.toISOString() },
+          after: { review_due_at: second.review_due_at.toISOString() },
+        },
+      ],
+    ])
+
+    await hardDeleteTestUser(firstReviewer.id)
+    const retained = (await getModeratorActionRowsForTest({ targetUserId: target.id })).filter(
+      action => action.action_type === 'report_integrity_penalty_review',
+    )
+    expect(retained).toHaveLength(2)
+    expect(retained.find(action => action.id === reviewActions[0]!.id)?.actor_user_id).toBe(
+      firstReviewer.id,
+    )
+
+    await hardDeleteTestUser(target.id)
+    const afterTargetPurge = (
+      await getModeratorActionRowsForTest({ targetUserId: target.id })
+    ).filter(action => action.action_type === 'report_integrity_penalty_review')
+    expect(afterTargetPurge).toHaveLength(2)
+    expect(afterTargetPurge.map(action => action.report_abuse_penalty_id)).toEqual([null, null])
+    expect(afterTargetPurge.map(action => action.target_user_id)).toEqual([target.id, target.id])
+  })
+
+  it('rolls back the confirmation when the audit action cannot be written', async () => {
+    const reviewer = await createTestUser()
+    const target = await createTestUser()
+    const penaltyId = await insertTestReportAbusePenalty({
+      userId: target.id,
+      createdById: reviewer.id,
+    })
+    await setTestReportAbusePenaltyReviewDueAt(penaltyId, new Date('2001-01-01T00:00:00.000Z'))
+    const before = await getReportAbusePenaltyByIdFromPrimary(penaltyId)
+
+    await expect(
+      withRejectedStaffActionHistory(query =>
+        reviewReportAbusePenalty(penaltyId, reviewer.id, { query }),
+      ),
+    ).rejects.toThrow('staff history rejected for test')
+
+    const after = await getReportAbusePenaltyByIdFromPrimary(penaltyId)
+    expect(after).toMatchObject({
+      reviewed_at: before!.reviewed_at,
+      reviewed_by_id: before!.reviewed_by_id,
+      review_due_at: before!.review_due_at,
+    })
+    expect(
+      (await getModeratorActionRowsForTest({ targetUserId: target.id })).filter(
+        action => action.action_type === 'report_integrity_penalty_review',
+      ),
+    ).toEqual([])
   })
 
   it('keeps a due penalty with an unlinked soft-deleted profile', async () => {

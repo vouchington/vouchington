@@ -1,4 +1,5 @@
-import { write } from '@data-stores/psql'
+import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { recordModeratorAction } from '@services/moderator-actions'
 import { getPaginationLimits } from '@services/pagination'
 import {
   decodeScopedPreciseTimestampCursor,
@@ -56,18 +57,42 @@ export async function getReportAbusePenaltyReviewsDue(
 export async function reviewReportAbusePenalty(
   penaltyId: string,
   reviewedById: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<ReportAbusePenalty> {
-  const { rows } = await write<ReportAbusePenalty>(sql`/* reviewReportAbusePenalty */
-    UPDATE report_abuse_penalties
-    SET reviewed_at = CURRENT_TIMESTAMP,
-        reviewed_by_id = ${reviewedById},
-        review_due_at = CURRENT_TIMESTAMP + interval '12 months'
-    WHERE id = ${penaltyId} AND revoked_at IS NULL
-      AND review_due_at <= CURRENT_TIMESTAMP
-    RETURNING id, user_id, reason, source_flag_id, created_by_id, revoked_at,
-      revoked_by_id, reviewed_at, reviewed_by_id, review_due_at, created_at, updated_at
-  `)
-  const penalty = rows[0]
-  if (!penalty) throw createHttpError(404, 'Active report abuse penalty not found')
-  return penalty
+  return runWithTransaction(options.query, async query => {
+    const { rows: dueRows } = await query<{ user_id: string; review_due_at: Date }>(sql`
+      /* reviewReportAbusePenalty_lockDue */
+      SELECT user_id, review_due_at FROM report_abuse_penalties
+      WHERE id = ${penaltyId} AND revoked_at IS NULL
+        AND review_due_at <= CURRENT_TIMESTAMP
+      FOR UPDATE
+    `)
+    const due = dueRows[0]
+    if (!due) throw createHttpError(404, 'Active report abuse penalty not found')
+
+    const { rows } = await query<ReportAbusePenalty>(sql`/* reviewReportAbusePenalty */
+      UPDATE report_abuse_penalties
+      SET reviewed_at = CURRENT_TIMESTAMP,
+          reviewed_by_id = ${reviewedById},
+          review_due_at = CURRENT_TIMESTAMP + interval '12 months'
+      WHERE id = ${penaltyId}
+      RETURNING id, user_id, reason, source_flag_id, created_by_id, revoked_at,
+        revoked_by_id, reviewed_at, reviewed_by_id, review_due_at, created_at, updated_at
+    `)
+    const penalty = rows[0]!
+    await recordModeratorAction(
+      reviewedById,
+      {
+        actionType: 'report_integrity_penalty_review',
+        reportAbusePenaltyId: penaltyId,
+        targetUserId: due.user_id,
+        metadata: {
+          before: { review_due_at: due.review_due_at.toISOString() },
+          after: { review_due_at: penalty.review_due_at.toISOString() },
+        },
+      },
+      { query },
+    )
+    return penalty
+  })
 }
