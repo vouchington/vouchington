@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueueCommandClient, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { runWithMembershipVerificationLeaseRenewal } from '../../../workers/memberships/processors/verification-execution-renewal.mts'
 import { membershipVerificationQueueConfig } from '../config.mts'
 import {
   acquireMembershipVerificationExecutionLease,
+  membershipVerificationLeaseNamespace,
   releaseMembershipVerificationExecutionLease,
   renewMembershipVerificationExecutionLease,
   type MembershipVerificationExecutionLease,
@@ -16,19 +17,21 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('membership verification execution lease with real Valkey', () => {
   it('bounds contention and fences renewal and release by owner token', async () => {
-    const namespace = `${workerQueuePrefix}:{memberships}:verification-lease-test:${randomUUID()}`
-    const keys = [`${namespace}:slot:0`, `${namespace}:slot:1`]
+    const keys = [
+      `${membershipVerificationLeaseNamespace}:slot:0`,
+      `${membershipVerificationLeaseNamespace}:slot:1`,
+    ]
     const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 2,
     })
     try {
-      const first = await acquireMembershipVerificationExecutionLease(namespace)
-      const second = await acquireMembershipVerificationExecutionLease(namespace)
+      const first = await acquireMembershipVerificationExecutionLease()
+      const second = await acquireMembershipVerificationExecutionLease()
       expect(first).not.toBeNull()
       expect(second).not.toBeNull()
       if (!first || !second) throw new Error('Expected two verification execution leases')
       expect(new Set([first.key, second.key])).toEqual(new Set(keys))
-      await expect(acquireMembershipVerificationExecutionLease(namespace)).resolves.toBeNull()
+      await expect(acquireMembershipVerificationExecutionLease()).resolves.toBeNull()
 
       const forged: MembershipVerificationExecutionLease = {
         key: first.key,

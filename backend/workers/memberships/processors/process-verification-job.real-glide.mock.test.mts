@@ -2,7 +2,6 @@ import { createHash, generateKeyPairSync, randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { Queue, QueueEvents, Worker, type Job, type JobOptions } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import * as httpDispatchers from '../../../modules/utils/http.mts'
 import {
   MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
@@ -144,16 +143,15 @@ describe('membership verification job deferral with real PostgreSQL and GlideMQ'
       lastEventId: '0',
       blockTimeout: 1_000,
     })
-    const leaseNamespace = `${workerQueuePrefix}:{memberships}:verification-test:${randomUUID()}`
     const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 1,
       verification_retry_minutes: 1,
     })
-    const worker = new Worker(
-      queueName,
-      (job: Job) => processMembershipVerificationJob(job, { leaseNamespace }),
-      { ...connection, concurrency: 2, blockTimeout: 1_000 },
-    )
+    const worker = new Worker(queueName, (job: Job) => processMembershipVerificationJob(job), {
+      ...connection,
+      concurrency: 2,
+      blockTimeout: 1_000,
+    })
     const failedJobIds: string[] = []
     events.on('failed', event => failedJobIds.push(event.jobId))
 

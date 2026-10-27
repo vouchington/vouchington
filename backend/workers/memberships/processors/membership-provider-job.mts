@@ -13,15 +13,12 @@ import { runWithMembershipVerificationLeaseRenewal } from './verification-execut
 const LEASE_CONTENTION_RETRY_MS = 1_000
 const LEASE_CONTENTION_JITTER_MS = 500
 
-export type MembershipProviderJobOptions = { leaseNamespace?: string }
-
 /** Canonical verifications and unbound notification lookups share one provider-call cap. */
 export async function processMembershipProviderJob(
   job: Job,
   operation: () => Promise<void>,
-  options: MembershipProviderJobOptions = {},
 ): Promise<void> {
-  const lease = await acquireMembershipVerificationExecutionLease(options.leaseNamespace)
+  const lease = await acquireMembershipVerificationExecutionLease()
   if (!lease)
     return job.moveToDelayed(
       Date.now() + LEASE_CONTENTION_RETRY_MS + randomInt(LEASE_CONTENTION_JITTER_MS + 1),

@@ -3,7 +3,6 @@ import { once } from 'node:events'
 import { Queue, QueueEvents, Worker, type Job, type JobOptions } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueueCommandClient, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import * as httpDispatchers from '../../../modules/utils/http.mts'
 import { membershipVerificationQueueConfig, QUEUE_NAME } from '@queues/memberships/config'
 import { buildGooglePlayNotificationJob } from '@queues/memberships/enqueues/google-play-jobs'
@@ -17,6 +16,7 @@ import { MembershipProviderUnavailableError } from '@services/memberships/provid
 import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-play-memberships'
 import { createTestGooglePlayRtdnBody } from '@voucha/test-helpers/google-play-recovery'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
+import { deleteMembershipVerificationLeaseSlots } from '@voucha/test-helpers/membership-verification-lease'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createMockAgentFetchForTest, MockAgent } from '@voucha/test-helpers/provider-http'
 import { realGlideConnection } from '@voucha/test-helpers/real-glide-connection'
@@ -94,17 +94,14 @@ describe('Google Play notification admission through the shared provider lease',
       lastEventId: '0',
       blockTimeout: 1_000,
     })
-    const leaseNamespace = `${workerQueuePrefix}:{memberships}:rtdn-provider-test:${randomUUID()}`
     const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 1,
     })
     const worker = new Worker(
       queueName,
       (job: Job) =>
-        processMembershipProviderJob(
-          job,
-          () => processGooglePlayNotification({ evidenceId: job.data.evidenceId }),
-          { leaseNamespace },
+        processMembershipProviderJob(job, () =>
+          processGooglePlayNotification({ evidenceId: job.data.evidenceId }),
         ),
       { ...connection, concurrency: 1, blockTimeout: 100, promotionInterval: 100 },
     )
@@ -112,7 +109,7 @@ describe('Google Play notification admission through the shared provider lease',
 
     try {
       await Promise.all([events.waitUntilReady(), worker.waitUntilReady()])
-      heldLease = await acquireMembershipVerificationExecutionLease(leaseNamespace)
+      heldLease = await acquireMembershipVerificationExecutionLease()
       if (!heldLease) throw new Error('Expected to reserve the provider execution slot')
 
       const notification = buildGooglePlayNotificationJob({
@@ -186,17 +183,12 @@ describe('membership provider job when the execution lease is lost before releas
     restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 1,
     })
-    const leaseNamespace = `${workerQueuePrefix}:{memberships}:lost-lease-test:${randomUUID()}`
     const moveToDelayed = vi.fn<Job['moveToDelayed']>()
-    const outcome = processMembershipProviderJob(
-      { moveToDelayed } as unknown as Job,
-      async () => {
-        // Expiry or a takeover removes the slot while the provider call is still running.
-        await workerQueueCommandClient.del([`${leaseNamespace}:slot:0`])
-        if (failure) throw failure()
-      },
-      { leaseNamespace },
-    )
+    const outcome = processMembershipProviderJob({ moveToDelayed } as unknown as Job, async () => {
+      // Expiry or a takeover removes the slot while the provider call is still running.
+      await deleteMembershipVerificationLeaseSlots(1)
+      if (failure) throw failure()
+    })
     return { outcome, moveToDelayed }
   }
 

@@ -8,7 +8,7 @@ import {
   MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
 } from '../config.mts'
 
-const DEFAULT_NAMESPACE = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
+export const membershipVerificationLeaseNamespace = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
 
 type LeaseClient = Awaited<ReturnType<typeof upsertValkeyClientByUrl>>
 let leaseClientPromise: Promise<LeaseClient> | undefined
@@ -33,15 +33,13 @@ export type MembershipVerificationExecutionLease = Readonly<{
   token: string
 }>
 
-export async function acquireMembershipVerificationExecutionLease(
-  namespace = DEFAULT_NAMESPACE,
-): Promise<MembershipVerificationExecutionLease | null> {
+export async function acquireMembershipVerificationExecutionLease(): Promise<MembershipVerificationExecutionLease | null> {
   const client = await getLeaseClient()
   const token = randomUUID()
   const limit = getMembershipVerificationConcurrency()
   const start = randomInt(limit)
   for (let offset = 0; offset < limit; offset++) {
-    const key = `${namespace}:slot:${(start + offset) % limit}`
+    const key = `${membershipVerificationLeaseNamespace}:slot:${(start + offset) % limit}`
     // oxlint-disable-next-line no-await-in-loop -- bounded semaphore admission probes at most 20 slots.
     const acquired = await client.set(key, token, {
       conditionalSet: 'onlyIfDoesNotExist',
