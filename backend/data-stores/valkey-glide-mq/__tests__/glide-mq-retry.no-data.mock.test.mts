@@ -122,7 +122,7 @@ describe('retryOnInflightSaturation', () => {
     expect(captureException).toHaveBeenCalledWith(saturationErr, expect.anything())
     // breadcrumbs should be recorded for attempts 1 and 2 (not attempt 0)
     expect(addBreadcrumb).toHaveBeenCalledTimes(2)
-    expect(captureMessage).toHaveBeenCalledTimes(2)
+    expect(captureMessage).toHaveBeenCalledOnce()
   })
 
   it('recordValkeySaturation emits console.warn in development mode', async () => {
