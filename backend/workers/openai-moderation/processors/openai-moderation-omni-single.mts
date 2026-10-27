@@ -107,9 +107,11 @@ async function moderatePostVersion(versionId: string | undefined): Promise<unkno
     return { success: true, applied: false }
   }
   await enqueueReconcilePostNotifications(post.id, attempt.id)
+  /* v8 ignore start -- valid post rows require text content; service-level tests cover direct no-content handling */
   if (result.skipped && result.reason === 'no_content_to_moderate') {
     await markPostOpenAIModerationNoContent(post.id, attempt)
   }
+  /* v8 ignore stop */
   await checkPostClearance(post.id)
   return { success: true }
 }

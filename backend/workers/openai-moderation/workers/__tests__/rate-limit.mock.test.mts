@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { RateLimitError } from 'openai'
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
@@ -84,6 +84,41 @@ describe('openai moderation post job under a provider rate limit', () => {
     })
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       is_flagged_by_openai_omni_moderation: null,
+    })
+  })
+
+  it('applies the verdict, queues notifications, and checks clearance on success', async () => {
+    const postId = await insertPendingPost()
+    const versionId = await beginOpenAttempt(postId)
+    requestOpenAIModeration.mockResolvedValueOnce({
+      id: 'mod_test',
+      model: 'omni-moderation-latest',
+      results: [{ flagged: false, categories: {}, category_scores: {} }],
+    })
+
+    await expect(handleOpenAIModerationOmniSingleJob(makeJob(versionId))).resolves.toEqual({
+      success: true,
+    })
+    await expect(getPostModerationData(postId)).resolves.toMatchObject({
+      is_flagged_by_openai_omni_moderation: false,
+    })
+  })
+
+  it('exits without notifications when the content changed during the provider call', async () => {
+    const postId = await insertPendingPost()
+    const versionId = await beginOpenAttempt(postId)
+    requestOpenAIModeration.mockImplementationOnce(async () => {
+      await setPostModerationContentSha256(postId, randomBytes(32))
+      return {
+        id: 'mod_test',
+        model: 'omni-moderation-latest',
+        results: [{ flagged: false, categories: {}, category_scores: {} }],
+      }
+    })
+
+    await expect(handleOpenAIModerationOmniSingleJob(makeJob(versionId))).resolves.toEqual({
+      success: true,
+      applied: false,
     })
   })
 })
