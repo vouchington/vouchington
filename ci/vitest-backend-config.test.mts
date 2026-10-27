@@ -156,7 +156,7 @@ describe('backend Vitest project config', () => {
     expect(project?.extends).toBe(true)
     expect(glideMqAlias).toEqual(realGlideMqAlias())
     expect(backendAliases().find(alias => String(alias.find) === '/^glide-mq$/')?.replacement).toBe(
-      resolve(process.cwd(), 'test-helpers/request-query-profile-worker.mts'),
+      resolve(process.cwd(), 'test-helpers/worker-query-profile.mts'),
     )
   })
 
