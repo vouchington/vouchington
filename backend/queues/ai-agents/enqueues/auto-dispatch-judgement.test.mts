@@ -53,7 +53,7 @@ describe('enqueueAutoDispatchJudgement', () => {
         attempts: AI_AGENTS_DEFAULTS.attempts,
         backoff: AI_AGENTS_DEFAULTS.backoff,
         removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-        removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+        removeOnFail: false,
         priority: AGENT_PRIORITY['auto-dispatch-judgement'],
         deduplication: { id: `auto_dispatch_judgement_${row.judgement_id}`, mode: 'simple' },
       })

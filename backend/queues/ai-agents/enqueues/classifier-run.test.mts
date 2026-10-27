@@ -84,7 +84,7 @@ describe('classifier run enqueue', () => {
     expect(jobs).toHaveLength(1)
     expect(jobs[0]?.opts).toMatchObject({
       removeOnComplete: true,
-      removeOnFail: true,
+      removeOnFail: false,
       jobId: classifierRunDispatcherJobId(data),
       // The dispatcher never calls a provider, so it keeps the shared queue defaults.
       attempts: AI_AGENTS_DEFAULTS.attempts,

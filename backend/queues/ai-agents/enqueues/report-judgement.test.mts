@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { ai_agents } from '../queues.mts'
-import { enqueueReportJudgement } from './report-judgement.mts'
+import { enqueueBackfillReportJudgements, enqueueReportJudgement } from './report-judgement.mts'
 
 describe('enqueueReportJudgement', () => {
   beforeEach(async () => {
@@ -40,6 +40,11 @@ describe('enqueueReportJudgement', () => {
     const job = (await getReportJudgementJobs()).find(isReportJudgementJobFor(entityId))
     expect(job?.opts.deduplication).toBeUndefined()
     expect(job?.opts.ordering).toBeUndefined()
+  })
+
+  it('retains a failed backfill dispatcher for guarded cleanup', async () => {
+    const job = await enqueueBackfillReportJudgements()
+    expect(job?.opts.removeOnFail).toBe(false)
   })
 })
 

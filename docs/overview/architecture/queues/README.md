@@ -210,7 +210,9 @@ still marked, so the queue is not a second source of truth and there is no dead-
 - **Background OpenAI responses keep their recovery owner.** AI worker calls persist each provider
   response id in their GlideMQ job before draining it. A replay retrieves or cancels unsettled
   responses before it can dispatch another paid call; terminal failed jobs retain those ids for a
-  bounded recovery sweep. The response-id ledger key prevents duplicate accounting. Conversation
+  bounded recovery sweep. Every job in the shared AI queue keeps its failed record until guarded
+  cleanup: count retention on an unrelated failure can otherwise evict the job holding the only
+  unsettled response id. The response-id ledger key prevents duplicate accounting. Conversation
   titles generated inline from an API request admit a delayed settlement job after the provider
   reports its response id. Normal completion and delayed recovery share the same accounting fence;
   recovery never generates another title. A job can outlive a post or community, so recovery

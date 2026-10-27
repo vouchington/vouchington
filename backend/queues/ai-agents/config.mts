@@ -59,7 +59,8 @@ export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
   removeOnComplete: 100,
-  removeOnFail: 100,
+  // Count retention on any job trims the entire failed set, including jobs holding unsettled IDs.
+  removeOnFail: false,
 } as const
 
 /**

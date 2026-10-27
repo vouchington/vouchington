@@ -141,6 +141,7 @@ export function enqueueBackfillReportJudgements(): ReturnType<
     {},
     {
       priority: 100,
+      removeOnFail: false,
       deduplication: { id: 'backfill_report_judgements', mode: 'throttle', ttl: 3_600_000 },
     },
   )

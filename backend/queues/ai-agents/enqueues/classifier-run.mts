@@ -46,8 +46,8 @@ function classifierRunDispatcherOptions(data: ClassifierRunDispatcherJobData): J
     priority: AGENT_PRIORITY['classifier-run-dispatcher'],
     jobId: classifierRunDispatcherJobId(data),
     removeOnComplete: true,
-    // The durable request row is authoritative; a failed dispatcher is retried by the sweep.
-    removeOnFail: true,
+    // The durable request row is authoritative; guarded cleanup releases failed jobs.
+    removeOnFail: false,
   }
 }
 

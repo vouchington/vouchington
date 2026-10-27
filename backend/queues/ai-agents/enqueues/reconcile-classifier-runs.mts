@@ -31,6 +31,6 @@ export function enqueueReconcileClassifierRunsPage(
     priority: AGENT_PRIORITY['reconcile-classifier-runs'],
     jobId: `reconcile_classifier_runs_${data.phase}_${data.classifier ?? 'all'}_${data.after ?? 'start'}`,
     removeOnComplete: true,
-    removeOnFail: true,
+    removeOnFail: false,
   } satisfies JobOptions)
 }

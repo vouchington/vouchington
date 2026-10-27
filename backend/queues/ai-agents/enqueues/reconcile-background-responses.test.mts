@@ -18,6 +18,7 @@ describe('background response sweep continuation', () => {
         data: input,
         opts: {
           removeOnComplete: true,
+          removeOnFail: false,
           priority: AGENT_PRIORITY['reconcile-background-responses'],
           ordering: { key: 'ai_background_response_reconcile', concurrency: 1 },
         },
