@@ -153,8 +153,7 @@ async function cleanupRetainedIdentityFamily(
   if (!identityIds)
     await query(
       `/* ensureRetainedIdentityCleanupCursor */
-        INSERT INTO retained_identity_cleanup_cursors (family) VALUES ($1)
-        ON CONFLICT DO NOTHING`,
+        INSERT INTO retained_identity_cleanup_cursors (family) VALUES ($1) ON CONFLICT DO NOTHING`,
       [family],
     )
   const progress = identityIds
@@ -193,8 +192,7 @@ async function cleanupRetainedIdentityFamily(
   if (!identityIds)
     await query(
       `/* checkpointRetainedIdentityCleanup */
-      UPDATE retained_identity_cleanup_cursors
-      SET cursor_identity_id = $2 WHERE family = $1`,
+      UPDATE retained_identity_cleanup_cursors SET cursor_identity_id = $2 WHERE family = $1`,
       [family, hasMore ? page.at(-1)!.id : null],
     )
   await query.commit()
