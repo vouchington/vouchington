@@ -141,7 +141,7 @@ export function installClientContentRouteHarness(
 
     harness.penaltyId = await insertTestVoteWeightPenalty(user.id, admin.id)
     await options.afterPenalty?.(ctx)
-  }, 30_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -164,7 +164,7 @@ export function installClientContentRouteHarness(
     } else {
       options.unset(globalThis, 'window')
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

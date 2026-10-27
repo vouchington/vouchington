@@ -74,7 +74,7 @@ describe('routes — public and direct', () => {
 
     const post = await createTestPost({ user })
     postId = post.id
-  }, 15_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -98,7 +98,7 @@ describe('routes — public and direct', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

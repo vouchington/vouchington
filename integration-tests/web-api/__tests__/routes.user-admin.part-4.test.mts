@@ -153,7 +153,7 @@ describe('routes — user and admin', () => {
       statusCode: 200,
       markdown: 'Web API test crawl markdown',
     })
-  }, 15_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -177,7 +177,7 @@ describe('routes — user and admin', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

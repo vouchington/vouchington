@@ -142,7 +142,7 @@ describe('community-list-items', () => {
         addedById: admin.id,
       }),
     ])
-  }, 20_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -166,7 +166,7 @@ describe('community-list-items', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   describe('community list items server routes', () => {
     it('getCommunityListTopics returns paginated items', async () => {

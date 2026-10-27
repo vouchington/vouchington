@@ -51,7 +51,7 @@ describe('server-misc-routes', () => {
 
     const lp = await createTestLandingPage(user.id, `Test LP ${randomUUID()}`)
     landingPageId = lp.landingPageId
-  }, 20_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -68,7 +68,7 @@ describe('server-misc-routes', () => {
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
     }
-  }, 15_000)
+  })
 
   describe('feature-flags server routes', () => {
     it('getFeatureFlags returns flags with user headers', async () => {

@@ -84,7 +84,7 @@ describe('routes-extended', () => {
     // Post created by admin so user can report it without "Cannot report yourself"
     const post = await createTestPost({ user: admin })
     postId = post.id
-  }, 20_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -106,7 +106,7 @@ describe('routes-extended', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

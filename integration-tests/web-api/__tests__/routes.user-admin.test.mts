@@ -132,7 +132,7 @@ describe('routes — user and admin', () => {
       statusCode: 200,
       markdown: 'Web API test crawl markdown',
     })
-  }, 15_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -149,7 +149,7 @@ describe('routes — user and admin', () => {
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
     }
-  }, 15_000)
+  })
 
   describe('web server API user routes', () => {
     it('GET /api/v1/feature-flags resolves', async () => {
