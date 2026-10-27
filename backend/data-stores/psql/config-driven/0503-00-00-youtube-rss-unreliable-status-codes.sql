@@ -1,4 +1,3 @@
--- no-mistakes-disable-file postgres-idempotent-insert: one data-modifying WITH has two guarded INSERTs (url_hostnames ON CONFLICT DO NOTHING, url_hostname_blocks NOT EXISTS). sqlparser cannot parse this file as a whole (`unparseable fragment carries more than one INSERT`); splitting would drop the `inserted` RETURNING bound so inherited blocks would no longer apply only to newly inserted hostnames.
 -- YouTube channel RSS feeds can intermittently return 404 for still-valid feeds.
 -- Keep those 404s retryable at the hostname-policy layer without clobbering
 -- operator-configured retry statuses. Any existing non-null array, including
