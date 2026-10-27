@@ -3,13 +3,15 @@ import {
   beginTransaction,
   createTestTopic,
   createTestUser,
-  getTestPostgresBackendProcessId,
   getUrlHostnameTopicId,
   insertTestRssFeedDirect,
-  waitForTestPostgresLockWaiter,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { getActiveLandingPageHostnameClaims } from '@voucha/test-helpers/hostname-ownership'
+import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
+import {
+  getActiveLandingPageHostnameClaims,
+  getFirstTestHostnameOwnershipLockKey,
+} from '@voucha/test-helpers/hostname-ownership'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { blockHostnameInTransaction } from '../hostname-blocking/block-hostname.mts'
@@ -35,18 +37,23 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
     const feed = await insertTestRssFeedDirect({ topicId: first.id })
     await using holder = await beginTransaction()
     await lockTopicHostnameMutations(holder, [first.id])
-    const pid = await getTestPostgresBackendProcessId(holder)
-    const hiding = disableAndHideSource(feed.id).then(
-      () => null,
-      (err: unknown) => err,
-    )
+    await using waiter = await createTestPostgresLockWaiter({
+      holder,
+      lock: { kind: 'advisory64', key: `topic-hostname:${first.id.toLowerCase()}` },
+      selected: {
+        marker: '/* lockTopicHostnameMutations */',
+        binding: { index: 1, value: [first.id.toLowerCase()] },
+      },
+    })
+    const hiding = disableAndHideSource(feed.id, { query: waiter.query })
     try {
-      await waitForTestPostgresLockWaiter(pid, 'lockTopicHostnameMutations')
+      await waiter.waitForLock(hiding)
       await updateRssFeedById(feed.id, { topic_id: second.id })
     } finally {
       await holder.commit()
     }
-    expect(await hiding).toBeNull()
+    await expect(hiding).resolves.toBeUndefined()
+    await waiter.query.commit()
     expect(await getTopicByAny(first.id)).toBeNull()
     expect(await getTopicByAny(second.id)).not.toBeNull()
     expect(await getRssFeedById(feed.id)).toMatchObject({
@@ -67,17 +74,22 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
       const move = kind === 'primary' ? setTopicHostnameLink : linkHostnameToSourceTopic
       await using holder = await beginTransaction()
       await move(topic.id, firstId!, { query: holder })
-      const pid = await getTestPostgresBackendProcessId(holder)
-      const pending = move(topic.id, secondId!).then(
-        () => null,
-        (err: unknown) => err,
-      )
+      await using waiter = await createTestPostgresLockWaiter({
+        holder,
+        lock: { kind: 'advisory64', key: `topic-hostname:${topic.id.toLowerCase()}` },
+        selected: {
+          marker: '/* lockTopicHostnameMutations */',
+          binding: { index: 1, value: [topic.id.toLowerCase()] },
+        },
+      })
+      const pending = move(topic.id, secondId!, { query: waiter.query })
       try {
-        await waitForTestPostgresLockWaiter(pid, 'lockTopicHostnameMutations')
+        await waiter.waitForLock(pending)
       } finally {
         await holder.commit()
       }
-      expect(await pending).toBeNull()
+      await expect(pending).resolves.toBeUndefined()
+      await waiter.query.commit()
       expect((await getTopicByAny(topic.id))?.hostname_id).toBe(secondId)
       expect(await getUrlHostnameTopicId(oldId!)).toBeNull()
       expect(await getUrlHostnameTopicId(firstId!)).toBeNull()
@@ -101,24 +113,31 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
     await blockHostnameInTransaction(admin.id, hostnames.get(parent)!, holder, {
       penalizeCreators: false,
     })
-    const pid = await getTestPostgresBackendProcessId(holder)
-    await using waiter = await beginTransaction()
+    await using waiter = await createTestPostgresLockWaiter({
+      holder,
+      lock: { kind: 'advisory64', key: hostnames.get(parent)!.toLowerCase() },
+      selected: {
+        marker: '/* lockHostnameOwnership */',
+        binding: { index: 0, value: [hostnames.get(child)!.toLowerCase()] },
+      },
+    })
     const pending = approveTopicRecommendationInTransaction(
       admin,
       WEB_PROVENANCE,
       recommendation.id,
-      { query: waiter },
-    ).then(
+      { query: waiter.query },
+    )
+    const rejection = pending.then(
       () => null,
       (err: unknown) => err,
     )
     try {
-      await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
+      await waiter.waitForLock(pending)
     } finally {
       await holder.commit()
     }
-    expect(await pending).toMatchObject({ status: 422 })
-    await waiter.rollback()
+    expect(await rejection).toMatchObject({ status: 422 })
+    await waiter.query.rollback()
     expect(await getActiveLandingPageHostnameClaims([hostnames.get(child)!])).toEqual([])
     const newChild = `new.${parent}`
     await upsertUrlHostnames(admin.id, [newChild])
@@ -129,13 +148,16 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
   it('serializes source hiding after approval without removing its coexisting landing-page claim', async () => {
     const admin = await createTestUser({ administrator: true })
     const suffix = crypto.randomUUID()
-    const hostname = `hide-${suffix}.example.com`
+    const parent = `hide-${suffix}.example.com`
+    const hostname = `feed.${parent}`
+    await upsertUrlHostnames(admin.id, [parent])
     const source = await createTestTopic({ user: admin, topic_type: 'rss_feed' })
     const feed = await insertTestRssFeedDirect({
       topicId: source.id,
       homePageUrl: `https://${hostname}/`,
       rssFeedUrl: `https://${hostname}/feed.xml`,
     })
+    const hostnameId = (await getUrlHostnameByAny(hostname))!.id
     const recommendation = await createTopicRecommendation(admin, WEB_PROVENANCE, {
       markdown: 'Source hide race',
       topic_title: `Hide ${suffix}`,
@@ -149,19 +171,24 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
       recommendation.id,
       { query: holder },
     )
-    const pid = await getTestPostgresBackendProcessId(holder)
-    const pending = disableAndHideSource(feed.id).then(
-      () => null,
-      (err: unknown) => err,
-    )
+    const heldHostnameKey = await getFirstTestHostnameOwnershipLockKey(holder, hostnameId)
+    await using waiter = await createTestPostgresLockWaiter({
+      holder,
+      lock: { kind: 'advisory64', key: heldHostnameKey },
+      selected: {
+        marker: '/* lockHostnameOwnership */',
+        binding: { index: 0, value: [hostnameId.toLowerCase()] },
+      },
+    })
+    const pending = disableAndHideSource(feed.id, { query: waiter.query })
     try {
-      await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
+      await waiter.waitForLock(pending)
     } finally {
       await holder.commit()
     }
-    expect(await pending).toBeNull()
+    await expect(pending).resolves.toBeUndefined()
+    await waiter.query.commit()
     expect(await getTopicByAny(source.id)).toBeNull()
-    const hostnameId = (await getUrlHostnameByAny(hostname))!.id
     expect(await getActiveLandingPageHostnameClaims([hostnameId])).toContain(approved.topic.id)
   })
 })
