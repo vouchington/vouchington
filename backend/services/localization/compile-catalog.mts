@@ -1,13 +1,6 @@
-import { existsSync, mkdirSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { mkdirSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { compileLocalizationSqlite, loadCatalogDirectory } from '@vouchington/localization-compiler'
-import { localizationSqlitePath } from './database.mts'
-
-export function catalogScratchDirectory(): string {
-  if (existsSync('/dev/shm')) return '/dev/shm'
-  return process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir()
-}
 
 export async function compileCatalogDirectory(source: string, output: string): Promise<string> {
   const loaded = await loadCatalogDirectory(resolve(source))
@@ -21,27 +14,6 @@ export async function compileCatalogDirectory(source: string, output: string): P
   } finally {
     restoreTmpdir(previousTmpdir)
   }
-}
-
-/** Compile catalog JSON into a temp SQLite file and point `LOCALIZATION_SQLITE_PATH` at it. */
-export async function compileCatalogForProcess(options?: {
-  source?: string
-  output?: string
-}): Promise<string> {
-  const output =
-    options?.output ?? join(catalogScratchDirectory(), `vouchington-catalog-${process.pid}.sqlite`)
-  await compileCatalogDirectory(options?.source ?? 'localization/catalog', output)
-  process.env.LOCALIZATION_SQLITE_PATH = output
-  return output
-}
-
-export async function ensurePlaywrightLocalizationSqlite(options?: {
-  source?: string
-  output?: string
-}): Promise<void> {
-  if (process.env.PLAYWRIGHT_TEST !== 'true') return
-  if (existsSync(options?.output ?? localizationSqlitePath())) return
-  await compileCatalogForProcess(options)
 }
 
 export async function runCompileCli(args: readonly string[]): Promise<string> {

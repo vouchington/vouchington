@@ -131,6 +131,8 @@
         "localization-tmux.config.mts",
         // Loaded by the localization config through Playwright's string-valued globalSetup.
         "localization-timeout-setup.mts",
+        // Started by the Playwright backend command strings, not imported.
+        "test-helpers/launch-api.mts",
       ],
       "project": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,

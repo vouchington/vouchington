@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { CatalogMessage } from '@vouchington/localization'
 import { compileLocalizationSqlite } from '@vouchington/localization-compiler'
-import { catalogScratchDirectory } from '../services/localization/compile-catalog.mts'
 import { createLocalizationDatabaseOwner } from '../services/localization/database.mts'
 import { createLocalizationResolver } from '../services/localization/resolve.mts'
 
@@ -70,4 +70,9 @@ function sampleCatalogMessages(): CatalogMessage[] {
       translations: { 'en-US': 'Welcome to Voucha' },
     },
   ]
+}
+
+function catalogScratchDirectory(): string {
+  if (existsSync('/dev/shm')) return '/dev/shm'
+  return process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir()
 }
