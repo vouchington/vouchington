@@ -84,8 +84,6 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   // Deletion-tolerant bounded merge positions; these coordinates never join target rows.
   'topic_merge_metric_users.cursor_review_post_id',
   'topic_merge_metric_users.cursor_topic_vote_id',
-  'topic_merge_operation_aliases.cursor_relation_post_id',
-  'topic_merge_operation_aliases.cursor_source_post_id',
   'topic_merge_operations.cursor_object_id',
   'topic_merge_operations.cursor_row_id',
   'topic_merge_operations.cursor_subject_id',
