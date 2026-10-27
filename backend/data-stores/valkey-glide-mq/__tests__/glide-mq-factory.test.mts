@@ -4,7 +4,6 @@ import {
   closeAndUnregisterGlideMQInstance,
   createMaintenanceQueue,
   createQueue,
-  createWorker,
 } from '../glide-mq-factory.mts'
 import {
   createBulkEnqueueFunction,
