@@ -33,6 +33,6 @@
     "@vouchington/utils": "^0.10.2",
     "@vouchington/worker-runtime": "^0.2.1",
     "@workers/heartbeat": "workspace:^",
-    "glide-mq": "^0.19.0"
+    "glide-mq": "^0.20.0"
   }
 }

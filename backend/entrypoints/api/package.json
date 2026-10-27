@@ -27,7 +27,7 @@
     "@backend/service-registrations": "workspace:^",
     "@data-stores/graceful-shutdown": "workspace:^",
     "@data-stores/psql": "workspace:^",
-    "@glidemq/dashboard": "^0.4.2",
+    "@glidemq/dashboard": "^0.4.3",
     "@jongleberry/vurst-runtime": "^0.4.3",
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/bluesky-oauth": "workspace:^",
@@ -53,7 +53,7 @@
     "@voucha/rss": "workspace:^",
     "cookie": "^2.0.1",
     "express": "^5.3.0",
-    "glide-mq": "^0.19.0"
+    "glide-mq": "^0.20.0"
   },
   "devDependencies": {
     "@ts-shared/session-jwt": "workspace:^",
