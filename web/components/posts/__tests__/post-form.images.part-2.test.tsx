@@ -79,7 +79,7 @@ describe('PostForm image state', () => {
       { timeout: IMAGE_UPLOAD_WAIT_TIMEOUT },
     )
     expect(screen.queryByPlaceholderText('Caption (optional)')).toBeNull()
-  }, 10_000)
+  })
 
   it('shows toast and does not upload for unsupported file type', async () => {
     render(<PostForm postType='discussion' />)

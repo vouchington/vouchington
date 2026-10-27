@@ -155,5 +155,5 @@ describe('PostForm image state', () => {
       file,
       expect.objectContaining({ onPhase: expect.any(Function) }),
     )
-  }, 10_000)
+  })
 })
