@@ -6,6 +6,7 @@ import { getRssFeedItemMappedTopics } from '../category-relations.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 
 import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
+import { continueTopicAliasUnlink } from '@services/topics/unlink-topic-alias-page'
 
 import { upsertRssFeedItems } from '../upsert.mts'
 
@@ -235,7 +236,6 @@ describe('categories relations', () => {
 
   it('retires the prior direct topic relation when a hashtag alias moves', async () => {
     const random = Math.random().toString(36).slice(2, 15)
-    const authored = `#Moved_${random}`
     const canonical = `moved-${random}`
     const user = await createTestUser({ administrator: true })
     const originalTopic = await createTopic(user!, WEB_PROVENANCE, {
@@ -248,9 +248,10 @@ describe('categories relations', () => {
     })
     const [alias] = await createTopicAliases(originalTopic.id, canonical)
     await upsertRssFeedItemCategories([
-      { rss_feed_item_id: testRssFeedItemId, categories: [authored] },
+      { rss_feed_item_id: testRssFeedItemId, categories: [canonical] },
     ])
     await unlinkTopicAlias(alias!.id, { expectedTopicId: originalTopic.id, skipSideEffects: true })
+    await finishTopicAliasUnlink(alias!.id)
     await linkTopicAlias(destinationTopic.id, alias!.id, { skipSideEffects: true })
 
     await backfillCategoriesForTopicAliases(destinationTopic.id)
@@ -290,3 +291,9 @@ describe('categories relations', () => {
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof softDeleteTopic)
 })
+
+async function finishTopicAliasUnlink(topicAliasId: string) {
+  for (let page = 0; page < 8; page += 1)
+    if (!(await continueTopicAliasUnlink(topicAliasId))) return
+  throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
+}

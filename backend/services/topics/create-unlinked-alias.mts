@@ -21,12 +21,13 @@ export async function createUnlinkedTopicAlias(
   )
   if (inserted[0]) return inserted[0]
 
-  const { rows: existing } = await write<TopicAlias>(
+  const { rows: existing } = await write<TopicAlias & { unlink_requested_at: Date | null }>(
     `/* createUnlinkedTopicAlias existing */
-      SELECT id, topic_id, alias FROM topic_aliases WHERE alias = $1`,
+      SELECT id, topic_id, alias, unlink_requested_at FROM topic_aliases WHERE alias = $1`,
     [normalized.key],
     options,
   )
   assert(existing[0], 409, 'Hashtag alias conflict disappeared')
+  assert(!existing[0].unlink_requested_at, 409, 'Topic alias unlink is in progress')
   return existing[0]
 }

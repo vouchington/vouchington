@@ -27,6 +27,8 @@ export type TopicAliasJobs =
   | 'processTopicAliasesUpdate'
   | 'processInvalidatePostsForTopicAliases'
   | 'processReconcileTopicAliasCategoryMappings'
+  | 'processUnlinkTopicAliasPage'
+  | 'processRecoverTopicAliasUnlinks'
 
 /** First remaining raw row, revalidated under the feed lock before a destructive page. */
 export type RssFeedHardDeletePageData = { rssFeedId: string; pageCursor: string }
@@ -35,4 +37,24 @@ export type TopicAliasPostInvalidationData = {
   topicAliasIds: string[]
   changeId: string
   afterPostId?: string
+}
+
+export const TOPIC_ALIAS_UNLINK_PHASES = [
+  'post_sources',
+  'post_relations',
+  'rss_item_categories',
+  'rss_item_relations',
+  'finalize',
+] as const
+
+export type TopicAliasUnlinkPhase = (typeof TOPIC_ALIAS_UNLINK_PHASES)[number]
+
+export type TopicAliasUnlinkPage = {
+  topicAliasId: string
+  phase: TopicAliasUnlinkPhase
+  pageCursor: string
+}
+
+export type TopicAliasUnlinkRecovery = {
+  afterId: string | null
 }

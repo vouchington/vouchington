@@ -26,6 +26,11 @@ export const backgroundWorkRegistryEntries5 = {
       story_lifecycle_lock_batch_size:
         'Story lifecycle lock batch size for post publication processing.',
       rss_feed_hard_delete_capture_batch_size: 'RSS feed hard delete page size.',
+      topic_alias_unlink_page_size: 'Topic alias unlink page size for post publication processing.',
+      topic_alias_unlink_page_concurrency:
+        'Topic alias unlink page concurrency for post publication processing.',
+      topic_alias_unlink_recovery_concurrency:
+        'Topic alias unlink recovery concurrency for post publication processing.',
     },
   }),
   'rss-feed-items-work-config': defineBoundedWorkNamespace({

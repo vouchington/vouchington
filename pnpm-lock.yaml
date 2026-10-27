@@ -3401,6 +3401,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@services/post-publication':
+        specifier: workspace:^
+        version: link:../../services/post-publication
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -11366,6 +11369,9 @@ importers:
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
+      '@queues/post-publication':
+        specifier: workspace:^
+        version: link:../../queues/post-publication
       '@queues/rss-feed-maintenance':
         specifier: workspace:^
         version: link:../../queues/rss-feed-maintenance

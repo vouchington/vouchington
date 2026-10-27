@@ -48,9 +48,12 @@ describe('topic alias post-cache invalidation', () => {
     expect(await caches.topic_metrics.get(topicId)).toBeNull()
 
     await cachePosts(postIds)
-
+    await refresh.topic_metrics(topicId)
+    expect(await caches.topic_metrics.get(topicId)).not.toBeNull()
     await unlinkTopicAlias(alias.id)
-    await expectPostCachesInvalidated(postIds)
+    const cached = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
+    expect(cached.every(value => value !== null)).toBe(true)
+    expect(await caches.topic_metrics.get(topicId)).toBeNull()
   })
 
   it('invalidates posts when a deleted topic alias is reassigned', async () => {

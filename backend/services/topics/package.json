@@ -33,6 +33,7 @@
     "@queues/background": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
+    "@queues/post-publication": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/batch-lookup": "workspace:^",

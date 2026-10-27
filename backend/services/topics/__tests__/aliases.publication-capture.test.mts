@@ -19,6 +19,7 @@ import {
   unlinkTopicAlias,
 } from '../aliases.mts'
 import { recordTopicAliasPublicationChanges } from '../publication-change.mts'
+import { continueTopicAliasUnlink } from '../unlink-topic-alias-page.mts'
 
 describe('topic alias publication mutation', () => {
   it('rejects conflicting text for one alias identity', async () => {
@@ -55,9 +56,14 @@ describe('topic alias publication mutation', () => {
       topicAliasId: alias.id,
       userId: user.id,
     })
-
     await unlinkTopicAlias(alias.id)
+    await finishTopicAliasUnlink(alias.id)
 
     expect(await countTestPostAliasRelations(post.id, alias.id)).toBe(0)
   })
 })
+async function finishTopicAliasUnlink(topicAliasId: string) {
+  for (let page = 0; page < 8; page += 1)
+    if (!(await continueTopicAliasUnlink(topicAliasId))) return
+  throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
+}

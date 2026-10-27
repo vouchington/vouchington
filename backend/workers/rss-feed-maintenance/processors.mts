@@ -1,4 +1,12 @@
 import type { Job } from 'glide-mq'
+import {
+  applyTopicAliasUnlinkPage,
+  recoverTopicAliasUnlinks,
+} from '@services/topics/unlink-topic-alias-page'
+import type {
+  TopicAliasUnlinkPage,
+  TopicAliasUnlinkRecovery,
+} from '@queues/rss-feed-maintenance/types'
 import * as itemCategories from './processors/item-categories.mts'
 import * as topicAliases from './processors/topic-aliases.mts'
 import * as hardDelete from './processors/hard-delete.mts'
@@ -36,6 +44,14 @@ export function processRssFeedMaintenanceJob(job: Job) {
     case 'processReconcileTopicAliasCategoryMappings': {
       if (!job.data) throw new Error('Topic alias job .data is required')
       return topicAliases[job.name](job.data as never)
+    }
+    case 'processUnlinkTopicAliasPage': {
+      if (!job.data) throw new Error('Topic alias job .data is required')
+      return applyTopicAliasUnlinkPage(job.data as TopicAliasUnlinkPage)
+    }
+    case 'processRecoverTopicAliasUnlinks': {
+      if (!job.data) throw new Error('Topic alias job .data is required')
+      return recoverTopicAliasUnlinks((job.data as TopicAliasUnlinkRecovery).afterId)
     }
     default:
       throw new Error(`RSS feed maintenance job ${job.name} not found`)

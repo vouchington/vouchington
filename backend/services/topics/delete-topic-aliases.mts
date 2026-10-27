@@ -1,18 +1,26 @@
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
-import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
 import {
-  enqueueBulkTopicAliasesUpdate,
-  enqueueTopicAliasRemovalUpdate,
-} from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
+  beginTransaction,
+  registerPostCommitAction,
+  withTransactionOptions,
+} from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
+import { enqueueContinuePostPublicationReconciliation } from '@queues/post-publication/enqueues'
+import { enqueueTopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
 import { invalidate } from '@services/entity-cache/invalidate'
+import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { createTopicRevision } from '@services/topic-revisions'
 import { normalizeHashtag } from '@ts-shared/utils'
 import assert from 'http-assert'
 import type { TopicAlias, TopicAliasOptions } from './alias-types.mts'
-import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
+import { selectTopicAliasUnlinkNextPage } from './unlink-topic-alias-page.mts'
+
+type LockedAlias = TopicAlias & {
+  unlink_topic_id: string | null
+  unlink_requested_at: Date | null
+  active_topic_slug: string | null
+}
 
 export async function unlinkTopicAlias(
   aliasId: string,
@@ -20,26 +28,34 @@ export async function unlinkTopicAlias(
 ): Promise<TopicAlias | null> {
   const run = async (query: TransactionQuery) => {
     await lockTopicAliasPublicationScopes(query, [aliasId])
-    const { rows: ownerRows } = await query<{ topic_id: string | null }>(
-      `/* unlinkTopicAlias readOwner */ SELECT topic_id FROM topic_aliases WHERE id = $1`,
+    const { rows: ownerRows } = await query<{
+      topic_id: string | null
+      unlink_topic_id: string | null
+    }>(
+      `/* unlinkTopicAlias readOwner */
+      SELECT topic_id, unlink_topic_id FROM topic_aliases WHERE id = $1`,
       [aliasId],
     )
-    const ownerTopicId = ownerRows[0]?.topic_id
-    if (ownerTopicId) {
+    const owner = ownerRows[0]
+    if (!owner) return null
+    const topicToLock = owner.topic_id ?? owner.unlink_topic_id
+    if (topicToLock) {
       await query(
         `/* unlinkTopicAlias lockTopic */
         SELECT id FROM topics
         WHERE id = $1 AND deleted_at IS NULL AND merged_into_topic_id IS NULL
         FOR UPDATE`,
-        [ownerTopicId],
+        [topicToLock],
       )
     }
-    const { rows: existingRows } = await query<TopicAlias & { active_topic_slug: string | null }>(
+    const { rows: existingRows } = await query<LockedAlias>(
       `/* unlinkTopicAlias lock */
       SELECT
         topic_aliases.id,
         topic_aliases.topic_id,
         topic_aliases.alias,
+        topic_aliases.unlink_topic_id,
+        topic_aliases.unlink_requested_at,
         active_topic.slug AS active_topic_slug
       -- no-mistakes-disable-next-line postgres-required-predicates: merge moves alias ownership to destination; deleted_at remains checked
       FROM topic_aliases
@@ -52,84 +68,101 @@ export async function unlinkTopicAlias(
     )
     const existing = existingRows[0]
     if (!existing) return null
-    assert(existing.topic_id === ownerTopicId, 409, 'Topic alias owner changed; retry the request')
+    const sameOwner =
+      existing.topic_id === owner.topic_id && existing.unlink_topic_id === owner.unlink_topic_id
+    const acceptedConcurrently =
+      owner.topic_id !== null &&
+      existing.topic_id === null &&
+      existing.unlink_topic_id === owner.topic_id &&
+      existing.unlink_requested_at !== null
+    assert(sameOwner || acceptedConcurrently, 409, 'Topic alias owner changed; retry the request')
+    if (existing.unlink_requested_at) {
+      assert(
+        !options.expectedTopicId || existing.unlink_topic_id === options.expectedTopicId,
+        409,
+        'Topic alias is not linked to this topic',
+      )
+      await enqueueUnlinkPage(query, existing)
+      return {
+        alias: { id: existing.id, alias: existing.alias, topic_id: null },
+        previousTopicId: existing.unlink_topic_id,
+      }
+    }
+    assert(existing.alias !== existing.active_topic_slug, 409, 'Cannot unlink an active topic slug')
     assert(
       !options.expectedTopicId || existing.topic_id === options.expectedTopicId,
       409,
       'Topic alias is not linked to this topic',
     )
-    assert(existing.alias !== existing.active_topic_slug, 409, 'Cannot unlink an active topic slug')
-    const preservesAlias = Boolean(normalizeHashtag(existing.alias))
-    if (!preservesAlias && existing.topic_id) {
-      await recordTopicAliasPublicationChanges(
-        query,
-        [
-          {
-            aliasId: existing.id,
-            alias: existing.alias,
-            previousTopicId: existing.topic_id,
-            nextTopicId: null,
-          },
-        ],
-        { retainDestroyedPostImpacts: true },
-      )
-    }
-    if (preservesAlias) {
-      await query(
-        `/* unlinkTopicAlias preserveHashtag */ UPDATE topic_aliases SET topic_id = NULL WHERE id = $1`,
-        [aliasId],
-      )
-    } else {
-      await query(
-        `/* unlinkTopicAlias deleteOrdinaryAlias */ DELETE FROM topic_aliases WHERE id = $1`,
-        [aliasId],
-      )
-    }
-    if (existing.topic_id) {
-      if (preservesAlias) {
-        await recordTopicAliasPublicationChanges(query, [
-          {
-            aliasId: existing.id,
-            alias: existing.alias,
-            previousTopicId: existing.topic_id,
-            nextTopicId: null,
-          },
-        ])
-      }
-      if (options.revisedById) {
-        await createTopicRevision(
-          existing.topic_id,
-          'update',
-          {
-            topic_alias_unlink: {
-              before: { id: existing.id, alias: existing.alias },
-              after: null,
-            },
-          },
-          options.revisedById,
-          { query },
-        )
+    if (!existing.topic_id) {
+      return {
+        alias: { id: existing.id, alias: existing.alias, topic_id: null },
+        previousTopicId: null,
       }
     }
-    return { alias: { ...existing, topic_id: null }, previousTopicId: existing.topic_id }
+    const detachedTopicId = existing.topic_id
+    await query(
+      `/* unlinkTopicAlias mark */
+      UPDATE topic_aliases
+      SET topic_id = NULL,
+          unlink_requested_at = COALESCE(unlink_requested_at, CURRENT_TIMESTAMP),
+          unlink_topic_id = COALESCE(unlink_topic_id, $2::uuid)
+      WHERE id = $1::uuid
+        AND topic_id = $2::uuid
+        AND unlink_requested_at IS NULL`,
+      [aliasId, detachedTopicId],
+    )
+    if (options.revisedById) {
+      await createTopicRevision(
+        detachedTopicId,
+        'update',
+        {
+          topic_alias_unlink: {
+            before: { id: existing.id, alias: existing.alias },
+            after: null,
+          },
+        },
+        options.revisedById,
+        { query },
+      )
+    }
+    await recordTopicAliasPublicationChanges(query, [
+      {
+        aliasId: existing.id,
+        alias: existing.alias,
+        previousTopicId: detachedTopicId,
+        nextTopicId: null,
+      },
+    ])
+    registerPostCommitAction(query, () =>
+      awaitReportedEnqueueAdmission(() => enqueueContinuePostPublicationReconciliation()),
+    )
+    await enqueueUnlinkPage(query, {
+      ...existing,
+      topic_id: null,
+      unlink_topic_id: detachedTopicId,
+    })
+    return {
+      alias: { id: existing.id, alias: existing.alias, topic_id: null },
+      previousTopicId: detachedTopicId,
+    }
   }
   const result = await runInTransaction(options, run)
-
-  if (result && !options.skipSideEffects && result.previousTopicId) {
-    const previousTopicId = result.previousTopicId
-    await Promise.all([
-      invalidate.topicsWithMetrics(previousTopicId, result.alias.alias),
-      invalidatePostsForTopicAliases([result.alias.id]),
-    ])
-    if (normalizeHashtag(result.alias.alias)) {
-      await awaitReportedEnqueueAdmission(() =>
-        enqueueTopicAliasRemovalUpdate(previousTopicId, result.alias.id),
-      )
-    } else {
-      await awaitReportedEnqueueAdmission(() => enqueueBulkTopicAliasesUpdate([previousTopicId]))
-    }
+  if (result?.previousTopicId && !options.skipSideEffects) {
+    await invalidate.topicsWithMetrics(result.previousTopicId, result.alias.alias)
   }
   return result?.alias ?? null
+}
+
+async function enqueueUnlinkPage(query: TransactionQuery, alias: TopicAlias): Promise<void> {
+  const page = await selectTopicAliasUnlinkNextPage(
+    query,
+    alias.id,
+    Boolean(normalizeHashtag(alias.alias)),
+  )
+  registerPostCommitAction(query, () =>
+    awaitReportedEnqueueAdmission(() => enqueueTopicAliasUnlinkPage(page)),
+  )
 }
 
 async function runInTransaction<Result>(

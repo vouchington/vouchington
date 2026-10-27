@@ -45,6 +45,15 @@ result and optimistically present read state. Background continuation usually co
 mark-all intent, but a lost or terminally failed job leaves unread rows; another mark-all request
 resumes them. Their current clients do not automatically retry that case.
 
+## Topic alias unlink
+
+`DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId` accepts the unlink and responds with
+`202` and `{ topic_alias_id, topic_id, status: "unlinking" }`. The alias is already absent from
+the topic's alias list. Relation removal and publication refresh finish afterward; a later read
+shows the finished state. The web admin client ignores the response body. This staff route is not
+an MCP tool. Native clients have no topic-alias management surface in the parity matrix, so this
+response change does not claim native UI evidence.
+
 ## Hostname identity in presentation
 
 On crawler and integrity screens, hostname links and labels use the hostname string. Their reads

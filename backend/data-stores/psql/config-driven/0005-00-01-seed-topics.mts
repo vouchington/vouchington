@@ -65,7 +65,8 @@ FROM topics t
 WHERE t.slug = '${safeSlug}'
 ON CONFLICT (alias) DO UPDATE
 SET topic_id = EXCLUDED.topic_id
-WHERE topic_aliases.topic_id IS NULL AND EXCLUDED.topic_id IS NOT NULL;`)
+WHERE topic_aliases.unlink_requested_at IS NULL
+  AND topic_aliases.topic_id IS NULL AND EXCLUDED.topic_id IS NOT NULL;`)
     }
   }
 

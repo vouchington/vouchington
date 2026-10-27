@@ -57,7 +57,9 @@ describe('0080-00-01-publisher-type-topics', () => {
     const sql = generatePublisherTypeTopicsSQL()
     const aliasUpserts = sql.match(/INSERT INTO topic_aliases/g) ?? []
     const protectedAliasUpserts =
-      sql.match(/WHERE topic_aliases\.topic_id IS NULL AND EXCLUDED\.topic_id IS NOT NULL;/g) ?? []
+      sql.match(
+        /WHERE topic_aliases\.unlink_requested_at IS NULL\n {2}AND topic_aliases\.topic_id IS NULL AND EXCLUDED\.topic_id IS NOT NULL;/g,
+      ) ?? []
 
     expect(aliasUpserts).not.toHaveLength(0)
     expect(protectedAliasUpserts).toHaveLength(aliasUpserts.length)

@@ -84,6 +84,7 @@ async function insertMissingCategoriesChunk(
         ON identity.category_text = LOWER(TRIM(input.category_text))
       LEFT JOIN topic_aliases ta
         ON ta.alias = input.hashtag_alias
+        AND ta.unlink_requested_at IS NULL
       ORDER BY input.rss_feed_item_id, identity.id
       ON CONFLICT (rss_feed_item_id, category_identity_id) DO NOTHING
       RETURNING rss_feed_item_id, NULL::uuid AS previous_topic_id, topic_id,
