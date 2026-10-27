@@ -25,6 +25,7 @@ export interface SitemapPostWithId extends SitemapPost {
 }
 
 export interface SitemapFamilyEntry {
+  id: string
   path: string
   updated_at: Date
 }

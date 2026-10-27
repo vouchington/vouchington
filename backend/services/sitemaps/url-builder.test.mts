@@ -188,6 +188,7 @@ describe('URL Builder', () => {
     it('should build family URL entries with lastmod', () => {
       expect(
         buildFamilySitemapUrl({
+          id: '11111111-1111-7111-8111-111111111111',
           path: '/@testuser/gear',
           updated_at: new Date('2026-02-03T04:05:06.000Z'),
         }),

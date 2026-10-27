@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
   type SitemapArchiveBackfillData,
@@ -8,6 +9,7 @@ import {
   SITEMAPS_POST_DAY_JOB,
   SITEMAPS_POST_TYPE_INDEX_JOB,
   SITEMAPS_ROOT_INDEX_JOB,
+  SITEMAPS_RETIRED_CLEANUP_JOB,
   SITEMAPS_WEEKLY_BACKFILL_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
 import type { BackgroundJobDefinition } from '@queues/background/types'
@@ -31,6 +33,7 @@ const enqueueBulkUpdatePostDaySitemapJobs = createBackgroundBulkEnqueue(
 const enqueueUpdatePostTypeIndexJob = createBackgroundEnqueue(SITEMAPS_POST_TYPE_INDEX_JOB)
 const enqueueUpdatePostsIndexJob = createBackgroundEnqueue(SITEMAPS_POSTS_INDEX_JOB)
 const enqueueUpdateFamilySitemapJob = createBackgroundEnqueue(SITEMAPS_FAMILY_JOB)
+const enqueueUpdatePostDaySitemapJob = createBackgroundEnqueue(SITEMAPS_POST_DAY_JOB)
 const enqueueUpdateRootIndexJob = createBackgroundEnqueue(SITEMAPS_ROOT_INDEX_JOB)
 
 function postDayJobOptions(entry: PostDayJobData): Partial<JobOptions> {
@@ -117,6 +120,32 @@ export const enqueueUpdateFamilySitemap = (
   )
 }
 
+export const enqueuePostDaySitemapContinuation = (
+  entry: PostDayJobData & { generationId: string },
+  continuationId: string,
+): EnqueueReturnType =>
+  enqueueUpdatePostDaySitemapJob(entry, {
+    ordering: SITEMAPS_ORDERING[getSitemapsOrderingKeyForDay(entry.day)],
+    jobId: `sitemap-post-day-${entry.postType}-${entry.day}-${continuationId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  })
+
+export const enqueueFamilySitemapContinuation = (
+  family: SitemapFamilyJobData['family'],
+  generationId: string,
+  continuationId: string,
+): EnqueueReturnType =>
+  enqueueUpdateFamilySitemapJob(
+    { family, generationId },
+    {
+      ordering: SITEMAPS_ORDERING.indexes,
+      jobId: `sitemap-family-${family}-${continuationId}`,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )
+
 export const enqueueUpdateRootIndex = (priority?: number): EnqueueReturnType => {
   return enqueueUpdateRootIndexJob({}, indexOptions('sitemaps:root-index', priority))
 }
@@ -141,6 +170,22 @@ export const enqueueMonthlyBackfillArchiveContinuation = (afterDay: string): Enq
     { afterDay },
     {
       jobId: `${SITEMAPS_MONTHLY_BACKFILL_JOB.name}__${afterDay}`,
+      ordering: SITEMAPS_ORDERING.dispatcher,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )
+
+const enqueueRetiredSitemapCleanupJob = createBackgroundEnqueue(SITEMAPS_RETIRED_CLEANUP_JOB)
+
+// The id names the durable cleanup state the next job resumes from. Every pass advances that state,
+// so each step gets a new id while a retried parent re-derives the same one and collapses.
+/** Resumes the durable cleanup cursor in a new bounded job, without waiting for worker completion. */
+export const enqueueRetiredSitemapCleanupContinuation = (resumeToken: string): EnqueueReturnType =>
+  enqueueRetiredSitemapCleanupJob(
+    {},
+    {
+      jobId: `${SITEMAPS_RETIRED_CLEANUP_JOB.name}__${createHash('sha256').update(resumeToken).digest('hex').slice(0, 32)}`,
       ordering: SITEMAPS_ORDERING.dispatcher,
       removeOnComplete: true,
       removeOnFail: true,

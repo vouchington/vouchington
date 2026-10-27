@@ -4,6 +4,7 @@ import { createSitemapsHandlers } from './workers.mts'
 
 function makeProcessors() {
   return {
+    processRetiredSitemapCleanup: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
     processUpdatePostDaySitemap: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
     processUpdatePostTypeIndex: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
     processUpdatePostsIndex: vi.fn<VitestLooseMock>().mockResolvedValue(undefined),
@@ -37,6 +38,7 @@ describe('sitemaps handler routing', () => {
     ).toEqual([
       'sitemaps.processMonthlyBackfillArchiveDispatcher',
       'sitemaps.processNightlyBackfillWeekDispatcher',
+      'sitemaps.processRetiredSitemapCleanup',
       'sitemaps.processUpdateFamilySitemap',
       'sitemaps.processUpdatePostDaySitemap',
       'sitemaps.processUpdatePostTypeIndex',
@@ -60,6 +62,30 @@ describe('sitemaps handler routing', () => {
     })
   })
 
+  it('hands a continuation its generation id and rejects a malformed one', async () => {
+    const processors = makeProcessors()
+
+    await run(processors, 'processUpdatePostDaySitemap', {
+      postType: 'discussion',
+      day: '2026-06-10',
+      generationId: 'gen-1',
+    })
+    await run(processors, 'processUpdateFamilySitemap', { family: 'topics', generationId: 'gen-1' })
+
+    expect(processors.processUpdatePostDaySitemap).toHaveBeenCalledWith({
+      postType: 'discussion',
+      day: '2026-06-10',
+      generationId: 'gen-1',
+    })
+    expect(processors.processUpdateFamilySitemap).toHaveBeenCalledWith({
+      family: 'topics',
+      generationId: 'gen-1',
+    })
+    await expect(async () =>
+      run(processors, 'processUpdateFamilySitemap', { family: 'topics', generationId: '' }),
+    ).rejects.toThrow('generationId is required')
+  })
+
   it('routes index jobs through validated data', async () => {
     const processors = makeProcessors()
 
@@ -68,7 +94,7 @@ describe('sitemaps handler routing', () => {
     await run(processors, 'processUpdatePostsIndex')
     await run(processors, 'processUpdateRootIndex')
 
-    expect(processors.processUpdateFamilySitemap).toHaveBeenCalledWith('landing-pages')
+    expect(processors.processUpdateFamilySitemap).toHaveBeenCalledWith({ family: 'landing-pages' })
     expect(processors.processUpdatePostTypeIndex).toHaveBeenCalledWith('review')
     expect(processors.processUpdatePostsIndex).toHaveBeenCalledWith()
     expect(processors.processUpdateRootIndex).toHaveBeenCalledWith()
@@ -77,6 +103,8 @@ describe('sitemaps handler routing', () => {
   it('routes dispatcher jobs and hands the archive dispatcher its cursor', async () => {
     const processors = makeProcessors()
 
+    await run(processors, 'processRetiredSitemapCleanup')
+    expect(processors.processRetiredSitemapCleanup).toHaveBeenCalledWith()
     await run(processors, 'processNightlyBackfillWeekDispatcher')
     await run(processors, 'processWeeklyBackfillMonthDispatcher')
     await run(processors, 'processMonthlyBackfillArchiveDispatcher', { afterDay: '2026-01-31' })
