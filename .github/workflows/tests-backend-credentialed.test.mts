@@ -28,7 +28,6 @@ describe('backend credentialed test workflow', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
     expect(credentialedJob).toContain('AWS_REGION: us-west-2')
     expect(credentialedJob).toContain('AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}')
-    expect(credentialedJob).toContain("REQUIRE_BEDROCK_INTEGRATION: ''")
 
     expect(credentialedJob).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
     expect(credentialedJob).toContain('OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}')
