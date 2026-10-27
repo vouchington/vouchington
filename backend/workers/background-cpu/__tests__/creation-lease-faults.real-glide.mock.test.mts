@@ -216,5 +216,5 @@ describe('creation lease consumer fault policy through real background CPU worke
       await fixture.close()
       vi.unstubAllEnvs()
     }
-  }, 30_000)
+  })
 })

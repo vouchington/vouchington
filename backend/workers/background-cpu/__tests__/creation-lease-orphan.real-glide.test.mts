@@ -110,5 +110,5 @@ describe('crashed embedding creation lease holder', () => {
     } finally {
       await fixture.close()
     }
-  }, 30_000)
+  })
 })

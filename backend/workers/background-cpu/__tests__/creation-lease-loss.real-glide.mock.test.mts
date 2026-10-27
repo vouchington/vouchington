@@ -62,6 +62,7 @@ describe('embedding creation lease loss through real background CPU workers', ()
     vi.stubEnv('ENVIRONMENT', 'staging')
   })
   afterEach(() => vi.unstubAllEnvs())
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for embedding creation lease loss
   it('defers pre-submit loss, then records a Bedrock receipt after in-flight loss', async () => {
     const fixture = await acquireEmbeddingQuotaFixture()
     const connection = {
