@@ -15,9 +15,7 @@ describe('getImageFromS3', () => {
 
   it('reads images from the selected bucket', async () => {
     vi.resetModules()
-    for (const key of ENV_KEYS) {
-      delete process.env[key]
-    }
+    process.env.S3_BUCKET_IMAGES = 'test-images'
     process.env.NODE_ENV = 'development'
     process.env.VITEST = 'true'
     const sendSpy = vi
