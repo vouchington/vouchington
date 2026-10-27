@@ -7,6 +7,7 @@ import { NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './notific
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
+import { OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from '../../../operational-cursor-uuid-allowlist.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
@@ -33,11 +34,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'follower_distributions.cursor_recipient_id',
     'Deletion-stable recipient UUIDv7 keyset position, not a relationship.',
   ],
-  ['images.deletion_post_cursor', 'Post scan position survives deletion; never joined.'],
-  [
-    'retained_identity_cleanup_cursors.cursor_identity_id',
-    'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
-  ],
+  ...OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS,
   ...MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'payment_operational_cleanup_cursors.cursor_id',
