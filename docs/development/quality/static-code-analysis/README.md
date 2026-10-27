@@ -67,6 +67,9 @@ Knip entries represent code invoked by a runner, framework, or browser outside o
 
 Production imports of test infrastructure make fixture implementation part of the runtime and can make test-only exports appear production-used. Dependency boundaries preserve that separation while allowing the canonical configuration needed by test runners.
 
+Comment-based export suppression hides whether a production caller exists. Keep runtime loading in
+the analysis entrypoint model so test-only helpers and unused exports remain visible during review.
+
 ## Runtime work tunables
 
 Numeric constants named `*BATCH_SIZE`, `*PAGE_SIZE`, `*CHUNK_SIZE`, `MAX_BATCHES`, or `*_PER_RUN` in backend runtime code must come from an owning DynamicConfig value, and direct batch or page-size `process.env` reads are rejected, so operators can tune bounded work without a deploy. External protocol ceilings need an exact allowlist entry with a reason; stale entries fail.
