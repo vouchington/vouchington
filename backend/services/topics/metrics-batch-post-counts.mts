@@ -1,51 +1,28 @@
 export function topicPostCountCtes(): string {
   return `
     attached_posts AS (
-      SELECT 'discussion'::post_types AS wanted_type, requested.id AS topic_id, relation.post_id
+      SELECT 'discussion'::post_types AS wanted_type, requested.id AS topic_id, relation.subject_id AS post_id
       FROM requested_topic_ids requested
-      JOIN LATERAL (
-        SELECT relation.subject_id AS post_id
-        FROM relation__post__category__topic relation
-        WHERE relation.object_id = requested.id
-          AND relation.deleted_at IS NULL
-          AND relation.votes_score_net > 0
-        GROUP BY relation.subject_id
-      ) relation ON TRUE
+      JOIN relation__post__category__topic relation
+        ON relation.object_id = requested.id
+       AND relation.deleted_at IS NULL
+       AND relation.votes_score_net > 0
       UNION ALL
-      SELECT 'discussion'::post_types, requested.id, alias_relation.post_id
+      SELECT 'discussion'::post_types, requested.id, alias_relation.subject_id
       FROM requested_topic_ids requested
-      JOIN LATERAL (
-        SELECT alias_row.id
-        FROM topic_aliases alias_row
-        WHERE alias_row.topic_id = requested.id
-        GROUP BY alias_row.id
-      ) alias ON TRUE
-      JOIN LATERAL (
-        SELECT alias_relation.subject_id AS post_id
-        FROM relation__post__category__topic_alias alias_relation
-        WHERE alias_relation.object_id = alias.id
-          AND alias_relation.deleted_at IS NULL
-          AND alias_relation.votes_score_net > 0
-        GROUP BY alias_relation.subject_id
-      ) alias_relation ON TRUE
+      JOIN topic_aliases alias ON alias.topic_id = requested.id
+      JOIN relation__post__category__topic_alias alias_relation
+        ON alias_relation.object_id = alias.id
+       AND alias_relation.deleted_at IS NULL
+       AND alias_relation.votes_score_net > 0
       UNION ALL
       SELECT 'review'::post_types, requested.id, rating.post_id
       FROM requested_topic_ids requested
-      JOIN LATERAL (
-        SELECT rating.post_id
-        FROM post_review_topic_ratings rating
-        WHERE rating.topic_id = requested.id
-        GROUP BY rating.post_id
-      ) rating ON TRUE
+      JOIN post_review_topic_ratings rating ON rating.topic_id = requested.id
       UNION ALL
       SELECT 'data_point'::post_types, requested.id, mapping.post_id
       FROM requested_topic_ids requested
-      JOIN LATERAL (
-        SELECT mapping.post_id
-        FROM post_data_point_topics mapping
-        WHERE mapping.topic_id = requested.id
-        GROUP BY mapping.post_id
-      ) mapping ON TRUE
+      JOIN post_data_point_topics mapping ON mapping.topic_id = requested.id
     ),
     -- Same predicate as view_public_post_eligibility. Pin each post by primary key
     -- before those filters so a topic page does not scan posts.
