@@ -8,6 +8,8 @@ import {
   readTestCommunityActivityDigestCursor,
   withTestCommunityActivityDigestCursor,
 } from '@voucha/test-helpers/community-activity-digest-dispatch'
+import { NOTIFICATIONS_DIGEST_DISPATCH_JOB } from '@queues/background/enqueues/notifications-jobs'
+import { redirectBackgroundQueue } from '@voucha/test-helpers/background-queue-redirect'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
@@ -25,6 +27,13 @@ import { processCommunityActivityDigestDispatch } from './community-activity-dig
 import { processCommunityActivityDigestScheduleTick } from './community-activity-digest-schedule.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
+vi.mock<typeof import('@vouchington/worker-runtime/glide-mq')>(
+  import('@vouchington/worker-runtime/glide-mq'),
+  async original =>
+    (
+      await import('@voucha/test-helpers/background-queue-redirect')
+    ).withRedirectableBackgroundQueue(await original()),
+)
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const connection = getTestCommunityActivityDigestQueueConnection()
@@ -54,6 +63,7 @@ describe('community digest gap recovery through the native queue', () => {
         connection,
         workerOptions: { blockTimeout: 100 },
         processor: async (job): Promise<void> => {
+          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return
           const key = (job.data as CommunityActivityDigestDispatchData).windowStart
           const count = (runs.get(key) ?? 0) + 1
           runs.set(key, count)
@@ -82,7 +92,6 @@ describe('community digest gap recovery through the native queue', () => {
                     ),
                   })
                 },
-                getJobCounts: () => harness.queue.getJobCounts(),
               },
             )
             if (count === 2) {
@@ -99,23 +108,20 @@ describe('community digest gap recovery through the native queue', () => {
         },
       })
       owner.beforeRelease(() => harness.close())
-      const queue = Object.assign(harness.queue, { priorityKind: 'ranked' as const })
-      const enqueue = (windows: CommunityActivityDigestDispatchData[]) =>
-        enqueueCommunityActivityDigestWindows(windows, { queue, retry: { attempts: 1 } })
+      redirectBackgroundQueue(harness.queue)
       const tick = (target: Date) =>
         processCommunityActivityDigestScheduleTick(
           { targetWindowStart: target.toISOString() },
           {
             prepareCommunityActivityDigestWindows: date =>
               prepareCommunityActivityDigestWindows(date, { query }),
-            enqueueCommunityActivityDigestWindows: enqueue,
           },
         )
       try {
         await tick(start)
         const firstJobId = communityActivityDigestWindowJobId(windowData(start, end))
         expect(await harness.settled({ id: firstJobId })).toBe('failed')
-        const [later] = await enqueue([windowData(end, laterEnd)])
+        const [later] = await enqueueCommunityActivityDigestWindows([windowData(end, laterEnd)])
         if (!later) throw new Error('Expected later digest window job')
         expect(await harness.settled(later)).toBe('completed')
         expect(await readTestCommunityActivityDigestCursor(query)).toEqual(start)

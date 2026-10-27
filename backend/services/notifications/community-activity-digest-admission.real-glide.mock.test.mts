@@ -9,6 +9,8 @@ import {
   readTestCommunityActivityDigestDelivery,
   withTestCommunityActivityDigestCursor,
 } from '@voucha/test-helpers/community-activity-digest-dispatch'
+import { NOTIFICATIONS_DIGEST_DISPATCH_JOB } from '../../queues/background/enqueues/notifications-jobs.mts'
+import { redirectBackgroundQueue } from '@voucha/test-helpers/background-queue-redirect'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users-direct'
@@ -32,6 +34,13 @@ import { processCommunityActivityDigestScheduleTick } from '../../workers/notifi
 
 // This project replaces its default transport shim with the real external package.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
+vi.mock<typeof import('@vouchington/worker-runtime/glide-mq')>(
+  import('@vouchington/worker-runtime/glide-mq'),
+  async original =>
+    (
+      await import('@voucha/test-helpers/background-queue-redirect')
+    ).withRedirectableBackgroundQueue(await original()),
+)
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -89,6 +98,7 @@ describe('community activity digest real queue admission', () => {
         connection: getTestCommunityActivityDigestQueueConnection(),
         workerOptions: { blockTimeout: 100 },
         processor: async job => {
+          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return
           runs += 1
           try {
             await processCommunityActivityDigestDispatch(
@@ -115,7 +125,6 @@ describe('community activity digest real queue admission', () => {
                     ),
                   })
                 },
-                getJobCounts: () => harness.queue.getJobCounts(),
               },
             )
             if (runs === 2) replaySettled.resolve()
@@ -126,7 +135,7 @@ describe('community activity digest real queue admission', () => {
         },
       })
       owner.beforeRelease(() => harness.close())
-      const queue = Object.assign(harness.queue, { priorityKind: 'ranked' as const })
+      redirectBackgroundQueue(harness.queue)
       try {
         const tick = () =>
           processCommunityActivityDigestScheduleTick(
@@ -134,11 +143,6 @@ describe('community activity digest real queue admission', () => {
             {
               prepareCommunityActivityDigestWindows: target =>
                 prepareCommunityActivityDigestWindows(target, { query }),
-              enqueueCommunityActivityDigestWindows: windows =>
-                enqueueCommunityActivityDigestWindows(windows, {
-                  queue,
-                  retry: { attempts: 1 },
-                }),
             },
           )
         await tick()
@@ -165,12 +169,11 @@ describe('community activity digest real queue admission', () => {
   })
 
   it('admits one native job for duplicate window enqueue attempts', async () => {
-    const queue = Object.assign(
+    const queue = redirectBackgroundQueue(
       new Queue(
         `community_digest_dedup_${randomUUID()}`,
         getTestCommunityActivityDigestQueueConnection(),
       ),
-      { priorityKind: 'ranked' as const },
     )
     try {
       const window = {
@@ -178,8 +181,8 @@ describe('community activity digest real queue admission', () => {
         windowEnd: '2400-01-13T00:00:00.000Z',
       }
       const [first, duplicate] = await Promise.all([
-        enqueueCommunityActivityDigestWindows([window], { queue }),
-        enqueueCommunityActivityDigestWindows([window], { queue }),
+        enqueueCommunityActivityDigestWindows([window]),
+        enqueueCommunityActivityDigestWindows([window]),
       ])
       expect([...first, ...duplicate].map(job => job.id)).toEqual([
         communityActivityDigestWindowJobId(window),

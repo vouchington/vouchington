@@ -1,6 +1,3 @@
-import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import type { JobOptions } from 'glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import type {
@@ -43,27 +40,12 @@ export function getCommunityActivityDigestDispatchData(
 /** Re-admit a terminal window job after a crash; a live job already owns its window. */
 export function enqueueCommunityActivityDigestWindows(
   windows: CommunityActivityDigestDispatchData[],
-  options: { queue?: typeof notifications; retry?: Pick<JobOptions, 'attempts' | 'backoff'> } = {},
 ) {
-  const queue = options.queue ?? notifications
-  const enqueueBulk =
-    options.queue || options.retry
-      ? createBulkEnqueueFunction({
-          queue,
-          queueName: BACKGROUND_QUEUE_NAME,
-          jobName: NOTIFICATIONS_DIGEST_DISPATCH_JOB.name,
-          defaults: { ...NOTIFICATIONS_DIGEST_DISPATCH_JOB.options, ...options.retry },
-          buildJob: (data: CommunityActivityDigestDispatchData) => ({
-            data,
-            opts: { jobId: communityActivityDigestWindowJobId(data) },
-          }),
-        })
-      : enqueueBulkWindowJobs
   return enqueueBulkReactivatingFinished({
-    queue,
+    queue: notifications,
     inputs: windows,
     jobIdOf: communityActivityDigestWindowJobId,
-    enqueueBulk,
+    enqueueBulk: enqueueBulkWindowJobs,
   })
 }
 

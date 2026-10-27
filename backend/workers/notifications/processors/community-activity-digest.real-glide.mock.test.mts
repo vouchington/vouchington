@@ -10,6 +10,8 @@ import {
   readTestCommunityActivityDigestDelivery,
   withTestCommunityActivityDigestCursor,
 } from '@voucha/test-helpers/community-activity-digest-dispatch'
+import { NOTIFICATIONS_DIGEST_DISPATCH_JOB } from '@queues/background/enqueues/notifications-jobs'
+import { redirectBackgroundQueue } from '@voucha/test-helpers/background-queue-redirect'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -27,6 +29,13 @@ import {
 import { processCommunityActivityDigestDispatch } from './community-activity-digest.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
+vi.mock<typeof import('@vouchington/worker-runtime/glide-mq')>(
+  import('@vouchington/worker-runtime/glide-mq'),
+  async original =>
+    (
+      await import('@voucha/test-helpers/background-queue-redirect')
+    ).withRedirectableBackgroundQueue(await original()),
+)
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const connection = getTestCommunityActivityDigestQueueConnection()
@@ -63,6 +72,7 @@ describe('community activity digest native worker', () => {
         connection,
         workerOptions: { blockTimeout: 100 },
         processor: async (job): Promise<unknown> => {
+          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return
           activations += 1
           if (activations === 2) {
             secondEntered.resolve()
@@ -82,7 +92,6 @@ describe('community activity digest native worker', () => {
                 isCommunityActivityDigestWindowComplete(windowEnd, { query }),
               advanceCommunityActivityDigestCursor: (windowStart, windowEnd) =>
                 advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query }),
-              getJobCounts: () => harness.queue.getJobCounts(),
             },
           )
         },
@@ -92,10 +101,8 @@ describe('community activity digest native worker', () => {
         await harness.close()
       })
       try {
-        const queue = Object.assign(harness.queue, { priorityKind: 'ranked' as const })
-        const [job] = await enqueueCommunityActivityDigestWindows([windowData(start, end)], {
-          queue,
-        })
+        const queue = redirectBackgroundQueue(harness.queue)
+        const [job] = await enqueueCommunityActivityDigestWindows([windowData(start, end)])
         if (!job) throw new Error('Expected native digest job')
         await waitForRealGlideEvent(secondEntered.promise, 'digest second recipient page')
         const checkpoint = await queue.getJob(job.id)
@@ -134,27 +141,29 @@ describe('community activity digest native worker', () => {
         connection,
         workerOptions: { blockTimeout: 100 },
         processor: (job): Promise<unknown> =>
-          processCommunityActivityDigestDispatch(job as Job<CommunityActivityDigestDispatchData>, {
-            createCommunityActivityDigestBatch: input =>
-              createCommunityActivityDigestBatch({
-                ...input,
-                afterUserId: beforeTestDigestUserId(user),
-                throughUserId: user,
-                now,
-              }),
-            isCommunityActivityDigestWindowComplete: windowEnd =>
-              isCommunityActivityDigestWindowComplete(windowEnd, { query }),
-            advanceCommunityActivityDigestCursor: (windowStart, windowEnd) =>
-              advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query }),
-            getJobCounts: () => harness.queue.getJobCounts(),
-          }),
+          job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name
+            ? Promise.resolve()
+            : processCommunityActivityDigestDispatch(
+                job as Job<CommunityActivityDigestDispatchData>,
+                {
+                  createCommunityActivityDigestBatch: input =>
+                    createCommunityActivityDigestBatch({
+                      ...input,
+                      afterUserId: beforeTestDigestUserId(user),
+                      throughUserId: user,
+                      now,
+                    }),
+                  isCommunityActivityDigestWindowComplete: windowEnd =>
+                    isCommunityActivityDigestWindowComplete(windowEnd, { query }),
+                  advanceCommunityActivityDigestCursor: (windowStart, windowEnd) =>
+                    advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query }),
+                },
+              ),
       })
       owner.beforeRelease(() => harness.close())
       try {
-        const queue = Object.assign(harness.queue, { priorityKind: 'ranked' as const })
-        const [job] = await enqueueCommunityActivityDigestWindows([windowData(start, end)], {
-          queue,
-        })
+        redirectBackgroundQueue(harness.queue)
+        const [job] = await enqueueCommunityActivityDigestWindows([windowData(start, end)])
         if (!job) throw new Error('Expected native digest job')
         expect(await harness.settled(job)).toBe('completed')
         expect(await readTestCommunityActivityDigestCursor(query)).toEqual(end)
@@ -184,7 +193,7 @@ describe('community activity digest native worker', () => {
         connection,
         workerOptions: { blockTimeout: 100 },
         processor: async (job): Promise<unknown> => {
-          if (job.name === 'test.digest-backlog-marker') return
+          if (job.name !== NOTIFICATIONS_DIGEST_DISPATCH_JOB.name) return
           entered.resolve()
           await release.promise
           return processCommunityActivityDigestDispatch(
@@ -201,7 +210,6 @@ describe('community activity digest native worker', () => {
                 isCommunityActivityDigestWindowComplete(windowEnd, { query }),
               advanceCommunityActivityDigestCursor: (windowStart, windowEnd) =>
                 advanceCommunityActivityDigestCursor(windowStart, windowEnd, { query }),
-              getJobCounts: () => harness.queue.getJobCounts(),
             },
           )
         },
@@ -214,10 +222,8 @@ describe('community activity digest native worker', () => {
       owner.beforeRelease(() => events.close())
       try {
         await events.waitUntilReady()
-        const queue = Object.assign(harness.queue, { priorityKind: 'ranked' as const })
-        const [job] = await enqueueCommunityActivityDigestWindows([windowData(start, end)], {
-          queue,
-        })
+        const queue = redirectBackgroundQueue(harness.queue)
+        const [job] = await enqueueCommunityActivityDigestWindows([windowData(start, end)])
         if (!job) throw new Error('Expected native digest job')
         await waitForRealGlideEvent(entered.promise, 'digest backlog gate')
         const marker = await harness.add({ name: 'test.digest-backlog-marker', options: {} }, {})

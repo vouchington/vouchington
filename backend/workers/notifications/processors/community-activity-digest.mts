@@ -20,7 +20,6 @@ type Dependencies = {
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   advanceCommunityActivityDigestCursor: typeof advanceCommunityActivityDigestCursor
   isCommunityActivityDigestWindowComplete: typeof isCommunityActivityDigestWindowComplete
-  getJobCounts: typeof background.getJobCounts
 }
 
 /** One recipient page per activation, with the same live job retaining the ordering slot. */
@@ -35,8 +34,7 @@ export async function processCommunityActivityDigestDispatch(
     dependencies.isCommunityActivityDigestWindowComplete ?? isCommunityActivityDigestWindowComplete
   if (await isComplete(end)) return
 
-  const getCounts = dependencies.getJobCounts ?? (() => background.getJobCounts())
-  const counts = await getCounts()
+  const counts = await background.getJobCounts()
   const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
   if (depth > getPagedDispatchLimit('background_max_depth')) {
     return processRetainedSweep(job, async () => ({ hasMore: true }), {

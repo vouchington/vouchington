@@ -5,7 +5,6 @@ import {
 import { prepareCommunityActivityDigestWindows } from '@services/notifications/community-activity-digest-dispatch'
 
 type Dependencies = {
-  enqueueCommunityActivityDigestWindows: typeof enqueueCommunityActivityDigestWindows
   prepareCommunityActivityDigestWindows: typeof prepareCommunityActivityDigestWindows
 }
 
@@ -18,9 +17,7 @@ export async function processCommunityActivityDigestScheduleTick(
   const prepare =
     dependencies.prepareCommunityActivityDigestWindows ?? prepareCommunityActivityDigestWindows
   const result = await prepare(new Date(targetWindowStart))
-  const enqueue =
-    dependencies.enqueueCommunityActivityDigestWindows ?? enqueueCommunityActivityDigestWindows
-  await enqueue(
+  await enqueueCommunityActivityDigestWindows(
     result.windows.map(window => ({
       windowStart: window.windowStart.toISOString(),
       windowEnd: window.windowEnd.toISOString(),
