@@ -56,7 +56,6 @@
     "backend/services/topics/delete-topic-aliases.mts",
     "backend/services/topics/merge-aliases-page.mts",
     "backend/services/topics/claim-topic-alias.mts",
-    "backend/services/topics/unlink-topic-alias-phase.mts",
     "backend/services/rss-feed-items/category-publication-changes.mts",
     "backend/services/hostname-blocking/delete-url-relation-page.mts",
     "backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts",
@@ -231,6 +230,10 @@
     {
       "path": "backend/services/topics/create-unlinked-alias.mts",
       "reason": "inserts or reads unowned aliases only; no existing alias ownership changes or post-topic projection exists."
+    },
+    {
+      "path": "backend/services/topics/unlink-topic-alias-phase.mts",
+      "reason": "unlink-topic-alias-page.mts records the returned post and feed-item ids as a publication change inside the same transaction."
     },
     {
       "path": "backend/services/rss-feed-items/categories-chunks.mts",
