@@ -6,11 +6,14 @@ import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
+import { assertNotSuspended } from '@services/users'
 import { currentUserCanApplyReportAbusePenalty } from '@services/report-integrity/authorization'
 import {
   getReportAbusePenalties,
   getReportAbusePenaltyByIdFromPrimary,
   revokeReportAbusePenalty,
+  getReportAbusePenaltyReviewsDue,
+  reviewReportAbusePenalty,
 } from '@services/report-integrity'
 import {
   requireAuthAndRateLimit,
@@ -22,10 +25,29 @@ const penaltiesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
+const reviewsParser = createPaginationParser({
+  cursor: { type: 'precise_timestamp' },
+  limit: { min: 1, default: 25, max: 25 },
+})
 const penaltiesQuery = defineQueryContract({
   status: queryEnum(['active', 'revoked']),
   user_id: queryUuid(),
   source_flag_id: queryUuid(),
+})
+
+// GET /api/v1/report-integrity/penalties/review-due
+app.route('/api/v1/report-integrity/penalties/review-due').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyReportAbusePenalty,
+    'GET:/api/v1/report-integrity/penalties/review-due',
+  )
+  apiQuery('GET:/api/v1/report-integrity/penalties/review-due', reviewsParser)
+  const { after, limit } = parseRuntimePagination(reviewsParser, ctx.query)
+  const query = prepareQueryForValidation(ctx.query, reviewsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/report-integrity/penalties/review-due', { query })
+  ctx.json(await getReportAbusePenaltyReviewsDue({ after, limit }))
 })
 
 // GET /api/v1/report-integrity/penalties
@@ -89,6 +111,7 @@ app.route('/api/v1/report-integrity/penalties/:id').delete(async (ctx: Context) 
     currentUserCanApplyReportAbusePenalty,
     'DELETE:/api/v1/report-integrity/penalties/:id',
   )
+  assertNotSuspended(currentUser)
 
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'DELETE:/api/v1/report-integrity/penalties/:id', {
@@ -96,4 +119,20 @@ app.route('/api/v1/report-integrity/penalties/:id').delete(async (ctx: Context) 
   })
   const result = await revokeReportAbusePenalty(currentUser.id, id)
   ctx.json(result)
+})
+
+// POST /api/v1/report-integrity/penalties/:id/reviews
+app.route('/api/v1/report-integrity/penalties/:id/reviews').post(async (ctx: Context) => {
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyReportAbusePenalty,
+    'POST:/api/v1/report-integrity/penalties/:id/reviews',
+  )
+  assertNotSuspended(currentUser)
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/report-integrity/penalties/:id/reviews', {
+    path: ctx.params,
+  })
+  const penalty = await reviewReportAbusePenalty(id, currentUser.id)
+  ctx.json({ penalty })
 })

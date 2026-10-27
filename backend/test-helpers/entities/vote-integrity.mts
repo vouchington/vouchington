@@ -121,6 +121,15 @@ export async function insertTestVoteWeightPenaltyRecord(options: {
   return (rows[0] as { id: string }).id
 }
 
+export async function setTestVoteWeightPenaltyReviewDueAt(
+  id: string,
+  dueAt: Date | string,
+): Promise<void> {
+  await write(sql`/* setTestVoteWeightPenaltyReviewDueAt */
+    UPDATE vote_weight_penalties SET review_due_at = ${dueAt} WHERE id = ${id}::uuid
+  `)
+}
+
 export async function insertTestVoteIntegrityFlag(params: {
   postId?: string
   hostnameId?: string

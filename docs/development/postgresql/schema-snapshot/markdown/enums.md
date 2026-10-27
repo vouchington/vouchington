@@ -1174,6 +1174,7 @@
 - `report_escalate`
 - `report_integrity_flag_review`
 - `report_integrity_penalty_apply`
+- `report_integrity_penalty_review`
 - `report_integrity_penalty_revoke`
 - `report_judgement_rerun`
 - `report_unclaim`
@@ -1198,6 +1199,7 @@
 - `unsuspend`
 - `vote_integrity_flag_review`
 - `vote_integrity_penalty_apply`
+- `vote_integrity_penalty_review`
 - `vote_integrity_penalty_revoke`
 - `vote_manipulation`
 - `vote_weight_reset`
@@ -1242,9 +1244,11 @@
 - `report_deescalate`
 - `report_integrity_flag_review`
 - `report_integrity_penalty_apply`
+- `report_integrity_penalty_review`
 - `report_integrity_penalty_revoke`
 - `vote_integrity_flag_review`
 - `vote_integrity_penalty_apply`
+- `vote_integrity_penalty_review`
 - `vote_integrity_penalty_revoke`
 - `vote_weight_set`
 - `vote_weight_reset`

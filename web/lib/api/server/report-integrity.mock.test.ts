@@ -22,7 +22,12 @@ vi.mock<typeof import('react')>(import('react'), async importOriginal => {
   }
 })
 
-import { getReportIntegrityFlags, getReportIntegrityPenalties } from './report-integrity'
+import { getVoteIntegrityPenaltyReviewsDue } from './vote-integrity'
+import {
+  getReportIntegrityFlags,
+  getReportIntegrityPenalties,
+  getReportIntegrityPenaltyReviewsDue,
+} from './report-integrity'
 
 describe('report-integrity server api helpers', () => {
   beforeEach(() => {
@@ -71,5 +76,24 @@ describe('report-integrity server api helpers', () => {
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/report-integrity/penalties', options)
     expect(result).toBe(response)
+  })
+  it.each([
+    {
+      read: getReportIntegrityPenaltyReviewsDue,
+      path: '/api/v1/report-integrity/penalties/review-due',
+    },
+    {
+      read: getVoteIntegrityPenaltyReviewsDue,
+      path: '/api/v1/vote-integrity/penalties/review-due',
+    },
+  ])('uses the private due endpoint $path with its page options', async ({ read, path }) => {
+    const options = { searchParams: { limit: 1, after: 'opaque-position' } }
+    const page = {
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    }
+    mockGet.mockResolvedValueOnce(page)
+    expect(await read(options)).toBe(page)
+    expect(mockGet).toHaveBeenCalledWith(path, options)
   })
 })

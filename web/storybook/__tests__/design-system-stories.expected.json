@@ -1,5 +1,6 @@
 {
   "accordion.stories.tsx": ["Single", "Multiple"],
+  "admin-annual-penalty-reviews.stories.tsx": ["DueVotePenalties"],
   "admin-curated-asides.stories.tsx": ["TableWithItems", "EmptyTable"],
   "admin-integrity-flags.stories.tsx": ["Report", "Vote"],
   "admin-divided-table-shell.stories.tsx": ["WithRows", "Empty"],

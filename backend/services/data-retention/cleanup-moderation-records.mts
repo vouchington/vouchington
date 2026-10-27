@@ -56,6 +56,12 @@ async function cleanupModerationRecordPage(
   options: ModerationRecordCleanupOptions,
 ): Promise<{ deleted: number; hasMore: boolean }> {
   await using transaction = await beginTransaction()
+  if (kind === 'actions') {
+    // Hold placement/release writes this table, so its state cannot change during the delete page.
+    await transaction(sql`/* cleanupModerationRecordPage.lockActionHolds */
+      LOCK TABLE user_legal_preservation_holds IN SHARE MODE
+    `)
+  }
   await transaction(sql`/* cleanupModerationRecordPage.ensureCursor */
     INSERT INTO moderation_record_cleanup_cursors (kind)
     VALUES (${kind}::moderation_record_cleanup_kinds) ON CONFLICT DO NOTHING

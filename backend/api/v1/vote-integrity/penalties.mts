@@ -6,12 +6,15 @@ import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
+import { assertNotSuspended } from '@services/users'
 import { currentUserCanApplyVoteRingPenalty } from '@services/vote-integrity/authorization'
 import {
   getVoteWeightPenalties,
   getVoteWeightPenaltiesByFlagIdFromPrimary,
   getVoteWeightPenaltyByIdFromPrimary,
   revokeVoteWeightPenalty,
+  getVoteWeightPenaltyReviewsDue,
+  reviewVoteWeightPenalty,
   type GetVoteWeightPenaltiesOptions,
 } from '@services/vote-integrity'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -20,11 +23,30 @@ const penaltiesParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { default: 25, max: 100 },
 })
+const reviewsParser = createPaginationParser({
+  cursor: { type: 'precise_timestamp' },
+  limit: { min: 1, default: 25, max: 25 },
+})
 const penaltiesQuery = defineQueryContract({
   status: queryEnum(['active', 'revoked']),
   source: queryEnum(['flag']),
   user_id: queryUuid(),
   source_flag_id: queryUuid(),
+})
+
+// GET /api/v1/vote-integrity/penalties/review-due
+app.route('/api/v1/vote-integrity/penalties/review-due').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyVoteRingPenalty,
+    'GET:/api/v1/vote-integrity/penalties/review-due',
+  )
+  apiQuery('GET:/api/v1/vote-integrity/penalties/review-due', reviewsParser)
+  const { after, limit } = parseRuntimePagination(reviewsParser, ctx.query)
+  const query = prepareQueryForValidation(ctx.query, reviewsParser.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = limit
+  validateRequestContract(ctx, 'GET:/api/v1/vote-integrity/penalties/review-due', { query })
+  ctx.json(await getVoteWeightPenaltyReviewsDue({ after, limit }))
 })
 
 // GET /api/v1/vote-integrity/penalties
@@ -103,5 +125,21 @@ app.route('/api/v1/vote-integrity/penalties/:id').delete(async (ctx: Context) =>
   validateRequestContract(ctx, 'DELETE:/api/v1/vote-integrity/penalties/:id', { path: ctx.params })
 
   const penalty = await revokeVoteWeightPenalty(ctx.params.id!, currentUser.id)
+  ctx.json({ penalty })
+})
+
+// POST /api/v1/vote-integrity/penalties/:id/reviews
+app.route('/api/v1/vote-integrity/penalties/:id/reviews').post(async (ctx: Context) => {
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyVoteRingPenalty,
+    'POST:/api/v1/vote-integrity/penalties/:id/reviews',
+  )
+  assertNotSuspended(currentUser)
+  ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid penalty ID')
+  validateRequestContract(ctx, 'POST:/api/v1/vote-integrity/penalties/:id/reviews', {
+    path: ctx.params,
+  })
+  const penalty = await reviewVoteWeightPenalty(ctx.params.id!, currentUser.id)
   ctx.json({ penalty })
 })

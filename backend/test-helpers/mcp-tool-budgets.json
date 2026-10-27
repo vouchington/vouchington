@@ -787,8 +787,8 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 40068,
-          "core": 6439
+          "list": 40236,
+          "core": 6505
         },
         "max": {
           "list": 41000,
@@ -1081,8 +1081,8 @@
       },
       "search_moderator_actions": {
         "measured": {
-          "list": 2600,
-          "core": 1659
+          "list": 2666,
+          "core": 1725
         },
         "max": {
           "list": 3000,
@@ -1211,11 +1211,11 @@
       },
       "read_report_integrity": {
         "measured": {
-          "list": 3230,
-          "core": 1020
+          "list": 4416,
+          "core": 1162
         },
         "max": {
-          "list": 4000,
+          "list": 5000,
           "core": 2000
         }
       },
@@ -1241,21 +1241,21 @@
       },
       "lift_integrity_penalty": {
         "measured": {
-          "list": 2271,
-          "core": 646
+          "list": 3267,
+          "core": 868
         },
         "max": {
-          "list": 3000,
+          "list": 4000,
           "core": 1000
         }
       },
       "read_vote_integrity": {
         "measured": {
-          "list": 3493,
-          "core": 1061
+          "list": 4691,
+          "core": 1203
         },
         "max": {
-          "list": 4000,
+          "list": 5000,
           "core": 2000
         }
       },

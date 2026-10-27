@@ -141,6 +141,9 @@ CREATE TABLE IF NOT EXISTS report_abuse_penalties (
   created_by_id uuid REFERENCES users ON DELETE SET NULL,
   revoked_at    timestamptz,
   revoked_by_id uuid REFERENCES users ON DELETE SET NULL,
+  reviewed_at timestamptz,
+  reviewed_by_id uuid REFERENCES users ON DELETE SET NULL,
+  review_due_at timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP + interval '12 months'),
   created_at    timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at    timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -154,6 +157,14 @@ CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__active
   ON report_abuse_penalties (user_id)
   WHERE revoked_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__review_due
+  ON report_abuse_penalties (review_due_at, id)
+  WHERE revoked_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__reviewed_by_id
+  ON report_abuse_penalties (reviewed_by_id)
+  WHERE reviewed_by_id IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_report_abuse_penalties__user_flag_unique
   ON report_abuse_penalties (user_id, source_flag_id)
@@ -164,12 +175,15 @@ CREATE INDEX IF NOT EXISTS idx_report_abuse_penalties__flag
   ON report_abuse_penalties (source_flag_id)
   WHERE source_flag_id IS NOT NULL;
 
-COMMENT ON TABLE report_abuse_penalties IS 'Penalties applied to bad-faith reporters. Revoked rows are deleted after 180 days; active rows remain until explicitly revoked.';
+COMMENT ON TABLE report_abuse_penalties IS 'Penalties applied to bad-faith reporters. Revoked rows are deleted after 180 days; active rows remain subject to annual staff review.';
 COMMENT ON COLUMN report_abuse_penalties.user_id IS 'The penalized reporter.';
 COMMENT ON COLUMN report_abuse_penalties.reason IS 'Human-readable explanation of why the penalty was applied.';
 COMMENT ON COLUMN report_abuse_penalties.source_flag_id IS 'The report integrity flag that triggered this penalty.';
 COMMENT ON COLUMN report_abuse_penalties.revoked_at IS 'When the penalty was revoked.';
 COMMENT ON COLUMN report_abuse_penalties.revoked_by_id IS 'Moderator who revoked the penalty.';
+COMMENT ON COLUMN report_abuse_penalties.reviewed_at IS 'Most recent staff confirmation that an active penalty remains warranted.';
+COMMENT ON COLUMN report_abuse_penalties.reviewed_by_id IS 'Staff member who last reviewed the active penalty.';
+COMMENT ON COLUMN report_abuse_penalties.review_due_at IS 'Next annual review deadline while this penalty remains active.';
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

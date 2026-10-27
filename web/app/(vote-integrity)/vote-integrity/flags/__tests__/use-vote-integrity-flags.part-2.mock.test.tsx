@@ -2,7 +2,6 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@vouchington/api-client'
 import type { VoteIntegrityPenaltiesResponse, VoteIntegrityPenalty } from '@/types/vote-integrity'
-
 vi.mock(
   import('next/navigation'),
   () =>
@@ -56,12 +55,10 @@ const flag = {
   resolution: null,
   created_at: '2026-07-16T00:00:00.000Z',
 }
-
 const initialData = {
   results: [flag],
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
 }
-
 const committedPenalty: VoteIntegrityPenalty = {
   id: 'penalty-1',
   user_id: 'user-1',
@@ -71,6 +68,9 @@ const committedPenalty: VoteIntegrityPenalty = {
   created_by_id: 'admin-1',
   revoked_at: null,
   revoked_by_id: null,
+  reviewed_at: null,
+  reviewed_by_id: null,
+  review_due_at: '2026-10-01T00:00:00Z',
   created_at: '2026-07-16T00:01:00.000Z',
 }
 

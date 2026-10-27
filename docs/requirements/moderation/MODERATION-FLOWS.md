@@ -50,3 +50,13 @@ that still suppress a flagged post, or already released aggregate transparency c
 projection is immutable even after its contributing operational rows are removed; see
 [Moderation Analytics](./MODERATION-ANALYTICS.md). Member appeal history remains visible during
 the appeal record's access period, while staff can follow the surviving case history independently.
+
+## Active integrity penalty review
+
+Staff reviews active integrity penalties on a recurring due queue and either confirms continued
+enforcement or revokes the penalty. A review records who made the decision and schedules the next
+review; it never silently lifts or renews the sanction on the member's behalf.
+Each confirmation also leaves a durable staff action with its prior and next deadline, so later
+reviews cannot replace the evidence of an earlier decision. Retained user identities preserve
+reviewer and subject attribution after account deletion without granting access to the deleted
+account; an open preservation hold on the subject defers removal of review history.

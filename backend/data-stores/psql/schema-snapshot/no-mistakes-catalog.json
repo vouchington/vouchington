@@ -878,6 +878,7 @@
         "report_escalate",
         "report_integrity_flag_review",
         "report_integrity_penalty_apply",
+        "report_integrity_penalty_review",
         "report_integrity_penalty_revoke",
         "report_judgement_rerun",
         "report_unclaim",
@@ -902,6 +903,7 @@
         "unsuspend",
         "vote_integrity_flag_review",
         "vote_integrity_penalty_apply",
+        "vote_integrity_penalty_review",
         "vote_integrity_penalty_revoke",
         "vote_manipulation",
         "vote_weight_reset",
@@ -943,9 +945,11 @@
         "report_deescalate",
         "report_integrity_flag_review",
         "report_integrity_penalty_apply",
+        "report_integrity_penalty_review",
         "report_integrity_penalty_revoke",
         "vote_integrity_flag_review",
         "vote_integrity_penalty_apply",
+        "vote_integrity_penalty_review",
         "vote_integrity_penalty_revoke",
         "vote_weight_set",
         "vote_weight_reset",
@@ -71483,7 +71487,7 @@
           "ordinalPosition": 5
         },
         "actor_user_id": {
-          "comment": "Moderator/admin who took the action (ON DELETE SET NULL for audit persistence).",
+          "comment": "Moderator/admin who took the action; retained user identity preserves attribution after account deletion and grants no authority.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -71663,7 +71667,7 @@
           "ordinalPosition": 29
         },
         "report_abuse_penalty_id": {
-          "comment": "Target report-abuse penalty applied or revoked.",
+          "comment": "Target report-abuse penalty applied, reviewed or revoked.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -71723,7 +71727,7 @@
           "ordinalPosition": 25
         },
         "target_user_id": {
-          "comment": "Target user for bans, suspensions, warnings, member actions.",
+          "comment": "Target user identity for bans, suspensions, warnings, member actions and integrity penalty reviews; survives account deletion without granting authority.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -71773,7 +71777,7 @@
           "ordinalPosition": 15
         },
         "vote_weight_penalty_id": {
-          "comment": "Target vote-weight penalty applied or revoked.",
+          "comment": "Target vote-weight penalty applied, reviewed or revoked.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -71783,7 +71787,7 @@
           "ordinalPosition": 16
         }
       },
-      "comment": "Unified log of moderator/admin actions. Scheduled-job, backfill and queue actions are deleted after 90 days; other actions after 24 months.",
+      "comment": "Unified log of moderator/admin actions. Scheduled-job, backfill and queue actions are deleted after 90 days; integrity penalty review actions after six years; other actions after 24 months.",
       "foreignKeys": {
         "fk_moderator_actions__agent_moderation_post__agent_moderation": {
           "columns": ["agent_moderation_post_id", "agent_moderation_id"],
@@ -71827,10 +71831,10 @@
         },
         "moderator_actions_actor_user_id_fkey": {
           "columns": ["actor_user_id"],
-          "onDelete": "SET NULL",
+          "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "moderator_actions_admin_import_batch_id_fkey": {
@@ -71899,10 +71903,10 @@
         },
         "moderator_actions_target_user_id_fkey": {
           "columns": ["target_user_id"],
-          "onDelete": "SET NULL",
+          "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "moderator_actions_topic_claim_id_fkey": {
@@ -114683,7 +114687,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 11
         },
         "created_by_id": {
           "comment": null,
@@ -114714,6 +114718,36 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 3
+        },
+        "review_due_at": {
+          "comment": "Next annual review deadline while this penalty remains active.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "(CURRENT_TIMESTAMP + '1 year'::interval)",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10
+        },
+        "reviewed_at": {
+          "comment": "Most recent staff confirmation that an active penalty remains warranted.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "reviewed_by_id": {
+          "comment": "Staff member who last reviewed the active penalty.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
         },
         "revoked_at": {
           "comment": "When the penalty was revoked.",
@@ -114753,7 +114787,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 12
         },
         "user_id": {
           "comment": "The penalized reporter.",
@@ -114766,10 +114800,18 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Penalties applied to bad-faith reporters. Revoked rows are deleted after 180 days; active rows remain until explicitly revoked.",
+      "comment": "Penalties applied to bad-faith reporters. Revoked rows are deleted after 180 days; active rows remain subject to annual staff review.",
       "foreignKeys": {
         "report_abuse_penalties_created_by_id_fkey": {
           "columns": ["created_by_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "report_abuse_penalties_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -114843,6 +114885,61 @@
           ],
           "live": true,
           "predicate": "(source_flag_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_report_abuse_penalties__review_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_abuse_penalties__review_due ON public.report_abuse_penalties USING btree (review_due_at, id) WHERE (revoked_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_due_at",
+              "descending": false,
+              "expression": "review_due_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_report_abuse_penalties__reviewed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_abuse_penalties__reviewed_by_id ON public.report_abuse_penalties USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(reviewed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -146753,7 +146850,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 14
         },
         "created_by_id": {
           "comment": "User who created the penalty, or NULL after that account is purged.",
@@ -146794,6 +146891,36 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
+        },
+        "review_due_at": {
+          "comment": "Next annual review deadline while this penalty remains active.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "(CURRENT_TIMESTAMP + '1 year'::interval)",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13
+        },
+        "reviewed_at": {
+          "comment": "Most recent staff confirmation that an active penalty remains warranted.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11
+        },
+        "reviewed_by_id": {
+          "comment": "Staff member who last reviewed the active penalty.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12
         },
         "revoked_at": {
           "comment": "When the penalty was revoked.",
@@ -146853,7 +146980,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 15
         },
         "user_id": {
           "comment": "The penalized user.",
@@ -146866,10 +146993,18 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Penalties applied to users' vote weights. Revoked rows are deleted after 180 days; active rows remain until explicitly revoked.",
+      "comment": "Penalties applied to users' vote weights. Revoked rows are deleted after 180 days; active rows remain subject to annual staff review.",
       "foreignKeys": {
         "vote_weight_penalties_created_by_id_fkey": {
           "columns": ["created_by_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "vote_weight_penalties_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -147028,6 +147163,61 @@
           ],
           "live": true,
           "predicate": "(source_post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_weight_penalties__review_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_weight_penalties__review_due ON public.vote_weight_penalties USING btree (review_due_at, id) WHERE (revoked_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_due_at",
+              "descending": false,
+              "expression": "review_due_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_weight_penalties__reviewed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_weight_penalties__reviewed_by_id ON public.vote_weight_penalties USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(reviewed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

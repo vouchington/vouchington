@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   renderIntegrityPenaltiesClient: vi.fn<(props: unknown) => void>(),
   getById: vi.fn<VitestLooseMock>(),
   revoke: vi.fn<VitestLooseMock>(),
+  getDue: vi.fn<VitestLooseMock>(),
+  review: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(import('@/components/admin/integrity-penalties-client'), () => {
@@ -33,6 +35,8 @@ vi.mock(import('@/components/admin/integrity-penalties-client'), () => {
 vi.mock(import('@/lib/api/client/vote-integrity'), () => ({
   getVoteIntegrityPenaltyClient: mocks.getById,
   revokeVoteWeightPenalty: mocks.revoke,
+  getVoteWeightPenaltyReviewsDue: mocks.getDue,
+  reviewVoteWeightPenalty: mocks.review,
 }))
 
 import { VoteIntegrityPenaltiesClient } from './vote-integrity-penalties-client'
@@ -46,6 +50,9 @@ const penalty: VoteIntegrityPenalty = {
   created_by_id: 'admin-1',
   revoked_at: null,
   revoked_by_id: null,
+  reviewed_at: null,
+  reviewed_by_id: null,
+  review_due_at: '2026-10-01T00:00:00Z',
   created_at: '2026-01-01T00:00:00Z',
 }
 
@@ -58,6 +65,7 @@ describe('VoteIntegrityPenaltiesClient', () => {
     }
     render(
       <VoteIntegrityPenaltiesClient
+        initialDuePage={null}
         initialData={initialData}
         initialStatus='revoked'
       />,
@@ -79,6 +87,7 @@ describe('VoteIntegrityPenaltiesClient', () => {
       penaltiesPath: '/vote-integrity/penalties',
       getById: mocks.getById,
       revoke: mocks.revoke,
+      annualReviews: undefined,
     })
     expect(props.multiplier(penalty)).toBe('0.25')
     expect(props.scopeGuard?.(initialData)).toBe(true)

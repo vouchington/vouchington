@@ -42,6 +42,8 @@ export const ROOT_FAMILIES = {
       ['review_dispute_lifecycle_changes', 'changed_by_id'],
       ['rss_feed_setting_changes', 'changed_by_id'],
       ['mcp_call_audit_events', 'actor_user_id'],
+      ['moderator_actions', 'actor_user_id'],
+      ['moderator_actions', 'target_user_id'],
       ['user_legal_preservation_holds', 'account_user_id'],
       ['user_legal_preservation_holds', 'placed_by_id'],
       ['user_legal_preservation_holds', 'released_by_id'],
@@ -151,8 +153,7 @@ async function cleanupRetainedIdentityFamily(
   if (!identityIds)
     await query(
       `/* ensureRetainedIdentityCleanupCursor */
-        INSERT INTO retained_identity_cleanup_cursors (family) VALUES ($1)
-        ON CONFLICT DO NOTHING`,
+        INSERT INTO retained_identity_cleanup_cursors (family) VALUES ($1) ON CONFLICT DO NOTHING`,
       [family],
     )
   const progress = identityIds
@@ -191,8 +192,7 @@ async function cleanupRetainedIdentityFamily(
   if (!identityIds)
     await query(
       `/* checkpointRetainedIdentityCleanup */
-      UPDATE retained_identity_cleanup_cursors
-      SET cursor_identity_id = $2 WHERE family = $1`,
+      UPDATE retained_identity_cleanup_cursors SET cursor_identity_id = $2 WHERE family = $1`,
       [family, hasMore ? page.at(-1)!.id : null],
     )
   await query.commit()

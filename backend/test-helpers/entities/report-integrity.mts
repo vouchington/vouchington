@@ -130,6 +130,15 @@ export async function insertTestReportAbusePenalty(options: {
   return rows[0]!.id
 }
 
+export async function setTestReportAbusePenaltyReviewDueAt(
+  id: string,
+  dueAt: Date | string,
+): Promise<void> {
+  await write(sql`/* setTestReportAbusePenaltyReviewDueAt */
+    UPDATE report_abuse_penalties SET review_due_at = ${dueAt} WHERE id = ${id}::uuid
+  `)
+}
+
 export async function insertTestReportIntegrityFlag(options: {
   query?: TransactionQuery
   postId?: string
