@@ -424,9 +424,16 @@ checks:
         - node
         - static-code-analysis/run-node-checks.mts
         - --checks
-        - config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
+        - config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails
       fileArgs: none
       always: true
+    - name: dependency-license-policy
+      command: [pnpm, run, dependency-license-policy]
+      fileArgs: none
+      include:
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - 'static-code-analysis/dependency-license-policy/**'
     - name: live-repository-policies
       command: [node, ci/check-repository-policy-scans.mts]
       fileArgs: none
