@@ -56,8 +56,8 @@ export async function insertTestVerifiedIdentity(
 ): Promise<void> {
   await write(sql`/* insertTestVerifiedIdentity */
     WITH inserted AS (
-      INSERT INTO verified_identities (identity_fingerprint, first_verified_at, last_verified_at)
-      VALUES (decode(${fingerprint}, 'hex'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO verified_identities (identity_fingerprint, first_verified_at)
+      VALUES (decode(${fingerprint}, 'hex'), CURRENT_TIMESTAMP)
       RETURNING identity_fingerprint
     )
     INSERT INTO verified_identity_account_links (user_id, identity_fingerprint, provider_session_id)
@@ -158,18 +158,15 @@ export async function getVerifiedIdentityByFingerprint(fingerprint: string): Pro
   user_id: string | null
   status: string
   revoked_at: Date | null
-  transferred_at: Date | null
 } | null> {
   const { rows } = await read(sql`/* getVerifiedIdentityByFingerprint */
     SELECT
       link.user_id,
       CASE
-        WHEN identity.transferred_at IS NOT NULL THEN 'transferred'
         WHEN identity.revoked_at IS NOT NULL THEN 'revoked'
         ELSE 'active'
       END AS status,
-      identity.revoked_at,
-      identity.transferred_at
+      identity.revoked_at
     FROM verified_identities identity
     LEFT JOIN verified_identity_account_links link ON link.identity_fingerprint = identity.identity_fingerprint
     WHERE identity.identity_fingerprint = decode(${fingerprint}, 'hex')
@@ -181,7 +178,6 @@ export async function getVerifiedIdentityByFingerprint(fingerprint: string): Pro
           user_id: string | null
           status: string
           revoked_at: Date | null
-          transferred_at: Date | null
         }
       | undefined) ?? null
   )

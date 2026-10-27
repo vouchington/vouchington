@@ -16,18 +16,13 @@ CREATE TYPE identity_verification_attempt_sources AS ENUM (
 CREATE TABLE IF NOT EXISTS verified_identities (
   identity_fingerprint BYTEA PRIMARY KEY CHECK (octet_length(identity_fingerprint) = 32),
   first_verified_at TIMESTAMPTZ NOT NULL,
-  last_verified_at TIMESTAMPTZ NOT NULL,
-  revoked_at TIMESTAMPTZ,
-  transferred_at TIMESTAMPTZ,
-  CHECK (last_verified_at >= first_verified_at)
+  revoked_at TIMESTAMPTZ
 );
 
-COMMENT ON TABLE verified_identities IS 'Permanent minimum anti-reuse record: a keyed document hash and verification lifecycle dates only, with no account or provider identity.';
+COMMENT ON TABLE verified_identities IS 'Permanent minimum anti-reuse record: a keyed document hash with first-verification and revocation dates only, with no account or provider identity.';
 COMMENT ON COLUMN verified_identities.identity_fingerprint IS '32-byte HMAC-SHA256 hash of (country:type:document_number). Never store the raw document number.';
 COMMENT ON COLUMN verified_identities.first_verified_at IS 'First successful verification time.';
-COMMENT ON COLUMN verified_identities.last_verified_at IS 'Most recent successful verification time.';
 COMMENT ON COLUMN verified_identities.revoked_at IS 'When the document verification was revoked, if applicable.';
-COMMENT ON COLUMN verified_identities.transferred_at IS 'When the document verification was transferred, if applicable.';
 
 CREATE TABLE IF NOT EXISTS verified_identity_account_links (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

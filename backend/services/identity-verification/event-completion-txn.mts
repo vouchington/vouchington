@@ -75,8 +75,8 @@ export async function runVerifiedIdentityTransaction(
     // Insert the minimum permanent record. A concurrent insert of the same hash wins the
     // unique constraint; only its own live account link can treat replay as success.
     const { rows: insertedRows } = await query(sql`/* onVerificationSessionVerified:insert */
-      INSERT INTO verified_identities (identity_fingerprint, first_verified_at, last_verified_at)
-      VALUES (decode(${fingerprint}, 'hex'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO verified_identities (identity_fingerprint, first_verified_at)
+      VALUES (decode(${fingerprint}, 'hex'), CURRENT_TIMESTAMP)
       ON CONFLICT (identity_fingerprint) DO NOTHING
       RETURNING identity_fingerprint
     `)
