@@ -150,9 +150,10 @@ async function insertClassifierRunRow(input: {
   const { rows: identities } = await transaction<{ id: string }>(sql`
     /* insertClassifierRunSchemaIdentity */
     INSERT INTO classifier_run_identities (
-      classifier_id, post_id, rss_feed_item_id, input_sha256
+      classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_sha256
     ) VALUES (
-      ${input.classifierId}, ${input.postId}, ${input.rssFeedItemId}, ${input.inputSha256}
+      ${input.classifierId}, ${input.postId}, ${input.rssFeedItemId}, ${input.inputSha256},
+      digest(${input.configurationJson}::jsonb::text, 'sha256')
     ) RETURNING id
   `)
   const identityId = identities[0]!.id

@@ -33,6 +33,7 @@ export async function insertClassifierRun<C>(
     subject,
     current.inputSha256,
     remote?.promptVersionId ?? null,
+    resolved.configurationSha256,
   )
   const { rows } = isNew
     ? await query<{

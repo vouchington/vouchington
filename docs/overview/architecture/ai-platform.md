@@ -65,6 +65,8 @@ flowchart LR
 
 Lifecycle producers record requests in their own transaction and enqueue after commit. The
 dispatcher checks readiness and reserves the run; a pending embedding leaves its request pending.
+On a later moderation request, an edited active community rule changes the configuration key and
+reserves a new receipt for unchanged post content; a rule edit alone does not reprocess every post.
 The shared sweep recovers both a lost request enqueue and an unfinished run. All classifiers use
 the same lease, reclaim, bounded attempt reservation and terminal-failure machinery; adapters supply
 input construction and outcome application rather than another queue or receipt table.

@@ -48,9 +48,10 @@ export async function seedClassifierCacheIdentity(input: {
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* seedClassifierCacheIdentity */
     INSERT INTO classifier_run_identities (
-      classifier_id, prompt_version_id, post_id, input_sha256
+      classifier_id, prompt_version_id, post_id, input_sha256, configuration_sha256
     ) VALUES (
-      ${input.classifierId}, ${input.promptVersionId}, ${input.postId}, ${input.inputSha256}
+      ${input.classifierId}, ${input.promptVersionId}, ${input.postId}, ${input.inputSha256},
+      digest('{}'::jsonb::text, 'sha256')
     ) RETURNING id`)
   return rows[0]!.id
 }
@@ -61,8 +62,8 @@ export async function seedClassifierCacheIdentityForSlug(input: {
   inputSha256: Buffer
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* seedClassifierCacheIdentityForSlug */
-    INSERT INTO classifier_run_identities (classifier_id, post_id, input_sha256)
-    SELECT classifier.id, ${input.postId}, ${input.inputSha256}
+    INSERT INTO classifier_run_identities (classifier_id, post_id, input_sha256, configuration_sha256)
+    SELECT classifier.id, ${input.postId}, ${input.inputSha256}, digest('{}'::jsonb::text, 'sha256')
     FROM classifiers classifier WHERE classifier.slug = ${input.slug}
     RETURNING id`)
   return rows[0]!.id

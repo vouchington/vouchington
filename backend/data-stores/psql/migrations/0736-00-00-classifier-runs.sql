@@ -1,5 +1,5 @@
 -- Shared fixed-classifier run lifecycle: one compact identity per classifier, prompt version,
--- subject and content, plus the durable request that makes a subject recoverable by the sweep
+-- subject, content and configuration, plus the durable request that makes a subject recoverable by the sweep
 -- before any receipt exists. C3 batches retain remote results; C4 retains votes. Remote work
 -- reserves its real C3 batch and exact candidate snapshots before provider execution.
 --
@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS classifier_run_identities (
   post_id UUID REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
   rss_feed_item_id UUID REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT,
   input_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(input_sha256) = 32),
+  configuration_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(configuration_sha256) = 32),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT pk_classifier_run_identities PRIMARY KEY (id),
   CONSTRAINT chk_classifier_run_identities__one_subject
@@ -19,11 +20,11 @@ CREATE TABLE IF NOT EXISTS classifier_run_identities (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_identities__post
-  ON classifier_run_identities (classifier_id, prompt_version_id, post_id, input_sha256)
+  ON classifier_run_identities (classifier_id, prompt_version_id, post_id, input_sha256, configuration_sha256)
   NULLS NOT DISTINCT
   WHERE post_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_identities__rss_feed_item
-  ON classifier_run_identities (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256)
+  ON classifier_run_identities (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256, configuration_sha256)
   NULLS NOT DISTINCT
   WHERE rss_feed_item_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_run_identities__classifier
@@ -43,6 +44,7 @@ COMMENT ON COLUMN classifier_run_identities.classifier_id IS 'Classifier named i
 COMMENT ON COLUMN classifier_run_identities.post_id IS 'Retained post identity in the deduplication key; never grants live-post access.';
 COMMENT ON COLUMN classifier_run_identities.rss_feed_item_id IS 'Retained feed-item identity in the deduplication key; never grants live-item access.';
 COMMENT ON COLUMN classifier_run_identities.input_sha256 IS 'Exact content digest in the immutable run deduplication key.';
+COMMENT ON COLUMN classifier_run_identities.configuration_sha256 IS 'Canonical configuration digest in the immutable run deduplication key.';
 COMMENT ON COLUMN classifier_run_identities.prompt_version_id IS 'Real prompt-version relation in the deduplication key; NULL for classifier runs without a prompt version.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
