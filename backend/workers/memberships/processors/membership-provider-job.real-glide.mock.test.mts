@@ -1,32 +1,87 @@
-import { generateKeyPairSync, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
-import { Queue, QueueEvents, Worker, type Job, type JobOptions } from 'glide-mq'
+import { Worker, type Job, type JobOptions } from 'glide-mq'
 import { throwRateLimited } from '@vouchington/queue-errors'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import * as httpDispatchers from '../../../modules/utils/http.mts'
-import { membershipVerificationQueueConfig, QUEUE_NAME } from '@queues/memberships/config'
+import { workerQueueCommandClient } from '@data-stores/valkey-glide-mq'
+import { membershipVerificationQueueConfig } from '@queues/memberships/config'
 import { buildGooglePlayNotificationJob } from '@queues/memberships/enqueues/google-play-jobs'
 import {
   acquireMembershipVerificationExecutionLease,
+  membershipVerificationLeaseNamespace,
   releaseMembershipVerificationExecutionLease,
+  renewMembershipVerificationExecutionLease,
   type MembershipVerificationExecutionLease,
 } from '@queues/memberships/enqueues/verification-execution-lease'
 import { GooglePlayPurchasePendingError } from '@services/memberships/google/process-verification'
 import { MembershipProviderUnavailableError } from '@services/memberships/provider-unavailable'
-import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-play-memberships'
-import { createTestGooglePlayRtdnBody } from '@voucha/test-helpers/google-play-recovery'
+import {
+  cleanUpGooglePlayDeferralFixtures,
+  createGooglePlayDeferralFixtures,
+  createUnboundGooglePlayRtdnFixture,
+} from '@voucha/test-helpers/google-play-deferral-fixtures'
+import { stubGooglePlayProvider } from '@voucha/test-helpers/google-play-provider-stub'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { deleteMembershipVerificationLeaseSlots } from '@voucha/test-helpers/membership-verification-lease'
+import {
+  addVerificationJob,
+  expectCanonicalDelay,
+  expectDelayAfter,
+  openMembershipQueueHarness,
+} from '@voucha/test-helpers/membership-verification-queue-assertions'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { createMockAgentFetchForTest, MockAgent } from '@voucha/test-helpers/provider-http'
-import { realGlideConnection } from '@voucha/test-helpers/real-glide-connection'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { processGooglePlayNotification } from './google-play.mts'
 import { processMembershipProviderJob } from './membership-provider-job.mts'
+import { processMembershipVerificationJob } from './process-verification-job.mts'
+import { runWithMembershipVerificationLeaseRenewal } from './verification-execution-renewal.mts'
 
+// Every test touching the real shared lease slots lives here; a file runs its tests sequentially.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
-const connection = realGlideConnection
+describe('membership verification execution lease with real Valkey', () => {
+  it('bounds contention and fences renewal and release by owner token', async () => {
+    const keys = [0, 1].map(slot => `${membershipVerificationLeaseNamespace}:slot:${slot}`)
+    const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
+      verification_concurrency: 2,
+    })
+    try {
+      const first = await acquireMembershipVerificationExecutionLease()
+      const second = await acquireMembershipVerificationExecutionLease()
+      if (!first || !second) throw new Error('Expected two verification execution leases')
+      expect(new Set([first.key, second.key])).toEqual(new Set(keys))
+      await expect(acquireMembershipVerificationExecutionLease()).resolves.toBeNull()
+
+      const forged: MembershipVerificationExecutionLease = {
+        key: first.key,
+        token: randomUUID(),
+      }
+      await expect(renewMembershipVerificationExecutionLease(forged)).resolves.toBe(false)
+      await expect(releaseMembershipVerificationExecutionLease(forged)).resolves.toBe(false)
+      await expect(workerQueueCommandClient.get(first.key)).resolves.toBe(first.token)
+
+      await expect(renewMembershipVerificationExecutionLease(first)).resolves.toBe(true)
+      const ttl = await workerQueueCommandClient.pttl(first.key)
+      expect(ttl).toBeGreaterThan(50_000)
+      expect(ttl).toBeLessThanOrEqual(60_000)
+      await expect(
+        runWithMembershipVerificationLeaseRenewal(first, async () => 'renewed'),
+      ).resolves.toBe('renewed')
+
+      await expect(releaseMembershipVerificationExecutionLease(first)).resolves.toBe(true)
+      const operation = vi.fn<() => Promise<void>>(async () => undefined)
+      await expect(runWithMembershipVerificationLeaseRenewal(first, operation)).rejects.toThrow(
+        'lost ownership',
+      )
+      expect(operation).not.toHaveBeenCalled()
+      await expect(releaseMembershipVerificationExecutionLease(second)).resolves.toBe(true)
+      await expect(workerQueueCommandClient.get(second.key)).resolves.toBeNull()
+    } finally {
+      restoreConfig()
+      await workerQueueCommandClient.unlink(keys)
+    }
+  })
+})
 
 describe('Google Play notification admission through the shared provider lease', () => {
   afterEach(() => {
@@ -35,80 +90,22 @@ describe('Google Play notification admission through the shared provider lease',
   })
 
   it('delays an unbound RTDN lookup until the shared lease is available', async ({ signal }) => {
-    const agent = new MockAgent()
-    agent.disableNetConnect()
-    const providerUrls: string[] = []
-    const agentFetch = createMockAgentFetchForTest(agent)
-    const providerFetch: ReturnType<typeof httpDispatchers.getExternalFetch> = async (
-      input,
-      init,
-    ) => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
-      providerUrls.push(url)
-      return agentFetch(input, init)
-    }
-    vi.spyOn(httpDispatchers, 'getExternalFetch').mockReturnValue(providerFetch)
-
-    const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
-    vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', `queue-test-${randomUUID()}@example.test`)
-    vi.stubEnv(
-      'GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY',
-      privateKey.export({ format: 'pem', type: 'pkcs8' }),
-    )
-
-    const applicationId = `com.voucha.test.${randomUUID().replaceAll('-', '')}`
-    const purchaseToken = `unbound-${randomUUID()}`
-    const evidenceId = await createTestGooglePlayRtdnEvidence({
-      applicationId,
-      rawBody: createTestGooglePlayRtdnBody(applicationId, {
-        subscriptionNotification: {
-          notificationType: 2,
-          purchaseToken,
-          subscriptionId: `plus.monthly.${randomUUID()}`,
-        },
-      }),
-    })
-
-    agent
-      .get('https://oauth2.googleapis.com')
-      .intercept({ path: '/token', method: 'POST' })
-      .reply(200, { access_token: 'synthetic-access-token', expires_in: 3600 })
-    agent
-      .get('https://androidpublisher.googleapis.com')
-      .intercept({
-        path: `/androidpublisher/v3/applications/${applicationId}/purchases/subscriptionsv2/tokens/${purchaseToken}`,
-        method: 'GET',
-      })
-      .reply(200, {
-        latestOrderId: `order-${randomUUID()}`,
-        subscriptionState: 'SUBSCRIPTION_STATE_ACTIVE',
-        acknowledgementState: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
-        testPurchase: {},
-        lineItems: [],
-      })
-
-    const queueName = `${QUEUE_NAME}_provider_lease_${randomUUID()}`
-    const queue = new Queue(queueName, connection)
-    const events = new QueueEvents(queueName, {
-      ...connection,
-      lastEventId: '0',
-      blockTimeout: 1_000,
-    })
+    const { agent, providerUrls } = stubGooglePlayProvider()
+    const { evidenceId, purchaseToken } = await createUnboundGooglePlayRtdnFixture(agent)
     const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
       verification_concurrency: 1,
     })
-    const worker = new Worker(
-      queueName,
+    const { queue, events, close } = await openMembershipQueueHarness(
+      'provider_lease',
       (job: Job) =>
         processMembershipProviderJob(job, () =>
           processGooglePlayNotification({ evidenceId: job.data.evidenceId }),
         ),
-      { ...connection, concurrency: 1, blockTimeout: 100, promotionInterval: 100 },
+      { concurrency: 1, blockTimeout: 100, promotionInterval: 100 },
     )
     let heldLease: MembershipVerificationExecutionLease | null = null
 
     try {
-      await Promise.all([events.waitUntilReady(), worker.waitUntilReady()])
       heldLease = await acquireMembershipVerificationExecutionLease()
       if (!heldLease) throw new Error('Expected to reserve the provider execution slot')
 
@@ -136,13 +133,10 @@ describe('Google Play notification admission through the shared provider lease',
       expect(await delayedJob?.getState()).toBe('delayed')
       expect(delayedJob?.attemptsMade).toBe(0)
       expect(providerUrls).toEqual([])
+      const untouched = { verified_at: null, rejected_at: null, observation_count: 0 }
       await expect(
         getTestMembershipProviderEvidenceTerminalState(evidenceId),
-      ).resolves.toMatchObject({
-        verified_at: null,
-        rejected_at: null,
-        observation_count: 0,
-      })
+      ).resolves.toMatchObject(untouched)
 
       expect(await releaseMembershipVerificationExecutionLease(heldLease)).toBe(true)
       heldLease = null
@@ -158,17 +152,11 @@ describe('Google Play notification admission through the shared provider lease',
       agent.assertNoPendingInterceptors()
       await expect(
         getTestMembershipProviderEvidenceTerminalState(evidenceId),
-      ).resolves.toMatchObject({
-        verified_at: null,
-        rejected_at: null,
-        observation_count: 0,
-      })
+      ).resolves.toMatchObject(untouched)
     } finally {
       if (heldLease) await releaseMembershipVerificationExecutionLease(heldLease)
       restoreConfig()
-      await Promise.all([worker.close(true), events.close()])
-      await queue.obliterate({ force: true })
-      await queue.close()
+      await close()
       await agent.close()
     }
   })
@@ -212,6 +200,92 @@ describe('membership provider job when the execution lease is lost before releas
 
     await expect(outcome).rejects.toThrow('lease lost before release')
     expect(moveToDelayed).not.toHaveBeenCalled()
+  })
+})
+
+describe('membership verification job deferral with real PostgreSQL and GlideMQ', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  it('paces pending and throttled purchases without attempts or starvation', async ({ signal }) => {
+    const pendingProviderRequested = Promise.withResolvers<void>()
+    const releasePendingProvider = Promise.withResolvers<void>()
+    let pendingToken = ''
+    const { agent, providerUrls } = stubGooglePlayProvider(async url => {
+      if (!url.includes(pendingToken)) return
+      pendingProviderRequested.resolve()
+      await releasePendingProvider.promise
+    })
+    const fixtures = await createGooglePlayDeferralFixtures(agent)
+    pendingToken = fixtures.pendingToken
+    const { pending, rateLimited, rateLimitedToken } = fixtures
+    const restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
+      verification_concurrency: 1,
+      verification_retry_minutes: 1,
+    })
+    const { queue, events, close } = await openMembershipQueueHarness(
+      'verification_delay',
+      processMembershipVerificationJob,
+      { concurrency: 2 },
+    )
+    const failedJobIds: string[] = []
+    events.on('failed', event => failedJobIds.push(event.jobId))
+
+    try {
+      const pendingJob = await addVerificationJob(queue, pending.id)
+      await waitForRealGlideEvent(
+        pendingProviderRequested.promise,
+        `Google Play pending request ${pendingJob.id}`,
+      )
+
+      const rateLimitedJob = await expectDelayAfter({
+        events,
+        signal,
+        queue,
+        minDelayMs: 1_000,
+        maxDelayMs: 1_500,
+        trigger: () => addVerificationJob(queue, rateLimited.id),
+      })
+      expect(providerUrls.some(url => url.includes(rateLimitedToken))).toBe(false)
+
+      await expectDelayAfter({
+        events,
+        signal,
+        queue,
+        job: pendingJob,
+        minDelayMs: 60_000,
+        maxDelayMs: 60_000,
+        trigger: () => releasePendingProvider.resolve(),
+      })
+      await expectCanonicalDelay(queue, pendingJob, pending.id)
+
+      await expectDelayAfter({
+        events,
+        signal,
+        queue,
+        job: rateLimitedJob,
+        minDelayMs: 30_000,
+        maxDelayMs: 30_000,
+        trigger: () => rateLimitedJob.promote(),
+      })
+      await expectCanonicalDelay(queue, rateLimitedJob, rateLimited.id)
+
+      const completed = once(events, 'completed', { signal })
+      const sibling = await addVerificationJob(queue, randomUUID())
+      await expect(
+        waitForRealGlideEvent(completed, `GlideMQ membership verification sibling ${sibling.id}`),
+      ).resolves.toEqual([expect.objectContaining({ jobId: sibling.id })])
+      expect(failedJobIds).toEqual([])
+      agent.assertNoPendingInterceptors()
+    } finally {
+      releasePendingProvider.resolve()
+      restoreConfig()
+      await close()
+      await agent.close()
+      await cleanUpGooglePlayDeferralFixtures(fixtures)
+    }
   })
 })
 
