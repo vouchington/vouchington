@@ -3238,12 +3238,14 @@
       }
     },
     "activitypub_replay_rejection_floors": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "activitypub_replay_rejection_floors_is_singleton_check": "CHECK (is_singleton)"
+      },
       "columns": {
-        "is_outbound": {
+        "is_singleton": {
           "collation": null,
-          "comment": "False for signed inbound activity, true for outbound distribution activity.",
-          "defaultExpression": null,
+          "comment": "Allows one inbound admission boundary.",
+          "defaultExpression": "true",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -3264,7 +3266,7 @@
         },
         "updated_at": {
           "collation": null,
-          "comment": "Last time this admission boundary advanced.",
+          "comment": "Last time the admission boundary advanced.",
           "defaultExpression": "CURRENT_TIMESTAMP",
           "generated": null,
           "generatedExpression": null,
@@ -3274,20 +3276,20 @@
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Monotonic admission boundaries retained after expired ActivityPub replay-ledger rows are deleted.",
+      "comment": "Monotonic inbound admission boundary retained after expired ActivityPub replay-ledger rows are deleted.",
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
         "activitypub_replay_rejection_floors_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX activitypub_replay_rejection_floors_pkey ON public.activitypub_replay_rejection_floors USING btree (is_outbound)",
+          "definition": "CREATE UNIQUE INDEX activitypub_replay_rejection_floors_pkey ON public.activitypub_replay_rejection_floors USING btree (is_singleton)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "is_outbound",
+              "column": "is_singleton",
               "descending": false,
-              "expression": "is_outbound",
+              "expression": "is_singleton",
               "nullsFirst": false,
               "opclass": "bool_ops"
             }
@@ -3302,8 +3304,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["is_outbound"],
-        "definition": "PRIMARY KEY (is_outbound)"
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
       },
       "relationKind": "table",
       "triggers": {
