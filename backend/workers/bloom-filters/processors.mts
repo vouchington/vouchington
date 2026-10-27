@@ -20,18 +20,22 @@ export type RebuildBloomFilterProcessorOptions = {
 
 const noopAfterSnapshot = async (): Promise<void> => {}
 
-let rebuildBloomFilterProcessorOptions: RebuildBloomFilterProcessorOptions = {}
+let currentRebuildBloomFilterProcessorOptions: RebuildBloomFilterProcessorOptions = {}
 
-/** Production leaves this unset. A test may install `afterSnapshot` for the next rebuild. */
-export function setRebuildBloomFilterProcessorOptions(
-  options: RebuildBloomFilterProcessorOptions,
-): void {
-  rebuildBloomFilterProcessorOptions = options
+/**
+ * Options for the next rebuild. Production reads them and does not install a hook.
+ * A caller may replace them, which is how a test commits during the open snapshot.
+ */
+export function rebuildBloomFilterProcessorOptions(
+  replacement?: RebuildBloomFilterProcessorOptions,
+): RebuildBloomFilterProcessorOptions {
+  if (replacement !== undefined) currentRebuildBloomFilterProcessorOptions = replacement
+  return currentRebuildBloomFilterProcessorOptions
 }
 
 export async function processRebuildBloomFilter(
   data: RebuildBloomFilterData,
-  options: RebuildBloomFilterProcessorOptions = rebuildBloomFilterProcessorOptions,
+  options: RebuildBloomFilterProcessorOptions = rebuildBloomFilterProcessorOptions(),
 ): Promise<void> {
   const afterSnapshot = options.afterSnapshot ?? noopAfterSnapshot
   if (data.filter === 'url-blocklist') {

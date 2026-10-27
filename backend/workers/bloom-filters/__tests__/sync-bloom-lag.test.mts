@@ -13,7 +13,7 @@ import {
   acquireTestPostgresAdvisoryLock,
   type TestPostgresAdvisoryLock,
 } from '@voucha/test-helpers/postgres-advisory-lock'
-import { setRebuildBloomFilterProcessorOptions } from '../processors.mts'
+import { rebuildBloomFilterProcessorOptions } from '../processors.mts'
 import { bloomFilters as bloomWorker } from '../workers.mts'
 
 // One url-blocklist filter and one rebuild job id are shared by every fork.
@@ -77,7 +77,7 @@ describe('sync bloom lag', () => {
     })
     let committedSecond = false
     await settleExistingUrlBlocklistRebuild()
-    setRebuildBloomFilterProcessorOptions({
+    rebuildBloomFilterProcessorOptions({
       afterSnapshot: async () => {
         if (committedSecond) return
         committedSecond = true
@@ -96,7 +96,7 @@ describe('sync bloom lag', () => {
     } finally {
       primary.stop()
       followUp.stop()
-      setRebuildBloomFilterProcessorOptions({})
+      rebuildBloomFilterProcessorOptions({})
       await deleteTestBlacklistSource(firstSourceId)
       await deleteTestBlacklistSource(secondSourceId)
     }
