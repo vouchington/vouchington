@@ -52,6 +52,7 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
 describe('creation admission on real GlideMQ', () => {
   afterEach(() => vi.unstubAllEnvs())
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for creation cooldown recheck after S3 upload
   it('rechecks shared cooldown after S3 upload before submitting a creation batch', async () => {
     vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
     vi.stubEnv('ENVIRONMENT', 'staging')

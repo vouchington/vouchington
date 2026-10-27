@@ -152,7 +152,7 @@ describe('production embedding creation on real GlideMQ', () => {
     } finally {
       await fixture.close()
     }
-  }, 30_000)
+  })
 
   it('keeps two workers to one active creation and retries the contending job unchanged', async () => {
     const fixture = await acquireEmbeddingQuotaFixture()
@@ -275,5 +275,5 @@ describe('production embedding creation on real GlideMQ', () => {
       releaseFirstSend.resolve({ jobArn: firstArn })
       await fixture.close()
     }
-  }, 30_000)
+  })
 })
