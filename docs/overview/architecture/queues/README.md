@@ -184,6 +184,22 @@ Replaying an event can reactivate its retained completed or failed queue record;
 running record keeps its claim. Election replay has its own
 bounded dispatcher and does not recalculate weights or change administrator overrides.
 
+## Membership verification recovery
+
+Verification writes admit work after commit. Pending domain rows remain recoverable when admission
+or Valkey state is lost; queue retention does not authorize an outcome. Recovery fixes a sweep's
+upper UUID bound and continues by verification ID in job data, so a failing early verification cannot
+starve later rows. Repeated scheduled sweeps revisit earlier IDs to cover out-of-order commits.
+Verification tasks and recovery pages use separate concurrency lanes so externally submitted
+purchases cannot occupy the dispatcher lane. Each verification retains its job and deduplication
+identity while pending purchases, provider throttles, and missing provider configuration delay that
+job without rejecting the purchase or notification. Per-verification ordering
+isolates these waits; a token-owned Valkey execution lease enforces the global provider-call cap
+and is released before deferral, so a delayed purchase cannot block unrelated verifications.
+Source recovery admits the same canonical verification jobs. Bound Google notification receipts
+remain pending until an outcome exists and finalize on receipt replay. Unbound token-lineage
+discovery shares the execution cap while it waits for a user binding.
+
 ## Related architecture
 
 - [Crawling](../reference-crawling-components.md) explains how URL and referral crawling share CPU

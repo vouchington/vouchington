@@ -29793,7 +29793,7 @@
     },
     "GET:/api/v1/membership-verifications/:verificationId": {
       "bodyKind": "content",
-      "hash": "21ec9923bf6d6c94db0cad278c3fffae3a162cd517ab2394c02b35f4404b043b",
+      "hash": "ce35abe77051c5bb1467f5f15d2b9859ce26ce2910c05de270d339495e82285d",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -29898,6 +29898,10 @@
                     },
                     {
                       "type": "null"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "provider_unavailable"
                     }
                   ]
                 }
@@ -29953,7 +29957,7 @@
     },
     "GET:/api/v1/memberships/me": {
       "bodyKind": "content",
-      "hash": "90e098d0124f7ebf50283324cfbab2148755cbc46470008b5a3d18127345c856",
+      "hash": "5910ef62694aa1df91da2071e2489603ca2a6bc69f35f042c0bfbf7716194386",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -30470,20 +30474,6 @@
                                   "type": "string"
                                 }
                               },
-                              "next_processing_at": {
-                                "required": true,
-                                "schema": {
-                                  "type": "union",
-                                  "variants": [
-                                    {
-                                      "type": "null"
-                                    },
-                                    {
-                                      "type": "string"
-                                    }
-                                  ]
-                                }
-                              },
                               "provider": {
                                 "required": true,
                                 "schema": {
@@ -30546,6 +30536,10 @@
                                     },
                                     {
                                       "type": "null"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "provider_unavailable"
                                     }
                                   ]
                                 }
@@ -30985,20 +30979,6 @@
                                   "type": "string"
                                 }
                               },
-                              "next_processing_at": {
-                                "required": true,
-                                "schema": {
-                                  "type": "union",
-                                  "variants": [
-                                    {
-                                      "type": "null"
-                                    },
-                                    {
-                                      "type": "string"
-                                    }
-                                  ]
-                                }
-                              },
                               "provider": {
                                 "required": true,
                                 "schema": {
@@ -31061,6 +31041,10 @@
                                     },
                                     {
                                       "type": "null"
+                                    },
+                                    {
+                                      "type": "literal",
+                                      "value": "provider_unavailable"
                                     }
                                   ]
                                 }
@@ -88109,7 +88093,7 @@
     },
     "POST:/api/v1/membership-verifications": {
       "bodyKind": "content",
-      "hash": "28e1573f8a1e979aee45c2f7bb7049edc7efe0392f3d3b1b7792270ddb22616e",
+      "hash": "170e88eeb1ff1b36b47a05f9a8c34d50af4bb0c8e15c5349b49e9c3eb0a84a2b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -88241,6 +88225,10 @@
                         },
                         {
                           "type": "null"
+                        },
+                        {
+                          "type": "literal",
+                          "value": "provider_unavailable"
                         }
                       ]
                     }
@@ -102028,7 +102016,7 @@
       "migratedFrom": ["predecessor-issue#7880"],
       "path": "/api/v1/memberships/me",
       "responseSchema": {
-        "hash": "407793829c6e4ae2265ed3fbcdf5c8ac35319003c80d1bbc35852d90cd242114",
+        "hash": "43211da3859fa2e59a2591024d3f2b3070877a793052c5729fb1e5501a865e4c",
         "key": "native.memberships.me.lifecycle.default"
       },
       "route": {

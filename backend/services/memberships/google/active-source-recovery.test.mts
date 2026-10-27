@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import {
   createMembershipVerification,
   getMembershipByUserId,
@@ -12,6 +13,7 @@ import {
   getTestMembershipRaw,
   getTestMembershipSourceState,
 } from '@voucha/test-helpers'
+import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import {
@@ -62,7 +64,9 @@ describe('Google Play active-source recovery', () => {
       acknowledgeSubscription: async () => undefined,
     }
 
-    await reconcileGooglePlayActiveSource({ sourceId: fixture.sourceId, client })
+    const verificationId = await admitActiveSourceVerification(fixture)
+    await processGooglePlayMembershipVerification(verificationId, { client })
+    await (await memberships.getJob(verificationId))?.remove()
 
     expect(fetchedTokens).toEqual([fixture.purchaseToken])
     await expect(getTestMembershipRaw(fixture.membershipId)).resolves.toMatchObject({
@@ -82,8 +86,8 @@ describe('Google Play active-source recovery', () => {
     'terminalizes a known source after permanent leaf lookup loss ($status $reason)',
     async ({ status, reason }) => {
       const fixture = await createActiveGooglePlayFixture()
-      await reconcileGooglePlayActiveSource({
-        sourceId: fixture.sourceId,
+      const verificationId = await admitActiveSourceVerification(fixture)
+      await processGooglePlayMembershipVerification(verificationId, {
         client: {
           getSubscription: async ({ purchaseToken }) => {
             throw new GooglePlaySubscriptionLookupError(status, purchaseToken, reason)
@@ -91,6 +95,7 @@ describe('Google Play active-source recovery', () => {
           acknowledgeSubscription: async () => undefined,
         },
       })
+      await (await memberships.getJob(verificationId))?.remove()
 
       await expect(getTestMembershipSourceState(fixture.membershipId)).resolves.toMatchObject({
         expired_at: expect.any(Date),
@@ -126,8 +131,8 @@ describe('Google Play active-source recovery', () => {
     })
     await successorStarted.promise
 
-    await reconcileGooglePlayActiveSource({
-      sourceId: fixture.sourceId,
+    const recoveryVerificationId = await admitActiveSourceVerification(fixture)
+    await processGooglePlayMembershipVerification(recoveryVerificationId, {
       client: {
         getSubscription: async ({ purchaseToken }) => {
           throw new GooglePlaySubscriptionLookupError(404, purchaseToken)
@@ -135,6 +140,7 @@ describe('Google Play active-source recovery', () => {
         acknowledgeSubscription: async () => undefined,
       },
     })
+    await (await memberships.getJob(recoveryVerificationId))?.remove()
     releaseSuccessor.resolve()
     await successorProcessing
 
@@ -167,6 +173,25 @@ describe('Google Play active-source recovery', () => {
     await expect(getMembershipByUserId(other.id)).resolves.toBeNull()
   })
 })
+
+async function admitActiveSourceVerification(fixture: {
+  userId: string
+  applicationId: string
+  sourceId: string
+}): Promise<string> {
+  await reconcileGooglePlayActiveSource({ sourceId: fixture.sourceId })
+  const verificationId = await getTestPendingGooglePlayVerification({
+    userId: fixture.userId,
+    applicationId: fixture.applicationId,
+  })
+  if (!verificationId) throw new Error('Google Play recovery verification was not admitted')
+  await expect(memberships.getJob(verificationId)).resolves.toMatchObject({
+    id: verificationId,
+    name: 'processMembershipVerification',
+    data: { verificationId },
+  })
+  return verificationId
+}
 
 async function createActiveGooglePlayFixture() {
   const user = await createTestUser()

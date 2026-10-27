@@ -20,6 +20,7 @@ export type MembershipVerificationReasonCode =
   | 'revoked'
   | 'expired'
   | 'purchase_pending'
+  | 'provider_unavailable'
   | 'missing_account_token'
   | 'stale_evidence'
 

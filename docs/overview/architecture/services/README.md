@@ -87,6 +87,12 @@ the same document cannot verify another account. The domain HMAC key must remain
 hashes are retained: changing it would make older hashes uncheckable because raw document values
 are discarded. Fingerprint-key rotation is not implemented.
 
+Membership verification outcomes are durable authority. Provider reads may repeat after a queue
+loss or concurrent replay; only a pending verification can commit evidence and entitlement
+projections together. Google purchase acknowledgement remains a separate durable external effect.
+The membership overview returns no next-processing timestamp because queue scheduling is not a
+PostgreSQL lifecycle fact.
+
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates
 commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because

@@ -77,10 +77,7 @@ describe('schema growth classification', () => {
   })
 
   it('classifies membership work by its actual retention path', () => {
-    for (const table of [
-      'membership_google_play_acknowledgment_work_items',
-      'membership_verification_processing_work_items',
-    ]) {
+    for (const table of ['membership_google_play_acknowledgment_work_items']) {
       expect(EXPLICIT_BOUNDED_TABLES.has(table)).toBe(false)
       expect(UNBOUNDED_UNPARTITIONED_TABLES.get(table)).toContain(
         'owning parent is removed; no time-based retention',

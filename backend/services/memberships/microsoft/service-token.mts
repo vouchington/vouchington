@@ -1,3 +1,4 @@
+import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { createHash } from 'node:crypto'
 import { getExternalFetch } from '@modules/utils'
 
@@ -45,6 +46,7 @@ async function refreshMicrosoftStoreServiceToken(
       signal: AbortSignal.timeout(15_000),
     },
   )
+  throwIfRateLimitedResponse(response, 'https://login.microsoftonline.com/oauth2/v2.0/token')
   if (!response.ok)
     throw new Error(`Microsoft Store service token request failed with ${response.status}`)
   const payload = (await response.json()) as { access_token?: unknown; expires_in?: unknown }

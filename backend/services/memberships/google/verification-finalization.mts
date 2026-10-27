@@ -1,4 +1,3 @@
-import { deferClaimedMembershipVerification } from '../verification-work.mts'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { projectVerifiedProviderMembershipObservation } from '../provider-observation-projection.mts'
@@ -73,23 +72,6 @@ async function isLatestGooglePlayPurchaseToken(options: {
   return rows.at(0)?.current ?? false
 }
 
-export async function deferPendingGooglePlayVerification(
-  context: Context,
-  token: string,
-  query: GooglePlayTransaction,
-): Promise<void> {
-  if (
-    !(await deferClaimedMembershipVerification(
-      context.verificationId,
-      token,
-      'purchase_pending',
-      query,
-    ))
-  )
-    throw new Error('Google Play verification claim was superseded')
-  await query.commit()
-}
-
 export async function persistVerifiedGooglePlayObservation(
   context: Context,
   resolved: GooglePlayResolution,
@@ -140,7 +122,6 @@ export async function persistVerifiedGooglePlayObservation(
 
 export async function finalizeVerifiedGooglePlayMembership(options: {
   context: Context
-  token: string
   mapping: NonNullable<Awaited<ReturnType<typeof getMapping>>>
   purchaseToken: string
   acknowledgementPending: boolean
@@ -148,7 +129,7 @@ export async function finalizeVerifiedGooglePlayMembership(options: {
   observationId: string
   query: GooglePlayTransaction
 }): Promise<{ acknowledgementId: string | null }> {
-  await finalizeVerified(options.context, options.token, options.query)
+  await finalizeVerified(options.context, options.query)
   const current = await isLatestGooglePlayPurchaseToken({
     environment: options.context.environment,
     applicationId: options.context.applicationId,

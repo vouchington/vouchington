@@ -4,6 +4,7 @@ import {
   createAppleTransactionVerifier,
   type AppleTransactionVerifier,
 } from './verify-transaction.mts'
+import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 
 export function createConfiguredAppleTransactionVerifier(options: {
   applicationId: string
@@ -25,6 +26,8 @@ export function getConfiguredAppleAppStoreId(
   const rawAppId = process.env.APPLE_APP_STORE_APP_ID
   const appId = rawAppId ? Number(rawAppId) : Number.NaN
   if (!Number.isSafeInteger(appId) || appId <= 0)
-    throw new Error('APPLE_APP_STORE_APP_ID must be a positive integer in production')
+    throw new MembershipProviderUnavailableError(
+      'APPLE_APP_STORE_APP_ID must be a positive integer in production',
+    )
   return appId
 }

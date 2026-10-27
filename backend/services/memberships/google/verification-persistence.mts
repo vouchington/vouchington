@@ -1,7 +1,4 @@
-import {
-  finalizeClaimedMembershipVerification,
-  deferClaimedMembershipVerification,
-} from '../verification-work.mts'
+import { finalizePendingMembershipVerification } from '../verification-work.mts'
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
@@ -23,11 +20,10 @@ export async function allocateGooglePlayObservationOrder(): Promise<number> {
 }
 export async function terminalizeGooglePlayConflict(
   id: string,
-  token: string,
   reason: 'wrong_account' | 'competing_direct_source',
 ): Promise<void> {
   await using query = await beginTransaction()
-  if (!(await finalizeClaimedMembershipVerification(query, id, token, 'conflict', reason))) return
+  if (!(await finalizePendingMembershipVerification(query, id, 'conflict', reason))) return
   await query.commit()
 }
 export function getPurchaseToken(context: Context): string | null {
@@ -149,25 +145,19 @@ export async function acceptObservation(
   if (!existing[0]) throw new Error('Google Play observation was not returned')
   return existing[0].id
 }
-export async function finalizeVerified(
-  context: Context,
-  token: string,
-  query: QueryExecutor,
-): Promise<void> {
+export async function finalizeVerified(context: Context, query: QueryExecutor): Promise<void> {
   if (
-    !(await finalizeClaimedMembershipVerification(
+    !(await finalizePendingMembershipVerification(
       query,
       context.verificationId,
-      token,
       'verified',
       'verified',
     ))
   )
-    throw new Error('Google Play verification claim was superseded')
+    throw new Error('Google Play verification outcome was already recorded')
 }
 export async function reject(
   context: Context,
-  token: string,
   reason: string,
   query: Awaited<ReturnType<typeof beginTransaction>>,
 ): Promise<void> {
@@ -176,25 +166,13 @@ export async function reject(
       UPDATE membership_provider_evidence_records SET rejected_at = clock_timestamp(), rejection_reason = ${reason}
       WHERE id = ${context.evidenceId} AND verified_at IS NULL AND rejected_at IS NULL`)
   if (
-    !(await finalizeClaimedMembershipVerification(
+    !(await finalizePendingMembershipVerification(
       query,
       context.verificationId,
-      token,
       'rejected',
       reason,
     ))
   )
-    throw new Error('Google Play verification claim was superseded')
+    throw new Error('Google Play verification outcome was already recorded')
   await query.commit()
-}
-export async function deferGooglePlayVerification(
-  id: string,
-  token: string,
-  error: unknown,
-): Promise<void> {
-  await deferClaimedMembershipVerification(
-    id,
-    token,
-    error instanceof Error ? error.message : 'Google Play verification retry',
-  )
 }

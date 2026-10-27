@@ -10,7 +10,6 @@ import {
   createPriceOptionalProviderProduct,
 } from '../../../test-helpers/data-stores/psql/membership-purchase-intents.mts'
 import {
-  claimCompletedMembershipVerification,
   completeMembershipVerification,
   completeMembershipVerificationWithoutResult,
   createCrossOwnerMembershipVerification,
@@ -76,9 +75,6 @@ describe('membership purchase intent and verification schema constraints', () =>
     })
     await expect(setUnstableMembershipVerificationResult(verificationId)).rejects.toMatchObject({
       code: '22P02',
-    })
-    await expect(claimCompletedMembershipVerification(verificationId)).rejects.toMatchObject({
-      code: '23514',
     })
     await expect(
       createCrossOwnerMembershipVerification(fixture, intentId, evidenceId),

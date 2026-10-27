@@ -1,3 +1,4 @@
+import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { getMembershipWorkLimit } from '@services/memberships/work-limits'
 import { getExternalFetch } from '@modules/utils'
 import type {
@@ -7,6 +8,7 @@ import type {
 } from './types.mts'
 import { isInvalidStoreIdKeyResponse, MicrosoftStoreResponseError } from './response-error.mts'
 import { getMicrosoftStoreServiceToken } from './service-token.mts'
+import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 
 const COLLECTIONS_URL = 'https://collections.mp.microsoft.com/v9.0/collections/publisherQuery'
 const RECURRENCES_URL = 'https://purchase.mp.microsoft.com/v8.0/b2b/recurrences/query'
@@ -122,6 +124,7 @@ async function microsoftFetch(
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15_000),
   })
+  throwIfRateLimitedResponse(response, url)
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
     throw new MicrosoftStoreResponseError(
@@ -149,6 +152,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 function requiredEnv(name: string): string {
   const value = process.env[name]?.trim()
-  if (!value) throw new Error(`${name} is required for Microsoft Store membership verification`)
+  if (!value)
+    throw new MembershipProviderUnavailableError(
+      `${name} is required for Microsoft Store membership verification`,
+    )
   return value
 }

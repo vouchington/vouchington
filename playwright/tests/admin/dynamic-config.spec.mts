@@ -5,7 +5,7 @@ import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 // Each click loads that namespace's details and history. Walking the full
 // registry in one test exceeds the 30s cap, so slices keep every panel
 // covered and the per-slice count fails closed when the registry outgrows it.
-const namespacePanelSliceCount = 8
+const namespacePanelSliceCount = 9
 const maxNamespacesPerSlice = 12
 
 function namespacePanelSlice(

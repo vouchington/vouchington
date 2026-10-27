@@ -1,11 +1,8 @@
+import { completeMembershipVerification } from '@voucha/test-helpers/data-stores/psql/membership-verifications'
+import { getMembershipPendingState } from './membership-overview-pending.mts'
 import { describe, expect, it } from 'vitest'
+import { createTestPendingMembershipVerification, createTestUser } from '@voucha/test-helpers'
 import {
-  createTestPendingMembershipVerification,
-  createTestUser,
-  getTestMembershipVerificationProcessingState,
-} from '@voucha/test-helpers'
-import {
-  deferMembershipVerificationUntilAdapterAvailable,
   findRecoverableMembershipVerificationIds,
   createMembershipVerificationFingerprint,
   getMembershipVerificationStatus,
@@ -28,22 +25,33 @@ describe('membership verifications', () => {
     ).toBe('conflict')
   })
 
-  it('leases and defers due durable verification work without leaving a stale claim', async () => {
+  it('pages pending domain rows and preserves overview status without a queue timestamp', async () => {
     const user = await createTestUser()
-    const verificationId = await createTestPendingMembershipVerification(user.id)
-
-    await expect(deferMembershipVerificationUntilAdapterAvailable(verificationId)).resolves.toBe(
-      true,
+    const first = await createTestPendingMembershipVerification(user.id)
+    const second = await createTestPendingMembershipVerification(user.id)
+    // Exact UUID intervals isolate this global sweep from other parallel tests' pending rows.
+    const [beforeFirst, beforeSecond] = [first, second].map(id =>
+      (BigInt(`0x${id.replaceAll('-', '')}`) - 1n)
+        .toString(16)
+        .padStart(32, '0')
+        .replace(/^(........)(....)(....)(....)(............)$/u, '$1-$2-$3-$4-$5'),
     )
-    const state = await getTestMembershipVerificationProcessingState(verificationId)
-
-    expect(state).toMatchObject({
-      lease_token: null,
-      leased_at: null,
-      attempt_count: 1,
-      last_error: 'provider_adapter_unavailable',
+    await expect(
+      findRecoverableMembershipVerificationIds({ after: beforeSecond, through: second, limit: 1 }),
+    ).resolves.toEqual([second])
+    await expect(getMembershipPendingState(user.id)).resolves.toMatchObject({
+      verifications: expect.arrayContaining([
+        { id: first, provider: 'apple_app_store', status: 'pending', reason_code: null },
+      ]),
     })
-    expect(state?.available_at?.getTime()).toBeGreaterThan(Date.now())
-    await expect(findRecoverableMembershipVerificationIds()).resolves.not.toContain(verificationId)
+    await completeMembershipVerification(first)
+    await expect(
+      findRecoverableMembershipVerificationIds({ after: beforeFirst, through: first, limit: 1 }),
+    ).resolves.toEqual([])
+    await expect(getMembershipPendingState(user.id)).resolves.toMatchObject({
+      verifications: expect.arrayContaining([
+        { id: first, provider: 'apple_app_store', status: 'verified', reason_code: 'verified' },
+      ]),
+    })
   })
 })

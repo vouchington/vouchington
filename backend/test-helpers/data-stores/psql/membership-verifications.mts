@@ -67,13 +67,6 @@ export function setUnstableMembershipVerificationResult(
     UPDATE membership_verifications SET result_code = 'temporary_provider_wording' WHERE id = ${verificationId}`)
 }
 
-export function claimCompletedMembershipVerification(verificationId: string): Promise<WriteResult> {
-  return write(sql`/* rejectCompletedMembershipVerificationClaim */
-    UPDATE membership_verification_processing_work_items
-    SET lease_token = ${randomUUID()}, leased_at = CURRENT_TIMESTAMP, lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '30 minutes'
-    WHERE membership_verification_id = ${verificationId}`)
-}
-
 export function createCrossOwnerMembershipVerification(
   fixture: MembershipPurchaseIntentFixture,
   intentId: string,

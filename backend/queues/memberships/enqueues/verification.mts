@@ -1,9 +1,21 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
+import {
+  MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
+  membershipVerificationDispatchOrdering,
+  membershipVerificationOrdering,
+  PRIORITY_DEFAULT,
+  PRIORITY_DISPATCHER,
+  QUEUE_NAME,
+} from '../config.mts'
 import { memberships } from '../queues.mts'
-import type { MembershipsJobs, ProcessMembershipVerificationData } from '../types.mts'
+import type {
+  MembershipsJobs,
+  ProcessMembershipVerificationData,
+  RecoverMembershipVerificationsData,
+} from '../types.mts'
 
 const VERIFICATION_JOB_NAME: MembershipsJobs = 'processMembershipVerification'
 const VERIFICATION_RECOVERY_JOB_NAME: MembershipsJobs = 'recoverMembershipVerifications'
@@ -38,13 +50,13 @@ export const enqueueBulkProcessMembershipVerifications = createBulkEnqueueFuncti
 })
 
 const enqueueRecoverMembershipVerificationsJob = createEnqueueFunction<
-  Record<string, never>,
+  RecoverMembershipVerificationsData,
   MembershipsJobs
 >({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: VERIFICATION_RECOVERY_JOB_NAME,
-  defaults: verificationDefaults,
+  defaults: { ...verificationDefaults, ...pagedDispatchJobOptions('memberships') },
 })
 
 export function enqueueProcessMembershipVerification(
@@ -53,24 +65,31 @@ export function enqueueProcessMembershipVerification(
   return enqueueProcessMembershipVerificationJob(data, verificationJobOptions(data))
 }
 
-export function enqueueRecoverMembershipVerifications(): EnqueueReturnType {
+export function enqueueRecoverMembershipVerifications(
+  data: RecoverMembershipVerificationsData = {},
+  options: Partial<JobOptions> = {},
+): EnqueueReturnType {
   const jobId = `membership-verification-recovery__${Math.floor(Date.now() / VERIFICATION_RECOVERY_INTERVAL_MS)}`
-  return enqueueRecoverMembershipVerificationsJob({}, {
+  return enqueueRecoverMembershipVerificationsJob(data, {
     jobId,
     priority: PRIORITY_DISPATCHER,
+    ordering: membershipVerificationDispatchOrdering(),
     deduplication: {
       id: 'membership-verification-recovery',
       mode: 'throttle',
       ttl: VERIFICATION_RECOVERY_INTERVAL_MS,
     },
+    ...options,
   } satisfies Partial<JobOptions>)
 }
 
 function verificationJobOptions(data: ProcessMembershipVerificationData): Partial<JobOptions> {
-  const jobId = `membership-verification__${data.verificationId}`
+  const jobId = data.verificationId
   return {
     jobId,
+    lockDuration: MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS,
     priority: PRIORITY_DEFAULT,
+    ordering: membershipVerificationOrdering(data.verificationId),
     deduplication: { id: jobId, mode: 'simple' },
   }
 }

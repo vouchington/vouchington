@@ -32,9 +32,11 @@ describe('Microsoft Store membership verification edge cases', () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: clientFixture(fixture, 'missing-recurrence'),
-    })
+    await expect(
+      processMicrosoftStoreMembershipVerification(verification.id, {
+        client: clientFixture(fixture, 'missing-recurrence'),
+      }),
+    ).rejects.toThrow('Microsoft Store Collections/Recurrence response lag')
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -56,22 +58,24 @@ describe('Microsoft Store membership verification edge cases', () => {
     await expect(getMembershipByUserId(fixture.user.id)).resolves.toBeNull()
   })
 
-  it('releases a verification lease when Microsoft is temporarily unavailable', async () => {
+  it('rejects a Microsoft outage so GlideMQ retries the pending verification', async () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
     let recurrenceCalls = 0
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: {
-        queryCollections: async () => {
-          throw new Error('Microsoft Collections is temporarily unavailable')
+    await expect(
+      processMicrosoftStoreMembershipVerification(verification.id, {
+        client: {
+          queryCollections: async () => {
+            throw new Error('Microsoft Collections is temporarily unavailable')
+          },
+          queryRecurrences: async () => {
+            recurrenceCalls += 1
+            return []
+          },
         },
-        queryRecurrences: async () => {
-          recurrenceCalls += 1
-          return []
-        },
-      },
-    })
+      }),
+    ).rejects.toThrow('Microsoft Collections is temporarily unavailable')
 
     expect(recurrenceCalls).toBe(1)
     await expect(

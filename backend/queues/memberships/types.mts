@@ -31,6 +31,8 @@ export type ProcessStripeEventData = {
   isLiveMode: boolean
 }
 
+export type RecoverMembershipVerificationsData = { after?: string; through?: string }
+
 export type ProcessMembershipVerificationData = { verificationId: string }
 
 export type ProcessAppleNotificationData = {

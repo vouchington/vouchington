@@ -14,7 +14,6 @@ import {
   type reconcileStripeMembershipCatalog,
 } from '@services/memberships'
 import { createTestMembership, createTestUser } from '@voucha/test-helpers'
-import type { processMembershipVerification } from '@services/memberships/process-verification'
 import type { claimRecoverableStripeEvents } from '@services/stripe/recovery'
 import { cleanupRefundReconciliationOperationsForTest } from '../../../test-helpers/entities/membership-refund-reconciliation-state.mts'
 import { readAllQueueJobs } from '../../../test-helpers/queue-jobs.mts'
@@ -36,6 +35,7 @@ import type {
   recoverMicrosoftStoreSources,
 } from './microsoft-store.mts'
 import { processMembershipJob } from './process-job.mts'
+import type { processMembershipVerificationJob } from './process-verification-job.mts'
 import { type processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
 
 describe('processMembershipJob', () => {
@@ -45,7 +45,7 @@ describe('processMembershipJob', () => {
         vi.fn<typeof deliverPendingMembershipEntitlementEffects>(),
       expireElapsedMemberships: vi.fn<typeof expireElapsedMembershipsBatch>(),
       processAppleNotification: vi.fn<typeof reconcileAppleNotification>(),
-      processMembershipVerification: vi.fn<typeof processMembershipVerification>(),
+      processMembershipVerificationJob: vi.fn<typeof processMembershipVerificationJob>(),
       processRenewalNotificationCheckDispatcher:
         vi.fn<typeof processRenewalNotificationCheckDispatcher>(),
       processSendRenewalPriceIncreaseEmail: vi.fn<typeof processSendRenewalPriceIncreaseEmail>(),
@@ -131,7 +131,12 @@ describe('processMembershipJob', () => {
     expect(processors.processStripeEvent).toHaveBeenCalledWith(stripeData, true)
     expect(processors.deliverMembershipEntitlementEffects).toHaveBeenCalledOnce()
     expect(processors.expireElapsedMemberships).toHaveBeenCalledOnce()
-    expect(processors.processMembershipVerification).toHaveBeenCalledWith('verification-1')
+    expect(processors.processMembershipVerificationJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'processMembershipVerification',
+        data: { verificationId: 'verification-1' },
+      }),
+    )
     expect(processors.processAppleNotification).toHaveBeenCalledWith(appleData)
     expect(processors.recoverStripeEvents).toHaveBeenCalledOnce()
     expect(processors.recoverMembershipVerifications).toHaveBeenCalledOnce()
@@ -178,7 +183,7 @@ describe('processMembershipJob', () => {
           vi.fn<typeof deliverPendingMembershipEntitlementEffects>(),
         expireElapsedMemberships: vi.fn<typeof expireElapsedMembershipsBatch>(),
         processAppleNotification: vi.fn<typeof reconcileAppleNotification>(),
-        processMembershipVerification: vi.fn<typeof processMembershipVerification>(),
+        processMembershipVerificationJob: vi.fn<typeof processMembershipVerificationJob>(),
         processRenewalNotificationCheckDispatcher:
           vi.fn<typeof processRenewalNotificationCheckDispatcher>(),
         processSendRenewalPriceIncreaseEmail: vi.fn<typeof processSendRenewalPriceIncreaseEmail>(),

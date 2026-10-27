@@ -2,7 +2,6 @@ import { getContext } from './verification-context.mts'
 import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { enqueueAcknowledgeGooglePlayPurchase } from '@queues/memberships/enqueues'
-import { claimPendingMembershipVerification } from '../verification-recovery.mts'
 import { DirectMembershipSourceRejectedError } from '../direct-source-authority.mts'
 import { ProviderMembershipSourceConflictError } from '../provider-source.mts'
 import { GooglePlayLineageConflictError, resolveGooglePlayTokenLineage } from './lineage.mts'
@@ -13,44 +12,42 @@ import { terminalizeKnownGooglePlaySource } from './permanent-lookup-loss.mts'
 import { verifyGooglePlaySubscription } from './subscription-verifier.mts'
 import {
   allocateGooglePlayObservationOrder,
-  deferGooglePlayVerification,
   getMapping,
   getPurchaseToken,
   reject,
   terminalizeGooglePlayConflict,
 } from './verification-persistence.mts'
 import {
-  deferPendingGooglePlayVerification,
   finalizeVerifiedGooglePlayMembership,
   persistPendingGooglePlaySource,
   persistVerifiedGooglePlayObservation,
 } from './verification-finalization.mts'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
+export class GooglePlayPurchasePendingError extends Error {
+  constructor() {
+    super('Google Play purchase is pending')
+    this.name = 'GooglePlayPurchasePendingError'
+  }
+}
+
 /** Worker authority: fetches subscriptionsv2, then persists/projections its normalized source state. */
 export async function processGooglePlayMembershipVerification(
   verificationId: string,
   dependencies: { client: GooglePlaySubscriptionsV2Client },
 ): Promise<void> {
-  const claim = await claimPendingMembershipVerification(verificationId)
-  if (!claim) return
   let submittedPurchaseToken: string | null = null
   let providerOrder: number | null = null
   try {
     await using query = await beginTransaction()
-    const context = await getContext(claim.id, claim.leaseToken, query)
+    const context = await getContext(verificationId, query)
     if (!context) return
     if (context.evidenceRejectedAt)
-      return await reject(
-        context,
-        claim.leaseToken,
-        context.evidenceRejectionReason ?? 'invalid_evidence',
-        query,
-      )
+      return await reject(context, context.evidenceRejectionReason ?? 'invalid_evidence', query)
     const purchaseToken = getPurchaseToken(context)
-    if (!purchaseToken) return await reject(context, claim.leaseToken, 'invalid_evidence', query)
+    if (!purchaseToken) return await reject(context, 'invalid_evidence', query)
     submittedPurchaseToken = purchaseToken
-    // Do not retain a transaction while calling Google. The lease fences finalization.
+    // Release locks during provider reads; reload and lock pending state before finalization.
     await query.commit()
     providerOrder = await allocateGooglePlayObservationOrder()
     const currentSubscription = await fetchGooglePlaySubscription({
@@ -59,7 +56,7 @@ export async function processGooglePlayMembershipVerification(
       purchaseToken,
     })
     await using validationQuery = await beginTransaction()
-    const validation = await getContext(claim.id, claim.leaseToken, validationQuery)
+    const validation = await getContext(verificationId, validationQuery)
     if (!validation) return
     const preflight = await preflightGooglePlayCurrentSubscription({
       context: validation,
@@ -67,8 +64,7 @@ export async function processGooglePlayMembershipVerification(
       subscription: currentSubscription,
       query: validationQuery,
     })
-    if (preflight.reasonCode)
-      return await reject(validation, claim.leaseToken, preflight.reasonCode, validationQuery)
+    if (preflight.reasonCode) return await reject(validation, preflight.reasonCode, validationQuery)
     await validationQuery.commit()
     const resolved = await resolveGooglePlayTokenLineage({
       client: dependencies.client,
@@ -79,10 +75,10 @@ export async function processGooglePlayMembershipVerification(
     })
     const subscription = resolved.currentSubscription
     await using finalizeQuery = await beginTransaction()
-    const fresh = await getContext(claim.id, claim.leaseToken, finalizeQuery)
+    const fresh = await getContext(verificationId, finalizeQuery)
     if (!fresh) return
     const mapping = await getMapping(fresh, subscription, finalizeQuery)
-    if (!mapping) return await reject(fresh, claim.leaseToken, 'wrong_product', finalizeQuery)
+    if (!mapping) return await reject(fresh, 'wrong_product', finalizeQuery)
     const result = verifyGooglePlaySubscription({
       subscription,
       purchaseToken,
@@ -96,10 +92,10 @@ export async function processGooglePlayMembershipVerification(
     if (!result.accepted) {
       if (result.bindablePending) {
         await persistPendingGooglePlaySource(fresh, resolved, finalizeQuery)
-        await deferPendingGooglePlayVerification(fresh, claim.leaseToken, finalizeQuery)
-        return
+        await finalizeQuery.commit()
+        throw new GooglePlayPurchasePendingError()
       }
-      return await reject(fresh, claim.leaseToken, result.reasonCode, finalizeQuery)
+      return await reject(fresh, result.reasonCode, finalizeQuery)
     }
     const verified = await persistVerifiedGooglePlayObservation(
       fresh,
@@ -111,7 +107,6 @@ export async function processGooglePlayMembershipVerification(
     )
     const finalized = await finalizeVerifiedGooglePlayMembership({
       context: fresh,
-      token: claim.leaseToken,
       mapping,
       purchaseToken,
       acknowledgementPending: result.acknowledgementPending,
@@ -133,38 +128,32 @@ export async function processGooglePlayMembershipVerification(
         err.status === 410 ||
         (err.status === 400 && err.reason === 'subscriptionExpired')
       ) {
-        try {
-          if (
-            providerOrder !== null &&
-            (await terminalizeKnownGooglePlaySource({
-              verificationId: claim.id,
-              claimToken: claim.leaseToken,
-              purchaseTokenDigest: err.purchaseTokenDigest,
-              providerOrder,
-            }))
-          )
-            return
-        } catch (err) {
-          await deferGooglePlayVerification(claim.id, claim.leaseToken, err)
+        if (
+          providerOrder !== null &&
+          (await terminalizeKnownGooglePlaySource({
+            verificationId,
+            purchaseTokenDigest: err.purchaseTokenDigest,
+            providerOrder,
+          }))
+        )
           return
-        }
       }
       await using query = await beginTransaction()
-      const context = await getContext(claim.id, claim.leaseToken, query)
-      if (context) await reject(context, claim.leaseToken, 'invalid_evidence', query)
+      const context = await getContext(verificationId, query)
+      if (context) await reject(context, 'invalid_evidence', query)
       return
     }
     if (err instanceof DirectMembershipSourceRejectedError) {
-      await terminalizeGooglePlayConflict(claim.id, claim.leaseToken, 'competing_direct_source')
+      await terminalizeGooglePlayConflict(verificationId, 'competing_direct_source')
       return
     }
     if (
       err instanceof GooglePlayLineageConflictError ||
       err instanceof ProviderMembershipSourceConflictError
     ) {
-      await terminalizeGooglePlayConflict(claim.id, claim.leaseToken, 'wrong_account')
+      await terminalizeGooglePlayConflict(verificationId, 'wrong_account')
       return
     }
-    await deferGooglePlayVerification(claim.id, claim.leaseToken, err)
+    throw err
   }
 }

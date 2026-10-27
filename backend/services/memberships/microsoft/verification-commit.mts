@@ -15,7 +15,6 @@ type Transaction = Awaited<ReturnType<typeof beginTransaction>>
 /** Records the verified provider fact, advances the source, then retains only current keys. */
 export async function commitAcceptedMicrosoftStoreVerification(options: {
   context: Context
-  token: string
   mapping: Mapping
   evidence: Evidence
   observation: MicrosoftStoreObservation
@@ -27,13 +26,12 @@ export async function commitAcceptedMicrosoftStoreVerification(options: {
 
 async function recordAndFinalize(options: {
   context: Context
-  token: string
   mapping: Mapping
   observation: MicrosoftStoreObservation
   query: Transaction
 }): Promise<{ lineageId: string; observationId: string }> {
   const recorded = await recordObservation(options)
-  await finalizeVerified(options.context, options.token, options.query)
+  await finalizeVerified(options.context, options.query)
   return recorded
 }
 
