@@ -80,7 +80,7 @@ describe('cleanupOldReferralAttributions', () => {
 
     expect(await referralAttributionExistsById(survivingId)).toBe(true)
     expect(await referralAttributionExistsById(sweptId)).toBe(false)
-  }, 30_000)
+  })
 
   it('deletes anonymous referral attributions older than retentionDays', async () => {
     const window = createTestRetentionWindow()
@@ -93,7 +93,7 @@ describe('cleanupOldReferralAttributions', () => {
 
     expect(result).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(oldId)).toBe(false)
-  }, 30_000)
+  })
 
   it('does NOT delete recent anonymous referral attributions', async () => {
     const window = createTestRetentionWindow()
@@ -106,7 +106,7 @@ describe('cleanupOldReferralAttributions', () => {
 
     expect(result).toEqual({ deleted: 0, hasMore: false })
     expect(await referralAttributionExistsById(recentId)).toBe(true)
-  }, 30_000)
+  })
 
   it('does NOT delete user-linked referral attributions regardless of age', async () => {
     const window = createTestRetentionWindow()
@@ -124,7 +124,7 @@ describe('cleanupOldReferralAttributions', () => {
 
     expect(result).toEqual({ deleted: 0, hasMore: false })
     expect(await referralAttributionExistsById(oldLinkedId)).toBe(true)
-  }, 30_000)
+  })
 
   it('a re-clicked anonymous row (fresh id) survives even though its original click is old enough to be swept', async () => {
     const window = createTestRetentionWindow()
@@ -151,7 +151,7 @@ describe('cleanupOldReferralAttributions', () => {
     expect(result).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(originalId)).toBe(false)
     expect(await referralAttributionExistsById(movedId)).toBe(true)
-  }, 30_000)
+  })
 
   it('sweeps a converted row once its user_id has been nulled out (e.g. by account deletion)', async () => {
     const window = createTestRetentionWindow()
@@ -173,7 +173,7 @@ describe('cleanupOldReferralAttributions', () => {
 
     expect(result).toEqual({ deleted: 1, hasMore: false })
     expect(await referralAttributionExistsById(rowId)).toBe(false)
-  }, 30_000)
+  })
 
   it('deletes old anonymous referral attributions in bounded batches', async () => {
     const window = createTestRetentionWindow()
@@ -204,5 +204,5 @@ describe('cleanupOldReferralAttributions', () => {
     expect(secondResult).toEqual({ deleted: 1, hasMore: true })
     expect(await referralAttributionExistsById(firstOldId)).toBe(false)
     expect(await referralAttributionExistsById(secondOldId)).toBe(false)
-  }, 30_000)
+  })
 })

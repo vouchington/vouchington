@@ -143,7 +143,7 @@ describe('get-ids (pagination)', () => {
     const foundPost2 = result.results.find(r => r.id === post2.id)
     expect(foundPost1).toBeDefined()
     expect(foundPost2).toBeDefined()
-  }, 30_000)
+  })
 
   it('getPostIds builds opaque ranking cursors for sort=relevance with text search', async () => {
     const user = await createTestUser()

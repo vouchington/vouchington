@@ -121,5 +121,5 @@ describe('processors', () => {
     expect(topicRows).toHaveLength(0)
     expect(postRows.map(row => row.subject_id)).toEqual([commentId])
     expect(postRows[0].deleted_at).toBeNull()
-  }, 30_000)
+  })
 })

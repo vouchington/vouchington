@@ -58,7 +58,7 @@ describe('images', () => {
       [],
       [`https://private-images.example.test/${image.s3_key}?signature=fake`],
     )
-  }, 15000)
+  })
 
   it('upsertImageOpenAIModeration - uses stored S3 key for direct uploads', async () => {
     const { image_id: imageId } = await createImageUploadUrl(user, {

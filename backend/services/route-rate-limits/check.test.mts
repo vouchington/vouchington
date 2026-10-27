@@ -32,7 +32,7 @@ describe('check', () => {
     // so the singleton remains usable by other test files in the same fork.
     routeRateLimitConfig.unsubscribe()
     rateLimitConfig.unsubscribe()
-  }, 30_000)
+  })
 
   afterEach(async () => {
     const errors: unknown[] = []
@@ -279,7 +279,7 @@ describe('check', () => {
       const result = await checkRouteRateLimit(routeKey, identities, null)
       expect(result.limit).toBe(40) // ceil(10 * 4)
     })
-  }, 30_000)
+  })
 
   describe('getAttestedMultiplier', () => {
     afterEach(() => {

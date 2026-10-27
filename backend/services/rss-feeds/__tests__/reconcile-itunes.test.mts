@@ -32,7 +32,7 @@ describe('persistFeedMetadataAndReconcileLanguage (integration)', () => {
     const texts = categories.map(c => c.category_text)
     expect(texts).toContain('business')
     expect(texts).toContain('news')
-  }, 30_000)
+  })
 
   it('skips podcast show upsert when itunes data is absent', async () => {
     const feed = await createTestRssFeed({})
@@ -43,5 +43,5 @@ describe('persistFeedMetadataAndReconcileLanguage (integration)', () => {
     expect(show).toBeNull()
     const categories = await getRssFeedCategories(feed.id)
     expect(categories).toHaveLength(0)
-  }, 30_000)
+  })
 })
