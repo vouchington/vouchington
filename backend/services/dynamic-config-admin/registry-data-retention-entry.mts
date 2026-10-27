@@ -27,6 +27,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.moderation_max_batches_per_run,
       integer: true,
     },
+    ses_bounce_retention_days: {
+      description: 'Age in days before folded raw SES bounce and complaint events are deleted.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.ses_bounce_retention_days,
+      integer: true,
+    },
     batch_size: {
       description: 'Rows each data retention cleanup deletes per batch.',
       minValue: 1,

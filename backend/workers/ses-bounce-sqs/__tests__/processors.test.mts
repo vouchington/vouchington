@@ -104,7 +104,7 @@ describe('processSesBounceSqsMessage', () => {
     expect(await countSesBounceEventsBySesMessageId(messageId)).toBe(1)
   })
 
-  it('maps a delivery notification with multiple recipients', async () => {
+  it('acknowledges a delivery notification without storing it', async () => {
     const messageId = `msg-${Math.random().toString(36).slice(2)}`
 
     await processSesBounceSqsMessage(
@@ -119,7 +119,7 @@ describe('processSesBounceSqsMessage', () => {
       }),
     )
 
-    expect(await countSesBounceEventsBySesMessageId(messageId)).toBe(1)
+    expect(await countSesBounceEventsBySesMessageId(messageId)).toBe(0)
   })
 
   it('deduplicates redelivery of the same message so only one row lands', async () => {

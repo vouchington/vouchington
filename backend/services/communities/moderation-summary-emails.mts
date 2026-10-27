@@ -42,20 +42,22 @@ async function dispatchModerationSummary(
       recipient.id,
       windowStart,
       now,
+      now,
     )
     if (communities.length === 0) return
 
     sendKey = buildModerationSendKey(recipient, now)
     if (!(await claimModerationEmailSend(recipient.id, sendKey))) return
 
-    const props: CommunityModerationSummaryEmailProps = {
+    const props = {
       userName: recipient.username ?? undefined,
       generatedForDate: formatLocalDate(now, recipient.moderation_email_timezone),
+      dispatchTimeZone: recipient.moderation_email_timezone,
       settingsUrl: getSiteUrl('/my/notification-settings'),
       unsubscribeUrl: createEmailUnsubscribeUrl(recipient.id, 'community_digest'),
       physicalAddress: getMarketingPostalAddress(),
       communities,
-    }
+    } satisfies CommunityModerationSummaryEmailProps & { dispatchTimeZone: string }
     await enqueueSendCommunityModerationSummaryEmail(
       {
         userId: recipient.id,
@@ -107,18 +109,6 @@ export async function isModerationEmailsEnabled(userId: string): Promise<boolean
     `,
   )
   return rows.at(0)?.is_moderation_emails_enabled ?? false
-}
-
-export async function getModerationEmailTimezone(userId: string): Promise<string> {
-  const { rows } = await read<{ moderation_email_timezone: string }>(
-    sql`/* getModerationEmailTimezone */
-      SELECT COALESCE(moderation_email_timezone, 'America/Los_Angeles') AS moderation_email_timezone
-      FROM view_users_private
-      WHERE id = ${userId}
-      LIMIT 1
-    `,
-  )
-  return rows[0]?.moderation_email_timezone ?? 'America/Los_Angeles'
 }
 
 export async function getModerationEmailCadence(
@@ -327,10 +317,13 @@ export async function getModerationSummaryRecipients(now: Date): Promise<Moderat
 export async function getCommunityModerationSummaryCommunities(
   userId: string,
   windowStart: Date,
-  windowEnd: Date,
+  activityWindowEnd: Date,
+  eligibilityAt: Date,
 ): Promise<CommunityModerationSummaryEmailProps['communities']> {
+  // Vacation eligibility belongs to the queued period; activity reads may stop earlier
+  // when a worker clock trails the dispatcher clock.
   const windowStartId = timestampToUuidv7LowerBound(windowStart.getTime())
-  const windowEndId = timestampToUuidv7LowerBound(windowEnd.getTime())
+  const windowEndId = timestampToUuidv7LowerBound(activityWindowEnd.getTime())
   const { rows } = await read(sql`/* getCommunityModerationSummaryCommunities */
     SELECT
       c.name,
@@ -414,7 +407,7 @@ export async function getCommunityModerationSummaryCommunities(
         FROM community_members departed_members
         WHERE departed_members.community_id = c.id
           AND departed_members.removed_at >= ${windowStart}
-          AND departed_members.removed_at < ${windowEnd}
+          AND departed_members.removed_at < ${activityWindowEnd}
       ), 0) AS departed_members,
       COALESCE((
         SELECT COUNT(*)::int
@@ -504,8 +497,8 @@ export async function getCommunityModerationSummaryCommunities(
         FROM community_member_vacations v
         WHERE v.community_id = cm.community_id
           AND v.user_id = cm.user_id
-          AND v.starts_at <= ${windowEnd}::timestamptz
-          AND (v.ends_at IS NULL OR v.ends_at > ${windowEnd}::timestamptz)
+          AND v.starts_at <= ${eligibilityAt}::timestamptz
+          AND (v.ends_at IS NULL OR v.ends_at > ${eligibilityAt}::timestamptz)
         )
       )
     ORDER BY c.name ASC, c.id ASC
@@ -625,7 +618,7 @@ function getIsoDayOfWeekForLocalDate(localDate: string): number {
   return day === 0 ? 7 : day
 }
 
-function getIsoWeekKey(localDate: string): string {
+export function getIsoWeekKey(localDate: string): string {
   const date = new Date(`${localDate}T00:00:00.000Z`)
   const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
   const dayNumber = utcDate.getUTCDay() || 7

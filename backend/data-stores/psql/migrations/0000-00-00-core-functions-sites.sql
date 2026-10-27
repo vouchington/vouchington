@@ -20,7 +20,9 @@ DECLARE
   old_row JSONB;
   new_row JSONB;
 BEGIN
-  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1
+    AND NOT (TG_TABLE_SCHEMA = 'public' AND TG_TABLE_NAME = 'amazon_ses_bounce_events')
+  THEN RETURN OLD; END IF;
   -- Only the bounded history-retention transaction may delete these four audit families.
   -- Other append-only tables and every UPDATE retain the ordinary mutation guard.
   IF TG_OP = 'DELETE'
@@ -32,6 +34,30 @@ BEGIN
     )
     AND current_setting('app.history_retention_cleanup', true) = 'on'
   THEN RETURN OLD; END IF;
+  -- Raw SES events remain append-only until this exact retention page has already folded
+  -- every suppressed recipient into the durable per-address summary.
+  IF TG_OP = 'DELETE' AND TG_TABLE_SCHEMA = 'public'
+    AND TG_TABLE_NAME = 'amazon_ses_bounce_events' THEN
+    IF uuid_extract_timestamp(OLD.id) < nullif(
+        current_setting('app.ses_bounce_retention_cutoff', true), ''
+      )::timestamptz
+      AND OLD.id::text = ANY(string_to_array(
+        current_setting('app.ses_bounce_retention_ids', true), ','
+      ))
+      AND (
+        (OLD.notification_type = 'bounce' AND OLD.bounce_type IS DISTINCT FROM 'permanent')
+        OR NOT EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(OLD.recipients) recipient(email_address)
+          WHERE NOT EXISTS (
+            SELECT 1 FROM amazon_ses_address_suppressions suppression
+            WHERE suppression.email_address = lower(trim(recipient.email_address))
+          )
+        )
+      )
+    THEN
+      RETURN OLD;
+    END IF;
+  END IF;
   IF TG_OP = 'UPDATE' THEN
     old_row := to_jsonb(OLD);
     new_row := to_jsonb(NEW);

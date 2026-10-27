@@ -4,7 +4,7 @@ import sql from 'sql-template-strings'
 import { write } from '@data-stores/psql'
 import type { CreateSesBounceEventInput, SesBounceEvent } from './types.mts'
 
-const VALID_NOTIFICATION_TYPES = new Set(['bounce', 'complaint', 'delivery'])
+const VALID_NOTIFICATION_TYPES = new Set(['bounce', 'complaint'])
 const VALID_BOUNCE_TYPES = new Set(['permanent', 'transient', 'undetermined'])
 
 function normalizeRecipients(recipients: string[]): string[] {
@@ -15,7 +15,7 @@ function normalizeRecipients(recipients: string[]): string[] {
 
 // Content-derived, not the SNS/SQS envelope id: MessageDeduplicationId is FIFO-only and
 // unavailable on a standard queue. Recipients are part of the key because a multi-recipient
-// `delivery` notification can be split across separate per-recipient notifications that share
+// notification can be split across separate per-recipient notifications that share
 // mail.messageId, notification type, and (second-precision) timestamp -- without the recipient
 // set, the second notification would be silently dropped as a "duplicate" of the first.
 function deriveDedupKey(
@@ -99,6 +99,41 @@ export async function createSesBounceEvent(
       reporting_mta,
       dedup_key,
       uuid_extract_timestamp(id) AS created_at
+    ), folded_suppressions AS (
+      INSERT INTO amazon_ses_address_suppressions (
+        email_address, first_event_at, first_notification_type,
+        latest_event_at, latest_notification_type
+      )
+      SELECT DISTINCT recipient.email_address,
+        event.occurred_at, event.notification_type,
+        event.occurred_at, event.notification_type
+      FROM inserted_event event
+      CROSS JOIN LATERAL jsonb_array_elements_text(event.recipients) recipient(email_address)
+      WHERE event.notification_type = 'complaint'
+        OR (event.notification_type = 'bounce' AND event.bounce_type = 'permanent')
+      ORDER BY recipient.email_address ASC NULLS LAST
+      ON CONFLICT (email_address) DO UPDATE SET
+        first_event_at = LEAST(amazon_ses_address_suppressions.first_event_at, EXCLUDED.first_event_at),
+        first_notification_type = CASE
+          WHEN EXCLUDED.first_event_at < amazon_ses_address_suppressions.first_event_at
+            OR (
+              EXCLUDED.first_event_at = amazon_ses_address_suppressions.first_event_at
+              AND EXCLUDED.first_notification_type = 'complaint'
+            )
+            THEN EXCLUDED.first_notification_type
+          ELSE amazon_ses_address_suppressions.first_notification_type
+        END,
+        latest_event_at = GREATEST(amazon_ses_address_suppressions.latest_event_at, EXCLUDED.latest_event_at),
+        latest_notification_type = CASE
+          WHEN EXCLUDED.latest_event_at > amazon_ses_address_suppressions.latest_event_at
+            OR (
+              EXCLUDED.latest_event_at = amazon_ses_address_suppressions.latest_event_at
+              AND EXCLUDED.latest_notification_type = 'complaint'
+            )
+            THEN EXCLUDED.latest_notification_type
+          ELSE amazon_ses_address_suppressions.latest_notification_type
+        END
+      RETURNING email_address
     )
     SELECT
       event.id,

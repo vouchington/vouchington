@@ -30,6 +30,7 @@ describe('moderation summary departed-member window', () => {
         owner.id,
         new Date(start),
         new Date(end),
+        new Date(end),
       )
       const summary = communities.find(candidate => candidate.name === community.name)
       expect(summary?.pendingPostReviews).toBe(1)

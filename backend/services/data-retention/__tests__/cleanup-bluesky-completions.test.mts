@@ -61,6 +61,10 @@ describe('runDataRetentionCleanup', () => {
       oldModerationQueueClaims: emptyWindow,
       oldModerationMediaReveals: emptyWindow,
       classifierRecords: emptyWindow,
+      sesBounceEvents: emptyWindow,
+      systemPrunedNotifications: emptyWindow,
+      userDeletedNotifications: emptyWindow,
+      moderationEmailSends: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -102,6 +106,10 @@ describe('runDataRetentionCleanup', () => {
         batches: { scanned: 0, deleted: 0, hasMore: false },
         identities: { scanned: 0, deleted: 0, hasMore: false },
       },
+      sesBounceEvents: { deleted: 0, hasMore: false },
+      systemPrunedNotifications: { deleted: 0, hasMore: false },
+      userDeletedNotifications: { deleted: 0, hasMore: false },
+      moderationEmailSends: { deleted: 0, hasMore: false },
     })
   }, 30_000)
 })

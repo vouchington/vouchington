@@ -63,7 +63,6 @@
 
 - `bounce`
 - `complaint`
-- `delivery`
 
 ## `api_key_types`
 
@@ -1289,6 +1288,11 @@
 
 - `subscription`
 - `manual_send`
+
+## `notification_email_retention_cleanup_names`
+
+- `system_pruned_notifications`
+- `user_deleted_notifications`
 
 ## `notification_entity_types`
 

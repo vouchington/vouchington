@@ -48,7 +48,7 @@
       "values": ["permanent", "transient", "undetermined"]
     },
     "amazon_ses_notification_types": {
-      "values": ["bounce", "complaint", "delivery"]
+      "values": ["bounce", "complaint"]
     },
     "api_key_types": {
       "values": ["rss", "mcp"]
@@ -988,6 +988,9 @@
     "notification_delivery_types": {
       "values": ["subscription", "manual_send"]
     },
+    "notification_email_retention_cleanup_names": {
+      "values": ["system_pruned_notifications", "user_deleted_notifications"]
+    },
     "notification_entity_types": {
       "values": [
         "post",
@@ -1703,7 +1706,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.resolved_at IS NULL AND OLD.resolution_action IS NULL\n    AND NEW.resolved_at IS NOT NULL AND NEW.resolution_action IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.resolved_at IS DISTINCT FROM NEW.resolved_at\n    OR OLD.resolution_action IS DISTINCT FROM NEW.resolution_action THEN\n    RAISE EXCEPTION 'moderation appeal resolution is immutable once set';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_mutation()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;\n  -- Only the bounded history-retention transaction may delete these four audit families.\n  -- Other append-only tables and every UPDATE retain the ordinary mutation guard.\n  IF TG_OP = 'DELETE'\n    AND TG_TABLE_NAME IN (\n      'dynamic_configuration_revisions',\n      'rss_feed_setting_changes',\n      'fediverse_instance_integration_changes',\n      'community_agent_prompt_revisions'\n    )\n    AND current_setting('app.history_retention_cleanup', true) = 'on'\n  THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1\n    AND NOT (TG_TABLE_SCHEMA = 'public' AND TG_TABLE_NAME = 'amazon_ses_bounce_events')\n  THEN RETURN OLD; END IF;\n  -- Only the bounded history-retention transaction may delete these four audit families.\n  -- Other append-only tables and every UPDATE retain the ordinary mutation guard.\n  IF TG_OP = 'DELETE'\n    AND TG_TABLE_NAME IN (\n      'dynamic_configuration_revisions',\n      'rss_feed_setting_changes',\n      'fediverse_instance_integration_changes',\n      'community_agent_prompt_revisions'\n    )\n    AND current_setting('app.history_retention_cleanup', true) = 'on'\n  THEN RETURN OLD; END IF;\n  -- Raw SES events remain append-only until this exact retention page has already folded\n  -- every suppressed recipient into the durable per-address summary.\n  IF TG_OP = 'DELETE' AND TG_TABLE_SCHEMA = 'public'\n    AND TG_TABLE_NAME = 'amazon_ses_bounce_events' THEN\n    IF uuid_extract_timestamp(OLD.id) < nullif(\n        current_setting('app.ses_bounce_retention_cutoff', true), ''\n      )::timestamptz\n      AND OLD.id::text = ANY(string_to_array(\n        current_setting('app.ses_bounce_retention_ids', true), ','\n      ))\n      AND (\n        (OLD.notification_type = 'bounce' AND OLD.bounce_type IS DISTINCT FROM 'permanent')\n        OR NOT EXISTS (\n          SELECT 1 FROM jsonb_array_elements_text(OLD.recipients) recipient(email_address)\n          WHERE NOT EXISTS (\n            SELECT 1 FROM amazon_ses_address_suppressions suppression\n            WHERE suppression.email_address = lower(trim(recipient.email_address))\n          )\n        )\n      )\n    THEN\n      RETURN OLD;\n    END IF;\n  END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_non_stripe_membership_purchase_intent_checkout()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_intent_checkout()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.provider_checkout_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_contexts context\n    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'only Stripe purchase intents may have checkout ids' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -6162,6 +6165,151 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "amazon_ses_address_suppressions": {
+      "checkConstraints": {
+        "amazon_ses_address_suppressions_check": {
+          "definition": "CHECK ((first_event_at <= latest_event_at))",
+          "validated": true
+        },
+        "amazon_ses_address_suppressions_email_address_check": {
+          "definition": "CHECK (((email_address <> ''::text) AND (email_address = lower(TRIM(BOTH FROM email_address)))))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "email_address": {
+          "comment": "Normalized address suppressed from outbound email.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "first_event_at": {
+          "comment": "Earliest provider occurrence time of a permanent bounce or complaint.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "first_notification_type": {
+          "comment": "SES type of the earliest suppression event.",
+          "dataType": "amazon_ses_notification_types",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "latest_event_at": {
+          "comment": "Latest provider occurrence time of a permanent bounce or complaint.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
+        },
+        "latest_notification_type": {
+          "comment": "SES type of the latest suppression event.",
+          "dataType": "amazon_ses_notification_types",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        }
+      },
+      "comment": "Durable suppression identity for each address with a permanent bounce or complaint.",
+      "foreignKeys": {},
+      "indexes": {
+        "amazon_ses_address_suppressions_email_address_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX amazon_ses_address_suppressions_email_address_key ON public.amazon_ses_address_suppressions USING btree (email_address)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "email_address",
+              "descending": false,
+              "expression": "email_address",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "amazon_ses_address_suppressions_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX amazon_ses_address_suppressions_pkey ON public.amazon_ses_address_suppressions USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "amazon_ses_address_suppressions_email_address_key": {
+          "columns": ["email_address"]
+        }
+      }
+    },
     "amazon_ses_bounce_events": {
       "checkConstraints": {
         "amazon_ses_bounce_events_amazon_ses_feedback_id_check": {
@@ -6267,7 +6415,7 @@
           "ordinalPosition": 1
         },
         "notification_type": {
-          "comment": "SES notification type: bounce, complaint, or delivery.",
+          "comment": "Stored SES notification type: bounce or complaint.",
           "dataType": "amazon_ses_notification_types",
           "defaultExpression": null,
           "generated": null,
@@ -6317,7 +6465,7 @@
           "ordinalPosition": 12
         }
       },
-      "comment": "Records email bounce, complaint, and delivery notifications received from AWS SES.",
+      "comment": "Records email bounce and complaint notifications received from AWS SES.",
       "foreignKeys": {
         "amazon_ses_bounce_events_amazon_ses_bounce_subtype_id_fkey": {
           "columns": ["amazon_ses_bounce_subtype_id"],
@@ -72577,6 +72725,122 @@
         }
       }
     },
+    "notification_email_retention_cleanup_cursors": {
+      "checkConstraints": {
+        "notification_email_retention_cleanup_cursors_check": {
+          "definition": "CHECK (((cursor_at IS NULL) OR (cursor_notification_id IS NOT NULL)))",
+          "validated": true
+        },
+        "notification_email_retention_cleanup_cursors_check1": {
+          "definition": "CHECK (((cursor_notification_id IS NULL) = (sweep_cutoff_at IS NULL)))",
+          "validated": true
+        },
+        "notification_email_retention_cleanup_cursors_check2": {
+          "definition": "CHECK (((cursor_notification_id IS NULL) = (cursor_notification_partition_id IS NULL)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cleanup_name": {
+          "comment": "Finite sweep identity that owns this cursor row.",
+          "dataType": "notification_email_retention_cleanup_names",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "cursor_at": {
+          "comment": "Last scanned deletion time in a notification sweep.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "cursor_notification_id": {
+          "comment": "Last scanned UUIDv7 row position in the current sweep.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "cursor_notification_partition_id": {
+          "comment": "Notification partition-key tie-breaker, not a user relationship; no foreign key preserves progress after user deletion.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "sweep_cutoff_at": {
+          "comment": "Fixed cutoff retained while a multi-page sweep is incomplete.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "updated_at": {
+          "comment": "Time this durable sweep position last changed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
+        }
+      },
+      "comment": "Durable positions for bounded notification tombstone sweeps that skip protected rows.",
+      "foreignKeys": {},
+      "indexes": {
+        "notification_email_retention_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX notification_email_retention_cleanup_cursors_pkey ON public.notification_email_retention_cleanup_cursors USING btree (cleanup_name)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "cleanup_name",
+              "descending": false,
+              "expression": "cleanup_name",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["cleanup_name"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_notification_email_retention_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_notification_email_retention_cleanup_cursors_updated_at BEFORE UPDATE ON public.notification_email_retention_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "notification_push_intent_retention_cursors": {
       "checkConstraints": {
         "notification_push_intent_retention_cursors_is_singleton_check": {
@@ -74212,6 +74476,47 @@
           "unique": false,
           "valid": true
         },
+        "idx_notifications__system_pruned_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_notifications__system_pruned_retention ON ONLY public.notifications USING btree (deleted_at, id, user_id) WHERE ((deleted_at IS NOT NULL) AND (delete_reason = 'system_pruned'::notification_delete_reasons) AND (event_key IS NULL) AND (entity_type <> 'copyright_notice'::notification_entity_types))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "deleted_at",
+              "descending": false,
+              "expression": "deleted_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((deleted_at IS NOT NULL) AND (delete_reason = 'system_pruned'::notification_delete_reasons) AND (event_key IS NULL) AND (entity_type <> 'copyright_notice'::notification_entity_types))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_notifications__user_conversation_type": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -74251,6 +74556,47 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_notifications__user_deleted_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_notifications__user_deleted_retention ON ONLY public.notifications USING btree (deleted_at, id, user_id) WHERE ((deleted_at IS NOT NULL) AND (delete_reason = 'user_deleted'::notification_delete_reasons) AND (event_key IS NULL) AND (entity_type <> 'copyright_notice'::notification_entity_types))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "deleted_at",
+              "descending": false,
+              "expression": "deleted_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((deleted_at IS NOT NULL) AND (delete_reason = 'user_deleted'::notification_delete_reasons) AND (event_key IS NULL) AND (entity_type <> 'copyright_notice'::notification_entity_types))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_notifications__user_id__actor_follow": {

@@ -51,6 +51,7 @@ describe('moderation summary vacation suppression', () => {
         recipient.id,
         new Date(now.getTime() - 86_400_000),
         new Date(now.getTime() + 1000),
+        new Date(now.getTime() + 1000),
       )
       expect(rows.some(row => row.name === community.name)).toBe(included)
     },
@@ -92,6 +93,7 @@ describe('moderation summary vacation suppression', () => {
     const rows = await getCommunityModerationSummaryCommunities(
       recipient.id,
       new Date(start.getTime() - 86_400_000),
+      new Date(start.getTime() + offset),
       new Date(start.getTime() + offset),
     )
     expect(rows.some(row => row.name === community.name)).toBe(included)

@@ -71,6 +71,10 @@ function emptyScopedOptions(now: Date) {
     oldModerationQueueClaims: emptyWindow,
     oldModerationMediaReveals: emptyWindow,
     classifierRecords: emptyWindow,
+    sesBounceEvents: emptyWindow,
+    systemPrunedNotifications: emptyWindow,
+    userDeletedNotifications: emptyWindow,
+    moderationEmailSends: emptyWindow,
   }
 }
 

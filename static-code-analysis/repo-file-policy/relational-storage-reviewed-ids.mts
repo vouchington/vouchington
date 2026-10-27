@@ -33,6 +33,14 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'Deletion-stable keyset position shared by three bounded cleanup streams; the scanned row is removed before checkpointing.',
   ],
   [
+    'notification_email_retention_cleanup_cursors.cursor_notification_id',
+    'Notification keyset position survives deletion of an examined notification; it is not a relationship.',
+  ],
+  [
+    'notification_email_retention_cleanup_cursors.cursor_notification_partition_id',
+    'Notification partition tie-breaker survives deletion of its former owner; it is not a relationship.',
+  ],
+  [
     'copyright_dsa_statement_submissions.transparency_database_uuid',
     'Commission statement UUID returned by the external DSA protocol; no Voucha row owns it.',
   ],

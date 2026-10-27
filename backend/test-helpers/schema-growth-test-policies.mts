@@ -56,6 +56,10 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   rationale,
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
+  [
+    'notification_email_retention_cleanup_cursors',
+    naturalOrProviderId('Finite retention sweep names are the key.'),
+  ],
   ...SHARED_PARENT_ID_POLICIES,
   ['post_publication_post_identities', sharedParentUuidv7('posts')],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],
