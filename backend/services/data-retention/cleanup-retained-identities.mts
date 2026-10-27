@@ -42,6 +42,8 @@ export const ROOT_FAMILIES = {
       ['review_dispute_lifecycle_changes', 'changed_by_id'],
       ['rss_feed_setting_changes', 'changed_by_id'],
       ['mcp_call_audit_events', 'actor_user_id'],
+      ['moderator_actions', 'actor_user_id'],
+      ['moderator_actions', 'target_user_id'],
       ['user_legal_preservation_holds', 'account_user_id'],
       ['user_legal_preservation_holds', 'placed_by_id'],
       ['user_legal_preservation_holds', 'released_by_id'],

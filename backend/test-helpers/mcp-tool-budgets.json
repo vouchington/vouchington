@@ -787,8 +787,8 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 40068,
-          "core": 6439
+          "list": 40236,
+          "core": 6505
         },
         "max": {
           "list": 41000,
@@ -1081,8 +1081,8 @@
       },
       "search_moderator_actions": {
         "measured": {
-          "list": 2600,
-          "core": 1659
+          "list": 2666,
+          "core": 1725
         },
         "max": {
           "list": 3000,
