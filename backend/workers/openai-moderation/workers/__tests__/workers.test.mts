@@ -4,14 +4,12 @@ import type { Job } from 'glide-mq'
 import {
   createTestUser,
   expireTestPostModerationVersion,
-  getImageModerationState,
   getPostClearanceStatus,
   getPostModerationData,
   getTestPostModerationRetryDelayMinutes,
   insertPendingTestImage,
   insertTestImage,
   insertTestPost,
-  markImageQuarantinePending,
   readAllQueueJobs,
   setImageOpenAIModerationResults,
   setPostModerationContentSha256,
@@ -227,22 +225,6 @@ describe('openai moderation single worker', () => {
     )) as { hasMore: boolean }
     expect(second.hasMore).toBe(false)
     await expect(getPostClearanceStatus(foreignPostId)).resolves.toBe('pending')
-  })
-
-  it('runs image quarantine reconciliation jobs', async () => {
-    const creator = await createTestUser()
-    expect(creator).toBeTruthy()
-    const foreignImageId = await insertPendingTestImage(creator!.id)
-    await markImageQuarantinePending(foreignImageId)
-
-    await expect(
-      handleOpenAIModerationOmniSingleJob(makeJob('reconcile_image_quarantines', randomUUID()), {
-        imageIds: [randomUUID()],
-      }),
-    ).resolves.toEqual({ reconciled: 0 })
-    await expect(getImageModerationState(foreignImageId)).resolves.toMatchObject({
-      deleted_at: null,
-    })
   })
 
   it('records a retryable failed attempt when the provider is unavailable', async () => {

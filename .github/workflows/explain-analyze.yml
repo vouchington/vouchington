@@ -197,6 +197,8 @@ jobs:
           --include 'backend/services/referral-link-unfurl/dispatch.mts'
           --include 'backend/services/stories/story-post-related-url-projection-{work,reconcile,dispatch}.mts'
           --include 'backend/services/stories/story-post-related-url-projection.mts'
+          --include 'backend/services/openai-moderation/{delete-flagged,quarantine-reconciliation}.mts'
+          --include 'backend/workers/openai-moderation/processors/openai-moderation-omni-single.mts'
           --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction,migration-*}.mts'
           --include 'backend/scripts/explain-analyze/pruning/idle-embedding-retention.mts'
       - name: Preserve full native migration LCOV
