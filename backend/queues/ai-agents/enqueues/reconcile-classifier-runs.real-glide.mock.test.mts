@@ -47,7 +47,13 @@ describe('classifier control-job recovery with real GlideMQ', () => {
       async (_job: Job<AIAgentJobData>) => {
         throw new UnrecoverableError('synthetic control-job failure')
       },
-      { connection: workerQueueConnection, prefix: workerQueuePrefix, blockTimeout: 100 },
+      {
+        connection: workerQueueConnection,
+        prefix: workerQueuePrefix,
+        concurrency: 3,
+        blockTimeout: 100,
+        promotionInterval: 100,
+      },
     )
     worker.on('failed', job => {
       if (job?.id === dispatcherId) dispatcherFailed.resolve()
@@ -97,7 +103,7 @@ describe('classifier control-job recovery with real GlideMQ', () => {
       await expect((await ai_agents.getJob(dispatcherId))?.getState()).resolves.toBe('failed')
 
       await retained.updateData({ ...retained.data, backgroundResponses: [] })
-      await enqueueBulkClassifierRunDispatchers([dispatcher])
+      await enqueueClassifierRunDispatcher(dispatcher)
       await expect((await ai_agents.getJob(dispatcherId))?.getState()).resolves.toBe('prioritized')
       await enqueueBulkClassifierRunDispatchers([dispatcher])
       expect(

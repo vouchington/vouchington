@@ -72,7 +72,23 @@ const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction({
 export async function enqueueClassifierRunDispatcher(
   data: ClassifierRunDispatcherJobData,
 ): Promise<void> {
-  await enqueueBulkClassifierRunDispatchers([data])
+  await enqueueBulkReactivatingFinished({
+    queue: ai_agents,
+    inputs: [data],
+    jobIdOf: classifierRunDispatcherJobId,
+    enqueueBulk: async inputs => {
+      const item = inputs[0]
+      if (!item) return []
+      const job = await ai_agents.add(
+        'classifier-run-dispatcher',
+        item,
+        classifierRunDispatcherOptions(item),
+      )
+      trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'classifier-run-dispatcher')
+      return job ? [job] : []
+    },
+    canRemoveFailed: failedAiJobHasNoPendingResponses,
+  })
 }
 
 /** Reoffers a failed dispatcher from its durable request, without touching a live job. */
