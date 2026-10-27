@@ -13,6 +13,7 @@ import {
   insertTestTopic,
   softDeleteTopic,
 } from '@voucha/test-helpers'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -74,7 +75,7 @@ describe('topic alias post-cache invalidation', () => {
     await expectPostCachesInvalidated(postIds)
   })
 
-  it('invalidates posts when a topic merge moves their alias', async () => {
+  it('admits an alias-scoped publication effect when a topic merge moves the alias', async () => {
     const suffix = Math.random().toString(36).slice(2, 12)
     const user = await createTestUser({ administrator: true })
     const sourceTopicId = await insertTestTopic({
@@ -88,15 +89,18 @@ describe('topic alias post-cache invalidation', () => {
       createdById: user.id,
     })
     const [alias] = await createTopicAliases(sourceTopicId, `cache-merge-${suffix}`)
-    const postIds = await createCachedAliasPosts(alias!.id, user, suffix)
+    await createCachedAliasPosts(alias!.id, user, suffix)
     const [sourceTopic, destinationTopic] = await Promise.all([
       getTopicByAny(sourceTopicId),
       getTopicByAny(destinationTopicId),
     ])
 
-    await mergeTopicAliases(user, sourceTopic!, destinationTopic!)
+    const jobs = await captureAddedPublicationEffectsForScope(alias!.id, () =>
+      mergeTopicAliases(user, sourceTopic!, destinationTopic!),
+    )
 
-    await expectPostCachesInvalidated(postIds)
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]!.scope).toEqual({ type: 'topic_alias', id: alias!.id })
   })
 
   it('invalidates posts when a topic slug claims an unlinked alias', async () => {

@@ -5,6 +5,7 @@ import { copyrightStaffQueueCursorScope } from '../services/copyright-notices/re
 import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-models-staff-queue-sql.mts'
 
 type CursorKey = { id: string; tier: number; timestamp: string }
+type Key = CursorKey & { before: string }
 
 /** Scope invariant expectations to one borrowed-client snapshot; pages remain uncached. */
 export function createQueueSnapshotKeys(query: TransactionQuery, now: Date) {
@@ -35,16 +36,15 @@ async function firstOwnedKey(
   ids: readonly string[],
   boost: boolean,
   now: Date,
-): Promise<CursorKey[]> {
-  if (ids.length === 0 || new Set(ids).size !== ids.length)
-    throw new Error('Owned queue fixture needs distinct notice IDs')
-  const { rows } = await query<CursorKey>(
-    sql`/* readOwnedCopyrightQueueKeys */`.append(
+): Promise<Key> {
+  const { rows } = await query<Key>(
+    sql`/* firstOwnedCopyrightQueueKey */`.append(
       copyrightStaffQueueKeysSql({ trustedFlaggerBoost: boost, now }),
     ).append(sql` SELECT id, tier,
-      to_char(waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS timestamp
+      to_char(waiting_since AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS timestamp,
+      to_char((waiting_since - interval '1 microsecond') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS before
       FROM queue_key WHERE id = ANY(${[...ids]}::uuid[])
-      ORDER BY tier, waiting_since, id LIMIT ${ids.length}`),
+      ORDER BY tier, waiting_since, id LIMIT 1`),
   )
   if (!rows[0]) throw new Error('Owned queue fixture has no native start key')
   return rows[0]

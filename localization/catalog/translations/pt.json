@@ -6202,5 +6202,10 @@
 {"id":"copy.shared.provenance.viaApi","value":"via API"},
 {"id":"copy.shared.provenance.viaApp","value":"via {app}"},
 {"id":"copy.shared.provenance.viaMcp","value":"via MCP"},
-{"id":"copy.shared.timeAgo.relativeDuration","value":{"day":{"one":"há {value} dia","other":"há {value} dias"},"hour":{"one":"há {value} hora","other":"há {value} horas"},"minute":{"one":"há {value} minuto","other":"há {value} minutos"},"month":{"one":"há {value} mês","other":"há {value} meses"},"week":{"one":"há {value} semana","other":"há {value} semanas"},"year":{"one":"há {value} ano","other":"há {value} anos"}}}
+{"id":"copy.shared.timeAgo.relativeDuration","value":{"day":{"one":"há {value} dia","other":"há {value} dias"},"hour":{"one":"há {value} hora","other":"há {value} horas"},"minute":{"one":"há {value} minuto","other":"há {value} minutos"},"month":{"one":"há {value} mês","other":"há {value} meses"},"week":{"one":"há {value} semana","other":"há {value} semanas"},"year":{"one":"há {value} ano","other":"há {value} anos"}}},
+{"id":"copy.topics.merge.checkStatus","value":"Consultar status"},
+{"id":"copy.topics.merge.completed","value":"Mesclagem de tópicos concluída."},
+{"id":"copy.topics.merge.failed","value":"Não foi possível mesclar os tópicos. Revise as configurações antes de tentar novamente."},
+{"id":"copy.topics.merge.queued","value":"Mesclagem na fila. Consulte o status para saber quando terminar."},
+{"id":"copy.topics.merge.statusFailed","value":"Não foi possível carregar o status da mesclagem."}
 ]

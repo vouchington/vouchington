@@ -26,7 +26,11 @@ export async function finalizeTopicMergeDomain(
   await finalizeTopicMergeProjection(query, operation)
   // Every moved reference now belongs to the destination; the committed redirect starts direct
   // publication effects after this page commits.
-  recordTopicMergePublicationChange(query, operation.source_topic_id, operation.destination_topic_id)
+  recordTopicMergePublicationChange(
+    query,
+    operation.source_topic_id,
+    operation.destination_topic_id,
+  )
   return true
 }
 
