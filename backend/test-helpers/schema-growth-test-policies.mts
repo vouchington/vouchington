@@ -84,14 +84,6 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
 ])
 const UNBOUNDED_RECONSIDERATION_EXCEPTIONS = new Map([
   [
-    'ai_usage_provider_response_keys',
-    'Only if the replacement preserves global response-id uniqueness across every ledger partition.',
-  ],
-  [
-    'ai_agent_call_receipts',
-    'Only if the replacement preserves global paid-call operation-key uniqueness across every receipt partition.',
-  ],
-  [
     'web_push_endpoint_owners',
     'Only if the replacement preserves global endpoint uniqueness and claim serialization across every subscription partition.',
   ],

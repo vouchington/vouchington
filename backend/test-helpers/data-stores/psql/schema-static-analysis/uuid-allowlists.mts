@@ -1,4 +1,5 @@
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
+import { AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './ai-retention-uuid-allowlists.mts'
 import { CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './classifier-run-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
@@ -11,6 +12,7 @@ import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './s
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
 import { OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from '../../../operational-cursor-uuid-allowlist.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  ...AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
@@ -39,11 +41,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ],
   ...OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS,
   ...MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS,
-  [
-    'payment_operational_cleanup_cursors.cursor_id',
-    'Operational keyset position survives deletion of the swept row; it is not a relationship.',
-  ],
-  ['auth_session_retention_cleanup_cursors.cursor_id', 'Deleted-row keyset, not a relation.'],
   ['history_retention_cursors.cursor_id', 'Deleted-row keyset position, not a relationship.'],
   ['history_retention_cursors.sweep_cutoff_id', 'Frozen sweep end, not a relationship.'],
   [

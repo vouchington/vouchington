@@ -42,6 +42,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_post_moderation_dispositions__actor_user_id`: `CREATE INDEX idx_post_moderation_dispositions__actor_user_id ON public.post_moderation_dispositions USING btree (actor_user_id) WHERE (actor_user_id IS NOT NULL)`
+- `idx_post_moderation_dispositions__terminal_version_source`: `CREATE INDEX idx_post_moderation_dispositions__terminal_version_source ON public.post_moderation_dispositions USING btree (version_id, source) WHERE (disposition <> 'incomplete'::post_moderation_disposition_types)`
 - `idx_post_moderation_dispositions__version_source_id`: `CREATE INDEX idx_post_moderation_dispositions__version_source_id ON public.post_moderation_dispositions USING btree (version_id, source, id DESC)`
 - `post_moderation_dispositions_attempt_id_key`: `CREATE UNIQUE INDEX post_moderation_dispositions_attempt_id_key ON public.post_moderation_dispositions USING btree (attempt_id)`
 - `post_moderation_dispositions_pkey`: `CREATE UNIQUE INDEX post_moderation_dispositions_pkey ON public.post_moderation_dispositions USING btree (id)`

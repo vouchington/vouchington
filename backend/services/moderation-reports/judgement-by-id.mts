@@ -46,6 +46,17 @@ export async function getJudgementByRunId(
   return rows[0] ? getJudgementById(rows[0].id) : null
 }
 
+/** Whether an automatic (non-rerun) judgement already exists for this report. */
+export async function hasAutomaticJudgementForReport(reportId: string): Promise<boolean> {
+  const { rows } = await read<{ exists: boolean }>(sql`/* hasAutomaticJudgementForReport */
+    SELECT EXISTS (
+      SELECT 1 FROM moderation_report_judgements
+      WHERE triggering_report_id = ${reportId}::uuid AND rerun_by_id IS NULL
+    ) AS exists
+  `)
+  return rows[0]?.exists ?? false
+}
+
 export async function getReportJudgementRunResult(
   reportId: string,
   runId: string,

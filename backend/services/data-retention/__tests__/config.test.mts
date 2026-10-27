@@ -4,6 +4,7 @@ import {
   DATA_RETENTION_MAX_VALUES,
   DEFAULT_DATA_RETENTION_CONFIG,
   dataRetentionConfig,
+  getAIRetentionPageLimits,
   getClassifierRetentionDays,
   getDataRetentionLimits,
   getPartitionStatusProbeLimit,
@@ -73,6 +74,8 @@ describe('getDataRetentionLimits', () => {
       'classifier_retention_days',
       'max_batches_per_run',
       'ses_bounce_retention_days',
+      'ai_retention_page_size',
+      'ai_retention_max_pages_per_run',
     ] as const) {
       expect(Number.isInteger(DEFAULT_DATA_RETENTION_CONFIG[field])).toBe(true)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeGreaterThan(0)
@@ -88,5 +91,13 @@ describe('getDataRetentionLimits', () => {
     )
     overrideDynamicConfigFieldsForTest(dataRetentionConfig, { ses_bounce_retention_days: 30 })
     expect(getSesBounceRetentionDays()).toBe(30)
+  })
+
+  it('bounds persisted AI pages with the owning runtime config', () => {
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+      ai_retention_page_size: 7,
+      ai_retention_max_pages_per_run: 3,
+    })
+    expect(getAIRetentionPageLimits()).toEqual({ batchSize: 7, maxBatches: 3 })
   })
 })

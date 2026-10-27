@@ -13,18 +13,6 @@ and measurement, and [AI agents](../ai-agents.md) links the surrounding pipeline
 - Tools exposed to agents wrap existing services and are registered in the MCP catalog; no new
   business logic lives in a tool.
 - Sanitize external content before it reaches an agent.
-- Paid background decisions reserve a durable receipt before the provider request. A completed
-  result can finish its domain write after a worker retry; an interrupted call with an unknown
-  billing outcome requires review before it can be sent again. The receipt stores its result
-  encrypted because advisory answers can contain private filing or report content. Its identity
-  follows the logical operation across retries, while a separate digest binds the original model,
-  prompt/schema contract version and input; changed source content or a new prompt contract requires
-  review instead of another billable dispatch or a
-  stale result attached to new input. Copyright guidance and appeal receipts retain a submission
-  foreign key so the case-retention sweep can erase their duplicate ciphertext, including pending
-  receipts. Report-derived ciphertext follows the reported target’s deletion lifecycle while the
-  permanent reservation remains, so erasure cannot authorize a second paid request. Story answers
-  contain the news story’s title and RSS-derived summary rather than a user profile or report.
-  Durable reservation is the admission point: erasure prevents new reservations and late
-  result persistence, but does not cancel provider I/O admitted before erasure. Existing receipts
-  pass the worker's daily-spend admission gate to replay local writes or stop an uncertain call.
+- Duplicate delivery is prevented by cheap start-of-job reads of the domain row on the primary
+  database, not by a billing record. Billing and usage records are downstream reporting only; a
+  retry after a lost response may call the provider again.

@@ -4,6 +4,13 @@
 
 ## Dual Pipeline Architecture
 
+The shared text-vector cache is recomputable. Bounded deletion removes aged entries while
+entity-owned vectors remain in place. Its Bloom filter can retain deleted hashes: these are
+harmless false positives because positive results still go through the SQL lookup. Retention
+therefore needs no filter rebuild; bootstrap, operator and detected-failure recovery own rebuilds.
+Terminal batch cleanup drains capped pages of entity associations before deleting a parent.
+Active batches remain available to polling and rate limits.
+
 ```mermaid
 flowchart LR
   subgraph single ["Single — real-time"]

@@ -3469,9 +3469,6 @@ rules:
         - moderation_cases.resolved_by_id
         - moderation_report_judgements.rerun_by_id
         - moderation_reports.escalated_by_id
-        - post_autotagger_results.created_by_id
-        - post_autotagger_results.deleted_by_id
-        - post_autotagger_results.updated_by_id
         - post_dispute_annotations.removed_by_id
         - post_locks.lifted_by_id
         - post_locks.locked_by_id
@@ -3483,9 +3480,6 @@ rules:
         - review_disputes.approved_by_id
         - review_disputes.edited_by_id
         - review_disputes.resolved_by_id
-        - rss_feed_item_autotagger_results.created_by_id
-        - rss_feed_item_autotagger_results.deleted_by_id
-        - rss_feed_item_autotagger_results.updated_by_id
         - rss_feed_item_category_rejections.created_by_id
         - rss_feeds.created_by_id
         - topic_revisions.revised_by_id
@@ -5125,6 +5119,36 @@ rules:
       allow:
         - object: table:agent_moderation_votes
           reason: Binary moderation ballots intentionally do not model neutral or semantic score provenance;
+        - object: table:media_delivery_registry_changes
+          reason: This change ledger permits only a guarded, aged, superseded transition delete;
+            its exact shape and trigger are checked by the dedicated rule below.
+  - name: media delivery change ledger uses its scoped retention guard
+    rule: postgres-table-shape
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      shapes:
+        - name: media-delivery-change-ledger
+          tablePattern: ^media_delivery_registry_changes$
+          requiredColumns:
+            - name: id
+              type: uuid
+              nullable: false
+            - name: change_type
+              nullable: false
+            - name: changed_by_id
+              type: uuid
+              references:
+                - retained_user_identities
+              onDelete: restrict
+          forbiddenColumns:
+            - updated_at
+          requiredTriggers:
+            - function: fn_reject_media_delivery_registry_change_retention
+              timing: before
+              events:
+                - update
+                - delete
   - name: NM-11 status beside lifecycle timestamps
     rule: postgres-status-with-lifecycle-timestamps
     scope: repository

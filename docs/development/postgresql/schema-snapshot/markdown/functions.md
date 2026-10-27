@@ -900,6 +900,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_refund_operation_
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_media_delivery_registry_change_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_media_delivery_registry_change_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_media_placement`
 
 ```sql
@@ -1314,14 +1322,6 @@ CREATE OR REPLACE FUNCTION public.fn_update_parent_notice_scope()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_update_report_agent_call_receipt_target`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_update_report_agent_call_receipt_target()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

@@ -92,9 +92,14 @@ its listener work is admitted. Quarantine deletion still requires a confirmed pe
 
 The data-retention schedule runs in deployed environments so staging exposes retention failures
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
-work ahead of housekeeping. Membership retention pages persist their position. A capped run
-enqueues a retention continuation step naming the membership families with more eligible rows,
-and that step reruns only those families, keeping the backlog draining between schedules.
+work ahead of housekeeping. Each AI retention family owns one fixed continuation identity in the
+PostgreSQL maintenance queue. Daily seeds recover finished records but coalesce with live work.
+Each bounded pass yields that same native job while backlog remains, so a large cleanup drains
+without waiting for another daily schedule or multiplying independent chains. Committed deletion
+advances pure deletion sweeps; guarded media sweeps retain positions past protected rows.
+Membership retention pages persist their position. A capped run enqueues a retention continuation
+step naming the membership families with more eligible rows, and that step reruns only those
+families, keeping the backlog draining between schedules.
 
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
@@ -154,6 +159,8 @@ and that step reruns only those families, keeping the backlog draining between s
 - **Spend admission is single-sourced.** Every call that can incur billed model spend goes through
   one spend-cap decision point, and capped jobs park until the daily rollover instead of failing.
   The coordinator that releases them is deliberately not behind the provider limiter.
+- **Embedding cache deletion leaves safe Bloom false positives.** Writes add membership; operator
+  actions and detected failures own full rebuilds. Retention does not schedule a full rebuild.
 - **Deletion and money paths recover from durable rows.** Account deletion, membership refunds and
   OAuth exchange keep their work in PostgreSQL with fenced leases, so terminal queue failure can
   never silently mark the work complete or issue a duplicate refund.

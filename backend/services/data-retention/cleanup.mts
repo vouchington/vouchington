@@ -33,6 +33,10 @@ import {
   cleanupTerminalNotificationPushIntents,
   type PendingNotificationPushIntentCleanupResult,
 } from './cleanup-notification-push-intents.mts'
+import { cleanupTextEmbeddingCache } from './cleanup-text-embeddings.mts'
+import { cleanupTerminalEmbeddingBatches } from './cleanup-embedding-batches.mts'
+import { cleanupOldProviderResponseKeys } from './cleanup-provider-response-keys.mts'
+import { cleanupOldMediaDeliveryChanges } from './cleanup-media-delivery-changes.mts'
 import type { MembershipOperationalCleanupOptions } from './cleanup-membership-operational.mts'
 import { cleanupMembershipOperational } from './cleanup-membership-operational-families.mts'
 import {
@@ -105,6 +109,9 @@ export {
   cleanupUserDeletedNotifications,
   cleanupModerationEmailSends,
 }
+export { cleanupTextEmbeddingCache, cleanupTerminalEmbeddingBatches }
+export { cleanupOldProviderResponseKeys }
+export { cleanupOldMediaDeliveryChanges }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -168,6 +175,10 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
+  terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
+  oldProviderResponseKeys?: OptionalRetentionLimits<CleanupOptions>
+  oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions>
   classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
     activeSweeps?: readonly string[]
   }
@@ -205,6 +216,10 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  textEmbeddingCache: CleanupResult
+  terminalEmbeddingBatches: CleanupResult
+  oldProviderResponseKeys: CleanupResult
+  oldMediaDeliveryChanges: CleanupResult
   classifierRecords: ClassifierCleanupResult
   sesBounceEvents: NotificationEmailCleanupResult
   systemPrunedNotifications: NotificationEmailCleanupResult
@@ -305,6 +320,16 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
+  const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
+    withLimits(options.terminalEmbeddingBatches),
+  )
+  const oldProviderResponseKeys = await cleanupOldProviderResponseKeys(
+    withLimits(options.oldProviderResponseKeys),
+  )
+  const oldMediaDeliveryChanges = await cleanupOldMediaDeliveryChanges(
+    withLimits(options.oldMediaDeliveryChanges),
+  )
   const classifierRecords = await cleanupClassifierRecords({
     ...withLimits(options.classifierRecords),
     retentionDays: getClassifierRetentionDays(),
@@ -361,6 +386,10 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    textEmbeddingCache,
+    terminalEmbeddingBatches,
+    oldProviderResponseKeys,
+    oldMediaDeliveryChanges,
     classifierRecords,
     sesBounceEvents,
     systemPrunedNotifications,

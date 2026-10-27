@@ -3,6 +3,8 @@ import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/en
 import type { EnqueueReturnType } from '@voucha/types'
 import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
 import { psql } from './queues.mts'
+import { enqueueAIRetentionContinuations } from './enqueues/ai-retention.mts'
+export { enqueueAIRetentionContinuations }
 import type {
   ClassifierPartitionRange,
   PsqlJobs,

@@ -10,18 +10,22 @@ import {
 } from '@data-stores/psql/migrate'
 import { runDataRetentionCleanup } from '@services/data-retention'
 import { createHash } from 'node:crypto'
-import { enqueueDataRetentionCleanupContinuation } from '@queues/psql/enqueues'
+import {
+  enqueueAIRetentionContinuations,
+  enqueueDataRetentionCleanupContinuation,
+} from '@queues/psql/enqueues'
 import {
   dataRetentionConfig,
   getClassifierRetentionDays,
   getDataRetentionLimits,
 } from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
-import type {
-  PsqlJobs,
-  PsqlPartitionJobData,
-  PsqlRetentionJobData,
-  RefreshMaterializedViewData,
+import {
+  AI_RETENTION_FAMILIES,
+  type PsqlJobs,
+  type PsqlPartitionJobData,
+  type PsqlRetentionJobData,
+  type RefreshMaterializedViewData,
 } from '@queues/psql/types'
 
 function unfinishedClassifierSweeps(
@@ -72,6 +76,7 @@ type ProcessPsqlDependencies = {
   cleanupPartitions: typeof cleanupPartitions
   createPartitions: typeof createMonthlyPartitions
   dataRetentionCleanup: typeof runDataRetentionCleanup
+  enqueueAIRetentionContinuations: typeof enqueueAIRetentionContinuations
   reconcileVoteDrift: typeof reconcilePostVoteDrift
   refreshMaterializedView: typeof refreshMaterializedView
   runConfigDriven: typeof runConfigDriven
@@ -111,6 +116,12 @@ export default async function processPsql(
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
           })
         : await cleanup(getDataRetentionLimits())
+      const aiFamilies = AI_RETENTION_FAMILIES.filter(family => result[family].hasMore)
+      if (aiFamilies.length > 0) {
+        await (dependencies?.enqueueAIRetentionContinuations ?? enqueueAIRetentionContinuations)(
+          aiFamilies,
+        )
+      }
       const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
       const activeMembershipFamilies = unfinishedMembershipFamilies(result)
       if (activeClassifierSweeps.length > 0 || activeMembershipFamilies.length > 0) {

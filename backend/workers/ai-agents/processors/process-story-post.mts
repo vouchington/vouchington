@@ -23,17 +23,14 @@ function storyPostWouldCallOpenAI(
   return post != null && post.post_type === 'story' && (!post.ai_summary_markdown || force)
 }
 
-export async function getStoryPostSpendState(
-  postIdOrSlug: string,
-  force: boolean,
-): Promise<{ postId: string; wouldCallModel: boolean } | null> {
-  const post = await getPostByAny(postIdOrSlug)
-  if (!post) return null
-  return { postId: post.id, wouldCallModel: storyPostWouldCallOpenAI(post, force) }
+export async function wouldStoryPostCallOpenAI(postId: string, force: boolean): Promise<boolean> {
+  // Primary read: a stored summary from an earlier delivery must stop a second provider request.
+  const post = await getPostByAny(postId, { readOnly: false })
+  return storyPostWouldCallOpenAI(post, force)
 }
 
 export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unknown> {
-  const post = await getPostByAny(job.data.post_id)
+  const post = await getPostByAny(job.data.post_id, { readOnly: false })
   if (!post) return null
   if (post.post_type !== 'story') return null
   // Idempotent: skip if summary already set, unless the job explicitly requests a refresh.
@@ -66,9 +63,6 @@ export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unkn
     story!,
     itemSummaries,
     await loadServiceModelSelection('story-post'),
-    undefined,
-    job.data.force ? `${post.id}:${job.id}` : post.id,
-    post.id,
   )
   await updateStoryPostAgentResult(post.id, post.title ?? '', agentResult.ai_summary_markdown)
   return agentResult

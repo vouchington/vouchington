@@ -17,6 +17,7 @@ import {
   makeAgentModelCaller,
   makeModelCallResult,
 } from '@voucha/test-helpers/agents/model-call-result'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type {
   CopyrightAppealRecommendationJobData,
@@ -96,7 +97,9 @@ describe('copyright AI queue admission and staff result polling', () => {
         rationale: 'No obvious spam markers.',
         guidance: testCopyrightFormGuidance,
       })
-      await processCopyrightFormScreening(job! as Job<CopyrightFormScreeningJobData>, callModel)
+      await withReservedAiUsageDay(10_000_000, () =>
+        processCopyrightFormScreening(job! as Job<CopyrightFormScreeningJobData>, callModel),
+      )
       expect((await findCase(staff, noticeId)).form_review?.screening?.guidance).toMatchObject({
         summary: testCopyrightFormGuidance.summary,
       })
@@ -131,9 +134,11 @@ describe('copyright AI queue admission and staff result polling', () => {
         recommendation: 'reverse',
         rationale: 'Moderator review is required.',
       })
-      await processCopyrightAppealRecommendation(
-        job! as Job<CopyrightAppealRecommendationJobData>,
-        callModel,
+      await withReservedAiUsageDay(10_000_000, () =>
+        processCopyrightAppealRecommendation(
+          job! as Job<CopyrightAppealRecommendationJobData>,
+          callModel,
+        ),
       )
       expect(
         (await current()).appeals.find(item => item.submission_id === submissionId)?.recommendation,
@@ -177,9 +182,11 @@ describe('copyright AI queue admission and staff result polling', () => {
       const callModel = vi.fn<
         NonNullable<Parameters<typeof processCopyrightSubmissionGuidance>[1]>
       >(async () => makeModelCallResult(guidance))
-      await processCopyrightSubmissionGuidance(
-        job! as Job<CopyrightSubmissionGuidanceJobData>,
-        callModel,
+      await withReservedAiUsageDay(10_000_000, () =>
+        processCopyrightSubmissionGuidance(
+          job! as Job<CopyrightSubmissionGuidanceJobData>,
+          callModel,
+        ),
       )
       expect(
         (await current()).counter_notices.find(item => item.submission_id === submissionId)

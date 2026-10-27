@@ -26,7 +26,6 @@ export const POST_PARTITION_TABLES: string[] = [
   'post_data_point_topics',
   'post_explicit_topic_categories',
   'post_topic_recommendations',
-  'post_autotagger_results',
   'agent_moderations',
 ]
 

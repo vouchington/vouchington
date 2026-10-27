@@ -14,8 +14,20 @@ import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import { oauthGithubWorkConfig, oauthGithubWorkMaxValues } from '@services/oauth-github/work-limits'
 import { oauthXWorkConfig, oauthXWorkMaxValues } from '@services/oauth-x/work-limits'
 import { sesInboundWorkConfig, sesInboundWorkMaxValues } from '@workers/ses-inbound/work-limits'
+import {
+  psqlQueueConfig,
+  psqlQueueDescriptions,
+  psqlQueueMaxValues,
+} from '@queues/psql/enqueues/ordering-config'
 
 export const backgroundWorkEntries4 = [
+  defineBoundedWorkNamespace({
+    namespace: 'psql-queue-config',
+    config: psqlQueueConfig,
+    label: 'PostgreSQL queue',
+    maxValues: psqlQueueMaxValues,
+    descriptions: psqlQueueDescriptions,
+  }),
   defineBoundedWorkNamespace({
     namespace: 'oauth-authorization-exchange-work-config',
     config: oauthAuthorizationExchangeWorkConfig,

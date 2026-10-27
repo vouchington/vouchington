@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { callReceiptedAgentModel } from '@agents/_shared'
+import { callAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { copyrightAppealRecommendations } from '@services/copyright-notices'
@@ -15,19 +15,17 @@ export async function runCopyrightAppealRecommendationAgent(
   submissionId: string,
   selection: ModelSelection,
   callModel: CopyrightAppealRecommendationModelCaller = callCopyrightAppealRecommendationModel,
-  operationId = submissionId,
 ): Promise<'confirm' | 'modify' | 'reverse' | 'uncertain' | null> {
+  if (await copyrightAppealRecommendations.has(submissionId, COPYRIGHT_APPEAL_PROMPT_VERSION))
+    return null
   const appeal = await copyrightAppealRecommendations.get(submissionId)
   if (!appeal) return null
   const input = wrapExternalContent(await sanitizePromptInjection(JSON.stringify(appeal)), {
     source: 'copyright_appeal',
     contentType: 'copyright-appeal',
   })
-  const { output, model } = await callReceiptedAgentModel({
+  const { output, model } = await callAgentModel({
     agentSlug: 'copyright-appeal-recommendation',
-    promptVersion: COPYRIGHT_APPEAL_PROMPT_VERSION,
-    operationId,
-    copyrightNoticeSubmissionId: submissionId,
     selection,
     input,
     safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),

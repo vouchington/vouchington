@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
   CHECK (response_id = TRIM(response_id) AND char_length(response_id) BETWEEN 1 AND 100)
 );
 
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__community_id_id
   ON ai_usage_records (community_id, id DESC)
@@ -93,7 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
   WHERE currency_code IS NOT NULL;
 
 COMMENT ON TABLE ai_usage_records IS 'Append-only per-call LLM usage and cost ledger for every agent that calls a model provider (Anthropic or OpenAI), not only community moderation.';
-COMMENT ON TABLE ai_usage_provider_response_keys IS 'Global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row.';
+COMMENT ON TABLE ai_usage_provider_response_keys IS 'Time-bounded global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row; old keys expire after provider replay is no longer expected.';
 
 COMMENT ON COLUMN ai_usage_records.community_id IS 'The community the call is scoped to, if any; NULL for agents that run outside a community.';
 COMMENT ON COLUMN ai_usage_records.post_id IS 'The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.';

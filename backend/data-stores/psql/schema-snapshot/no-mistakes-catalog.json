@@ -27,14 +27,6 @@
     "agent_types": {
       "values": ["moderator", "autotagger", "storyteller", "classifier"]
     },
-    "ai_agent_call_receipt_agent_slugs": {
-      "values": [
-        "story-post",
-        "report-judgement",
-        "copyright-submission-guidance",
-        "copyright-appeal-recommendation"
-      ]
-    },
     "ai_model_providers": {
       "values": ["anthropic", "openai", "typesafe"]
     },
@@ -1658,6 +1650,9 @@
     "fn_reject_invalid_membership_refund_operation_attempt()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_refund_operation_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE valid_attempt BOOLEAN;\nBEGIN\n  SELECT operation.operation_kind IN ('automatic_refund', 'ineligible_purchase_reversal', 'collision_resolution', 'administrator_refund') AND operation.currency_code = NEW.currency_code AND NEW.amount_minor_units <= operation.remaining_refundable_minor_units INTO valid_attempt FROM membership_operations operation WHERE operation.id = NEW.membership_operation_id;\n  IF valid_attempt IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'refund attempt does not match its operation' USING ERRCODE = '23514'; END IF;\n  RETURN NEW;\nEND $function$\n"
     },
+    "fn_reject_media_delivery_registry_change_retention()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_delivery_registry_change_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cutoff_id uuid; cutoff_at timestamptz;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    cutoff_id := NULLIF(current_setting('app.media_delivery_retention_cutoff_id', TRUE), '')::uuid;\n    cutoff_at := NULLIF(current_setting('app.media_delivery_retention_cutoff_at', TRUE), '')::timestamptz;\n    IF cutoff_id IS NOT NULL AND OLD.id < cutoff_id\n      AND cutoff_at IS NOT NULL\n      AND (OLD.completed_at IS NULL OR OLD.completed_at < cutoff_at)\n      AND NOT (OLD.change_type = 'completed' AND OLD.desired_state = 'withheld')\n      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_records record\n        WHERE record.latest_change_id = OLD.id)\n      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_projection_work_items work\n        WHERE work.failed_change_id = OLD.id) THEN\n      RETURN OLD;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'media delivery registry changes are immutable outside eligible retention';\nEND;\n$function$\n"
+    },
     "fn_reject_media_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_media_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'media placements are retained for legal revision fencing' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.revision <> OLD.revision + 1 THEN\n    RAISE EXCEPTION 'media placement revision must advance by exactly one' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.retired_at IS NOT DISTINCT FROM OLD.retired_at\n    AND NEW.retirement_reason IS NOT DISTINCT FROM OLD.retirement_reason\n    AND NEW.copyright_withheld_at IS NOT DISTINCT FROM OLD.copyright_withheld_at THEN\n    RAISE EXCEPTION 'media placement lifecycle update must change availability' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.retired_at IS NOT NULL AND NEW.retired_at IS NULL THEN\n    NEW.activation_revision := NEW.revision;\n  ELSIF NEW.activation_revision IS DISTINCT FROM OLD.activation_revision THEN\n    RAISE EXCEPTION 'media placement activation revision is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1813,9 +1808,6 @@
     },
     "fn_update_posts_search_vector()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_update_report_agent_call_receipt_target()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_report_agent_call_receipt_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.agent_slug = 'report-judgement'\n      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) <> 1 THEN\n      RAISE EXCEPTION 'Report call receipts require exactly one live target';\n    END IF;\n    IF NEW.agent_slug = 'story-post' AND NEW.post_id IS NULL THEN\n      RAISE EXCEPTION 'Story post call receipts require a live post';\n    END IF;\n  ELSIF OLD.result_ciphertext = 'erased'\n    OR (OLD.agent_slug = 'report-judgement'\n      AND num_nonnulls(OLD.post_id, OLD.reported_user_id, OLD.hostname_id, OLD.rss_feed_item_id) = 1\n      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) = 0)\n    OR (OLD.agent_slug = 'story-post' AND OLD.post_id IS NOT NULL AND NEW.post_id IS NULL) THEN\n    NEW.result_ciphertext := 'erased';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_rss_feed_items_search_vector()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_items_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.data->>'title', '')), 'A') ||\n    setweight(to_tsvector('voucha_english',\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encodedSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encoded', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'contentSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '')\n    ), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -5106,363 +5098,6 @@
         }
       }
     },
-    "ai_agent_call_receipts": {
-      "checkConstraints": {
-        "ai_agent_call_receipts_check": {
-          "definition": "CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::ai_agent_call_receipt_agent_slugs, 'copyright-appeal-recommendation'::ai_agent_call_receipt_agent_slugs])) = (copyright_notice_submission_id IS NOT NULL)))",
-          "validated": true
-        },
-        "ai_agent_call_receipts_check1": {
-          "definition": "CHECK (\nCASE\n    WHEN (agent_slug = 'report-judgement'::ai_agent_call_receipt_agent_slugs) THEN ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1) OR ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0) AND (NOT (result_ciphertext IS DISTINCT FROM 'erased'::text))))\n    WHEN (agent_slug = 'story-post'::ai_agent_call_receipt_agent_slugs) THEN ((num_nonnulls(reported_user_id, hostname_id, rss_feed_item_id) = 0) AND ((post_id IS NOT NULL) OR ((post_id IS NULL) AND (NOT (result_ciphertext IS DISTINCT FROM 'erased'::text)))))\n    ELSE (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0)\nEND)",
-          "validated": true
-        },
-        "ai_agent_call_receipts_operation_key_check": {
-          "definition": "CHECK ((char_length(operation_key) = 64))",
-          "validated": true
-        },
-        "ai_agent_call_receipts_request_sha256_check": {
-          "definition": "CHECK ((char_length(request_sha256) = 64))",
-          "validated": true
-        },
-        "ai_agent_call_receipts_result_ciphertext_check": {
-          "definition": "CHECK (((result_ciphertext IS NULL) OR (char_length(result_ciphertext) > 0)))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "agent_slug": {
-          "comment": "Agent that reserved the paid call.",
-          "dataType": "ai_agent_call_receipt_agent_slugs",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
-        "copyright_notice_submission_id": {
-          "comment": "Retention owner for copyright guidance and appeal results; null for other agents.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5
-        },
-        "created_at": {
-          "comment": "Creation time derived from the UUIDv7 receipt identity.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
-        },
-        "hostname_id": {
-          "comment": "Reported URL hostname; hard deletion erases the result while retaining the paid operation key.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
-        },
-        "id": {
-          "comment": "UUIDv7 receipt identity and creation order.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "operation_key": {
-          "comment": "SHA-256 of the agent and stable logical operation identity; retries cannot mint a second paid call by changing the request.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "post_id": {
-          "comment": "Story post being written, or a reported post or comment. Hard deletion erases the result while retaining the paid operation key.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
-        },
-        "reported_user_id": {
-          "comment": "Reported user; hard deletion erases the result while retaining the paid operation key.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
-        },
-        "request_sha256": {
-          "comment": "SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "result_ciphertext": {
-          "comment": "Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
-        "rss_feed_item_id": {
-          "comment": "Reported RSS feed item; hard deletion erases the result while retaining the paid operation key.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        }
-      },
-      "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
-      "foreignKeys": {
-        "fk_ai_agent_call_receipts__copyright_notice_submission": {
-          "columns": ["copyright_notice_submission_id"],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_submissions",
-          "validated": true
-        },
-        "fk_ai_agent_call_receipts__hostname": {
-          "columns": ["hostname_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "url_hostnames",
-          "validated": true
-        },
-        "fk_ai_agent_call_receipts__post": {
-          "columns": ["post_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "posts",
-          "validated": true
-        },
-        "fk_ai_agent_call_receipts__reported_user": {
-          "columns": ["reported_user_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "fk_ai_agent_call_receipts__rss_feed_item": {
-          "columns": ["rss_feed_item_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "ai_agent_call_receipts_operation_key_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX ai_agent_call_receipts_operation_key_key ON public.ai_agent_call_receipts USING btree (operation_key)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "operation_key",
-              "descending": false,
-              "expression": "operation_key",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "ai_agent_call_receipts_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX ai_agent_call_receipts_pkey ON public.ai_agent_call_receipts USING btree (id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "idx_ai_agent_call_receipts__copyright_submission": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_agent_call_receipts__copyright_submission ON public.ai_agent_call_receipts USING btree (copyright_notice_submission_id) WHERE (copyright_notice_submission_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "copyright_notice_submission_id",
-              "descending": false,
-              "expression": "copyright_notice_submission_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(copyright_notice_submission_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_ai_agent_call_receipts__hostname": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_agent_call_receipts__hostname ON public.ai_agent_call_receipts USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "hostname_id",
-              "descending": false,
-              "expression": "hostname_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(hostname_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_ai_agent_call_receipts__post": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_agent_call_receipts__post ON public.ai_agent_call_receipts USING btree (post_id) WHERE (post_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_ai_agent_call_receipts__reported_user": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_agent_call_receipts__reported_user ON public.ai_agent_call_receipts USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "reported_user_id",
-              "descending": false,
-              "expression": "reported_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(reported_user_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_ai_agent_call_receipts__rss_feed_item": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_agent_call_receipts__rss_feed_item ON public.ai_agent_call_receipts USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(rss_feed_item_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_erase_report_agent_call_receipt_target": {
-          "definition": "CREATE TRIGGER trigger_erase_report_agent_call_receipt_target BEFORE INSERT OR UPDATE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_update_report_agent_call_receipt_target()"
-        }
-      },
-      "uniqueConstraints": {
-        "ai_agent_call_receipts_operation_key_key": {
-          "columns": ["operation_key"]
-        }
-      }
-    },
     "ai_service_tiers": {
       "checkConstraints": {},
       "columns": {
@@ -5608,7 +5243,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row.",
+      "comment": "Time-bounded global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row; old keys expire after provider replay is no longer expected.",
       "foreignKeys": {
         "ai_usage_provider_response_keys_ai_usage_record_id_fkey": {
           "columns": ["ai_usage_record_id"],
@@ -8428,6 +8063,38 @@
           "unique": true,
           "valid": true
         },
+        "idx_bedrock_embedding_batches__terminal_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_bedrock_embedding_batches__terminal_retention ON public.bedrock_embedding_batches USING btree (COALESCE(completed_at, failed_at, cancelled_at), id) WHERE ((completed_at IS NOT NULL) OR (failed_at IS NOT NULL) OR (cancelled_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(completed_at, failed_at, cancelled_at)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((completed_at IS NOT NULL) OR (failed_at IS NOT NULL) OR (cancelled_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_bedrock_embedding_batches__url_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -8597,94 +8264,6 @@
       "triggers": {
         "trigger_bedrock_nova_multimodal_v1_embeddings_updated_at": {
           "definition": "CREATE TRIGGER trigger_bedrock_nova_multimodal_v1_embeddings_updated_at BEFORE UPDATE ON public.bedrock_nova_multimodal_v1_embeddings FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
-    },
-    "bedrock_nova_multimodal_v1_image_embeddings": {
-      "checkConstraints": {
-        "bedrock_nova_multimodal_v1_image_embeddings_image_sha_256_check": {
-          "definition": "CHECK ((octet_length(image_sha_256) = 32))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
-        "embedding": {
-          "comment": "1024-dimensional image vector from Amazon Nova 2 Multimodal Embeddings V1.",
-          "dataType": "vector(1024)",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "image_sha_256": {
-          "comment": "SHA-256 of the original image bytes. Primary key for image embedding deduplication.",
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        }
-      },
-      "comment": "Centralized lookup table for Amazon Nova multimodal image vectors, keyed by image hash.",
-      "foreignKeys": {},
-      "indexes": {
-        "bedrock_nova_multimodal_v1_image_embeddings_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX bedrock_nova_multimodal_v1_image_embeddings_pkey ON public.bedrock_nova_multimodal_v1_image_embeddings USING btree (image_sha_256)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "image_sha_256",
-              "descending": false,
-              "expression": "image_sha_256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["image_sha_256"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_bedrock_nova_multimodal_v1_image_embeddings_updated_at": {
-          "definition": "CREATE TRIGGER trigger_bedrock_nova_multimodal_v1_image_embeddings_updated_at BEFORE UPDATE ON public.bedrock_nova_multimodal_v1_image_embeddings FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -53611,6 +53190,98 @@
       },
       "uniqueConstraints": {}
     },
+    "media_delivery_change_retention_cursors": {
+      "checkConstraints": {
+        "media_delivery_change_retention_cursors_check": {
+          "definition": "CHECK (((cursor_change_id IS NULL) OR (sweep_upper_bound_change_id IS NOT NULL)))",
+          "validated": true
+        },
+        "media_delivery_change_retention_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_change_id": {
+          "comment": "Last scanned transition identity, including protected rows.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Allows one delivery-transition retention sweep position.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "sweep_upper_bound_change_id": {
+          "comment": "Frozen exclusive UUIDv7 age bound for the current sweep.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Last cursor transition time.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Singleton raw UUIDv7 scan position for aged delivery transition retention.",
+      "foreignKeys": {},
+      "indexes": {
+        "media_delivery_change_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX media_delivery_change_retention_cursors_pkey ON public.media_delivery_change_retention_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_media_delivery_change_retention_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_media_delivery_change_retention_cursors_updated_at BEFORE UPDATE ON public.media_delivery_change_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "media_delivery_registry_changes": {
       "checkConstraints": {
         "media_delivery_registry_changes_check": {
@@ -53851,6 +53522,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_media_delivery_registry_changes__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_changes__retention ON public.media_delivery_registry_changes USING btree (id) WHERE (NOT ((change_type = 'completed'::media_delivery_registry_change_types) AND (desired_state = 'withheld'::media_delivery_desired_states)))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(NOT ((change_type = 'completed'::media_delivery_registry_change_types) AND (desired_state = 'withheld'::media_delivery_desired_states)))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "media_delivery_registry_changes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -53964,7 +53658,7 @@
           "definition": "CREATE TRIGGER trigger_media_delivery_registry_changes_generation BEFORE INSERT ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_update_media_delivery_change_authority()"
         },
         "trigger_media_delivery_registry_changes_immutable": {
-          "definition": "CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE DELETE OR UPDATE ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+          "definition": "CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE DELETE OR UPDATE ON public.media_delivery_registry_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_media_delivery_registry_change_retention()"
         }
       },
       "uniqueConstraints": {
@@ -54097,6 +53791,29 @@
         }
       },
       "indexes": {
+        "idx_med_dlvry_rgstry_prjctn_wrk_itms__failed_change": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_med_dlvry_rgstry_prjctn_wrk_itms__failed_change ON public.media_delivery_registry_projection_work_items USING btree (failed_change_id) WHERE (failed_change_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "failed_change_id",
+              "descending": false,
+              "expression": "failed_change_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(failed_change_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_media_delivery_registry_projection_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -54387,6 +54104,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_media_delivery_registry_records__latest_change_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_media_delivery_registry_records__latest_change_id ON public.media_delivery_registry_records USING btree (latest_change_id) WHERE (latest_change_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "latest_change_id",
+              "descending": false,
+              "expression": "latest_change_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(latest_change_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -69056,7 +68796,7 @@
           "ordinalPosition": 7
         }
       },
-      "comment": "AI-generated judgements on reported entities. Superseded dispatched rows are deleted after 90 days; the latest judgement and undispatched work remain.",
+      "comment": "AI-generated judgements on reported entities. Superseded dispatched outcomes and rationale remain for six years and through an open account preservation hold; latest and undispatched judgements remain.",
       "foreignKeys": {
         "moderation_report_judgements_case_id_fkey": {
           "columns": ["case_id"],
@@ -80956,398 +80696,6 @@
         }
       }
     },
-    "post_autotagger_result_topics": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        },
-        "post_id": {
-          "comment": "The post (part of composite FK to post_autotagger_results).",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "prompt_id": {
-          "comment": "The prompt version (part of composite FK to post_autotagger_results).",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "topic_id": {
-          "comment": "The topic suggested by the autotagger.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
-        "topic_order": {
-          "comment": "Relevance order of this topic suggestion (0 = most relevant).",
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        }
-      },
-      "comment": "Topics suggested by the autotagger for a given post result.",
-      "foreignKeys": {
-        "post_autotagger_result_topics_post_id_prompt_id_fkey": {
-          "columns": ["post_id", "prompt_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["post_id", "prompt_id"],
-          "referencedTable": "post_autotagger_results",
-          "validated": true
-        },
-        "post_autotagger_result_topics_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "topics",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "idx_post_autotagger_result_topics__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_autotagger_result_topics__topic_id ON public.post_autotagger_result_topics USING btree (topic_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_autotagger_result_topics_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_autotagger_result_topics_pkey ON public.post_autotagger_result_topics USING btree (post_id, prompt_id, topic_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "prompt_id",
-              "descending": false,
-              "expression": "prompt_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["post_id", "prompt_id", "topic_id"]
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "post_autotagger_results": {
-      "checkConstraints": {
-        "post_autotagger_results_content_sha256_check": {
-          "definition": "CHECK ((octet_length(content_sha256) = 32))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "content_sha256": {
-          "comment": "SHA-256 of the post content that was analyzed.",
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "created_by_id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5
-        },
-        "deleted_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
-        },
-        "deleted_by_id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
-        "post_id": {
-          "comment": "The post that was auto-tagged.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "prompt_id": {
-          "comment": "The agent prompt version used for tagging.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6
-        },
-        "updated_by_id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
-        }
-      },
-      "comment": "Autotagger LLM results for posts. Keyed by (post, prompt). RANGE-partitioned by post_id.",
-      "foreignKeys": {
-        "post_autotagger_results_created_by_id_fkey": {
-          "columns": ["created_by_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "post_autotagger_results_deleted_by_id_fkey": {
-          "columns": ["deleted_by_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "post_autotagger_results_post_id_fkey": {
-          "columns": ["post_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "posts",
-          "validated": true
-        },
-        "post_autotagger_results_prompt_id_fkey": {
-          "columns": ["prompt_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "agent_prompts",
-          "validated": true
-        },
-        "post_autotagger_results_updated_by_id_fkey": {
-          "columns": ["updated_by_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "idx_post_autotagger_results__lookup": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_autotagger_results__lookup ON ONLY public.post_autotagger_results USING btree (post_id, prompt_id) WHERE (deleted_at IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "prompt_id",
-              "descending": false,
-              "expression": "prompt_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(deleted_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_post_autotagger_results__prompt_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_autotagger_results__prompt_id ON ONLY public.post_autotagger_results USING btree (prompt_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "prompt_id",
-              "descending": false,
-              "expression": "prompt_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "post_autotagger_results_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_autotagger_results_pkey ON ONLY public.post_autotagger_results USING btree (post_id, prompt_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "prompt_id",
-              "descending": false,
-              "expression": "prompt_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": {
-        "key": "RANGE (post_id)"
-      },
-      "primaryKey": {
-        "columns": ["post_id", "prompt_id"]
-      },
-      "relationKind": "partitioned table",
-      "triggers": {
-        "trigger_post_autotagger_results_updated_at": {
-          "definition": "CREATE TRIGGER trigger_post_autotagger_results_updated_at BEFORE UPDATE ON public.post_autotagger_results FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
-    },
     "post_classifier_local_outcomes": {
       "checkConstraints": {
         "post_classifier_local_outcomes_classification_check": {
@@ -83523,6 +82871,38 @@
           ],
           "live": true,
           "predicate": "(actor_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_dispositions__terminal_version_source": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_dispositions__terminal_version_source ON public.post_moderation_dispositions USING btree (version_id, source) WHERE (disposition <> 'incomplete'::post_moderation_disposition_types)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "version_id",
+              "descending": false,
+              "expression": "version_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "source",
+              "descending": false,
+              "expression": "source",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(disposition <> 'incomplete'::post_moderation_disposition_types)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -119983,432 +119363,6 @@
       "relationKind": "partitioned table",
       "triggers": {},
       "uniqueConstraints": {}
-    },
-    "rss_feed_item_autotagger_result_topics": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "rss_feed_item_autotagger_result_id": {
-          "comment": "The autotagger result this topic belongs to.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "topic_id": {
-          "comment": "The topic suggested by the autotagger.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "topic_order": {
-          "comment": "Relevance order of this topic suggestion (0 = most relevant).",
-          "dataType": "integer",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        }
-      },
-      "comment": "Topics suggested by the autotagger for a given RSS feed item result.",
-      "foreignKeys": {
-        "fk_rss_feed_item_autotagger_result_topics__result": {
-          "columns": ["rss_feed_item_autotagger_result_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_item_autotagger_results",
-          "validated": true
-        },
-        "rss_feed_item_autotagger_result_topics_topic_id_fkey": {
-          "columns": ["topic_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "topics",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "idx_rss_feed_item_autotagger_result_topics__topic_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_autotagger_result_topics__topic_id ON public.rss_feed_item_autotagger_result_topics USING btree (topic_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "rss_feed_item_autotagger_result_topics_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_autotagger_result_topics_pkey ON public.rss_feed_item_autotagger_result_topics USING btree (rss_feed_item_autotagger_result_id, topic_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "rss_feed_item_autotagger_result_id",
-              "descending": false,
-              "expression": "rss_feed_item_autotagger_result_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "topic_id",
-              "descending": false,
-              "expression": "topic_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["rss_feed_item_autotagger_result_id", "topic_id"]
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
-    "rss_feed_item_autotagger_results": {
-      "checkConstraints": {
-        "rss_feed_item_autotagger_results_content_sha256_check": {
-          "definition": "CHECK ((octet_length(content_sha256) = 32))",
-          "validated": true
-        }
-      },
-      "columns": {
-        "content_sha256": {
-          "comment": "SHA-256 of the item content that was analyzed.",
-          "dataType": "bytea",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
-        "created_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5
-        },
-        "created_by_id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
-        },
-        "deleted_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
-        "deleted_by_id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
-        "id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "prompt_id": {
-          "comment": "The agent prompt version used for tagging.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "rss_feed_item_id": {
-          "comment": "The RSS feed item that was auto-tagged.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7
-        },
-        "updated_by_id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
-        }
-      },
-      "comment": "Autotagger LLM results for RSS feed items. Keyed by (rss_feed_item_id, content hash, prompt).",
-      "foreignKeys": {
-        "rss_feed_item_autotagger_results_created_by_id_fkey": {
-          "columns": ["created_by_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "rss_feed_item_autotagger_results_deleted_by_id_fkey": {
-          "columns": ["deleted_by_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "rss_feed_item_autotagger_results_prompt_id_fkey": {
-          "columns": ["prompt_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "agent_prompts",
-          "validated": true
-        },
-        "rss_feed_item_autotagger_results_rss_feed_item_id_fkey": {
-          "columns": ["rss_feed_item_id"],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
-          "validated": true
-        },
-        "rss_feed_item_autotagger_results_updated_by_id_fkey": {
-          "columns": ["updated_by_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
-      "indexes": {
-        "idx_rss_feed_item_autotagger_results__lookup": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_autotagger_results__lookup ON public.rss_feed_item_autotagger_results USING btree (rss_feed_item_id, prompt_id, content_sha256) WHERE (deleted_at IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "prompt_id",
-              "descending": false,
-              "expression": "prompt_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "content_sha256",
-              "descending": false,
-              "expression": "content_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(deleted_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_item_autotagger_results__prompt_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_autotagger_results__prompt_id ON public.rss_feed_item_autotagger_results USING btree (prompt_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "prompt_id",
-              "descending": false,
-              "expression": "prompt_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "rss_feed_item_autotagger_results_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_autotagger_results_pkey ON public.rss_feed_item_autotagger_results USING btree (id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id ON public.rss_feed_item_autotagger_results USING btree (rss_feed_item_id, content_sha256, prompt_id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "content_sha256",
-              "descending": false,
-              "expression": "content_sha256",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bytea_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "prompt_id",
-              "descending": false,
-              "expression": "prompt_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_rss_feed_item_autotagger_results_updated_at": {
-          "definition": "CREATE TRIGGER trigger_rss_feed_item_autotagger_results_updated_at BEFORE UPDATE ON public.rss_feed_item_autotagger_results FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {
-        "uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id": {
-          "columns": ["rss_feed_item_id", "content_sha256", "prompt_id"]
-        }
-      }
     },
     "rss_feed_item_categories": {
       "checkConstraints": {},

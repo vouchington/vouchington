@@ -8,17 +8,13 @@ import {
   insertTestStory,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
-import { loadServiceModelSelection, type DailyAiCostTotal } from '@services/ai-usage'
+import type { DailyAiCostTotal } from '@services/ai-usage'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '@services/stories/story-posts'
 import type { SpendCapBreachContext } from '@modules/on-error/spend-cap-breach'
 import type { AIAgentJobData, StoryPostJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
-import { callStoryPostAgent } from '@agents/story-post'
-import { makeAgentModelCaller } from '@voucha/test-helpers/agents/model-call-result'
-import { getStoryItemSummaries } from '@services/stories/get'
-import { getPostByAny } from '@services/posts/get'
 
 // #8773 round-15 finding: `story-post` is spend-producing by default (AI_AGENT_JOB_PRODUCES_SPEND),
 // so unlike the exemptions in core.spend-cap-moderation.test.mts, evaluateSpendCapBreach
@@ -154,42 +150,6 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
       dailyCapMicrounits: 1_000_000,
       reason: 'cap_exceeded',
     })
-  })
-
-  it('replays a reserved result for an unsummarized post despite a daily cap breach', async () => {
-    const { story, testUser } = await makeStoryWithItem()
-    const prepared = await prepareStoryPost(story.id, testUser)
-    await prepared.finalize()
-    const result = prepared.response
-    const provider = makeAgentModelCaller({
-      title: 'Receipt title',
-      ai_summary_markdown: 'Receipt summary.',
-    })
-    await callStoryPostAgent(
-      story,
-      await getStoryItemSummaries(story.id),
-      await loadServiceModelSelection('story-post'),
-      provider,
-      result.post.id,
-      result.post.id,
-    )
-
-    const job = mockJob(result.post.id)
-    const recordSpendCapBreach = vi.fn<(context: SpendCapBreachContext) => void>()
-    await expect(
-      processAIAgentWorkerJob(job, {
-        waitForSpendCapConfig: () => Promise.resolve(),
-        getSpendCapFields: () => ({ enabled: true, daily_cap_microunits: 1_000_000 }),
-        getDailyAiCostTotalMicrounits: createDailyTotalLoader(5_000_000),
-        recordSpendCapBreach,
-      }),
-    ).resolves.toMatchObject({ ai_summary_markdown: 'Receipt summary.' })
-    await expect(getPostByAny(result.post.id)).resolves.toMatchObject({
-      ai_summary_markdown: 'Receipt summary.',
-    })
-    expect(provider).toHaveBeenCalledOnce()
-    expect(recordSpendCapBreach).not.toHaveBeenCalled()
-    expect(job.moveToDelayed).not.toHaveBeenCalled()
   })
 
   it('defers a forced retry even once a summary already exists, during a breach', async () => {
