@@ -202,9 +202,6 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
-      '@modules/token-secrets':
-        specifier: workspace:^
-        version: link:../../modules/token-secrets
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents

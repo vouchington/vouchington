@@ -28,7 +28,6 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
-    "@modules/token-secrets": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@ts-shared/utils": "workspace:^",
