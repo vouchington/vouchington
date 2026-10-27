@@ -201,6 +201,7 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Vote and activity data** — retained in aggregate form for trust scoring even after individual user deletion
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
+- **Identity verification** — after verification ends or an account is deleted, we retain only a keyed hash of the identity document and verification lifecycle dates indefinitely to prevent the same document from verifying another account. The retained record has no account, name, image, document details, or provider payload.
 - **Vote integrity flags** — retained for the life of the account; anonymized upon account deletion
 - **Copyright case records and evidence** — we keep US copyright notices, appeals, counter-notices,
   correspondence, evidence, and case decisions for three years after the case's last activity. This

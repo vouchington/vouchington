@@ -252,7 +252,7 @@ describe('deleteUser', () => {
     const identity = await getVerifiedIdentityByFingerprint(fingerprint)
     expect(identity?.status).toBe('revoked')
     expect(identity?.revoked_at).not.toBeNull()
-    expect(identity?.user_id).toBe(user.id)
+    expect(identity?.user_id).toBeNull()
   })
 
   it('scrubs profile fields on account deletion', async () => {

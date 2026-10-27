@@ -187,6 +187,51 @@ describe('processPsql', () => {
     expect(cleanup).toHaveBeenCalledTimes(3)
   })
 
+  it('continues only the membership families that exceeded their cap', async () => {
+    const initialJobId = `retention-test-${randomUUID()}`
+    const runId = createHash('sha256').update(initialJobId).digest('hex')
+    const ids = [1, 2].map(step => `data-retention-cleanup__${runId}__${step}`)
+    onTestFinished(async () => {
+      await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
+    })
+    const result = (effects: boolean, notices: boolean) =>
+      ({
+        classifierRecords: {},
+        deliveredMembershipEntitlementEffects: { hasMore: effects },
+        endedMembershipRenewalNotices: { hasMore: notices },
+        terminalGooglePlayAcknowledgments: { hasMore: false },
+      }) as Awaited<ReturnType<typeof runDataRetentionCleanup>>
+    const cleanup = vi
+      .fn<typeof runDataRetentionCleanup>()
+      .mockResolvedValueOnce(result(true, true))
+      .mockResolvedValueOnce(result(false, true))
+      .mockResolvedValue(result(false, false))
+
+    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
+    const first = await psql.getJob(ids[0]!)
+    expect(first?.opts.attempts).toBe(3)
+    expect((first!.data as PsqlRetentionJobData).continuation?.activeMembershipFamilies).toEqual([
+      'deliveredMembershipEntitlementEffects',
+      'endedMembershipRenewalNotices',
+    ])
+    await processPsql(
+      'dataRetentionCleanup',
+      first?.data as PsqlRetentionJobData,
+      { dataRetentionCleanup: cleanup },
+      first!.id,
+    )
+    expect(cleanup.mock.calls[1]?.[1]).toMatchObject({
+      activeMembershipFamilies: [
+        'deliveredMembershipEntitlementEffects',
+        'endedMembershipRenewalNotices',
+      ],
+    })
+    const second = await psql.getJob(ids[1]!)
+    expect((second!.data as PsqlRetentionJobData).continuation?.activeMembershipFamilies).toEqual([
+      'endedMembershipRenewalNotices',
+    ])
+  })
+
   it('calls runConfigDriven when the job name is runConfigDriven', async () => {
     runConfigDriven.mockReset()
     runConfigDriven.mockResolvedValue()

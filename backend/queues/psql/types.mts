@@ -56,5 +56,10 @@ export type PsqlPartitionJobData = {
 }
 
 export type PsqlRetentionJobData = {
-  continuation?: { runId: string; step: number; activeClassifierSweeps: string[] }
+  continuation?: {
+    runId: string
+    step: number
+    activeClassifierSweeps: string[]
+    activeMembershipFamilies: string[]
+  }
 }

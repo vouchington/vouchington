@@ -53,6 +53,8 @@ export function enqueueDataRetentionCleanupContinuation(
             jobId,
             priority: PRIORITY_DEFAULT,
             ordering: retentionOrdering,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
             removeOnComplete: true,
             removeOnFail: true,
           }),

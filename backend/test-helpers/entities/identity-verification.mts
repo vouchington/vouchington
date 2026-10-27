@@ -55,19 +55,13 @@ export async function insertTestVerifiedIdentity(
   sessionId: string,
 ): Promise<void> {
   await write(sql`/* insertTestVerifiedIdentity */
-    WITH registered_identity_document_type_id AS (
-      INSERT INTO identity_document_types (identity_document_type) VALUES ('passport')
-      ON CONFLICT (identity_document_type) DO UPDATE
-        SET identity_document_type = EXCLUDED.identity_document_type
-      RETURNING id
+    WITH inserted AS (
+      INSERT INTO verified_identities (identity_fingerprint, first_verified_at)
+      VALUES (decode(${fingerprint}, 'hex'), CURRENT_TIMESTAMP)
+      RETURNING identity_fingerprint
     )
-    INSERT INTO verified_identities (
-      user_id, provider, provider_session_id, identity_fingerprint,
-      issuing_country, identity_document_type_id, verified_at, checkout_session_id
-    ) SELECT
-      ${userId}, 'stripe_identity', ${sessionId}, ${fingerprint},
-      'US', registered_identity_document_type_id.id, CURRENT_TIMESTAMP, 'cs_test'
-    FROM registered_identity_document_type_id
+    INSERT INTO verified_identity_account_links (user_id, identity_fingerprint, provider_session_id)
+    SELECT ${userId}, identity_fingerprint, ${sessionId} FROM inserted
   `)
 }
 
@@ -113,15 +107,24 @@ export async function getUserVerificationState(userId: string): Promise<{
 }
 
 /**
- * Count verified_identities rows for a user.
+ * Count live verified-identity links for a user.
  */
 export async function countVerifiedIdentities(userId: string): Promise<number> {
   const { rows } = await read(sql`/* countVerifiedIdentities */
     SELECT COUNT(*)::int AS count
-    FROM verified_identities
+    FROM verified_identity_account_links
     WHERE user_id = ${userId}
   `)
   return (rows[0] as { count: number }).count
+}
+
+export async function getStoredVerifiedIdentityHash(fingerprint: string): Promise<Buffer | null> {
+  const { rows } = await read<{ identity_fingerprint: Buffer }>(sql`
+    /* getStoredVerifiedIdentityHash */
+    SELECT identity_fingerprint FROM verified_identities
+    WHERE identity_fingerprint = decode(${fingerprint}, 'hex')
+  `)
+  return rows[0]?.identity_fingerprint ?? null
 }
 
 export type IdentityVerificationAttemptState = {
@@ -149,35 +152,32 @@ export async function getIdentityVerificationAttemptStates(
 
 /**
  * Read a verified_identities row by its fingerprint for assertion in tests.
- * Used after hard-delete to assert reassignment, because the original user_id is gone.
+ * Used after hard-delete to assert the permanent record has no account link.
  */
 export async function getVerifiedIdentityByFingerprint(fingerprint: string): Promise<{
-  user_id: string
+  user_id: string | null
   status: string
   revoked_at: Date | null
-  transferred_to_user_id: string | null
 } | null> {
   const { rows } = await read(sql`/* getVerifiedIdentityByFingerprint */
     SELECT
-      user_id,
+      link.user_id,
       CASE
-        WHEN transferred_to_user_id IS NOT NULL THEN 'transferred'
-        WHEN revoked_at IS NOT NULL THEN 'revoked'
+        WHEN identity.revoked_at IS NOT NULL THEN 'revoked'
         ELSE 'active'
       END AS status,
-      revoked_at,
-      transferred_to_user_id
-    FROM verified_identities
-    WHERE identity_fingerprint = ${fingerprint}
+      identity.revoked_at
+    FROM verified_identities identity
+    LEFT JOIN verified_identity_account_links link ON link.identity_fingerprint = identity.identity_fingerprint
+    WHERE identity.identity_fingerprint = decode(${fingerprint}, 'hex')
     LIMIT 1
   `)
   return (
     (rows[0] as
       | {
-          user_id: string
+          user_id: string | null
           status: string
           revoked_at: Date | null
-          transferred_to_user_id: string | null
         }
       | undefined) ?? null
   )

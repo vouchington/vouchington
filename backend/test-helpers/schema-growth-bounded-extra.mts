@@ -30,6 +30,14 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One unfinished projection per delivery authority; terminal audit outcomes delete work, and explicit replay recreates it.',
   ],
   [
+    'membership_renewal_price_increase_notification_work_items',
+    'One latest notification snapshot per membership projection; ended projection work is deleted after 90 days by the bounded operational cleanup.',
+  ],
+  ['membership_entitlement_effects', 'Delivered effects delete after 30 days; pending remain.'],
+  ['membership_google_play_acknowledgments', 'Terminal token rows delete after 90 days.'],
+  ['membership_operational_cleanup_cursors', 'Three durable scan cursors.'],
+  ['verified_identity_account_links', 'One live link per verified user, deleted on revocation.'],
+  [
     'membership_operation_execution_work_items',
     'One row per unfinished provider operation; completion deletes work while durable refund and attempt ledgers remain.',
   ],

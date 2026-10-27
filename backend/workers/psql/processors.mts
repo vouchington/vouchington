@@ -56,6 +56,18 @@ function unfinishedClassifierSweeps(
   ).flatMap(([sweep, pending]) => (pending ? [sweep] : []))
 }
 
+const MEMBERSHIP_FAMILIES = [
+  'deliveredMembershipEntitlementEffects',
+  'endedMembershipRenewalNotices',
+  'terminalGooglePlayAcknowledgments',
+] as const
+
+function unfinishedMembershipFamilies(
+  result: Awaited<ReturnType<typeof runDataRetentionCleanup>>,
+): string[] {
+  return MEMBERSHIP_FAMILIES.filter(family => result[family]?.hasMore)
+}
+
 type ProcessPsqlDependencies = {
   cleanupPartitions: typeof cleanupPartitions
   createPartitions: typeof createMonthlyPartitions
@@ -96,16 +108,19 @@ export default async function processPsql(
       const result = data?.continuation
         ? await cleanup(getDataRetentionLimits(), {
             classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
+            activeMembershipFamilies: data.continuation.activeMembershipFamilies,
           })
         : await cleanup(getDataRetentionLimits())
       const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
-      if (activeClassifierSweeps.length > 0) {
+      const activeMembershipFamilies = unfinishedMembershipFamilies(result)
+      if (activeClassifierSweeps.length > 0 || activeMembershipFamilies.length > 0) {
         if (!jobId) throw new Error('Data retention continuation needs the current job ID')
         const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
         await enqueueDataRetentionCleanupContinuation({
           runId,
           step: (data?.continuation?.step ?? 0) + 1,
           activeClassifierSweeps,
+          activeMembershipFamilies,
         })
       }
       return result

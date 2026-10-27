@@ -92,7 +92,9 @@ its listener work is admitted. Quarantine deletion still requires a confirmed pe
 
 The data-retention schedule runs in deployed environments so staging exposes retention failures
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
-work ahead of housekeeping.
+work ahead of housekeeping. Membership retention pages persist their position. A capped run
+enqueues a retention continuation step naming the membership families with more eligible rows,
+and that step reruns only those families, keeping the backlog draining between schedules.
 
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against

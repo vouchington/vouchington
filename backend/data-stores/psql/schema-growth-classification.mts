@@ -26,7 +26,6 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'follower_distribution_deliveries',
   'follower_distributions',
   'membership_changes',
-  'membership_entitlement_effects',
   'membership_ineligible_purchase_reversal_refund_scans',
   'membership_ineligible_purchase_reversal_refund_observations',
   'membership_refund_operation_attempts',
@@ -47,7 +46,6 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
 ] as const
 const UNBOUNDED_MEMBERSHIP_WORK_ITEMS = [
   'membership_google_play_acknowledgment_work_items',
-  'membership_renewal_price_increase_notification_work_items',
   'membership_verification_processing_work_items',
 ] as const
 const INDEFINITE_EDGE_TABLES = [
