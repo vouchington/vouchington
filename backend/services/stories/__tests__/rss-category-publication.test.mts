@@ -5,18 +5,14 @@ import {
   createTestTopicAliasForCategoryMapping,
   createTestUrlWithHostname,
   createTestUserDirect,
-  countTestStoryPostPublicationDirtyWork,
   deleteTestPostStory,
   getTopicAliasIdForTest,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestPost,
   insertTestPostStoryAndWaitBeforeCommit,
   insertTestRssFeedItem,
   insertTestStoryCategoryPublicationBatch,
   insertTestStory,
   insertTestTopicBatch,
-  listTestPostPublicationImpactPostIds,
-  listTestPostPublicationImpactTopicIds,
   setTestItemStoryId,
   updateTestTopicAliasCategoryMappingOwner,
   beginTransaction,
@@ -30,6 +26,11 @@ import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/c
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { prepareStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@voucha/test-helpers/post-publication-fixtures'
+import {
+  captureAddedPublicationEffectsForScope,
+  captureAddedPublicationEffectsForScopes,
+} from '@voucha/test-helpers/publication-effect-jobs'
+import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 
 let feedId: string
 let urlId: string
@@ -99,11 +100,13 @@ describe('RSS category story-post publication', () => {
     const alias = `rss-category-insert-${Math.random().toString(36).slice(2)}`
     await createTestTopicAliasForCategoryMapping({ alias, topicId: topic.id })
 
-    await upsertRssFeedItemCategories([{ rss_feed_item_id: itemIds[0]!, categories: [alias] }])
-
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-    ).resolves.toMatchObject({ story_identity_id: story.id })
+    const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
+      upsertRssFeedItemCategories([{ rss_feed_item_id: itemIds[0]!, categories: [alias] }]),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: topic.id,
+    })
   })
 
   it('retains category topic impacts for a story that has no discussion post', async () => {
@@ -118,45 +121,41 @@ describe('RSS category story-post publication', () => {
       topicId: firstTopic.id,
     })
 
-    await upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }])
-
-    const inserted = await getTestPostPublicationDirtyWorkForScope({
-      type: 'story',
-      id: story.id,
+    const inserted = await captureAddedPublicationEffectsForScope(story.id, () =>
+      upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }]),
+    )
+    expect(inserted.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: firstTopic.id,
     })
-    expect(inserted).toBeDefined()
-    await expect(listTestPostPublicationImpactPostIds(inserted!.id)).resolves.toEqual([])
-    await expect(listTestPostPublicationImpactTopicIds(inserted!.id)).resolves.toEqual([
-      firstTopic.id,
-    ])
+    expect(inserted.flatMap(job => job.keys).filter(key => key.kind === 'impact_post')).toEqual([])
 
-    await updateTestTopicAliasCategoryMappingOwner(aliasId, secondTopic.id)
-    await backfillCategoriesForTopicAliases(secondTopic.id)
-    await updateTestTopicAliasCategoryMappingOwner(aliasId, null)
-    await clearCategoriesForUnlinkedTopicAlias(aliasId, secondTopic.id)
-
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id })
-    expect(work).toBeDefined()
-    await expect(listTestPostPublicationImpactPostIds(work!.id)).resolves.toEqual([])
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual(
-      expect.arrayContaining([firstTopic.id, secondTopic.id]),
+    const changed = await captureAddedPublicationEffectsForScope(story.id, async () => {
+      await updateTestTopicAliasCategoryMappingOwner(aliasId, secondTopic.id)
+      await backfillCategoriesForTopicAliases(secondTopic.id)
+      await updateTestTopicAliasCategoryMappingOwner(aliasId, null)
+      await clearCategoriesForUnlinkedTopicAlias(aliasId, secondTopic.id)
+    })
+    expect(changed.flatMap(job => job.keys)).toEqual(
+      expect.arrayContaining([
+        { kind: 'impact_topic', uuidValue: firstTopic.id },
+        { kind: 'impact_topic', uuidValue: secondTopic.id },
+      ]),
     )
   })
 
   it('retains the story post when its mapping disappears after capture', async () => {
-    const { itemIds, story } = await createStoryPostWithItems()
+    const { itemIds, postId, story } = await createStoryPostWithItems()
     const topic = await createTestTopic({ user })
     const alias = `rss-category-retain-post-${Math.random().toString(36).slice(2)}`
     await createTestTopicAliasForCategoryMapping({ alias, topicId: topic.id })
 
-    await upsertRssFeedItemCategories([{ rss_feed_item_id: itemIds[0]!, categories: [alias] }])
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id })
-    expect(work).toBeDefined()
-    const [postId] = await listTestPostPublicationImpactPostIds(work!.id)
-    expect(postId).toBeDefined()
-
-    await deleteTestPostStory(postId!)
-    await expect(listTestPostPublicationImpactPostIds(work!.id)).resolves.toEqual([postId])
+    const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
+      upsertRssFeedItemCategories([{ rss_feed_item_id: itemIds[0]!, categories: [alias] }]),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({ kind: 'impact_post', uuidValue: postId })
+    await deleteTestPostStory(postId)
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({ kind: 'impact_post', uuidValue: postId })
   })
 
   it('captures a story scope when an alias backfill maps a topic', async () => {
@@ -168,11 +167,13 @@ describe('RSS category story-post publication', () => {
     expect(aliasId).not.toBeNull()
     await updateTestTopicAliasCategoryMappingOwner(aliasId!, topic.id)
 
-    await backfillCategoriesForTopicAliases(topic.id)
-
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-    ).resolves.toMatchObject({ story_identity_id: story.id })
+    const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
+      backfillCategoriesForTopicAliases(topic.id),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: topic.id,
+    })
   })
 
   it('captures a story scope when an alias unlink clears a topic', async () => {
@@ -183,11 +184,13 @@ describe('RSS category story-post publication', () => {
     await upsertRssFeedItemCategories([{ rss_feed_item_id: itemIds[0]!, categories: [alias] }])
     await updateTestTopicAliasCategoryMappingOwner(topicAliasId, null)
 
-    await clearCategoriesForUnlinkedTopicAlias(topicAliasId, topic.id)
-
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-    ).resolves.toMatchObject({ story_identity_id: story.id })
+    const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
+      clearCategoriesForUnlinkedTopicAlias(topicAliasId, topic.id),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: topic.id,
+    })
   })
 
   it('re-reads a story-post association committed by concurrent story creation', async () => {
@@ -221,7 +224,7 @@ describe('RSS category story-post publication', () => {
       releaseCreation.promise,
       associationInserted.resolve,
     )
-    let capturing: Promise<void> | undefined
+    let capturing: Promise<PostPublicationEffectsJobData[]> | undefined
     try {
       await associationInserted.promise
       const lockStories = storyLifecycleLock.lockStoryLifecycles
@@ -232,7 +235,9 @@ describe('RSS category story-post publication', () => {
           if (storyIds.includes(story.id)) entered.resolve()
           return lockStories(query, storyIds)
         })
-      capturing = upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }])
+      capturing = captureAddedPublicationEffectsForScope(story.id, () =>
+        upsertRssFeedItemCategories([{ rss_feed_item_id: itemId, categories: [alias] }]),
+      )
       try {
         await entered.promise
         await using probe = await beginTransaction()
@@ -242,17 +247,17 @@ describe('RSS category story-post publication', () => {
         lifecycleSpy.mockRestore()
       }
       releaseCreation.resolve()
-      await Promise.all([creating, capturing])
-      await expect(
-        getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id }),
-      ).resolves.toMatchObject({ story_identity_id: story.id })
+      const [, jobs] = await Promise.all([creating, capturing])
+      expect(jobs.flatMap(job => job.keys)).toContainEqual({
+        kind: 'impact_post',
+        uuidValue: postId,
+      })
     } finally {
       releaseCreation.resolve()
       await creating.catch(() => undefined)
       await capturing?.catch(() => undefined)
     }
   })
-
   it('captures the full 500-row category writer batch without per-story loops', async () => {
     const topic = await createTestTopic({ user })
     const { storyIds } = await insertTestStoryCategoryPublicationBatch({
@@ -263,12 +268,13 @@ describe('RSS category story-post publication', () => {
       topicId: null,
       urlId,
     })
-
-    await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toEqual({
-      updated: 500,
-      hasMore: true,
-    })
-    await expect(countTestStoryPostPublicationDirtyWork(storyIds)).resolves.toBe(500)
+    const jobs = await captureAddedPublicationEffectsForScopes(storyIds, () =>
+      expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toEqual({
+        updated: 500,
+        hasMore: true,
+      }),
+    )
+    expect(new Set(jobs.map(job => job.scope.id)).size).toBe(500)
   })
 
   it('chunks more than 1000 retained topic impacts for one story', async () => {
@@ -276,13 +282,19 @@ describe('RSS category story-post publication', () => {
     const prefix = `publication-impact-${Math.random().toString(36).slice(2)}`
     const topicIds = await insertTestTopicBatch({ count: 1001, createdById: user.id, prefix })
 
-    await recordTestStoryTopicPublicationChange({
-      storyId: story.id,
-      impactedPostIds: [postId],
-      impactedTopicIds: topicIds,
-    })
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'story', id: story.id })
-    expect(work).toBeDefined()
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toHaveLength(1001)
+    const jobs = await captureAddedPublicationEffectsForScope(story.id, () =>
+      recordTestStoryTopicPublicationChange({
+        storyId: story.id,
+        impactedPostIds: [postId],
+        impactedTopicIds: topicIds,
+      }),
+    )
+    expect(
+      new Set(
+        jobs.flatMap(job =>
+          job.keys.flatMap(key => (key.kind === 'impact_topic' ? [key.uuidValue] : [])),
+        ),
+      ).size,
+    ).toBe(1001)
   })
 })

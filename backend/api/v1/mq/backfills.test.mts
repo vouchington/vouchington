@@ -4,8 +4,6 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
-import { POST_PUBLICATION_SHADOW_AUDIT_JOB } from '@queues/background/enqueues/post-publication-jobs'
-import { background } from '@queues/background/queues'
 
 describe('backfills', () => {
   let admin: PrivateUser
@@ -122,36 +120,6 @@ describe('backfills', () => {
 
         expect(response.body).toEqual({ success: true })
         await expectStaffOperationHistory(admin.id, 'backfill_run')
-      })
-
-      it('should expose and trigger a read-only post-publication shadow audit', async () => {
-        const request = createRequest()
-        await request.authenticateAs(admin)
-        const response = await request
-          .post('/api/v1/mq/backfills/post-publication-shadow-dry-run/runs')
-          .expect(200)
-
-        expect(response.body).toEqual({ success: true })
-        await expectStaffOperationHistory(admin.id, 'backfill_run')
-        const jobs = (
-          await Promise.all(
-            (['waiting', 'active', 'delayed', 'completed', 'failed'] as const).map(state =>
-              background.searchJobs({
-                state,
-                name: POST_PUBLICATION_SHADOW_AUDIT_JOB.name,
-                limit: 1_000,
-              }),
-            ),
-          )
-        ).flat()
-        expect(jobs).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              name: POST_PUBLICATION_SHADOW_AUDIT_JOB.name,
-              data: { dryRun: true, cursor: null },
-            }),
-          ]),
-        )
       })
     })
   })

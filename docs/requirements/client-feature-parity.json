@@ -2,6 +2,41 @@
   "version": 1,
   "features": [
     {
+      "id": "staff-rss-feed-deletion",
+      "title": "Staff asynchronous RSS feed deletion",
+      "domain": "Admin",
+      "intents": [],
+      "requirements": ["docs/requirements/CLIENT-PARITY-MATRIX.md"],
+      "matrixRows": [],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/topics/manage-source/manage-source-client.tsx",
+            "web/components/topics/manage-source/feed-actions-section.tsx"
+          ],
+          "apiEvidence": ["web/lib/api/client/rss-feeds.ts"],
+          "behaviorTests": [
+            "web/components/topics/manage-source/__tests__/use-manage-source-actions.error.mock.test.ts"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Native staff source management must distinguish accepted asynchronous deletion from physical removal. Retained admin import history rejects acceptance with HTTP 409. The producer returns HTTP 202 with rss_feed_id and status deleting; discovery hides the feed, but detail reads may remain available during cleanup and must not be polled as a deletion progress or completion API.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/521"
+      }
+    },
+    {
       "id": "authentication",
       "title": "Authentication flows",
       "domain": "Account",

@@ -112,6 +112,8 @@ describe('index', () => {
         expect(getResponse.headers['vary']).toContain('Cookie')
         expect(getResponse.headers['vary']).toContain('Authorization')
 
+        await request.authenticateAs(user)
+        await request.delete(`/api/v1/rss-feeds/${feedId}`).expect(403)
         await request.authenticateAs(admin!)
 
         const patchResponse = await request
@@ -120,9 +122,8 @@ describe('index', () => {
           .expect(200)
         expect(patchResponse.body.rss_feed.title).toBe(`Updated Feed ${random}`)
 
-        await request.delete(`/api/v1/rss-feeds/${feedId}`).expect(204)
-
-        await request.get(`/api/v1/rss-feeds/${feedId}`).expect(404)
+        const deleteResponse = await request.delete(`/api/v1/rss-feeds/${feedId}`).expect(202)
+        expect(deleteResponse.body).toEqual({ rss_feed_id: feedId, status: 'deleting' })
       })
 
       it('should update enablement and discoverability state as admin', async () => {

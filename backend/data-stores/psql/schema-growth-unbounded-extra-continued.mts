@@ -10,8 +10,6 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'oauth_grants',
   'podcast_playback_positions',
   'story_posts',
-  'post_publication_identity_snapshots',
-  'post_publication_identity_snapshot_keys',
   'autotagger_agent_run_topics',
   'classifier_run_community_prompts',
   'post_classifier_local_outcomes',

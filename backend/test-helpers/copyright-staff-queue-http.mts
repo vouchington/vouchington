@@ -7,7 +7,7 @@ import { copyrightStaffQueueCursorScope } from '../services/copyright-notices/re
 import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-models-staff-queue-sql.mts'
 import { copyrightJurisdictionPolicyLockKey } from '../services/copyright-notices/jurisdiction-policy.mts'
 import { withApiRequestQueryOptions } from './api/server.mts'
-import { firstOwnedKey, suffixCount, nativeKeyPage } from './copyright-staff-queue-keys.mts'
+import { createQueueSnapshotKeys, nativeKeyPage } from './copyright-staff-queue-keys.mts'
 
 type QueueCase = {
   id: string
@@ -73,17 +73,17 @@ export async function withCopyrightStaffQueueHttp<Result>(
       }
       result = await withApiRequestQueryOptions({ query: transaction, now }, async request => {
         await request.authenticateAs(moderator)
+        const snapshotKeys = createQueueSnapshotKeys(transaction, now)
         return run({
           query: transaction,
           read: async (ids, boost, limit) => {
-            const key = await firstOwnedKey(transaction, ids, boost, now)
+            const { key, count } = await snapshotKeys(ids, boost)
             let after = encodeScopedTierPreciseUuidCursor(
               key.before,
               key.tier,
               key.id,
               copyrightStaffQueueCursorScope,
             )
-            const count = await suffixCount(transaction, key, boost, now)
             const ownedIdCount = new Set(ids).size
             const owned: QueueCase[] = []
             const cursors = new Set<string>([after])

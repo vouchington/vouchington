@@ -108,39 +108,11 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ],
   [
     'post_publication_community_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_rss_feed_item_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_author_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_rss_feed_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_topic_alias_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_story_identities',
-    'Only active dirty-work scopes or retained impact keys reference these repair identities; cyclic raw-capped reclamation deletes unreferenced rows, bounding cardinality to the active repair backlog.',
-  ],
-  [
-    'post_publication_identity_bridge_cleanup_cursors',
-    'A finite family primary key permits one independently advanced cursor per concrete identity bridge family.',
+    'Classifier run history can retain a community identity after live deletion; the generic retained-identity cleanup removes unreferenced rows in bounded pages.',
   ],
   [
     'media_delivery_repair_markers',
     'One coalesced marker per immutable delivery key; successful exact-token reconciliation deletes it, bounding cardinality to outstanding repair work.',
-  ],
-  [
-    'post_publication_identity_snapshot_cleanup_cursors',
-    'A checked true primary key permits exactly one bounded sweep cursor.',
   ],
   [
     'oauth_access_tokens',

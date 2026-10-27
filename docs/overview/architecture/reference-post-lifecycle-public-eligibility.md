@@ -8,12 +8,18 @@ canonical SQL owner is
 Readers join a candidate post to `COALESCE(candidate.root_post_id, candidate.id)` and compose that
 predicate; callers must not restate a partial publication check.
 
-Post-publication reconciliation materializes the identities affected by this predicate in bounded
-relational pages before cache, sitemap, or receipt effects. Page cursors follow indexed physical
-source rows before identity mapping; duplicate or filtered rows still advance progress. Snapshot
-reclamation also bounds examined headers before ownership checks. Its snapshot-only receipts,
-concrete FK identity ownership, and bounded reclamation are owned by
-`backend/services/post-publication`.
+After a producer commits a public-state change, it queues the previous identity keys and affected
+entities captured inside the transaction. The worker reads current identities in bounded pages and
+applies cache, sitemap, rating, metrics, and notification effects to both sets. Repeated jobs are
+safe because these effects invalidate or recompute current state. A process failure between commit
+and enqueue can leave a cache entry stale until its TTL, a sitemap entry until its next rebuild, or
+a notification until its next reconciliation. The capture and application boundary is owned by
+`backend/services/post-publication` and `backend/workers/post-publication`.
+
+Author and community eligibility also affects inherited visibility in comment threads. Scope
+discovery therefore follows affected posts downward to their descendants, while captured previous
+identities remain applicable even when their live relations have disappeared. A logical change
+starts scope discovery once even when its previous identities require multiple payloads.
 
 ## Predicates
 

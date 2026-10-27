@@ -10,19 +10,14 @@ import {
   createTestUrlWithHostname,
   createTestUserDirect,
   getPostCategoryTopicIds,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestRssFeedItem,
   insertTestStory,
-  listTestPostPublicationImpactTopicIds,
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { upsertSystemUser } from '@services/users/system-users'
 import { settleStoryPostTopicVoteCapture } from '../../../test-helpers/services/stories/post-topic-vote-capture.mts'
-import {
-  acknowledgePostPublicationDirtyWork,
-  claimPostPublicationDirtyWork,
-} from '@services/post-publication/dirty-work'
 
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
@@ -96,47 +91,22 @@ describe('story clustering retry', () => {
     await prepared.finalize()
     const { post } = prepared.response
     await settleStoryPostTopicVoteCapture(post.id, priorTopic.id)
-    const initialWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
-    })
-    expect(initialWork).toBeDefined()
-    await acknowledgeCurrentPostPublicationWork(post.id)
-
     await Promise.all([
       setTestItemStoryId(priorItemId, null),
       addCategoryToRssFeedItem(currentItemId, currentTopic.id),
     ])
-    await expect(
+    const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
       completeStoryClusteringRun({ postId: null, rssFeedItemId: currentItemId }),
-    ).resolves.toBeUndefined()
+    )
 
     const topicIds = await getPostCategoryTopicIds(post.id)
     expect(topicIds).toContain(currentTopic.id)
     expect(topicIds).not.toContain(priorTopic.id)
-    const replayWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
-    })
-    expect(replayWork).toBeDefined()
-    await expect(listTestPostPublicationImpactTopicIds(replayWork!.id)).resolves.toEqual(
-      expect.arrayContaining([priorTopic.id, currentTopic.id]),
+    expect(jobs.flatMap(job => job.keys)).toEqual(
+      expect.arrayContaining([
+        { kind: 'impact_topic', uuidValue: priorTopic.id },
+        { kind: 'impact_topic', uuidValue: currentTopic.id },
+      ]),
     )
   })
 })
-
-async function acknowledgeCurrentPostPublicationWork(postId: string): Promise<void> {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
-    if (!work) return
-    const claimed = await claimPostPublicationDirtyWork(work, 60)
-    if (!claimed) continue
-    const acknowledged = await acknowledgePostPublicationDirtyWork({
-      id: claimed.id,
-      generation: claimed.generation,
-      leaseToken: claimed.lease_token,
-    })
-    if (acknowledged) return
-  }
-  throw new Error('Unable to acknowledge current post publication work')
-}

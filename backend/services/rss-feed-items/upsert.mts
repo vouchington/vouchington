@@ -37,11 +37,9 @@ import {
 import { finishRssFeedItemUpsert, finishUnchangedRssFeedItemUpsert } from './upsert-result.mts'
 import { markStoryPostRelatedUrlProjectionsForStories } from './story-post-related-url-projections.mts'
 import { getExistingRssFeedItems } from './upsert-existing.mts'
-
 export type UpsertRssFeedItemsDependencies = {
   getExistingRssFeedItems?: typeof getExistingRssFeedItems
 }
-
 export async function upsertRssFeedItems(
   rssFeedId: string,
   feedItems: RssFeedItemToUpsert[],
@@ -83,9 +81,16 @@ export async function upsertRssFeedItems(
   const replicaItemsToUpsert = getRssFeedItemsToUpsert(itemsWithHashes, existingMap)
   const replicaGuidsToUpsert = new Set<string>()
   for (const item of replicaItemsToUpsert) replicaGuidsToUpsert.add(item.feedItem.guid)
-
   await using txQuery = await beginTransaction()
   await lockRssFeedItemWriteScopes(txQuery, rssFeedId)
+  // The first feed lookup runs before this transaction. Recheck after taking the
+  // publication lock so a queued hard delete cannot acquire new source rows.
+  const activeFeed = await txQuery<{ id: string }>(sql`/* upsertRssFeedItems:activeFeed */
+    SELECT id FROM rss_feeds
+    WHERE id = ${rssFeedId} AND deleted_at IS NULL AND hard_delete_requested_at IS NULL
+    FOR UPDATE
+  `)
+  assert(activeFeed.rows.length > 0, 404, 'RSS feed not found')
   const resolved = await resolveAndLockRssFeedItemWrites(txQuery, urlHostnameId, itemsWithHashes)
   const writerRevisionItemsByGuid = new Map<string, (typeof itemsWithHashes)[number]>()
   for (const item of itemsWithHashes) {
@@ -187,13 +192,9 @@ export async function upsertRssFeedItems(
 }
 
 function rssFeedItemIdsOf(rows: Array<{ id: string }>): string[] {
-  const ids: string[] = []
-  for (const row of rows) ids.push(row.id)
-  return ids
+  return rows.map(row => row.id)
 }
 
 function insertedRssFeedItemIds(insertedSourceRows: Array<{ rss_feed_item_id: string }>): string[] {
-  const ids: string[] = []
-  for (const row of insertedSourceRows) ids.push(row.rss_feed_item_id)
-  return ids
+  return insertedSourceRows.map(row => row.rss_feed_item_id)
 }

@@ -1,5 +1,8 @@
 import { orderingMaxValue } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 
+/** Shared lane for direct publication effects and their continuations. */
+export const POST_PUBLICATION_EFFECTS_ORDERING_KEY = 'post-publication:effects' as const
+
 export const BACKGROUND_ORDERING_CAPS = {
   'image-deletion': 2,
   'image-deletion:recovery': 1,
@@ -8,6 +11,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'post-mentions': 5,
   'story-post-related-url-projections': 1,
   'post-publication': 1,
+  'post-publication:effects': 5,
   'vote-aggregation': 10,
   'entity-listeners': 5,
   'account-lifecycle': 2,

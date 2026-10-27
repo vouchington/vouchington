@@ -91,7 +91,6 @@
     "@queues/notifications": "workspace:^",
     "@queues/oauth-authorization-exchange": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
-    "@queues/post-publication": "workspace:^",
     "@queues/psql": "workspace:^",
     "@queues/rss-feeds": "workspace:^",
     "@queues/ses-inbound": "workspace:^",

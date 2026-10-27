@@ -86,7 +86,7 @@ async function handleDelete(state: ManageSourceState, dispatch: (action: Action)
   try {
     await deleteRssFeed(state.rssFeed.id)
     dispatch({ confirmDelete: false, crawls: [], rssFeed: null })
-    onSuccess('Source deleted')
+    onSuccess('Source deletion started')
   } catch (err) {
     onError(err, { fallback: 'Failed to delete source', tags: { form: 'admin-topic-source' } })
   } finally {

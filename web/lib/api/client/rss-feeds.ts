@@ -62,9 +62,13 @@ export function updateRssFeed(
   )
 }
 
-export function deleteRssFeed(rssFeedId: string): Promise<void> {
+export function deleteRssFeed(
+  rssFeedId: string,
+): Promise<{ rss_feed_id: string; status: 'deleting' }> {
   const safeId = assertEncodablePathSegmentIdentifier(rssFeedId)
-  return clientApi.delete(`/api/v1/rss-feeds/${encodeURIComponent(safeId)}`)
+  return clientApi.delete<{ rss_feed_id: string; status: 'deleting' }>(
+    `/api/v1/rss-feeds/${encodeURIComponent(safeId)}`,
+  )
 }
 
 export function refreshRssFeed(

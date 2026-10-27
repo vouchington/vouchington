@@ -1,6 +1,7 @@
+import { nativeGlideMq } from './native-glide-mq.mts'
 import { randomUUID } from 'node:crypto'
 import { onTestFinished } from 'vitest'
-import { Queue, Worker, type Job, type JobOptions, type WorkerOptions } from 'glide-mq'
+import type { Queue, Worker, Job, JobOptions, WorkerOptions } from 'glide-mq'
 import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
 export type RealGlideConnection = Pick<WorkerOptions, 'connection' | 'prefix'>
@@ -27,6 +28,8 @@ export async function startRealGlideBackgroundLifecycle<TJob extends JobDefiniti
   concurrency?: number
   workerOptions?: Partial<WorkerOptions>
 }): Promise<RealGlideBackgroundHarness<TJob>> {
+  // This helper promises native execution even when ordinary service admissions use TestQueue.
+  const { Queue, Worker } = nativeGlideMq
   const { connection, processor, workers = 1, concurrency = 1 } = options
   const queueName = `${options.queueNamePrefix}_${randomUUID()}`
   const queue = new Queue(queueName, connection)
@@ -90,8 +93,15 @@ export async function startRealGlideBackgroundLifecycle<TJob extends JobDefiniti
       }
     })
     worker.on('completed', job => deferredFor(job.id).resolve('completed'))
-    worker.on('failed', job => {
-      if (job) deferredFor(job.id).resolve('failed')
+    worker.on('failed', (job, error) => {
+      // Native failed also fires for retriable attempts; settled means a terminal receipt.
+      if (
+        job &&
+        (job.discarded ||
+          error.name === 'UnrecoverableError' ||
+          job.attemptsMade + 1 >= (job.opts.attempts ?? 1))
+      )
+        deferredFor(job.id).resolve('failed')
     })
   }
   startup = Promise.all(started.map(worker => worker.waitUntilReady())).then(() => undefined)
