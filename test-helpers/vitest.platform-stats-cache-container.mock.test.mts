@@ -1,8 +1,7 @@
 import { PassThrough } from 'node:stream'
 import { execFileSync, spawn, ChildProcess } from 'node:child_process'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { TestProject } from 'vitest/node'
-import setup from './vitest.global-setup.platform-stats-cache.mts'
+import createPlatformStatsCache from './vitest.platform-stats-cache-container.mts'
 
 vi.mock<typeof import('node:child_process')>(import('node:child_process'), async importOriginal => {
   const actual = await importOriginal()
@@ -14,7 +13,7 @@ vi.mock<typeof import('node:child_process')>(import('node:child_process'), async
 })
 
 const containerId = 'a'.repeat(64)
-type Failure = 'start' | 'create' | 'id' | 'unhealthy' | 'exit'
+type Failure = 'start' | 'create' | 'id' | 'unhealthy' | 'exit' | 'binding'
 
 function fixture(failure?: Failure, manualHealth = false) {
   let owner = ''
@@ -23,7 +22,6 @@ function fixture(failure?: Failure, manualHealth = false) {
   const stdout = new PassThrough()
   watcher.stdout = stdout
   vi.spyOn(watcher, 'kill').mockReturnValue(true)
-  const provide = vi.fn<TestProject['provide']>()
   const commands = vi.mocked(execFileSync)
   vi.mocked(spawn).mockReturnValue(watcher)
   commands.mockImplementation((...parameters) => {
@@ -51,7 +49,11 @@ function fixture(failure?: Failure, manualHealth = false) {
     if (args[0] === 'inspect')
       return Buffer.from(
         String(args[2]).includes('NetworkSettings')
-          ? JSON.stringify({ '6379/tcp': [{ HostIp: '127.0.0.1', HostPort: '43210' }] })
+          ? JSON.stringify({
+              '6379/tcp': [
+                { HostIp: failure === 'binding' ? '0.0.0.0' : '127.0.0.1', HostPort: '43210' },
+              ],
+            })
           : foreign
             ? 'foreign-owner'
             : owner,
@@ -59,8 +61,6 @@ function fixture(failure?: Failure, manualHealth = false) {
     return Buffer.from('')
   })
   return {
-    project: { provide } satisfies Pick<TestProject, 'provide'>,
-    provide,
     watcher,
     stdout,
     commands,
@@ -76,8 +76,8 @@ describe('private platform-stats cache lifecycle', () => {
 
   it('provides the healthy owned endpoint and removes that exact container on teardown', async () => {
     const target = fixture()
-    const teardown = await setup(target.project)
-    expect(target.provide).toHaveBeenCalledWith('platformStatsCache', {
+    const cache = await createPlatformStatsCache()
+    expect(cache).toMatchObject({
       url: 'redis://127.0.0.1:43210',
       owner: target.owner(),
     })
@@ -85,7 +85,7 @@ describe('private platform-stats cache lifecycle', () => {
     expect(
       target.commands.mock.calls.find(([, args]) => Array.isArray(args) && args[0] === 'rm'),
     ).toBeUndefined()
-    teardown()
+    cache.close()
     expect(target.commands).toHaveBeenLastCalledWith('docker', ['rm', '--force', containerId], {
       timeout: 30_000,
     })
@@ -111,11 +111,12 @@ describe('private platform-stats cache lifecycle', () => {
     ['start', 'start failed', 1],
     ['create', 'create transport timeout', 0],
     ['id', 'Docker did not return a container ID', 0],
+    ['binding', 'Private platform-stats Valkey did not bind an assigned localhost port', 1],
     ['unhealthy', 'unhealthy', 1],
     ['exit', 'health watcher exited', 1],
   ] as const)('cleans up its owned container after %s failure', async (mode, message, watchers) => {
     const target = fixture(mode)
-    await expect(setup(target.project)).rejects.toThrow(message)
+    await expect(createPlatformStatsCache()).rejects.toThrow(message)
     expect(target.commands).toHaveBeenLastCalledWith('docker', ['rm', '--force', containerId], {
       timeout: 30_000,
     })
@@ -125,25 +126,29 @@ describe('private platform-stats cache lifecycle', () => {
 
   it('ignores a healthy event for another container', async () => {
     const target = fixture(undefined, true)
-    const starting = setup(target.project)
+    const settled = vi.fn<() => void>()
+    const starting = createPlatformStatsCache().then(cache => {
+      settled()
+      return cache
+    })
     await Promise.resolve()
     target.stdout.write(
       `${JSON.stringify({ Actor: { ID: 'b'.repeat(64) }, Action: 'health_status: healthy' })}\n`,
     )
     await Promise.resolve()
-    expect(target.provide).not.toHaveBeenCalled()
+    expect(settled).not.toHaveBeenCalled()
     target.stdout.write(
       `${JSON.stringify({ Actor: { ID: containerId }, Action: 'health_status: healthy' })}\n`,
     )
-    const teardown = await starting
-    teardown()
+    const cache = await starting
+    cache.close()
   })
 
   it('refuses to remove a container whose ownership label differs', async () => {
     const target = fixture()
-    const teardown = await setup(target.project)
+    const cache = await createPlatformStatsCache()
     target.makeForeign()
-    expect(teardown).toThrow('foreign platform-stats cache container')
+    expect(cache.close).toThrow('foreign platform-stats cache container')
     expect(
       target.commands.mock.calls.some(([, args]) => Array.isArray(args) && args[0] === 'rm'),
     ).toBe(false)
