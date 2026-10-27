@@ -113,8 +113,8 @@ function isBlocklistRebuild(data: RebuildBloomFilterData): data is BlocklistRebu
 }
 
 /**
- * A duplicate job id drops the commit. Move a queued rebuild out to the lag margin, or
- * admit one follow-up when the rebuild is already active.
+ * A queued rebuild has not read the generation yet, so it still covers this commit.
+ * Leave its delay alone. Only a rebuild that is already active needs the other id.
  */
 async function enqueueBlocklistRebuildCoveringLatestCommit(
   data: BlocklistRebuildData,
@@ -144,17 +144,9 @@ async function admitBlocklistRebuild(
   if (added != null) return true
   const job = await bloomFilters.getJob(jobId)
   if (!job) return false
-  try {
-    await job.changeDelay(margin)
-    return true
-  } catch (err) {
-    if (isUnchangeableDelay(err)) return false
-    throw err
-  }
-}
-
-function isUnchangeableDelay(err: unknown): boolean {
-  return err instanceof Error && err.message.startsWith('Cannot change delay:')
+  // `active` has already read the generation. Every other state, including a
+  // follow-up held by the ordering key, still runs against the latest commit.
+  return (await job.getState()) !== 'active'
 }
 
 export const enqueueRebuildEmbeddingBloomFilter = (priority?: number): EnqueueReturnType =>

@@ -1,9 +1,11 @@
 import type { Job } from 'glide-mq'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { wrapSingleProcessor } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import {
   BLOOM_FILTER_DEFAULTS,
   blocklistBloomRebuildFollowUpJobId,
   bloomFilterRebuildJobId,
+  QUEUE_NAME,
 } from '@queues/bloom-filters/config'
 import { bloomFilters as bloomQueue } from '@queues/bloom-filters/queues'
 import { checkBloomFilters } from '@services/urls-domains-blacklist/bloom-filter'
@@ -13,7 +15,7 @@ import {
   acquireTestPostgresAdvisoryLock,
   type TestPostgresAdvisoryLock,
 } from '@voucha/test-helpers/postgres-advisory-lock'
-import { rebuildBloomFilterProcessorOptions } from '../processors.mts'
+import { processRebuildBloomFilter } from '../processors.mts'
 import { bloomFilters as bloomWorker } from '../workers.mts'
 
 // One url-blocklist filter and one rebuild job id are shared by every fork.
@@ -77,26 +79,32 @@ describe('sync bloom lag', () => {
     })
     let committedSecond = false
     await settleExistingUrlBlocklistRebuild()
-    rebuildBloomFilterProcessorOptions({
-      afterSnapshot: async () => {
-        if (committedSecond) return
-        committedSecond = true
-        await syncDomainsWithDatabase(secondSourceId, new Response(`${second}\n`))
-      },
-    })
-    const primary = watchRebuild(URL_BLOCKLIST_REBUILD_JOB_ID)
     const followUp = watchRebuild(URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID)
     try {
       await syncDomainsWithDatabase(firstSourceId, new Response(`${first}\n`))
-      await primary.done
-      const followUpJob = await bloomQueue.getJob(URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID)
-      expect(followUpJob).toBeTruthy()
+      await (await bloomQueue.getJob(URL_BLOCKLIST_REBUILD_JOB_ID))?.remove()
+      const run = wrapSingleProcessor(
+        QUEUE_NAME,
+        async () => {
+          await processRebuildBloomFilter(
+            { filter: 'url-blocklist' },
+            {
+              afterSnapshot: async () => {
+                if (committedSecond) return
+                committedSecond = true
+                await syncDomainsWithDatabase(secondSourceId, new Response(`${second}\n`))
+              },
+            },
+          )
+        },
+        {},
+      )
+      await run({ id: URL_BLOCKLIST_REBUILD_JOB_ID, opts: {} } as Job)
+      expect(await bloomQueue.getJob(URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID)).toBeTruthy()
       await followUp.done
       expect(await checkBloomFilters([second])).toEqual([true])
     } finally {
-      primary.stop()
       followUp.stop()
-      rebuildBloomFilterProcessorOptions({})
       await deleteTestBlacklistSource(firstSourceId)
       await deleteTestBlacklistSource(secondSourceId)
     }

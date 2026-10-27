@@ -1,7 +1,7 @@
--- Advance the blocklist bloom generation and record when the commit landed.
+-- Advance the blocklist bloom generation and record the transaction the replica must see.
 -- KEYS[1] = generation key
--- ARGV[1] = bump timestamp in milliseconds
--- Returns the new generation string "<counter>:<timestamp>".
+-- ARGV[1] = primary transaction id that committed this membership change
+-- Returns the new generation string "<counter>:<transaction id>".
 local current = redis.call('GET', KEYS[1])
 local counter = 0
 if current then

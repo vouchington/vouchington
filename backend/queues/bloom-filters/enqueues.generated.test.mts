@@ -1,6 +1,9 @@
 import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { wrapSingleProcessor } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
+import {
+  wrapBatchProcessor,
+  wrapSingleProcessor,
+} from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import {
   BLOOM_FILTER_DEFAULTS,
   backfillBloomFilterJobOptions,
@@ -111,37 +114,22 @@ describe('blocklist rebuild admission', () => {
     vi.restoreAllMocks()
   })
 
-  it('retries the primary id after the follow-up cannot move', async () => {
-    let adds = 0
-    vi.spyOn(bloomFilters, 'add').mockImplementation(async () => {
-      adds += 1
-      return (adds === 3 ? { id: emailPrimaryJobId } : null) as never
-    })
-    vi.spyOn(bloomFilters, 'getJob').mockResolvedValue(unchangeableJob() as never)
-
-    await expect(enqueueRebuildBloomFilter(emailBlocklist)).resolves.toBeNull()
-    expect(adds).toBe(3)
-  })
-
-  it('throws when every blocklist rebuild id is refused', async () => {
-    vi.spyOn(bloomFilters, 'add').mockResolvedValue(null as never)
-    vi.spyOn(bloomFilters, 'getJob').mockResolvedValue(unchangeableJob() as never)
-
-    await expect(enqueueRebuildBloomFilter(emailBlocklist)).rejects.toThrow(
-      'Blocklist bloom rebuild for email-blocklist was not admitted',
-    )
-  })
-
-  it('rethrows a delay change that is not an admission refusal', async () => {
-    const failure = new Error('connection reset')
-    vi.spyOn(bloomFilters, 'add').mockResolvedValue(null as never)
-    vi.spyOn(bloomFilters, 'getJob').mockResolvedValue({
-      changeDelay: async () => {
-        throw failure
+  it('throws when the running rebuild and its follow-up are both already active', async () => {
+    const run = wrapBatchProcessor(
+      QUEUE_NAME,
+      async jobs => {
+        await enqueueRebuildBloomFilter(emailBlocklist)
+        return jobs.map(() => undefined)
       },
-    } as never)
+      {},
+    )
 
-    await expect(enqueueRebuildBloomFilter(emailBlocklist)).rejects.toBe(failure)
+    await expect(
+      run([
+        { id: emailPrimaryJobId, opts: {} } as Job,
+        { id: emailFollowUpJobId, opts: {} } as Job,
+      ]),
+    ).rejects.toThrow('Blocklist bloom rebuild for email-blocklist was not admitted')
   })
 
   it('skips the rebuild id that is already running and admits the follow-up', async () => {
@@ -161,11 +149,3 @@ describe('blocklist rebuild admission', () => {
     }
   })
 })
-
-function unchangeableJob(): { changeDelay: () => Promise<void> } {
-  return {
-    changeDelay: async () => {
-      throw new Error('Cannot change delay: invalid_state')
-    },
-  }
-}

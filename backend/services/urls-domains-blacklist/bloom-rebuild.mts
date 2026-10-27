@@ -1,7 +1,8 @@
 import { bloomValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
-import { BLOOM_FILTER_DEFAULTS } from '@queues/bloom-filters/config'
+import { read, write } from '@data-stores/psql'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
+import sql from 'sql-template-strings'
 import { newBloomReadyMarkerValue } from './ready-marker.mts'
 
 export type BlocklistBloomFilterName = 'url-blocklist' | 'email-blocklist'
@@ -26,11 +27,12 @@ function blocklistBloomGenerationKey(filter: BlocklistBloomFilterName): string {
 
 export async function bumpBlocklistBloomGeneration(
   filter: BlocklistBloomFilterName,
-  bumpedAt = Date.now(),
+  visibleThrough?: string,
 ): Promise<string> {
+  const version = visibleThrough ?? (await readPrimaryTransactionId())
   const value = await bloomValkeyClient.invokeScript(bumpBlocklistBloomGenerationScript, {
     keys: [blocklistBloomGenerationKey(filter)],
-    args: [String(bumpedAt)],
+    args: [version],
   })
   return generationText(value)
 }
@@ -41,11 +43,18 @@ async function readBlocklistBloomGeneration(filter: BlocklistBloomFilterName): P
   return generationText(value)
 }
 
-/** A bump younger than the replica-lag margin is not safe to snapshot yet. */
-function blocklistBloomGenerationIsWithinReplicaLag(generation: string, now = Date.now()): boolean {
-  const bumpedAt = generationBumpedAt(generation)
-  if (bumpedAt === undefined) return false
-  return now - bumpedAt < BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs
+/**
+ * The stored id is the primary transaction that must be visible before the snapshot.
+ * Compare it with the replica's snapshot instead of the sync host's clock.
+ */
+async function replicaCanSeeBlocklistGeneration(generation: string): Promise<boolean> {
+  const visibleThrough = generationVisibleThrough(generation)
+  if (visibleThrough === undefined) return true
+  const { rows } = await read<{ visible: boolean }>(
+    sql`/* rebuildCurrentBlocklistBloomFilter */
+      SELECT pg_visible_in_snapshot(${visibleThrough}::xid8, pg_current_snapshot()) AS visible`,
+  )
+  return rows[0]?.visible ?? false
 }
 
 /**
@@ -59,7 +68,7 @@ export async function rebuildCurrentBlocklistBloomFilter(input: {
   afterSnapshot?: () => Promise<void>
 }): Promise<void> {
   const generation = await readBlocklistBloomGeneration(input.filter)
-  if (blocklistBloomGenerationIsWithinReplicaLag(generation)) {
+  if (!(await replicaCanSeeBlocklistGeneration(generation))) {
     await enqueueRebuildBloomFilter({ filter: input.filter })
     return
   }
@@ -99,12 +108,17 @@ async function publishBlocklistReadyMarkerIfGeneration(input: {
   return Number(published) === 1
 }
 
-function generationBumpedAt(generation: string): number | undefined {
-  const match = generationPattern.exec(generation)
-  if (!match) return undefined
-  const bumpedAt = Number(match[2])
-  if (!Number.isSafeInteger(bumpedAt)) return undefined
-  return bumpedAt
+function generationVisibleThrough(generation: string): string | undefined {
+  return generationPattern.exec(generation)?.[2]
+}
+
+async function readPrimaryTransactionId(): Promise<string> {
+  const { rows } = await write<{ id: string }>(
+    sql`/* bumpBlocklistBloomGeneration */ SELECT pg_current_xact_id()::text AS id`,
+  )
+  const id = rows[0]?.id
+  if (!id) throw new Error('PostgreSQL did not return a transaction id')
+  return id
 }
 
 function generationText(value: unknown): string {

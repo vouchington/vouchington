@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bloomValkeyClient } from '@data-stores/valkey/clients'
-import { BLOOM_FILTER_DEFAULTS, bloomFilterRebuildJobId } from '@queues/bloom-filters/config'
+import { bloomFilterRebuildJobId } from '@queues/bloom-filters/config'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import {
   bumpBlocklistBloomGeneration,
@@ -15,11 +15,11 @@ describe('blocklist bloom rebuild generation', () => {
     vi.restoreAllMocks()
   })
 
-  it('does not snapshot a generation younger than the replica-lag margin', async () => {
+  it('does not snapshot a generation the replica cannot see', async () => {
     const existing = await bloomFilters.getJob(emailPrimaryJobId)
     let streamed = false
     try {
-      await bumpBlocklistBloomGeneration(emailBlocklist, Date.now())
+      await bumpBlocklistBloomGeneration(emailBlocklist, '999999999999999')
       await rebuildCurrentBlocklistBloomFilter({
         filter: emailBlocklist,
         readyKey: 'bloom-filter:email-blocklist:ready:coverage',
@@ -30,10 +30,7 @@ describe('blocklist bloom rebuild generation', () => {
       expect(streamed).toBe(false)
       expect(await bloomFilters.getJob(emailPrimaryJobId)).toBeTruthy()
     } finally {
-      await bumpBlocklistBloomGeneration(
-        emailBlocklist,
-        Date.now() - BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs - 1,
-      )
+      await bumpBlocklistBloomGeneration(emailBlocklist)
       if (!existing) await (await bloomFilters.getJob(emailPrimaryJobId))?.remove()
     }
   })
@@ -41,12 +38,12 @@ describe('blocklist bloom rebuild generation', () => {
   it('reads numeric, binary, and empty script results as generation text', async () => {
     const invokeScript = vi.spyOn(bloomValkeyClient, 'invokeScript')
     invokeScript.mockResolvedValueOnce(7 as never)
-    await expect(bumpBlocklistBloomGeneration(emailBlocklist, 1)).resolves.toBe('7')
+    await expect(bumpBlocklistBloomGeneration(emailBlocklist, '1')).resolves.toBe('7')
 
     invokeScript.mockResolvedValueOnce(Buffer.from('8:1') as never)
-    await expect(bumpBlocklistBloomGeneration(emailBlocklist, 1)).resolves.toBe('8:1')
+    await expect(bumpBlocklistBloomGeneration(emailBlocklist, '1')).resolves.toBe('8:1')
 
     invokeScript.mockResolvedValueOnce({ unexpected: true } as never)
-    await expect(bumpBlocklistBloomGeneration(emailBlocklist, 1)).resolves.toBe('0')
+    await expect(bumpBlocklistBloomGeneration(emailBlocklist, '1')).resolves.toBe('0')
   })
 })

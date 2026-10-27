@@ -15,10 +15,7 @@ function runOne(job: Job): Promise<void> {
 
   switch (jobName) {
     case 'processRebuildBloomFilter':
-      return processors.processRebuildBloomFilter(
-        job.data,
-        processors.rebuildBloomFilterProcessorOptions(),
-      )
+      return processors.processRebuildBloomFilter(job.data)
     case 'processBackfillBloomFilter':
       return processors.processBackfillBloomFilter(job.data)
     case 'processBackfillUserBookmarkBloomFilter':
