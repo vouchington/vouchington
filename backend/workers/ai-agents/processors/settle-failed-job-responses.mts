@@ -32,30 +32,29 @@ export async function settleFailedJobResponses(
           settled.add(response.responseId)
         }
       } catch (err) {
-        reportFailure(err)
+        reportReconcileFailure(err)
       }
     },
     { concurrency: RECONCILE_CONCURRENCY },
   )
   if (settled.size === 0) return
-  try {
-    const latest = await queue.getJob(failedJob.id)
-    if (!latest || (await latest.getState()) !== 'failed') return
-    await latest.updateData({
-      ...latest.data,
-      backgroundResponses: (latest.data.backgroundResponses ?? []).filter(
-        response => !settled.has(response.responseId),
-      ),
-    })
-  } catch (err) {
-    reportFailure(err)
-  }
+  const latest = await queue.getJob(failedJob.id)
+  if (!latest || (await latest.getState()) !== 'failed') return
+  await latest.updateData({
+    ...latest.data,
+    backgroundResponses: (latest.data.backgroundResponses ?? []).filter(
+      response => !settled.has(response.responseId),
+    ),
+  })
 }
 
-function reportFailure(err: unknown): void {
-  onError(
-    err instanceof Error
-      ? err
-      : new Error('Background response reconciliation failed', { cause: err }),
-  )
+const asError = (err: unknown) =>
+  err instanceof Error
+    ? err
+    : new Error('Background response reconciliation failed', { cause: err })
+
+/** Reports one failure and yields 0 so a removal count can continue. */
+export function reportReconcileFailure(err: unknown): 0 {
+  onError(asError(err))
+  return 0
 }
