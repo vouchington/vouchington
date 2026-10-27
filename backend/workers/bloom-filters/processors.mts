@@ -14,21 +14,11 @@ import type {
   RebuildEmbeddingBloomFilterData,
 } from '@queues/bloom-filters/types'
 
-export type RebuildBloomFilterProcessorOptions = {
-  afterSnapshot?: () => Promise<void>
-}
-
-const noopAfterSnapshot = async (): Promise<void> => {}
-
-export async function processRebuildBloomFilter(
-  data: RebuildBloomFilterData,
-  options: RebuildBloomFilterProcessorOptions = {},
-): Promise<void> {
-  const afterSnapshot = options.afterSnapshot ?? noopAfterSnapshot
+export async function processRebuildBloomFilter(data: RebuildBloomFilterData): Promise<void> {
   if (data.filter === 'url-blocklist') {
-    await rebuildBloomFilter({ afterSnapshot })
+    await rebuildBloomFilter()
   } else if (data.filter === 'email-blocklist') {
-    await rebuildEmailBloomFilter({ afterSnapshot })
+    await rebuildEmailBloomFilter()
   } else if (data.filter === 'embedding') {
     await rebuildEmbeddingBloomFilter()
   } else if (data.filter === 'api-keys') {

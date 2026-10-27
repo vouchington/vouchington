@@ -1,8 +1,8 @@
 import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor, type PoolClient } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
+export async function* urlBlocklistBatchesFromDb(client?: PoolClient): AsyncGenerator<string[]> {
   const URL_BLOCKLIST_BLOOM_BATCH_SIZE = getUrlsDomainsBlacklistWorkLimit('bloom_batch_size')
   let batch: string[] = []
 
@@ -13,7 +13,7 @@ export async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
       INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
       WHERE dbs.type = 'url'::domain_blocklist_types
     `,
-    { batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE },
+    { batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE, client },
   )) {
     batch.push(row.domain)
     if (batch.length >= URL_BLOCKLIST_BLOOM_BATCH_SIZE) {
@@ -37,7 +37,7 @@ export async function* urlBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
       UNION ALL
       SELECT hostname FROM url_hostnames WHERE NOT is_crawlable AND NOT is_blocked
     `,
-    { batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE },
+    { batchSize: URL_BLOCKLIST_BLOOM_BATCH_SIZE, client },
   )) {
     batch.push(row.hostname)
     if (batch.length >= URL_BLOCKLIST_BLOOM_BATCH_SIZE) {

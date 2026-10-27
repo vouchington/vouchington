@@ -1,5 +1,6 @@
 import type { Job } from 'glide-mq'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import * as urlBlocklistBatches from '@services/urls-domains-blacklist/bloom-filter-batches'
 import { wrapSingleProcessor } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import {
   BLOOM_FILTER_DEFAULTS,
@@ -11,6 +12,11 @@ import { bloomFilters as bloomQueue } from '@queues/bloom-filters/queues'
 import { checkBloomFilters } from '@services/urls-domains-blacklist/bloom-filter'
 import { syncDomainsWithDatabase } from '@services/urls-domains-blacklist-sync/sync-db'
 import { createTestBlacklistSource, deleteTestBlacklistSource } from '@voucha/test-helpers'
+import {
+  clearBlocklistBloomSnapshotPause,
+  installUrlBlocklistBloomSnapshotPause,
+  pauseAfterBlocklistBloomSnapshot,
+} from '@voucha/test-helpers/blocklist-bloom-snapshot'
 import {
   acquireTestPostgresAdvisoryLock,
   type TestPostgresAdvisoryLock,
@@ -26,8 +32,10 @@ const URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID = blocklistBloomRebuildFollowUpJobI
 
 describe('sync bloom lag', () => {
   let rebuildLock: TestPostgresAdvisoryLock | undefined
+  let restoreSnapshotPause: (() => void) | undefined
 
   beforeAll(async () => {
+    restoreSnapshotPause = installUrlBlocklistBloomSnapshotPause(urlBlocklistBatches)
     rebuildLock = await acquireTestPostgresAdvisoryLock({
       ...URL_BLOCKLIST_REBUILD_LOCK,
       timeout: '4s',
@@ -35,6 +43,7 @@ describe('sync bloom lag', () => {
   })
 
   afterAll(async () => {
+    restoreSnapshotPause?.()
     await rebuildLock?.release()
   })
 
@@ -83,19 +92,15 @@ describe('sync bloom lag', () => {
     try {
       await syncDomainsWithDatabase(firstSourceId, new Response(`${first}\n`))
       await (await bloomQueue.getJob(URL_BLOCKLIST_REBUILD_JOB_ID))?.remove()
+      pauseAfterBlocklistBloomSnapshot(async () => {
+        if (committedSecond) return
+        committedSecond = true
+        await syncDomainsWithDatabase(secondSourceId, new Response(`${second}\n`))
+      })
       const run = wrapSingleProcessor(
         QUEUE_NAME,
         async () => {
-          await processRebuildBloomFilter(
-            { filter: 'url-blocklist' },
-            {
-              afterSnapshot: async () => {
-                if (committedSecond) return
-                committedSecond = true
-                await syncDomainsWithDatabase(secondSourceId, new Response(`${second}\n`))
-              },
-            },
-          )
+          await processRebuildBloomFilter({ filter: 'url-blocklist' })
         },
         {},
       )
@@ -104,6 +109,7 @@ describe('sync bloom lag', () => {
       await followUp.done
       expect(await checkBloomFilters([second])).toEqual([true])
     } finally {
+      clearBlocklistBloomSnapshotPause()
       followUp.stop()
       await deleteTestBlacklistSource(firstSourceId)
       await deleteTestBlacklistSource(secondSourceId)
