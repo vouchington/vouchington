@@ -57,10 +57,8 @@ describe('single entity relation vote stats publication locking', () => {
       { enqueueVoteStats: false },
     )
     await assertTestRelationPublicationLockOrder({
-      table: 'relation__rss_feed_item__category__topic_alias',
       relationId: row.id,
-      scope: 'topic_alias',
-      scopeId: aliasId,
+      aliasId,
       update: () => updateEntityRelationElectionVoteStatsFromPrimary(target),
     })
     const [updated] = (await getEntityRelation(relation.table_name, itemId, aliasId)) as Array<{

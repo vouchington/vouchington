@@ -4,10 +4,8 @@ import { expect, onTestFinished } from 'vitest'
 
 /** Hold the relation row until the updater has actually acquired its publication fence. */
 export async function assertTestRelationPublicationLockOrder(options: {
-  table: 'relation__post__category__topic' | 'relation__rss_feed_item__category__topic_alias'
   relationId: string
-  scope: 'post' | 'topic_alias'
-  scopeId: string
+  aliasId: string
   update: () => Promise<void>
 }): Promise<void> {
   await using holder = await beginTransaction()
@@ -23,25 +21,21 @@ export async function assertTestRelationPublicationLockOrder(options: {
   }
   onTestFinished(cleanup)
   try {
-    const lockSql =
-      options.table === 'relation__post__category__topic'
-        ? '/* assertTestRelationPublicationLockOrder.holdPost */ SELECT 1 FROM relation__post__category__topic WHERE id = $1 FOR UPDATE'
-        : '/* assertTestRelationPublicationLockOrder.holdAlias */ SELECT 1 FROM relation__rss_feed_item__category__topic_alias WHERE id = $1 FOR UPDATE'
-    await holder(lockSql, [options.relationId])
+    await holder(
+      '/* assertTestRelationPublicationLockOrder.holdAlias */ SELECT 1 FROM relation__rss_feed_item__category__topic_alias WHERE id = $1 FOR UPDATE',
+      [options.relationId],
+    )
     if (closed) throw new Error('Publication lock observation closed before updater admission')
     const diagnostics = await runWithCapturedQueries(async context => {
       const acquired = Promise.withResolvers<void>()
       let publicationExecutor: QueryExecutor | undefined
       let updatedWithFence = false
-      const annotation =
-        options.scope === 'post'
-          ? '/* lockPostPublicationCaptures */'
-          : '/* lockTopicAliasPublicationCaptures */'
+      const annotation = '/* lockTopicAliasPublicationCaptures */'
       const unsubscribe = context.subscribe(event => {
         if (
           event.text.includes(annotation) &&
           Array.isArray(event.values[0]) &&
-          event.values[0].includes(options.scopeId)
+          event.values[0].includes(options.aliasId)
         ) {
           if (event.status === 'rejected') acquired.reject(event.reason)
           else {
@@ -99,7 +93,7 @@ export async function assertTestRelationPublicationLockOrder(options: {
     )
     await probe(
       '/* assertTestRelationPublicationLockOrder.probe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-      [`${options.scope}:${options.scopeId}`],
+      [`topic_alias:${options.aliasId}`],
     )
     await probe.commit()
   }
