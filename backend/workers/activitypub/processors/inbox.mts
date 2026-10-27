@@ -8,7 +8,6 @@ import {
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
 import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/work-limits'
 export { cleanupExpiredDeliveries } from './inbox-cleanup.mts'
-export type { CleanupExpiredDeliveriesDependencies } from './inbox-cleanup.mts'
 export { processDelivery } from './inbox-delivery.mts'
 
 export type RecoverDeliveriesDependencies = {

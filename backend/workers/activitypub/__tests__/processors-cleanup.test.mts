@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-storage-policy'
-import {
-  cleanupExpiredDeliveries,
-  type CleanupExpiredDeliveriesDependencies,
-} from '../processors/inbox.mts'
+import type { CleanupExpiredDeliveriesDependencies } from '../processors/inbox-cleanup.mts'
+import { cleanupExpiredDeliveries } from '../processors/inbox.mts'
 
 type Expire = CleanupExpiredDeliveriesDependencies['expire']
 type GetSnapshot = CleanupExpiredDeliveriesDependencies['getSnapshot']
