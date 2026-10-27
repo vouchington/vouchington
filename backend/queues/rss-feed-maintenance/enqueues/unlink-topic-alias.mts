@@ -28,16 +28,12 @@ const enqueuePage = createEnqueueFunction<TopicAliasUnlinkPage, TopicAliasJobs>(
   defaults: pageDefaults,
 })
 
-const enqueuePages = createBulkEnqueueFunction<
-  TopicAliasUnlinkPage,
-  TopicAliasUnlinkPage,
-  TopicAliasJobs
->({
+const enqueuePages = createBulkEnqueueFunction({
   queue: rssFeedMaintenance,
   queueName: QUEUE_NAME,
   jobName: PAGE_JOB,
   defaults: pageDefaults,
-  buildJob: page => ({
+  buildJob: (page: TopicAliasUnlinkPage) => ({
     data: page,
     opts: pageJobOptions(page),
   }),
