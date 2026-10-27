@@ -3,6 +3,7 @@ import { onTestFinished } from 'vitest'
 import { writePool, type PoolClient } from '@data-stores/psql'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 import { observeTestTransactionLockNotice } from './postgres-advisory-lock-notice.mts'
+import { observeTestPostgresLockQuery } from './postgres-lock-query-observation.mts'
 
 const leaseScope = new AsyncLocalStorage<object>()
 const marker = '/* expireElapsedMemberships: lock user */'
@@ -70,16 +71,13 @@ async function runWithReservedMembershipClient<Result>(
   if (admission.closed) throw new Error('Membership lock notice fixture is already closed')
   const token = {}
   const connect = writePool.connect
-  const query = client.query
   const release = client.release
   const ended = Promise.withResolvers<void>()
   const onEnd = () => ended.resolve()
   client.once('end', onEnd)
   const connectDescriptor = Object.getOwnPropertyDescriptor(writePool, 'connect')
-  const queryDescriptor = Object.getOwnPropertyDescriptor(client, 'query')
   const releaseDescriptor = Object.getOwnPropertyDescriptor(client, 'release')
-  let selectedPending = false
-  let pendingQueries = 0
+  let observation: ReturnType<typeof observeTestPostgresLockQuery> | undefined
   let handedOff = false
   let requestedRelease: { reason?: Error | boolean } | undefined
   let actionOutcome: Promise<[PromiseSettledResult<Result>]> | undefined
@@ -88,14 +86,14 @@ async function runWithReservedMembershipClient<Result>(
   const observer = observeTestTransactionLockNotice(
     client,
     options.transactionId,
-    () => selectedPending,
+    () => observation?.selectedPending === true,
   )
   const cleanup = () =>
     (cleanupPromise ??= (async () => {
       admission.closed = true
       const failures: unknown[] = []
       const settled = await actionOutcome
-      restore(client, 'query', queryDescriptor)
+      observation?.restore()
       try {
         await observer.close()
       } catch (err) {
@@ -103,7 +101,8 @@ async function runWithReservedMembershipClient<Result>(
       }
       restore(client, 'release', releaseDescriptor)
       restore(writePool, 'connect', connectDescriptor)
-      if (pendingQueries !== 0) failures.push(new Error('Membership SQL did not finish draining'))
+      if ((observation?.pendingQueries ?? 0) !== 0)
+        failures.push(new Error('Membership SQL did not finish draining'))
       if (handedOff && !requestedRelease)
         failures.push(new Error('Membership action did not release its owned transaction'))
       if (failures.length && primaryFailure) failures.unshift(primaryFailure.reason)
@@ -122,41 +121,10 @@ async function runWithReservedMembershipClient<Result>(
   try {
     await observer.ready
     if (admission.closed) throw new Error('Membership lock notice fixture is already closed')
-    client.query = ((...args: unknown[]) => {
-      const input = args[0]
-      if (
-        args.length !== 1 ||
-        typeof input !== 'object' ||
-        input === null ||
-        !('text' in input) ||
-        typeof input.text !== 'string' ||
-        'callback' in input ||
-        'submit' in input
-      )
-        throw new Error('Membership lock notice requires native Promise query configs')
-      const selected = input.text.trimStart().startsWith(marker)
-      if (
-        selected &&
-        (!('values' in input) || !Array.isArray(input.values) || input.values[0] !== options.userId)
-      )
-        throw new Error('Membership lock SQL did not target the owned user')
-      if (selectedPending || (selected && pendingQueries !== 0))
-        throw new Error('Membership lock notice does not support queued or pipelined lock SQL')
-      pendingQueries += 1
-      selectedPending = selected
-      const completed = () => {
-        pendingQueries -= 1
-        if (selected) selectedPending = false
-      }
-      try {
-        const pending = Reflect.apply(query, client, args)
-        void pending.then(completed, completed)
-        return pending
-      } catch (err) {
-        completed()
-        throw err
-      }
-    }) as typeof client.query
+    observation = observeTestPostgresLockQuery(client, {
+      marker,
+      binding: { index: 0, value: options.userId },
+    })
     client.release = reason => {
       if (requestedRelease) throw new Error('Release called on membership client more than once')
       requestedRelease = { reason }
