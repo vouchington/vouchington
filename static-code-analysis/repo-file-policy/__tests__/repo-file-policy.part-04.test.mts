@@ -4,7 +4,7 @@ import { setupRepoFilePolicyTest } from '../../test-helpers/repo-file-policy-fix
 describe('repo-file-policy', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()
 
-  it('rejects stale RSS feed item partition comments', { timeout: 10_000 }, async () => {
+  it('rejects stale RSS feed item partition comments', async () => {
     const dir = await makeRepo()
     await track(
       dir,
@@ -18,7 +18,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('rejects HASH partition declarations', { timeout: 10_000 }, async () => {
+  it('rejects HASH partition declarations', async () => {
     const dir = await makeRepo()
     await track(
       dir,

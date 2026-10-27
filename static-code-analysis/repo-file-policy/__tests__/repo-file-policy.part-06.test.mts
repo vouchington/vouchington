@@ -182,7 +182,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('allows aligned finite enum route surfaces', { timeout: 10_000 }, async () => {
+  it('allows aligned finite enum route surfaces', async () => {
     const dir = await makeRepo()
     await trackTopicEnumSurfaces(dir, {
       backend: { topic: 'topic', card: 'card' },
@@ -198,7 +198,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('rejects backend/web topicTypes slug mismatches', { timeout: 10_000 }, async () => {
+  it('rejects backend/web topicTypes slug mismatches', async () => {
     const dir = await makeRepo()
     await trackTopicEnumSurfaces(dir, {
       backend: { topic: 'topic', card: 'card' },
