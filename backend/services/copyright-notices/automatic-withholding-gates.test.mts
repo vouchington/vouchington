@@ -13,7 +13,7 @@ import {
 } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { suspendUser } from '@services/users/suspension'
 import { checkAutomaticWithholdingEligibility } from './automatic-withholding-gates.mts'
-import { findSwitchOnTime } from './automatic-withholding-since.mts'
+import { getAutomaticWithholdingWindow } from './automatic-withholding-since.mts'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -53,8 +53,8 @@ describe('automatic withholding gates', () => {
     const since = new Date(instant)
     const restoreSince = await overrideAutomaticWithholdingSinceForTest(since)
     try {
-      const window = { enabled: true, since: await findSwitchOnTime() }
-      expect(window.since).toEqual(since)
+      const window = await getAutomaticWithholdingWindow()
+      expect(window).toEqual({ enabled: true, since })
 
       const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
       for (const [delta, expectedReason] of [

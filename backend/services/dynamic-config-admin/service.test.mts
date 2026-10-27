@@ -8,7 +8,7 @@ import { cleanupHistoryFixtureIds } from '@voucha/test-helpers/history-retention
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { recordDynamicConfigChange } from '@services/dynamic-config-audit'
 import { copyrightConfig } from '@services/copyright-notices/config'
-import { findSwitchOnTime } from '@services/copyright-notices/automatic-withholding-since'
+import { getAutomaticWithholdingWindow } from '@services/copyright-notices/automatic-withholding-since'
 import {
   getDynamicConfigNamespace,
   listDynamicConfigNamespaceHistory,
@@ -61,22 +61,39 @@ describe('dynamic-config-admin service authorization guards', () => {
     })
     const ownedAuditIds: string[] = []
     try {
-      await expect(findSwitchOnTime()).resolves.toBeNull()
+      const readPublishedSince = async () =>
+        (await getDynamicConfigNamespace(admin, 'copyright'))?.config
+          .automaticProvisionalWithholdingSince
+      expect(await readPublishedSince()).toBe('')
+      await expect(getAutomaticWithholdingWindow()).resolves.toEqual({
+        enabled: false,
+        since: null,
+      })
       const result = await updateDynamicConfigNamespace(admin, 'copyright', {
         automaticProvisionalWithholding: true,
       })
       expect(result?.changed).toBe(true)
-      const since = await findSwitchOnTime()
-      expect(since).toBeInstanceOf(Date)
+      const published = await readPublishedSince()
+      if (typeof published !== 'string' || published === '') {
+        throw new Error('expected the switch-on instant')
+      }
+      const since = new Date(published)
+      expect(since.toISOString()).toBe(published)
+      await expect(getAutomaticWithholdingWindow()).resolves.toEqual({ enabled: true, since })
       ownedAuditIds.push(await getDynamicConfigAuditRowId('copyright', admin.id))
       await cleanupHistoryFixtureIds('dynamic_configuration_revisions', ownedAuditIds)
       ownedAuditIds.length = 0
-      await expect(findSwitchOnTime()).resolves.toEqual(since)
+      expect(await readPublishedSince()).toBe(published)
+      await expect(getAutomaticWithholdingWindow()).resolves.toEqual({ enabled: true, since })
       await updateDynamicConfigNamespace(admin, 'copyright', {
         automaticProvisionalWithholding: false,
       })
       ownedAuditIds.push(await getDynamicConfigAuditRowId('copyright', admin.id))
-      await expect(findSwitchOnTime()).resolves.toBeNull()
+      expect(await readPublishedSince()).toBe('')
+      await expect(getAutomaticWithholdingWindow()).resolves.toEqual({
+        enabled: false,
+        since: null,
+      })
     } finally {
       await cleanupHistoryFixtureIds('dynamic_configuration_revisions', ownedAuditIds)
       restore()
