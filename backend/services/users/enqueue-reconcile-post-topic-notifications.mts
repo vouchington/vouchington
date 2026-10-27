@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import { randomUUID } from 'node:crypto'
 import { enqueueBulkReconcilePostNotifications } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
 import type { EntityRelationVoteTarget } from './delete-entity-relation-votes.mts'
@@ -27,7 +28,11 @@ export async function enqueueReconcileNotificationsForPostCategoryVotes(
       ${alias.map(target => target.entityRelationId)}::uuid[]) AS target(subject_id, relation_id)
       ON target.subject_id = relation.subject_id AND target.relation_id = relation.id
   `)
-  if (rows.length > 0) await enqueueBulkReconcilePostNotifications(rows.map(row => row.subject_id))
+  if (rows.length > 0)
+    await enqueueBulkReconcilePostNotifications(
+      rows.map(row => row.subject_id),
+      randomUUID(),
+    )
 }
 
 export async function getTopicIdsForPostCategoryVotes(

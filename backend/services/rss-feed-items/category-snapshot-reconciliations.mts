@@ -4,6 +4,7 @@ import { enqueueBulkReconcileRssFeedItemNotifications } from '@queues/notificati
 import { upsertRssFeedItemCategories, type RssFeedItemCategoryInput } from './categories.mts'
 
 export type RssFeedItemCategorySnapshotReconciliation = RssFeedItemCategoryInput & {
+  change_id: string
   generation: string
 }
 
@@ -43,7 +44,8 @@ export async function persistRssFeedItemCategorySnapshotReconciliations(
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
       SET categories = EXCLUDED.categories,
-          generation = rss_feed_item_category_snapshot_reconciliations.generation + 1`,
+          generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
+          change_id = uuidv7()`,
     [
       orderedSnapshots.map(snapshot => snapshot.rss_feed_item_id),
       orderedSnapshots.map(snapshot => JSON.stringify(snapshot.categories)),
@@ -67,7 +69,8 @@ export async function markRssFeedItemCategorySnapshotsForReconciliation(
       FROM UNNEST($1::uuid[]) AS snapshot(rss_feed_item_id)
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
-      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1`,
+      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
+          change_id = uuidv7()`,
     [orderedIds],
   )
 }
@@ -85,7 +88,8 @@ export async function markRssFeedCategorySnapshotsForReconciliation(
       WHERE rss_feed_id = $1::uuid
       ORDER BY rss_feed_item_id
       ON CONFLICT (rss_feed_item_id) DO UPDATE
-      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1`,
+      SET generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
+          change_id = uuidv7()`,
     [rssFeedId],
   )
 }
@@ -100,7 +104,7 @@ export async function reconcileRssFeedItemCategorySnapshots(
   if (rssFeedItemIds?.length === 0) return { reconciled: 0 }
   const { rows } = await write<RssFeedItemCategorySnapshotReconciliation>(
     `/* reconcileRssFeedItemCategorySnapshots */
-      SELECT rss_feed_item_id, categories, generation
+      SELECT rss_feed_item_id, categories, generation, change_id
       FROM rss_feed_item_category_snapshot_reconciliations
       ${rssFeedItemIds ? 'WHERE rss_feed_item_id = ANY($2::uuid[])' : ''}
       ORDER BY updated_at, rss_feed_item_id
@@ -135,7 +139,7 @@ export async function reconcileRssFeedItemCategorySnapshotRows(
       // remains pending if this enqueue fails, so the next reconciliation retries both the
       // notification prompt and its exact-generation acknowledgement.
       // eslint-disable-next-line no-await-in-loop -- each snapshot must enqueue before its own acknowledgement.
-      await enqueueBulkReconcileRssFeedItemNotifications([row.rss_feed_item_id])
+      await enqueueBulkReconcileRssFeedItemNotifications([row.rss_feed_item_id], row.change_id)
       // eslint-disable-next-line no-await-in-loop -- a compare-and-delete must follow this item only.
       await acknowledgeRssFeedItemCategorySnapshot(row)
       reconciled += 1

@@ -1,4 +1,5 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestPost,
@@ -147,7 +148,7 @@ describe('topic-aliases processors', () => {
     )
 
     await expect(
-      processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+      processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id], changeId: alias!.id }),
     ).resolves.toEqual({ hasMore: true, lastPostId: expect.any(String) })
     const continuation = (await readAllQueueJobs(rssFeedMaintenance)).find(
       job =>
@@ -157,6 +158,7 @@ describe('topic-aliases processors', () => {
     expect(continuation?.data).toEqual({
       afterPostId: expect.any(String),
       topicAliasIds: [alias!.id],
+      changeId: alias!.id,
     })
   })
 
@@ -194,7 +196,10 @@ describe('topic-aliases processors', () => {
     })
     try {
       await expect(
-        processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+        processInvalidatePostsForTopicAliases({
+          topicAliasIds: [alias!.id],
+          changeId: randomUUID(),
+        }),
       ).rejects.toBe(failure)
     } finally {
       addSpy.mockRestore()
@@ -247,7 +252,10 @@ describe('topic-aliases processors', () => {
     })
     try {
       await expect(
-        processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+        processInvalidatePostsForTopicAliases({
+          topicAliasIds: [alias!.id],
+          changeId: randomUUID(),
+        }),
       ).rejects.toBe(failure)
     } finally {
       addSpy.mockRestore()

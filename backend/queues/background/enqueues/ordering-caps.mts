@@ -22,6 +22,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'notifications:digest-windows': 1,
   'notifications:digest-schedule': 1,
   'notifications:mark-all-read': 1,
+  'notifications:bulk': 1,
   'activitypub:outbound': 5,
   'activitypub:outbound-dispatch': 2,
   'activitypub:outbound-recovery': 1,
@@ -53,12 +54,15 @@ export function getBackgroundOrderingLimits(key: string): {
   defaultValue: number
   maxValue: number
 } {
-  const configKey = key
+  const configKey =
+    key.startsWith('notifications:bulk:post:') || key.startsWith('notifications:bulk:rss:')
+      ? 'notifications:bulk'
+      : key
   const defaultValue = BACKGROUND_ORDERING_CAPS[configKey as keyof typeof BACKGROUND_ORDERING_CAPS]
   if (defaultValue === undefined) throw new Error(`Unregistered background ordering key: ${key}`)
   return {
     configKey,
     defaultValue,
-    maxValue: orderingMaxValue(defaultValue),
+    maxValue: configKey === 'notifications:bulk' ? 1 : orderingMaxValue(defaultValue),
   }
 }

@@ -4810,6 +4810,8 @@ rules:
           reason: 'Decision 13 capability-bearing Web Push endpoint from the browser protocol.'
         - object: column:moderation_report_judgements.run_id
           reason: 'GlideMQ report-judgement run identity; queue jobs live outside PostgreSQL, while this unique correlation key supports exact result polling and retry replay.'
+        - object: column:rss_feed_item_category_snapshot_reconciliations.change_id
+          reason: 'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.'
         - object: 'column:activitypub_inbox_activities.actor_uri'
           reason: "Decision 13 allowed URL group: The activity's `actor` field (the sending remote actor's ActivityPub id), recorded for operational visibility."
         - object: 'column:activitypub_inbox_envelopes.claimed_actor_uri'

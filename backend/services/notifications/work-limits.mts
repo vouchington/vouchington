@@ -1,4 +1,5 @@
 import { DynamicConfig } from '@data-stores/valkey'
+import { getNotificationRecipientDispatchPageLimit } from '@queues/notifications/enqueues/page-limits'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
@@ -6,6 +7,7 @@ const defaultFields = {
   community_digest_windows_per_run: 25,
   reconcile_batch_size: 500,
   reconcile_recipient_page_size: 5000,
+  content_visibility_page_size: 500,
   push_intent_recovery_page_size: 100,
   mark_all_read_page_size: 100,
 }
@@ -16,6 +18,7 @@ export const notificationsWorkMaxValues = {
   community_digest_windows_per_run: 1000,
   reconcile_batch_size: 5000,
   reconcile_recipient_page_size: 50_000,
+  content_visibility_page_size: 5000,
   push_intent_recovery_page_size: 1000,
   mark_all_read_page_size: 1000,
 }
@@ -27,6 +30,7 @@ export const notificationsWorkConfig = new DynamicConfig({
     community_digest_windows_per_run: 'number',
     reconcile_batch_size: 'number',
     reconcile_recipient_page_size: 'number',
+    content_visibility_page_size: 'number',
     push_intent_recovery_page_size: 'number',
     mark_all_read_page_size: 'number',
   },
@@ -38,4 +42,13 @@ export function getNotificationsWorkLimit(field: keyof typeof defaultFields): nu
     defaultValue: defaultFields[field],
     maxValue: notificationsWorkMaxValues[field],
   })
+}
+
+/** Visibility pages honor the smaller configured recipient/dispatcher bound as settings change. */
+export function getContentVisibilityPageLimit(): number {
+  return Math.min(
+    getNotificationsWorkLimit('content_visibility_page_size'),
+    getNotificationsWorkLimit('reconcile_recipient_page_size'),
+    getNotificationRecipientDispatchPageLimit(),
+  )
 }

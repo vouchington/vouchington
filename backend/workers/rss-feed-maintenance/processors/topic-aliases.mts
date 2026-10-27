@@ -13,6 +13,7 @@ import { invalidatePostsForTopicAliasesPage } from '@services/topics/invalidate-
 import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
 import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
 import { processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings } from '@services/rss-feeds/reconcile-topic-alias-category-mappings'
+import type { TopicAliasPostInvalidationData } from '@queues/rss-feed-maintenance/types'
 
 type TopicAliasCategoryMappingReconciliationDependencies = {
   enqueueContinueTopicAliasCategoryMappingReconciliation: typeof enqueueContinueTopicAliasCategoryMappingReconciliation
@@ -25,7 +26,7 @@ type TopicAliasPostInvalidationDependencies = {
 }
 
 export async function processInvalidatePostsForTopicAliases(
-  data: { afterPostId?: string; topicAliasIds: string[] },
+  data: TopicAliasPostInvalidationData,
   dependencies?: Partial<TopicAliasPostInvalidationDependencies>,
 ) {
   const invalidate =
@@ -33,9 +34,9 @@ export async function processInvalidatePostsForTopicAliases(
   const enqueueContinuation =
     dependencies?.enqueueContinueInvalidatingPostsForTopicAliases ??
     enqueueContinueInvalidatingPostsForTopicAliases
-  const result = await invalidate(data.topicAliasIds, data.afterPostId)
+  const result = await invalidate(data.topicAliasIds, data.changeId, data.afterPostId)
   if (result.hasMore && result.lastPostId)
-    await enqueueContinuation(data.topicAliasIds, result.lastPostId)
+    await enqueueContinuation(data.topicAliasIds, data.changeId, result.lastPostId)
   return result
 }
 

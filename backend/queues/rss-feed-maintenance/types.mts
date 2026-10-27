@@ -30,3 +30,9 @@ export type TopicAliasJobs =
 
 /** First remaining raw row, revalidated under the feed lock before a destructive page. */
 export type RssFeedHardDeletePageData = { rssFeedId: string; pageCursor: string }
+
+export type TopicAliasPostInvalidationData = {
+  topicAliasIds: string[]
+  changeId: string
+  afterPostId?: string
+}

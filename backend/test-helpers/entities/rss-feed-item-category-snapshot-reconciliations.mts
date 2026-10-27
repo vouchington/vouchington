@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 
 export type TestRssFeedItemCategorySnapshotReconciliation = {
   rss_feed_item_id: string
+  change_id: string
   categories: unknown
   generation: string
   updated_at: Date
@@ -13,7 +14,7 @@ export async function getTestRssFeedItemCategorySnapshotReconciliation(
 ): Promise<TestRssFeedItemCategorySnapshotReconciliation | undefined> {
   const { rows } = await read<TestRssFeedItemCategorySnapshotReconciliation>(sql`
     /* getTestRssFeedItemCategorySnapshotReconciliation */
-    SELECT rss_feed_item_id, categories, generation, updated_at
+    SELECT rss_feed_item_id, categories, generation, change_id, updated_at
     FROM rss_feed_item_category_snapshot_reconciliations
     WHERE rss_feed_item_id = ${rssFeedItemId}
   `)
@@ -26,7 +27,7 @@ export async function listTestRssFeedItemCategorySnapshotReconciliations(
   if (rssFeedItemIds.length === 0) return []
   const { rows } = await read<TestRssFeedItemCategorySnapshotReconciliation>(sql`
     /* listTestRssFeedItemCategorySnapshotReconciliations */
-    SELECT rss_feed_item_id, categories, generation, updated_at
+    SELECT rss_feed_item_id, categories, generation, change_id, updated_at
     FROM rss_feed_item_category_snapshot_reconciliations
     WHERE rss_feed_item_id = ANY(${rssFeedItemIds}::uuid[])
     ORDER BY updated_at, rss_feed_item_id
@@ -45,6 +46,7 @@ export async function replaceTestRssFeedItemCategorySnapshotReconciliation(
     VALUES (${rssFeedItemId}, ${JSON.stringify(categories)}::jsonb)
     ON CONFLICT (rss_feed_item_id) DO UPDATE
     SET categories = EXCLUDED.categories,
-        generation = rss_feed_item_category_snapshot_reconciliations.generation + 1
+        generation = rss_feed_item_category_snapshot_reconciliations.generation + 1,
+        change_id = uuidv7()
   `)
 }

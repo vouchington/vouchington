@@ -4,12 +4,15 @@ import { describe, expect, it } from 'vitest'
 import { notifications } from '@queues/notifications/queues'
 import {
   getTestRssFeedItemCategorySnapshotReconciliation,
+  beginTransaction,
   insertTestRssFeedDirect,
   listTestRssFeedItemCategorySnapshotReconciliations,
   replaceTestRssFeedItemCategorySnapshotReconciliation,
 } from '@voucha/test-helpers'
 import {
   acknowledgeRssFeedItemCategorySnapshot,
+  markRssFeedCategorySnapshotsForReconciliation,
+  markRssFeedItemCategorySnapshotsForReconciliation,
   reconcileRssFeedItemCategorySnapshotRows,
   type RssFeedItemCategorySnapshotReconciliation,
 } from '../category-snapshot-reconciliations.mts'
@@ -33,6 +36,34 @@ async function reconcileOwned(rssFeedItemIds: string[]) {
 }
 
 describe('RSS feed item category snapshot reconciliation', () => {
+  it.each(['item', 'feed'] as const)(
+    'refreshes the persisted change identity when %s recovery inserts and bumps pending work',
+    async kind => {
+      const suffix = Math.random().toString(36).slice(2, 12)
+      const feed = await insertTestRssFeedDirect({})
+      const [item] = await upsertRssFeedItems(feed.id, [itemInput(suffix, [])])
+      const original = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
+      await acknowledgeRssFeedItemCategorySnapshot({ ...original!, categories: [] })
+      const mark = async () => {
+        await using query = await beginTransaction()
+        if (kind === 'item')
+          await markRssFeedItemCategorySnapshotsForReconciliation(query, [item!.id])
+        else await markRssFeedCategorySnapshotsForReconciliation(query, feed.id)
+        await query.commit()
+      }
+
+      await mark()
+      const inserted = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
+      expect(inserted).toMatchObject({ generation: '1', categories: [] })
+      expect(inserted!.change_id).not.toBe(original!.change_id)
+
+      await mark()
+      const bumped = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
+      expect(bumped).toMatchObject({ generation: '2', categories: [] })
+      expect(bumped!.change_id).not.toBe(inserted!.change_id)
+    },
+  )
+
   it('recovers the committed desired snapshot when the post-commit prompt is absent', async () => {
     const suffix = Math.random().toString(36).slice(2, 12)
     const feed = await insertTestRssFeedDirect({})
@@ -193,11 +224,13 @@ describe('RSS feed item category snapshot reconciliation', () => {
     await upsertRssFeedItems(feed.id, [itemInput(suffix, [secondCategory], 'Changed title')])
     const second = await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)
     expect(Number(second!.generation)).toBe(Number(first!.generation) + 1)
+    expect(second!.change_id).not.toBe(first!.change_id)
 
     await acknowledgeRssFeedItemCategorySnapshot({
       rss_feed_item_id: item!.id,
       categories: first!.categories as string[],
       generation: first!.generation,
+      change_id: first!.change_id,
     })
     await expect(getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).resolves.toMatchObject(
       { categories: [secondCategory], generation: second!.generation },

@@ -61,7 +61,7 @@ describe('bounded live publication scope effects', () => {
     const admitted = await executeTestPublicationChain(job, processApplyPostPublicationEffects)
     expect(admitted).toContainEqual({
       name: NOTIFICATIONS_RECONCILE_POST_JOB.name,
-      data: { postId },
+      data: { postId, changeId: job.changeId },
     })
     expect(await caches.posts_lookup.get(slug)).toBeNull()
   })
@@ -108,7 +108,7 @@ describe('bounded live publication scope effects', () => {
       for (const id of posts) {
         expect(admitted).toContainEqual({
           name: NOTIFICATIONS_RECONCILE_POST_JOB.name,
-          data: { postId: id },
+          data: { postId: id, changeId: jobs[0]!.changeId },
         })
         expect(admitted).toContainEqual({
           name: VOTE_AGGREGATION_REFRESH_POST_METRICS_JOB.name,
@@ -219,9 +219,12 @@ describe('bounded live publication scope effects', () => {
       const notifications = admitted
         .filter(item => item.name === NOTIFICATIONS_RECONCILE_POST_JOB.name)
         .map(item => item.data)
-      expect(notifications).toEqual(expect.arrayContaining(ids.map(postId => ({ postId }))))
-      expect(notifications).not.toContainEqual({ postId: root })
-      for (const postId of inactive) expect(notifications).not.toContainEqual({ postId })
+      expect(notifications).toEqual(
+        expect.arrayContaining(ids.map(postId => ({ postId, changeId: job.changeId }))),
+      )
+      expect(notifications).not.toContainEqual({ postId: root, changeId: job.changeId })
+      for (const postId of inactive)
+        expect(notifications).not.toContainEqual({ postId, changeId: job.changeId })
       expect(await Promise.all(slugs.map(slug => caches.posts_lookup.get(slug)))).toEqual([
         null,
         null,

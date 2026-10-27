@@ -8663,6 +8663,9 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../bookmarks
@@ -14274,6 +14277,9 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks

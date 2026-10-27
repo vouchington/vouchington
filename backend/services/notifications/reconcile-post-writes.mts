@@ -1,6 +1,5 @@
 import type { PoolClient } from '@data-stores/psql'
-import type { CreatedNotification, RecipientPageRange } from './reconcile-batches.mts'
-import { reconcilePostContentNotificationVisibility } from './content-visibility-writes.mts'
+import type { CreatedNotification } from './reconcile-batches.mts'
 import { getPostRouteSlug, truncateText } from './shared.mts'
 
 export type PostNotificationInsertInput = {
@@ -117,46 +116,4 @@ export async function insertPostNotificationsForRecipients(
   )
 
   return rows
-}
-
-export async function prunePostNotificationsExceptRecipients(
-  postId: string,
-  isContentEligible: boolean,
-  isManualSendContentEligible: boolean,
-  client: PoolClient,
-  recipientTable: string,
-  range: RecipientPageRange,
-): Promise<number> {
-  // Content visibility spans the whole post, so only the first page applies it.
-  const prunedForContentVisibility =
-    range.afterUserId === null
-      ? await reconcilePostContentNotificationVisibility(
-          postId,
-          isContentEligible,
-          isManualSendContentEligible,
-          client,
-        )
-      : 0
-  if (!isContentEligible) return prunedForContentVisibility
-
-  const { rowCount } = await client.query(
-    `/* prunePostNotificationsExceptRecipients */
-    UPDATE notifications n
-    SET deleted_at = CURRENT_TIMESTAMP,
-        delete_reason = 'system_pruned'
-    WHERE n.post_id = $1
-      AND n.delivery_type = 'subscription'
-      AND n.deleted_at IS NULL
-      AND n.read_at IS NULL
-      AND ($2::uuid IS NULL OR n.user_id > $2)
-      AND ($3::uuid IS NULL OR n.user_id <= $3)
-      AND NOT EXISTS (
-        SELECT 1
-        FROM ${recipientTable} recipients
-        WHERE recipients.user_id = n.user_id
-      )
-  `,
-    [postId, range.afterUserId, range.throughUserId],
-  )
-  return prunedForContentVisibility + (rowCount ?? 0)
 }
