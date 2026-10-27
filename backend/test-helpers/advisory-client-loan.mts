@@ -11,7 +11,7 @@ export type TestOwnedAdvisoryWaitOptions = TestAdvisoryLockIdentity & {
   pool: 'advisory' | 'write'
   queryMarker: string
   requestId?: string
-  releaseHolder: () => Promise<void>
+  releaseHolder: () => PromiseLike<void>
 }
 
 /** Restore a real borrowed client's settings before its synchronous release reaches the pool. */
