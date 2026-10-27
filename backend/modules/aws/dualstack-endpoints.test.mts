@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { installS3TestCredentials } from '@voucha/test-helpers/s3-test-environment'
 import type { NodeHttpHandler } from '@smithy/node-http-handler'
 import {
   AWS_CONNECTION_TIMEOUT_MS,
@@ -20,6 +21,14 @@ type EndpointProviderConfig = {
 }
 
 describe('AWS client configuration', () => {
+  let restoreCredentials: () => void
+
+  beforeEach(() => {
+    restoreCredentials = installS3TestCredentials()
+  })
+
+  afterEach(() => restoreCredentials())
+
   it('selects dual-stack delivery clients and IPv4 Bedrock clients', async () => {
     for (const [client, useDualstackEndpoint] of [
       [CloudWatchMetricsClient, true],

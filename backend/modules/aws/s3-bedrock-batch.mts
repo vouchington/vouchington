@@ -11,7 +11,6 @@ export const S3BedrockBatchBucket = resolveBedrockBatchBucket(process.env)
 function resolveBedrockBatchBucket(env: NodeJS.ProcessEnv): string {
   const value = env.S3_BUCKET_BEDROCK_BATCH?.trim()
   if (value) return value
-  if (env.VITEST === 'true' || env.NODE_ENV === 'test') return 'test-bedrock-batch'
   throw new Error('Missing S3_BUCKET_BEDROCK_BATCH')
 }
 

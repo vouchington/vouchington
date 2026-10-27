@@ -1,17 +1,11 @@
 import { S3Client } from '@aws-sdk/client-s3'
-import createHttpError from 'http-errors'
 import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
 import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
-import { getS3Credentials, hasS3Credentials } from './credentials.mts'
+import { getS3ClientCredentials } from './credentials.mts'
 
 let imageUploadsClient: S3Client | undefined
 let imagesClient: S3Client | undefined
-
-const TEST_S3_CREDENTIALS = {
-  accessKeyId: 'test-s3-access-key-id',
-  secretAccessKey: 'test-s3-secret-access-key',
-}
 
 const S3_BUCKET_ENV = {
   images: 'S3_BUCKET_IMAGES',
@@ -24,17 +18,6 @@ const S3_BUCKET_ENV = {
   quarantine: 'S3_BUCKET_QUARANTINE',
 } as const
 
-const TEST_S3_BUCKETS: Record<keyof typeof S3_BUCKET_ENV, string> = {
-  images: 'test-images',
-  imageUploads: 'test-image-uploads',
-  sitemaps: 'test-sitemaps',
-  renders: 'test-renders',
-  assets: 'test-assets',
-  crawls: 'test-crawls',
-  userExports: 'test-user-exports',
-  quarantine: 'test-quarantine',
-}
-
 export type S3EnvironmentKey = 'development' | 'production' | 'staging'
 
 export function getS3EnvironmentKey(value: string | undefined): S3EnvironmentKey {
@@ -42,14 +25,11 @@ export function getS3EnvironmentKey(value: string | undefined): S3EnvironmentKey
   return 'development'
 }
 
-export function buildS3Buckets(
-  env: NodeJS.ProcessEnv = process.env,
-): Record<keyof typeof S3_BUCKET_ENV, string> {
+function buildS3Buckets(): Record<keyof typeof S3_BUCKET_ENV, string> {
   return Object.fromEntries(
     Object.entries(S3_BUCKET_ENV).map(([key, name]) => {
-      const value = env[name]?.trim()
+      const value = process.env[name]?.trim()
       if (value) return [key, value]
-      if (isVitestProcess(env)) return [key, TEST_S3_BUCKETS[key as keyof typeof S3_BUCKET_ENV]]
       throw new Error(`Missing ${name}`)
     }),
   ) as Record<keyof typeof S3_BUCKET_ENV, string>
@@ -96,35 +76,4 @@ function getS3ImageUploadsClient(): S3Client {
   }
 
   return imageUploadsClient
-}
-
-export function getS3ClientCredentials(env: NodeJS.ProcessEnv = process.env) {
-  if (hasS3Credentials(env)) {
-    return getS3Credentials(env)
-  }
-
-  if (isVitestProcess(env)) {
-    return TEST_S3_CREDENTIALS
-  }
-
-  // Deployed staging/production uses OpenTofu-managed IAM task roles.
-  const environment = env.ENVIRONMENT?.trim()
-  if (environment === 'staging' || environment === 'production') {
-    return undefined
-  }
-
-  throw createMissingS3CredentialsError(env)
-}
-
-function isVitestProcess(env: NodeJS.ProcessEnv): boolean {
-  return env.NODE_ENV === 'test' || env.VITEST === 'true'
-}
-
-function createMissingS3CredentialsError(env: NodeJS.ProcessEnv): Error & { status: 503 } {
-  const localSetupMessage =
-    'S3 credentials are not configured. S3-backed features such as image uploads, sitemap/crawl storage, and user exports require S3_AWS_ACCESS_KEY_ID and S3_AWS_SECRET_ACCESS_KEY in ~/voucha.env, then ./dev/initialize web.'
-  const deployedMessage = 'Missing S3 credentials'
-  const message = env.NODE_ENV === 'development' ? localSetupMessage : deployedMessage
-
-  return createHttpError(503, message)
 }

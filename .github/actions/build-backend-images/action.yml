@@ -183,6 +183,7 @@ runs:
 
         echo "Starting API container on port $PORT..."
         docker run -d --name "$SERVER_CONTAINER" --network host \
+          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
           -e NODE_ENV=test -e PORT="$PORT" -e VALKEY_URL \
           -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION \
           "$IMAGE"
@@ -262,6 +263,7 @@ runs:
 
         echo "Starting worker-cpu container..."
         docker run -d --name "$WORKER_CONTAINER" --network host \
+          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
           -e NODE_ENV=test \
           -e VALKEY_URL \
           -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e AWS_REGION \
@@ -343,6 +345,7 @@ runs:
 
         echo "Starting worker-io container..."
         docker run -d --name "$WORKER_CONTAINER" --network host \
+          --env-file "$GITHUB_ACTION_PATH/s3-test-buckets.env" \
           -e NODE_ENV=test \
           -e QUEUES="$WORKER_QUEUE_EXCLUDES" \
           -e VALKEY_URL \

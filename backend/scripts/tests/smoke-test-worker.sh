@@ -15,7 +15,7 @@ POLL_INTERVAL_SECONDS=0.5
 STARTUP_POLL_ATTEMPTS=$((STARTUP_TIMEOUT_SECONDS * 2))
 
 # Start worker in background
-NODE_ENV='test' node entrypoints/worker-io/serve.mts > "$WORKER_OUTPUT_LOG" 2>&1 &
+NODE_ENV='test' node --import ./test-helpers/s3-test-environment.mts entrypoints/worker-io/serve.mts > "$WORKER_OUTPUT_LOG" 2>&1 &
 WORKER_PID=$!
 
 # Small delay to ensure log file is created and initial output is written

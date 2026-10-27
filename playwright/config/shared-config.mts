@@ -1,3 +1,4 @@
+import '../../backend/test-helpers/s3-test-environment.mts'
 import { devices, type PlaywrightTestConfig } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
