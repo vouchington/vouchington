@@ -10,6 +10,7 @@ import {
   createTestTopic,
   createTestUser,
   insertTestRssFeedDirect,
+  beginTransaction,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import {
@@ -19,7 +20,10 @@ import {
   unlinkTopicAlias,
 } from '../aliases.mts'
 import { recordTopicAliasPublicationChanges } from '../publication-change.mts'
-import { continueTopicAliasUnlink } from '../unlink-topic-alias-page.mts'
+import {
+  applyTopicAliasUnlinkPage,
+  selectTopicAliasUnlinkNextPage,
+} from '../unlink-topic-alias-page.mts'
 
 describe('topic alias publication mutation', () => {
   it('rejects conflicting text for one alias identity', async () => {
@@ -62,8 +66,11 @@ describe('topic alias publication mutation', () => {
     expect(await countTestPostAliasRelations(post.id, alias.id)).toBe(0)
   })
 })
-async function finishTopicAliasUnlink(topicAliasId: string) {
-  for (let page = 0; page < 8; page += 1)
-    if (!(await continueTopicAliasUnlink(topicAliasId))) return
-  throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
+async function finishTopicAliasUnlink(topicAliasId: string): Promise<void> {
+  await using lookup = await beginTransaction()
+  let page: Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>> =
+    await selectTopicAliasUnlinkNextPage(lookup, topicAliasId, false)
+  await lookup.rollback()
+  for (let n = 0; n < 16 && page; n += 1) page = await applyTopicAliasUnlinkPage(page)
+  if (page) throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
 }

@@ -27,7 +27,6 @@ import { getTopicAliasIdByKey, getTopicAliasRecords } from '../get-topic-aliases
 import { searchTopicAliases } from '../search-topic-aliases.mts'
 import {
   applyTopicAliasUnlinkPage,
-  continueTopicAliasUnlink,
   selectTopicAliasUnlinkNextPage,
 } from '../unlink-topic-alias-page.mts'
 
@@ -243,9 +242,10 @@ describe('topic alias unlink pages', () => {
 })
 
 async function finishTopicAliasUnlink(topicAliasId: string): Promise<void> {
-  for (let page = 0; page < UNLINK_PAGE_CAP; page += 1) {
-    const pending = await continueTopicAliasUnlink(topicAliasId)
-    if (!pending) return
-  }
-  throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
+  await using lookup = await beginTransaction()
+  let page: Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>> =
+    await selectTopicAliasUnlinkNextPage(lookup, topicAliasId, false)
+  await lookup.rollback()
+  for (let n = 0; n < UNLINK_PAGE_CAP && page; n += 1) page = await applyTopicAliasUnlinkPage(page)
+  if (page) throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
 }

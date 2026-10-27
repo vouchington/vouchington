@@ -1,20 +1,17 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { it, expect, beforeEach, describe } from 'vitest'
-
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { getRssFeedItemMappedTopics } from '../category-relations.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
-
 import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
-import { continueTopicAliasUnlink } from '@services/topics/unlink-topic-alias-page'
-
+import {
+  applyTopicAliasUnlinkPage,
+  selectTopicAliasUnlinkNextPage,
+} from '@services/topics/unlink-topic-alias-page'
 import { upsertRssFeedItems } from '../upsert.mts'
-
 import { caches } from '@services/entity-cache/caches'
-
 import { getRssFeedItemById } from '../get.mts'
 import { searchRssFeedItems } from '../search.mts'
-
 import { v4 as uuid } from 'uuid'
 
 // Reconstructed locally rather than imported from @services/entity-fetch: entity-fetch already
@@ -32,6 +29,7 @@ import {
   insertTestRssFeedDirect,
   setTestEntityRelationIdAndScore,
   WEB_PROVENANCE,
+  beginTransaction,
 } from '@voucha/test-helpers'
 
 import { createTopic } from '@services/topics'
@@ -292,8 +290,11 @@ describe('categories relations', () => {
   void (0 as unknown as typeof softDeleteTopic)
 })
 
-async function finishTopicAliasUnlink(topicAliasId: string) {
-  for (let page = 0; page < 8; page += 1)
-    if (!(await continueTopicAliasUnlink(topicAliasId))) return
-  throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
+async function finishTopicAliasUnlink(topicAliasId: string): Promise<void> {
+  await using lookup = await beginTransaction()
+  let page: Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>> =
+    await selectTopicAliasUnlinkNextPage(lookup, topicAliasId, false)
+  await lookup.rollback()
+  for (let n = 0; n < 16 && page; n += 1) page = await applyTopicAliasUnlinkPage(page)
+  if (page) throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
 }

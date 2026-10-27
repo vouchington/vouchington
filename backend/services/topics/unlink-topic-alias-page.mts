@@ -1,6 +1,5 @@
 import {
   beginTransaction,
-  read,
   registerPostCommitAction,
   withTransactionOptions,
 } from '@data-stores/psql'
@@ -18,16 +17,10 @@ import {
   finalizeTopicAliasUnlink,
   lockPendingAlias,
 } from './unlink-topic-alias-phase.mts'
-import {
-  selectTopicAliasUnlinkNextPage,
-  type TopicAliasUnlinkSql,
-} from './unlink-topic-alias-next-page.mts'
+import { selectTopicAliasUnlinkNextPage } from './unlink-topic-alias-next-page.mts'
 
 export { recoverTopicAliasUnlinks } from './unlink-topic-alias-recovery.mts'
 export { selectTopicAliasUnlinkNextPage } from './unlink-topic-alias-next-page.mts'
-
-const readUnlinkPrimary: TopicAliasUnlinkSql = (sql, params) =>
-  read(sql, params ? [...params] : [], { readOnly: false })
 
 export async function applyTopicAliasUnlinkPage(
   page: TopicAliasUnlinkPage,
@@ -74,26 +67,4 @@ export async function applyTopicAliasUnlinkPage(
   await transaction.commit()
   if (next) await enqueueTopicAliasUnlinkPage(next)
   return next
-}
-
-/**
- * Applies the alias's current page. Returns false once the unlink is no longer pending.
- * @public Test seam: tests advance the unlink one page at a time.
- */
-export async function continueTopicAliasUnlink(topicAliasId: string): Promise<boolean> {
-  const { rows } = await readUnlinkPrimary<{ alias: string }>(
-    `/* continueTopicAliasUnlink */
-    SELECT alias FROM topic_aliases
-    WHERE id = $1::uuid AND unlink_requested_at IS NOT NULL`,
-    [topicAliasId],
-  )
-  const alias = rows[0]
-  if (!alias) return false
-  const page = await selectTopicAliasUnlinkNextPage(
-    readUnlinkPrimary,
-    topicAliasId,
-    Boolean(normalizeHashtag(alias.alias)),
-  )
-  await applyTopicAliasUnlinkPage(page)
-  return true
 }
