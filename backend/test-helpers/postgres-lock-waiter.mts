@@ -15,7 +15,7 @@ import {
   type TestPostgresLockQuery,
 } from './postgres-lock-query-observation.mts'
 
-type HeldLock = { kind: 'transaction' } | { kind: 'advisory64'; key: string }
+type HeldLock = { kind: 'transaction' } | { kind: 'advisory32' | 'advisory64'; key: string }
 type Observer = ReturnType<typeof observeTestTransactionLockNotice>
 
 /** Own the holder's failure release and one real borrowed contender transaction. */
@@ -136,17 +136,24 @@ async function readHeldLock(holder: OwnedTransaction, lock: HeldLock) {
     if (!transactionId) throw new Error('Owned holder has no PostgreSQL transaction ID')
     return { kind: 'transaction' as const, transactionId }
   }
-  const { rows } = await holder<{ lock_tag: string }>(sql`
+  const hash =
+    lock.kind === 'advisory32'
+      ? sql`hashtext(${lock.key})::bigint`
+      : sql`hashtextextended(${lock.key}, 0)`
+  const statement = sql`
     /* createTestPostgresLockWaiter.advisory */
     SELECT 'advisory lock [' || database::text || ',' || classid::text || ',' ||
       objid::text || ',' || objsubid::text || ']' AS lock_tag
     FROM pg_locks
     WHERE pid = pg_backend_pid() AND locktype = 'advisory' AND granted AND mode = 'ExclusiveLock'
       AND objsubid = 1
-      AND classid::bigint = ((hashtextextended(${lock.key}, 0) >> 32) & 4294967295)
-      AND objid::bigint = (hashtextextended(${lock.key}, 0) & 4294967295)
-    LIMIT 2
-  `)
+      AND classid::bigint = ((`
+    .append(hash)
+    .append(sql` >> 32) & 4294967295)
+      AND objid::bigint = (`)
+    .append(hash).append(sql` & 4294967295)
+      LIMIT 2`)
+  const { rows } = await holder<{ lock_tag: string }>(statement)
   const tag = rows[0]?.lock_tag
   if (!tag || rows.length !== 1)
     throw new Error('Owned holder does not have the exact advisory lock')
