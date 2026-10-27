@@ -66,6 +66,10 @@
             "pattern": "\\bfor (?:legacy|old) (?:clients|callers|readers)\\b",
             "flags": "i",
             "message": "Delete the path kept for old callers and update them (AGENTS.md: one current contract)."
+          },
+          {
+            "pattern": "@(?:public|beta|alias|internal)\\b",
+            "message": "Remove Knip export-suppression tags; model runtime entrypoints in knip.jsonc and remove or relocate unused exports."
           }
         ]
       }
@@ -1263,6 +1267,38 @@
     "__filename": "readonly"
   },
   "overrides": [
+    // Keep only the pending sitemap comments until #3595's delegated cleanup after #3978.
+    {
+      "files": ["**/backend/workers/sitemaps/{processors,workers}.mts"],
+      "rules": {
+        "no-mistakes/no-comment-phrases": [
+          "error",
+          {
+            "patterns": [
+              {
+                "pattern": "\\b(?:kept|keep|retained|retain|preserved|preserve)\\b[^.\\n]{0,40}\\bcompat",
+                "flags": "i",
+                "message": "Delete the compatibility tombstone and update its callers (AGENTS.md: one current contract)."
+              },
+              {
+                "pattern": "\\bbackwards?[- ]compat",
+                "flags": "i",
+                "message": "Delete the backward-compatibility path and update its callers (AGENTS.md: one current contract)."
+              },
+              {
+                "pattern": "\\bfor (?:legacy|old) (?:clients|callers|readers)\\b",
+                "flags": "i",
+                "message": "Delete the path kept for old callers and update them (AGENTS.md: one current contract)."
+              },
+              {
+                "pattern": "^(?!(?:\\*\\n \\* @public Retained provisionally under issue #1360; external production use is unconfirmed and this\\n \\* export may be made private or removed after intended-use review\\.\\n \\* Evidence: `docs/overview/architecture/queues/README\\.md`\\.\\n |\\*\\n \\* @public Retained provisionally under issue #1360; external production use is unconfirmed and this\\n \\* export may be made private or removed after intended-use review\\. Evidence: `docs/overview/architecture/queues/README\\.md`\\.\\n |\\* @internal Handlers over the processors; tests pass substitute processors to observe the routing\\. )$)[\\s\\S]*@(?:public|beta|alias|internal)\\b",
+                "message": "Remove Knip export-suppression tags; model runtime entrypoints in knip.jsonc and remove or relocate unused exports."
+              }
+            ]
+          }
+        ]
+      }
+    },
     {
       "files": ["**/vitest.config.*"],
       "excludeFiles": ["**/*/vitest.config.*"],

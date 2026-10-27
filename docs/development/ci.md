@@ -75,9 +75,7 @@ changed files.
   attempt, and commit key, for the web integration and Playwright jobs in the same run. Consumers
   validate the manifest and rebuild locally when the cache is missing.
 - AST-grep scans honor each rule's declared severity: errors block CI and warnings report staged
-  cleanup work, so entrypoints must not use a bare `--error`. The static AST-grep step also rejects
-  Knip export-suppression tags in source comments; explicit runtime loading belongs in Knip entries,
-  not source comments.
+  cleanup work, so entrypoints must not use a bare `--error`.
 
 ## Area workflows and test selection
 

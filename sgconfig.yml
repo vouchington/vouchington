@@ -6,8 +6,3 @@ languageGlobs:
     - '**/*.mts'
     - '**/*.cts'
     - '**/*.tsx'
-  JavaScript:
-    - '**/*.js'
-    - '**/*.jsx'
-    - '**/*.mjs'
-    - '**/*.cjs'
