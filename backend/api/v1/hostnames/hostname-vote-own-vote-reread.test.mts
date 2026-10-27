@@ -46,6 +46,7 @@ describe('hostname vote request lock', () => {
     await withTestOwnedAdvisoryWait(
       {
         holderProcessId: holderPid,
+        pool: 'advisory',
         key,
         queryMarker: 'lockElectionVoteRequest',
         requestId,

@@ -1,4 +1,4 @@
-import { writePool, type PoolClient } from '@data-stores/psql'
+import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
 import { observeTestAdvisoryLockNotice } from './postgres-advisory-lock-notice.mts'
 
 export type TestAdvisoryLockIdentity = {
@@ -8,6 +8,7 @@ export type TestAdvisoryLockIdentity = {
 }
 
 export type TestOwnedAdvisoryWaitOptions = TestAdvisoryLockIdentity & {
+  pool: 'advisory' | 'write'
   queryMarker: string
   requestId?: string
   releaseHolder: () => Promise<void>
@@ -86,11 +87,12 @@ export async function discardTestAdvisoryClient(
 }
 
 /** Own the ordinary observer checkout, including a borrow that finishes during cleanup. */
-export function reserveTestAdvisoryObserver() {
+export function reserveTestAdvisoryObserver(targetPool: TestOwnedAdvisoryWaitOptions['pool']) {
+  const pool = targetPool === 'write' ? advisoryLockPool : writePool
   let client: PoolClient | undefined
   let ended: ReturnType<typeof trackTestPostgresClientEnd> | undefined
   let released: Promise<void> | undefined
-  const ready = writePool.connect().then(actual => {
+  const ready = pool.connect().then(actual => {
     client = actual
     ended = trackTestPostgresClientEnd(actual)
     return actual

@@ -3,13 +3,13 @@ import {
   clearUserDataRequestExpiryForTest,
   createTestUser,
   expireUserDataRequestForTest,
-  flushPendingTasks,
   getTestDataRequestAttemptFence,
   getUserDataRequestStatusAndS3KeyForTest,
   restoreUser,
   softDeleteUser,
   startPausedTestUserSoftDeletion,
 } from '@voucha/test-helpers'
+import { withTestOwnedAdvisoryWait } from '@voucha/test-helpers/advisory-client-lock-observer'
 import {
   createDataRequest,
   markDataRequestProcessing,
@@ -134,14 +134,28 @@ describe('markDataRequestProcessing', () => {
     const user = await createTestUser()
     const request = await createDataRequest(user.id, user.id)
     const deletion = await startPausedTestUserSoftDeletion(user.id)
-    const claim = markDataRequestProcessing(request.id)
     try {
-      await flushPendingTasks()
-      const row = await getUserDataRequestStatusAndS3KeyForTest(request.id)
-      expect(row?.status).toBe('pending')
-      deletion.release()
-      await deletion.completed
-      await expect(claim).resolves.toBe(false)
+      await withTestOwnedAdvisoryWait(
+        {
+          pool: 'write',
+          holderProcessId: deletion.holderProcessId,
+          key: user.id,
+          queryMarker: 'lockActiveDataRequestUser:lock',
+          releaseHolder: async () => {
+            deletion.release()
+            await deletion.completed
+          },
+        },
+        async waitForLock => {
+          const claim = markDataRequestProcessing(request.id)
+          await waitForLock(claim)
+          const row = await getUserDataRequestStatusAndS3KeyForTest(request.id)
+          expect(row?.status).toBe('pending')
+          deletion.release()
+          await deletion.completed
+          await expect(claim).resolves.toBe(false)
+        },
+      )
     } finally {
       deletion.release()
       await deletion.completed

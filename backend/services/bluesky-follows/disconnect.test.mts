@@ -177,6 +177,7 @@ describe('durable Bluesky disconnect', () => {
     await withTestOwnedAdvisoryWait(
       {
         holderProcessId: requestHolderProcessId,
+        pool: 'advisory',
         namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE,
         key: user.id,
         queryMarker: 'withBlueskyDisconnectLock:lock',
