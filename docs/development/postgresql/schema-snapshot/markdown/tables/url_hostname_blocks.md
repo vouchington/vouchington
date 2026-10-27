@@ -6,18 +6,25 @@ Append-only history of hostname blocks. url_hostnames.blocked is trigger-maintai
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                         | Nullable | Default                               | Identity | Generated | Collation | Comment                                                                |
-| ---------------------------- | ---------------------------- | -------- | ------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`                         | `uuid`                       | no       | `uuidv7()`                            |          |           |           |                                                                        |
-| `url_hostname_id`            | `uuid`                       | no       |                                       |          |           |           | The blocked hostname.                                                  |
-| `blocked_by_id`              | `uuid`                       | yes      |                                       |          |           |           | Admin who issued the block.                                            |
-| `blocked_source`             | `url_hostname_block_sources` | no       | `'admin'::url_hostname_block_sources` |          |           |           | Who initiated the block: admin, google_web_risk, parent_hostname, etc. |
-| `domain_blocklist_source_id` | `bigint`                     | yes      |                                       |          |           |           | External blacklist source for projected URL or email domain blocks.    |
-| `reason`                     | `text`                       | yes      |                                       |          |           |           | Optional reason for the block.                                         |
-| `created_at`                 | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)`          |          | virtual   |           |                                                                        |
-| `updated_at`                 | `timestamp with time zone`   | yes      | `CURRENT_TIMESTAMP`                   |          |           |           |                                                                        |
-| `lifted_at`                  | `timestamp with time zone`   | yes      |                                       |          |           |           | When the block was lifted. NULL means still active.                    |
-| `lifted_by_id`               | `uuid`                       | yes      |                                       |          |           |           | Who lifted the block.                                                  |
+| Column                                         | Type                         | Nullable | Default                               | Identity | Generated | Collation | Comment                                                                                                                           |
+| ---------------------------------------------- | ---------------------------- | -------- | ------------------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                           | `uuid`                       | no       | `uuidv7()`                            |          |           |           |                                                                                                                                   |
+| `url_hostname_id`                              | `uuid`                       | no       |                                       |          |           |           | The blocked hostname.                                                                                                             |
+| `blocked_by_id`                                | `uuid`                       | yes      |                                       |          |           |           | Admin who issued the block.                                                                                                       |
+| `blocked_source`                               | `url_hostname_block_sources` | no       | `'admin'::url_hostname_block_sources` |          |           |           | Who initiated the block: admin, google_web_risk, parent_hostname, etc.                                                            |
+| `domain_blocklist_source_id`                   | `bigint`                     | yes      |                                       |          |           |           | External blacklist source for projected URL or email domain blocks.                                                               |
+| `reason`                                       | `text`                       | yes      |                                       |          |           |           | Optional reason for the block.                                                                                                    |
+| `created_at`                                   | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)`          |          | virtual   |           |                                                                                                                                   |
+| `updated_at`                                   | `timestamp with time zone`   | yes      | `CURRENT_TIMESTAMP`                   |          |           |           |                                                                                                                                   |
+| `lifted_at`                                    | `timestamp with time zone`   | yes      |                                       |          |           |           | When the block was lifted. NULL means still active.                                                                               |
+| `lifted_by_id`                                 | `uuid`                       | yes      |                                       |          |           |           | Who lifted the block.                                                                                                             |
+| `relation_cleanup_root_block_id`               | `uuid`                       | yes      |                                       |          |           |           | First owning staff or provider block whose bounded cleanup operation owns this hostname; self-reference marks the operation root. |
+| `should_penalize_relation_creators`            | `boolean`                    | no       | `false`                               |          |           |           | Immutable creator-penalty intent captured when the cleanup root is first created.                                                 |
+| `relation_cleanup_progress`                    | `integer`                    | no       | `0`                                   |          |           |           | Monotonic generation used to fence and identify bounded cleanup continuation jobs.                                                |
+| `relation_cleanup_blocked_hostname_count`      | `integer`                    | no       | `0`                                   |          |           |           | Durable total of hostnames first assigned to this bounded cleanup operation.                                                      |
+| `relation_cleanup_soft_deleted_relation_count` | `integer`                    | no       | `0`                                   |          |           |           | Durable total of relations soft-deleted by this bounded cleanup operation.                                                        |
+| `relation_cleanup_penalized_user_count`        | `integer`                    | no       | `0`                                   |          |           |           | Durable total of distinct creator penalties inserted by this bounded cleanup operation.                                           |
+| `relation_cleanup_completed_at`                | `timestamp with time zone`   | yes      |                                       |          |           |           | When every hostname, URL, relation, and penalty page owned by this root finished processing.                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,10 +34,13 @@ _none_
 **Check constraints:**
 
 - `chk_url_hostname_blocks__domain_source`: `CHECK (((blocked_source = ANY (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])) = (domain_blocklist_source_id IS NOT NULL)))`
+- `chk_url_hostname_blocks__relation_cleanup_counts`: `CHECK (((relation_cleanup_blocked_hostname_count >= 0) AND (relation_cleanup_soft_deleted_relation_count >= 0) AND (relation_cleanup_penalized_user_count >= 0)))`
+- `chk_url_hostname_blocks__relation_cleanup_progress`: `CHECK ((relation_cleanup_progress >= 0))`
 
 **Foreign keys:**
 
 - `fk_url_hostname_blocks__domain_blocklist_source`: `FOREIGN KEY (domain_blocklist_source_id) REFERENCES domain_blocklist_sources(id) ON DELETE RESTRICT`
+- `fk_url_hostname_blocks__relation_cleanup_root_block`: `FOREIGN KEY (relation_cleanup_root_block_id) REFERENCES url_hostname_blocks(id) ON DELETE SET NULL`
 - `url_hostname_blocks_blocked_by_id_fkey`: `FOREIGN KEY (blocked_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `url_hostname_blocks_lifted_by_id_fkey`: `FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `url_hostname_blocks_url_hostname_id_fkey`: `FOREIGN KEY (url_hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
@@ -41,6 +51,8 @@ _none_
 - `idx_url_hostname_blocks__active_nonfeed`: `CREATE INDEX idx_url_hostname_blocks__active_nonfeed ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE ((lifted_at IS NULL) AND (blocked_source <> ALL (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])))`
 - `idx_url_hostname_blocks__domain_blocklist_source_id`: `CREATE INDEX idx_url_hostname_blocks__domain_blocklist_source_id ON public.url_hostname_blocks USING btree (domain_blocklist_source_id) WHERE (domain_blocklist_source_id IS NOT NULL)`
 - `idx_url_hostname_blocks__hostname`: `CREATE INDEX idx_url_hostname_blocks__hostname ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE (lifted_at IS NULL)`
+- `idx_url_hostname_blocks__pending_relation_cleanup`: `CREATE INDEX idx_url_hostname_blocks__pending_relation_cleanup ON public.url_hostname_blocks USING btree (id) WHERE ((relation_cleanup_root_block_id = id) AND (relation_cleanup_completed_at IS NULL))`
+- `idx_url_hostname_blocks__relation_cleanup_root__hostname`: `CREATE INDEX idx_url_hostname_blocks__relation_cleanup_root__hostname ON public.url_hostname_blocks USING btree (relation_cleanup_root_block_id, url_hostname_id) WHERE (relation_cleanup_root_block_id IS NOT NULL)`
 - `idx_url_hostname_blocks__url_hostname_id`: `CREATE INDEX idx_url_hostname_blocks__url_hostname_id ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE (url_hostname_id IS NOT NULL)`
 - `url_hostname_blocks_pkey`: `CREATE UNIQUE INDEX url_hostname_blocks_pkey ON public.url_hostname_blocks USING btree (id)`
 

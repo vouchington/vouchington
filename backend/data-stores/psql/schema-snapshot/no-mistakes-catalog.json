@@ -1804,7 +1804,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Lock every affected hostname even when it is already blocked. A concurrent\n  -- source removal must wait, then evaluate the remaining blocks in a fresh\n  -- READ COMMITTED statement.\n  PERFORM host.id FROM url_hostnames host\n  JOIN (\n    SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ) affected ON affected.id = host.id\n  ORDER BY host.id FOR UPDATE OF host;\n\n  WITH affected AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  )\n  UPDATE url_hostnames host SET is_blocked = TRUE\n  FROM affected WHERE host.id = affected.id AND NOT host.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_update_url_hostname_blocked_after_update()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM host.id FROM url_hostnames host\n  JOIN (\n    SELECT url_hostname_id AS id FROM prior_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n    UNION\n    SELECT url_hostname_id AS id FROM updated_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ) affected ON affected.id = host.id\n  ORDER BY host.id FOR UPDATE OF host;\n\n  WITH affected AS MATERIALIZED (\n    SELECT url_hostname_id AS id FROM prior_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n    UNION\n    SELECT url_hostname_id AS id FROM updated_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), states AS MATERIALIZED (\n    SELECT affected.id, EXISTS (\n      SELECT 1 FROM url_hostname_blocks block\n      WHERE block.url_hostname_id = affected.id\n        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'\n    ) AS is_blocked FROM affected\n  )\n  UPDATE url_hostnames host SET is_blocked = states.is_blocked\n  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM host.id FROM url_hostnames host\n  JOIN (WITH prior_active AS (\n    SELECT DISTINCT url_hostname_id AS id FROM prior_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), updated_active AS (\n    SELECT DISTINCT url_hostname_id AS id FROM updated_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  )\n    (SELECT id FROM prior_active EXCEPT SELECT id FROM updated_active)\n    UNION\n    (SELECT id FROM updated_active EXCEPT SELECT id FROM prior_active)\n  ) affected ON affected.id = host.id\n  ORDER BY host.id FOR UPDATE OF host;\n\n  WITH prior_active AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM prior_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), updated_active AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM updated_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), affected AS MATERIALIZED (\n    (SELECT id FROM prior_active EXCEPT SELECT id FROM updated_active)\n    UNION\n    (SELECT id FROM updated_active EXCEPT SELECT id FROM prior_active)\n  ), states AS MATERIALIZED (\n    SELECT affected.id, EXISTS (\n      SELECT 1 FROM url_hostname_blocks block\n      WHERE block.url_hostname_id = affected.id\n        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'\n    ) AS is_blocked FROM affected\n  )\n  UPDATE url_hostnames host SET is_blocked = states.is_blocked\n  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_update_url_hostname_crawl_policy_changed_at()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.is_crawlable IS DISTINCT FROM OLD.is_crawlable\n    OR NEW.is_blocked IS DISTINCT FROM OLD.is_blocked\n    OR NEW.age_threshold_days IS DISTINCT FROM OLD.age_threshold_days\n    OR NEW.requests_per_second_limit IS DISTINCT FROM OLD.requests_per_second_limit\n    OR NEW.attempt_threshold_hours IS DISTINCT FROM OLD.attempt_threshold_hours\n  THEN\n    NEW.crawl_policy_changed_at = GREATEST(\n      clock_timestamp(), OLD.crawl_policy_changed_at + INTERVAL '1 microsecond'\n    );\n  ELSE\n    NEW.crawl_policy_changed_at = OLD.crawl_policy_changed_at;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -92311,6 +92311,38 @@
         }
       },
       "indexes": {
+        "idx_relation__post__related__url__active_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__active_reverse ON ONLY public.relation__post__related__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97055,6 +97087,38 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__faq__url__active_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__url__active_reverse ON public.relation__topic__faq__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97955,6 +98019,38 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__guide__url__active_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__guide__url__active_reverse ON public.relation__topic__guide__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__guide__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -98855,6 +98951,38 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__landing_page__url__active_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__active_reverse ON public.relation__topic__landing_page__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__landing_page__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -102891,6 +103019,38 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__related__url__active_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__url__active_reverse ON public.relation__topic__related__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__url__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -103818,6 +103978,38 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__terms_of_service__url__active_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__active_reverse ON public.relation__topic__terms_of_service__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -110070,6 +110262,38 @@
         }
       },
       "indexes": {
+        "idx_relation__user__save__url__active_reverse": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__save__url__active_reverse ON public.relation__user__save__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "object_id",
+              "descending": false,
+              "expression": "object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__save__url__reverse_index": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -127188,6 +127412,14 @@
         "chk_url_hostname_blocks__domain_source": {
           "definition": "CHECK (((blocked_source = ANY (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])) = (domain_blocklist_source_id IS NOT NULL)))",
           "validated": true
+        },
+        "chk_url_hostname_blocks__relation_cleanup_counts": {
+          "definition": "CHECK (((relation_cleanup_blocked_hostname_count >= 0) AND (relation_cleanup_soft_deleted_relation_count >= 0) AND (relation_cleanup_penalized_user_count >= 0)))",
+          "validated": true
+        },
+        "chk_url_hostname_blocks__relation_cleanup_progress": {
+          "definition": "CHECK ((relation_cleanup_progress >= 0))",
+          "validated": true
         }
       },
       "columns": {
@@ -127271,6 +127503,76 @@
           "nullable": true,
           "ordinalPosition": 6
         },
+        "relation_cleanup_blocked_hostname_count": {
+          "comment": "Durable total of hostnames first assigned to this bounded cleanup operation.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14
+        },
+        "relation_cleanup_completed_at": {
+          "comment": "When every hostname, URL, relation, and penalty page owned by this root finished processing.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17
+        },
+        "relation_cleanup_penalized_user_count": {
+          "comment": "Durable total of distinct creator penalties inserted by this bounded cleanup operation.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 16
+        },
+        "relation_cleanup_progress": {
+          "comment": "Monotonic generation used to fence and identify bounded cleanup continuation jobs.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13
+        },
+        "relation_cleanup_root_block_id": {
+          "comment": "First owning staff or provider block whose bounded cleanup operation owns this hostname; self-reference marks the operation root.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11
+        },
+        "relation_cleanup_soft_deleted_relation_count": {
+          "comment": "Durable total of relations soft-deleted by this bounded cleanup operation.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 15
+        },
+        "should_penalize_relation_creators": {
+          "comment": "Immutable creator-penalty intent captured when the cleanup root is first created.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 12
+        },
         "updated_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -127300,6 +127602,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "domain_blocklist_sources",
+          "validated": true
+        },
+        "fk_url_hostname_blocks__relation_cleanup_root_block": {
+          "columns": ["relation_cleanup_root_block_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostname_blocks",
           "validated": true
         },
         "url_hostname_blocks_blocked_by_id_fkey": {
@@ -127424,6 +127734,61 @@
           ],
           "live": true,
           "predicate": "(lifted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_blocks__pending_relation_cleanup": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__pending_relation_cleanup ON public.url_hostname_blocks USING btree (id) WHERE ((relation_cleanup_root_block_id = id) AND (relation_cleanup_completed_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((relation_cleanup_root_block_id = id) AND (relation_cleanup_completed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_blocks__relation_cleanup_root__hostname": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__relation_cleanup_root__hostname ON public.url_hostname_blocks USING btree (relation_cleanup_root_block_id, url_hostname_id) WHERE (relation_cleanup_root_block_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "relation_cleanup_root_block_id",
+              "descending": false,
+              "expression": "relation_cleanup_root_block_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(relation_cleanup_root_block_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -128423,6 +128788,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_url_hostnames__reversed_hostname__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__reversed_hostname__id ON public.url_hostnames USING btree (reversed_hostname COLLATE \"C\", id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"C\"",
+              "column": "reversed_hostname",
+              "descending": false,
+              "expression": "reversed_hostname",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": false
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostnames__reversed_hostname__text_pattern_ops": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -128953,7 +129350,7 @@
         "idx_urls__hostname_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_urls__hostname_id ON public.urls USING btree (hostname_id)",
+          "definition": "CREATE INDEX idx_urls__hostname_id ON public.urls USING btree (hostname_id, id)",
           "immediate": true,
           "keys": [
             {
@@ -128961,6 +129358,15 @@
               "column": "hostname_id",
               "descending": false,
               "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -143388,7 +143794,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "created_by_id": {
           "comment": "User who created the penalty, or NULL after that account is purged.",
@@ -143398,7 +143804,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "id": {
           "comment": null,
@@ -143438,7 +143844,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "reviewed_at": {
           "comment": "Most recent staff confirmation that an active penalty remains warranted.",
@@ -143448,7 +143854,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "reviewed_by_id": {
           "comment": "Staff member who last reviewed the active penalty.",
@@ -143458,7 +143864,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "revoked_at": {
           "comment": "When the penalty was revoked.",
@@ -143468,7 +143874,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "revoked_by_id": {
           "comment": "Moderator who revoked the penalty.",
@@ -143478,7 +143884,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "source_flag_id": {
           "comment": "The integrity flag that triggered this penalty, if auto-generated.",
@@ -143490,8 +143896,18 @@
           "nullable": true,
           "ordinalPosition": 5
         },
+        "source_hostname_block_id": {
+          "comment": "The exact hostname block event whose bounded relation cleanup first created this penalty fact.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "source_hostname_id": {
-          "comment": "The blocked hostname that triggered this penalty (for initial block penalties). NULL for stacking attempt penalties.",
+          "comment": "The blocked hostname whose active penalty identity prevents stacking across unblock and reblock operations. NULL for stacking attempt penalties.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -143508,7 +143924,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "updated_at": {
           "comment": null,
@@ -143518,7 +143934,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "user_id": {
           "comment": "The penalized user.",
@@ -143533,6 +143949,14 @@
       },
       "comment": "Penalties applied to users' vote weights. Revoked rows are deleted after 180 days; active rows remain subject to annual staff review.",
       "foreignKeys": {
+        "fk_vote_weight_penalties__source_hostname_block": {
+          "columns": ["source_hostname_block_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostname_blocks",
+          "validated": true
+        },
         "vote_weight_penalties_created_by_id_fkey": {
           "columns": ["created_by_id"],
           "onDelete": "SET NULL",
@@ -143678,6 +144102,38 @@
           ],
           "live": true,
           "predicate": "(source_hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_weight_penalties__hostname_block": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_weight_penalties__hostname_block ON public.vote_weight_penalties USING btree (source_hostname_block_id, user_id) WHERE (source_hostname_block_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "source_hostname_block_id",
+              "descending": false,
+              "expression": "source_hostname_block_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(source_hostname_block_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

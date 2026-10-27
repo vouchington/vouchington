@@ -50,6 +50,7 @@ RANGE partitioned on `subject_id` (children: default, no retention owner, access
 
 **Indexes:**
 
+- `idx_relation__post__related__url__active_reverse`: `CREATE INDEX idx_relation__post__related__url__active_reverse ON ONLY public.relation__post__related__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)`
 - `idx_relation__post__related__url__id`: `CREATE INDEX idx_relation__post__related__url__id ON ONLY public.relation__post__related__url USING btree (id)`
 - `idx_relation__post__related__url__positive_score__id`: `CREATE INDEX idx_relation__post__related__url__positive_score__id ON ONLY public.relation__post__related__url USING btree (votes_score_sort DESC, id) WHERE (votes_score_net > (0)::double precision)`
 - `idx_relation__post__related__url__reverse_index`: `CREATE INDEX idx_relation__post__related__url__reverse_index ON ONLY public.relation__post__related__url USING btree (object_id, subject_id)`

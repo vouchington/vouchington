@@ -84,6 +84,7 @@ Not partitioned — growth: unbounded.
 - `idx_url_hostnames__hostname__text_pattern_ops`: `CREATE INDEX idx_url_hostnames__hostname__text_pattern_ops ON public.url_hostnames USING btree (hostname text_pattern_ops)`
 - `idx_url_hostnames__hostname_trgm`: `CREATE INDEX idx_url_hostnames__hostname_trgm ON public.url_hostnames USING gin (hostname gin_trgm_ops)`
 - `idx_url_hostnames__not_crawlable`: `CREATE INDEX idx_url_hostnames__not_crawlable ON public.url_hostnames USING btree (hostname) INCLUDE (is_blocked) WHERE (NOT is_crawlable)`
+- `idx_url_hostnames__reversed_hostname__id`: `CREATE INDEX idx_url_hostnames__reversed_hostname__id ON public.url_hostnames USING btree (reversed_hostname COLLATE "C", id)`
 - `idx_url_hostnames__reversed_hostname__text_pattern_ops`: `CREATE INDEX idx_url_hostnames__reversed_hostname__text_pattern_ops ON public.url_hostnames USING btree (reversed_hostname text_pattern_ops)`
 - `idx_url_hostnames__skip_web_risk`: `CREATE INDEX idx_url_hostnames__skip_web_risk ON public.url_hostnames USING btree (hostname text_pattern_ops) WHERE (should_skip_web_risk = true)`
 - `idx_url_hostnames__top_sort`: `CREATE INDEX idx_url_hostnames__top_sort ON public.url_hostnames USING btree (votes_score_net DESC, id DESC) WHERE ((NOT is_blocked) AND (votes_count_up > 0))`
