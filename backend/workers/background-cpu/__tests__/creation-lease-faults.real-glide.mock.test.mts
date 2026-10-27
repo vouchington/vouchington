@@ -1,3 +1,4 @@
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { randomInt, randomUUID } from 'node:crypto'
 import { channel } from 'node:diagnostics_channel'
 import { v7 as uuidv7 } from 'uuid'
@@ -7,7 +8,6 @@ import {
   type RenewableLease,
   type RenewableLeaseLoss,
 } from 'valkyries/lease'
-import Sentry from '@modules/on-error/sentry'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
@@ -60,7 +60,7 @@ describe('creation lease consumer fault policy through real background CPU worke
   it('records an in-flight receipt after renewal loss and preserves a provider error over release failure', async () => {
     vi.stubEnv('BEDROCK_BATCH_ROLE_ARN', 'arn:aws:iam::123456789012:role/test-bedrock-role')
     vi.stubEnv('ENVIRONMENT', 'staging')
-    const capture = vi.spyOn(Sentry, 'captureException').mockReturnValue('lease-fault-test')
+    const capture = sentryCaptureExceptionMock
     const fixture = await acquireEmbeddingQuotaFixture()
     const connection = {
       connection: workerQueueConnection,
@@ -214,7 +214,6 @@ describe('creation lease consumer fault policy through real background CPU worke
     } finally {
       losses.unsubscribe(onLoss)
       await fixture.close()
-      capture.mockRestore()
       vi.unstubAllEnvs()
     }
   }, 30_000)
