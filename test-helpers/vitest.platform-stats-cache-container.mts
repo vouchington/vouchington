@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { parse } from 'yaml'
-import type { TestProject } from 'vitest/node'
 
 const ownershipLabel = 'voucha.platform-stats-cache'
 const startupTimeout = 30_000
@@ -73,7 +72,7 @@ function removeOwnedContainer(containerId: string, owner: string): void {
   docker(['rm', '--force', containerId])
 }
 
-export default async function setup(project: Pick<TestProject, 'provide'>) {
+export default async function createPlatformStatsCache() {
   const owner = randomUUID()
   const since = new Date().toISOString()
   const name = `voucha-platform-stats-${owner}`
@@ -118,8 +117,11 @@ export default async function setup(project: Pick<TestProject, 'provide'>) {
     if (binding?.HostIp !== '127.0.0.1' || !Number.isInteger(port) || port < 1 || port > 65535) {
       throw new Error('Private platform-stats Valkey did not bind an assigned localhost port')
     }
-    project.provide('platformStatsCache', { url: `redis://127.0.0.1:${port}`, owner })
-    return () => removeOwnedContainer(createdId, owner)
+    return {
+      url: `redis://127.0.0.1:${port}`,
+      owner,
+      close: () => removeOwnedContainer(createdId, owner),
+    }
   } catch (outerErr) {
     try {
       containerId ??=
