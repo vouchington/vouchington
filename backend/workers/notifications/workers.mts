@@ -38,7 +38,7 @@ import {
   NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import * as processors from './processors.mts'
-import { enqueueVisibilityContinuations } from './visibility-continuations.mts'
+import { enqueueVisibilityContinuations } from './processors/visibility-continuations.mts'
 import { processCommunityActivityDigestScheduleTick } from './processors/community-activity-digest-schedule.mts'
 
 export const notificationsHandlers = [
