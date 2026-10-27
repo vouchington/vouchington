@@ -21,6 +21,11 @@ import {
   seedClassifierRetentionPricedUsage,
 } from '@voucha/test-helpers/classifier-cache-retention'
 import {
+  retireSupersededVersionedRunPayloadForTest,
+  rollBackActivePromptVersionForTest,
+} from '@voucha/test-helpers/classifier-prompt-rollback-retention'
+import { withClassifierRetentionSweepLock } from '@voucha/test-helpers/classifier-retention-sweep-lock'
+import {
   countClassifierRows,
   seedClassifierRunPayloadsAt,
 } from '@voucha/test-helpers/classifier-retention'
@@ -72,19 +77,21 @@ describe('classifier retention cleanup', () => {
       now: new Date(at.getTime() + 90 * DAY_MS + 1),
     }
 
-    const atBoundary = await cleanupClassifierRecords({
-      ...options,
-      now: new Date(at.getTime() + 90 * DAY_MS),
+    await withClassifierRetentionSweepLock(async () => {
+      const atBoundary = await cleanupClassifierRecords({
+        ...options,
+        now: new Date(at.getTime() + 90 * DAY_MS),
+      })
+      expect(atBoundary.runs.deleted).toBe(0)
+      expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(3)
+
+      const first = await cleanupClassifierRecords(options)
+      expect(first.runs).toEqual({ scanned: 2, deleted: 2, hasMore: true })
+      expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(1)
+
+      const second = await cleanupClassifierRecords(options)
+      expect(second.runs).toEqual({ scanned: 2, deleted: 1, hasMore: false })
     })
-    expect(atBoundary.runs.deleted).toBe(0)
-    expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(3)
-
-    const first = await cleanupClassifierRecords(options)
-    expect(first.runs).toEqual({ scanned: 2, deleted: 2, hasMore: true })
-    expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(1)
-
-    const second = await cleanupClassifierRecords(options)
-    expect(second.runs).toEqual({ scanned: 2, deleted: 1, hasMore: false })
     expect(await countClassifierRows('classifier_runs', terminalIds)).toBe(0)
     expect(await countClassifierRows('classifier_runs', [pendingId])).toBe(1)
     expect(await countClassifierRows('classifier_run_identities', terminalIds)).toBe(0)
@@ -139,6 +146,79 @@ describe('classifier retention cleanup', () => {
     } finally {
       await deleteClassifierCacheIdentitiesForTest([oldId, newId])
     }
+  })
+
+  it('prunes superseded edits of one prompt version but keeps the subject newest identity', async () => {
+    const startedAt = new Date()
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    const seed = () =>
+      seedClassifierCacheIdentity({
+        classifierId: fixture.classifierId,
+        promptVersionId: fixture.promptVersionId,
+        postId: fixture.postId,
+        inputSha256: randomBytes(32),
+      })
+    const oldId = await seed()
+    const newId = await seed()
+    try {
+      expect(
+        await probeVersionedClassifierCachePageForTest({
+          classifierId: fixture.classifierId,
+          oldPromptVersionId: fixture.promptVersionId,
+          oldIdentityId: oldId,
+          newIdentityId: newId,
+          startedAt,
+        }),
+      ).toEqual({ scanned: 2, deleted: 1, oldInside: false, newInside: true })
+    } finally {
+      await deleteClassifierCacheIdentitiesForTest([oldId, newId])
+    }
+  })
+
+  it('keeps the active prompt version identity after a newer version is rolled back', async () => {
+    const startedAt = new Date()
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    const identityId = await seedClassifierCacheIdentity({
+      classifierId: fixture.classifierId,
+      promptVersionId: fixture.promptVersionId,
+      postId: fixture.postId,
+      inputSha256: randomBytes(32),
+    })
+    const nextPromptVersionId = await supersedeActivePromptVersion(
+      fixture.classifierId,
+      fixture.promptVersionId,
+    )
+    await rollBackActivePromptVersionForTest(nextPromptVersionId, fixture.promptVersionId)
+    try {
+      expect(
+        await probeVersionedClassifierCachePageForTest({
+          classifierId: fixture.classifierId,
+          oldPromptVersionId: fixture.promptVersionId,
+          oldIdentityId: identityId,
+          newIdentityId: identityId,
+          startedAt,
+        }),
+      ).toEqual({ scanned: 1, deleted: 0, oldInside: true, newInside: true })
+    } finally {
+      await deleteClassifierCacheIdentitiesForTest([identityId])
+    }
+  })
+
+  it('retires the identity of a payload superseded before it completed', async () => {
+    const fixture = await createClassifierFixture()
+    const setup = await createSyntheticFixture()
+    const retired = await retireSupersededVersionedRunPayloadForTest({
+      classifierId: fixture.classifierId,
+      promptVersionId: fixture.promptVersionId,
+      postId: setup.post.id,
+      actorId: setup.actorId,
+      inputSha256: randomBytes(32),
+      at: new Date(Date.now() - 100 * DAY_MS),
+    })
+    expect(retired.identityRemaining).toBe(0)
+    expect(await countClassifierRows('classifier_runs', [retired.runId])).toBe(0)
   })
 
   it('prunes a cache identity when its real post is deleted despite a retained subject id', async () => {

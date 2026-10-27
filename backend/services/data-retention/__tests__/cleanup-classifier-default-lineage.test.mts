@@ -5,6 +5,7 @@ import {
   readClassifierDefaultLineage,
   seedOldClassifierDefaultDecision,
 } from '@voucha/test-helpers/classifier-default-retention'
+import { withClassifierRetentionSweepLock } from '@voucha/test-helpers/classifier-retention-sweep-lock'
 import { cleanupClassifierRecords } from '../cleanup-classifier-records.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -35,28 +36,30 @@ describe('expired classifier DEFAULT lineage', () => {
       calls: 2,
       batches: 2,
     })
-    const first = await cleanupClassifierRecords(options)
-    expect(first.topicResults).toEqual({ scanned: 1, deleted: 1, hasMore: true })
-    expect(first.decisionCandidates).toEqual({ scanned: 1, deleted: 1, hasMore: true })
-    expect(first.calls).toEqual({ scanned: 1, deleted: 1, hasMore: true })
-    expect(first.batches).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+    await withClassifierRetentionSweepLock(async () => {
+      const first = await cleanupClassifierRecords(options)
+      expect(first.topicResults).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+      expect(first.decisionCandidates).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+      expect(first.calls).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+      expect(first.batches).toEqual({ scanned: 1, deleted: 1, hasMore: true })
 
-    const second = await cleanupClassifierRecords(options)
-    expect(second.topicResults).toEqual({ scanned: 1, deleted: 1, hasMore: false })
-    expect(second.decisionCandidates).toEqual({ scanned: 1, deleted: 1, hasMore: false })
-    expect(second.calls).toEqual({ scanned: 1, deleted: 1, hasMore: false })
-    expect(second.batches).toEqual({ scanned: 1, deleted: 1, hasMore: false })
-    expect(await readClassifierDefaultLineage(oldIds)).toEqual({
-      results: 0,
-      candidates: 0,
-      calls: 0,
-      batches: 0,
-    })
-    expect(await readClassifierDefaultLineage([freshId])).toEqual({
-      results: 1,
-      candidates: 1,
-      calls: 1,
-      batches: 1,
+      const second = await cleanupClassifierRecords(options)
+      expect(second.topicResults).toEqual({ scanned: 1, deleted: 1, hasMore: false })
+      expect(second.decisionCandidates).toEqual({ scanned: 1, deleted: 1, hasMore: false })
+      expect(second.calls).toEqual({ scanned: 1, deleted: 1, hasMore: false })
+      expect(second.batches).toEqual({ scanned: 1, deleted: 1, hasMore: false })
+      expect(await readClassifierDefaultLineage(oldIds)).toEqual({
+        results: 0,
+        candidates: 0,
+        calls: 0,
+        batches: 0,
+      })
+      expect(await readClassifierDefaultLineage([freshId])).toEqual({
+        results: 1,
+        candidates: 1,
+        calls: 1,
+        batches: 1,
+      })
     })
   })
 })

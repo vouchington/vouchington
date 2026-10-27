@@ -8,7 +8,11 @@ export async function deleteOldClassifierRuns(
   query: OwnedTransaction,
   ids: readonly string[],
 ): Promise<number> {
-  const { rows: deletedRuns } = await query<{ id: string }>(sql`/* deleteOldClassifierRuns */
+  const { rows: deletedRuns } = await query<{
+    id: string
+    completed_at: Date | null
+    terminal_failed_at: Date | null
+  }>(sql`/* deleteOldClassifierRuns */
     DELETE FROM classifier_runs run
     WHERE run.id = ANY(${[...ids]}::uuid[])
       AND (run.completed_at IS NOT NULL OR run.superseded_at IS NOT NULL
@@ -22,9 +26,12 @@ export async function deleteOldClassifierRuns(
       AND NOT EXISTS (
         SELECT 1 FROM post_classifier_local_outcomes outcome WHERE outcome.run_id = run.id
       )
-    RETURNING run.id
+    RETURNING run.id, run.completed_at, run.terminal_failed_at
   `)
   if (deletedRuns.length > 0) {
+    const neverCompletedIds = deletedRuns
+      .filter(row => row.completed_at === null && row.terminal_failed_at === null)
+      .map(row => row.id)
     // The C7 request can outlive its completed C6 payload. Retire it only when no other current
     // first-stage completion proves readiness; a later new prompt/content can re-arm it.
     await query(
@@ -57,10 +64,12 @@ export async function deleteOldClassifierRuns(
         AND request.stale_at IS NULL
         AND NOT `.append(followsCompletedClassifierRun(TAGGING_CLASSIFIER_SLUG)),
     )
-    await query(sql`/* deleteRetiredPromptlessClassifierIdentities */
+    // A superseded payload never produced a result, so its content must classify again if it
+    // returns; a completed or terminally failed payload keeps its versioned identity as the cache.
+    await query(sql`/* deleteRetiredClassifierIdentities */
       DELETE FROM classifier_run_identities identity
       WHERE identity.id = ANY(${deletedRuns.map(row => row.id)}::uuid[])
-        AND identity.prompt_version_id IS NULL`)
+        AND (identity.prompt_version_id IS NULL OR ${neverCompletedIds}::uuid[] @> ARRAY[identity.id])`)
   }
   return deletedRuns.length
 }

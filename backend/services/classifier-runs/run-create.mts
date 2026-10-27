@@ -57,7 +57,7 @@ export async function insertClassifierRun<C>(
           AND shared_actor_user_id = ${resolved.actorId}
           AND prompt_version_id IS NOT DISTINCT FROM ${remote?.promptVersionId ?? null}::uuid
           AND (id >= ${activeCutoffId} OR
-            (completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL))
+            (completed_at IS NULL AND terminal_failed_at IS NULL))
         RETURNING id, decision_batch_id`)
   const inserted = rows[0]
   if (!inserted && isNew) throw new Error('classifier run reservation did not return a receipt')

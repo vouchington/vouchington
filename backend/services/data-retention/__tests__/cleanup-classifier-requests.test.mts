@@ -6,6 +6,7 @@ import {
   seedDeletedSubjectClassifierRequest,
   seedLivePostClassifierRequest,
 } from '@voucha/test-helpers/classifier-request-retention'
+import { withClassifierRetentionSweepLock } from '@voucha/test-helpers/classifier-retention-sweep-lock'
 import { cleanupClassifierRecords } from '../cleanup-classifier-records.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
@@ -49,14 +50,16 @@ describe('deleted-subject classifier requests', () => {
       lowerBoundDate: startedAt,
       now: new Date(requestAt.getTime() + 3_000),
     }
-    const first = await cleanupClassifierRecords(options)
-    expect(first.requests).toEqual({ scanned: 1, deleted: 1, hasMore: true })
-    expect((await facts()).requests).toBe(2)
-    const second = await cleanupClassifierRecords(options)
-    expect(second.requests).toEqual({ scanned: 1, deleted: 1, hasMore: true })
-    const third = await cleanupClassifierRecords(options)
-    expect(third.requests).toEqual({ scanned: 1, deleted: 0, hasMore: false })
-    expect((await facts()).requests).toBe(1)
+    await withClassifierRetentionSweepLock(async () => {
+      const first = await cleanupClassifierRecords(options)
+      expect(first.requests).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+      expect((await facts()).requests).toBe(2)
+      const second = await cleanupClassifierRecords(options)
+      expect(second.requests).toEqual({ scanned: 1, deleted: 1, hasMore: true })
+      const third = await cleanupClassifierRecords(options)
+      expect(third.requests).toEqual({ scanned: 1, deleted: 0, hasMore: false })
+      expect((await facts()).requests).toBe(1)
+    })
     expect((await cleanupRetainedIdentityRoots(2, roots)).map(page => page.deleted)).toEqual([1, 1])
     expect(await facts()).toEqual({ requests: 1, postRoot: 0, feedRoot: 0 })
   })

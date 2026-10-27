@@ -153,11 +153,23 @@ async function deleteOldVersionIdentities(
     DELETE FROM classifier_run_identities identity
     WHERE identity.id = ANY(${[...ids]}::uuid[])
       AND NOT EXISTS (SELECT 1 FROM classifier_runs run WHERE run.id = identity.id)
-      AND EXISTS (
-        SELECT 1 FROM classifier_prompt_versions newer
-        WHERE newer.classifier_id = identity.classifier_id
-          AND newer.id > identity.prompt_version_id
-          AND newer.activated_at IS NOT NULL AND newer.deleted_at IS NULL
+      AND (
+        EXISTS (
+          SELECT 1 FROM classifier_prompt_versions active
+          WHERE active.classifier_id = identity.classifier_id
+            AND active.id > identity.prompt_version_id
+            AND active.activated_at IS NOT NULL AND active.deactivated_at IS NULL
+            AND active.deleted_at IS NULL
+        )
+        OR EXISTS (
+          SELECT 1 FROM classifier_run_identities newer
+          WHERE newer.classifier_id = identity.classifier_id
+            AND newer.prompt_version_id = identity.prompt_version_id
+            AND newer.configuration_sha256 = identity.configuration_sha256
+            AND newer.id > identity.id
+            AND (newer.post_id = identity.post_id
+              OR newer.rss_feed_item_id = identity.rss_feed_item_id)
+        )
       )`)
   return rowCount ?? 0
 }

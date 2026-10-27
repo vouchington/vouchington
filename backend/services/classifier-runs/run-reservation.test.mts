@@ -2,16 +2,18 @@ import {
   getClassifierRunFacts,
   getClassifierRunRequestFacts,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import { supersedeClassifierRunForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-agent-fixture'
 import {
   createSyntheticFixture,
   reviseSyntheticPost,
+  setSyntheticPostContent,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-classifier'
 import {
   requestSyntheticRun,
   reserveSyntheticRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { setTestPostClearanceStatus } from '@voucha/test-helpers/entities/post-clearance'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { listPendingClassifierRunRequests } from './run-discovery.mts'
 import { reserveClassifierRun } from './run-reservation.mts'
 
@@ -113,6 +115,24 @@ describe('classifier run reservation and requests (real PG)', () => {
     expect(again.kind === 'reserved' && again.run.runId).toBe(run.runId)
     expect(await getClassifierRunFacts(setup.post.id, setup.slug)).toHaveLength(1)
     expect((await listPendingClassifierRunRequests(setup.adapter, null)).items).toEqual([])
+  })
+
+  it('classifies reverted content again when its superseded payload is past retention', async () => {
+    const setup = await createSyntheticFixture()
+    const run = await reserveSyntheticRun(setup)
+    await reviseSyntheticPost(setup.post.id)
+    await supersedeClassifierRunForTest(run.runId)
+    await setSyntheticPostContent(setup.post.id, setup.post.inputSha256)
+
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() + 91 * 24 * 60 * 60 * 1000 })
+    try {
+      const again = await reserveClassifierRun(setup.adapter, setup.subject)
+      expect(again.kind === 'reserved' && again.run.runId).toBe(run.runId)
+    } finally {
+      vi.useRealTimers()
+    }
+    const [facts] = await getClassifierRunFacts(setup.post.id, setup.slug)
+    expect(facts!.superseded_at).toBeNull()
   })
 
   it('marks an unsettled request for older content stale when newer content is requested', async () => {
