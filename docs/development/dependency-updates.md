@@ -15,9 +15,10 @@ run with the existing CI credential policy. Review the PR before placing it in t
 All configured release delays match: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
 
 pnpm itself is not pinned. The root `package.json` has no `packageManager` field, so local installs
-run whichever pnpm is installed. CI uses the SHA-pinned `pnpm/setup` action with `version: latest-12`
-to download pnpm directly, avoiding a temporary npm project and its `npm ci` bootstrap. The action
-leaves Node provisioning and workspace installation with their existing owners. Docker builds
+run whichever pnpm is installed. CI uses the released shared tooling action to resolve an aged stable pnpm release and
+download its native binary, avoiding a temporary npm project and its `npm ci` bootstrap. Jobs
+with specialized install ownership use the shared resolver with the native installer; the shared
+setup action owns ordinary workspace installs. Docker builds
 continue to run `npm install -g pnpm@<major>` independently. Moving to the next major is a manual
 edit. An enforced package-manager pin would make pnpm write `pnpm-lock.yaml` as two YAML documents,
 which single-document lockfile readers and GitHub's dependency graph

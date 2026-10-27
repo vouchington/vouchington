@@ -31,7 +31,7 @@ jobs:
         timeout-minutes: 1
         with:
           fetch-depth: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
         timeout-minutes: 5
       - name: Resolve web shard total
         timeout-minutes: 2
@@ -66,7 +66,7 @@ jobs:
         timeout-minutes: 1
         with:
           fetch-depth: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
         timeout-minutes: 5
       - name: Run web tests
         env:
