@@ -14,7 +14,7 @@ describe('MFA re-auth routes - request contract validation', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 15_000)
+  })
 
   describe.each([
     { route: '/api/v1/auth/mfa/re-auth/email/verification', field: 'code' as const },

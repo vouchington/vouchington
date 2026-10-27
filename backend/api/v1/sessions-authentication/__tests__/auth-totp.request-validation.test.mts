@@ -16,7 +16,7 @@ describe('TOTP routes - request contract validation', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 15_000)
+  })
 
   describe('POST /api/v1/auth/totp', () => {
     it('returns 401, not 422, for a malformed body without auth', async () => {
@@ -88,7 +88,7 @@ describe('TOTP routes - request contract validation', () => {
       expect(
         listRes.body.results.some((item: { id: string }) => item.id === authenticator.id),
       ).toBe(true)
-    }, 20_000)
+    })
 
     it('rejects a missing proof without deleting the authenticator', async () => {
       const freshUser = await createTestUser()
@@ -105,7 +105,7 @@ describe('TOTP routes - request contract validation', () => {
       expect(list.body.results.some((item: { id: string }) => item.id === authenticator.id)).toBe(
         true,
       )
-    }, 20_000)
+    })
 
     it('passes a JSON re-auth token through to the protected delete', async () => {
       const freshUser = await createTestUser()
@@ -121,6 +121,6 @@ describe('TOTP routes - request contract validation', () => {
         .delete(`/api/v1/auth/totp/${authenticator.id}`)
         .send({ re_auth_token: reAuthToken })
         .expect(204)
-    }, 20_000)
+    })
   })
 })

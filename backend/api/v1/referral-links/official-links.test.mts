@@ -24,7 +24,7 @@ describe('official-links', () => {
     const fixture = await createReferralProgramFixture({ createdById: regularUser!.id })
     referralProgramId = fixture.referralProgramId
     testHostname = fixture.hostname
-  }, 30_000)
+  })
 
   describe('Official Referral Links Routes', () => {
     it('GET /api/v1/referral-programs/:id/official-referral-links returns 403 for regular user', async () => {

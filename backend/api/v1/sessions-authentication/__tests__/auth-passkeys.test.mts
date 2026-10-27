@@ -23,7 +23,7 @@ describe('Passkey API Routes', () => {
     // so the singleton remains usable by other test files in the same fork.
     routeRateLimitConfig.unsubscribe()
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
-  }, 15_000)
+  })
 
   afterAll(async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
@@ -149,7 +149,7 @@ describe('Passkey API Routes', () => {
         .delete(`/api/v1/auth/passkeys/${v7()}`)
         .send({ re_auth_token: await createTestAccountChangeProof(freshUser.id, req) })
         .expect(404)
-    }, 20_000)
+    })
 
     it('rejects unknown JSON fields without deleting the passkey', async () => {
       const freshUser = await createTestUser()
@@ -167,7 +167,7 @@ describe('Passkey API Routes', () => {
 
       const listRes = await req.get('/api/v1/auth/passkeys').expect(200)
       expect(listRes.body.results.some((item: { id: string }) => item.id === passkey.id)).toBe(true)
-    }, 20_000)
+    })
 
     it('passes a JSON re-auth token through to the protected delete', async () => {
       const freshUser = await createTestUser()
@@ -180,7 +180,7 @@ describe('Passkey API Routes', () => {
         .delete(`/api/v1/auth/passkeys/${passkey.id}`)
         .send({ re_auth_token: reAuthToken })
         .expect(204)
-    }, 20_000)
+    })
 
     it('deletes a passkey and returns 204', async () => {
       const suffix = `delete-api-${Date.now()}`

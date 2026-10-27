@@ -34,7 +34,7 @@ describe('MFA API Routes', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 15_000)
+  })
 
   // ─── GET /api/v1/auth/mfa/status ──────────────────────────────────────────
 
@@ -69,7 +69,7 @@ describe('MFA API Routes', () => {
       const afterRes = await req.get('/api/v1/auth/mfa/status').expect(200)
       expect(afterRes.body.passkeys_count).toBe(prevCount + 1)
       expect(afterRes.body.has_mfa).toBe(true)
-    }, 20_000)
+    })
 
     it('reflects totp count accurately', async () => {
       const freshUser = await createTestUser()
@@ -82,7 +82,7 @@ describe('MFA API Routes', () => {
       const res = await req.get('/api/v1/auth/mfa/status').expect(200)
       expect(res.body.totp_count).toBeGreaterThanOrEqual(1)
       expect(res.body.has_mfa).toBe(true)
-    }, 20_000)
+    })
   })
 
   // ─── POST /api/v1/auth/mfa/totp/verification ──────────────────────────────
@@ -134,7 +134,7 @@ describe('MFA API Routes', () => {
         .post('/api/v1/auth/mfa/totp/verification')
         .send({ login_attempt_id: attemptId, code: '000000' })
         .expect(401)
-    }, 20_000)
+    })
 
     it('rejects valid TOTP codes after the MFA failure threshold is reached', async () => {
       const { attemptId } = await createTotpMfaLoginAttempt('limited')
@@ -151,7 +151,7 @@ describe('MFA API Routes', () => {
         .post('/api/v1/auth/mfa/totp/verification')
         .send({ login_attempt_id: attemptId, code })
         .expect(429)
-    }, 20_000)
+    })
 
     it('returns an authenticated session for a suspended user with a valid TOTP code', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('susp')
@@ -169,7 +169,7 @@ describe('MFA API Routes', () => {
       expect(res.body.user.id).toBe(mfaUser.id)
 
       await unsuspendTestUser(mfaUser.id)
-    }, 20_000)
+    })
 
     it('accepts a valid sixth TOTP attempt, mints tokens, and clears its budget', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('success')
@@ -202,7 +202,7 @@ describe('MFA API Routes', () => {
         await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(false)
       }
       await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(true)
-    }, 20_000)
+    })
 
     it('keeps verified login successful when clearing its attempt budget fails', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('cleanup-failure')
@@ -228,7 +228,7 @@ describe('MFA API Routes', () => {
       } finally {
         spy.mockRestore()
       }
-    }, 20_000)
+    })
 
     it('mints a 30-day (not 2-day) st cookie when the login attempt itself carries deviceClass', async () => {
       // deviceClass is captured on the LoginAttempt at creation time (from the device/session
@@ -251,7 +251,7 @@ describe('MFA API Routes', () => {
         minRemainingSeconds: SESSION_EXPIRATION_SECONDS,
         maxRemainingSeconds: ATTESTED_SESSION_EXPIRATION_SECONDS,
       })
-    }, 20_000)
+    })
 
     it('does not elevate to a 30-day session from the completing request own attested cookies', async () => {
       // Regression: a login attempt created without deviceClass (e.g. an unattested device
@@ -287,6 +287,6 @@ describe('MFA API Routes', () => {
         minRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS - 10,
         maxRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS,
       })
-    }, 20_000)
+    })
   })
 })

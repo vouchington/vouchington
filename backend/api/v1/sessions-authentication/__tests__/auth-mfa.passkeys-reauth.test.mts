@@ -19,7 +19,7 @@ describe('MFA API Routes', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 15_000)
+  })
 
   describe('POST /api/v1/auth/mfa/passkeys/authentication/options', () => {
     it('returns 415 without JSON content-type', async () => {
@@ -69,7 +69,7 @@ describe('MFA API Routes', () => {
 
       expect(res.body.options).toBeDefined()
       expect(res.body.options.challenge).toBeDefined()
-    }, 20_000)
+    })
   })
 
   describe('POST /api/v1/auth/mfa/passkeys/authentication/verification', () => {
@@ -144,7 +144,7 @@ describe('MFA API Routes', () => {
       const res = await req.post('/api/v1/auth/mfa/re-auth/email/tokens').expect(200)
 
       expect(res.body.email_address).toBeTruthy()
-    }, 20_000)
+    })
   })
 
   describe('POST /api/v1/auth/mfa/re-auth/email/verification', () => {
@@ -228,7 +228,7 @@ describe('MFA API Routes', () => {
         .post('/api/v1/auth/mfa/re-auth/totp/verification')
         .send({ code: '000000' })
         .expect(401)
-    }, 20_000)
+    })
 
     it('accepts a valid sixth TOTP attempt and clears the scoped budget', async () => {
       const totpUser = await createTestUser()
@@ -252,6 +252,6 @@ describe('MFA API Routes', () => {
       // A successful verified factor clears the user's earlier charged attempts.
       for (let i = 0; i < 6; i++) await countTotpReAuthAttempt(totpUser.id)
       await expect(countTotpReAuthAttempt(totpUser.id)).rejects.toMatchObject({ status: 429 })
-    }, 20_000)
+    })
   })
 })

@@ -52,7 +52,7 @@ describe('OAuth request validation', () => {
         .send({})
         .expect(422)
       expect(response.body.message).toBe('Invalid request body')
-    }, 15_000)
+    })
 
     it('PUT /connect should return 422 when redirectUri is missing', async () => {
       const request = createRequest()
@@ -63,7 +63,7 @@ describe('OAuth request validation', () => {
         .send({ code: 'fake-code' })
         .expect(422)
       expect(response.body.message).toBe('Invalid request body')
-    }, 15_000)
+    })
 
     it('PUT /connect should return 422 when codeVerifier is missing', async () => {
       const request = createRequest()
@@ -78,7 +78,7 @@ describe('OAuth request validation', () => {
         })
         .expect(422)
       expect(response.body.message).toContain('codeVerifier is required')
-    }, 15_000)
+    })
 
     it('POST /continue should return 422 when code is missing', async () => {
       const request = createRequest()
@@ -124,7 +124,7 @@ describe('OAuth request validation', () => {
             re_auth_token: await createTestAccountChangeProof(user.id, request),
           })
           .expect(422)
-      }, 15_000)
+      })
 
       it('POST /continue should return 422 when redirectUri is not a valid URL', async () => {
         const request = createRequest()
@@ -132,7 +132,7 @@ describe('OAuth request validation', () => {
           .post(`/api/v1/auth/oauth/${provider}/continue`)
           .send({ code: 'fake-code', redirectUri: 'not-a-url', codeVerifier: 'fake-verifier' })
           .expect(422)
-      }, 15_000)
+      })
     },
   )
 })

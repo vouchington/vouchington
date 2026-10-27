@@ -12,7 +12,7 @@ describe('TOTP API Routes', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 15_000)
+  })
 
   // ─── POST /api/v1/auth/totp (setup) ───────────────────────────────────────
 
@@ -255,6 +255,6 @@ describe('TOTP API Routes', () => {
         .expect(403)
 
       expect(res.body.code).toBe('MFA_REAUTH_REQUIRED')
-    }, 20_000)
+    })
   })
 })
