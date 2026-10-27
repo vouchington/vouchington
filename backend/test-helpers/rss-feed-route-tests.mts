@@ -14,7 +14,7 @@ export function registerRssFeedRouteTests(
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 30_000)
+  })
 
   async function freshKey() {
     const result = await createApiKey(
