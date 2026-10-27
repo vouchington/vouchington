@@ -2,15 +2,22 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 
+export type PendingAncestorCleanupRoot = {
+  id: string
+  stage: 'subdomains' | 'relations' | 'penalties'
+  penalizeCreators: boolean
+}
+
 export async function lockPendingAncestorHostnameBlockCleanup(
   query: TransactionQuery,
   hostname: string,
-): Promise<string | null> {
+): Promise<PendingAncestorCleanupRoot | null> {
   const labels = hostname.split('.')
   const ancestors = labels.slice(1).map((_, index) => labels.slice(index + 1).join('.'))
   if (ancestors.length === 0) return null
 
-  const { rows } = await query<{ id: string }>(sql`/* lockPendingAncestorHostnameBlockCleanup */
+  const { rows } =
+    await query<PendingAncestorCleanupRoot>(sql`/* lockPendingAncestorHostnameBlockCleanup */
     WITH ancestors AS MATERIALIZED (
       SELECT id, hostname, cardinality(string_to_array(hostname, '.')) AS specificity
       FROM url_hostnames WHERE hostname = ANY(${ancestors}::text[])
@@ -28,14 +35,16 @@ export async function lockPendingAncestorHostnameBlockCleanup(
       ) root
       ORDER BY ancestor.specificity DESC, root.id LIMIT 1
     )
-    SELECT root.id FROM url_hostname_blocks root
+    SELECT root.id, root.relation_cleanup_stage AS stage,
+      root.should_penalize_relation_creators AS "penalizeCreators"
+    FROM url_hostname_blocks root
     JOIN candidate ON candidate.id = root.id
     WHERE root.lifted_at IS NULL AND root.domain_blocklist_source_id IS NULL
       AND root.relation_cleanup_root_block_id = root.id
       AND root.relation_cleanup_completed_at IS NULL
     FOR UPDATE OF root
   `)
-  return rows[0]?.id ?? null
+  return rows[0] ?? null
 }
 
 export async function getPendingDescendantCleanupRootHostnames(

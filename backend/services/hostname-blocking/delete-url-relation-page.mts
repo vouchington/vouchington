@@ -38,28 +38,44 @@ async function deleteOrdinaryUrlRelationPage(
     URL_RELATION_TABLES,
     'entityRelationTable',
   )
+  const candidateStatement = sql`/* deleteUrlRelationPage:ordinaryCandidates */
+    SELECT relation.object_id, relation.subject_id
+    FROM `
+  candidateStatement.append(tableIdentifier)
+  candidateStatement.append(sql` relation
+    WHERE relation.object_id = ANY(${urlIds}::uuid[]) AND relation.deleted_at IS NULL`)
+  if (after) {
+    candidateStatement.append(sql`
+      AND (relation.object_id, relation.subject_id) > (${after.objectId}, ${after.subjectId})`)
+  }
+  candidateStatement.append(sql`
+    ORDER BY relation.object_id, relation.subject_id
+    LIMIT ${limit}`)
+  const { rows: candidates } = await query<{ object_id: string; subject_id: string }>(
+    candidateStatement,
+  )
+  if (candidates.length === 0) return { deleted: [], page: [] }
+
   const statement = sql`/* deleteUrlRelationPage:ordinary */
-    WITH candidates AS MATERIALIZED (
+    WITH locked AS MATERIALIZED (
       SELECT relation.object_id, relation.subject_id
       FROM `
   statement.append(tableIdentifier)
   statement.append(sql` relation
-      WHERE relation.object_id = ANY(${urlIds}::uuid[]) AND relation.deleted_at IS NULL`)
-  if (after) {
-    statement.append(sql`
-      AND (relation.object_id, relation.subject_id) > (${after.objectId}, ${after.subjectId})`)
-  }
-  statement.append(sql`
+      JOIN unnest(${candidates.map(row => row.object_id)}::uuid[],
+        ${candidates.map(row => row.subject_id)}::uuid[]) candidate(object_id, subject_id)
+        ON relation.object_id = candidate.object_id AND relation.subject_id = candidate.subject_id
+      WHERE relation.object_id = ANY(${urlIds}::uuid[]) AND relation.deleted_at IS NULL
       ORDER BY relation.object_id, relation.subject_id
-      LIMIT ${limit} FOR UPDATE OF relation
+      FOR UPDATE OF relation
     )
     UPDATE `)
   statement.append(tableIdentifier)
   statement.append(sql` relation
     SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${blockedById}
-    FROM candidates
-    WHERE relation.object_id = candidates.object_id
-      AND relation.subject_id = candidates.subject_id
+    FROM locked
+    WHERE relation.object_id = locked.object_id
+      AND relation.subject_id = locked.subject_id
       AND relation.deleted_at IS NULL
     RETURNING relation.object_id, relation.subject_id, relation.created_by_id`)
   const { rows } = await query<{
@@ -67,8 +83,10 @@ async function deleteOrdinaryUrlRelationPage(
     subject_id: string
     created_by_id: string | null
   }>(statement)
-  const deleted = rows.map(toDeletedUrlRelation)
-  return { deleted, page: deleted }
+  return {
+    deleted: rows.map(toDeletedUrlRelation),
+    page: candidates.map(row => ({ objectId: row.object_id, subjectId: row.subject_id })),
+  }
 }
 
 async function deletePostRelatedUrlPage(

@@ -21,6 +21,7 @@ import {
   advanceHostnameBlockPenaltyPage,
   getHostnameBlockPenaltyPage,
 } from '@services/hostname-blocking/cleanup-penalties'
+import { resumeCursor } from '@services/hostname-blocking/cleanup-operation-progress'
 import { searchPendingHostnameBlockCleanups } from '@services/hostname-blocking/cleanup-recovery'
 import { projectNextHostnameBlockSubdomainPage } from '@services/hostname-blocking/cleanup-subdomains'
 import { softDeleteNextBlockedHostnameRelationPage } from '@services/hostname-blocking/soft-delete-relation-page'
@@ -35,9 +36,12 @@ export function createHostnameBlockingHandlers(enqueues: HostnameBlockingEnqueue
   async function processHostnameBlockCleanup(data: HostnameBlockCleanupData): Promise<void> {
     const operation = await getHostnameBlockCleanupOperation(data.blockId)
     if (!operation || operation.completedAt) return
-    if (operation.progress !== data.progress) return enqueueContinuation(operation)
+    // A stale retry resumes from the stage and position committed with the progress it lost.
+    if (operation.progress !== data.progress) {
+      return enqueueContinuation(operation, resumeCursor(operation))
+    }
 
-    const cursor = data.cursor ?? { stage: 'subdomains' }
+    const cursor = data.cursor ?? resumeCursor(operation)
     if (cursor.stage === 'subdomains') {
       const projection = await projectNextHostnameBlockSubdomainPage(
         data.blockId,
@@ -98,6 +102,7 @@ export function createHostnameBlockingHandlers(enqueues: HostnameBlockingEnqueue
       operation.blockId,
       operation.progress,
       userIds.length < penaltyLimit,
+      userIds.at(-1),
     )
     return { updated, userIds }
   }

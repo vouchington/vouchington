@@ -6,15 +6,15 @@ import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostn
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import sql from 'sql-template-strings'
 import {
-  advanceHostnameBlockCleanupProgress,
   getHostnameBlockCleanupOperationInTransaction,
   lockHostnameBlockCleanupOperation,
   type HostnameBlockCleanupOperation,
 } from './cleanup-operation.mts'
+import { advanceHostnameBlockCleanupProgress } from './cleanup-operation-progress.mts'
 import { getPendingDescendantCleanupRootHostnames } from './cleanup-operation-ancestor.mts'
 import {
   lockHostnameBlockSubdomainCandidatePage,
-  type HostnameCandidate,
+  type LockedSubdomainCandidatePage,
 } from './lock-subdomain-candidate-page.mts'
 
 export async function projectNextHostnameBlockSubdomainPage(
@@ -35,14 +35,19 @@ export async function projectNextHostnameBlockSubdomainPage(
     afterReversedHostname,
     limit,
   )
-  if (!discovery.candidates) {
+  if (!discovery.page) {
     return {
       operation: discovery.operation,
       cursor: { stage: 'subdomains', ...(afterReversedHostname ? { afterReversedHostname } : {}) },
       projected: 0,
     }
   }
-  const { candidates } = discovery
+  const { page } = discovery
+  const { candidates } = page
+  const nextCursor: HostnameBlockCleanupCursor =
+    page.pageSize < limit
+      ? { stage: 'relations' }
+      : { stage: 'subdomains', afterReversedHostname: page.pageAfter! }
   const pendingDescendantRoots = await getPendingDescendantCleanupRootHostnames(
     query,
     blockId,
@@ -109,28 +114,17 @@ export async function projectNextHostnameBlockSubdomainPage(
     const newlyOwnedHostnameCount = new Set(
       [...attached, ...inserted].map(row => row.url_hostname_id),
     ).size
-    const nextCursor: HostnameBlockCleanupCursor =
-      candidates.length < limit
-        ? { stage: 'relations' }
-        : {
-            stage: 'subdomains',
-            afterReversedHostname: candidates[0]!.page_after,
-          }
     const updated = await advanceHostnameBlockCleanupProgress(query, blockId, expectedProgress, {
       blockedHostnameCount: newlyOwnedHostnameCount,
+      next: nextCursor,
     })
     await query.commit()
     return { operation: updated, cursor: nextCursor, projected: candidates.length }
   }
 
-  const nextCursor: HostnameBlockCleanupCursor =
-    candidates.length < limit
-      ? { stage: 'relations' }
-      : {
-          stage: 'subdomains',
-          afterReversedHostname: candidates[0]!.page_after,
-        }
-  const updated = await advanceHostnameBlockCleanupProgress(query, blockId, expectedProgress)
+  const updated = await advanceHostnameBlockCleanupProgress(query, blockId, expectedProgress, {
+    next: nextCursor,
+  })
   await query.commit()
   return { operation: updated, cursor: nextCursor, projected: candidates.length }
 }
@@ -143,17 +137,17 @@ async function lockSubdomainCandidatePageBeforeOperation(
   limit: number,
 ): Promise<{
   operation: HostnameBlockCleanupOperation | null
-  candidates: HostnameCandidate[] | null
+  page: LockedSubdomainCandidatePage | null
 }> {
   const operation = await getHostnameBlockCleanupOperationInTransaction(query, blockId)
   if (!operation || operation.completedAt || operation.progress !== expectedProgress) {
-    return { operation, candidates: null }
+    return { operation, page: null }
   }
-  const candidates = await lockHostnameBlockSubdomainCandidatePage(
+  const page = await lockHostnameBlockSubdomainCandidatePage(
     query,
     operation,
     afterReversedHostname,
     limit,
   )
-  return { operation, candidates }
+  return { operation, page }
 }

@@ -24,6 +24,7 @@ export async function advanceHostnameBlockPenaltyPage(
   blockId: string,
   expectedProgress: number,
   completed: boolean,
+  nextAfterUserId?: string,
 ): Promise<HostnameBlockCleanupOperation | null> {
   await using query = await beginTransaction()
   const operation = await lockHostnameBlockCleanupOperation(query, blockId)
@@ -35,6 +36,7 @@ export async function advanceHostnameBlockPenaltyPage(
     SET relation_cleanup_completed_at = CASE
         WHEN ${completed} THEN CURRENT_TIMESTAMP ELSE relation_cleanup_completed_at
       END,
+      relation_cleanup_resume_after = ${nextAfterUserId ?? null}::text,
       relation_cleanup_progress = relation_cleanup_progress + 1
     FROM url_hostnames hostname
     WHERE block.id = ${blockId}
@@ -47,6 +49,8 @@ export async function advanceHostnameBlockPenaltyPage(
       block.blocked_source AS "blockedSource",
       block.should_penalize_relation_creators AS "penalizeCreators",
       block.relation_cleanup_progress AS progress,
+      block.relation_cleanup_stage AS stage,
+      block.relation_cleanup_resume_after AS "resumeAfter",
       block.relation_cleanup_blocked_hostname_count AS "blockedHostnameCount",
       block.relation_cleanup_soft_deleted_relation_count AS "softDeletedRelationCount",
       block.relation_cleanup_penalized_user_count AS "penalizedUserCount",

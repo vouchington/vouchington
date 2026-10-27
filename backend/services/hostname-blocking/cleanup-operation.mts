@@ -1,4 +1,8 @@
 import { write } from '@data-stores/psql'
+import type {
+  HostnameBlockCleanupCursor,
+  HostnameBlockCleanupData,
+} from '@queues/background/enqueues/hostname-blocking-jobs'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
@@ -15,16 +19,15 @@ export type HostnameBlockCleanupOperation = {
   blockedSource: string
   penalizeCreators: boolean
   progress: number
+  stage: HostnameBlockCleanupCursor['stage']
+  resumeAfter: string | null
   blockedHostnameCount: number
   softDeletedRelationCount: number
   penalizedUserCount: number
   completedAt: Date | null
 }
 
-export type HostnameBlockCleanupPosition = Pick<
-  HostnameBlockCleanupOperation,
-  'blockId' | 'progress'
->
+export type HostnameBlockCleanupPosition = HostnameBlockCleanupData
 
 export async function ensureHostnameBlockCleanupOperation(
   query: TransactionQuery,
@@ -52,16 +55,20 @@ export async function ensureHostnameBlockCleanupOperation(
     if (!operation) throw new Error('Hostname block cleanup root is missing')
     return operation
   }
-  const ancestorRootBlockId = await lockPendingAncestorHostnameBlockCleanup(query, hostname)
-  if (ancestorRootBlockId) {
+  const ancestor = await lockPendingAncestorHostnameBlockCleanup(query, hostname)
+  if (
+    ancestor &&
+    ancestor.stage === 'subdomains' &&
+    ancestor.penalizeCreators === penalizeCreators
+  ) {
     await attachHostnameBlockToAncestorCleanup(query, {
       existingBlockId: existing?.id ?? null,
       hostnameId,
       blockedById,
       blockedSource,
-      rootBlockId: ancestorRootBlockId,
+      rootBlockId: ancestor.id,
     })
-    const operation = await lockHostnameBlockCleanupOperation(query, ancestorRootBlockId)
+    const operation = await lockHostnameBlockCleanupOperation(query, ancestor.id)
     if (!operation) throw new Error('Ancestor hostname block cleanup root is missing')
     return operation
   }
@@ -125,45 +132,6 @@ export async function lockHostnameBlockCleanupOperation(
   return rows[0] ?? null
 }
 
-export async function advanceHostnameBlockCleanupProgress(
-  query: TransactionQuery,
-  blockId: string,
-  expectedProgress: number,
-  deltas: {
-    blockedHostnameCount?: number
-    softDeletedRelationCount?: number
-    penalizedUserCount?: number
-  } = {},
-): Promise<HostnameBlockCleanupOperation | null> {
-  const { rows } = await query<HostnameBlockCleanupOperation>(
-    sql`/* advanceHostnameBlockCleanupProgress */
-      UPDATE url_hostname_blocks block
-      SET relation_cleanup_progress = relation_cleanup_progress + 1,
-        relation_cleanup_blocked_hostname_count =
-          relation_cleanup_blocked_hostname_count + ${deltas.blockedHostnameCount ?? 0},
-        relation_cleanup_soft_deleted_relation_count =
-          relation_cleanup_soft_deleted_relation_count + ${deltas.softDeletedRelationCount ?? 0},
-        relation_cleanup_penalized_user_count =
-          relation_cleanup_penalized_user_count + ${deltas.penalizedUserCount ?? 0}
-      FROM url_hostnames hostname
-      WHERE block.id = ${blockId}
-        AND block.relation_cleanup_progress = ${expectedProgress}
-        AND block.relation_cleanup_completed_at IS NULL
-        AND hostname.id = block.url_hostname_id
-      RETURNING block.id AS "blockId", block.url_hostname_id AS "hostnameId",
-        hostname.hostname, block.blocked_by_id AS "blockedById",
-        block.blocked_source AS "blockedSource",
-        block.should_penalize_relation_creators AS "penalizeCreators",
-        block.relation_cleanup_progress AS progress,
-        block.relation_cleanup_blocked_hostname_count AS "blockedHostnameCount",
-        block.relation_cleanup_soft_deleted_relation_count AS "softDeletedRelationCount",
-        block.relation_cleanup_penalized_user_count AS "penalizedUserCount",
-        block.relation_cleanup_completed_at AS "completedAt"
-    `,
-  )
-  return rows[0] ?? null
-}
-
 function cleanupOperationSql(blockId: string) {
   return sql`/* hostnameBlockCleanupOperation */
     SELECT block.id AS "blockId", block.url_hostname_id AS "hostnameId",
@@ -171,6 +139,8 @@ function cleanupOperationSql(blockId: string) {
       block.blocked_source AS "blockedSource",
       block.should_penalize_relation_creators AS "penalizeCreators",
       block.relation_cleanup_progress AS progress,
+      block.relation_cleanup_stage AS stage,
+      block.relation_cleanup_resume_after AS "resumeAfter",
       block.relation_cleanup_blocked_hostname_count AS "blockedHostnameCount",
       block.relation_cleanup_soft_deleted_relation_count AS "softDeletedRelationCount",
       block.relation_cleanup_penalized_user_count AS "penalizedUserCount",

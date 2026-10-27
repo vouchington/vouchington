@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS url_hostname_blocks (
   relation_cleanup_root_block_id UUID,
   should_penalize_relation_creators BOOLEAN NOT NULL DEFAULT FALSE,
   relation_cleanup_progress INTEGER NOT NULL DEFAULT 0,
+  relation_cleanup_stage TEXT NOT NULL DEFAULT 'subdomains',
+  relation_cleanup_resume_after TEXT,
   relation_cleanup_blocked_hostname_count INTEGER NOT NULL DEFAULT 0,
   relation_cleanup_soft_deleted_relation_count INTEGER NOT NULL DEFAULT 0,
   relation_cleanup_penalized_user_count INTEGER NOT NULL DEFAULT 0,
@@ -49,6 +51,12 @@ ALTER TABLE url_hostname_blocks
   CHECK (relation_cleanup_progress >= 0) NOT VALID;
 ALTER TABLE url_hostname_blocks
   VALIDATE CONSTRAINT chk_url_hostname_blocks__relation_cleanup_progress;
+
+ALTER TABLE url_hostname_blocks
+  ADD CONSTRAINT chk_url_hostname_blocks__relation_cleanup_stage
+  CHECK (relation_cleanup_stage IN ('subdomains', 'relations', 'penalties')) NOT VALID;
+ALTER TABLE url_hostname_blocks
+  VALIDATE CONSTRAINT chk_url_hostname_blocks__relation_cleanup_stage;
 
 ALTER TABLE url_hostname_blocks
   ADD CONSTRAINT chk_url_hostname_blocks__relation_cleanup_counts
@@ -244,6 +252,8 @@ COMMENT ON COLUMN url_hostname_blocks.lifted_by_id IS 'Who lifted the block.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_root_block_id IS 'First owning staff or provider block whose bounded cleanup operation owns this hostname; self-reference marks the operation root.';
 COMMENT ON COLUMN url_hostname_blocks.should_penalize_relation_creators IS 'Immutable creator-penalty intent captured when the cleanup root is first created.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_progress IS 'Monotonic generation used to fence and identify bounded cleanup continuation jobs.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_stage IS 'Stage the bounded cleanup operation is in; descendants may attach to a root only while it is still projecting subdomains.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_resume_after IS 'Keyset position (reversed hostname or user id) at which a lost continuation job resumes the current stage.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_blocked_hostname_count IS 'Durable total of hostnames first assigned to this bounded cleanup operation.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_soft_deleted_relation_count IS 'Durable total of relations soft-deleted by this bounded cleanup operation.';
 COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_penalized_user_count IS 'Durable total of distinct creator penalties inserted by this bounded cleanup operation.';

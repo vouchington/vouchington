@@ -4,10 +4,10 @@ import type { HostnameBlockCleanupCursor } from '@queues/background/enqueues/hos
 import { getEntityRelationUrlTables } from '@services/entity-relations/url-tables'
 import { insertVoteWeightPenalty } from '@services/vote-integrity/insert-vote-weight-penalty'
 import {
-  advanceHostnameBlockCleanupProgress,
   lockHostnameBlockCleanupOperation,
   type HostnameBlockCleanupOperation,
 } from './cleanup-operation.mts'
+import { advanceHostnameBlockCleanupProgress } from './cleanup-operation-progress.mts'
 import { deleteUrlRelationPage } from './delete-url-relation-page.mts'
 import {
   advancePastHostname,
@@ -44,6 +44,7 @@ export async function softDeleteNextBlockedHostnameRelationPage(
   const updated = await advanceHostnameBlockCleanupProgress(query, blockId, expectedProgress, {
     softDeletedRelationCount: result.deleted,
     penalizedUserCount: result.penalized,
+    next: result.cursor,
   })
   await query.commit()
   return { operation: updated, cursor: result.cursor, deleted: result.deleted }

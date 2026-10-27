@@ -21,8 +21,9 @@ export async function getHostnameCleanupPage(
           AND owner.relation_cleanup_root_block_id = ${operation.blockId}
       ) AS owned
     FROM url_hostnames hostname
-    WHERE hostname.reversed_hostname COLLATE "C" >= ${reversedRoot}
-      AND hostname.reversed_hostname COLLATE "C" < ${`${reversedRoot}/`}`
+    WHERE (hostname.reversed_hostname COLLATE "C" = ${reversedRoot}
+      OR (hostname.reversed_hostname COLLATE "C" >= ${`${reversedRoot}.`}
+        AND hostname.reversed_hostname COLLATE "C" < ${`${reversedRoot}/`}))`
   if (afterReversedHostname) {
     statement.append(sql` AND hostname.reversed_hostname COLLATE "C" > ${afterReversedHostname}`)
   }

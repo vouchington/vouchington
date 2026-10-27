@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import {
+  beginTransaction,
   createTestUser,
   getTestPenaltiesByHostnameId,
   getTestRelationDeletedAt,
@@ -22,6 +23,7 @@ import {
   getHostnameBlockPenaltyPage,
 } from './cleanup-penalties.mts'
 import { projectNextHostnameBlockSubdomainPage } from './cleanup-subdomains.mts'
+import { getHostnameCleanupPage } from './relation-cleanup-pages.mts'
 import { softDeleteNextBlockedHostnameRelationPage } from './soft-delete-relation-page.mts'
 
 describe('hostname block cleanup ownership', () => {
@@ -66,7 +68,7 @@ describe('hostname block cleanup ownership', () => {
     await expect(getTestPenaltiesByHostnameId(leafId)).resolves.toEqual([])
   })
 
-  it('prefers the most-specific owned scope over inherited block row age', async () => {
+  it('gives a child its own root when the specific pending ancestor penalizes differently', async () => {
     const [administrator, creator] = await Promise.all([
       createTestUser({ administrator: true }),
       createTestUser({ username: `inherited-owner-${randomToken()}` }),
@@ -102,12 +104,88 @@ describe('hostname block cleanup ownership', () => {
     const leaf = await blockHostname(administrator.id, leafId, { penalizeCreators: true })
 
     expect(broad.operation_id.localeCompare(deep.operation_id)).toBeLessThan(0)
-    expect(leaf).toEqual(deep)
+    expect(leaf.operation_id).not.toBe(deep.operation_id)
     await completeAdmittedCleanup(broad.operation_id)
     await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeNull()
     await completeAdmittedCleanup(deep.operation_id)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeNull()
+    await completeAdmittedCleanup(leaf.operation_id)
     await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeInstanceOf(Date)
-    await expect(getTestPenaltiesByHostnameId(leafId)).resolves.toEqual([])
+    await expect(getTestPenaltiesByHostnameId(leafId)).resolves.toHaveLength(1)
+  })
+
+  it('cleans a child blocked after its ancestor root left the subdomains stage', async () => {
+    const [administrator, creator] = await Promise.all([
+      createTestUser({ administrator: true }),
+      createTestUser({ username: `late-child-${randomToken()}` }),
+    ])
+    const rootHostname = `late-child-${randomToken()}.example.com`
+    const childHostname = `child.${rootHostname}`
+    const rootId = await insertTestUrlHostname({ hostname: rootHostname })
+    const root = await blockHostname(administrator.id, rootId, { penalizeCreators: true })
+    const projection = await projectAdmittedCleanup(root.operation_id)
+    expect(projection.cursor).toEqual({ stage: 'relations' })
+    expect(projection.operation).toMatchObject({ stage: 'relations', resumeAfter: null })
+
+    // The child appears after the root left the subdomains stage, so the root cannot own it.
+    const childId = await insertTestUrlHostname({ hostname: childHostname })
+    const postId = await insertTestPost({
+      title: `Late child ${randomToken()}`,
+      slug: `late-child-${randomToken()}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+    const urlId = uuidv7()
+    await insertTestPostRelatedUrlBatch({
+      postIds: [postId],
+      urlIds: [urlId],
+      hostname: childHostname,
+      hostnameId: childId,
+      createdById: creator.id,
+    })
+
+    const child = await blockHostname(administrator.id, childId, { penalizeCreators: true })
+    expect(child.operation_id).not.toBe(root.operation_id)
+
+    await finishProjectedCleanup(projection)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeNull()
+    await completeAdmittedCleanup(child.operation_id)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeInstanceOf(Date)
+    await expect(getTestPenaltiesByHostnameId(childId)).resolves.toHaveLength(1)
+  })
+
+  it('scans only the root and its descendants, not lexical siblings', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const rootHostname = `scan-range-${randomToken()}.example.com`
+    const [rootId, childId, siblingId] = await Promise.all([
+      insertTestUrlHostname({ hostname: rootHostname }),
+      insertTestUrlHostname({ hostname: `child.${rootHostname}` }),
+      // Sorts between the root and its descendants but is not in the subtree.
+      insertTestUrlHostname({ hostname: `${rootHostname.slice(0, -4)}-x.com` }),
+    ])
+    const root = await blockHostname(administrator.id, rootId, { penalizeCreators: true })
+    const operation = (await getHostnameBlockCleanupOperation(root.operation_id))!
+    await using query = await beginTransaction()
+    const page = await getHostnameCleanupPage(query, operation, undefined, 10)
+    await query.commit()
+    expect(page.map(hostname => hostname.id)).toEqual([rootId, childId])
+    expect(page.map(hostname => hostname.id)).not.toContain(siblingId)
+  })
+
+  it('attaches a child blocked during the subdomains stage to the ancestor root', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const rootHostname = `early-child-${randomToken()}.example.com`
+    const [rootId, childId] = await Promise.all([
+      insertTestUrlHostname({ hostname: rootHostname }),
+      insertTestUrlHostname({ hostname: `child.${rootHostname}` }),
+    ])
+    const root = await blockHostname(administrator.id, rootId, { penalizeCreators: true })
+    const child = await blockHostname(administrator.id, childId, { penalizeCreators: true })
+    expect(child.operation_id).toBe(root.operation_id)
+    const differing = `other.${rootHostname}`
+    const differingId = await insertTestUrlHostname({ hostname: differing })
+    const own = await blockHostname(administrator.id, differingId, { penalizeCreators: false })
+    expect(own.operation_id).not.toBe(root.operation_id)
   })
 })
 

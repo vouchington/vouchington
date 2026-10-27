@@ -77,7 +77,7 @@ describe('blockHostname', () => {
     )
   })
 
-  it('keeps an earlier parent cleanup penalty intent when a child is blocked before projection', async () => {
+  it('gives a child with a different penalty intent its own cleanup root before projection', async () => {
     const rootHostname = randomHostname()
     const childHostname = `child.${rootHostname}`
     const [rootId, childId, creator] = await Promise.all([
@@ -103,14 +103,19 @@ describe('blockHostname', () => {
     const parent = await blockHostname(administrator.id, rootId, { penalizeCreators: false })
     const child = await blockHostname(administrator.id, childId, { penalizeCreators: true })
 
-    expect(child).toEqual(parent)
+    expect(child.operation_id).not.toBe(parent.operation_id)
     await expect(getHostnameBlockCleanupOperation(parent.operation_id)).resolves.toMatchObject({
       penalizeCreators: false,
-      blockedHostnameCount: 2,
+      blockedHostnameCount: 1,
+    })
+    await expect(getHostnameBlockCleanupOperation(child.operation_id)).resolves.toMatchObject({
+      penalizeCreators: true,
     })
     await completeAdmittedCleanup(parent.operation_id)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeNull()
+    await completeAdmittedCleanup(child.operation_id)
     await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeInstanceOf(Date)
-    await expect(getTestPenaltiesByHostnameId(childId)).resolves.toEqual([])
+    await expect(getTestPenaltiesByHostnameId(childId)).resolves.toHaveLength(1)
   })
 
   it('rejects unblock until accepted cleanup completes, then leaves new relations alone', async () => {

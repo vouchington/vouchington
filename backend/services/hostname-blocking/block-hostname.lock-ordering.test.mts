@@ -4,10 +4,10 @@ import { beginTransaction, createTestUser, insertTestUrlHostname } from '@voucha
 import { describe, expect, it } from 'vitest'
 import { blockHostname } from './block-hostname.mts'
 import {
-  advanceHostnameBlockCleanupProgress,
   getHostnameBlockCleanupOperationInTransaction,
   lockHostnameBlockCleanupOperation,
 } from './cleanup-operation.mts'
+import { advanceHostnameBlockCleanupProgress } from './cleanup-operation-progress.mts'
 import { projectNextHostnameBlockSubdomainPage } from './cleanup-subdomains.mts'
 import { lockHostnameBlockSubdomainCandidatePage } from './lock-subdomain-candidate-page.mts'
 import { insertVoteWeightPenalty } from '@services/vote-integrity/insert-vote-weight-penalty'
@@ -80,7 +80,7 @@ describe('hostname block lock ordering', () => {
       projectionTransaction,
       admission.operation_id,
     )
-    const candidates = await lockHostnameBlockSubdomainCandidatePage(
+    const { candidates } = await lockHostnameBlockSubdomainCandidatePage(
       projectionTransaction,
       operation!,
       undefined,

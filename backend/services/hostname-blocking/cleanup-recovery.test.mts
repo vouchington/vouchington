@@ -15,6 +15,7 @@ import {
   getHostnameBlockCleanupOperation,
 } from './cleanup-operation.mts'
 import { advanceHostnameBlockPenaltyPage } from './cleanup-penalties.mts'
+import { resumeCursor } from './cleanup-operation-progress.mts'
 import { searchPendingHostnameBlockCleanups } from './cleanup-recovery.mts'
 import { projectNextHostnameBlockSubdomainPage } from './cleanup-subdomains.mts'
 
@@ -111,7 +112,7 @@ describe('hostname block cleanup recovery', () => {
       blockedById: administrator.id,
     })
     await expect(searchPendingHostnameBlockCleanups(recoveryAnchor, 1)).resolves.toEqual([
-      { blockId: recoveryBlockId, progress: 0 },
+      { blockId: recoveryBlockId, progress: 0, cursor: { stage: 'subdomains' } },
     ])
     await expect(searchPendingHostnameBlockCleanups(undefined, 1)).resolves.toHaveLength(1)
     await advanceHostnameBlockPenaltyPage(recoveryBlockId, 0, true)
@@ -154,6 +155,12 @@ describe('hostname block cleanup recovery', () => {
     if (firstCursor.stage !== 'subdomains' || !firstCursor.afterReversedHostname) {
       throw new Error('Expected an exact-limit subdomain continuation')
     }
+    // A lost continuation resumes from the committed stage and position, not from the start.
+    expect(resumeCursor(first.operation!)).toEqual(firstCursor)
+    await expect(getHostnameBlockCleanupOperation(operation.blockId)).resolves.toMatchObject({
+      stage: 'subdomains',
+      resumeAfter: firstCursor.afterReversedHostname,
+    })
     const second = await projectNextHostnameBlockSubdomainPage(
       operation.blockId,
       first.operation!.progress,
@@ -161,6 +168,7 @@ describe('hostname block cleanup recovery', () => {
       1,
     )
     expect(second).toMatchObject({ operation: { progress: operation.progress + 2 }, projected: 1 })
+    expect(resumeCursor(second.operation!)).toEqual(second.cursor)
   })
 })
 
