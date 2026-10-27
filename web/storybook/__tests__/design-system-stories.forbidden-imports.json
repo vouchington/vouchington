@@ -1,8 +1,0 @@
-[
-  "/web/app/",
-  "@/app/",
-  "@/lib/api/server",
-  "@/lib/auth/context",
-  "VoteStoreProvider",
-  "SidebarProvider"
-]
