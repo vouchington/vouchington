@@ -1,7 +1,7 @@
 import Sentry from './sentry.mts'
 import { shouldLogToConsole } from './should-log-to-console.mts'
 
-export type CopyrightReviewTargetBreachBucket = {
+type CopyrightReviewTargetBreachBucket = {
   count: number
   noticeIds: readonly string[]
 }
