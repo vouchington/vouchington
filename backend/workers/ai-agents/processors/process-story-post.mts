@@ -68,6 +68,7 @@ export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unkn
     await loadServiceModelSelection('story-post'),
     undefined,
     job.data.force ? `${post.id}:${job.id}` : post.id,
+    post.id,
   )
   await updateStoryPostAgentResult(post.id, post.title ?? '', agentResult.ai_summary_markdown)
   return agentResult

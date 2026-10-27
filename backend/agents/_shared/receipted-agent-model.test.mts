@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import { getOpenAIResponseAttemptHooks } from '@modules/openai-utils/create-response'
 import { MissingModelClientCredentialError } from '@modules/openai-utils/missing-client-credential'
 import { resolveAnthropicCredentials } from '@modules/model-providers/anthropic-client'
@@ -14,14 +15,27 @@ import {
 } from '@voucha/test-helpers/agents/model-call-result'
 import { agentCallOperationKey, callReceiptedAgentModel } from './receipted-agent-model.mts'
 
+async function ownedStoryPostId(): Promise<string> {
+  const author = await createTestUserDirect()
+  return insertTestPost({
+    title: 'Owned story post receipt',
+    slug: `story-receipt-${randomUUID()}`,
+    createdById: author.id,
+    markdown: '',
+    postType: 'story',
+  })
+}
+
 describe('paid agent receipt after a free-capacity retry is blocked', () => {
   it('releases the known-unbilled reservation so the job can resume after the cap clears', async () => {
     await spendCapConfig.waitForInitialization()
     const restoreAdmission = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     const operationId = randomUUID()
+    const postId = await ownedStoryPostId()
     const params = {
       agentSlug: 'story-post',
       operationId,
+      postId,
       promptVersion: 'story-post-test-v1',
       selection: TEST_OPENAI_SELECTION,
       input: 'One fixed story prompt',
@@ -84,9 +98,11 @@ describe('paid agent receipt after provider validation', () => {
     await spendCapConfig.waitForInitialization()
     const restoreAdmission = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     const operationId = randomUUID()
+    const postId = await ownedStoryPostId()
     const params = {
       agentSlug: 'story-post',
       operationId,
+      postId,
       promptVersion: 'story-post-test-v1',
       selection: fixture.selection,
       input: 'One fixed story prompt',
@@ -122,9 +138,11 @@ describe('paid agent receipt after provider validation', () => {
     await spendCapConfig.waitForInitialization()
     const restoreAdmission = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
     const operationId = randomUUID()
+    const postId = await ownedStoryPostId()
     const params = {
       agentSlug: 'story-post',
       operationId,
+      postId,
       promptVersion: 'story-post-test-v1',
       selection: TEST_OPENAI_SELECTION,
       input: 'One fixed story prompt',
@@ -173,9 +191,11 @@ describe('paid agent receipt after provider validation', () => {
           ? { createOpenAIResponse: () => Promise.reject(missingCredential) }
           : { createOpenRouterResponse: () => Promise.reject(missingCredential) }
       const operationId = randomUUID()
+      const postId = await ownedStoryPostId()
       const params = {
         agentSlug: 'story-post',
         operationId,
+        postId,
         promptVersion: 'story-post-test-v1',
         selection: TEST_OPENAI_SELECTION,
         input: 'One fixed story prompt',

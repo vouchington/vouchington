@@ -26,11 +26,17 @@ CREATE TABLE IF NOT EXISTS ai_agent_call_receipts (
   CHECK ((agent_slug IN ('copyright-submission-guidance', 'copyright-appeal-recommendation'))
     = (copyright_notice_submission_id IS NOT NULL)),
   CHECK (result_ciphertext IS NULL OR char_length(result_ciphertext) > 0),
-  CHECK (CASE WHEN agent_slug = 'report-judgement'
-    THEN num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1
+  CHECK (CASE
+    WHEN agent_slug = 'report-judgement' THEN
+      num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1
       OR (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0
         AND result_ciphertext IS NOT DISTINCT FROM 'erased')
-    ELSE num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0 END)
+    WHEN agent_slug = 'story-post' THEN
+      num_nonnulls(reported_user_id, hostname_id, rss_feed_item_id) = 0
+      AND (post_id IS NOT NULL
+        OR (post_id IS NULL AND result_ciphertext IS NOT DISTINCT FROM 'erased'))
+    ELSE num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0
+  END)
 );
 
 ALTER TABLE ai_agent_call_receipts
@@ -76,8 +82,8 @@ ALTER TABLE ai_agent_call_receipts
 CREATE INDEX idx_ai_agent_call_receipts__rss_feed_item
   ON ai_agent_call_receipts (rss_feed_item_id) WHERE rss_feed_item_id IS NOT NULL;
 
--- A deleted report target erases the encrypted answer without forgetting that the operation
--- was paid. SET NULL takes the receipt row lock, serializing deletion with result completion.
+-- A deleted report target or story post erases the encrypted answer without forgetting that the
+-- operation was paid. SET NULL takes the receipt row lock, serializing deletion with result completion.
 CREATE OR REPLACE FUNCTION fn_update_report_agent_call_receipt_target() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -86,16 +92,20 @@ BEGIN
       AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) <> 1 THEN
       RAISE EXCEPTION 'Report call receipts require exactly one live target';
     END IF;
+    IF NEW.agent_slug = 'story-post' AND NEW.post_id IS NULL THEN
+      RAISE EXCEPTION 'Story post call receipts require a live post';
+    END IF;
   ELSIF OLD.result_ciphertext = 'erased'
     OR (OLD.agent_slug = 'report-judgement'
       AND num_nonnulls(OLD.post_id, OLD.reported_user_id, OLD.hostname_id, OLD.rss_feed_item_id) = 1
-      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) = 0) THEN
+      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) = 0)
+    OR (OLD.agent_slug = 'story-post' AND OLD.post_id IS NOT NULL AND NEW.post_id IS NULL) THEN
     NEW.result_ciphertext := 'erased';
   END IF;
   RETURN NEW;
 END;
 $$;
-COMMENT ON FUNCTION fn_update_report_agent_call_receipt_target() IS 'Requires an initial report target and irreversibly tombstones a receipt when its target is hard-deleted.';
+COMMENT ON FUNCTION fn_update_report_agent_call_receipt_target() IS 'Requires a live report target or story post on insert and irreversibly tombstones a receipt when that subject is hard-deleted.';
 CREATE TRIGGER trigger_erase_report_agent_call_receipt_target
   BEFORE INSERT OR UPDATE ON ai_agent_call_receipts
   FOR EACH ROW EXECUTE FUNCTION fn_update_report_agent_call_receipt_target();
@@ -108,7 +118,7 @@ COMMENT ON COLUMN ai_agent_call_receipts.request_sha256 IS 'SHA-256 of the selec
 COMMENT ON COLUMN ai_agent_call_receipts.copyright_notice_submission_id IS 'Retention owner for copyright guidance and appeal results; null for other agents.';
 COMMENT ON COLUMN ai_agent_call_receipts.result_ciphertext IS 'Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.';
 COMMENT ON COLUMN ai_agent_call_receipts.created_at IS 'Creation time derived from the UUIDv7 receipt identity.';
-COMMENT ON COLUMN ai_agent_call_receipts.post_id IS 'Reported post or comment; hard deletion erases the result while retaining the paid operation key.';
+COMMENT ON COLUMN ai_agent_call_receipts.post_id IS 'Story post being written, or a reported post or comment. Hard deletion erases the result while retaining the paid operation key.';
 COMMENT ON COLUMN ai_agent_call_receipts.reported_user_id IS 'Reported user; hard deletion erases the result while retaining the paid operation key.';
 COMMENT ON COLUMN ai_agent_call_receipts.hostname_id IS 'Reported URL hostname; hard deletion erases the result while retaining the paid operation key.';
 COMMENT ON COLUMN ai_agent_call_receipts.rss_feed_item_id IS 'Reported RSS feed item; hard deletion erases the result while retaining the paid operation key.';
