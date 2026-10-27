@@ -3720,6 +3720,9 @@ importers:
       '@services/growth-metrics':
         specifier: workspace:^
         version: link:../services/growth-metrics
+      '@services/hostname-blocking':
+        specifier: workspace:^
+        version: link:../services/hostname-blocking
       '@services/identity-verification':
         specifier: workspace:^
         version: link:../services/identity-verification
@@ -7292,9 +7295,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@queues/vote-aggregation':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/vote-aggregation
+        version: link:../../queues/background
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -13096,9 +13099,15 @@ importers:
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/fediverse-instances':
         specifier: workspace:^
         version: link:../../services/fediverse-instances
+      '@services/hostname-blocking':
+        specifier: workspace:^
+        version: link:../../services/hostname-blocking
       '@services/images':
         specifier: workspace:^
         version: link:../../services/images

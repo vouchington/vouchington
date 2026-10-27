@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
-  countTestPostPublicationDirtyWorkForPostsWithReason,
   createTestUserDirect,
   getTestRelationDeletedAt,
   insertTestPost,
@@ -12,6 +11,7 @@ import {
   insertTestUrlDirect,
   insertTestUrlHostname,
 } from '@voucha/test-helpers'
+import { captureAddedPublicationEffectsForScopes } from '@voucha/test-helpers/publication-effect-jobs'
 import type { HostnameBlockCleanupCursor } from '@queues/background/enqueues/hostname-blocking-jobs'
 import { getEntityRelationUrlTables } from '@services/entity-relations/url-tables'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -95,13 +95,15 @@ describe('bounded hostname block relation cleanup', () => {
       undefined,
       10,
     )
-    const processed = await processRelations(projection.operation!, projection.cursor)
-
+    let processed!: Awaited<ReturnType<typeof processRelations>>
+    const jobs = await captureAddedPublicationEffectsForScopes([postId], async () => {
+      processed = await processRelations(projection.operation!, projection.cursor)
+    })
     expect(processed.cursor).toEqual({ stage: 'penalties' })
     expect(await getTestRelationDeletedAt(postId, urlId)).toBeInstanceOf(Date)
-    await expect(
-      countTestPostPublicationDirtyWorkForPostsWithReason([postId], 'post_related_urls_changed'),
-    ).resolves.toBe(1)
+    expect(
+      jobs.filter(job => job.reason === 'post_related_urls_changed' && job.postId === postId),
+    ).toHaveLength(1)
     await expect(getHostnameBlockPenaltyPage(processed.operation, undefined, 10)).resolves.toEqual([
       creator.id,
     ])

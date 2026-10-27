@@ -54,9 +54,14 @@ export async function getPendingDescendantCleanupRootHostnames(
 
   const { rows } = await query<{ reversed_hostname: string }>(
     sql`/* getPendingDescendantCleanupRootHostnames */
-      WITH candidate_ancestors AS MATERIALIZED (
-        SELECT id, reversed_hostname FROM url_hostnames
-        WHERE reversed_hostname = ANY(${ancestorReversedHostnames}::text[])
+      WITH current_root AS MATERIALIZED (
+        SELECT hostname.reversed_hostname FROM url_hostname_blocks block
+        JOIN url_hostnames hostname ON hostname.id = block.url_hostname_id
+        WHERE block.id = ${blockId}
+      ), candidate_ancestors AS MATERIALIZED (
+        SELECT hostname.id, hostname.reversed_hostname FROM url_hostnames hostname
+        JOIN current_root ON starts_with(hostname.reversed_hostname, current_root.reversed_hostname || '.')
+        WHERE hostname.reversed_hostname = ANY(${ancestorReversedHostnames}::text[])
       )
       SELECT ancestor.reversed_hostname FROM candidate_ancestors ancestor
       CROSS JOIN LATERAL (

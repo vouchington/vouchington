@@ -111,14 +111,20 @@ describe('hostname block cleanup ownership', () => {
   })
 })
 
-async function completeAdmittedCleanup(blockId: string): Promise<HostnameBlockCleanupOperation> {
+type Projection = Awaited<ReturnType<typeof projectNextHostnameBlockSubdomainPage>>
+
+async function projectAdmittedCleanup(blockId: string): Promise<Projection> {
   const initial = await getHostnameBlockCleanupOperation(blockId)
-  const projection = await projectNextHostnameBlockSubdomainPage(
-    blockId,
-    initial!.progress,
-    undefined,
-    10,
-  )
+  return projectNextHostnameBlockSubdomainPage(blockId, initial!.progress, undefined, 10)
+}
+
+async function completeAdmittedCleanup(blockId: string): Promise<HostnameBlockCleanupOperation> {
+  return finishProjectedCleanup(await projectAdmittedCleanup(blockId))
+}
+
+async function finishProjectedCleanup(
+  projection: Projection,
+): Promise<HostnameBlockCleanupOperation> {
   let operation = projection.operation!
   let cursor: HostnameBlockCleanupCursor = projection.cursor
   const maximumPages = getEntityRelationUrlTables().length + 8
