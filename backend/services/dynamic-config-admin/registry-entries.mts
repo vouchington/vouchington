@@ -1,4 +1,3 @@
-import { psqlQueueRegistryEntry } from './registry-psql-queue-entry.mts'
 import {
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
@@ -27,7 +26,6 @@ import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-ent
 import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 
 const unorderedRegistryEntries = [
-  psqlQueueRegistryEntry,
   pagedDispatchRegistryEntry,
   membershipVerificationQueueRegistryEntry,
   ...paginationRegistryEntries,

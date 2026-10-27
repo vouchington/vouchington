@@ -2,8 +2,8 @@ import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { psql } from '../queues.mts'
 import type { JobOptions } from 'glide-mq'
+import { getTerminalActivityRetentionConcurrency } from './ordering-config.mts'
 import {
-  getTerminalActivityRetentionConcurrency,
   PRIORITY_DEFAULT,
   PSQL_RETRY_OPTIONS,
   QUEUE_NAME,

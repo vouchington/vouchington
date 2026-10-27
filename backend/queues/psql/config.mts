@@ -53,23 +53,6 @@ export const RECONCILE_VOTE_DRIFT_CRON = '0 6 * * *'
 
 export type TerminalActivityRetentionFamily = 'follow' | 'like'
 export const TERMINAL_ACTIVITY_RETENTION_JOB_NAME = 'cleanupTerminalActivityIdentities'
-export const TERMINAL_ACTIVITY_RETENTION_ORDERING_MAX = 1
-export const psqlQueueConfig = new DynamicConfig({
-  key: 'psql-queue-config',
-  fieldTypes: { terminal_activity_retention_concurrency: 'number' },
-  defaultFields: { terminal_activity_retention_concurrency: 1 },
-})
-
-export function getTerminalActivityRetentionConcurrency(): number {
-  return getBoundedPositiveIntegerField(
-    psqlQueueConfig,
-    'terminal_activity_retention_concurrency',
-    {
-      defaultValue: 1,
-      maxValue: TERMINAL_ACTIVITY_RETENTION_ORDERING_MAX,
-    },
-  )
-}
 
 /** Existing PSQL transient-failure policy, shared by schedules and retained continuations. */
 export const PSQL_RETRY_OPTIONS = {
