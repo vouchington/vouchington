@@ -6,11 +6,13 @@ import { beginTransaction } from '@voucha/test-helpers'
 import {
   getPostSeedDiagnosticsBackend,
   getPostSeedDiagnosticsBlockerPid,
+  getPostSeedDiagnosticsLockTag,
   holdPostSeedDiagnosticsLock,
   rejectPostSeedDiagnosticsOperation,
   tryPostSeedDiagnosticsLock,
   waitForPostSeedDiagnosticsLock,
 } from '@voucha/test-helpers/post-seed-diagnostics'
+import { observeTestAdvisoryLockNotice } from '@voucha/test-helpers/postgres-advisory-lock-notice'
 import { describe, expect, it, vi } from 'vitest'
 import { PostSeedDiagnostics } from './post-diagnostics.mts'
 
@@ -40,6 +42,7 @@ describe('post seed diagnostics', () => {
       await using blocker = await beginTransaction()
       const blockerPid = await getPostSeedDiagnosticsBlockerPid(blocker)
       await holdPostSeedDiagnosticsLock(blocker, lockKey)
+      const lockTag = await getPostSeedDiagnosticsLockTag(blocker, lockKey)
       try {
         await using transaction = await diagnostics.operation('begin', null, () =>
           beginTransaction(),
@@ -47,31 +50,38 @@ describe('post seed diagnostics', () => {
         const backendContext = await diagnostics.operation('backend_context', null, () =>
           getPostSeedDiagnosticsBackend(transaction),
         )
-        diagnostics.startObserver(backendContext)
+        const lockNotice = observeTestAdvisoryLockNotice(transaction.client, lockTag)
+        await lockNotice.ready
         expect(await tryPostSeedDiagnosticsLock(transaction, lockKey)).toBe(false)
-        const blocked = waitForPostSeedDiagnosticsLock(transaction, lockKey).then(
-          () => ({ status: 'fulfilled' as const }),
-          err => ({ status: 'rejected' as const, error: asError(err) }),
-        )
+        const blocked = Promise.allSettled([waitForPostSeedDiagnosticsLock(transaction, lockKey)])
         let observationError: Error | undefined
         try {
-          await Promise.race([
-            observation.then(result => {
-              if (result.status === 'rejected') throw result.error
-              return undefined
-            }),
-            blocked.then(result => {
-              if (result.status === 'rejected') throw result.error
-              throw new Error('Lock acquisition completed before observer sampled it')
-            }),
-          ])
-        } catch (err) {
-          observationError = asError(err)
+          // Start sampling only once PostgreSQL reports the wait, so the observer's first
+          // sample sees it well inside the session statement_timeout.
+          await lockNotice.wait(blocked)
+          diagnostics.startObserver(backendContext)
+          try {
+            await Promise.race([
+              observation.then(result => {
+                if (result.status === 'rejected') throw result.error
+                return undefined
+              }),
+              blocked.then(([result]) => {
+                if (result.status === 'rejected') throw result.reason
+                throw new Error('Lock acquisition completed before observer sampled it')
+              }),
+            ])
+          } catch (err) {
+            observationError = asError(err)
+          }
+        } finally {
+          await blocker.rollback()
+          await blocked
+          await lockNotice.close()
         }
-        await blocker.rollback()
-        const blockedResult = await blocked
+        const [blockedResult] = await blocked
         if (observationError !== undefined) throw observationError
-        if (blockedResult.status === 'rejected') throw blockedResult.error
+        if (blockedResult.status === 'rejected') throw blockedResult.reason
         await expect(
           diagnostics.operation('clearance', 7, () =>
             rejectPostSeedDiagnosticsOperation(transaction),
