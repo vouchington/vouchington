@@ -1,5 +1,5 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { lstat, utimes } from 'node:fs/promises'
+import { utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -96,21 +96,24 @@ describe('sweepExpiredFeedListDirectories', () => {
     const boundary = await createFeedListDirectory()
     const freshOther = mkdtempSync(join(tmpdir(), `kagi-feed-list-${otherPid}-`))
     const unrelated = mkdtempSync(join(tmpdir(), 'not-kagi-'))
-    const recorded = await lstat(boundary)
-    const aged = new Date(recorded.mtimeMs - 5_000)
-    const freshAt = new Date(recorded.mtimeMs + 10_000)
-    await utimes(expired, aged, aged)
-    await utimes(expiredOther, aged, aged)
+    const now = Date.now()
+    const expiredAt = new Date(now - FEED_LIST_DIRECTORY_MAX_AGE_MS - 5_000)
+    const insideWindow = new Date(now - FEED_LIST_DIRECTORY_MAX_AGE_MS + 5_000)
+    const freshAt = new Date(now)
+    await utimes(expired, expiredAt, expiredAt)
+    await utimes(expiredOther, expiredAt, expiredAt)
+    await utimes(boundary, insideWindow, insideWindow)
     await utimes(freshOther, freshAt, freshAt)
     try {
-      await sweepExpiredFeedListDirectories(recorded.mtimeMs + FEED_LIST_DIRECTORY_MAX_AGE_MS)
+      await sweepExpiredFeedListDirectories(now)
       expect(existsSync(expired)).toBe(false)
       expect(existsSync(expiredOther)).toBe(false)
       expect(existsSync(boundary)).toBe(true)
       expect(existsSync(freshOther)).toBe(true)
       expect(existsSync(unrelated)).toBe(true)
 
-      await sweepExpiredFeedListDirectories(recorded.mtimeMs + FEED_LIST_DIRECTORY_MAX_AGE_MS + 1)
+      await utimes(boundary, expiredAt, expiredAt)
+      await sweepExpiredFeedListDirectories(now)
       expect(existsSync(boundary)).toBe(false)
       expect(existsSync(freshOther)).toBe(true)
       expect(existsSync(unrelated)).toBe(true)
