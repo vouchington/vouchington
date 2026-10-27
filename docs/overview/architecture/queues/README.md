@@ -218,6 +218,10 @@ still marked, so the queue is not a second source of truth and there is no dead-
   recovery never generates another title. A job can outlive a post or community, so recovery
   records the provider charge with deleted scopes nulled. An unknown billing outcome closes the
   spend gate for that request day.
+- **Classifier control jobs recover from durable requests.** A failed dispatcher or sweep page can
+  retain its stable queue ID for diagnosis. Its next admission releases that terminal ID only after
+  any saved provider responses settle; a waiting or running job keeps its claim. This lets the
+  request sweep continue without losing a pending response owner.
 - **Deletion and money paths recover from durable rows.** Account deletion, membership refunds and
   OAuth exchange keep their work in PostgreSQL with fenced leases, so terminal queue failure can
   never silently mark the work complete or issue a duplicate refund.

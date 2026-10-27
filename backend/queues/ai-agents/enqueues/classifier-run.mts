@@ -15,6 +15,7 @@ import type {
   ClassifierRunDispatcherJobData,
   ClassifierRunJobData,
 } from '../types.mts'
+import { failedAiJobHasNoPendingResponses } from './failed-job-recovery.mts'
 
 export function classifierRunJobId(runId: string): string {
   return `classifier_run_${runId}`
@@ -71,16 +72,21 @@ const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction({
 export async function enqueueClassifierRunDispatcher(
   data: ClassifierRunDispatcherJobData,
 ): Promise<void> {
-  await ai_agents.add('classifier-run-dispatcher', data, classifierRunDispatcherOptions(data))
-  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'classifier-run-dispatcher')
+  await enqueueBulkClassifierRunDispatchers([data])
 }
 
-/** Adds the dispatchers for a page of requests; a dispatcher that still exists is skipped. */
+/** Reoffers a failed dispatcher from its durable request, without touching a live job. */
 export async function enqueueBulkClassifierRunDispatchers(
   items: readonly ClassifierRunDispatcherJobData[],
 ): Promise<void> {
   if (items.length === 0) return
-  await enqueueClassifierRunDispatcherBatch([...items])
+  await enqueueBulkReactivatingFinished({
+    queue: ai_agents,
+    inputs: [...items],
+    jobIdOf: classifierRunDispatcherJobId,
+    enqueueBulk: enqueueClassifierRunDispatcherBatch,
+    canRemoveFailed: failedAiJobHasNoPendingResponses,
+  })
 }
 
 export async function enqueueClassifierRun(data: ClassifierRunJobData): Promise<void> {
