@@ -20,7 +20,6 @@ import {
 } from '@queues/background/enqueues/schedules'
 import { background } from '@queues/background/queues'
 import { scheduledJobManifest as openAiModerationManifest } from '@queues/openai-moderation/enqueues/schedules'
-import { scheduledJobManifest as postPublicationManifest } from '@queues/post-publication/enqueues/schedules'
 import { scheduledJobManifest as sesInboundManifest } from '@queues/ses-inbound/enqueues/schedules'
 import { scheduledJobManifest as storyProjectionManifest } from '@queues/story-post-related-url-projections/enqueues/schedules'
 import { scheduledJobManifest as kagiManifest } from '@queues/kagi-smallweb/enqueues/schedules'
@@ -33,7 +32,6 @@ const BACKGROUND_MANIFESTS = [
   sesInboundManifest,
   openAiModerationManifest,
   storyProjectionManifest,
-  postPublicationManifest,
   voteWeightManifest,
   rssFeedsManifest,
   sitemapsManifest,

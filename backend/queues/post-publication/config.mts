@@ -1,2 +1,2 @@
-export const RECONCILIATION_DEDUPLICATION_ID = 'post-publication:reconcile'
-export const RECONCILIATION_DEDUPLICATION_TTL_MS = 60_000
+/** Namespaces stable direct-effect job IDs within the shared background queue. */
+export const POST_PUBLICATION_EFFECTS_JOB_ID_PREFIX = 'post-publication-effects' as const

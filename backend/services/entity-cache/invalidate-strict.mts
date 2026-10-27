@@ -1,7 +1,6 @@
 import {
   getCommunityCacheKeys,
   getPostCacheKeysWithOptions,
-  getRssFeedCacheKeys,
   getStoryCacheKeys,
   getTopicCacheKeys,
   getUserCacheKeys,
@@ -10,15 +9,7 @@ import {
 import { caches } from './caches.mts'
 import { deleteFromCachesInChunks } from './invalidate.mts'
 import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
-import {
-  HTML_TAG,
-  communityTag,
-  postTag,
-  rssFeedTag,
-  storyTag,
-  topicTag,
-  userTag,
-} from '@ts-shared/cache'
+import { HTML_TAG, communityTag, postTag, storyTag, topicTag, userTag } from '@ts-shared/cache'
 
 /** Strict publication-worker cache effects: errors and tag enqueue failures propagate. */
 export async function invalidatePostStrict(...keys: unknown[]): Promise<void> {
@@ -65,14 +56,6 @@ export async function invalidateCommunityStrict(...keys: unknown[]): Promise<voi
 
 export async function invalidateHtmlStrict(): Promise<void> {
   await enqueueBulkPurgeCacheTags([HTML_TAG])
-}
-
-export async function invalidateRssFeedStrict(...keys: unknown[]): Promise<void> {
-  const rssKeys = await getRssFeedCacheKeys(...keys)
-  await Promise.all([
-    caches.rss_feeds.invalidateCacheGetByAny(...rssKeys),
-    enqueueBulkPurgeCacheTags(rssKeys.map(rssFeedTag)),
-  ])
 }
 
 /** Strict story-tag purge for reconciliation work that must remain retryable on enqueue failure. */

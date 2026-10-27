@@ -6,9 +6,7 @@ import { getRssFeedById } from '../get.mts'
 import {
   createTestTopic,
   createTestUser,
-  getTestPostPublicationDirtyWorkForScope,
   getRssFeedDeclaredLanguageForTest,
-  listTestPostPublicationImpactTopicIds,
   setRssFeedDeclaredLanguageForTest,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -116,11 +114,6 @@ describe('update.generated (fields)', () => {
 
     const updated = await getRssFeedById(feed.id)
     expect(updated!.topic.id).toBe(topic2.id)
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: feed.id })
-    expect(work?.reasons).toContain('rss_feed_discoverability_changed')
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual(
-      [topic1.id, topic2.id].toSorted(),
-    )
   })
   it('updateRssFeedById updates etag', async () => {
     const random = Math.random().toString(36).slice(2, 15)

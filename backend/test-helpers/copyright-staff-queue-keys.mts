@@ -7,7 +7,31 @@ import { copyrightStaffQueueKeysSql } from '../services/copyright-notices/read-m
 type CursorKey = { id: string; tier: number; timestamp: string }
 type Key = CursorKey & { before: string }
 
-export async function firstOwnedKey(
+/** Scope invariant expectations to one borrowed-client snapshot; pages remain uncached. */
+export function createQueueSnapshotKeys(query: TransactionQuery, now: Date) {
+  const anchors = new Map<string, Promise<Key>>()
+  const suffixes = new Map<string, Promise<number>>()
+  return async (ids: readonly string[], boost: boolean) => {
+    const normalized = [...new Set(ids)].toSorted()
+    const asOf = now.toISOString()
+    const anchorId = JSON.stringify([normalized, boost, asOf])
+    let anchor = anchors.get(anchorId)
+    if (!anchor) {
+      anchor = firstOwnedKey(query, normalized, boost, now)
+      anchors.set(anchorId, anchor)
+    }
+    const key = await anchor
+    const suffixId = JSON.stringify([key.tier, key.before, key.id, boost, asOf])
+    let count = suffixes.get(suffixId)
+    if (!count) {
+      count = suffixCount(query, key, boost, now)
+      suffixes.set(suffixId, count)
+    }
+    return { key, count: await count }
+  }
+}
+
+async function firstOwnedKey(
   query: TransactionQuery,
   ids: readonly string[],
   boost: boolean,
@@ -26,7 +50,7 @@ export async function firstOwnedKey(
   return rows[0]
 }
 
-export async function suffixCount(
+async function suffixCount(
   query: TransactionQuery,
   key: Key,
   boost: boolean,

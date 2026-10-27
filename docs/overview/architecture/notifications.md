@@ -6,13 +6,15 @@ Subscription rules and client behavior are in the
 
 ## Architecture
 
-The fan-out pipeline flows from durable publication reconciliation to per-channel delivery:
+The fan-out pipeline applies captured publication changes to current subscriptions before
+per-channel delivery:
 
 ```mermaid
 flowchart TD
-  E["Post, author, community, or RSS change"] --> O["post publication outbox"]
-  O --> Q["post-publication queue"]
-  Q --> J["background queue, notifications domain (reconcile-post / reconcile-rss-feed-item jobs)"]
+  E["Post, author, community, or RSS change"] --> C["Transaction captures previous identities"]
+  C -->|after commit| Q["post-publication queue"]
+  Q --> L["Bounded live scope and descendant discovery"]
+  L --> J["background queue, notifications domain (reconcile-post / reconcile-rss-feed-item jobs)"]
   J --> S["notifications service (reconcileNotificationsForPost / ForRssFeedItem)"]
   S --> I["Insert or prune subscription notifications"]
   I --> IA["In-app: row visible in /my/notifications"]

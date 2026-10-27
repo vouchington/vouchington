@@ -16,7 +16,6 @@ import {
   createTestTopic,
   getEntityRelation,
   getEntityRelationVersion,
-  getTestPostPublicationDirtyWorkForScope,
   getTopicAliasIdForTest,
   hardDeleteEntityRelationTest,
   insertTestRssFeedDirect,
@@ -100,19 +99,7 @@ describe('RSS feed item category relation retries', () => {
     await expect(getTestRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ topic_id: topicId })]),
     )
-    const before = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: aliasId!,
-    })
-
     await upsertRssFeedItemCategories([{ rss_feed_item_id: rssFeedItemId, categories: [hashtag] }])
-
-    const after = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: aliasId!,
-    })
-    expect(Number(after!.generation)).toBeGreaterThan(Number(before!.generation))
-    expect(after!.reasons).toContain('post_topics_changed')
 
     await expect(
       getEntityRelation('relation__rss_feed_item__category__topic', rssFeedItemId, topicId),

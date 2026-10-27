@@ -6,7 +6,6 @@ import {
   createTestUserWithAge,
   CONTRIBUTING_USER_AGE_MS,
   beginTransaction,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestCommunity,
   insertTestPost,
   insertTestPostStory,
@@ -14,18 +13,20 @@ import {
   insertTestRssFeedItem,
   insertTestStory,
   insertTestUrlDirect,
-  listTestPostPublicationImpactPostIds,
-  listTestPostPublicationImpactTopicIds,
-  listTestPostPublicationRetainedTextKeys,
   setTestItemStoryId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { updateCommunity } from '@services/communities'
 import { createPost, deletePost, updatePost } from '@services/posts'
 import { hardDeleteRssFeedById } from '@services/rss-feeds'
+import { hardDeleteRssFeedSourcePage } from '@services/rss-feeds/hard-delete-source-page'
 import { setRssFeedStatesAsCurrentUser } from '@services/rss-feeds/set-states-as-current-user'
 import { ensureUserSuspendedInTransaction } from '@services/users'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
+import {
+  captureAddedPublicationEffectsForScope,
+  captureAddedPublicationEffectsForScopes,
+} from '@voucha/test-helpers/publication-effect-jobs'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { describe, expect, it } from 'vitest'
 import {
@@ -40,18 +41,21 @@ describe('post publication lifecycle capture integration', () => {
     if (!user) throw new Error('Expected test user')
     const post = await createTestPost({ user })
 
-    await deleteUserAndDrainForTest(user, user)
-
-    const [authorWork, postWork] = await Promise.all([
-      getTestPostPublicationDirtyWorkForScope({ type: 'author', id: user.id }),
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }),
-    ])
-    expect(authorWork).toMatchObject({ author_identity_id: user.id })
-    expect(postWork).toMatchObject({ post_identity_id: post.id })
-    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toContain(post.id)
-    await expect(
-      listTestPostPublicationRetainedTextKeys(authorWork!.id, 'identity_author_username'),
-    ).resolves.toContain(user.username)
+    const jobs = await captureAddedPublicationEffectsForScopes([user.id, post.id], () =>
+      deleteUserAndDrainForTest(user, user),
+    )
+    expect(jobs.map(job => job.scope)).toEqual(
+      expect.arrayContaining([
+        { type: 'author', id: user.id },
+        { type: 'post', id: post.id },
+      ]),
+    )
+    const authorKeys = jobs.filter(job => job.scope.type === 'author').flatMap(job => job.keys)
+    expect(authorKeys).toContainEqual({ kind: 'impact_post', uuidValue: post.id })
+    expect(authorKeys).toContainEqual({
+      kind: 'identity_author_username',
+      textValue: user.username,
+    })
   })
 
   it('locks authored posts before writing author deletion dirty work', async () => {
@@ -103,23 +107,23 @@ describe('post publication lifecycle capture integration', () => {
       title: `publication capture ${createRandomString(8)}`,
     })
 
-    await expect(
-      setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
-        { kind: 'enablement', is_enabled: false },
-      ]),
-    ).resolves.toBe('updated')
-    const disabledWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'rss_feed',
-      id: rssFeedId,
-    })
-    await expect(
-      setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
-        { kind: 'enablement', is_enabled: true },
-      ]),
-    ).resolves.toBe('updated')
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: rssFeedId }),
-    ).resolves.toMatchObject({ generation: String(Number(disabledWork!.generation) + 1) })
+    const disabled = await captureAddedPublicationEffectsForScope(rssFeedId, () =>
+      expect(
+        setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
+          { kind: 'enablement', is_enabled: false },
+        ]),
+      ).resolves.toBe('updated'),
+    )
+    const enabled = await captureAddedPublicationEffectsForScope(rssFeedId, () =>
+      expect(
+        setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
+          { kind: 'enablement', is_enabled: true },
+        ]),
+      ).resolves.toBe('updated'),
+    )
+    expect(disabled.map(job => job.reason)).toContain('rss_feed_enablement_changed')
+    expect(enabled.map(job => job.reason)).toContain('rss_feed_enablement_changed')
+    expect(disabled[0]?.changeId).not.toBe(enabled[0]?.changeId)
 
     const story = await insertTestStory()
     const storyPostId = await insertTestPost({
@@ -145,13 +149,8 @@ describe('post publication lifecycle capture integration', () => {
     await setTestItemStoryId(itemId, story.id)
 
     await expect(hardDeleteRssFeedById(rssFeedId)).resolves.toBe(true)
-    const deletedWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'rss_feed',
-      id: rssFeedId,
-    })
-    await expect(listTestPostPublicationImpactPostIds(deletedWork!.id)).resolves.toContain(
-      storyPostId,
-    )
+    const page = await hardDeleteRssFeedSourcePage(rssFeedId)
+    expect(page.keys).toContainEqual({ kind: 'impact_post', uuidValue: storyPostId })
   })
 
   it('retains prior explicit topic keys when a post replaces its categories', async () => {
@@ -167,10 +166,13 @@ describe('post publication lifecycle capture integration', () => {
       categories: [{ type: 'topic', topic_id: firstTopic.id }],
     })
 
-    await updatePost(author, post!, { categories: [{ type: 'topic', topic_id: secondTopic.id }] })
-
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post!.id })
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toContain(firstTopic.id)
+    const jobs = await captureAddedPublicationEffectsForScope(post!.id, () =>
+      updatePost(author, post!, { categories: [{ type: 'topic', topic_id: secondTopic.id }] }),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: firstTopic.id,
+    })
   })
 
   it('retains prior topic evidence when title or markdown hashtag synchronization removes relations', async () => {
@@ -184,13 +186,16 @@ describe('post publication lifecycle capture integration', () => {
       categories: [{ type: 'topic', topic_id: topic.id }],
     })
 
-    await updatePost(author, post!, {
-      title: `Publication removed ${createRandomString(8)}`,
-      markdown: 'without a hashtag',
+    const jobs = await captureAddedPublicationEffectsForScope(post!.id, () =>
+      updatePost(author, post!, {
+        title: `Publication removed ${createRandomString(8)}`,
+        markdown: 'without a hashtag',
+      }),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: topic.id,
     })
-
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post!.id })
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toContain(topic.id)
   })
 
   it('retains prior topics for a combined content and category replacement', async () => {
@@ -207,13 +212,16 @@ describe('post publication lifecycle capture integration', () => {
       categories: [{ type: 'topic', topic_id: firstTopic.id }],
     })
 
-    await updatePost(author, post!, {
-      markdown: 'replacement content',
-      categories: [{ type: 'topic', topic_id: secondTopic.id }],
+    const jobs = await captureAddedPublicationEffectsForScope(post!.id, () =>
+      updatePost(author, post!, {
+        markdown: 'replacement content',
+        categories: [{ type: 'topic', topic_id: secondTopic.id }],
+      }),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: firstTopic.id,
     })
-
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post!.id })
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toContain(firstTopic.id)
   })
 
   it('serializes author and RSS lifecycle writers with transaction advisory locks', async () => {
@@ -254,36 +262,30 @@ describe('post publication lifecycle capture integration', () => {
       visibility: 'public',
     })
 
-    await updateCommunity(administrator, community.id, { name: community.name })
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'community', id: community.id }),
-    ).resolves.toBeUndefined()
-    await updateCommunity(administrator, community.id, { visibility: 'private' })
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'community', id: community.id }),
-    ).resolves.toMatchObject({ community_identity_id: community.id })
+    const unchangedCommunity = await captureAddedPublicationEffectsForScope(community.id, () =>
+      updateCommunity(administrator, community.id, { name: community.name }),
+    )
+    expect(unchangedCommunity).toEqual([])
+    const changedCommunity = await captureAddedPublicationEffectsForScope(community.id, () =>
+      updateCommunity(administrator, community.id, { visibility: 'private' }),
+    )
+    expect(changedCommunity.length).toBeGreaterThan(0)
 
     const post = await createPost(administrator, WEB_PROVENANCE, {
       post_type: 'discussion',
       title: `Publication no-op ${createRandomString(8)}`,
     })
-    const initialWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post!.id,
-    })
-    await updatePost(administrator, post!, {})
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post!.id }),
-    ).resolves.toMatchObject({ generation: initialWork!.generation })
-
-    await deletePost(administrator, post!)
-    const deletedWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post!.id,
-    })
-    await deletePost(administrator, post!)
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post!.id }),
-    ).resolves.toMatchObject({ generation: deletedWork!.generation })
+    const unchangedPost = await captureAddedPublicationEffectsForScope(post!.id, () =>
+      updatePost(administrator, post!, {}),
+    )
+    expect(unchangedPost).toEqual([])
+    const deleted = await captureAddedPublicationEffectsForScope(post!.id, () =>
+      deletePost(administrator, post!),
+    )
+    expect(deleted.map(job => job.reason)).toContain('post_deleted')
+    const deletedAgain = await captureAddedPublicationEffectsForScope(post!.id, () =>
+      deletePost(administrator, post!),
+    )
+    expect(deletedAgain).toEqual([])
   })
 })

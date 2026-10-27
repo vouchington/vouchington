@@ -14,7 +14,6 @@ import {
   getTestPostClearanceState,
   getLatestPostClearanceMetadata,
   getPostClearanceChanges,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestImage,
   insertTestPost,
   insertTestPostImage,
@@ -51,9 +50,6 @@ describe('setPostImages', () => {
     const enqueued = watchContentChangedEnqueues(postId)
     await setPostImages(creator!, post, [{ image_id: imageId, order_index: 0 }])
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toMatchObject({ reasons: expect.arrayContaining(['post_content_reset']) })
     await expect(enqueued.spam).resolves.toMatchObject({ contentSha256: content_sha256 })
     const moderation = await enqueued.moderation
     expect(moderation?.deduplicationKey).toContain(content_sha256.toString('hex'))
@@ -118,11 +114,6 @@ describe('setPostImages', () => {
     await setPostImages(creator, post, [{ image_id: imageId, order_index: 0 }])
     await expect(getTestPostClearanceState(postId)).resolves.toMatchObject({
       approved_at: null,
-    })
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toMatchObject({
-      reasons: expect.arrayContaining(['post_clearance_changed', 'post_content_reset']),
     })
   })
   it('skips rollback when post moderation hashes no longer match the failed edit', async () => {

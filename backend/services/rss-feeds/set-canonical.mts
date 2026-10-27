@@ -1,4 +1,5 @@
 import { read, beginTransaction } from '@data-stores/psql'
+import assert from 'http-assert'
 
 export class CircularRssFeedCanonicalError extends Error {
   readonly code = 'CIRCULAR_CANONICAL_REFERENCE'
@@ -62,6 +63,16 @@ export const setCanonicalRssFeed = async (
   // Atomically set canonical_rss_feed_id and flatten any back-references
   await using query = await beginTransaction()
   {
+    // Lock the target before writing a referencing feed. This serializes with the
+    // hard-delete marker without reversing the feed/child lock order.
+    const { rows: targets } = await query<{ id: string }>(
+      `/* setCanonicalRssFeed:lockTarget */
+      SELECT id FROM rss_feeds
+      WHERE id = $1::uuid AND hard_delete_requested_at IS NULL
+      FOR SHARE`,
+      [finalCanonicalId],
+    )
+    assert(targets.length > 0, 409, 'Canonical RSS feed is pending deletion')
     await query(
       `/* setCanonicalRssFeed */
       UPDATE rss_feeds

@@ -57,9 +57,12 @@ CREATE TABLE IF NOT EXISTS community_list_rss_feeds (
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_community_list_rss_feeds__unique ON community_list_rss_feeds (community_id, rss_feed_id) WHERE removed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_community_list_rss_feeds_guard_hard_delete
+BEFORE INSERT OR UPDATE OF rss_feed_id ON community_list_rss_feeds
+FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id');
 CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__community ON community_list_rss_feeds (community_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__rss_feed ON community_list_rss_feeds (rss_feed_id);
+CREATE INDEX IF NOT EXISTS idx_community_list_rss_feeds__rss_feed ON community_list_rss_feeds (rss_feed_id, id);
 
 COMMENT ON TABLE community_list_rss_feeds IS 'RSS feeds curated into a community list by community leads.';
 COMMENT ON COLUMN community_list_rss_feeds.community_id IS 'The community this list item belongs to.';

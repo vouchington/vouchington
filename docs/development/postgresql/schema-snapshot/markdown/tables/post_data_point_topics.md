@@ -30,7 +30,7 @@ _none_
 
 **Indexes:**
 
-- `idx_post_data_point_topics__topic_id`: `CREATE INDEX idx_post_data_point_topics__topic_id ON ONLY public.post_data_point_topics USING btree (topic_id) INCLUDE (post_id)`
+- `idx_post_data_point_topics__topic_id`: `CREATE INDEX idx_post_data_point_topics__topic_id ON ONLY public.post_data_point_topics USING btree (topic_id, post_id)`
 - `post_data_point_topics_pkey`: `CREATE UNIQUE INDEX post_data_point_topics_pkey ON ONLY public.post_data_point_topics USING btree (post_id, topic_id)`
 
 **Triggers:**

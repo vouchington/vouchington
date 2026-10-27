@@ -1,3 +1,4 @@
+import { assertRssHardDeleteRecoverySeek } from './plan-custom/rss-hard-delete.mts'
 import { assertDispatchWorkPlan } from './plan-custom/dispatch-work.mts'
 import { assertMediaDeliveryReplayPlan } from './plan-custom/media-delivery-replay.mts'
 import type { ExplainResult } from '@data-stores/psql'
@@ -38,6 +39,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   remoteFollowers: assertRemoteFollowerPagePlanShapeIfApplicable,
   reviewSuccession: assertReviewSuccessionCandidatePlanIfApplicable,
   rssFeedCandidates: assertRssFeedCandidatesAreSetBased,
+  rssHardDeleteRecoverySeek: assertRssHardDeleteRecoverySeek,
   rssRecencyCursor: assertRssRecencyLateCursorPlan,
   searchCommunitiesEligibility: assertSearchCommunitiesEligibilityIsIndexed,
   searchCommunityMemberCandidates: assertSearchCommunityMemberCandidates,

@@ -1,11 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import {
-  createTestUser,
-  getTestPostPublicationDirtyWorkForScope,
-  insertTestCommunity,
-  insertTestImage,
-  listTestPostPublicationRetainedTextKeys,
-} from '@voucha/test-helpers'
+import { createTestUser, insertTestCommunity, insertTestImage } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import * as psqlEnqueues from '@queues/psql/enqueues'
 import { updateCommunity } from './update.mts'
@@ -88,23 +82,16 @@ describe('updateCommunity language handling', () => {
   })
 })
 
-describe('updateCommunity publication capture', () => {
-  it('records the locked prior slug when the community slug changes', async () => {
+describe('updateCommunity slug changes', () => {
+  it('replaces the slug while keeping the community identity', async () => {
     const user = await createTestUser({ administrator: true })
     const community = await insertTestCommunity({ createdById: user.id })
     const priorSlug = community.slug
 
     await updateCommunity(user, community.id, { slug: `${priorSlug}-renamed` })
 
-    const dirtyWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'community',
-      id: community.id,
-    })
-    expect(dirtyWork).toBeDefined()
-    expect(dirtyWork!.reasons).toContain('community_visibility_changed')
-    await expect(
-      listTestPostPublicationRetainedTextKeys(dirtyWork!.id, 'identity_community_slug'),
-    ).resolves.toContain(priorSlug)
+    expect((await getCommunity(community.id))?.slug).toBe(`${priorSlug}-renamed`)
+    expect(await getCommunity(priorSlug)).toBeNull()
   })
 })
 

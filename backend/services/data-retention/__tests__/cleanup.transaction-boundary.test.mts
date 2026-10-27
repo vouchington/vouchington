@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
+import {
+  lockTestPostRow,
+  readTestPostCreator,
+} from '../../../test-helpers/publication-test-queries.mts'
+import { DELETED_USER_ID } from '@services/users/constants'
 
 import {
   beginTransaction,
   createTestRetentionWindow,
   createTestUserDirect,
-  getTestPostPublicationDirtyWorkForScope,
   getTestUserRaw,
   insertTestPost,
   softDeleteUserAt,
@@ -45,10 +49,7 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
 
     async function holdSecondPostRowLock(): Promise<void> {
       await using query = await beginTransaction()
-      await query(
-        `/* cleanup retention transaction boundary */ SELECT id FROM posts WHERE id = $1::uuid FOR UPDATE`,
-        [secondPostId],
-      )
+      await lockTestPostRow(query, secondPostId)
       secondPostLocked.resolve()
       await releaseSecondPost.promise
 
@@ -69,9 +70,7 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     try {
       await firstCommitted.promise
       expect(await getTestUserRaw(firstUser.id)).toBeNull()
-      expect(
-        await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: firstUser.id }),
-      ).toMatchObject({ reasons: expect.arrayContaining(['author_deleted']) })
+      expect(await readTestPostCreator(firstPostId)).toBe(DELETED_USER_ID)
       expect(await getTestUserRaw(secondUser.id)).not.toBeNull()
     } finally {
       releaseSecondPost.resolve()
@@ -80,8 +79,5 @@ describe('cleanupSoftDeletedUsers transaction boundaries', () => {
     await holder
     await expect(cleanup).resolves.toEqual({ deleted: 2, hasMore: false })
     expect(await getTestUserRaw(secondUser.id)).toBeNull()
-    expect(
-      await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: firstPostId }),
-    ).toMatchObject({ reasons: expect.arrayContaining(['author_deleted']) })
   })
 })

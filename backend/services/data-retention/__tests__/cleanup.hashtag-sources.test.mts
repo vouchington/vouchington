@@ -7,10 +7,8 @@ import {
   createTopHashtagAliasForTest,
   createTopHashtagPostSourceForTest,
   getPostHashtagSourceContributorIdsForTest,
-  getTestPostPublicationDirtyWorkForScope,
   getTestUserRaw,
   insertTestPost,
-  listTestPostPublicationImpactTopicIds,
   createTestRetentionWindow,
   softDeleteUserAt,
 } from '@voucha/test-helpers'
@@ -43,9 +41,6 @@ describe('cleanupSoftDeletedUsers hashtag source retention', () => {
     await softDeleteUserAt(contributor.id, window.firstEligibleDate)
     await cleanupSoftDeletedUsers(window)
 
-    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })
-    expect(work?.reasons).toContain('author_deleted')
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toContain(topic.id)
     await expect(getPostHashtagSourceContributorIdsForTest(postId)).resolves.toEqual([
       DELETED_USER_ID,
     ])

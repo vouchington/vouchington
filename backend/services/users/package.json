@@ -71,7 +71,6 @@
   },
   "devDependencies": {
     "@modules/csv": "workspace:^",
-    "@queues/cache-purge": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
     "@services/lists": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",

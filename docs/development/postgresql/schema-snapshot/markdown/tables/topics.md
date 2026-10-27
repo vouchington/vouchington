@@ -115,7 +115,7 @@ _none_
 - `idx_topics__lingua_rs_pending`: `CREATE INDEX idx_topics__lingua_rs_pending ON public.topics USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_topics__logo_image_id`: `CREATE INDEX idx_topics__logo_image_id ON public.topics USING btree (logo_image_id) WHERE (logo_image_id IS NOT NULL)`
 - `idx_topics__merged_by_id`: `CREATE INDEX idx_topics__merged_by_id ON public.topics USING btree (merged_by_id) WHERE (merged_by_id IS NOT NULL)`
-- `idx_topics__merged_into_topic_id`: `CREATE INDEX idx_topics__merged_into_topic_id ON public.topics USING btree (merged_into_topic_id) WHERE (merged_into_topic_id IS NOT NULL)`
+- `idx_topics__merged_into_topic_id`: `CREATE INDEX idx_topics__merged_into_topic_id ON public.topics USING btree (merged_into_topic_id, id) WHERE (merged_into_topic_id IS NOT NULL)`
 - `idx_topics__name`: `CREATE UNIQUE INDEX idx_topics__name ON public.topics USING btree (lower(name))`
 - `idx_topics__name__text_pattern_ops`: `CREATE INDEX idx_topics__name__text_pattern_ops ON public.topics USING btree (lower(name) text_pattern_ops)`
 - `idx_topics__name_trgm`: `CREATE INDEX idx_topics__name_trgm ON public.topics USING gin (name gin_trgm_ops) WHERE (deleted_at IS NULL)`

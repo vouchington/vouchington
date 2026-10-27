@@ -3,7 +3,6 @@ import { caches } from '../caches.mts'
 import {
   invalidateCommunityStrict,
   invalidatePostStrict,
-  invalidateRssFeedStrict,
   invalidateStoryStrict,
 } from '../invalidate-strict.mts'
 
@@ -18,9 +17,8 @@ describe('strict entity cache invalidation', () => {
     expect(await caches.post_metrics.get(postId)).toBeNull()
   })
 
-  it('propagates strict community, RSS, and story tag invalidation', async () => {
+  it('propagates strict community and story tag invalidation', async () => {
     await expect(invalidateCommunityStrict(crypto.randomUUID())).resolves.toBeUndefined()
-    await expect(invalidateRssFeedStrict(crypto.randomUUID())).resolves.toBeUndefined()
     await expect(invalidateStoryStrict(crypto.randomUUID())).resolves.toBeUndefined()
   })
 })

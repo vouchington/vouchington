@@ -96,7 +96,7 @@ describe('index.generated', () => {
       const random = Math.random().toString(36).slice(2, 10)
       const slug = `approved-topic-${Date.now()}-${random}`
       const hostname = `${slug}.example.com`
-      const approvedAlias = `approved-topic-alias-${random}`
+      const approvedAliases = [1, 2, 3].map(index => `approved-topic-alias-${random}-${index}`)
       const createResponse = await requestAsAdmin
         .post('/api/v1/topic-recommendations')
         .send({
@@ -106,7 +106,7 @@ describe('index.generated', () => {
           topic_markdown: 'Approved topic markdown.',
           topic_hostname: hostname,
           topic_hostnames: [hostname],
-          topic_aliases: [approvedAlias],
+          topic_aliases: approvedAliases,
         })
         .expect(201)
       const approveResponse = await requestAsAdmin
@@ -119,7 +119,7 @@ describe('index.generated', () => {
 
       const createdTopic = await getTopicByAny(approveResponse.body.topic_id)
       expect(createdTopic?.slug).toBe(slug)
-      expect(createdTopic?.aliases).toContain(approvedAlias)
+      for (const alias of approvedAliases) expect(createdTopic?.aliases).toContain(alias)
     })
 
     it('lets the author withdraw a pending recommendation', async () => {

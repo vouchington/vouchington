@@ -151,7 +151,7 @@ WHERE hostname_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__merged_into_topic_id
-ON topics(merged_into_topic_id)
+ON topics(merged_into_topic_id, id)
 WHERE merged_into_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

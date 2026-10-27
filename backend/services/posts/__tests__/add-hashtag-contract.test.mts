@@ -11,7 +11,6 @@ import {
   createTestUserWithAge,
   getLatestPostCategoryRevisionForTest,
   getPostHashtagSourcesForTest,
-  getTestPostPublicationDirtyWorkForScope,
   getTopicAliasIdForTest,
   insertTestCommunity,
   insertTestCommunityMember,
@@ -70,9 +69,6 @@ describe('addPostHashtag admission and persistence', () => {
       userId: creator.id,
       authoredToken: retained,
     })
-    expect(
-      await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).toBeUndefined()
 
     await addPostHashtag(creator, postId, added, firstParty)
 
@@ -82,9 +78,6 @@ describe('addPostHashtag admission and persistence', () => {
         { type: 'hashtag', hashtag: added },
       ],
     })
-    expect(
-      (await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }))?.reasons,
-    ).toContain('post_topics_changed')
   })
 
   it('rejects a suspended author before mutation', async () => {

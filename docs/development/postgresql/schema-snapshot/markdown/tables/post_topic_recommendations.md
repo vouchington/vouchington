@@ -51,7 +51,7 @@ _none_
 
 **Indexes:**
 
-- `idx_post_topic_recommendations__created_topic_id`: `CREATE INDEX idx_post_topic_recommendations__created_topic_id ON ONLY public.post_topic_recommendations USING btree (created_topic_id) WHERE (created_topic_id IS NOT NULL)`
+- `idx_post_topic_recommendations__created_topic_id`: `CREATE INDEX idx_post_topic_recommendations__created_topic_id ON ONLY public.post_topic_recommendations USING btree (created_topic_id, post_id) WHERE (created_topic_id IS NOT NULL)`
 - `idx_post_topic_recommendations__example_referral_url_id`: `CREATE INDEX idx_post_topic_recommendations__example_referral_url_id ON ONLY public.post_topic_recommendations USING btree (example_referral_url_id)`
 - `idx_post_topic_recommendations__hostname_id`: `CREATE INDEX idx_post_topic_recommendations__hostname_id ON ONLY public.post_topic_recommendations USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
 - `idx_post_topic_recommendations__reviewed_by_id`: `CREATE INDEX idx_post_topic_recommendations__reviewed_by_id ON ONLY public.post_topic_recommendations USING btree (reviewed_by_id, post_id DESC) WHERE (reviewed_by_id IS NOT NULL)`

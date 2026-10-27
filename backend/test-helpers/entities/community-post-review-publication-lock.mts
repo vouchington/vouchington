@@ -75,10 +75,11 @@ export async function expectUnpublishHoldsPublicationLockWhileWaitingOnReview(
   const diagnostics = await runWithCapturedQueries(async context => {
     const unsubscribe = context.subscribe(event => {
       if (
-        event.text ===
-          '/* lockPostPublicationScope */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))' &&
-        event.values.length === 1 &&
-        event.values[0] === `post:${postId.toLowerCase()}`
+        event.text.startsWith('/* lockPostPublicationScope */') &&
+        event.values.length === 2 &&
+        event.values[0] === '' &&
+        Array.isArray(event.values[1]) &&
+        event.values[1].includes(`post:${postId.toLowerCase()}`)
       ) {
         if (event.status === 'fulfilled') publicationLocked.resolve()
         else publicationLocked.reject(event.reason)
