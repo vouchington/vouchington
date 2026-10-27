@@ -194,4 +194,4 @@ export async function probeTestUserLock(userId: string): Promise<void> {
 }
 
 export { runTestActionWhileMembershipUserLocked } from './locks/action-while-user-locked.mts'
-export { runTestStripeCatalogReconciliationWhileProductReferenced } from './locks/stripe-catalog-fk-hold.mts'
+export { runTestStripeCatalogReconciliationWhileProductReferenced } from '../../membership-stripe-catalog-fk-hold.mts'

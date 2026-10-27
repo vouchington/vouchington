@@ -1801,7 +1801,6 @@ rules:
       - 'backend/test-helpers/entities/memberships-lifecycle.mts'
       - 'backend/test-helpers/entities/memberships/locks.mts'
       - 'backend/test-helpers/entities/memberships/locks/action-while-user-locked.mts'
-      - 'backend/test-helpers/entities/memberships/locks/stripe-catalog-fk-hold.mts'
       - 'backend/test-helpers/polling.mts'
       - 'backend/test-helpers/polling.test.mts'
       - 'backend/test-helpers/post-delegated-fk-concurrency.mts'
