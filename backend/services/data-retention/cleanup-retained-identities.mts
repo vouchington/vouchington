@@ -89,6 +89,7 @@ export const ROOT_FAMILIES = {
       ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
+      ['image_deletion_post_updates', 'post_id'],
       ...retainedRelationReferences('post'),
     ],
   },
@@ -112,7 +113,6 @@ export const ROOT_FAMILIES = {
     ],
   },
 } as const
-
 export type RetainedIdentityFamily = keyof typeof ROOT_FAMILIES
 export type RetainedIdentityCleanupPage = {
   family: RetainedIdentityFamily

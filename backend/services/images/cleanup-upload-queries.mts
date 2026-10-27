@@ -19,6 +19,8 @@ export function uploadCleanupPredicate(phase: UploadCleanupPhase) {
   if (phase === 'staged')
     return sql`upload_staged_at IS NOT NULL
       AND upload_source_deleted_at IS NULL
+      AND (deleted_at IS NULL OR deletion_posts_completed_at IS NOT NULL)
+      AND (quarantine_pending_at IS NULL OR quarantined_at IS NOT NULL)
       AND (deleted_at IS NOT NULL OR upload_failed_at IS NOT NULL
         OR upload_completed_at IS NOT NULL
         OR (upload_started_at IS NOT NULL AND sha_256 IS NOT NULL

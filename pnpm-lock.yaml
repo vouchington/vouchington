@@ -7444,9 +7444,6 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@ts-shared/url-signing':
         specifier: workspace:^
         version: link:../../../ts-shared/url-signing
@@ -8593,6 +8590,9 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
+      '@services/images':
+        specifier: workspace:^
+        version: link:../images
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -13041,6 +13041,9 @@ importers:
       '@services/fediverse-instances':
         specifier: workspace:^
         version: link:../../services/fediverse-instances
+      '@services/images':
+        specifier: workspace:^
+        version: link:../../services/images
       '@services/queue-domain-controls':
         specifier: workspace:^
         version: link:../../services/queue-domain-controls

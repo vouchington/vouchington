@@ -58,8 +58,9 @@ function idPayload(data: unknown): Record<string, unknown> {
 
 function postUpdatedPayload(data: unknown): Record<string, unknown> {
   const record = asRecord(data, 'payload')
-  assertExactKeys(record, ['id', 'contentChanged'])
+  assertExactKeys(record, ['id', 'contentChanged', 'clearanceAlreadyReset'])
   requiredString(record, 'id')
   optionalBoolean(record, 'contentChanged')
+  optionalBoolean(record, 'clearanceAlreadyReset')
   return record
 }

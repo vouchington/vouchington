@@ -18,14 +18,16 @@ export const PAGED_DISPATCH_OPTIONS = {
 
 export function pagedDispatchBackoffStrategies() {
   return Object.fromEntries(
-    ['hostnames', 'rss', 'kagi', 'elections', 'notifications', 'activitypub'].map(dispatcher => [
-      `paged-dispatch-${dispatcher}`,
-      (attempt: number) =>
-        Math.min(
-          1000 * 2 ** Math.min(attempt, 20),
-          getPagedDispatchLimit(`${dispatcher}_backoff_ms`),
-        ),
-    ]),
+    ['hostnames', 'rss', 'kagi', 'elections', 'notifications', 'activitypub', 'images'].map(
+      dispatcher => [
+        `paged-dispatch-${dispatcher}`,
+        (attempt: number) =>
+          Math.min(
+            1000 * 2 ** Math.min(attempt, 20),
+            getPagedDispatchLimit(`${dispatcher}_backoff_ms`),
+          ),
+      ],
+    ),
   )
 }
 

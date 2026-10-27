@@ -912,8 +912,17 @@ CREATE INDEX IF NOT EXISTS idx_post_images__post_id__order_index
   ON post_images (post_id, order_index);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_post_images__image_id
-  ON post_images (image_id);
+CREATE INDEX IF NOT EXISTS idx_post_images__image_id__post_id
+  ON post_images (image_id, post_id);
+
+CREATE TABLE IF NOT EXISTS image_deletion_post_updates (
+  image_id UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES retained_post_identities(id) ON DELETE RESTRICT,
+  PRIMARY KEY (image_id, post_id)
+);
+COMMENT ON TABLE image_deletion_post_updates IS 'Bounded post-updated admission receipts committed with each image deletion page; removed after admission succeeds.';
+COMMENT ON COLUMN image_deletion_post_updates.image_id IS 'Image whose deletion reset the post.';
+COMMENT ON COLUMN image_deletion_post_updates.post_id IS 'Post requiring content-changed admission; retained identity survives concurrent deletion.';
 
 COMMENT ON TABLE post_images IS 'Associates images with posts in a specified display order with optional captions.';
 COMMENT ON COLUMN post_images.post_id IS 'The post this image is attached to.';
@@ -925,3 +934,6 @@ COMMENT ON COLUMN post_images.caption IS 'Optional caption text for the image.';
 CREATE INDEX IF NOT EXISTS idx_posts__created_via_oauth_client_id
   ON posts (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_image_deletion_post_updates__post_id
+ON image_deletion_post_updates (post_id);

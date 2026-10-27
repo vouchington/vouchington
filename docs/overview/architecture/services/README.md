@@ -48,6 +48,12 @@ flowchart LR
 
 ## Decisions worth knowing
 
+Deleting an image immediately denies delivery and retires its placements. Posts sharing the image
+are reset in independent bounded transactions, so popular images cannot hold every post lock in
+one transaction. A failed page keeps the image unreadable and its source storage intact until
+recovery completes. PostgreSQL owns progress and pending listener admissions; the
+[queue continuation](../queues/README.md#why-queues-are-shaped-this-way) is a delivery hint.
+
 List import applies the same post discovery eligibility as list reads, preventing invisible rows
 from being copied into a personal list. A shared runtime bound caps post and feed-item import
 sources, including the combined feed-item result across source feeds; feed items stay readable only

@@ -30,6 +30,7 @@ export const enqueueBulkOnPostUpdated = (
   posts: Array<{
     id: string
     contentChanged?: boolean
+    clearanceAlreadyReset?: boolean
   }>,
   priority?: number,
 ) => {
