@@ -54,6 +54,7 @@ jobs:
           package-manager-cache: false
 
       - name: Resolve pnpm version
+        timeout-minutes: 1
         id: pnpm-version
         uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
       - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
