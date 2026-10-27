@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { setTimeout as delay } from 'node:timers/promises'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { TimeUnit } from '@valkey/valkey-glide'
@@ -183,8 +184,4 @@ function digestExactPushBinding(binding: ExactPushBinding): string {
     .update('\0')
     .update(binding.subscriptionId)
     .digest('hex')
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }
