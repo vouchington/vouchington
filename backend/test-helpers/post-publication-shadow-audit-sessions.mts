@@ -2,7 +2,7 @@ import { addAbortListener } from 'node:events'
 import { onTestFinished } from 'vitest'
 import { advisoryLockPool, beginTransaction, writePool, type PoolClient } from '@data-stores/psql'
 import { FAST_TEST_STATEMENT_TIMEOUT_MS } from './statement-timeout-constant.mts'
-import { waitForTestPostgresLockWaiter } from './postgres-lock-wait.mts'
+import { observeTestAdvisoryLockNotice } from './postgres-advisory-lock-notice.mts'
 
 type AuditSessions = { observer: PoolClient; contender: PoolClient; holder?: PoolClient }
 export type AuditTransaction = Awaited<ReturnType<typeof beginTransaction>>
@@ -57,7 +57,37 @@ export function assertAuditOutcomes(
   }
 }
 
+/** Register on the actual reserved contender before it starts its transaction. */
+export async function prepareAuditLockObservation(
+  holderPid: number,
+  key: string,
+  client: PoolClient,
+  observer: AuditTransaction,
+) {
+  const { rows } = await observer<{ lock_tag: string }>(
+    `/* identifyShadowAuditLock */
+      SELECT 'advisory lock [' || database::text || ',' || classid::text || ',' ||
+        objid::text || ',' || objsubid::text || ']' AS lock_tag
+      FROM pg_locks WHERE pid = $1 AND locktype = 'advisory' AND granted
+        AND mode = 'ExclusiveLock' AND objsubid = 1
+        AND classid::bigint = ((hashtextextended($2, 0) >> 32) & 4294967295)
+        AND objid::bigint = (hashtextextended($2, 0) & 4294967295)`,
+    [holderPid, key],
+  )
+  const lockTag = rows[0]?.lock_tag
+  if (!lockTag || rows.length !== 1) throw new Error('Missing exact owned shadow-audit lock')
+  const observation = observeTestAdvisoryLockNotice(client, lockTag)
+  return {
+    ...observation,
+    lockTag,
+    [Symbol.asyncDispose]: () => observation.close(),
+  }
+}
+
+type AuditLockObservation = Awaited<ReturnType<typeof prepareAuditLockObservation>>
+
 export async function observeAuditWait(
+  observation: AuditLockObservation,
   holderPid: number,
   contenderPid: number,
   marker: string,
@@ -65,20 +95,30 @@ export async function observeAuditWait(
   operation: Promise<unknown>,
   signal: AbortSignal,
 ): Promise<void> {
-  const cancellation = new AbortController()
-  using listener = addAbortListener(signal, () => cancellation.abort(signal.reason))
+  const session = await observation.ready
+  if (session.processId !== contenderPid) throw new Error('Shadow-audit contender changed sessions')
+  const cancelled = Promise.withResolvers<never>()
+  using listener = addAbortListener(signal, () => cancelled.reject(signal.reason))
   void listener
-  const stop = () => cancellation.abort(new Error('Audit operation ended'))
-  void operation.then(stop, stop)
-  if (signal.aborted) cancellation.abort(signal.reason)
-  await waitForTestPostgresLockWaiter(
-    holderPid,
-    marker,
-    observer,
-    undefined,
-    cancellation.signal,
-    contenderPid,
+  if (signal.aborted) cancelled.reject(signal.reason)
+  await Promise.race([observation.wait(Promise.allSettled([operation])), cancelled.promise])
+  signal.throwIfAborted()
+  await observer('/* clearShadowAuditWaitSnapshot */ SELECT pg_stat_clear_snapshot()')
+  const { rows } = await observer<{ waiting: boolean }>(
+    `/* proveShadowAuditNativeWait */
+      SELECT EXISTS (SELECT 1 FROM pg_stat_activity activity
+        WHERE activity.pid = $1 AND activity.application_name = $2
+          AND activity.state = 'active' AND activity.query LIKE $3
+          AND EXISTS (SELECT 1 FROM pg_locks queued
+            WHERE queued.pid = activity.pid AND queued.locktype = 'advisory'
+              AND NOT queued.granted
+              AND 'advisory lock [' || queued.database::text || ',' || queued.classid::text || ',' ||
+                queued.objid::text || ',' || queued.objsubid::text || ']' = $4)
+          AND $5 = ANY(pg_blocking_pids(activity.pid))) AS waiting`,
+    [contenderPid, session.applicationName, `%${marker}%`, observation.lockTag, holderPid],
   )
+  signal.throwIfAborted()
+  if (!rows[0]?.waiting) throw new Error('Shadow-audit notice did not retain its exact blocker')
 }
 
 export async function configureBoundedContender(query: AuditTransaction): Promise<number> {
@@ -91,18 +131,27 @@ export async function configureBoundedContender(query: AuditTransaction): Promis
   return value
 }
 
-export async function statementBudget(query: AuditTransaction): Promise<number> {
+export async function reusableSessionBudget(client: PoolClient): Promise<number> {
+  await using next = await beginTransaction({ client })
+  const restored = await statementBudget(next)
+  await next.rollback()
+  return restored
+}
+
+/** Restore session settings before inspecting a subsequent borrowed transaction's budget. */
+export async function restoreAuditSessionBudget(
+  observation: AuditLockObservation,
+  client: PoolClient,
+): Promise<number> {
+  await observation.close()
+  return reusableSessionBudget(client)
+}
+
+async function statementBudget(query: AuditTransaction): Promise<number> {
   const { rows } = await query<{ timeout_ms: number }>(
     `/* readShadowAuditStatementBudget */ SELECT setting::integer AS timeout_ms
      FROM pg_settings WHERE name = 'statement_timeout'`,
   )
   if (!rows[0]) throw new Error('Missing PostgreSQL statement budget')
   return rows[0].timeout_ms
-}
-
-export async function reusableSessionBudget(client: PoolClient): Promise<number> {
-  await using next = await beginTransaction({ client })
-  const restored = await statementBudget(next)
-  await next.rollback()
-  return restored
 }

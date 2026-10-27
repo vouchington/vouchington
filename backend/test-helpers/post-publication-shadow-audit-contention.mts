@@ -1,13 +1,18 @@
 import { beginTransaction } from '@data-stores/psql'
-import { runPostPublicationShadowAudit } from '../services/post-publication/shadow-audit.mts'
+import { postPublicationScopeLockKey } from '../services/post-publication/lock.mts'
+import {
+  postPublicationShadowAuditLockKey,
+  runPostPublicationShadowAudit,
+} from '../services/post-publication/shadow-audit.mts'
 import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 import {
   assertAuditOutcomes,
   auditOutcome,
   configureBoundedContender,
   observeAuditWait,
+  prepareAuditLockObservation,
   reusableSessionBudget,
-  statementBudget,
+  restoreAuditSessionBudget,
   withAuditSessions,
   type AuditTransaction,
 } from './post-publication-shadow-audit-sessions.mts'
@@ -16,8 +21,15 @@ import {
 export async function observeGlobalShadowAuditCancellation(holderPid: number, signal: AbortSignal) {
   return withAuditSessions(signal, false, async sessions => {
     await using observer = await beginTransaction({ client: sessions.observer })
+    const baseline = await reusableSessionBudget(sessions.contender)
+    await using observation = await prepareAuditLockObservation(
+      holderPid,
+      postPublicationShadowAuditLockKey,
+      sessions.contender,
+      observer,
+    )
+    await observation.ready
     await using contender = await beginTransaction({ client: sessions.contender })
-    const baseline = await statementBudget(contender)
     const timeoutMs = await configureBoundedContender(contender)
     const contenderPid = await getTestPostgresBackendProcessId(contender)
     signal.throwIfAborted()
@@ -26,6 +38,7 @@ export async function observeGlobalShadowAuditCancellation(holderPid: number, si
     )
     const observed = await auditOutcome(
       observeAuditWait(
+        observation,
         holderPid,
         contenderPid,
         'lockPostPublicationShadowAudit',
@@ -40,7 +53,7 @@ export async function observeGlobalShadowAuditCancellation(holderPid: number, si
       auditOutcome(contender.rollback()),
       auditOutcome(observer.rollback()),
     ])
-    const restored = await auditOutcome(reusableSessionBudget(sessions.contender))
+    const restored = await auditOutcome(restoreAuditSessionBudget(observation, sessions.contender))
     const supporting = [observed, rollback, observerRollback, restored]
     if (!result.ok && supporting.every(value => value.ok) && restored.ok) {
       return {
@@ -72,18 +85,27 @@ export async function observeScopedShadowAuditSuccess(postId: string, signal: Ab
     if (!sessions.holder) throw new Error('Scoped audit requires an independent holder')
     await using observer = await beginTransaction({ client: sessions.observer })
     await using holder = await beginTransaction({ client: sessions.holder })
-    await using contender = await beginTransaction({ client: sessions.contender })
-    const baseline = await statementBudget(contender)
-    const timeoutMs = await configureBoundedContender(contender)
+    const baseline = await reusableSessionBudget(sessions.contender)
     const holderPid = await getTestPostgresBackendProcessId(holder)
-    const contenderPid = await getTestPostgresBackendProcessId(contender)
     const options = { dryRun: false, limit: 1, postIdentityIds: [postId] }
     signal.throwIfAborted()
     const first = await runPostPublicationShadowAudit(options, { query: holder })
     signal.throwIfAborted()
+    await using observation = await prepareAuditLockObservation(
+      holderPid,
+      postPublicationScopeLockKey({ type: 'post', postId }),
+      sessions.contender,
+      observer,
+    )
+    await observation.ready
+    await using contender = await beginTransaction({ client: sessions.contender })
+    const timeoutMs = await configureBoundedContender(contender)
+    const contenderPid = await getTestPostgresBackendProcessId(contender)
+    signal.throwIfAborted()
     const operation = auditOutcome(runPostPublicationShadowAudit(options, { query: contender }))
     const observed = await auditOutcome(
       observeAuditWait(
+        observation,
         holderPid,
         contenderPid,
         'lockPostPublicationScope',
@@ -102,7 +124,7 @@ export async function observeScopedShadowAuditSuccess(postId: string, signal: Ab
       auditOutcome(contender.rollback()),
       auditOutcome(observer.rollback()),
     ])
-    const restored = await auditOutcome(reusableSessionBudget(sessions.contender))
+    const restored = await auditOutcome(restoreAuditSessionBudget(observation, sessions.contender))
     assertAuditOutcomes(
       second,
       [observed, holderRollback, repair, rollback, observerRollback, restored],
