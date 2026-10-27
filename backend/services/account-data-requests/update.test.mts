@@ -9,7 +9,7 @@ import {
   softDeleteUser,
   startPausedTestUserSoftDeletion,
 } from '@voucha/test-helpers'
-import { withTestOwnedAdvisoryWait } from '@voucha/test-helpers/advisory-client-lock-observer'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import {
   createDataRequest,
   markDataRequestProcessing,
@@ -135,11 +135,11 @@ describe('markDataRequestProcessing', () => {
     const request = await createDataRequest(user.id, user.id)
     const deletion = await startPausedTestUserSoftDeletion(user.id)
     try {
-      await withTestOwnedAdvisoryWait(
+      await withTestOwnedPostgresWait(
         {
           pool: 'write',
           holderProcessId: deletion.holderProcessId,
-          key: user.id,
+          lock: { kind: 'advisory', key: user.id },
           queryMarker: 'lockActiveDataRequestUser:lock',
           releaseHolder: async () => {
             deletion.release()

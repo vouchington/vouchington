@@ -4,35 +4,38 @@ import { getOptionalRequestClientInfo } from '../modules/request-client-info/ind
 import { onTestFinished } from 'vitest'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
 import {
-  assertTestOwnedAdvisoryWait,
-  createTestAdvisoryClientLoan,
-  discardTestAdvisoryClient,
-  getTestOwnedAdvisoryLockTag,
-  reserveTestAdvisoryObserver,
-  type TestOwnedAdvisoryWaitOptions,
-} from './advisory-client-loan.mts'
+  createTestPostgresClientLoan,
+  discardTestPostgresClient,
+  reserveTestPostgresObserver,
+} from './postgres-client-loan.mts'
+import {
+  assertTestOwnedPostgresWait,
+  getTestOwnedPostgresLock,
+  type TestOwnedPostgresWaitOptions,
+  type TestHeldPostgresLock,
+} from './postgres-client-lock-identity.mts'
 
 const actionScope = new AsyncLocalStorage<object>()
 
 /** Own only the first selected pool's Promise checkout of this action or actual HTTP request. */
-export async function withTestOwnedAdvisoryWait<Result>(
-  options: TestOwnedAdvisoryWaitOptions,
+export async function withTestOwnedPostgresWait<Result>(
+  options: TestOwnedPostgresWaitOptions,
   action: (waitForLock: (operation: Promise<unknown>) => Promise<void>) => Promise<Result>,
 ): Promise<Result> {
   const pool = options.pool === 'write' ? writePool : advisoryLockPool
   const token = {}
   const cancelled = Promise.withResolvers<never>()
-  const captured = Promise.withResolvers<ReturnType<typeof createTestAdvisoryClientLoan>>()
+  const captured = Promise.withResolvers<ReturnType<typeof createTestPostgresClientLoan>>()
   void cancelled.promise.catch(() => {})
   void captured.promise.catch(() => {})
-  const closedReason = new Error('Owned advisory observation closed before completion')
+  const closedReason = new Error('Owned PostgreSQL observation closed before completion')
   let closed = false
   let entered = false
   let cleanupReported = false
-  let observerLoan: ReturnType<typeof reserveTestAdvisoryObserver> | undefined
-  let setup: Promise<string> | undefined
+  let observerLoan: ReturnType<typeof reserveTestPostgresObserver> | undefined
+  let setup: Promise<TestHeldPostgresLock> | undefined
   let pendingConnect: Promise<PoolClient> | undefined
-  let loan: ReturnType<typeof createTestAdvisoryClientLoan> | undefined
+  let loan: ReturnType<typeof createTestPostgresClientLoan> | undefined
   let operationOutcome: Promise<PromiseSettledResult<unknown>[]> | undefined
   let callbackOutcome: Promise<PromiseSettledResult<Result>[]> | undefined
   let snapshot: Promise<void> | undefined
@@ -85,7 +88,7 @@ export async function withTestOwnedAdvisoryWait<Result>(
       if (failures.size)
         throw new AggregateError(
           [...(primary ? [primary.reason] : []), ...failures],
-          'Owned advisory action and cleanup failed',
+          'Owned PostgreSQL action and cleanup failed',
           { cause: failures.values().next().value },
         )
     })())
@@ -99,18 +102,18 @@ export async function withTestOwnedAdvisoryWait<Result>(
   }
   onTestFinished(() => (cleanupReported ? undefined : dispose()))
   async function waitForLock(operation: Promise<unknown>): Promise<void> {
-    if (operationOutcome) throw new Error('Owned advisory action was registered more than once')
+    if (operationOutcome) throw new Error('Owned PostgreSQL action was registered more than once')
     operationOutcome = Promise.allSettled([operation])
     const settledEarly = operationOutcome.then(([result]) => {
       if (result?.status === 'rejected') throw result.reason
-      throw new Error('Owned action settled without its native advisory wait')
+      throw new Error('Owned action settled without its native lock wait')
     })
     const observed = await Promise.race([captured.promise, settledEarly, cancelled.promise])
     await Promise.race([observed.wait(operationOutcome), cancelled.promise])
     const observer = observerLoan?.client
     if (closed || !observer) throw closedReason
     const { processId } = await observed.ready
-    snapshot = assertTestOwnedAdvisoryWait(
+    snapshot = assertTestOwnedPostgresWait(
       observer,
       processId,
       options.holderProcessId,
@@ -124,11 +127,11 @@ export async function withTestOwnedAdvisoryWait<Result>(
       entered = true
       try {
         requireOpen()
-        observerLoan = reserveTestAdvisoryObserver(options.pool)
+        observerLoan = reserveTestPostgresObserver(options.pool)
         const reservedObserver = await observerLoan.ready
         requireOpen()
-        setup = getTestOwnedAdvisoryLockTag(reservedObserver, options)
-        const tag = await setup
+        setup = getTestOwnedPostgresLock(reservedObserver, options)
+        const targetLock = await setup
         requireOpen()
         const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
         const original = pool.connect
@@ -147,14 +150,14 @@ export async function withTestOwnedAdvisoryWait<Result>(
               requireOpen()
               claimed = true
               if (args.some(arg => typeof arg === 'function'))
-                throw new Error('Owned first advisory checkout must use the Promise overload')
+                throw new Error('Owned first PostgreSQL checkout must use the Promise overload')
               pendingConnect = (Reflect.apply(target, receiver, args) as Promise<PoolClient>).then(
                 async client => {
                   if (closed) {
-                    await discardTestAdvisoryClient(client)
+                    await discardTestPostgresClient(client)
                     throw closedReason
                   }
-                  loan = createTestAdvisoryClientLoan(client, tag)
+                  loan = createTestPostgresClientLoan(client, targetLock)
                   await loan.ready
                   requireOpen()
                   captured.resolve(loan)

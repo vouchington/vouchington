@@ -5,7 +5,7 @@ import {
   getTestPostgresBackendProcessId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { withTestOwnedAdvisoryWait } from '@voucha/test-helpers/advisory-client-lock-observer'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import {
   getActiveLandingPageHostnameClaims,
   getFirstTestHostnameOwnershipLockKey,
@@ -45,11 +45,11 @@ describe('source creation serializes hostname ownership before aliases', () => {
       )
       const pid = await getTestPostgresBackendProcessId(holder)
       const lockKey = await getFirstTestHostnameOwnershipLockKey(holder, hostnameId)
-      const result = await withTestOwnedAdvisoryWait(
+      const result = await withTestOwnedPostgresWait(
         {
           pool: 'write',
           holderProcessId: pid,
-          key: lockKey,
+          lock: { kind: 'advisory', key: lockKey },
           queryMarker: 'lockHostnameOwnership',
           releaseHolder: () => holder[Symbol.asyncDispose](),
         },

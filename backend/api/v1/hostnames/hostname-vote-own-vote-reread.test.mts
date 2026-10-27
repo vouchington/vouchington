@@ -1,5 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { withTestOwnedAdvisoryWait } from '@voucha/test-helpers/advisory-client-lock-observer'
+import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   CONTRIBUTING_USER_AGE_MS,
@@ -43,11 +43,11 @@ describe('hostname vote request lock', () => {
     await request.authenticateAs(user)
     const requestId = crypto.randomUUID()
     managed = true
-    await withTestOwnedAdvisoryWait(
+    await withTestOwnedPostgresWait(
       {
         holderProcessId: holderPid,
         pool: 'advisory',
-        key,
+        lock: { kind: 'advisory', key },
         queryMarker: 'lockElectionVoteRequest',
         requestId,
         releaseHolder,
