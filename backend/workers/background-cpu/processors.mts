@@ -34,7 +34,12 @@ export function createBackgroundCpuProcessor(handlers: ReadonlyMap<string, Backg
 async function runWithProviderCooldown(job: Job, handler: BackgroundCpuHandler): Promise<unknown> {
   // Only Bedrock handlers use an external provider lane. Other CPU domains must remain
   // independent of the rate-limiter Valkey connection.
-  const groupKey = handler.job.domain === 'bedrock-embeddings' ? job.groupKey : undefined
+  const groupKey =
+    handler.job.domain === 'bedrock-embeddings'
+      ? job.groupKey?.startsWith('bedrock-embeddings:creation:')
+        ? 'bedrock-embeddings:creation'
+        : job.groupKey
+      : undefined
   const remainingMs = groupKey ? await getCpuProviderCooldownRemainingMs(groupKey) : null
   if (remainingMs) return job.moveToDelayed(Date.now() + remainingMs)
   try {

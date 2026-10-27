@@ -1,5 +1,6 @@
 import { Readable } from 'node:stream'
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
@@ -71,7 +72,10 @@ describe('embedding scan caps', () => {
   it('continues past poison images and submits the healthy tail at the minimum boundary', async () => {
     const owner = await createTestUser()
     const ids: string[] = []
-    for (let index = 0; index < 3; index++) ids.push(await insertTestImage(owner.id))
+    const baseMs = randomInt(1_000_000_000, 2_000_000_000)
+    for (let index = 0; index < 3; index++)
+      ids.push(await insertTestImage(owner.id, getMinUUIDv7ForDate(new Date(baseMs + index))))
+    const initialCursor = { sweepStartedAt: new Date(baseMs + 1_000).toISOString() }
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       min_records_per_job: 2,
       max_scan_rows_per_run: 2,
@@ -100,11 +104,12 @@ describe('embedding scan caps', () => {
       }
     })
     let continuation: EmbeddingScanCursor | undefined
-    const run = (cursor?: EmbeddingScanCursor) =>
+    const run = (cursor: EmbeddingScanCursor = initialCursor) =>
       processImageBatchCreation({
         cursor,
         streamPending: options => streamPendingImages({ ...options, cursor }),
         addImageToBatch,
+        isLeaseHeld: () => true,
         reEnqueue: next => {
           continuation = next
         },
@@ -134,7 +139,10 @@ describe('embedding scan caps', () => {
   it('drains carried IDs under a smaller next-run budget without dropping the tail', async () => {
     const owner = await createTestUser()
     const ids: string[] = []
-    for (let index = 0; index < 4; index++) ids.push(await insertTestImage(owner.id))
+    const baseMs = randomInt(1_000_000_000, 2_000_000_000)
+    for (let index = 0; index < 4; index++)
+      ids.push(await insertTestImage(owner.id, getMinUUIDv7ForDate(new Date(baseMs + index))))
+    const initialCursor = { sweepStartedAt: new Date(baseMs + 1_000).toISOString() }
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       min_records_per_job: 3,
       max_scan_rows_per_run: 3,
@@ -163,11 +171,12 @@ describe('embedding scan caps', () => {
       }
     })
     let continuation: EmbeddingScanCursor | undefined
-    const run = (cursor?: EmbeddingScanCursor) =>
+    const run = (cursor: EmbeddingScanCursor = initialCursor) =>
       processImageBatchCreation({
         cursor,
         streamPending: options => streamPendingImages({ ...options, cursor }),
         addImageToBatch,
+        isLeaseHeld: () => true,
         reEnqueue: next => {
           continuation = next
         },
@@ -237,7 +246,12 @@ describe('embedding scan caps', () => {
     })
     const streamPending = vi.fn<typeof streamPendingImages>()
     await expect(
-      processImageBatchCreation({ streamPending, addImageToBatch, reEnqueue: () => {} }),
+      processImageBatchCreation({
+        streamPending,
+        addImageToBatch,
+        reEnqueue: () => {},
+        isLeaseHeld: () => true,
+      }),
     ).rejects.toThrow('scan budget')
     expect(streamPending).not.toHaveBeenCalled()
     expect(S3ImagesClient.send).not.toHaveBeenCalled()

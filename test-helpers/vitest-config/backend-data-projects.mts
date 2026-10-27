@@ -92,6 +92,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         '**/*.mock.test.mts',
+        '**/*.real-glide.test.mts',
         ...backendNoDataUnitTestFiles,
         '**/*.anthropic*.test.mts',
         '**/*.openai*.test.mts',

@@ -42,6 +42,7 @@ describe('utils', () => {
             jobType: 'topics',
             cursor,
             streamPending: () => streamEntities([]),
+            isLeaseHeld: () => true,
             reEnqueue,
           },
           dependencies,
@@ -59,6 +60,7 @@ describe('utils', () => {
               { id: 'topic-1', content: 'a', content_sha256: hexBuf('a') },
               { id: 'topic-2', content: 'b', content_sha256: hexBuf('b') },
             ]),
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -74,6 +76,7 @@ describe('utils', () => {
         {
           jobType: 'crawl_chunks',
           streamPending: () => streamEntities([]),
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -94,6 +97,7 @@ describe('utils', () => {
               { id: 'post-2', content: 'b', content_sha256: hexBuf('b') },
               { id: 'post-3', content: 'c', content_sha256: hexBuf('c') },
             ]),
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -115,6 +119,7 @@ describe('utils', () => {
         {
           jobType: 'topics',
           streamPending: () => streamEntities([]),
+          isLeaseHeld: () => true,
           reEnqueue,
         },
         dependencies,
@@ -136,6 +141,7 @@ describe('utils', () => {
         {
           jobType: 'topics',
           streamPending,
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -154,6 +160,7 @@ describe('utils', () => {
         {
           streamPending: () => streamImages([{ id: 'image-1' }, { id: 'image-2' }]),
           addImageToBatch: () => Promise.reject(new Error('preprocess failed')),
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -183,6 +190,7 @@ describe('utils', () => {
               },
               maxSizeMB,
             ),
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -202,6 +210,7 @@ describe('utils', () => {
           streamPending: () => streamImages([{ id: 'image-1' }, { id: 'image-2' }]),
           addImageToBatch: () =>
             Promise.reject(new Error('Refusing to fetch non-public image URL for image image-1')),
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -232,6 +241,7 @@ describe('utils', () => {
               },
               maxSizeMB,
             ),
+          isLeaseHeld: () => true,
           reEnqueue: vi.fn<VitestLooseMock>(),
         },
         dependencies,
@@ -244,6 +254,9 @@ describe('utils', () => {
         3,
         expect.any(String),
         expect.objectContaining({ inputSizeMB: expect.any(Number) }),
+        {},
+        expect.any(Function),
+        expect.any(Function),
       )
     })
   })

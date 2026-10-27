@@ -8,6 +8,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 export async function getBatchCreationLimits(
   referenceTime: Date,
   options: QueryOptions = {},
+  excludePreparingBatchId?: string,
 ): Promise<
   | {
       allowed: true
@@ -27,6 +28,7 @@ export async function getBatchCreationLimits(
   const recordsCreatedLastHour = await getBatchRecordsCreatedInLastHour(
     operationReferenceTime,
     options,
+    excludePreparingBatchId,
   )
   const remainingRequestsThisHour = config.MAX_REQUESTS_PER_HOUR - recordsCreatedLastHour
   if (remainingRequestsThisHour <= 0) {

@@ -12,9 +12,10 @@ export function createOwnedEmbeddingQueue(
   fixture: Pick<Fixture, 'assertOpen' | 'beforeRelease'>,
   label: string,
   options: Pick<QueueEventsOptions, 'connection' | 'prefix'>,
+  queueName?: string,
 ) {
   fixture.assertOpen()
-  const name = `embedding_creation_${label}_${randomUUID()}`
+  const name = queueName ?? `embedding_creation_${label}_${randomUUID()}`
   const queue = new Queue(name, options)
   const workers: Worker[] = []
   const writes: Promise<unknown>[] = []

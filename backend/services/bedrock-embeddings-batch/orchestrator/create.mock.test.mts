@@ -28,7 +28,26 @@ import {
   insertTestRssFeedItem,
   insertTestTopic,
 } from '@voucha/test-helpers'
-import { createBatch } from './create.mts'
+import { createBatch as submitBatch } from './create.mts'
+
+const createBatch = (
+  file: string,
+  type: BatchJobType,
+  count: number,
+  ids: string,
+  metadata?: Parameters<typeof submitBatch>[4],
+  source?: Parameters<typeof submitBatch>[5],
+) =>
+  submitBatch(
+    file,
+    type,
+    count,
+    ids,
+    metadata,
+    source,
+    async () => {},
+    () => true,
+  )
 
 vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(
   import('@modules/aws/s3-bedrock-batch'),
@@ -39,7 +58,6 @@ vi.mock<typeof import('@modules/aws/s3-bedrock-batch')>(
     } as unknown as typeof import('@modules/aws/s3-bedrock-batch').S3BedrockBatchClient,
   }),
 )
-
 vi.mock<typeof import('@modules/aws/bedrock-control')>(
   import('@modules/aws/bedrock-control'),
   async importOriginal => ({
@@ -49,9 +67,7 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
     } as unknown as typeof import('@modules/aws/bedrock-control').BedrockControlClient,
   }),
 )
-
 const tempFiles: string[] = []
-
 describe('createBatch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -62,12 +78,10 @@ describe('createBatch', () => {
       jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`,
     } as never)
   })
-
   afterEach(async () => {
     vi.unstubAllEnvs()
     await Promise.all(tempFiles.splice(0).map(path => rm(path, { force: true })))
   })
-
   it.each([['topics'], ['posts'], ['rss_feed_items'], ['crawl_chunks'], ['images']] as const)(
     'inserts typed FK lock rows for %s batches',
     async jobType => {
@@ -78,9 +92,7 @@ describe('createBatch', () => {
         'entity-ids.csv',
         entityIds.map(id => `${id}\n`).join(''),
       )
-
       const batchId = await createBatch(inputFile, jobType, entityIds.length, entityIdsFile)
-
       expect(getDateFromUUIDv7(batchId)).toBeInstanceOf(Date)
       expect(await getTestBatchEntities(batchId)).toEqual([
         {
@@ -94,20 +106,16 @@ describe('createBatch', () => {
       })
     },
   )
-
   it('deduplicates repeated entity IDs before inserting lock rows', async () => {
     const user = await createTestUserDirect()
     const entityId = await createLockedEntityId('topics', user.id)
     const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
     const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n${entityId}\n`)
-
     const batchId = await createBatch(inputFile, 'topics', 2, entityIdsFile)
-
     expect(await getTestBatchEntities(batchId)).toEqual([
       { entity_type: 'topics', entity_id: entityId },
     ])
   })
-
   it('stores the source url and crawl only in their foreign-key columns', async () => {
     const user = await createTestUserDirect()
     const entityId = await createLockedEntityId('topics', user.id)
@@ -115,7 +123,6 @@ describe('createBatch', () => {
     const crawl = await insertTestCrawl({ urlId, statusCode: 200, markdown: 'Crawl markdown' })
     const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
     const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n`)
-
     const batchId = await createBatch(
       inputFile,
       'topics',
