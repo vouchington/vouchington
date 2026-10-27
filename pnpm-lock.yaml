@@ -319,9 +319,6 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(@anthropic-ai/sdk@0.137.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.88)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
     devDependencies:
-      '@services/classifiers':
-        specifier: workspace:^
-        version: link:../../services/classifiers
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
