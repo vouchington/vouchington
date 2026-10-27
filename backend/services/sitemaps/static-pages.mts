@@ -8,7 +8,7 @@ import { iterateUrlsetXml } from './xml-builder.mts'
  * Static pages included in the sitemap (paths relative to site root).
  * Add new public pages here.
  */
-export const STATIC_PAGE_PATHS = [
+const STATIC_PAGE_PATHS = [
   '/',
   '/news',
   '/stories',
@@ -37,7 +37,7 @@ export const STATIC_PAGE_PATHS = [
   '/rewards-program-statuses',
 ] as const
 
-export function buildStaticPageUrlEntries(now: string = new Date().toISOString()) {
+function buildStaticPageUrlEntries(now: string = new Date().toISOString()) {
   return STATIC_PAGE_PATHS.map(path => ({
     loc: buildSitemapUrl(path),
     lastmod: now,
