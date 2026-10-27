@@ -33,16 +33,18 @@ export const getBlacklistSourceById = async (
   return result.rows[0] || null
 }
 
-type SourceCacheHeaders = {
+export type SourceCacheHeaders = {
   etag: string | null
   last_modified_at: Date | null
+  membership_diff_applied_at: Date | null
 }
 
 export const getSourceCacheHeaders = async (
   sourceId: DomainBlacklistSourceId,
 ): Promise<SourceCacheHeaders | null> => {
   const result = await read<SourceCacheHeaders>(sql`/* getSourceCacheHeaders */
-    SELECT etag, last_modified_at FROM domain_blocklist_sources
+    SELECT etag, last_modified_at, membership_diff_applied_at
+    FROM domain_blocklist_sources
     WHERE id = ${sourceId}
   `)
   return result.rows[0] || null

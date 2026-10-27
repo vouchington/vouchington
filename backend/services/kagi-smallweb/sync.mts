@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import { FEED_LIST_SOURCES } from './sources.mts'
 import { fetchFeedList, forgetFeedListValidators, type FeedListRead } from './fetch-feed-list.mts'
 import { getKagiCandidateBatchSize, isKagiSmallWebImportEnabled } from './import-config.mts'
@@ -9,6 +8,7 @@ import {
   prepareFeedListDiff,
   readFeedListPage,
   removeFeedListDirectory,
+  sweepExpiredFeedListDirectories,
   type FeedListChunkSource,
 } from './feed-list-temp-file.mts'
 
@@ -21,45 +21,38 @@ export type DispatchKagiSmallWebResult = {
   /** True when a continuation was enqueued for the entries after this page. */
   hasMore?: true
   nextCursor?: string
-  /** Set while later pages of this run still need the on-disk diff. */
-  feedListDir?: string
   commitValidators?: () => Promise<void>
 }
 
 /**
- * One bounded page of the Small Web lists. The root downloads each changed list once. A
- * continuation resumes from that run's file and does not download or sort the lists again.
- * The cursor is the last feed URL of the page before it.
+ * One bounded page of the Small Web lists. Each run re-fetches the lists and resumes from
+ * `cursor`, the last feed URL of the page before it. The on-disk diff lives only for this call.
  */
 export async function dispatchKagiSmallWeb(
   cursor?: string,
   pageSize = getKagiCandidateBatchSize(),
-  feedListDir?: string,
 ): Promise<DispatchKagiSmallWebResult> {
+  await sweepExpiredFeedListDirectories().catch(onError)
   if (!isKagiSmallWebImportEnabled()) return { disabled: true, enqueued: 0, total: 0 }
-
-  const existing = recordedDirectory(cursor, feedListDir)
-  if (existing) return pageRecordedDirectory(existing, cursor, pageSize)
 
   try {
     const fetched = await fetchChangedLists(cursor)
     if (fetched.kind === 'skipped') return { skipped: true, enqueued: 0, total: 0 }
+    let directory: string | undefined
     try {
-      const directory = await createFeedListDirectory()
-      try {
-        await prepareFeedListDiff(fetched.lists, directory)
-        const result = await enqueueFeedListPage(directory, cursor, pageSize, fetched.incomplete)
-        if (result.hasMore) {
-          return { ...result, feedListDir: directory, commitValidators: fetched.commitValidators }
-        }
-        await fetched.commitValidators()
-        await removeFeedListDirectory(directory)
-        return result
-      } catch (err) {
-        await removeFeedListDirectory(directory)
-        throw err
-      }
+      directory = await createFeedListDirectory()
+      const result = await stageFeedListPage(
+        fetched.lists,
+        directory,
+        cursor,
+        pageSize,
+        fetched.incomplete,
+      )
+      if (result.hasMore) return { ...result, commitValidators: fetched.commitValidators }
+      await fetched.commitValidators()
+      return result
     } finally {
+      if (directory !== undefined) await removeFeedListDirectory(directory)
       for (const list of fetched.lists) list.chunks.destroy()
     }
   } catch (err) {
@@ -70,29 +63,15 @@ export async function dispatchKagiSmallWeb(
   }
 }
 
-function recordedDirectory(
-  cursor: string | undefined,
-  feedListDir: string | undefined,
-): string | undefined {
-  if (cursor === undefined || feedListDir === undefined) return undefined
-  return existsSync(feedListDir) ? feedListDir : undefined
-}
-
-async function pageRecordedDirectory(
+async function stageFeedListPage(
+  lists: FeedListChunkSource[],
   directory: string,
   cursor: string | undefined,
   pageSize: number,
+  incomplete: boolean,
 ): Promise<DispatchKagiSmallWebResult> {
-  try {
-    const result = await enqueueFeedListPage(directory, cursor, pageSize, false)
-    if (result.hasMore) return { ...result, feedListDir: directory }
-    await removeFeedListDirectory(directory)
-    return result
-  } catch (err) {
-    if (cursor !== undefined)
-      await forgetFeedListValidators(FEED_LIST_SOURCES.map(source => source.name))
-    throw err
-  }
+  await prepareFeedListDiff(lists, directory)
+  return enqueueFeedListPage(directory, cursor, pageSize, incomplete)
 }
 
 async function enqueueFeedListPage(

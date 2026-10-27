@@ -6,17 +6,18 @@ External sources of domain blacklists (e.g. spam user_lists, disposable email us
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                  |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------- |
-| `id`               | `bigint`                   | no       |                     | always   |           |           |                                                          |
-| `type`             | `domain_blocklist_types`   | no       |                     |          |           |           | Whether this source blocks URL domains or email domains. |
-| `name`             | `text`                     | no       |                     |          |           |           | Unique lowercase identifier for this blacklist source.   |
-| `url`              | `text`                     | no       |                     |          |           |           | URL where the blacklist can be fetched from.             |
-| `etag`             | `text`                     | yes      |                     |          |           |           | HTTP ETag from the last fetch, for conditional requests. |
-| `last_modified_at` | `timestamp with time zone` | yes      |                     |          |           |           | HTTP Last-Modified from the last fetch.                  |
-| `last_fetched_at`  | `timestamp with time zone` | yes      |                     |          |           |           | When this source was last successfully fetched.          |
-| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                          |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                          |
+| Column                       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                   |
+| ---------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| `id`                         | `bigint`                   | no       |                     | always   |           |           |                                                                                                           |
+| `type`                       | `domain_blocklist_types`   | no       |                     |          |           |           | Whether this source blocks URL domains or email domains.                                                  |
+| `name`                       | `text`                     | no       |                     |          |           |           | Unique lowercase identifier for this blacklist source.                                                    |
+| `url`                        | `text`                     | no       |                     |          |           |           | URL where the blacklist can be fetched from.                                                              |
+| `etag`                       | `text`                     | yes      |                     |          |           |           | HTTP ETag from the last fetch, for conditional requests.                                                  |
+| `last_modified_at`           | `timestamp with time zone` | yes      |                     |          |           |           | HTTP Last-Modified from the last fetch.                                                                   |
+| `last_fetched_at`            | `timestamp with time zone` | yes      |                     |          |           |           | When this source was last successfully fetched.                                                           |
+| `membership_diff_applied_at` | `timestamp with time zone` | yes      |                     |          |           |           | When the last membership diff for this source committed. Conditional fetches skip only while this is set. |
+| `created_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                           |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 

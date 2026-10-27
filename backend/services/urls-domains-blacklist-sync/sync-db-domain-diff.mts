@@ -6,7 +6,7 @@ export async function persistDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
-): Promise<void> {
+): Promise<{ domainsAdded: number }> {
   // ast-grep-ignore: no-three-sequential-awaits -- existing parent policy must be locked before child creation, then inheritance and feed rows follow in one transaction.
   await lockExistingAffectedHostnames(query)
   await query(
@@ -23,14 +23,18 @@ export async function persistDomainDiff(
     [sourceType],
   )
   await persistInheritedParentBlocks(query)
-  await query(
+  const { rows } = await query<{ count: string }>(
     `/* syncDomainsWithDatabase */
-        INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
-        SELECT $1::bigint AS source_id, added.domain, hostname.id
-        FROM ${ADDED_DOMAINS_TABLE} added
-        JOIN url_hostnames hostname ON hostname.hostname = added.domain
-        ORDER BY added.domain ASC NULLS LAST, source_id ASC NULLS LAST
-        ON CONFLICT (domain, source_id) DO NOTHING
+        WITH inserted AS (
+          INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
+          SELECT $1::bigint AS source_id, added.domain, hostname.id
+          FROM ${ADDED_DOMAINS_TABLE} added
+          JOIN url_hostnames hostname ON hostname.hostname = added.domain
+          ORDER BY added.domain ASC NULLS LAST, source_id ASC NULLS LAST
+          ON CONFLICT (domain, source_id) DO NOTHING
+          RETURNING domain
+        )
+        SELECT COUNT(*)::text AS count FROM inserted
       `,
     [sourceId],
   )
@@ -42,6 +46,7 @@ export async function persistDomainDiff(
     `,
     [sourceId],
   )
+  return { domainsAdded: Number(rows[0]?.count ?? 0) }
 }
 
 async function lockExistingAffectedHostnames(query: TransactionQuery): Promise<void> {

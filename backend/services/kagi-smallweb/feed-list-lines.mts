@@ -40,6 +40,14 @@ export async function* linesOf(path: string): AsyncGenerator<string> {
   }
 }
 
+/** URL of a numbered feed line, without parsing the JSON payload. */
+export function feedUrlFromLine(line: string): string | null {
+  const first = line.indexOf(FIELD_SEPARATOR)
+  if (first === -1) return null
+  if (!line.includes(FIELD_SEPARATOR, first + 1)) return null
+  return line.slice(0, first)
+}
+
 export function entryFromLine(line: string): ParsedFeedEntry | null {
   const first = line.indexOf(FIELD_SEPARATOR)
   const second = first === -1 ? -1 : line.indexOf(FIELD_SEPARATOR, first + 1)

@@ -45,9 +45,14 @@ async function repairStaleReadyMarkerIfFilterUnavailable(): Promise<void> {
   })
 }
 
+/** Warmup can drop an enqueue failure. Sync uses the throwing form so a miss stays visible. */
+export async function enqueueUrlBlocklistRebuildOrThrow(): Promise<void> {
+  await enqueueRebuildBloomFilter({ filter: 'url-blocklist' })
+}
+
 export async function enqueueUrlBlocklistRebuild(): Promise<void> {
   try {
-    await enqueueRebuildBloomFilter({ filter: 'url-blocklist' })
+    await enqueueUrlBlocklistRebuildOrThrow()
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }

@@ -42360,7 +42360,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "etag": {
@@ -42407,6 +42407,17 @@
           "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
+        "membership_diff_applied_at": {
+          "collation": null,
+          "comment": "When the last membership diff for this source committed. Conditional fetches skip only while this is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
         "name": {
           "collation": null,
           "comment": "Unique lowercase identifier for this blacklist source.",
@@ -42437,7 +42448,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "url": {

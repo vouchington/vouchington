@@ -1,9 +1,9 @@
 import {
-  enqueueUrlBlocklistRebuild,
+  enqueueUrlBlocklistRebuildOrThrow,
   invalidateUrlBlocklistReadyMarker,
 } from '@services/urls-domains-blacklist/bloom-filter'
 import {
-  enqueueEmailBlocklistRebuild,
+  enqueueEmailBlocklistRebuildOrThrow,
   invalidateEmailBlocklistReadyMarker,
 } from '@services/urls-domains-blacklist/email-bloom-filter'
 
@@ -17,8 +17,8 @@ export interface BloomRebuildDependencies {
 export const defaultBloomRebuildDependencies: BloomRebuildDependencies = {
   invalidateEmailReadyMarker: invalidateEmailBlocklistReadyMarker,
   invalidateUrlReadyMarker: invalidateUrlBlocklistReadyMarker,
-  enqueueEmailRebuild: enqueueEmailBlocklistRebuild,
-  enqueueUrlRebuild: enqueueUrlBlocklistRebuild,
+  enqueueEmailRebuild: enqueueEmailBlocklistRebuildOrThrow,
+  enqueueUrlRebuild: enqueueUrlBlocklistRebuildOrThrow,
 }
 
 export async function rebuildBloomForSource(

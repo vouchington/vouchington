@@ -1,4 +1,5 @@
 import onError from '@modules/on-error'
+import { UnrecoverableError, unrecoverable } from '@vouchington/queue-errors'
 import undici from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import {
@@ -6,6 +7,7 @@ import {
   updateSourceCacheHeaders,
   getBlacklistSourceById,
   type DomainBlacklistSourceId,
+  type SourceCacheHeaders,
 } from '@services/urls-domains-blacklist/sources'
 import {
   parseSourceId,
@@ -16,14 +18,11 @@ import {
 } from './sync-utils.mts'
 import { syncDomainsWithDatabase } from './sync-db.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
+import { ReplicaBehindError } from './replica-freshness.mts'
 export type { SyncBlacklistSourceResult } from './sync-types.mts'
 
 const FETCH_TIMEOUT_MS = 30_000
-
-type SourceCacheHeaders = {
-  etag: string | null
-  last_modified_at: Date | null
-}
+const UNCONDITIONAL_NOT_MODIFIED = 'Blocklist source returned 304 to an unconditional request'
 
 type SyncBlacklistDependencies = {
   getBlacklistSourceById: typeof getBlacklistSourceById
@@ -55,6 +54,7 @@ export async function syncBlacklistSourceById(
   try {
     await syncBlacklistSource(sourceId, source.url, source.type, syncDependencies)
   } catch (err) {
+    if (err instanceof ReplicaBehindError || err instanceof UnrecoverableError) throw err
     onError(err instanceof Error ? err : createSyncFailedError(source.url, err))
   }
 }
@@ -68,9 +68,11 @@ export async function syncBlacklistSource(
   const syncDependencies = { ...defaultDependencies, ...dependencies }
   const id = parseSourceId(sourceId)
   const cache = await syncDependencies.getSourceCacheHeaders(sourceId)
-  const response = await syncDependencies.fetchBlacklist(url, cache)
+  const conditional = hasConditionalValidators(cache)
+  const response = await syncDependencies.fetchBlacklist(url, conditional ? cache : null)
 
   if (response.status === 304) {
+    if (!conditional) return unrecoverable(new Error(UNCONDITIONAL_NOT_MODIFIED))
     await syncDependencies.updateSourceCacheHeaders(sourceId, {
       etag: cache?.etag ?? null,
       lastModifiedAt: cache?.last_modified_at ?? null,
@@ -82,9 +84,17 @@ export async function syncBlacklistSource(
     throw createFetchError(response.status, response.statusText)
   }
 
-  const result = await syncDependencies.syncDomainsWithDatabase(id, response, sourceType)
-  await syncDependencies.updateSourceCacheHeaders(sourceId, getCacheHeadersFromResponse(response))
-  return result
+  return syncDependencies.syncDomainsWithDatabase(
+    id,
+    response,
+    sourceType,
+    getCacheHeadersFromResponse(response),
+  )
+}
+
+function hasConditionalValidators(cache: SourceCacheHeaders | null): boolean {
+  if (cache?.membership_diff_applied_at == null) return false
+  return cache.etag != null || cache.last_modified_at != null
 }
 
 /* no-mistakes: integration=http */
@@ -103,8 +113,9 @@ export function createBlacklistFetchHeaders(
   const headers: Record<string, string> = {
     'Accept-Encoding': 'gzip, deflate, br',
   }
-  if (cache?.etag) headers['If-None-Match'] = cache.etag
-  if (cache?.last_modified_at) {
+  if (cache?.membership_diff_applied_at == null) return headers
+  if (cache.etag) headers['If-None-Match'] = cache.etag
+  if (cache.last_modified_at) {
     headers['If-Modified-Since'] = new Date(cache.last_modified_at).toUTCString()
   }
   return headers

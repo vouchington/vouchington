@@ -29,10 +29,12 @@
     "@modules/utils": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
+    "@vouchington/queue-errors": "^0.2.0",
     "pg-copy-streams": "^7.0.0",
     "undici": "^8.12.3"
   },
   "devDependencies": {
+    "@queues/bloom-filters": "workspace:^",
     "@types/pg-copy-streams": "^1.2.5",
     "@voucha/test-helpers": "workspace:^"
   }

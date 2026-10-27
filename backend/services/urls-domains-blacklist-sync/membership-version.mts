@@ -1,6 +1,8 @@
 import { readPool, writePool, type TransactionQuery } from '@data-stores/psql'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
-import { prepareMembershipDiff, type MembershipDiffPaths } from './membership-diff-stage.mts'
+import { writeCommDiff } from './diff-files.mts'
+import type { MembershipDiffPaths } from './membership-diff-stage.mts'
+import { copyFreshSourceMembership, copySourceMembership } from './reader-membership-copy.mts'
 
 const MAX_MEMBERSHIP_PREPARATIONS = 3
 
@@ -11,11 +13,7 @@ export async function applyWithPreparedMembership<T>(
   apply: (version: string | null) => Promise<T | null>,
 ): Promise<T> {
   async function attempt(index: number): Promise<T> {
-    const version = await prepareVersionedMembership(
-      sourceId,
-      paths,
-      index === 0 ? readPool : writePool,
-    )
+    const version = await prepareVersionedMembership(sourceId, paths, index)
     const result = await apply(version)
     if (result !== null) return result
     if (index + 1 >= MAX_MEMBERSHIP_PREPARATIONS) {
@@ -29,10 +27,18 @@ export async function applyWithPreparedMembership<T>(
 async function prepareVersionedMembership(
   sourceId: DomainBlacklistSourceId,
   paths: MembershipDiffPaths,
-  pool: typeof readPool,
+  index: number,
 ): Promise<string | null> {
   const version = await sourceVersion(sourceId)
-  await prepareMembershipDiff(sourceId, paths, pool)
+  // Copy and diff stay outside the source lock. The first attempt uses the replica and
+  // refuses a snapshot older than the version just read on the writer. A mismatch retries
+  // from the writer.
+  if (index === 0) {
+    await copyFreshSourceMembership(sourceId, paths.membershipPath, version, readPool)
+  } else {
+    await copySourceMembership(sourceId, paths.membershipPath, writePool)
+  }
+  await writeCommDiff(paths)
   return version
 }
 

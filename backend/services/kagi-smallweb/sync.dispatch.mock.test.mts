@@ -1,12 +1,17 @@
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { kagiSmallWebImportConfig } from './import-config.mts'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { mkdir, rm, utimes, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { numberedLine } from './feed-list-lines.mts'
 import { sortAndDiff } from './feed-list-sort.mts'
-import { createFeedListDirectory, removeFeedListDirectory } from './feed-list-temp-file.mts'
+import {
+  createFeedListDirectory,
+  FEED_LIST_DIRECTORY_MAX_AGE_MS,
+  removeFeedListDirectory,
+} from './feed-list-temp-file.mts'
 import { processFeedEntry } from './process-feed-entry.mts'
 import { dispatchKagiSmallWeb } from './sync.mts'
 import { FEED_LIST_SOURCES } from './sources.mts'
@@ -102,9 +107,17 @@ describe('processFeedEntry', () => {
 
 describe('dispatchKagiSmallWeb', () => {
   it('returns disabled when kagi import is not enabled', async () => {
-    const result = await dispatchKagiSmallWeb()
-    expect(result.disabled).toBe(true)
-    expect(result.enqueued).toBe(0)
+    const expired = await createFeedListDirectory()
+    const old = new Date(Date.now() - FEED_LIST_DIRECTORY_MAX_AGE_MS - 5_000)
+    await utimes(expired, old, old)
+    try {
+      const result = await dispatchKagiSmallWeb()
+      expect(result.disabled).toBe(true)
+      expect(result.enqueued).toBe(0)
+      expect(existsSync(expired)).toBe(false)
+    } finally {
+      if (existsSync(expired)) await removeFeedListDirectory(expired)
+    }
   })
 })
 
@@ -141,32 +154,27 @@ describe('dispatchKagiSmallWeb owned feed lists', () => {
     feedListBodies.set(FEED_LIST_SOURCES[0]!.url, entries.map(entry => entry.feedUrl).join('\n'))
     // This owned predecessor sorts before a–e, including the already-present control.
     const first = await dispatchKagiSmallWeb(`https://kagi-page-${suffix}-0.example.com/feed.xml`)
-    try {
-      expect(first).toMatchObject({
-        enqueued: 1,
-        total: 5,
-        hasMore: true,
-        nextCursor: sorted[1]!.feedUrl,
-      })
-      expect(await enqueuedUrls()).toEqual([sorted[0]!.feedUrl])
-      if (!first.feedListDir) throw new Error('Expected the owned feed-list directory')
-      const second = await dispatchKagiSmallWeb(sorted[1]!.feedUrl, undefined, first.feedListDir)
-      expect(second).toMatchObject({
-        enqueued: 2,
-        total: 3,
-        hasMore: true,
-        nextCursor: sorted[3]!.feedUrl,
-      })
+    expect(first).toMatchObject({
+      enqueued: 1,
+      total: 5,
+      hasMore: true,
+      nextCursor: sorted[1]!.feedUrl,
+    })
+    expect(await enqueuedUrls()).toEqual([sorted[0]!.feedUrl])
+    const second = await dispatchKagiSmallWeb(sorted[1]!.feedUrl)
+    expect(second).toMatchObject({
+      enqueued: 2,
+      total: 3,
+      hasMore: true,
+      nextCursor: sorted[3]!.feedUrl,
+    })
 
-      const last = await dispatchKagiSmallWeb(sorted[3]!.feedUrl, undefined, first.feedListDir)
-      expect(last).toEqual({ enqueued: 1, total: 1 })
+    const last = await dispatchKagiSmallWeb(sorted[3]!.feedUrl)
+    expect(last).toEqual({ enqueued: 1, total: 1 })
 
-      expect((await enqueuedUrls()).toSorted()).toEqual(
-        sorted.filter(entry => entry !== sorted[1]).map(entry => entry.feedUrl),
-      )
-    } finally {
-      if (first.feedListDir) await removeFeedListDirectory(first.feedListDir)
-    }
+    expect((await enqueuedUrls()).toSorted()).toEqual(
+      sorted.filter(entry => entry !== sorted[1]).map(entry => entry.feedUrl),
+    )
   })
 
   it('keeps the later entry when a URL is listed twice', async () => {
