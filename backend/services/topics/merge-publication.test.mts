@@ -20,7 +20,7 @@ import {
 } from '@services/post-publication/live-topic-merge-pages'
 import { seedTopicMergeDirectPostCategory } from '@voucha/test-helpers/topic-merge-posts'
 import { getTopicByAny } from './get.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 
 describe('topic merge publication capture', () => {
   it('retains both topic projections for direct post categories and categories on independently owned RSS feeds', async () => {

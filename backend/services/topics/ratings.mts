@@ -3,6 +3,7 @@ import { beginTransaction, write, type TransactionQuery } from '@data-stores/psq
 import type { TopicRatingStats } from './types.mts'
 import { lockActiveTopicForRatingStatsRefresh } from './ratings-lifecycle.mts'
 import { normalizeTopicRatingStats } from './normalize-rating-stats.mts'
+import { advanceTopicRatingRevision, upsertTopicRatingStats } from './ratings-write.mts'
 import sql from 'sql-template-strings'
 
 const ratingStatsKeys = [
@@ -27,6 +28,7 @@ export async function updateTopicRatingStats(topicId: string): Promise<void> {
   ])
   const changed = hasRatingStatsChanged(currentStats, calculatedStats)
   if (changed) await upsertTopicRatingStats(query, topicId, calculatedStats)
+  else await advanceTopicRatingRevision(query, topicId)
   await query.commit()
 
   if (changed) await enqueueBulkRefreshTopicMetricsById([topicId])
@@ -141,57 +143,4 @@ function hasRatingStatsChanged(
       return Math.abs(currentValue - calculatedValue) > EPSILON
     return currentValue !== calculatedValue
   })
-}
-
-async function upsertTopicRatingStats(
-  query: TransactionQuery,
-  topicId: string,
-  stats: TopicRatingStats,
-): Promise<void> {
-  await write(
-    sql`/* upsertTopicRatingStats */
-    INSERT INTO topic_metrics (
-      topic_id,
-      ratings__score__1,
-      ratings__score__2,
-      ratings__score__3,
-      ratings__score__4,
-      ratings__score__5,
-      ratings__count__1,
-      ratings__count__2,
-      ratings__count__3,
-      ratings__count__4,
-      ratings__count__5,
-      ratings__updated_at
-    )
-    VALUES (
-      ${topicId},
-      ${stats.ratings__score__1},
-      ${stats.ratings__score__2},
-      ${stats.ratings__score__3},
-      ${stats.ratings__score__4},
-      ${stats.ratings__score__5},
-      ${stats.ratings__count__1},
-      ${stats.ratings__count__2},
-      ${stats.ratings__count__3},
-      ${stats.ratings__count__4},
-      ${stats.ratings__count__5},
-      CURRENT_TIMESTAMP
-    )
-    ON CONFLICT (topic_id) DO UPDATE SET
-      ratings__score__1 = EXCLUDED.ratings__score__1,
-      ratings__score__2 = EXCLUDED.ratings__score__2,
-      ratings__score__3 = EXCLUDED.ratings__score__3,
-      ratings__score__4 = EXCLUDED.ratings__score__4,
-      ratings__score__5 = EXCLUDED.ratings__score__5,
-      ratings__count__1 = EXCLUDED.ratings__count__1,
-      ratings__count__2 = EXCLUDED.ratings__count__2,
-      ratings__count__3 = EXCLUDED.ratings__count__3,
-      ratings__count__4 = EXCLUDED.ratings__count__4,
-      ratings__count__5 = EXCLUDED.ratings__count__5,
-      ratings__updated_at = EXCLUDED.ratings__updated_at
-    RETURNING topic_id
-  `,
-    { client: query.client },
-  )
 }

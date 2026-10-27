@@ -27,6 +27,7 @@ export function pagedDispatchBackoffStrategies() {
       'activitypub',
       'images',
       'memberships',
+      'topicMerges',
     ].map(dispatcher => [
       `paged-dispatch-${dispatcher}`,
       (attempt: number) =>

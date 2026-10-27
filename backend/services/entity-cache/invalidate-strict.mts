@@ -7,6 +7,7 @@ import {
   getCacheKeys,
 } from './keys.mts'
 import { caches } from './caches.mts'
+import type { EntityRelationElectionCacheKey } from './entity-relation-election-key.mts'
 import { deleteFromCachesInChunks } from './invalidate.mts'
 import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
 import { HTML_TAG, communityTag, postTag, storyTag, topicTag, userTag } from '@ts-shared/cache'
@@ -14,6 +15,11 @@ import { HTML_TAG, communityTag, postTag, storyTag, topicTag, userTag } from '@t
 /** Strict publication-worker cache effects: errors and tag enqueue failures propagate. */
 export async function invalidatePostStrict(...keys: unknown[]): Promise<void> {
   const postKeys = await getPostCacheKeysWithOptions({ readOnly: false }, ...keys)
+  await invalidateResolvedPostKeysStrict(postKeys)
+}
+
+/** Known post identity/slug keys from a bounded canonical enumeration. */
+export async function invalidateResolvedPostKeysStrict(postKeys: string[]): Promise<void> {
   await Promise.all([
     deleteFromCachesInChunks([
       { cache: caches.posts, keys: postKeys },
@@ -47,6 +53,27 @@ export async function invalidateTopicStrict(...keys: unknown[]): Promise<void> {
     ]),
     enqueueBulkPurgeCacheTags(topicKeys.map(topicTag)),
   ])
+}
+
+/** The caller has already enumerated a bounded page of canonical IDs/slugs/aliases. */
+export async function invalidateResolvedTopicKeysStrict(topicKeys: string[]): Promise<void> {
+  await Promise.all([
+    deleteFromCachesInChunks([
+      { cache: caches.topics, keys: topicKeys },
+      { cache: caches.topics_with_redirect, keys: topicKeys },
+      { cache: caches.topics_lookup, keys: topicKeys },
+      { cache: caches.topic_metrics, keys: topicKeys },
+      { cache: caches.topic_elections, keys: topicKeys },
+    ]),
+    enqueueBulkPurgeCacheTags(topicKeys.map(topicTag)),
+  ])
+}
+
+/** No key discovery and no best-effort wrapper: the owning merge cursor retries failures. */
+export async function invalidateResolvedEntityRelationElectionKeysStrict(
+  keys: EntityRelationElectionCacheKey[],
+): Promise<void> {
+  await deleteFromCachesInChunks([{ cache: caches.entity_relation_elections, keys }])
 }
 
 export async function invalidateCommunityStrict(...keys: unknown[]): Promise<void> {

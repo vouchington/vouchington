@@ -1,0 +1,25 @@
+{
+  "name": "@workers/topic-merge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-page topic merge processor and recovery dispatcher",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-core": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@queues/background": "workspace:^",
+    "@services/topics": "workspace:^"
+  }
+}

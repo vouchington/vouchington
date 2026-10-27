@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  beginTransaction,
-  createTestTopic,
-  createTestUser,
-  getTestPostgresBackendProcessId,
-  getUrlHostnameTopicId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers'
+import { createTestTopic, createTestUser, getUrlHostnameTopicId } from '@voucha/test-helpers'
 import { getActiveLandingPageHostnameClaims } from '@voucha/test-helpers/hostname-ownership'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
@@ -18,7 +11,7 @@ import '@voucha/test-helpers/entity-url-guard-registrations'
 import { addAdditionalHostname } from './additional-hostnames.mts'
 import { getTopicByAny } from './get.mts'
 import { setTopicHostnameLink } from './hostname-link.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 
 const landing = getEntityRelationMetadataOrThrow({
   subjectType: 'topic',
@@ -28,7 +21,7 @@ const landing = getEntityRelationMetadataOrThrow({
 
 describe('topic merge hostname ownership', () => {
   it.each(['primary', 'additional', 'landing'] as const)(
-    'waits for a concurrent source %s claim before discovering ownership',
+    'moves a source %s claim committed before admission',
     async kind => {
       const admin = await createTestUser({ administrator: true })
       const source = (await getTopicByAny((await createTestTopic({ user: admin })).id))!
@@ -37,30 +30,16 @@ describe('topic merge hostname ownership', () => {
       const hostnameId = (await upsertUrlHostnames(admin.id, [hostname])).get(hostname)!
       const url = kind === 'landing' ? await addUrl(admin.id, `https://${hostname}/`) : null
 
-      await using holder = await beginTransaction()
       if (kind === 'primary') {
-        await setTopicHostnameLink(source.id, hostnameId, { query: holder })
+        await setTopicHostnameLink(source.id, hostnameId)
       } else if (kind === 'additional') {
-        await addAdditionalHostname(source.id, hostname, admin.id, { query: holder })
+        await addAdditionalHostname(source.id, hostname, admin.id)
       } else {
         await writeEntityRelations(landing, admin, [{ subject: source, object: { id: url!.id } }], {
           vote: false,
-          query: holder,
         })
       }
-
-      const holderPid = await getTestPostgresBackendProcessId(holder)
-      const merging = mergeTopicAliases(admin, source, destination).then(
-        () => null,
-        (err: unknown) => err,
-      )
-      try {
-        await waitForTestPostgresLockWaiter(holderPid, 'lockTopicHostnameMutations')
-      } finally {
-        await holder.commit()
-        await merging
-      }
-      expect(await merging).toBeNull()
+      await mergeTopicAliases(admin, source, destination)
 
       const owners =
         kind === 'landing'
@@ -71,7 +50,7 @@ describe('topic merge hostname ownership', () => {
   )
 
   it.each(['source', 'deleted destination'] as const)(
-    'waits for a separate topic claim on the %s landing-page hostname',
+    'preserves a separate topic claim on the %s landing-page hostname',
     async kind => {
       const admin = await createTestUser({ administrator: true })
       const source = (await getTopicByAny((await createTestTopic({ user: admin })).id))!
@@ -97,20 +76,8 @@ describe('topic merge hostname ownership', () => {
         })
       }
 
-      await using holder = await beginTransaction()
-      await addAdditionalHostname(claimant.id, hostname, admin.id, { query: holder })
-      const holderPid = await getTestPostgresBackendProcessId(holder)
-      const merging = mergeTopicAliases(admin, source, destination).then(
-        () => null,
-        (err: unknown) => err,
-      )
-      try {
-        await waitForTestPostgresLockWaiter(holderPid, 'lockHostnameOwnership')
-      } finally {
-        await holder.commit()
-        await merging
-      }
-      expect(await merging).toBeNull()
+      await addAdditionalHostname(claimant.id, hostname, admin.id)
+      await mergeTopicAliases(admin, source, destination)
       expect(await getUrlHostnameTopicId(hostnameId)).toBe(claimant.id)
       expect(await getActiveLandingPageHostnameClaims([hostnameId])).toEqual([destination.id])
       const destinationRelations = await getEntityRelations(

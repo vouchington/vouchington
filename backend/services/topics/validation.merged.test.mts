@@ -6,7 +6,7 @@ import {
 } from './validation.mts'
 import { createTestUser, createTestTopic, insertTestRewardsProgram } from '@voucha/test-helpers'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from './get.mts'
 
 describe('validation - merged topic filter', () => {

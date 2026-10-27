@@ -5,7 +5,7 @@ import {
   createTrendingTopicsDataBatch,
 } from '@voucha/test-helpers/entities/trending-topics'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '@services/topics/get'
 import { withTestTrendingTopicsWindow } from '@voucha/test-helpers/trending-topics-window'
 

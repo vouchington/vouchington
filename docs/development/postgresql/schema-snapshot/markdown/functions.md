@@ -158,6 +158,30 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_id
  LANGUAGE plpgsql
 ```
 
+## `fn_ensure_topic_merge_participant_not_reserved`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_participant_not_reserved()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_topic_merge_relation_child_not_reserved`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_relation_child_not_reserved()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_ensure_topic_merge_slug_alias_not_reserved`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_topic_merge_slug_alias_not_reserved()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_field_changes(before_fields jsonb, after_fields jsonb)`
 
 ```sql
@@ -521,6 +545,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_topic_aliases()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_topic_image_placements()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_topic_merge_publication_work_holds`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_topic_merge_publication_work_holds()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

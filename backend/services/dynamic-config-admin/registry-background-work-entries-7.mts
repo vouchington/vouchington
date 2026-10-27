@@ -10,6 +10,7 @@ import {
 } from '@services/remote-actors/work-limits'
 import { storiesWorkConfig, storiesWorkMaxValues } from '@services/stories/work-limits'
 import { topicsWorkConfig, topicsWorkMaxValues } from '@services/topics/work-limits'
+import { topicMergeWorkConfig, topicMergeWorkMaxValues } from '@services/topics/merge-work-limits'
 
 export const backgroundWorkRegistryEntries7 = {
   'media-delivery-safety-work-config': defineBoundedWorkNamespace({
@@ -66,6 +67,17 @@ export const backgroundWorkRegistryEntries7 = {
         'Alias post invalidation batch size for topics processing.',
       parent_merge_cycle_max_depth:
         'Maximum ancestry depth inspected before a topic merge fails closed.',
+    },
+  }),
+  'topic-merge-work-config': defineBoundedWorkNamespace({
+    namespace: 'topic-merge-work-config',
+    config: topicMergeWorkConfig,
+    label: 'Topic merges',
+    maxValues: topicMergeWorkMaxValues,
+    descriptions: {
+      page_size: 'Maximum source rows processed by one staged merge page.',
+      recovery_stale_seconds:
+        'Minimum age since a merge cursor advanced before recovery re-enqueues it.',
     },
   }),
 }

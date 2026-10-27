@@ -2390,6 +2390,43 @@
       }
     },
     {
+      "id": "topic-merge-operations",
+      "title": "Asynchronous topic merge operations",
+      "domain": "Topics",
+      "intents": ["topics"],
+      "requirements": ["docs/requirements/content/TOPICS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "topics"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": ["web/components/topics/settings/merge-client.tsx"],
+          "behaviorTests": [
+            "web/components/topics/settings/__tests__/merge-client.mock.test.tsx",
+            "web/lib/api/client/__tests__/topics.mock.test.ts"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET must adopt pending topic merge operations and status presentation after the producer lands; native work does not gate the producer.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/517"
+      }
+    },
+    {
       "id": "source-browsing",
       "title": "Source directory browse and relations",
       "domain": "Sources",

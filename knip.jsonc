@@ -147,6 +147,8 @@
         "config-driven/0000-00-01-entity-relations.mts": ["exports"],
         "config-driven/0000-00-01a-entity-relation-partitions.mts": ["exports"],
         "config-driven/0000-00-01b-entity-relation-indexes.mts": ["exports"],
+        // Runtime migration runner loads this generator by filename from the config-driven directory.
+        "config-driven/0000-00-01d-topic-merge-relation-work-items.mts": ["exports"],
         "config-driven/0005-00-01-seed-topics.mts": ["exports"],
         "config-driven/0010-00-01-seed-agents.mts": ["exports"],
         "config-driven/0010-00-02-seed-admin-user.mts": ["exports"],

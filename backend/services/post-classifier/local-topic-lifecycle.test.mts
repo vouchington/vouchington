@@ -5,7 +5,7 @@ import {
   persistClassifierRunOutcomes,
   readClassifierRunOutcomes,
 } from '@services/classifier-runs'
-import { mergeTopicAliases } from '../topics/merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '../topics/get.mts'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'

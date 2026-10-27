@@ -23,7 +23,7 @@ import {
   unlinkTopicAlias,
 } from '../aliases.mts'
 import { getTopicByAny } from '../get.mts'
-import { mergeTopicAliases } from '../merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicAliasRecordByValue } from '../get-topic-aliases.mts'
 import { updateTopic } from '../update.mts'
 import { topicsWorkConfig } from '../work-limits.mts'

@@ -304,11 +304,6 @@ CREATE OR REPLACE TRIGGER trigger_individual_rewards_program_point_valuations_up
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
 
--- find a rewards program's point valuations
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_ind_rewards_program_point_valuations__program_topic_id
-ON individual_rewards_program_point_valuations (rewards_program_topic_id);
-
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ind_rewards_program_point_valuations__currency_code
 ON individual_rewards_program_point_valuations (currency_code);
@@ -816,3 +811,5 @@ CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__amazon_ses_bounce_subty
 
 COMMENT ON COLUMN github_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';
 COMMENT ON COLUMN x_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';
+
+CREATE INDEX IF NOT EXISTS idx_indvdl_rwrds_prgrm_pnt_vltns__topic_individual ON individual_rewards_program_point_valuations(rewards_program_topic_id,individual_id);

@@ -38,9 +38,11 @@ describe('copyright staff queue urgency', () => {
     restorePriority = overrideDynamicConfigFieldsForTest(copyrightConfig, {
       trustedFlaggerPriority: false,
     })
-    const fixture = await createCopyrightFormFixture()
+    const [fixture, moderator] = await Promise.all([
+      createCopyrightFormFixture(),
+      createTestUser({ extraRoles: ['moderator'] }),
+    ])
     const target = fixture.form.targets[0]!
-    const moderator = await createTestUser({ extraRoles: ['moderator'] })
     const createGuestNotice = async (now: Date) => {
       const { intake } = await createCopyrightFormIntake(
         {
@@ -100,21 +102,30 @@ describe('copyright staff queue urgency', () => {
         noticeId,
         reviewerUserId: moderator.id,
         state,
-        now: decisionNow,
+        now,
       })
     }
+    await Promise.all([
+      (async () => {
+        const capability = await issueCopyrightGuestCapability({
+          issuedAt: decisionNow,
+          currentUser: moderator,
+          noticeId: filingCase,
+          expiresAt: new Date(decisionNow.getTime() + day),
+        })
+        await appendCopyrightGuestFiling({
+          noticeId: filingCase,
+          token: capability.token,
+          now: decisionNow,
+          kind: 'court_or_ccb_hold',
+          statement: 'An action has been filed.',
+        })
+      })(),
+      createDeadline(due, 'due', decisionNow),
+      createDeadline(missed, 'missed', decisionNow),
+      createDeadline(interleavingControl, 'due', new Date(decisionNow.getTime() + 1)),
+    ])
     // Eligible owned control interleaves between the due deadline and newer legal hold.
-    const interleavingControl = await createGuestNotice(decisionNow)
-    await insertReviewedCopyrightFormIntake({
-      noticeId: interleavingControl,
-      reviewerUserId: moderator.id,
-    })
-    await insertOpenCopyrightCounterNoticeDeadline({
-      noticeId: interleavingControl,
-      reviewerUserId: moderator.id,
-      state: 'due',
-      now: new Date(decisionNow.getTime() + 1),
-    })
     const ownedIds = [missed, due, filingCase, olderIntake]
     // A later unrelated intake sorts beyond the owned span, exposing any walk
     // that scans the shared queue tail instead of stopping after owned cases.

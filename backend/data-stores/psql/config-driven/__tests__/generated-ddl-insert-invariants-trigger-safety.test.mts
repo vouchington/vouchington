@@ -87,9 +87,11 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
 
   it('accepts active-topic validation without allowing unknown trigger side effects', async () => {
     const validation = triggerFactsForTable('topic_aliases')?.filter(
-      trigger => trigger?.function?.parts.at(-1)?.value === 'fn_ensure_active_topic_references',
+      trigger =>
+        trigger?.function?.parts.at(-1)?.value === 'fn_ensure_active_topic_references' ||
+        trigger?.function?.parts.at(-1)?.value === 'fn_ensure_topic_merge_slug_alias_not_reserved',
     )
-    expect(validation).toHaveLength(1)
+    expect(validation).toHaveLength(2)
     expect(replayUnsafeTrigger(validation!, new Set(['topic_id']), new Set(), undefined)).toBe(
       false,
     )

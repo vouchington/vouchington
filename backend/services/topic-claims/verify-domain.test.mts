@@ -6,7 +6,7 @@ import {
   softDeleteTopic,
   getTestTopicClaimVerificationState,
 } from '@voucha/test-helpers'
-import { mergeTopicAliases } from '../topics/merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '../topics/get.mts'
 import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim, rejectTopicClaim } from './admin-verify.mts'

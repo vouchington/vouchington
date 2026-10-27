@@ -4,6 +4,7 @@ import {
 } from '@queues/background/enqueues/image-deletion-jobs'
 import { processImageDeletionPage } from '@services/images/delete'
 import { processImageDeletionRecovery } from './image-deletion.mts'
+import { topicMergeHandlers } from '@workers/topic-merge/workers'
 import type { BackgroundHandler } from '@queues/background/types'
 import { accountLifecycleHandlers } from '@workers/account-lifecycle/workers'
 import { activitypubHandlers } from '@workers/activitypub/workers'
@@ -37,6 +38,7 @@ import { voteAggregationHandlers } from '@workers/vote-aggregation/workers'
 export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   backgroundHandler(IMAGE_DELETION_PAGE_JOB, job => processImageDeletionPage(job.data.imageId)),
   backgroundHandler(IMAGE_DELETION_RECOVER_JOB, processImageDeletionRecovery),
+  ...topicMergeHandlers,
   ...sesInboundHandlers,
   ...openAiModerationHandlers,
   ...postMentionsHandlers,

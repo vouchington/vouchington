@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS topics (
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
   merged_into_topic_id UUID REFERENCES topics ON DELETE RESTRICT,
   merged_at TIMESTAMPTZ,
-  merged_by_id UUID REFERENCES users ON DELETE RESTRICT,
+  merged_by_id UUID REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   CONSTRAINT chk_topics_merged_into_not_self
     CHECK (merged_into_topic_id IS NULL OR merged_into_topic_id <> id),
   CONSTRAINT chk_topics_merge_state_complete
@@ -124,6 +124,165 @@ BEFORE UPDATE ON topics
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+-- A merge operation reserves both participants while its bounded pages run. The source's
+-- redirect is written only by the final page, after every current reference has moved.
+CREATE TYPE topic_merge_stages AS ENUM (
+  'preflight',
+  'aliases', 'subtype_create', 'subtypes', 'derived', 'classifier_cleanup', 'references', 'collisions', 'bookmarks', 'relations',
+  'subtype_delete', 'vote_aggregation', 'finalize', 'effects', 'cleanup', 'cleanup_failed'
+);
+
+CREATE TABLE IF NOT EXISTS topic_merge_operations (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  admission_position BIGINT GENERATED ALWAYS AS IDENTITY,
+  source_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE RESTRICT,
+  destination_topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE RESTRICT,
+  requested_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
+  fence_token UUID NOT NULL DEFAULT uuidv7(),
+  stage topic_merge_stages NOT NULL DEFAULT 'preflight',
+  stage_table_position INTEGER NOT NULL DEFAULT 0 CHECK (stage_table_position >= 0),
+  relation_column_position SMALLINT NOT NULL DEFAULT 0 CHECK (relation_column_position BETWEEN 0 AND 4),
+  relation_phase SMALLINT NOT NULL DEFAULT 0 CHECK (relation_phase BETWEEN 0 AND 9),
+  alias_phase SMALLINT NOT NULL DEFAULT 0 CHECK (alias_phase BETWEEN 0 AND 4),
+  cursor_row_id UUID,
+  cursor_subject_id UUID,
+  cursor_object_id UUID,
+  cursor_alias TEXT,
+  cursor_country_position SMALLINT,
+  generation INTEGER NOT NULL DEFAULT 0 CHECK (generation >= 0),
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  failed_at TIMESTAMPTZ,
+  rejected_at TIMESTAMPTZ,
+  error_code TEXT,
+  metric_stats JSONB NOT NULL DEFAULT '{}'::jsonb,
+  metric_snapshot_xmax XID8,
+  metric_snapshot_xip_count INTEGER,
+  metric_rating_revision BIGINT,
+  source_aliases_before JSONB NOT NULL DEFAULT '[]'::jsonb,
+  destination_aliases_before JSONB NOT NULL DEFAULT '[]'::jsonb,
+  destination_aliases_after JSONB NOT NULL DEFAULT '[]'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT chk_topic_merge_operations_distinct_topics
+    CHECK (source_topic_id <> destination_topic_id),
+  CONSTRAINT chk_topic_merge_operations_terminal_state
+    CHECK (num_nonnulls(completed_at, failed_at) <= 1),
+  CONSTRAINT chk_topic_merge_operations_failed_error
+    CHECK ((rejected_at IS NULL) = (error_code IS NULL)),
+  CONSTRAINT chk_topic_merge_operations_failed_rejection
+    CHECK (failed_at IS NULL OR rejected_at IS NOT NULL),
+  CONSTRAINT chk_topic_merge_operations_metric_snapshot_complete
+    CHECK ((metric_snapshot_xmax IS NULL AND metric_snapshot_xip_count IS NULL
+        AND metric_rating_revision IS NULL)
+      OR (metric_snapshot_xmax IS NOT NULL AND metric_snapshot_xip_count IS NOT NULL
+        AND metric_snapshot_xip_count >= 0 AND metric_rating_revision IS NOT NULL
+        AND metric_rating_revision >= 0)),
+  CONSTRAINT uq_topic_merge_operations__admission_position UNIQUE (admission_position)
+);
+
+CREATE OR REPLACE TRIGGER trigger_topic_merge_operations_updated_at
+BEFORE UPDATE ON topic_merge_operations
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operations__source_topic_id
+ON topic_merge_operations (source_topic_id, id);
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operations__destination_topic_id
+ON topic_merge_operations (destination_topic_id, id);
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operations__requested_by_id
+ON topic_merge_operations (requested_by_id);
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operations__active_source
+ON topic_merge_operations (source_topic_id)
+WHERE completed_at IS NULL AND failed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operations__active_destination
+ON topic_merge_operations (destination_topic_id)
+WHERE completed_at IS NULL AND failed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operations__active_recovery
+ON topic_merge_operations (updated_at, id)
+WHERE completed_at IS NULL AND failed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operations__active_id
+ON topic_merge_operations (id)
+WHERE completed_at IS NULL AND failed_at IS NULL;
+COMMENT ON TABLE topic_merge_operations IS 'Durable progress and participant reservation for one staged topic merge.';
+COMMENT ON COLUMN topic_merge_operations.admission_position IS 'Commit-ordered merge priority assigned under the admission transaction lock; younger connected operations reject in preflight.';
+COMMENT ON COLUMN topic_merge_operations.source_topic_id IS 'Topic whose current references move to the destination.';
+COMMENT ON COLUMN topic_merge_operations.rejected_at IS 'When bounded preflight rejected the request; reservations release only after scratch cleanup reaches failed_at.';
+COMMENT ON COLUMN topic_merge_operations.destination_topic_id IS 'Topic that receives current references.';
+COMMENT ON COLUMN topic_merge_operations.requested_by_id IS 'Administrator who requested the merge.';
+COMMENT ON COLUMN topic_merge_operations.fence_token IS 'Private capability for one worker transaction to mutate reserved participants.';
+COMMENT ON COLUMN topic_merge_operations.stage IS 'Current ordered merge stage.';
+COMMENT ON COLUMN topic_merge_operations.stage_table_position IS 'Position in the finite reviewed table inventory for the current stage.';
+COMMENT ON COLUMN topic_merge_operations.relation_column_position IS 'Subject or object topic-FK pass for the current relation table.';
+COMMENT ON COLUMN topic_merge_operations.relation_phase IS 'Discovery, votes, flags, or parent cleanup step for a voted relation group.';
+COMMENT ON COLUMN topic_merge_operations.alias_phase IS 'Destination snapshot, source snapshot, move, slug, or revision step for aliases.';
+COMMENT ON COLUMN topic_merge_operations.cursor_row_id IS 'Last processed UUID row key within the current stage and table.';
+COMMENT ON COLUMN topic_merge_operations.cursor_subject_id IS 'Last processed relation subject key for a composite-key page.';
+COMMENT ON COLUMN topic_merge_operations.cursor_object_id IS 'Last processed relation object key for a composite-key page.';
+COMMENT ON COLUMN topic_merge_operations.cursor_country_position IS 'Last country-key comparison position for retailer preflight.';
+COMMENT ON COLUMN topic_merge_operations.cursor_alias IS 'Last processed alias in lexical order.';
+COMMENT ON COLUMN topic_merge_operations.generation IS 'Committed page generation used to reject stale continuation jobs.';
+COMMENT ON COLUMN topic_merge_operations.started_at IS 'First page start time.';
+COMMENT ON COLUMN topic_merge_operations.completed_at IS 'Time the source redirect and final state committed.';
+COMMENT ON COLUMN topic_merge_operations.failed_at IS 'Preflight rejection time before any merge effects.';
+COMMENT ON COLUMN topic_merge_operations.error_code IS 'Stable error code for a rejected preflight.';
+COMMENT ON COLUMN topic_merge_operations.metric_stats IS 'Bounded page accumulation of destination vote, rating, and bookmark statistics.';
+COMMENT ON COLUMN topic_merge_operations.metric_snapshot_xmax IS 'Upper transaction-ID boundary captured at the first post-reference metric page for vote projection ordering.';
+COMMENT ON COLUMN topic_merge_operations.metric_snapshot_xip_count IS 'In-progress transaction count in the first metric-page snapshot; lower is newer at equal xmax.';
+COMMENT ON COLUMN topic_merge_operations.metric_rating_revision IS 'Destination rating reconciliation revision captured with the first metric page; finalization restarts if it changed.';
+COMMENT ON COLUMN topic_merge_operations.source_aliases_before IS 'Sorted source alias history document accumulated through bounded pages.';
+COMMENT ON COLUMN topic_merge_operations.destination_aliases_before IS 'Sorted destination alias history document accumulated through bounded pages.';
+COMMENT ON COLUMN topic_merge_operations.destination_aliases_after IS 'Sorted merged destination alias history document accumulated through bounded pages.';
+COMMENT ON COLUMN topic_merge_operations.updated_at IS 'Last committed cursor or stage transition time for recovery.';
+
+
+CREATE TABLE IF NOT EXISTS topic_merge_parent_ancestors (
+  operation_id UUID NOT NULL REFERENCES topic_merge_operations (id) ON DELETE CASCADE,
+  topic_id UUID NOT NULL REFERENCES topics (id) ON DELETE RESTRICT,
+  depth INTEGER NOT NULL CHECK (depth >= 0),
+  cursor_object_id UUID,
+  completed_at TIMESTAMPTZ,
+  PRIMARY KEY (operation_id, topic_id)
+);
+CREATE INDEX IF NOT EXISTS idx_topic_merge_parent_ancestors__topic_id
+ON topic_merge_parent_ancestors (topic_id);
+CREATE INDEX IF NOT EXISTS idx_topic_merge_parent_ancestors__pending
+ON topic_merge_parent_ancestors (operation_id, topic_id) WHERE completed_at IS NULL;
+COMMENT ON TABLE topic_merge_parent_ancestors IS 'Frozen ancestor frontier for bounded preflight of the contracted topic parent graph.';
+COMMENT ON COLUMN topic_merge_parent_ancestors.operation_id IS 'Merge operation that reserves this ancestor.';
+COMMENT ON COLUMN topic_merge_parent_ancestors.topic_id IS 'Ancestor whose outgoing parent edges remain frozen until operation settlement.';
+COMMENT ON COLUMN topic_merge_parent_ancestors.depth IS 'Greatest reached ancestry depth for overflow detection.';
+COMMENT ON COLUMN topic_merge_parent_ancestors.cursor_object_id IS 'Keyset comparison position in outgoing parent edges; never joined.';
+COMMENT ON COLUMN topic_merge_parent_ancestors.completed_at IS 'Time the current depth expansion finished.';
+
+CREATE TABLE IF NOT EXISTS topic_merge_metric_users (
+  operation_id UUID NOT NULL REFERENCES topic_merge_operations (id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  original_vote_topic_id UUID REFERENCES topics (id) ON DELETE RESTRICT,
+  cursor_topic_vote_id UUID,
+  topic_vote_score SMALLINT,
+  topic_vote_score_is_neutral BOOLEAN NOT NULL DEFAULT FALSE,
+  topic_vote_score_is_semantic BOOLEAN NOT NULL DEFAULT FALSE,
+  cursor_review_post_id UUID,
+  review_rating SMALLINT CHECK (review_rating BETWEEN 1 AND 5),
+  PRIMARY KEY (operation_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_merge_metric_users__user_id
+ON topic_merge_metric_users (user_id);
+CREATE INDEX IF NOT EXISTS idx_topic_merge_metric_users__original_vote_topic_id
+ON topic_merge_metric_users (original_vote_topic_id);
+
+COMMENT ON TABLE topic_merge_metric_users IS 'Frozen voter collision ownership and current per-user vote and review candidates accumulated through bounded merge pages.';
+COMMENT ON COLUMN topic_merge_metric_users.operation_id IS 'Owning topic merge operation.';
+COMMENT ON COLUMN topic_merge_metric_users.user_id IS 'Voter or review author whose current signal is accumulated.';
+COMMENT ON COLUMN topic_merge_metric_users.original_vote_topic_id IS 'Frozen winner of the voter collision before any source ballot history is moved; null for review-only users.';
+COMMENT ON COLUMN topic_merge_metric_users.cursor_topic_vote_id IS 'Ordering marker for the latest topic vote seen on a page.';
+COMMENT ON COLUMN topic_merge_metric_users.topic_vote_score IS 'Latest topic vote score for the user.';
+COMMENT ON COLUMN topic_merge_metric_users.topic_vote_score_is_neutral IS 'Whether the latest zero score explicitly records a neutral vote.';
+COMMENT ON COLUMN topic_merge_metric_users.topic_vote_score_is_semantic IS 'Whether the latest score uses semantic policy.';
+COMMENT ON COLUMN topic_merge_metric_users.cursor_review_post_id IS 'Ordering marker for the latest eligible review seen on a page.';
+COMMENT ON COLUMN topic_merge_metric_users.review_rating IS 'Rating from the latest eligible review.';
+
 -- search topics by name
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__name__text_pattern_ops
@@ -148,11 +307,6 @@ ON topics (LOWER(name));
 CREATE INDEX IF NOT EXISTS idx_topics__hostname_id
 ON topics (hostname_id)
 WHERE hostname_id IS NOT NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_topics__merged_into_topic_id
-ON topics(merged_into_topic_id, id)
-WHERE merged_into_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__created_by_id
@@ -293,6 +447,7 @@ CREATE TABLE IF NOT EXISTS topic_metrics (
   ratings__count__5 INT DEFAULT 0,
 
   ratings__updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  ratings__revision BIGINT NOT NULL DEFAULT 0 CHECK (ratings__revision >= 0),
 
   bookmarks__follow_count INT DEFAULT 0,
   bookmarks__updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -323,6 +478,7 @@ COMMENT ON COLUMN topic_metrics.ratings__count__3 IS 'Number of 3-star ratings.'
 COMMENT ON COLUMN topic_metrics.ratings__count__4 IS 'Number of 4-star ratings.';
 COMMENT ON COLUMN topic_metrics.ratings__count__5 IS 'Number of 5-star ratings.';
 COMMENT ON COLUMN topic_metrics.ratings__updated_at IS 'When the rating metrics were last recalculated.';
+COMMENT ON COLUMN topic_metrics.ratings__revision IS 'Monotonic reconciliation fence advanced by every completed rating refresh and merge rating write.';
 COMMENT ON COLUMN topic_metrics.bookmarks__follow_count IS 'Number of users who bookmarked/follow this topic.';
 COMMENT ON COLUMN topic_metrics.bookmarks__updated_at IS 'When the bookmark count was last recalculated.';
 
@@ -355,8 +511,8 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rewards_program_topics__company_id
-ON rewards_program_topics (company_topic_id)
+CREATE INDEX IF NOT EXISTS idx_rewards_program_topics__company_topic_id__topic_id
+ON rewards_program_topics (company_topic_id, topic_id)
 WHERE company_topic_id IS NOT NULL;
 
 COMMENT ON TABLE rewards_program_topics IS 'Extension table for topics of type rewards_program. Links program to its parent company.';
@@ -389,8 +545,8 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_referral_program_topics__company_id
-ON referral_program_topics (company_topic_id)
+CREATE INDEX IF NOT EXISTS idx_referral_program_topics__company_topic_id__topic_id
+ON referral_program_topics (company_topic_id, topic_id)
 WHERE company_topic_id IS NOT NULL;
 
 COMMENT ON TABLE referral_program_topics IS 'Extension table for topics of type referral_program. Links program to company.';
@@ -411,13 +567,13 @@ ALTER TABLE topics VALIDATE CONSTRAINT fk_topics_rewards_program_topic_id;
 ALTER TABLE topics VALIDATE CONSTRAINT fk_topics_referral_program_topic_id;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_topics__rewards_program_topic_id
-ON topics (rewards_program_topic_id)
+CREATE INDEX IF NOT EXISTS idx_topics__rewards_program_topic_id__id
+ON topics (rewards_program_topic_id, id)
 WHERE rewards_program_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_topics__referral_program_topic_id
-ON topics (referral_program_topic_id)
+CREATE INDEX IF NOT EXISTS idx_topics__referral_program_topic_id__id
+ON topics (referral_program_topic_id, id)
 WHERE referral_program_topic_id IS NOT NULL;
 
 COMMENT ON COLUMN topics.rewards_program_topic_id IS 'The rewards program this topic is associated with. Any topic type can link to a rewards program.';
@@ -452,13 +608,13 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_card_topics__bank_id
-ON card_topics (bank_topic_id)
+CREATE INDEX IF NOT EXISTS idx_card_topics__bank_topic_id__topic_id
+ON card_topics (bank_topic_id, topic_id)
 WHERE bank_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_card_topics__brand_id
-ON card_topics (brand_topic_id)
+CREATE INDEX IF NOT EXISTS idx_card_topics__brand_topic_id__topic_id
+ON card_topics (brand_topic_id, topic_id)
 WHERE brand_topic_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -575,7 +731,17 @@ LANGUAGE plpgsql AS $$
 DECLARE
   affected_topic_ids UUID[];
   affected_topic_id UUID;
+  removed_aliases TEXT[];
+  added_aliases TEXT[];
 BEGIN
+  -- The operation accumulates the exact final projection in its alias history document.
+  -- Its private transaction capability is checked against the durable reservation.
+  IF EXISTS (
+    SELECT 1 FROM topic_merge_operations operation
+    WHERE operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)
+      AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)
+      AND operation.completed_at IS NULL AND operation.failed_at IS NULL
+  ) THEN RETURN NULL; END IF;
   IF TG_OP = 'INSERT' THEN
     SELECT ARRAY_AGG(DISTINCT topic_id) INTO affected_topic_ids FROM new_aliases;
   ELSIF TG_OP = 'DELETE' THEN
@@ -585,19 +751,34 @@ BEGIN
       SELECT topic_id FROM new_aliases UNION SELECT topic_id FROM old_aliases
     ) affected;
   END IF;
-  -- Serialize cache projection by parent in a stable order before reading current aliases.
+  -- Serialize each parent and apply only this statement's transition rows. Re-reading every
+  -- destination alias after each bounded merge page would make the merge quadratic.
   FOR affected_topic_id IN
     SELECT id FROM topics WHERE id = ANY(affected_topic_ids) ORDER BY id FOR NO KEY UPDATE
   LOOP
-    UPDATE topics SET aliases = COALESCE((
-      SELECT ARRAY_AGG(alias ORDER BY alias) FROM topic_aliases
-      WHERE topic_id = affected_topic_id
-    ), '{}'::TEXT[]) WHERE id = affected_topic_id;
+    removed_aliases := '{}'::TEXT[];
+    added_aliases := '{}'::TEXT[];
+    IF TG_OP <> 'INSERT' THEN
+      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO removed_aliases
+      FROM old_aliases WHERE topic_id = affected_topic_id;
+    END IF;
+    IF TG_OP <> 'DELETE' THEN
+      SELECT COALESCE(ARRAY_AGG(alias), '{}'::TEXT[]) INTO added_aliases
+      FROM new_aliases WHERE topic_id = affected_topic_id;
+    END IF;
+    UPDATE topics SET aliases = ARRAY(
+      SELECT alias FROM (
+        SELECT existing.alias FROM UNNEST(topics.aliases) AS existing(alias)
+        WHERE existing.alias <> ALL(removed_aliases)
+        UNION
+        SELECT added.alias FROM UNNEST(added_aliases) AS added(alias)
+      ) next_aliases ORDER BY alias
+    ) WHERE id = affected_topic_id;
   END LOOP;
   RETURN NULL;
 END;
 $$;
-COMMENT ON FUNCTION fn_project_topic_aliases() IS 'Projects linked aliases to each affected topic search cache after every alias write.';
+COMMENT ON FUNCTION fn_project_topic_aliases() IS 'Applies bounded alias transition rows to each affected topic search cache in lexical order.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_topic_aliases_project_insert
@@ -638,6 +819,20 @@ CREATE INDEX IF NOT EXISTS idx_topic_aliases__updated_by_id
 ON topic_aliases (updated_by_id);
 
 COMMENT ON TABLE topic_aliases IS 'Topic aliases and standalone hashtags. Linked aliases are synced to topics.aliases.';
+
+CREATE TABLE IF NOT EXISTS topic_merge_operation_aliases (
+  operation_id UUID NOT NULL REFERENCES topic_merge_operations (id) ON DELETE CASCADE,
+  alias_id UUID NOT NULL REFERENCES topic_aliases (id) ON DELETE RESTRICT,
+  PRIMARY KEY (operation_id, alias_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_merge_operation_aliases__alias_id
+ON topic_merge_operation_aliases (alias_id);
+
+
+COMMENT ON TABLE topic_merge_operation_aliases IS 'Concrete alias identities moved by a merge, retained for bounded post-commit cache invalidation.';
+COMMENT ON COLUMN topic_merge_operation_aliases.operation_id IS 'Merge operation that moved this alias.';
+COMMENT ON COLUMN topic_merge_operation_aliases.alias_id IS 'Alias identity whose cache keys need invalidation.';
 COMMENT ON COLUMN topic_aliases.topic_id IS 'The linked topic. NULL identifies a standalone hashtag.';
 COMMENT ON COLUMN topic_aliases.alias IS 'Lowercase canonical alias or hashtag lookup key. Unique globally.';
 
@@ -967,3 +1162,5 @@ CREATE TRIGGER trigger_ensure_fediverse_instance_integration_changes_actor BEFOR
 CREATE TRIGGER trigger_fediverse_instance_integration_changes_append_only BEFORE UPDATE OR DELETE ON fediverse_instance_integration_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_fediverse_instance_integration_changes__changed_by_id ON fediverse_instance_integration_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_topics__merged_into_topic_id__id ON topics(merged_into_topic_id,id) WHERE merged_into_topic_id IS NOT NULL;

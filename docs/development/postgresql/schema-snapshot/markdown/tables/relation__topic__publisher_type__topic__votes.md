@@ -47,4 +47,5 @@ _none_
 - `relation__topic__publisher_type__topic__votes_pkey`: `CREATE UNIQUE INDEX relation__topic__publisher_type__topic__votes_pkey ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_topic_merge_relation_vote_reservation`: `CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__publisher_type__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__publisher_type__topic', 'subject_id', 'entity_relation_id', 'object_id, subject_id')`

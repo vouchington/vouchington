@@ -29,6 +29,7 @@ import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domai
 import { scheduledJobManifest as userRssFeedImports } from '@queues/user-rss-feed-imports/enqueues/schedules'
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
 import { scheduledJobManifest as hostnameBlocking } from '@queues/background/enqueues/hostname-blocking-schedules'
+import { scheduledJobManifest as topicMerge } from '@queues/background/enqueues/topic-merge-schedules'
 
 // Background domains register through one combined manifest, so the catalog lists that manifest.
 const background = combineBackgroundManifests([
@@ -48,6 +49,7 @@ const background = combineBackgroundManifests([
   emailDigests,
   userRssFeedImports,
   hostnameBlocking,
+  topicMerge,
 ])
 
 const backgroundCpu = combineBackgroundCpuManifests([

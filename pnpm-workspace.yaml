@@ -107,7 +107,6 @@ minimumReleaseAgeExclude:
   - '@vouchington/sentry'
   - '@vouchington/session-jwt'
   - '@vouchington/stripe'
-  - '@vouchington/typed-entities'
   - '@vouchington/utils'
   - '@vouchington/uuid-v7'
   - '@vouchington/worker-runtime'

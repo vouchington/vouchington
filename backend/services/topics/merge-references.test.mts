@@ -31,7 +31,9 @@ import {
 } from '@voucha/test-helpers/topic-merge-relations'
 import { describe, expect, it } from 'vitest'
 import { getTopicByAny } from './get.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
+import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
+import { processTopicMergeOperationPage } from './merge-operation-page.mts'
 import type { Topic } from './types.mts'
 
 async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0]): Promise<Topic> {
@@ -39,6 +41,20 @@ async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0
   const fullTopic = await getTopicByAny(topic.id)
   if (!fullTopic) throw new Error(`Test topic not found: ${topic.id}`)
   return fullTopic
+}
+
+async function runRejectedMerge(
+  admin: Awaited<ReturnType<typeof createTestUser>>,
+  source: Topic,
+  destination: Topic,
+) {
+  const operation = await createTopicMergeOperation(admin, source, destination)
+  let generation: number | null = 0
+  for (let page = 0; page < 2000 && generation !== null; page++) {
+    generation = await processTopicMergeOperationPage(operation.id, generation)
+  }
+  expect(generation).toBeNull()
+  return getTopicMergeOperation(admin, source.id, operation.id)
 }
 
 describe('mergeTopicAliases references', () => {
@@ -57,13 +73,12 @@ describe('mergeTopicAliases references', () => {
     const destination = await createFullTestTopic({ user: admin })
     const sourceFeed = await insertTestRssFeedDirect({ topicId: source.id })
     const destinationFeed = await insertTestRssFeedDirect({ topicId: destination.id })
-    await expect(mergeTopicAliases(admin, source, destination)).rejects.toMatchObject({
-      status: 409,
-      code: 'topic_merge_feed_conflict',
-      source_id: sourceFeed.id,
-      destination_id: destinationFeed.id,
+    await expect(runRejectedMerge(admin, source, destination)).resolves.toMatchObject({
+      status: 'failed',
+      error_code: 'topic_merge_feed_conflict',
     })
     await expect(getTopicMergeFeedOwner(sourceFeed.id)).resolves.toBe(source.id)
+    await expect(getTopicMergeFeedOwner(destinationFeed.id)).resolves.toBe(destination.id)
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
   })
 
@@ -113,7 +128,7 @@ describe('mergeTopicAliases references', () => {
     ])
   })
 
-  it('rejects competing lifetime links before any merge write and identifies both owners', async () => {
+  it('rejects competing lifetime links before any merge write and preserves both owners', async () => {
     const admin = await createTestUser({ administrator: true })
     const source = await createFullTestTopic({ user: admin, topic_type: 'rewards_program_status' })
     const destination = await createFullTestTopic({
@@ -134,13 +149,27 @@ describe('mergeTopicAliases references', () => {
       sourceOwnerId: sourceOwner.id,
       destinationOwnerId: destinationOwner.id,
     })
-    await expect(mergeTopicAliases(admin, source, destination)).rejects.toMatchObject({
-      status: 409,
-      code: 'topic_merge_lifetime_version_conflict',
-      source_id: sourceOwner.id,
-      destination_id: destinationOwner.id,
+    await expect(runRejectedMerge(admin, source, destination)).resolves.toMatchObject({
+      status: 'failed',
+      error_code: 'topic_merge_lifetime_version_conflict',
     })
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
+    await expect(
+      getTopicMergeStatusExtensions([
+        source.id,
+        destination.id,
+        sourceOwner.id,
+        destinationOwner.id,
+      ]),
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ topic_id: sourceOwner.id, lifetime_version_id: source.id }),
+        expect.objectContaining({
+          topic_id: destinationOwner.id,
+          lifetime_version_id: destination.id,
+        }),
+      ]),
+    )
   })
 
   it('repoints the source-only lifetime link while preserving destination subtype attributes', async () => {

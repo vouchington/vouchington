@@ -50,6 +50,7 @@
     "@workers/ses-inbound": "workspace:^",
     "@workers/sitemaps": "workspace:^",
     "@workers/story-post-related-url-projections": "workspace:^",
+    "@workers/topic-merge": "workspace:^",
     "@workers/urls-domains-blacklist": "workspace:^",
     "@workers/user-rss-feed-imports": "workspace:^",
     "@workers/vote-aggregation": "workspace:^",

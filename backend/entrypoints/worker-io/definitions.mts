@@ -22,6 +22,7 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/email-digests/enqueues/schedules'),
         import('@queues/user-rss-feed-imports/enqueues/schedules'),
         import('@queues/background/enqueues/hostname-blocking-schedules'),
+        import('@queues/background/enqueues/topic-merge-schedules'),
       ])
       return async () => {
         await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))

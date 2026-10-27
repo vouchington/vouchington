@@ -10,7 +10,7 @@ import {
   createTestRssFeedItemWithUrl,
   makeRandomEmbedding,
 } from '@voucha/test-helpers'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '@services/topics/get'
 
 describe('by-rss-feed-item-embedding', () => {

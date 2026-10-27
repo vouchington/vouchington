@@ -36,12 +36,12 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_ind_rewards_program_point_valuations__currency_code`: `CREATE INDEX idx_ind_rewards_program_point_valuations__currency_code ON public.individual_rewards_program_point_valuations USING btree (currency_code)`
-- `idx_ind_rewards_program_point_valuations__program_topic_id`: `CREATE INDEX idx_ind_rewards_program_point_valuations__program_topic_id ON public.individual_rewards_program_point_valuations USING btree (rewards_program_topic_id)`
 - `idx_individua_rewards_program_point_valuation__individual_id_id`: `CREATE INDEX idx_individua_rewards_program_point_valuation__individual_id_id ON public.individual_rewards_program_point_valuations USING btree (individual_id, id)`
+- `idx_indvdl_rwrds_prgrm_pnt_vltns__topic_individual`: `CREATE INDEX idx_indvdl_rwrds_prgrm_pnt_vltns__topic_individual ON public.individual_rewards_program_point_valuations USING btree (rewards_program_topic_id, individual_id)`
 - `individual_rewards_program_point_valuations_pkey`: `CREATE UNIQUE INDEX individual_rewards_program_point_valuations_pkey ON public.individual_rewards_program_point_valuations USING btree (id)`
 - `uq_ind_rp_point_valuations__individual_rewards_program`: `CREATE UNIQUE INDEX uq_ind_rp_point_valuations__individual_rewards_program ON public.individual_rewards_program_point_valuations USING btree (individual_id, rewards_program_topic_id)`
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF rewards_program_topic_id ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')`
 - `trigger_individual_rewards_program_point_valuations_updated_at`: `CREATE TRIGGER trigger_individual_rewards_program_point_valuations_updated_at BEFORE UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -92,7 +92,7 @@ _none_
 - `idx_moderator_actions__report_integrity_flag_id`: `CREATE INDEX idx_moderator_actions__report_integrity_flag_id ON public.moderator_actions USING btree (report_integrity_flag_id) WHERE (report_integrity_flag_id IS NOT NULL)`
 - `idx_moderator_actions__review_dispute_id`: `CREATE INDEX idx_moderator_actions__review_dispute_id ON public.moderator_actions USING btree (review_dispute_id) WHERE (review_dispute_id IS NOT NULL)`
 - `idx_moderator_actions__target_user_id`: `CREATE INDEX idx_moderator_actions__target_user_id ON public.moderator_actions USING btree (target_user_id) WHERE (target_user_id IS NOT NULL)`
-- `idx_moderator_actions__topic_claim_id`: `CREATE INDEX idx_moderator_actions__topic_claim_id ON public.moderator_actions USING btree (topic_claim_id) WHERE (topic_claim_id IS NOT NULL)`
+- `idx_moderator_actions__topic_claim_id__id`: `CREATE INDEX idx_moderator_actions__topic_claim_id__id ON public.moderator_actions USING btree (topic_claim_id, id) WHERE (topic_claim_id IS NOT NULL)`
 - `idx_moderator_actions__topic_id`: `CREATE INDEX idx_moderator_actions__topic_id ON public.moderator_actions USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
 - `idx_moderator_actions__user_moderator_note_id`: `CREATE INDEX idx_moderator_actions__user_moderator_note_id ON public.moderator_actions USING btree (user_moderator_note_id) WHERE (user_moderator_note_id IS NOT NULL)`
 - `idx_moderator_actions__vote_integrity_flag_id`: `CREATE INDEX idx_moderator_actions__vote_integrity_flag_id ON public.moderator_actions USING btree (vote_integrity_flag_id) WHERE (vote_integrity_flag_id IS NOT NULL)`

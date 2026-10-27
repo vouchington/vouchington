@@ -1,5 +1,5 @@
 import { getTopicByAny } from '../services/topics/get.mts'
-import { mergeTopicAliases } from '../services/topics/merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { createTestUser } from './entities/users.mts'
 
 /** Exercise the current merge contract when a reader fixture owns existing references. */

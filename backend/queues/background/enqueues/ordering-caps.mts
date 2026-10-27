@@ -49,6 +49,8 @@ export const BACKGROUND_ORDERING_CAPS = {
   'moderation-signals': 10,
   'hostname-blocking': 2,
   'hostname-blocking:dispatcher': 1,
+  'topic-merge:tasks': 1,
+  'topic-merge:dispatcher': 1,
 } as const
 
 export function getBackgroundOrderingLimits(key: string): {

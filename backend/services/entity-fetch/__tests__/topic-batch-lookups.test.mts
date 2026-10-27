@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 
 import { getTopicByAny } from '@services/topics/get'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import type { Topic } from '@services/topics/types'
 
 import { getTopicIdsByAnyCachedBatch } from '@services/entity-cache/lookups'

@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { updateTopicEmbeddingData } from '@voucha/test-helpers/entities/topics'
 import { createHash } from 'node:crypto'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from '@services/topics/get'
 
 describe('by-post-embedding', () => {

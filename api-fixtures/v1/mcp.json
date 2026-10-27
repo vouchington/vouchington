@@ -31716,6 +31716,194 @@
         },
         {
           "tool": {
+            "name": "merge_topic",
+            "title": "Merge topic",
+            "description": "Queue a topic merge. Returns a pending operation, not a completed merge. Read get_topic_merge with the source and operation ID until completed or failed. Participants cannot be edited while the merge runs.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "source_id_or_slug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "destination_id_or_slug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": ["source_id_or_slug", "destination_id_or_slug"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_merge": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "source_topic_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "destination_topic_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["queued", "running", "completed", "failed"]
+                    },
+                    "stage": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "completed_at": {
+                      "type": ["string", "null"]
+                    },
+                    "error_code": {
+                      "type": ["string", "null"]
+                    },
+                    "status_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "source_topic_id",
+                    "destination_topic_id",
+                    "status",
+                    "stage",
+                    "created_at",
+                    "completed_at",
+                    "error_code",
+                    "status_url"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["topic_merge"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["editorial:read", "editorial:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/topics/:sourceIdOrSlug/merges"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "get_topic_merge",
+            "title": "Get topic merge",
+            "description": "Read an admitted topic merge operation. queued and running are pending; completed means all stages finished; failed reports a preflight rejection in error_code. Uses the same operation and status fields as REST.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "source_id_or_slug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "operation_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["source_id_or_slug", "operation_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "topic_merge": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "source_topic_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "destination_topic_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["queued", "running", "completed", "failed"]
+                    },
+                    "stage": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "completed_at": {
+                      "type": ["string", "null"]
+                    },
+                    "error_code": {
+                      "type": ["string", "null"]
+                    },
+                    "status_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "source_topic_id",
+                    "destination_topic_id",
+                    "status",
+                    "stage",
+                    "created_at",
+                    "completed_at",
+                    "error_code",
+                    "status_url"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["topic_merge"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["editorial:read"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/topics/:sourceIdOrSlug/merges/:operationId"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "search_moderator_actions",
             "title": "Search moderator actions",
             "description": "Search audited moderator actions with staff actor projections.",

@@ -574,6 +574,14 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)
     AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)
+    AND NOT EXISTS (
+      SELECT 1 FROM topic_merge_operations operation
+      JOIN classifier_candidates candidate ON candidate.topic_id = operation.source_topic_id
+      WHERE candidate.id = OLD.candidate_id
+        AND operation.id::TEXT = current_setting('voucha.topic_merge_operation_id', TRUE)
+        AND operation.fence_token::TEXT = current_setting('voucha.topic_merge_fence_token', TRUE)
+        AND operation.completed_at IS NULL AND operation.failed_at IS NULL
+    )
     AND NOT (
       uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'
       AND NOT EXISTS (

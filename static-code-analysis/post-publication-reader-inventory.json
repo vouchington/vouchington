@@ -161,6 +161,10 @@
     {
       "path": "backend/services/topics/ratings.mts",
       "classification": "public-view"
+    },
+    {
+      "path": "backend/services/topics/merge-metrics-reviews.mts",
+      "classification": "public-view"
     }
   ],
   "pr2_baseline": [],

@@ -52,7 +52,6 @@ export const directStaffExclusions = [
     'POST /topics/:idOrSlug/aliases/:aliasId',
     'DELETE /topics/:idOrSlug/aliases/:aliasId',
   ]),
-  ...admin('currentUserCanMergeTopic', ['POST /topics/:sourceIdOrSlug/merges']),
   ...admin(
     'currentUserCanUpdateRssFeed, currentUserCanDeleteRssFeed, currentUserCanRefreshRssFeed',
     ['PATCH /rss-feeds/:id', 'DELETE /rss-feeds/:id', 'POST /rss-feeds/:id/refreshes'],

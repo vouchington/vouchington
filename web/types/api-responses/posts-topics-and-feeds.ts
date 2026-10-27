@@ -138,13 +138,7 @@ export interface TopicMutationResponseBody {
   topic: Topic
 }
 
-export type TopicMergeResponseBody = TopicMutationResponseBody & {
-  topic_merge: {
-    source_topic_id: string
-    destination_topic_id: string
-    moved_aliases: string[]
-  }
-}
+export type { TopicMergeResponseBody } from './topic-merges'
 
 export interface RssFeedResponseBody {
   rss_feed: Record<string, unknown>

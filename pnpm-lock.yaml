@@ -11420,9 +11420,6 @@ importers:
       '@vouchington/sentry':
         specifier: ^0.4.0
         version: 0.4.0(@sentry/browser@11.9.0)(@sentry/core@11.9.0)(@sentry/node@11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
-      '@vouchington/typed-entities':
-        specifier: ^0.6.0
-        version: 0.6.0
       '@vouchington/utils':
         specifier: ^0.10.2
         version: 0.10.2
@@ -11438,6 +11435,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
       valkyries:
         specifier: ^0.13.0
         version: 0.13.0
@@ -13226,6 +13226,9 @@ importers:
       '@workers/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../story-post-related-url-projections
+      '@workers/topic-merge':
+        specifier: workspace:^
+        version: link:../topic-merge
       '@workers/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
@@ -14723,6 +14726,21 @@ importers:
       '@aws-sdk/client-sqs':
         specifier: ^3.1156.0
         version: 3.1156.0
+
+  backend/workers/topic-merge:
+    dependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../../services/topics
 
   backend/workers/unfurl-referral-links:
     dependencies:
@@ -20550,10 +20568,6 @@ packages:
     engines: {node: '>=24.0.0'}
     peerDependencies:
       stripe: ^23.0.0
-
-  '@vouchington/typed-entities@0.6.0':
-    resolution: {integrity: sha512-QVu1rvSQm/ejoohjJAf0ivfXhBuq6MEQ/3LSYOmznox21sMNyQTq5R4/F0GXC3dIPHa2dVp3JZhodjkj7dU0tw==}
-    engines: {node: '>=24.0.0'}
 
   '@vouchington/utils@0.10.2':
     resolution: {integrity: sha512-zUEgsFBycd/6g1SWFfC8VQCQrYSg0lo91XiqctiFIW6mm6/kRS8gkuX6TJPAsI7WjVLDjkJA5V272cT9ADNR/w==}
@@ -29495,10 +29509,6 @@ snapshots:
   '@vouchington/stripe@0.1.0(stripe@23.0.0(@types/node@26.6.5))':
     dependencies:
       stripe: 23.0.0(@types/node@26.6.5)
-
-  '@vouchington/typed-entities@0.6.0':
-    dependencies:
-      '@vouchington/utils': 0.10.2
 
   '@vouchington/utils@0.10.2': {}
 

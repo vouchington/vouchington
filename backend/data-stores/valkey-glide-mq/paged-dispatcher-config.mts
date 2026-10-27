@@ -10,6 +10,7 @@ export type PagedDispatcher =
   | 'activitypub'
   | 'images'
   | 'memberships'
+  | 'topicMerges'
 const defaultFields = {
   images_page_size: 100,
   images_backoff_ms: 300000,
@@ -28,13 +29,21 @@ const defaultFields = {
   memberships_page_size: 500,
   memberships_backoff_ms: 300000,
   memberships_max_depth: 10000,
+  topicMerges_page_size: 25,
+  topicMerges_backoff_ms: 300000,
   background_max_depth: 10000,
   'background-cpu_max_depth': 10000,
 }
 export const pagedDispatchMaxValues = Object.fromEntries(
   Object.keys(defaultFields).map(key => [
     key,
-    key.endsWith('_page_size') ? 5000 : key.endsWith('_backoff_ms') ? 300000 : 1000000,
+    key.endsWith('_page_size')
+      ? key.startsWith('topicMerges_')
+        ? 250
+        : 5000
+      : key.endsWith('_backoff_ms')
+        ? 300000
+        : 1000000,
   ]),
 )
 export const pagedDispatchConfig = new DynamicConfig({

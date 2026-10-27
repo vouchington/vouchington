@@ -100,6 +100,19 @@ renders this review queue yet. [Clients #492](https://github.com/vouchington/vou
 owns native presentation, route consumption, and behavioral evidence; native parity stays
 dependent until that work is proven.
 
+## Topic merge operations
+
+Topic merge admission returns a pending operation, not a destination topic or a completed merge.
+The operation ID identifies the exact request; its status URL reads the same operation after a
+retry or reconnect. REST and admin MCP expose the same queued, running, completed, and failed
+states. Clients show completion only after that operation completes and present a failed preflight
+as a rejected merge. Web keeps the submitted merge pending with an explicit status check. Swift
+and .NET adoption is dependent client work; the producer lands first.
+
+Native admission and status presentation are tracked in
+[vouchington-clients#517](https://github.com/vouchington/vouchington-clients/issues/517); this
+producer change does not depend on native implementation.
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending

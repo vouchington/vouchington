@@ -5,7 +5,7 @@ import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { getTopicByAny } from '../get.mts'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { getTopicIdByAnyCached } from '@services/entity-cache/lookups'
-import { mergeTopicAliases } from '../merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { ValkeyBloomFilter } from '@data-stores/valkey'
 import { normalizeKey } from '@ts-shared/utils/strings'
 

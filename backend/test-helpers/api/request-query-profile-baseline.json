@@ -50,14 +50,6 @@
     ]
   },
   {
-    "annotation": "assertTopicMergeParentCompatibility",
-    "maxCount": 2,
-    "reason": "The batched ancestor walk runs before merge capture (merge-aliases.mts:52) and again after locking topic rows and reachable ancestors (:69), so a parent edge committed during the lock wait cannot create a cycle unnoticed. Each call issues one statement.",
-    "permanent": true,
-    "code": "backend/services/topics/merge-aliases.mts:52-72",
-    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
-  },
-  {
     "annotation": "assertReferralProgramExists",
     "maxCount": null,
     "reason": "Two allowed mechanisms: the check at backend/services/referral-program-link-validations/create-and-link.mts:76 runs before slug validation and the insert, so it sets which 4xx a request gets (a bad or duplicate slug with a missing program); the check at backend/services/topics/validation.mts:127-146 runs after the validation-row insert and must see that new row",
@@ -132,13 +124,10 @@
   {
     "annotation": "createTopicRevision",
     "maxCount": null,
-    "reason": "Approval records topic-create and alias-link revisions (backend/services/topics/create.mts:169 and aliases.mts:176); merge records source and destination revisions as distinct documents in one transaction",
+    "reason": "Approval records topic-create and alias-link revisions as distinct documents.",
     "permanent": true,
-    "code": "backend/services/topics/merge-alias-revisions.mts:36",
-    "routes": [
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "POST /api/v1/topics/:sourceIdOrSlug/merges"
-    ]
+    "code": "backend/services/topics/aliases.mts:createTopicRevision",
+    "routes": ["POST /api/v1/topic-recommendations/:id/approvals"]
   },
   {
     "annotation": "createTotpAuthenticator",
@@ -373,14 +362,6 @@
       "POST /api/v1/communities/:idOrSlug/ban-evasion/:userId",
       "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
     ]
-  },
-  {
-    "annotation": "getTopicAliasesForMergeRevision",
-    "maxCount": null,
-    "reason": "The destination alias list is read again after the alias move and source-slug insert, so the merge revision's after snapshot includes those writes.",
-    "permanent": true,
-    "code": "backend/services/topics/merge-alias-revisions.mts:35",
-    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
   },
   {
     "annotation": "getTopicByAny",
@@ -629,14 +610,6 @@
     "permanent": true,
     "code": "backend/services/users/delete.mts:77",
     "routes": ["DELETE /api/v1/users/:idOrSlug"]
-  },
-  {
-    "annotation": "lockTopicRssFeedAttachmentLifecycles",
-    "maxCount": null,
-    "reason": "Each transaction owns its attachment lifecycle locks: a topic merge fences both topics before publication capture, then the primary metric refresh must reacquire the destination fence in a new transaction after the merge commits. Transaction-scoped locks cannot be reused across that commit.",
-    "permanent": true,
-    "code": "backend/services/topics/merge-aliases-finalize.mts:refreshMergedTopicMetrics",
-    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
   },
   {
     "annotation": "maybeResolveCases",

@@ -7,7 +7,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { getTopicByAny } from '../topics/get.mts'
-import { mergeTopicAliases } from '../topics/merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
 import { ClassifierDecisionReuseError, type PersistClassifierDecisionInput } from './types.mts'
 

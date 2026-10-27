@@ -1,4 +1,3 @@
-import { createTopicAliases } from '@services/topics/aliases'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
@@ -56,62 +55,65 @@ describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
       .expect(422)
   })
 
-  it('merges source aliases into the destination for admins', async () => {
+  it('admits a merge and exposes its authorized status before completion', async () => {
     const admin = await createTestUser({ administrator: true })
-    const source = await createTestTopic({ user: admin, name: `API Merge Source ${Date.now()}` })
+    const source = await createTestTopic({ user: admin, name: `API Merge Source ${randomUUID()}` })
     const destination = await createTestTopic({
       user: admin,
-      name: `API Merge Destination ${Date.now()}`,
+      name: `API Merge Destination ${randomUUID()}`,
     })
-    const sourceAlias = `api-merge-alias-${Math.random().toString(36).slice(2, 8)}`
-    await createTopicAliases(source.id, sourceAlias)
-
     const request = createRequest()
     await request.authenticateAs(admin)
     const response = await request
       .post(`/api/v1/topics/${source.slug}/merges`)
       .send({ destination_id_or_slug: destination.id })
-      .expect(201)
+      .expect(202)
 
-    expect(response.body.topic.id).toBe(destination.id)
     expect(response.body.topic_merge).toMatchObject({
       source_topic_id: source.id,
       destination_topic_id: destination.id,
+      status: 'queued',
+      completed_at: null,
+      error_code: null,
     })
-    expect(response.body.topic_merge.moved_aliases).toEqual(
-      expect.arrayContaining([source.slug, sourceAlias]),
-    )
+    expect(response.body.topic).toBeUndefined()
+    const statusUrl = `/api/v1/topics/${source.id}/merges/${response.body.topic_merge.id}`
+    expect(response.body.topic_merge.status_url).toBe(statusUrl)
+    const status = await request.get(statusUrl).expect(200)
+    expect(status.body).toEqual(response.body)
 
-    const redirectResponse = await createRequest().get(`/api/v1/topics/${source.slug}`).expect(200)
-    expect(redirectResponse.body.topic.id).toBe(destination.id)
-    expect(redirectResponse.body.topic_redirect).toMatchObject({
-      source_topic_id: source.id,
-      destination_topic_id: destination.id,
-    })
+    await createRequest().get(statusUrl).expect(401)
+    const regularRequest = createRequest()
+    await regularRequest.authenticateAs(await createTestUser())
+    await regularRequest.get(statusUrl).expect(403)
+    await request
+      .get(`/api/v1/topics/${destination.id}/merges/${response.body.topic_merge.id}`)
+      .expect(404)
+    await request.get(`/api/v1/topics/${source.id}/merges/${randomUUID()}`).expect(404)
+    await request.get(`/api/v1/topics/${source.id}/merges/invalid`).expect(422)
   })
 
-  it('rejects already-merged source and destination identifiers', async () => {
+  it('rejects overlapping operations and preserves source validation precedence', async () => {
     const admin = await createTestUser({ administrator: true })
-    const source = await createTestTopic({ user: admin, name: `API Conflict Source ${Date.now()}` })
+    const source = await createTestTopic({
+      user: admin,
+      name: `API Conflict Source ${randomUUID()}`,
+    })
     const destination = await createTestTopic({
       user: admin,
-      name: `API Conflict Destination ${Date.now()}`,
+      name: `API Conflict Destination ${randomUUID()}`,
     })
-    const other = await createTestTopic({ user: admin, name: `API Conflict Other ${Date.now()}` })
+    const other = await createTestTopic({ user: admin, name: `API Conflict Other ${randomUUID()}` })
     const request = createRequest()
     await request.authenticateAs(admin)
 
     await request
       .post(`/api/v1/topics/${source.id}/merges`)
       .send({ destination_id_or_slug: destination.id })
-      .expect(201)
+      .expect(202)
     await request
       .post(`/api/v1/topics/${source.id}/merges`)
       .send({ destination_id_or_slug: other.id })
-      .expect(409)
-    await request
-      .post(`/api/v1/topics/${source.id}/merges`)
-      .send({ destination_id_or_slug: 'invalid!' })
       .expect(409)
     await request
       .post(`/api/v1/topics/${randomUUID()}/merges`)
@@ -120,7 +122,7 @@ describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
 
     const newSource = await createTestTopic({
       user: admin,
-      name: `API Conflict New Source ${Date.now()}`,
+      name: `API Conflict New Source ${randomUUID()}`,
     })
     await request
       .post(`/api/v1/topics/${newSource.id}/merges`)

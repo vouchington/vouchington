@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import {
+  acquireTestPostgresAdvisoryLock,
+  type TestPostgresAdvisoryLock,
+} from '@voucha/test-helpers/postgres-advisory-lock'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
@@ -18,13 +22,26 @@ const BASE = '/api/v1/mq/queues/background/domains'
 describe('background queue domain routes', () => {
   let admin: PrivateUser
   let regularUser: PrivateUser
+  let reservation: TestPostgresAdvisoryLock | undefined
 
   beforeAll(async () => {
+    // The domain control is global even when each process owns unique jobs and administrators.
+    reservation = await acquireTestPostgresAdvisoryLock({
+      namespace: 1_129_333_328,
+      key: 2,
+      timeout: '2s',
+    })
     admin = await createTestUser({ administrator: true })
     regularUser = await createTestUser({ administrator: false })
   })
 
-  afterAll(() => resumeQueueDomain(DOMAIN))
+  afterAll(async () => {
+    try {
+      if (reservation) await resumeQueueDomain(DOMAIN)
+    } finally {
+      await reservation?.release()
+    }
+  })
 
   it.each([
     ['GET', BASE],
@@ -89,6 +106,7 @@ describe('background queue domain routes', () => {
         'ses-inbound',
         'sitemaps',
         'story-post-related-url-projections',
+        'topic-merge',
         'urls-domains-blacklist',
         'vote-aggregation',
       ])

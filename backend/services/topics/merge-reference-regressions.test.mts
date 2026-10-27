@@ -1,4 +1,3 @@
-import { rethrowTopicMergeError } from './merge-preflight.mts'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
 import {
   changeTopicMergeClassifierCandidateTopic,
@@ -7,32 +6,35 @@ import {
   seedTopicMergeClassifierCollision,
 } from '@voucha/test-helpers/topic-merge-classifiers'
 import {
-  beginTransaction,
   createTestTopic,
   createTestUser,
   insertTestImage,
+  insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
 import { setTestTopicSurfaceImages } from '@voucha/test-helpers/entities/media-surface-writes'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
-import { withHeldTopicMergeTopicRow } from '@voucha/test-helpers/topic-merge-self-relations'
 import {
   seedTopicMergeDeletedBookmarks,
   getTopicMergeLiveBookmarks,
   seedTopicMergeParentEdges,
   seedTopicMergeClaims,
   getTopicMergeClaims,
-  lockTestTopicMergeAncestorRow,
-  seedTopicMergeParentEdgeInTransaction,
 } from '@voucha/test-helpers/topic-merge-relations'
+import {
+  createTopicMergeParentTestOperation,
+  deleteTopicMergeParentTestOperation,
+  runTopicMergeParentTestPage,
+} from '@voucha/test-helpers/entities/topic-merge-parent'
 import { getTopicMergeRelations } from '@voucha/test-helpers/topic-merge-references'
 import { seedTopicMergeLifetimeChain } from '@voucha/test-helpers/topic-merge-subtypes'
 import { describe, expect, it } from 'vitest'
 import { getTopicByAny } from './get.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import type { Topic } from './types.mts'
 import { topicsWorkConfig } from './work-limits.mts'
+import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
+import { processTopicMergeOperationPage } from './merge-operation-page.mts'
 async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0]): Promise<Topic> {
   const topic = await createTestTopic(options)
   const fullTopic = await getTopicByAny(topic.id)
@@ -41,20 +43,27 @@ async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0
 }
 
 describe('topic merge reference regressions', () => {
-  it('maps a restored-feed unique conflict to a stable 409 and preserves other failures', () => {
-    const conflict = Object.assign(new Error('restored feed collision'), {
-      code: '23505',
-      constraint: 'idx_rss_feeds__topic_id__unique',
+  it('records a live-feed conflict on the admitted operation before changing either topic', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const source = await createFullTestTopic({ user: admin })
+    const destination = await createFullTestTopic({ user: admin })
+    await Promise.all([
+      insertTestRssFeedDirect({ topicId: source.id }),
+      insertTestRssFeedDirect({ topicId: destination.id }),
+    ])
+    const operation = await createTopicMergeOperation(admin, source, destination)
+    expect(operation.status).toBe('queued')
+    let generation: number | null = 0
+    for (let page = 0; page < 32 && generation !== null; page++) {
+      generation = await processTopicMergeOperationPage(operation.id, generation)
+    }
+    expect(generation).toBeNull()
+    await expect(getTopicMergeOperation(admin, source.id, operation.id)).resolves.toMatchObject({
+      status: 'failed',
+      error_code: 'topic_merge_feed_conflict',
     })
-    expect(() => rethrowTopicMergeError(conflict)).toThrow(
-      expect.objectContaining({ status: 409, code: 'topic_merge_feed_conflict', cause: conflict }),
-    )
-    const other = Object.assign(new Error('different constraint'), {
-      code: '23505',
-      constraint: 'other_unique',
-    })
-    expect(() => rethrowTopicMergeError(other)).toThrow(other)
-    expect(() => rethrowTopicMergeError(new Error('preflight failed'))).toThrow('preflight failed')
+    await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
+    await expect(getTopicByAny(destination.id)).resolves.toMatchObject({ id: destination.id })
   })
 
   it('merges a source with a logo while retaining its immutable image placement history', async () => {
@@ -137,7 +146,7 @@ describe('topic merge reference regressions', () => {
     }
   })
 
-  it('rechecks an intermediate parent edge committed after preflight', async () => {
+  it('rechecks an intermediate parent edge added after operation reservation', async () => {
     const admin = await createTestUser({ administrator: true })
     const source = await createFullTestTopic({ user: admin })
     const destination = await createFullTestTopic({ user: admin })
@@ -147,46 +156,24 @@ describe('topic merge reference regressions', () => {
       [destination.id, first.id],
       [second.id, source.id],
     ])
-    let outcome: Promise<{ value: unknown } | { error: unknown }> | undefined
-    await withHeldTopicMergeTopicRow(destination.id, async holderProcessId => {
-      outcome = mergeTopicAliases(admin, source, destination).then(
-        value => ({ value }),
-        err => ({ error: err }),
-      )
-      await waitForTestPostgresLockWaiter(holderProcessId, 'mergeTopicAliases lockTopics')
+    const operationId = await createTopicMergeParentTestOperation(
+      source.id,
+      destination.id,
+      admin.id,
+    )
+    try {
       await seedTopicMergeParentEdges([[first.id, second.id]])
-    })
-    await expect(outcome).resolves.toMatchObject({
-      error: { status: 409, code: 'topic_merge_parent_cycle' },
-    })
-    await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
-  })
-
-  it('serializes a new parent edge through a locked ancestor before the final check', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const source = await createFullTestTopic({ user: admin })
-    const destination = await createFullTestTopic({ user: admin })
-    const first = await createFullTestTopic({ user: admin })
-    const second = await createFullTestTopic({ user: admin })
-    await seedTopicMergeParentEdges([
-      [destination.id, first.id],
-      [second.id, source.id],
-    ])
-    let outcome: Promise<{ value: unknown } | { error: unknown }> | undefined
-    {
-      await using writer = await beginTransaction()
-      const writerProcessId = await lockTestTopicMergeAncestorRow(writer, first.id)
-      outcome = mergeTopicAliases(admin, source, destination).then(
-        value => ({ value }),
-        err => ({ error: err }),
-      )
-      await waitForTestPostgresLockWaiter(writerProcessId, 'lockTopicMergeParentAncestors')
-      await seedTopicMergeParentEdgeInTransaction(writer, first.id, second.id)
-      await writer.commit()
+      let errorCode: string | null = null
+      for (let page = 0; page < 8 && errorCode === null; page++) {
+        const result = await runTopicMergeParentTestPage(operationId, source.id, destination.id, 1)
+        errorCode = result.errorCode
+        if (!result.hasMore) break
+      }
+      expect(errorCode).toBe('topic_merge_parent_cycle')
+      await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
+    } finally {
+      await deleteTopicMergeParentTestOperation(operationId)
     }
-    await expect(outcome).resolves.toMatchObject({
-      error: { status: 409, code: 'topic_merge_parent_cycle' },
-    })
   })
 
   it.each([false, true])(

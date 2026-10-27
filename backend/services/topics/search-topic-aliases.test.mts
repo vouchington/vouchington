@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { searchTopicAliases } from './search-topic-aliases.mts'
 import { createTestUser, createTestTopic } from '@voucha/test-helpers'
 import { createTopicAliases } from './aliases.mts'
-import { mergeTopicAliases } from './merge-aliases.mts'
+import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { getTopicByAny } from './get.mts'
 
 describe('searchTopicAliases - merged topic filter', () => {

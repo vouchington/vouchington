@@ -2,6 +2,8 @@ import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
+import { completeTopicMerge } from '../../helpers/complete-topic-merge.mts'
+import type { TopicMergeResponseBody } from '../../../web/types/api-responses/topic-merges.ts'
 
 test.describe('Admin Topic Merge', () => {
   test.use({ storageState: ADMIN_AUTH_STATE })
@@ -22,7 +24,7 @@ test.describe('Admin Topic Merge', () => {
     sourceTopicId = source.id
   })
 
-  test('merges source topic into destination and redirects to aliases page', async ({ page }) => {
+  test('queues a merge and checks completion before navigating to aliases', async ({ page }) => {
     await navigateTo(page, `/topic/${sourceTopicId}/settings/merge`)
     await expect(page.getByTestId('topic-settings-merge')).toBeVisible()
 
@@ -32,16 +34,27 @@ test.describe('Admin Topic Merge', () => {
     const autocompleteItem = page
       .getByTestId('topic-autocomplete-item')
       .filter({ hasText: destTopicName })
-      .first()
     await expect(autocompleteItem).toBeVisible()
     await autocompleteItem.click()
 
     await page.getByTestId('merge-topic-confirmation-input').pressSequentially(sourceTopicName)
 
     await expect(page.getByTestId('merge-topic-submit')).toBeEnabled()
+    const accepted = page.waitForResponse(
+      response =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === `/api/v1/topics/${sourceTopicId}/merges`,
+    )
     await page.getByTestId('merge-topic-submit').click()
+    const response = await accepted
+    const admitted: TopicMergeResponseBody = await response.json()
+    await expect(page.getByTestId('topic-settings-merge')).toContainText('Merge queued')
 
-    await expect(page.locator('[data-sonner-toast][data-type="success"]')).toContainText('Merged')
+    await completeTopicMerge(sourceTopicId, admitted.topic_merge.id)
+    await page.getByTestId('topic-settings-merge').getByRole('button').click()
+    await expect(
+      page.locator('[data-sonner-toast][data-type="success"]').filter({ hasText: 'completed' }),
+    ).toBeVisible()
     await expect(page).toHaveURL(new RegExp(`/topic/${destSlug}/settings/aliases$`))
   })
 })

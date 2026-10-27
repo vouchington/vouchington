@@ -102,6 +102,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/reconcileStoryPostRelatedUrlProjections',
   'background/blacklistDispatcher',
   'background/userDeletionRecovery',
+  'background/topic-merge-recover-stalled',
   'background/voteWeightAgeMilestones',
   'background/voteWeightMembershipExpirations',
   'background/voteWeightFamilySourceChanges',

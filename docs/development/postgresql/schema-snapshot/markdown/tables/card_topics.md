@@ -36,11 +36,11 @@ _none_
 **Indexes:**
 
 - `card_topics_pkey`: `CREATE UNIQUE INDEX card_topics_pkey ON public.card_topics USING btree (topic_id)`
-- `idx_card_topics__bank_id`: `CREATE INDEX idx_card_topics__bank_id ON public.card_topics USING btree (bank_topic_id) WHERE (bank_topic_id IS NOT NULL)`
-- `idx_card_topics__brand_id`: `CREATE INDEX idx_card_topics__brand_id ON public.card_topics USING btree (brand_topic_id) WHERE (brand_topic_id IS NOT NULL)`
+- `idx_card_topics__bank_topic_id__topic_id`: `CREATE INDEX idx_card_topics__bank_topic_id__topic_id ON public.card_topics USING btree (bank_topic_id, topic_id) WHERE (bank_topic_id IS NOT NULL)`
+- `idx_card_topics__brand_topic_id__topic_id`: `CREATE INDEX idx_card_topics__brand_topic_id__topic_id ON public.card_topics USING btree (brand_topic_id, topic_id) WHERE (brand_topic_id IS NOT NULL)`
 - `idx_card_topics__currency_code`: `CREATE INDEX idx_card_topics__currency_code ON public.card_topics USING btree (currency_code) WHERE (currency_code IS NOT NULL)`
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF bank_topic_id, brand_topic_id, topic_id ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('bank_topic_id', 'brand_topic_id', 'topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('bank_topic_id', 'brand_topic_id', 'topic_id')`
 - `trigger_card_topics_updated_at`: `CREATE TRIGGER trigger_card_topics_updated_at BEFORE UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

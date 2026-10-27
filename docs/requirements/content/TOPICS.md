@@ -34,6 +34,19 @@ links continue to describe the same destination. The source remains as a redirec
 identity of its historical audit records. Publication capture connects the reference changes to
 the asynchronous refresh of published content.
 
+Merge admission reserves both participants while bounded jobs validate and consolidate them.
+Independent merges can hold reservations concurrently. Preflight rejects a younger
+merge when a guarded reference connects it to an older active merge, so consolidation
+cannot leave both waiting on the other's reservation.
+Each page commits its changes with the operation cursor; queue replay resumes that position.
+Ordinary mutations of reserved participants are refused until the operation finishes. A rejected
+preflight releases the reservation without applying merge effects. Once consolidation begins,
+an interrupted merge retains its reservation and resumes rather than exposing a partial success.
+The source becomes a redirect after domain consolidation. The operation remains running and keeps
+its reservation until publication and cache effects are admitted and temporary state is released.
+The requester can be deleted while work continues; retained attribution does not authorize later
+requests.
+
 Ownership serialization covers both merge participants before publication capture, so a concurrent
 hostname claim cannot escape the source-to-destination transfer. Removed landing-page relations
 participate because consolidation can revive a destination claim; the source's retained primary
@@ -48,14 +61,12 @@ Live relations survive collisions with removed relations; among live claims, ver
 precedence. Merging directly related topics removes the resulting self-relation, while a merge
 that would create an indirect parent cycle is refused. An unresolved vote-integrity flag prevents
 self-relation removal so the merge cannot erase an outstanding audit finding.
-The merge walks indexed parent edges up to a configured depth and refuses deeper ancestry. It
-rechecks after locking the topic rows because intermediate parent edges can change during capture.
+The merge walks indexed parent edges up to a configured depth and refuses deeper ancestry. Discovered ancestors remain reserved while preflight walks the graph, so later pages cannot rely
+on an earlier edge that has changed.
 Image placements retain their source identity as history. Delayed classification applies no
 effects to inactive topics. A dedicated merge fence protects new current references without refusing
-ordinary reference writes during feed or vote-stat updates. The merge acquires topic and hostname
-ownership, alias publication, and attachment fences before the lifecycle fence and preflight.
-Guarded reference writers acquire the attachment fence before their reference write, including
-when they borrow an existing transaction. Derived batch rows remain unfenced.
+ordinary reference writes during feed or vote-stat updates. Admission serializes the participants before reserving them; guarded reference writers respect
+the reservation between committed pages. Derived batch rows remain unfenced.
 New embedding and classifier work admits only active topic identities; completed derived records
 retain the identity they describe rather than being redirected by a later merge.
 
