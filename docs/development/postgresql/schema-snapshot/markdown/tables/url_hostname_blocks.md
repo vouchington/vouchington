@@ -21,6 +21,8 @@ Not partitioned — growth: unbounded.
 | `relation_cleanup_root_block_id`               | `uuid`                       | yes      |                                       |          |           |           | First owning staff or provider block whose bounded cleanup operation owns this hostname; self-reference marks the operation root. |
 | `should_penalize_relation_creators`            | `boolean`                    | no       | `false`                               |          |           |           | Immutable creator-penalty intent captured when the cleanup root is first created.                                                 |
 | `relation_cleanup_progress`                    | `integer`                    | no       | `0`                                   |          |           |           | Monotonic generation used to fence and identify bounded cleanup continuation jobs.                                                |
+| `relation_cleanup_stage`                       | `text`                       | no       | `'subdomains'::text`                  |          |           |           | Stage the bounded cleanup operation is in; descendants may attach to a root only while it is still projecting subdomains.         |
+| `relation_cleanup_resume_after`                | `text`                       | yes      |                                       |          |           |           | Keyset position (reversed hostname or user id) at which a lost continuation job resumes the current stage.                        |
 | `relation_cleanup_blocked_hostname_count`      | `integer`                    | no       | `0`                                   |          |           |           | Durable total of hostnames first assigned to this bounded cleanup operation.                                                      |
 | `relation_cleanup_soft_deleted_relation_count` | `integer`                    | no       | `0`                                   |          |           |           | Durable total of relations soft-deleted by this bounded cleanup operation.                                                        |
 | `relation_cleanup_penalized_user_count`        | `integer`                    | no       | `0`                                   |          |           |           | Durable total of distinct creator penalties inserted by this bounded cleanup operation.                                           |
@@ -36,6 +38,7 @@ _none_
 - `chk_url_hostname_blocks__domain_source`: `CHECK (((blocked_source = ANY (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])) = (domain_blocklist_source_id IS NOT NULL)))`
 - `chk_url_hostname_blocks__relation_cleanup_counts`: `CHECK (((relation_cleanup_blocked_hostname_count >= 0) AND (relation_cleanup_soft_deleted_relation_count >= 0) AND (relation_cleanup_penalized_user_count >= 0)))`
 - `chk_url_hostname_blocks__relation_cleanup_progress`: `CHECK ((relation_cleanup_progress >= 0))`
+- `chk_url_hostname_blocks__relation_cleanup_stage`: `CHECK ((relation_cleanup_stage = ANY (ARRAY['subdomains'::text, 'relations'::text, 'penalties'::text])))`
 
 **Foreign keys:**
 

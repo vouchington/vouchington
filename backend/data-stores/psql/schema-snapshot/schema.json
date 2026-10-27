@@ -121155,7 +121155,8 @@
       "checkConstraints": {
         "chk_url_hostname_blocks__domain_source": "CHECK (((blocked_source = ANY (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])) = (domain_blocklist_source_id IS NOT NULL)))",
         "chk_url_hostname_blocks__relation_cleanup_counts": "CHECK (((relation_cleanup_blocked_hostname_count >= 0) AND (relation_cleanup_soft_deleted_relation_count >= 0) AND (relation_cleanup_penalized_user_count >= 0)))",
-        "chk_url_hostname_blocks__relation_cleanup_progress": "CHECK ((relation_cleanup_progress >= 0))"
+        "chk_url_hostname_blocks__relation_cleanup_progress": "CHECK ((relation_cleanup_progress >= 0))",
+        "chk_url_hostname_blocks__relation_cleanup_stage": "CHECK ((relation_cleanup_stage = ANY (ARRAY['subdomains'::text, 'relations'::text, 'penalties'::text])))"
       },
       "columns": {
         "blocked_by_id": {
@@ -121254,7 +121255,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "integer"
         },
         "relation_cleanup_completed_at": {
@@ -121265,7 +121266,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "relation_cleanup_penalized_user_count": {
@@ -121276,7 +121277,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "integer"
         },
         "relation_cleanup_progress": {
@@ -121289,6 +121290,17 @@
           "nullable": false,
           "ordinalPosition": 13,
           "type": "integer"
+        },
+        "relation_cleanup_resume_after": {
+          "collation": null,
+          "comment": "Keyset position (reversed hostname or user id) at which a lost continuation job resumes the current stage.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15,
+          "type": "text"
         },
         "relation_cleanup_root_block_id": {
           "collation": null,
@@ -121309,8 +121321,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "integer"
+        },
+        "relation_cleanup_stage": {
+          "collation": null,
+          "comment": "Stage the bounded cleanup operation is in; descendants may attach to a root only while it is still projecting subdomains.",
+          "defaultExpression": "'subdomains'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "text"
         },
         "should_penalize_relation_creators": {
           "collation": null,

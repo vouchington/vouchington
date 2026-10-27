@@ -127420,6 +127420,10 @@
         "chk_url_hostname_blocks__relation_cleanup_progress": {
           "definition": "CHECK ((relation_cleanup_progress >= 0))",
           "validated": true
+        },
+        "chk_url_hostname_blocks__relation_cleanup_stage": {
+          "definition": "CHECK ((relation_cleanup_stage = ANY (ARRAY['subdomains'::text, 'relations'::text, 'penalties'::text])))",
+          "validated": true
         }
       },
       "columns": {
@@ -127511,7 +127515,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14
+          "ordinalPosition": 16
         },
         "relation_cleanup_completed_at": {
           "comment": "When every hostname, URL, relation, and penalty page owned by this root finished processing.",
@@ -127521,7 +127525,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 19
         },
         "relation_cleanup_penalized_user_count": {
           "comment": "Durable total of distinct creator penalties inserted by this bounded cleanup operation.",
@@ -127531,7 +127535,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16
+          "ordinalPosition": 18
         },
         "relation_cleanup_progress": {
           "comment": "Monotonic generation used to fence and identify bounded cleanup continuation jobs.",
@@ -127542,6 +127546,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 13
+        },
+        "relation_cleanup_resume_after": {
+          "comment": "Keyset position (reversed hostname or user id) at which a lost continuation job resumes the current stage.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 15
         },
         "relation_cleanup_root_block_id": {
           "comment": "First owning staff or provider block whose bounded cleanup operation owns this hostname; self-reference marks the operation root.",
@@ -127561,7 +127575,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 17
+        },
+        "relation_cleanup_stage": {
+          "comment": "Stage the bounded cleanup operation is in; descendants may attach to a root only while it is still projecting subdomains.",
+          "dataType": "text",
+          "defaultExpression": "'subdomains'::text",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14
         },
         "should_penalize_relation_creators": {
           "comment": "Immutable creator-penalty intent captured when the cleanup root is first created.",
