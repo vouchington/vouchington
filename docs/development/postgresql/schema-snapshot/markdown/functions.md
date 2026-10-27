@@ -549,14 +549,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_topic_image_placements()
  LANGUAGE plpgsql
 ```
 
-## `fn_project_topic_merge_publication_work_holds`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_topic_merge_publication_work_holds()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_project_transparency_rollup`
 
 ```sql

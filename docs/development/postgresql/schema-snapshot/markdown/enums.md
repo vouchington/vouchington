@@ -1623,7 +1623,6 @@
 ## `topic_merge_stages`
 
 - `preflight`
-- `publication_capture`
 - `aliases`
 - `subtype_create`
 - `subtypes`

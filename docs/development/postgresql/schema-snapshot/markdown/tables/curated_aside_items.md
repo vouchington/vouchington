@@ -45,5 +45,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF topic_id ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
 - `trigger_curated_aside_items_guard_rss_feed_hard_delete`: `CREATE TRIGGER trigger_curated_aside_items_guard_rss_feed_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`

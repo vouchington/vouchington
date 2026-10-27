@@ -96,7 +96,7 @@ _none_
 - `topics_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 - `topics_id_fkey`: `FOREIGN KEY (id) REFERENCES retained_topic_identities(id) ON DELETE RESTRICT`
 - `topics_logo_image_id_fkey`: `FOREIGN KEY (logo_image_id) REFERENCES images(id) ON DELETE SET NULL`
-- `topics_merged_by_id_fkey`: `FOREIGN KEY (merged_by_id) REFERENCES users(id) ON DELETE RESTRICT`
+- `topics_merged_by_id_fkey`: `FOREIGN KEY (merged_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `topics_merged_into_topic_id_fkey`: `FOREIGN KEY (merged_into_topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
 - `topics_updated_by_id_fkey`: `FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
@@ -115,12 +115,12 @@ _none_
 - `idx_topics__lingua_rs_pending`: `CREATE INDEX idx_topics__lingua_rs_pending ON public.topics USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_topics__logo_image_id`: `CREATE INDEX idx_topics__logo_image_id ON public.topics USING btree (logo_image_id) WHERE (logo_image_id IS NOT NULL)`
 - `idx_topics__merged_by_id`: `CREATE INDEX idx_topics__merged_by_id ON public.topics USING btree (merged_by_id) WHERE (merged_by_id IS NOT NULL)`
-- `idx_topics__merged_into_topic_id`: `CREATE INDEX idx_topics__merged_into_topic_id ON public.topics USING btree (merged_into_topic_id, id) WHERE (merged_into_topic_id IS NOT NULL)`
+- `idx_topics__merged_into_topic_id__id`: `CREATE INDEX idx_topics__merged_into_topic_id__id ON public.topics USING btree (merged_into_topic_id, id) WHERE (merged_into_topic_id IS NOT NULL)`
 - `idx_topics__name`: `CREATE UNIQUE INDEX idx_topics__name ON public.topics USING btree (lower(name))`
 - `idx_topics__name__text_pattern_ops`: `CREATE INDEX idx_topics__name__text_pattern_ops ON public.topics USING btree (lower(name) text_pattern_ops)`
 - `idx_topics__name_trgm`: `CREATE INDEX idx_topics__name_trgm ON public.topics USING gin (name gin_trgm_ops) WHERE (deleted_at IS NULL)`
-- `idx_topics__referral_program_topic_id`: `CREATE INDEX idx_topics__referral_program_topic_id ON public.topics USING btree (referral_program_topic_id) WHERE (referral_program_topic_id IS NOT NULL)`
-- `idx_topics__rewards_program_topic_id`: `CREATE INDEX idx_topics__rewards_program_topic_id ON public.topics USING btree (rewards_program_topic_id) WHERE (rewards_program_topic_id IS NOT NULL)`
+- `idx_topics__referral_program_topic_id__id`: `CREATE INDEX idx_topics__referral_program_topic_id__id ON public.topics USING btree (referral_program_topic_id, id) WHERE (referral_program_topic_id IS NOT NULL)`
+- `idx_topics__rewards_program_topic_id__id`: `CREATE INDEX idx_topics__rewards_program_topic_id__id ON public.topics USING btree (rewards_program_topic_id, id) WHERE (rewards_program_topic_id IS NOT NULL)`
 - `idx_topics__search_vector`: `CREATE INDEX idx_topics__search_vector ON public.topics USING gin (search_vector) WHERE (deleted_at IS NULL)`
 - `idx_topics__slug`: `CREATE UNIQUE INDEX idx_topics__slug ON public.topics USING btree (slug)`
 - `idx_topics__slug__text_pattern_ops`: `CREATE INDEX idx_topics__slug__text_pattern_ops ON public.topics USING btree (slug text_pattern_ops)`
@@ -133,9 +133,10 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF referral_program_topic_id, rewards_program_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id', 'rewards_program_topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id', 'rewards_program_topic_id')`
 - `trigger_create_topic_metrics`: `CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id')`
 - `trigger_register_retained_topic_identity`: `CREATE TRIGGER trigger_register_retained_topic_identity BEFORE INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('topic')`
 - `trigger_sync_topic_image_placements`: `CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_project_topic_image_placements()`
+- `trigger_topic_merge_participant_reservation`: `CREATE TRIGGER trigger_topic_merge_participant_reservation BEFORE DELETE OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_participant_not_reserved()`
 - `trigger_topics_content_provenance_immutable`: `CREATE TRIGGER trigger_topics_content_provenance_immutable AFTER UPDATE ON public.topics FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_topics_updated_at`: `CREATE TRIGGER trigger_topics_updated_at BEFORE UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
