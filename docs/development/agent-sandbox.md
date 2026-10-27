@@ -15,7 +15,9 @@ the one sandbox key it must own, `sandbox.excludedCommands` for its own `dev/` s
 exact entry plus a ` *` twin). Host-safety denies (`sudo`, `rm -rf` of `/`, `~` or `.`, pipe-to-shell,
 credential paths) and general read-only preapprovals are machine policy, so every repository gets
 them. The project only review-skips deleting its own agent worktrees and Rust `target/`
-directories, and denies any `rm` with a `..` that could climb out of them. A project permission allow is
+directories, and denies any `rm` with a `..` that could climb out of them. Codex needs no `rm`
+rule: it removes files inside its writable roots without a prompt, and a `decision="allow"` prefix
+would only move `rm` outside the sandbox. A project permission allow is
 not an OS sandbox exemption, but `decision="allow"` prefixes in `.codex/rules/default.rules` do run
 outside Codex's sandbox without a prompt, so keep them narrow. `git rebase`, `git stash`,
 `git cherry-pick`, `gh run`, `gh api`, and `gh workflow` are deliberately not pre-approved, so
