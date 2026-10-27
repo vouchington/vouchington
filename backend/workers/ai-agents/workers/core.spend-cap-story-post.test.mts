@@ -85,7 +85,7 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
     await upsertSystemUser('spend-cap-story-teller')
     feedId = (await createTestRssFeed({})).id
     urlId = await createTestUrlWithHostname()
-  }, 30_000)
+  })
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
