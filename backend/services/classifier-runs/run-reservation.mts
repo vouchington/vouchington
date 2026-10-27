@@ -3,6 +3,7 @@ import {
   insertClassifierRunCandidates,
   insertClassifierRunStoryCandidates,
 } from './run-candidates.mts'
+import { insertClassifierRunCommunityPrompts } from './run-community-prompts.mts'
 import {
   PREPARE_AGAIN,
   attemptWithPreparedCandidates,
@@ -114,6 +115,15 @@ export async function reserveLockedClassifierRun<C, L, E>(
   }
   if (inserted && captured.storyCandidates.length > 0) {
     await insertClassifierRunStoryCandidates(query, run.runId, captured.storyCandidates)
+  }
+  const remote = resolved.remote
+  if (
+    inserted &&
+    remote &&
+    remote.candidateKind === 'community_prompt' &&
+    remote.promptIds.length > 0
+  ) {
+    await insertClassifierRunCommunityPrompts(query, run.runId, remote.promptIds)
   }
   await settleClassifierRunRequest(query, adapter.slug, subject, {
     kind: 'run',
