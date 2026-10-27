@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - name: Compute Playwright shards
         id: shards
@@ -150,7 +150,7 @@ jobs:
         timeout-minutes: 1
         run: echo "IMAGE_ORIGIN=http://localhost:$IMAGE_LAMBDA_PORT" >> "$GITHUB_ENV"
       # Covers browser-cache restore plus two 2-minute install attempts.
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - name: Create cloudflare worker dev vars
         timeout-minutes: 1

@@ -24,4 +24,4 @@ jobs:
   cancel:
     permissions:
       actions: write
-    uses: vouchington/vouchington-tooling/.github/workflows/cancel-replaced-merge-group-runs.yml@b6e3f5d57965caf14afa2faa5b20256d738cffb3 # v0.74.1
+    uses: vouchington/vouchington-tooling/.github/workflows/cancel-replaced-merge-group-runs.yml@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
