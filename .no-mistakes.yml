@@ -1803,7 +1803,6 @@ rules:
       - 'backend/test-helpers/polling.test.mts'
       - 'backend/test-helpers/post-delegated-fk-concurrency.mts'
       - 'backend/test-helpers/postgres-lock-wait.mts'
-      - 'backend/test-helpers/services/jwt-session/concurrent-user-agent.mts'
     options:
       roots:
         - glob:
@@ -2810,9 +2809,6 @@ rules:
   - name: git identity is not mutated by repo scripts
     rule: no-git-identity-mutation
     scope: repository
-    options:
-      excludePaths:
-        - .github/workflows/runner-policy.test.mts
 
   - name: shell scripts pass shellcheck
     rule: shellcheck-runner

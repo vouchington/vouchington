@@ -4,7 +4,7 @@ import { createTestUser, getTestUserSessionById } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
 import { upsertAuthenticatedSession } from './user-sessions.mts'
-import { runTestActionsAcrossUserAgentConflict } from '../../test-helpers/services/jwt-session/concurrent-user-agent.mts'
+import { runTestActionsAcrossUserAgentConflict } from '@voucha/test-helpers/user-agent-conflict'
 
 describe('authenticated session persistence', () => {
   it('persists both sessions across a concurrent first-use user-agent conflict', async () => {
@@ -23,13 +23,17 @@ describe('authenticated session persistence', () => {
           { sid: firstSessionId, deviceId: firstDeviceId, expiresAt, userAgent },
           queryOptions,
         ),
-      () =>
-        upsertAuthenticatedSession(user.id, {
-          sid: blockedSessionId,
-          deviceId: blockedDeviceId,
-          expiresAt,
-          userAgent,
-        }),
+      queryOptions =>
+        upsertAuthenticatedSession(
+          user.id,
+          {
+            sid: blockedSessionId,
+            deviceId: blockedDeviceId,
+            expiresAt,
+            userAgent,
+          },
+          queryOptions,
+        ),
     )
 
     expect(firstSession).toMatchObject({
