@@ -25,7 +25,6 @@ export async function runPersistedRetentionPages<Position>(
   let result: PersistedPage<Position> = { deleted: 0, hasMore: false, continuation: null }
   // oxlint-disable no-await-in-loop -- each committed cursor page determines the next page
   for (let batch = 0; batch < maxBatches; batch += 1) {
-    // no-mistakes-disable-next-line query-reached-per-item: runtime-capped persisted pages must serialize on one cursor
     const page = await deletePage(batchSize)
     result = {
       deleted: result.deleted + page.deleted,
