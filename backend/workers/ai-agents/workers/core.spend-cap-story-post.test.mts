@@ -171,6 +171,7 @@ describe('processAIAgentWorkerJob -- story-post spend-cap recovery exemption', (
       await loadServiceModelSelection('story-post'),
       provider,
       result.post.id,
+      result.post.id,
     )
 
     const job = mockJob(result.post.id)

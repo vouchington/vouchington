@@ -20,14 +20,21 @@ export async function reserveAgentCallReceipt(
   requestSha256: string,
   copyrightNoticeSubmissionId?: string,
   reportTarget?: ReportReceiptTarget,
+  storyPostId?: string,
 ): Promise<boolean> {
+  const postId =
+    reportTarget?.entityType === 'post' || reportTarget?.entityType === 'comment'
+      ? reportTarget.entityId
+      : agentSlug === 'story-post'
+        ? (storyPostId ?? null)
+        : null
   const insert = sql`/* reserveAgentCallReceipt */
     INSERT INTO ai_agent_call_receipts (
       operation_key, agent_slug, request_sha256, copyright_notice_submission_id,
       post_id, reported_user_id, hostname_id, rss_feed_item_id
     ) VALUES (
       ${key}, ${agentSlug}, ${requestSha256}, ${copyrightNoticeSubmissionId ?? null},
-      ${reportTarget?.entityType === 'post' || reportTarget?.entityType === 'comment' ? reportTarget.entityId : null},
+      ${postId},
       ${reportTarget?.entityType === 'user' ? reportTarget.entityId : null},
       ${reportTarget?.entityType === 'url_hostname' ? reportTarget.entityId : null},
       ${reportTarget?.entityType === 'rss_feed_item' ? reportTarget.entityId : null}

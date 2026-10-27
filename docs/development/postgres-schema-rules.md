@@ -14,13 +14,13 @@ replay envelopes where those contracts actually require them. Launch behavior an
 recovery follow [One current contract](../../AGENTS.md).
 
 - An internal entity reference is a column or child row with a concrete foreign key and a
-  supporting index, including a reference inside a primary or unique key. Extract such an id from a
-  JSON document or UUID array and leave the rest of the document in JSON. Do not replace a document
-  with a typed column per field.
+  supporting index, including a reference inside a primary or unique key. The same id may also be
+  copied in JSON or inside a fingerprint; the foreign key is the relation. Leave the rest of the
+  document in JSON. Do not replace a document with a typed column per field.
 - Structured documents and data points stay JSON. A data-point field that references an entity (a
   topic id) is a foreign-key column; counts, amounts, and the rest stay in the JSON.
 - Change history stays JSON. Do not extract before/after values or add foreign keys for ids that
-  appear only in a history document: history is for tracking and is never joined.
+  appear only in a history document nothing joins, filters, or cleans up by: history is for tracking.
 - Live references point at live tables. An entity that must stay referenceable after deletion has
   its own retained-identity row; durable rows that outlive the entity reference that row. A retained
   identity never authorizes a deleted entity, and root reservation does not prove the live entity
@@ -75,8 +75,11 @@ recovery follow [One current contract](../../AGENTS.md).
 
 ## R3 — Normalize: ids are FK columns, JSON is for schemaless data
 
-- A reference is an FK column or FK child row, never a UUID array, a type/id pair, or an id inside
-  JSON. The exception is a history document, which records ids as they were when written.
+- A reference is an FK column or FK child row, never a UUID array or a type/id pair. An id that
+  something joins, filters, deletes, or retains by is never only inside JSON or only inside a hash;
+  a copy in either may stay beside the foreign key. A history document that nothing joins or cleans
+  up by may keep its ids. Build a dedup or fingerprint key from the foreign-key columns and the
+  other identity fields, not from a hash of a document that contains relation ids.
 - **Join on ids, never on text.** An outside string (vendor id, edge or cache key, slug, email) is a
   unique or generated column, never a primary or foreign key. Turn it into an id once where it
   enters. Looking up outside input by its unique text is fine; joining tables on it is not.

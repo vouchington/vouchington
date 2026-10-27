@@ -79,7 +79,9 @@ export async function callStoryPostAgent(
   selection: ModelSelection,
   callModel: StoryPostModelCaller = callStoryPostModel,
   operationId = story.id,
+  postId?: string,
 ): Promise<StoryPostAgentResult> {
+  if (!postId) throw new Error('Story post receipts require the story post id')
   const [sanitizedArticles, sanitizedStoryTitle] = await Promise.all([
     Promise.all(
       itemSummaries.map(async (item, i) => {
@@ -110,6 +112,7 @@ export async function callStoryPostAgent(
     input: content,
     safetyIdentifier: story.id,
     callModel,
+    postId,
   })
 
   return {

@@ -76,6 +76,7 @@ export async function callReceiptedAgentModel<Output>(
             requestSha256,
             params.copyrightNoticeSubmissionId,
             params.reportTarget,
+            agentSlug === 'story-post' ? (params.postId ?? undefined) : undefined,
           ))
         ) {
           unrecoverable(new Error(`Paid ${agentSlug} call ${key} is already reserved`))
