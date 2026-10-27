@@ -14,10 +14,12 @@ export async function insertTestRetentionToken(
       ? `tests+${randomUUID()}@voucha.ai`
       : `+1555${randomInt(1000000, 9999999)}`
   const valueColumn = family === 'email_address_login_tokens' ? 'email_address' : 'phone_number'
+  const purposeColumn = family === 'email_address_login_tokens' ? ', purpose' : ''
+  const purposeValue = family === 'email_address_login_tokens' ? ", 'login'" : ''
   await query(
     `/* insertTestRetentionToken */
-     INSERT INTO ${family} (id, ${valueColumn}, token)
-     VALUES ($1, $2, $3)`,
+     INSERT INTO ${family} (id, ${valueColumn}, token${purposeColumn})
+     VALUES ($1, $2, $3${purposeValue})`,
     [id, address, randomUUID().toUpperCase()],
   )
   return id
@@ -27,8 +29,8 @@ export async function insertTestConsumedEmailTokenAt(email: string, at: Date): P
   const id = v7({ msecs: at.getTime() })
   await write(
     `/* insertTestConsumedEmailTokenAt */
-     INSERT INTO email_address_login_tokens (id, email_address, token, logged_in_at)
-     VALUES ($1, $2, $3, CURRENT_TIMESTAMP)`,
+     INSERT INTO email_address_login_tokens (id, email_address, token, purpose, consumed_at)
+     VALUES ($1, $2, $3, 'login', CURRENT_TIMESTAMP)`,
     [id, email, randomUUID().toUpperCase()],
   )
   return id

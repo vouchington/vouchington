@@ -244,3 +244,13 @@ site. Capable browsers prove possession of their registered key when renewing th
 bound sessions cannot use ordinary device-cookie renewal. Unsupported browsers retain unbound web
 sessions. Swift and .NET do not implement this browser protocol and keep their native token and
 attestation flows. Registration and renewal responses follow the external DBSC wire format.
+
+## Email verification codes
+
+Email sign-in and account email verification use the shared base32 code contract. Reauthentication
+codes are restricted to their requested flow, and requesting a replacement invalidates the older
+unused code for that same flow. Email reauthentication stays in the browser or device session that
+requested it; replacing one session’s challenge does not interrupt another session’s challenge.
+Web login links prefill the code and require deliberate submission.
+Swift and .NET OTP input, validation and deep-link presentation must adopt the producer contract;
+client implementation is dependent work and the producer lands first.

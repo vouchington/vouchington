@@ -7,7 +7,8 @@ import {
   insertTestPasskey,
   insertTestTotpAuthenticator,
 } from '@voucha/test-helpers'
-import { createLoginAttempt, recordFailedMfaLoginAttempt } from '@services/mfa/login-attempt'
+import { createLoginAttempt, countMfaLoginAttempt } from '@services/mfa/login-attempt'
+import { countTotpReAuthAttempt } from '@services/mfa/re-auth-failures'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 
@@ -19,8 +20,6 @@ describe('MFA API Routes', () => {
   beforeAll(async () => {
     user = await createTestUser()
   }, 15_000)
-
-  // ─── POST /api/v1/auth/mfa/passkeys/authentication/options ───────────────
 
   describe('POST /api/v1/auth/mfa/passkeys/authentication/options', () => {
     it('returns 415 without JSON content-type', async () => {
@@ -72,8 +71,6 @@ describe('MFA API Routes', () => {
     }, 20_000)
   })
 
-  // ─── POST /api/v1/auth/mfa/passkeys/authentication/verification ──────────
-
   describe('POST /api/v1/auth/mfa/passkeys/authentication/verification', () => {
     it('returns 415 without JSON content-type', async () => {
       const req = createRequest()
@@ -116,8 +113,8 @@ describe('MFA API Routes', () => {
       const attempt = { userId: v7(), deviceId: v7(), sessionId: v7() }
       const attemptId = await createLoginAttempt(attempt)
 
-      for (const expectedLimited of [false, false, false, false, false, true]) {
-        await expect(recordFailedMfaLoginAttempt(attemptId, attempt)).resolves.toBe(expectedLimited)
+      for (const expectedLimited of [false, false, false, false, false, false, true]) {
+        await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(expectedLimited)
       }
 
       await createRequest()
@@ -126,8 +123,6 @@ describe('MFA API Routes', () => {
         .expect(429)
     })
   })
-
-  // ─── POST /api/v1/auth/mfa/re-auth/email/tokens ──────────────────────────
 
   describe('POST /api/v1/auth/mfa/re-auth/email/tokens', () => {
     it('returns 401 without auth', async () => {
@@ -145,8 +140,6 @@ describe('MFA API Routes', () => {
       expect(res.body.email_address).toBeTruthy()
     }, 20_000)
   })
-
-  // ─── POST /api/v1/auth/mfa/re-auth/email/verification ────────────────────
 
   describe('POST /api/v1/auth/mfa/re-auth/email/verification', () => {
     it('returns 401 without auth', async () => {
@@ -187,8 +180,6 @@ describe('MFA API Routes', () => {
         .expect(401)
     })
   })
-
-  // ─── POST /api/v1/auth/mfa/re-auth/totp/verification ─────────────────────
 
   describe('POST /api/v1/auth/mfa/re-auth/totp/verification', () => {
     it('returns 401 without auth', async () => {
@@ -233,9 +224,11 @@ describe('MFA API Routes', () => {
         .expect(401)
     }, 20_000)
 
-    it('returns re_auth_token for valid TOTP code', async () => {
+    it('accepts a valid sixth TOTP attempt and clears the scoped budget', async () => {
       const totpUser = await createTestUser()
       const suffix = `reauth-valid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+      for (let i = 0; i < 5; i++) await countTotpReAuthAttempt(totpUser.id)
 
       // Use the known test secret so we can generate the valid code
       await insertTestTotpAuthenticator(totpUser.id, suffix)
@@ -250,10 +243,11 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       expect(res.body.re_auth_token).toBeTruthy()
+      // A successful verified factor clears the user's earlier charged attempts.
+      for (let i = 0; i < 6; i++) await countTotpReAuthAttempt(totpUser.id)
+      await expect(countTotpReAuthAttempt(totpUser.id)).rejects.toMatchObject({ status: 429 })
     }, 20_000)
   })
-
-  // ─── POST /api/v1/auth/mfa/re-auth/tokens/verification ───────────────────
 
   describe('POST /api/v1/auth/mfa/re-auth/tokens/verification', () => {
     it('returns 401 without auth', async () => {

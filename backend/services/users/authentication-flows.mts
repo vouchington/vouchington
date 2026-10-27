@@ -1,6 +1,5 @@
 import createHttpError from 'http-errors'
 import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
-import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import {
   EmailDomainInvalidError,
   EmailFormatInvalidError,
@@ -21,21 +20,10 @@ import {
   verifyEmailAddressLoginToken,
 } from './authentication.mts'
 
-const emailTokenRateLimiter = new RateLimiter({
-  prefix: 'email-address-login-token',
-  ttlSeconds: 60,
-})
-
-// Exported so tests can seed this exact ZSET key (same prefix + same client) instead of racing
-// the real 60s sliding window with slow sequential HTTP round-trips.
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX = 'email-address-login-verify'
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD = 10
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS = 60
-
-const emailLoginVerifyRateLimiter = new RateLimiter({
-  prefix: EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
-  ttlSeconds: EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,
-})
+import {
+  assertEmailTokenRequestAllowed,
+  assertEmailTokenVerificationAllowed,
+} from './email-auth-rate-limits.mts'
 
 export async function requestEmailAddressLoginToken(options: {
   emailAddress: string
@@ -45,12 +33,7 @@ export async function requestEmailAddressLoginToken(options: {
   uiLocale?: string | null
 }): Promise<{ emailAddress: string }> {
   const sanitizedEmail = sanitizeEmailAddress(options.emailAddress)
-  const rateLimitIds = [sanitizedEmail, options.ip, options.deviceId, options.sessionId].filter(
-    (id): id is string => typeof id === 'string',
-  )
-
-  const { limited } = await emailTokenRateLimiter.addAndCheck(rateLimitIds, 5)
-  if (limited) throw createHttpError(429, 'Too many requests. Please try again later.')
+  await assertEmailTokenRequestAllowed({ ...options, emailAddress: sanitizedEmail })
 
   try {
     const { token, emailAddress } = await createEmailAddressLoginToken(options.emailAddress)
@@ -75,15 +58,7 @@ export async function loginWithEmailAddressToken(options: {
 }) {
   try {
     const sanitizedEmail = sanitizeEmailAddress(options.emailAddress)
-    const rateLimitIds = [sanitizedEmail, options.ip, options.deviceId, options.sessionId].filter(
-      (id): id is string => typeof id === 'string',
-    )
-
-    const { limited } = await emailLoginVerifyRateLimiter.addAndCheck(
-      rateLimitIds,
-      EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD,
-    )
-    if (limited) throw createHttpError(429, 'Too many requests. Please try again later.')
+    await assertEmailTokenVerificationAllowed({ ...options, emailAddress: sanitizedEmail })
 
     const { success, emailAddress } = await verifyEmailAddressLoginToken(
       options.emailAddress,

@@ -54,13 +54,14 @@ export async function createEmailVerificationToken(
     sql`/* createEmailVerificationToken */ SELECT fn_lock_active_user_for_mutation(${userId})`,
   )
   await query(sql`/* createEmailVerificationToken */
-      INSERT INTO email_address_login_tokens (email_address, token, user_id)
-      VALUES (${normalized}, ${tokenHash}, ${userId})
-      ON CONFLICT (user_id, email_address) WHERE user_id IS NOT NULL
+      INSERT INTO email_address_login_tokens (email_address, token, user_id, purpose)
+      VALUES (${normalized}, ${tokenHash}, ${userId}, 'email_verification')
+      ON CONFLICT (user_id, email_address) WHERE purpose = 'email_verification'
       DO UPDATE SET
         id = uuidv7(),
         token = ${tokenHash},
-        logged_in_at = NULL
+        consumed_at = NULL,
+        invalidated_at = NULL
     `)
   await query.commit()
 
@@ -97,7 +98,9 @@ async function verifyTokenAndPrimeEmailCache(
       WHERE user_id = ${userId}
         AND email_address = ${normalizedEmailAddress}
         AND token = ${normalizedToken}
-        AND logged_in_at IS NULL
+        AND purpose = 'email_verification'
+        AND consumed_at IS NULL
+        AND invalidated_at IS NULL
         AND id >= fn_min_uuidv7(NOW() - INTERVAL '30 minutes' + INTERVAL '1 millisecond')
     `)
   assert(rowCount === 1, 400, 'Invalid or expired verification code')

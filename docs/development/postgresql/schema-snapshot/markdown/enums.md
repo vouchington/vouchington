@@ -726,6 +726,12 @@
 - `relation__rss_feed_item__category__topic`
 - `relation__rss_feed_item__category__topic_alias`
 
+## `email_address_token_purposes`
+
+- `login`
+- `re_auth`
+- `email_verification`
+
 ## `email_security_verdicts`
 
 - `pass`

@@ -1,5 +1,5 @@
 import * as OTPAuth from 'otpauth'
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
@@ -10,8 +10,9 @@ export async function verifyTotpSetup(
   userId: string,
   authenticatorId: string,
   code: string,
+  options: { now?: number } = {},
 ): Promise<PublicTotpAuthenticator> {
-  const { rows } = await read(sql`/* verifyTotpSetup */
+  const { rows } = await write(sql`/* verifyTotpSetup */
     SELECT id, name, secret_ciphertext, verified_at, created_at
     FROM user_totp_authenticators
     WHERE id = ${authenticatorId} AND user_id = ${userId}
@@ -33,14 +34,16 @@ export async function verifyTotpSetup(
     ),
   })
 
-  const delta = totp.validate({ token: code, window: 1 })
+  const now = options.now ?? Date.now()
+  const delta = totp.validate({ token: code, window: 1, timestamp: now })
   assert(delta !== null, 401, 'Invalid verification code')
+  const timeStep = Math.floor(now / (totp.period * 1000)) + delta
 
   await using query = await beginTransaction()
   await query(sql`/* verifyTotpSetup */ SELECT fn_lock_active_user_for_mutation(${userId})`)
   const result = await query<PublicTotpAuthenticator>(sql`/* verifyTotpSetup */
       UPDATE user_totp_authenticators
-      SET verified_at = NOW()
+      SET verified_at = NOW(), last_used_time_step = ${timeStep}
       WHERE id = ${authenticatorId} AND user_id = ${userId} AND verified_at IS NULL
       RETURNING id, name, created_at
     `)

@@ -31680,7 +31680,6 @@
 {"alias":"extracted.mfaReauthDialog.methodSelector.authenticatorApp_09a12ace","consumer":"web","pattern":"/my/identity"},
 {"alias":"extracted.mfaReauthDialog.methodSelector.emailVerification_4d225196","consumer":"web","pattern":"/my/identity"},
 {"alias":"extracted.mfaReauthDialog.verificationPanes.aVerificationCodeWasSentTo_7ff88c72","consumer":"web","pattern":"/my/identity"},
-{"alias":"extracted.mfaReauthDialog.verificationPanes.enterThe6DigitCodeFrom_888a9edc","consumer":"web","pattern":"/my/identity"},
 {"alias":"extracted.mfaReauthDialog.verificationPanes.enterThe6DigitCodeFrom_a160dee6","consumer":"web","pattern":"/my/identity"},
 {"alias":"extracted.mfaReauthDialog.verificationPanes.resend_1f948437","consumer":"web","pattern":"/my/identity"},
 {"alias":"extracted.mfaReauthDialog.verificationPanes.sendCode_66a5b409","consumer":"web","pattern":"/my/identity"},

@@ -6,15 +6,16 @@ TOTP authenticator apps registered by users for multi-factor authentication. Any
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                        |
-| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                |
-| `user_id`           | `uuid`                     | no       |                              |          |           |           | The user who registered this TOTP authenticator.                                                                                                               |
-| `secret_ciphertext` | `text`                     | no       |                              |          |           |           | Encrypted TOTP shared secret ciphertext used to generate and verify time-based one-time passwords.                                                             |
-| `name`              | `text`                     | no       |                              |          |           |           | User-chosen display name for this authenticator (1-100 chars, trimmed).                                                                                        |
-| `verified_at`       | `timestamp with time zone` | yes      |                              |          |           |           | When the user first verified a code from this authenticator, confirming setup is complete. NULL means setup is incomplete and the authenticator is not active. |
-| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                |
-| `updated_at`        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                        |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                                                |
+| `user_id`             | `uuid`                     | no       |                              |          |           |           | The user who registered this TOTP authenticator.                                                                                                               |
+| `secret_ciphertext`   | `text`                     | no       |                              |          |           |           | Encrypted TOTP shared secret ciphertext used to generate and verify time-based one-time passwords.                                                             |
+| `name`                | `text`                     | no       |                              |          |           |           | User-chosen display name for this authenticator (1-100 chars, trimmed).                                                                                        |
+| `verified_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When the user first verified a code from this authenticator, confirming setup is complete. NULL means setup is incomplete and the authenticator is not active. |
+| `last_used_time_step` | `bigint`                   | yes      |                              |          |           |           | The greatest successfully consumed TOTP counter, preventing reuse across authentication flows.                                                                 |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,6 +24,7 @@ _none_
 
 **Check constraints:**
 
+- `user_totp_authenticators_last_used_time_step_check`: `CHECK ((last_used_time_step >= 0))`
 - `user_totp_authenticators_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100) AND (TRIM(BOTH FROM name) = name)))`
 
 **Foreign keys:**

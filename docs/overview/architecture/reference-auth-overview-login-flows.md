@@ -49,21 +49,15 @@ sequenceDiagram
   W-->>U: Full-page navigation to /
 ```
 
-1. `POST /api/v1/auth/email-address/tokens` — generates an 8-character uppercase hex token, stores
-   a purpose-bound HMAC-SHA256 hash in `email_address_login_tokens`, and enqueues an email to deliver the raw token.
-   Short-lived. Rate-limited per email, IP, device, and session. The email includes both a CTA button and the
-   full `/login?emailAddress=...&otp=...` URL as fallback text.
-   Keep the backend token length in sync with the web login UI: `LoginCodeStep` renders eight OTP
-   slots, `LoginForm` trims deep-link OTP values to eight characters, and Playwright covers a real
-   backend-generated token through the UI.
-2. If the user opens that login link, `/login` pre-fills the email address and OTP, renders the
-   verification-code step immediately, hides OAuth buttons unless the user presses Back, and
-   auto-submits once.
-3. User can also enter the token manually from the email.
-4. `POST /api/v1/auth/email-address/login` — verifies the token, upserts the user, fetches
-   enriched claims, creates new `dt`/`st` JWTs with `uid` and enrichment fields set, and sets
-   the cookies. When an existing pair is present in the request body or cookies, the backend
-   reuses that device/session chain. Verification attempts are also rate-limited.
+Email sign-in codes are short lived, purpose bound, and replaced atomically when the user
+requests another code. Reauthentication and email-address verification codes cannot sign in;
+issuing one flow's code does not cancel a pending code for a different flow. Shared issuance
+and verification quotas prevent reauthentication from creating an unrestricted alternate path.
+
+A login link prefills the address and code and opens the verification step. The user must
+submit the form deliberately; tab focus and visibility do not establish sign-in intent.
+Manual code entry uses the same submission path. Verification enriches the resulting session
+and preserves its existing device chain when available.
 
 ### Verified email resolution
 

@@ -10,7 +10,7 @@ import { LoginCodePanel } from './login-code-panel'
 import { LoginEmailStep } from './login-email-step'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 import { useLoginCodeActions } from './use-login-code-actions'
-import { useLoginCodeAutoSubmit } from './use-login-code-auto-submit'
+import { LOGIN_CODE_LENGTH, LOGIN_CODE_PATTERN } from '@ts-shared/utils/login-code'
 import { sanitizeLoginNext } from '@/lib/auth/login-url'
 import { useRouter } from 'next/navigation'
 import { useRuntimePublicConfig } from '@/lib/runtime-public-config-context'
@@ -48,8 +48,8 @@ export function LoginForm({
       refresh()
     })
   const prefilledEmailAddress = initialEmailAddress.trim()
-  const prefilledOtp = initialOtp.trim().toUpperCase().slice(0, 8)
-  const startsOnCodeStep = prefilledEmailAddress.length > 0 && prefilledOtp.length === 8
+  const prefilledOtp = initialOtp.trim().toUpperCase().slice(0, LOGIN_CODE_LENGTH)
+  const startsOnCodeStep = prefilledEmailAddress.length > 0 && LOGIN_CODE_PATTERN.test(prefilledOtp)
   const [step, setStep] = useState<Step>(
     initialLoginAttemptId ? 'mfa' : startsOnCodeStep ? 'code' : 'email',
   )
@@ -136,16 +136,6 @@ export function LoginForm({
       setLoading(false)
     }
   }
-
-  useLoginCodeAutoSubmit({
-    code,
-    email,
-    loading,
-    startsOnCodeStep,
-    step,
-    submitCode,
-    submitting,
-  })
 
   return (
     <div className='space-y-4'>

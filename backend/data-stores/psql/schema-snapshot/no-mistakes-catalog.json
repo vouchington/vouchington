@@ -519,6 +519,9 @@
         "relation__rss_feed_item__category__topic_alias"
       ]
     },
+    "email_address_token_purposes": {
+      "values": ["login", "re_auth", "email_verification"]
+    },
     "email_security_verdicts": {
       "values": ["pass", "fail", "gray", "processing_failed", "unknown"]
     },
@@ -44376,6 +44379,18 @@
     },
     "email_address_login_tokens": {
       "checkConstraints": {
+        "email_address_login_tokens_check": {
+          "definition": "CHECK (((purpose = 're_auth'::email_address_token_purposes) = (reauthentication_session_id IS NOT NULL)))",
+          "validated": true
+        },
+        "email_address_login_tokens_check1": {
+          "definition": "CHECK (((consumed_at IS NULL) OR (invalidated_at IS NULL)))",
+          "validated": true
+        },
+        "email_address_login_tokens_check2": {
+          "definition": "CHECK (((purpose = 'login'::email_address_token_purposes) = (user_id IS NULL)))",
+          "validated": true
+        },
         "email_address_login_tokens_email_address_check": {
           "definition": "CHECK ((char_length(email_address) <= 255))",
           "validated": true
@@ -44402,6 +44417,16 @@
         }
       },
       "columns": {
+        "consumed_at": {
+          "comment": "When the token was successfully consumed for its declared authentication purpose.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -44410,7 +44435,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 6
         },
         "email_address": {
           "comment": "The email address this token was sent to.",
@@ -44432,15 +44457,35 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "logged_in_at": {
-          "comment": "When the token was used to log in. NULL means the token is still pending.",
+        "invalidated_at": {
+          "comment": "When a replacement code invalidated this unused token.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 9
+        },
+        "purpose": {
+          "comment": "The authentication flow allowed to consume this token.",
+          "dataType": "email_address_token_purposes",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "reauthentication_session_id": {
+          "comment": "The authenticated actor session allowed to consume this reauthentication code; NULL for other purposes.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "token": {
           "comment": "Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification/login token sent to the user.",
@@ -44450,7 +44495,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 5
         },
         "updated_at": {
           "comment": null,
@@ -44460,21 +44505,29 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 7
         },
         "user_id": {
-          "comment": "Non-NULL for email verification tokens; NULL for login tokens.",
+          "comment": "Owner of authenticated reauthentication or address-verification codes; NULL only for login codes.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 10
         }
       },
-      "comment": "Short-lived tokens for email-based login and email verification flows.",
+      "comment": "Short-lived tokens scoped to email login, reauthentication, or address verification.",
       "foreignKeys": {
+        "email_address_login_tokens_reauthentication_session_id_fkey": {
+          "columns": ["reauthentication_session_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_sessions",
+          "validated": true
+        },
         "email_address_login_tokens_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -44566,7 +44619,7 @@
         "idx_email_address_login_tokens__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__active ON public.email_address_login_tokens USING btree (email_address, token) WHERE (logged_in_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__active ON public.email_address_login_tokens USING btree (email_address, token) WHERE ((consumed_at IS NULL) AND (invalidated_at IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -44589,16 +44642,85 @@
             }
           ],
           "live": true,
-          "predicate": "(logged_in_at IS NULL)",
+          "predicate": "((consumed_at IS NULL) AND (invalidated_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
         },
+        "idx_email_address_login_tokens__pending_login": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__pending_login ON public.email_address_login_tokens USING btree (email_address) WHERE ((purpose = 'login'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "email_address",
+              "descending": false,
+              "expression": "email_address",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((purpose = 'login'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_email_address_login_tokens__pending_reauthentication": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__pending_reauthentication ON public.email_address_login_tokens USING btree (reauthentication_session_id) WHERE ((purpose = 're_auth'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reauthentication_session_id",
+              "descending": false,
+              "expression": "reauthentication_session_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((purpose = 're_auth'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_email_address_login_tokens__reauthentication_session_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_email_address_login_tokens__reauthentication_session_id ON public.email_address_login_tokens USING btree (reauthentication_session_id) WHERE (reauthentication_session_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reauthentication_session_id",
+              "descending": false,
+              "expression": "reauthentication_session_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(reauthentication_session_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_email_address_login_tokens__user_email_verify": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__user_email_verify ON public.email_address_login_tokens USING btree (user_id, email_address) WHERE (user_id IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__user_email_verify ON public.email_address_login_tokens USING btree (user_id, email_address) WHERE (purpose = 'email_verification'::email_address_token_purposes)",
           "immediate": true,
           "keys": [
             {
@@ -44621,10 +44743,33 @@
             }
           ],
           "live": true,
-          "predicate": "(user_id IS NOT NULL)",
+          "predicate": "(purpose = 'email_verification'::email_address_token_purposes)",
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_email_address_login_tokens__user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_email_address_login_tokens__user_id ON public.email_address_login_tokens USING btree (user_id) WHERE (user_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -78238,6 +78383,16 @@
         }
       },
       "columns": {
+        "consumed_at": {
+          "comment": "When the token was successfully consumed for phone-number login.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -78257,16 +78412,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
-        },
-        "logged_in_at": {
-          "comment": "When the token was used to log in. NULL means the token is still pending.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
         },
         "phone_number": {
           "comment": "The phone number this token was sent to.",
@@ -78305,7 +78450,7 @@
         "idx_phone_number_login_tokens__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (logged_in_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (consumed_at IS NULL)",
           "immediate": true,
           "keys": [
             {
@@ -78328,7 +78473,7 @@
             }
           ],
           "live": true,
-          "predicate": "(logged_in_at IS NULL)",
+          "predicate": "(consumed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -141343,6 +141488,10 @@
     },
     "user_totp_authenticators": {
       "checkConstraints": {
+        "user_totp_authenticators_last_used_time_step_check": {
+          "definition": "CHECK ((last_used_time_step >= 0))",
+          "validated": true
+        },
         "user_totp_authenticators_name_check": {
           "definition": "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100) AND (TRIM(BOTH FROM name) = name)))",
           "validated": true
@@ -141357,7 +141506,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -141368,6 +141517,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
+        },
+        "last_used_time_step": {
+          "comment": "The greatest successfully consumed TOTP counter, preventing reuse across authentication flows.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
         },
         "name": {
           "comment": "User-chosen display name for this authenticator (1-100 chars, trimmed).",
@@ -141397,7 +141556,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "user_id": {
           "comment": "The user who registered this TOTP authenticator.",

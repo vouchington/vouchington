@@ -113,8 +113,8 @@ describe('copyright staff queue urgency', () => {
       now: new Date(decisionNow.getTime() + 1),
     })
     const ownedIds = [missed, due, filingCase, olderIntake]
-    // Newer plain intake. It sorts after the owned window, so a walk that
-    // scans the shared queue tail reaches the global end instead of stopping.
+    // A later unrelated intake sorts beyond the owned span, exposing any walk
+    // that scans the shared queue tail instead of stopping after owned cases.
     await createGuestNotice(decisionNow)
     await withCopyrightStaffQueueHttp(
       moderator,

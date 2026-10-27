@@ -1,5 +1,6 @@
 'use client'
 
+import { LOGIN_CODE_PATTERN } from '@ts-shared/utils/login-code'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -86,7 +87,7 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
   }
 
   async function handleEmailVerify(code: string) {
-    if (code.length < 6) return
+    if (!LOGIN_CODE_PATTERN.test(code)) return
     setLoading(true)
     try {
       const result = await verifyReAuthEmail<{ re_auth_token: string }>(code)
