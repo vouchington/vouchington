@@ -2,7 +2,7 @@ import { generateKeyPairSync, randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { Queue, QueueEvents, Worker, type Job, type JobOptions } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { workerQueueCommandClient, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import * as httpDispatchers from '../../../modules/utils/http.mts'
 import { membershipVerificationQueueConfig, QUEUE_NAME } from '@queues/memberships/config'
 import { buildGooglePlayNotificationJob } from '@queues/memberships/enqueues/google-play-jobs'
@@ -11,6 +11,8 @@ import {
   releaseMembershipVerificationExecutionLease,
   type MembershipVerificationExecutionLease,
 } from '@queues/memberships/enqueues/verification-execution-lease'
+import { GooglePlayPurchasePendingError } from '@services/memberships/google/process-verification'
+import { MembershipProviderUnavailableError } from '@services/memberships/provider-unavailable'
 import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-play-memberships'
 import { createTestGooglePlayRtdnBody } from '@voucha/test-helpers/google-play-recovery'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
@@ -171,5 +173,51 @@ describe('Google Play notification admission through the shared provider lease',
       await queue.close()
       await agent.close()
     }
+  })
+})
+
+describe('membership provider job when the execution lease is lost before release', () => {
+  let restoreConfig: (() => void) | undefined
+
+  afterEach(() => restoreConfig?.())
+
+  async function run(failure: (() => unknown) | null) {
+    restoreConfig = overrideDynamicConfigFieldsForTest(membershipVerificationQueueConfig, {
+      verification_concurrency: 1,
+    })
+    const leaseNamespace = `${workerQueuePrefix}:{memberships}:lost-lease-test:${randomUUID()}`
+    const moveToDelayed = vi.fn<Job['moveToDelayed']>()
+    const outcome = processMembershipProviderJob(
+      { moveToDelayed } as unknown as Job,
+      async () => {
+        // Expiry or a takeover removes the slot while the provider call is still running.
+        await workerQueueCommandClient.del([`${leaseNamespace}:slot:0`])
+        if (failure) throw failure()
+      },
+      { leaseNamespace },
+    )
+    return { outcome, moveToDelayed }
+  }
+
+  it.each([
+    ['a pending Google Play purchase', () => new GooglePlayPurchasePendingError()],
+    ['a provider rate limit', () => new Worker.RateLimitError(2_000)],
+    [
+      'an unavailable provider configuration',
+      () => new MembershipProviderUnavailableError('unset'),
+    ],
+  ])('delays %s instead of burning a failed attempt', async (_name, failure) => {
+    const { outcome, moveToDelayed } = await run(failure)
+
+    await expect(outcome).resolves.toBeUndefined()
+    expect(moveToDelayed).toHaveBeenCalledOnce()
+    expect(moveToDelayed.mock.calls[0]![0]).toBeGreaterThan(0)
+  })
+
+  it('still fails the attempt for an ordinary failure', async () => {
+    const { outcome, moveToDelayed } = await run(() => new Error('boom'))
+
+    await expect(outcome).rejects.toThrow('lease lost before release')
+    expect(moveToDelayed).not.toHaveBeenCalled()
   })
 })

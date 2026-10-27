@@ -9,7 +9,6 @@ import {
   createConfiguredGooglePlaySubscriptionsV2Client,
   GooglePlaySubscriptionLookupError,
 } from './configured-client.mts'
-import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import {
   getLatestKnownGooglePlayPurchaseToken,
   persistGooglePlayTokenLineage,
@@ -71,8 +70,6 @@ export async function reconcileGooglePlayRtdnNotification(options: {
       purchaseToken,
     })
   } catch (err) {
-    if (err instanceof MembershipProviderUnavailableError)
-      return rejectNotification(context.evidenceId, 'provider_unavailable')
     if (
       err instanceof GooglePlaySubscriptionLookupError &&
       err.invalidPurchaseToken &&

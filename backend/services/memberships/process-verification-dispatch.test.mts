@@ -2,48 +2,37 @@ import { generateKeyPairSync, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { processMembershipVerification } from './process-verification.mts'
-import { rejectUnavailableMembershipProvider } from './provider-unavailable.mts'
+import { MembershipProviderUnavailableError } from './provider-unavailable.mts'
 import { createMembershipVerification, getMembershipVerification } from './verifications.mts'
 
 describe('membership verification provider dispatch', () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it('terminalizes a Google Play verification when its service account is unconfigured', async () => {
+  it('keeps a Google Play verification pending and replayable when its service account is unconfigured', async () => {
     const user = await createTestUser()
-    const verification = await createMembershipVerification({
+    const options = {
       userId: user.id,
-      provider: 'google_play',
+      provider: 'google_play' as const,
       purchaseIntentId: null,
       idempotencyKey: randomUUID(),
       evidence: { purchase_token: `google-token-${randomUUID()}` },
-    })
+    }
+    const verification = await createMembershipVerification(options)
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', undefined)
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', undefined)
 
-    await expect(processMembershipVerification(verification.id)).resolves.toBeUndefined()
+    await expect(processMembershipVerification(verification.id)).rejects.toBeInstanceOf(
+      MembershipProviderUnavailableError,
+    )
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
-      status: 'rejected',
-      reason_code: 'provider_unavailable',
+      status: 'pending',
+      reason_code: null,
     })
-  })
-
-  it('leaves an already-terminal verification unchanged when provider setup is unavailable', async () => {
-    const user = await createTestUser()
-    const verification = await createMembershipVerification({
-      userId: user.id,
-      provider: 'google_play',
-      purchaseIntentId: null,
-      idempotencyKey: randomUUID(),
-      evidence: { purchase_token: `google-token-${randomUUID()}` },
+    await expect(createMembershipVerification(options)).resolves.toMatchObject({
+      id: verification.id,
+      replayed: true,
+      status: 'pending',
     })
-    vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', undefined)
-    vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', undefined)
-
-    await processMembershipVerification(verification.id)
-    const terminal = await getMembershipVerification(user.id, verification.id)
-    await rejectUnavailableMembershipProvider(verification.id)
-    await expect(processMembershipVerification(verification.id)).resolves.toBeUndefined()
-    await expect(getMembershipVerification(user.id, verification.id)).resolves.toEqual(terminal)
   })
 
   it.each(['apple_app_store', 'google_play', 'microsoft_store'] as const)(

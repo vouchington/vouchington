@@ -192,7 +192,8 @@ upper UUID bound and continues by verification ID in job data, so a failing earl
 starve later rows. Repeated scheduled sweeps revisit earlier IDs to cover out-of-order commits.
 Verification tasks and recovery pages use separate concurrency lanes so externally submitted
 purchases cannot occupy the dispatcher lane. Each verification retains its job and deduplication
-identity while pending purchases and provider throttles delay that job. Per-verification ordering
+identity while pending purchases, provider throttles, and missing provider configuration delay that
+job without rejecting the purchase or notification. Per-verification ordering
 isolates these waits; a token-owned Valkey execution lease enforces the global provider-call cap
 and is released before deferral, so a delayed purchase cannot block unrelated verifications.
 Source recovery admits the same canonical verification jobs. Bound Google notification receipts

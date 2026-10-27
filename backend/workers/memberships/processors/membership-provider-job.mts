@@ -7,6 +7,7 @@ import {
   releaseMembershipVerificationExecutionLease,
 } from '@queues/memberships/enqueues/verification-execution-lease'
 import { GooglePlayPurchasePendingError } from '@services/memberships/google/process-verification'
+import { MembershipProviderUnavailableError } from '@services/memberships/provider-unavailable'
 import { runWithMembershipVerificationLeaseRenewal } from './verification-execution-renewal.mts'
 
 const LEASE_CONTENTION_RETRY_MS = 1_000
@@ -35,13 +36,17 @@ export async function processMembershipProviderJob(
   } finally {
     released = await releaseMembershipVerificationExecutionLease(lease)
   }
-  if (!released) throw new Error('Membership verification execution lease lost before release')
 
-  if (processingFailure?.error instanceof GooglePlayPurchasePendingError)
+  // Delay branches come first so a lost lease never burns a failed attempt for them.
+  if (
+    processingFailure?.error instanceof GooglePlayPurchasePendingError ||
+    processingFailure?.error instanceof MembershipProviderUnavailableError
+  )
     return job.moveToDelayed(Date.now() + getMembershipVerificationRetryMinutes() * 60_000)
   if (processingFailure?.error instanceof Worker.RateLimitError)
     return job.moveToDelayed(
       Date.now() + clampRateLimitDelayMs((processingFailure.error as { delayMs?: number }).delayMs),
     )
+  if (!released) throw new Error('Membership verification execution lease lost before release')
   if (processingFailure) throw processingFailure.error
 }

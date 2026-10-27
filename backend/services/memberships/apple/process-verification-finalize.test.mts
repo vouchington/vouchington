@@ -12,42 +12,43 @@ import {
   createTestAppleVerificationFixture,
   submitTestAppleVerification,
 } from '@voucha/test-helpers/apple-membership-verification'
+import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import { processAppleMembershipVerification } from './process-verification.mts'
 import type { AppleTransactionVerifier } from './types.mts'
 
 describe('Apple verification prior-attempt finalization', () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it('does not replay a configuration rejection after configuration is restored', async () => {
+  it('keeps a verification pending through a configuration outage and verifies it once restored', async () => {
     const user = await createTestUser()
     const fixture = await createTestAppleVerificationFixture(
       user.id,
       `ai.voucha.apple-production-${randomUUID()}`,
       'production',
     )
-    const signedTransactionInfo = `signed-config-recovery-${randomUUID()}`
-    const first = await submitTestAppleVerification(user.id, fixture, signedTransactionInfo)
+    const verification = await submitTestAppleVerification(
+      user.id,
+      fixture,
+      `signed-config-recovery-${randomUUID()}`,
+    )
     vi.stubEnv('APPLE_APP_STORE_APP_ID', undefined)
 
-    await processMembershipVerification(first.id)
-    await expect(getMembershipVerification(user.id, first.id)).resolves.toMatchObject({
-      status: 'rejected',
-      reason_code: 'provider_unavailable',
+    await expect(processMembershipVerification(verification.id)).rejects.toBeInstanceOf(
+      MembershipProviderUnavailableError,
+    )
+    await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
+      status: 'pending',
+      reason_code: null,
     })
 
-    const replay = await submitTestAppleVerification(user.id, fixture, signedTransactionInfo)
     vi.stubEnv('APPLE_APP_STORE_APP_ID', '123456789')
-    await processAppleMembershipVerification(replay.id, {
+    await processAppleMembershipVerification(verification.id, {
       createVerifier: () => makeProductionVerifier(fixture),
     })
 
-    await expect(getMembershipVerification(user.id, replay.id)).resolves.toMatchObject({
+    await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
       status: 'verified',
       reason_code: 'verified',
-    })
-    await expect(getMembershipVerification(user.id, first.id)).resolves.toMatchObject({
-      status: 'rejected',
-      reason_code: 'provider_unavailable',
     })
   })
 })

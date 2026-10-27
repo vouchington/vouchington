@@ -9,12 +9,23 @@ import {
 } from '../config.mts'
 
 const DEFAULT_NAMESPACE = `${workerQueuePrefix ?? 'glide'}:{memberships}:verification-execution`
-const membershipVerificationLeaseClient = await upsertValkeyClientByUrl(config.worker_queue_url, {
-  name: 'membership-verification-lease',
-  readFrom: 'primary',
-})
 
-type SetOptions = NonNullable<Parameters<typeof membershipVerificationLeaseClient.set>[2]>
+type LeaseClient = Awaited<ReturnType<typeof upsertValkeyClientByUrl>>
+let leaseClientPromise: Promise<LeaseClient> | undefined
+
+// Opened on first use so importing the enqueues never connects API or web processes.
+function getLeaseClient(): Promise<LeaseClient> {
+  leaseClientPromise ??= upsertValkeyClientByUrl(config.worker_queue_url, {
+    name: 'membership-verification-lease',
+    readFrom: 'primary',
+  }).catch(err => {
+    leaseClientPromise = undefined
+    throw err
+  })
+  return leaseClientPromise
+}
+
+type SetOptions = NonNullable<Parameters<LeaseClient['set']>[2]>
 type SetExpiry = Exclude<SetOptions['expiry'], undefined>
 
 export type MembershipVerificationExecutionLease = Readonly<{
@@ -25,13 +36,14 @@ export type MembershipVerificationExecutionLease = Readonly<{
 export async function acquireMembershipVerificationExecutionLease(
   namespace = DEFAULT_NAMESPACE,
 ): Promise<MembershipVerificationExecutionLease | null> {
+  const client = await getLeaseClient()
   const token = randomUUID()
   const limit = getMembershipVerificationConcurrency()
   const start = randomInt(limit)
   for (let offset = 0; offset < limit; offset++) {
     const key = `${namespace}:slot:${(start + offset) % limit}`
     // oxlint-disable-next-line no-await-in-loop -- bounded semaphore admission probes at most 20 slots.
-    const acquired = await membershipVerificationLeaseClient.set(key, token, {
+    const acquired = await client.set(key, token, {
       conditionalSet: 'onlyIfDoesNotExist',
       expiry: milliseconds(MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS),
     })
@@ -43,8 +55,9 @@ export async function acquireMembershipVerificationExecutionLease(
 export async function renewMembershipVerificationExecutionLease(
   lease: MembershipVerificationExecutionLease,
 ): Promise<boolean> {
+  const client = await getLeaseClient()
   return (
-    (await membershipVerificationLeaseClient.set(lease.key, lease.token, {
+    (await client.set(lease.key, lease.token, {
       conditionalSet: 'onlyIfEqual',
       comparisonValue: lease.token,
       expiry: milliseconds(MEMBERSHIP_VERIFICATION_LOCK_DURATION_MS),
@@ -55,9 +68,7 @@ export async function renewMembershipVerificationExecutionLease(
 export async function releaseMembershipVerificationExecutionLease(
   lease: MembershipVerificationExecutionLease,
 ): Promise<boolean> {
-  return unlinkIfValueMatches(lease.key, lease.token, {
-    client: membershipVerificationLeaseClient,
-  })
+  return unlinkIfValueMatches(lease.key, lease.token, { client: await getLeaseClient() })
 }
 
 function milliseconds(count: number): SetExpiry {

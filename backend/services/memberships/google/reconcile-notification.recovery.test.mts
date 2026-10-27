@@ -14,6 +14,7 @@ import {
   getTestPendingGooglePlayVerification,
 } from '@voucha/test-helpers/google-play-recovery'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
+import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
@@ -22,7 +23,7 @@ import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 describe('Google Play RTDN recovery', () => {
   afterEach(() => vi.unstubAllEnvs())
 
-  it('rejects an unknown notification when provider credentials are unavailable', async () => {
+  it('leaves an unknown notification pending for retry when provider credentials are unavailable', async () => {
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', '')
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', '')
     const applicationId = `ai.voucha.google-${randomUUID()}`
@@ -37,15 +38,12 @@ describe('Google Play RTDN recovery', () => {
       }),
     })
 
-    await reconcileGooglePlayRtdnNotification({ evidenceId })
+    await expect(reconcileGooglePlayRtdnNotification({ evidenceId })).rejects.toBeInstanceOf(
+      MembershipProviderUnavailableError,
+    )
 
     await expect(getTestMembershipProviderEvidenceTerminalState(evidenceId)).resolves.toMatchObject(
-      {
-        verified_at: null,
-        rejected_at: expect.any(Date),
-        rejection_reason: 'provider_unavailable',
-        observation_count: 0,
-      },
+      { verified_at: null, rejected_at: null, rejection_reason: null, observation_count: 0 },
     )
   })
 

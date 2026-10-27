@@ -4,10 +4,7 @@ import { processAppleMembershipVerification } from './apple/process-verification
 import { createConfiguredGooglePlaySubscriptionsV2Client } from './google/configured-client.mts'
 import { processGooglePlayMembershipVerification } from './google/process-verification.mts'
 import { processMicrosoftStoreMembershipVerification } from './microsoft/process-verification.mts'
-import {
-  MembershipProviderUnavailableError,
-  rejectUnavailableMembershipProvider,
-} from './provider-unavailable.mts'
+import { rejectUnavailableMembershipProvider } from './provider-unavailable.mts'
 
 export async function processMembershipVerification(verificationId: string): Promise<void> {
   const { rows } = await read<{ provider: string }>(sql`/* processMembershipVerification.provider */
@@ -17,24 +14,22 @@ export async function processMembershipVerification(verificationId: string): Pro
     WHERE verification.id = ${verificationId}
       AND verification.verified_at IS NULL AND verification.conflicted_at IS NULL
       AND verification.rejected_at IS NULL LIMIT 1`)
-  try {
-    switch (rows[0]?.provider) {
-      case 'apple_app_store':
-        await processAppleMembershipVerification(verificationId)
-        return
-      case 'google_play':
-        await processGooglePlayMembershipVerification(verificationId, {
-          client: createConfiguredGooglePlaySubscriptionsV2Client(),
-        })
-        return
-      case 'microsoft_store':
-        await processMicrosoftStoreMembershipVerification(verificationId)
-        return
-      default:
-        if (rows.length) await rejectUnavailableMembershipProvider(verificationId)
-    }
-  } catch (err) {
-    if (!(err instanceof MembershipProviderUnavailableError)) throw err
-    await rejectUnavailableMembershipProvider(verificationId)
+  // A misconfigured adapter throws MembershipProviderUnavailableError; the worker delays and
+  // retries it so a deploy-time config outage never rejects in-flight purchases.
+  switch (rows[0]?.provider) {
+    case 'apple_app_store':
+      await processAppleMembershipVerification(verificationId)
+      return
+    case 'google_play':
+      await processGooglePlayMembershipVerification(verificationId, {
+        client: createConfiguredGooglePlaySubscriptionsV2Client(),
+      })
+      return
+    case 'microsoft_store':
+      await processMicrosoftStoreMembershipVerification(verificationId)
+      return
+    default:
+      // No adapter exists for this provider, so the rejection is permanent.
+      if (rows.length) await rejectUnavailableMembershipProvider(verificationId)
   }
 }
