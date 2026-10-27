@@ -14,7 +14,7 @@ import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
-import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 
 let testUser: PrivateUser
 
@@ -124,7 +124,7 @@ describe('story post RSS URL revisions', () => {
 
 async function drainProjection(postId: string): Promise<void> {
   for (let iteration = 0; iteration < 20; iteration += 1) {
-    const result = await reconcileStoryPostRelatedUrlProjection({ postId })
+    const result = await processOwnedStoryProjectionPage(postId)
     if (!result.continue) return
   }
   throw new Error(`Projection for ${postId} did not drain`)

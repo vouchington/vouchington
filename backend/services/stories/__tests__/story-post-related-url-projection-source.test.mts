@@ -1,3 +1,4 @@
+import { createTestStoryProjectionLease } from '../../../test-helpers/entities/story-projection-work.mts'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -16,7 +17,6 @@ import {
   getStoryPostRelatedUrlProjectionSourcePageForWork,
 } from '../story-post-related-url-projection-source.mts'
 import {
-  claimStoryPostRelatedUrlProjectionWork,
   markStoryPostRelatedUrlProjection,
   releaseStoryPostRelatedUrlProjectionWork,
 } from '../story-post-related-url-projection-work.mts'
@@ -43,7 +43,7 @@ describe('story projection source eligibility database failure', () => {
       await markStoryPostRelatedUrlProjection(transaction, postId, story.id)
       await transaction.commit()
     }
-    const work = await claimStoryPostRelatedUrlProjectionWork(postId)
+    const work = await createTestStoryProjectionLease(postId)
     if (!work) throw new Error('Expected owned projection work')
     try {
       const rows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)

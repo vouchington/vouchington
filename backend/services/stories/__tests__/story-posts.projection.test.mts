@@ -24,7 +24,7 @@ import {
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
 import { getPrivateUserByAny } from '@services/users'
 import { prepareStoryPost } from '../story-posts.mts'
-import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -213,7 +213,7 @@ async function createStoryProjectionUrl(): Promise<string> {
 
 async function drainStoryPostRelatedUrlProjection(postId: string): Promise<void> {
   for (let page = 0; page < 10_000; page += 1) {
-    const result = await reconcileStoryPostRelatedUrlProjection({ postId })
+    const result = await processOwnedStoryProjectionPage(postId)
     if (!result.continue) return
   }
   throw new Error('story post related URL projection did not drain')

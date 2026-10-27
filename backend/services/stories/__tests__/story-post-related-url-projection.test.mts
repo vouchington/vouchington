@@ -17,7 +17,7 @@ import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import type { PrivateUser } from '@services/users/types'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
-import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 
 let testUser: PrivateUser
 
@@ -53,7 +53,7 @@ describe('story post related URL projection', () => {
       const iterationLimit =
         Math.ceil(itemCount / getStoriesWorkLimit('post_related_url_projection_page_size')) + 10
       for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
-        const result = await reconcileStoryPostRelatedUrlProjection({ postId: post.id })
+        const result = await processOwnedStoryProjectionPage(post.id)
         maxPageSize = Math.max(maxPageSize, result.processed)
         processed += result.processed
         if (processed === itemCount && observedReceiptCount === undefined) {
@@ -154,33 +154,13 @@ describe('story post related URL projection', () => {
     )
   })
 
-  it('continues the dispatcher after completing a projection when another job is claimable', async () => {
-    const fixtures = [await createProjectablePost('first'), await createProjectablePost('second')]
-    const posts = fixtures.map(fixture => fixture.post)
-    const completingPost = posts[0]!
-
-    await expect(
-      reconcileStoryPostRelatedUrlProjection({ postId: completingPost.id }),
-    ).resolves.toEqual({ processed: 2, continue: true })
-    await expect(
-      reconcileStoryPostRelatedUrlProjection({ postId: completingPost.id }),
-    ).resolves.toEqual({ processed: 0, continue: true })
-
-    await expect(
-      reconcileStoryPostRelatedUrlProjection({
-        postId: completingPost.id,
-        continueDispatcherAfterCompletion: true,
-      }),
-    ).resolves.toEqual({ processed: 0, continue: true })
-    await Promise.all(posts.map(post => drainProjection(post.id)))
-  })
-
   it('defers stale-generation receipt cleanup to bounded worker reconciliation', async () => {
     const { post, story } = await createProjectablePost('stale-receipts')
 
-    await expect(
-      reconcileStoryPostRelatedUrlProjection({ postId: post.id }),
-    ).resolves.toMatchObject({ processed: 2, continue: true })
+    await expect(processOwnedStoryProjectionPage(post.id)).resolves.toMatchObject({
+      processed: 2,
+      continue: true,
+    })
     await expect(getTestStoryPostProjectionReceiptCount(post.id)).resolves.toBe(1)
 
     await refreshStoryPostForStory(story.id)
@@ -233,7 +213,7 @@ async function createProjectablePost(label: string) {
 
 async function drainProjection(postId: string): Promise<void> {
   for (let iteration = 0; iteration < 20; iteration += 1) {
-    const result = await reconcileStoryPostRelatedUrlProjection({ postId })
+    const result = await processOwnedStoryProjectionPage(postId)
     if (!result.continue) return
   }
   throw new Error(`Projection for ${postId} did not drain`)

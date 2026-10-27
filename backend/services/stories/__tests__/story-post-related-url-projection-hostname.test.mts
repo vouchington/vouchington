@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
-import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 
 describe('story post related URL projection hostname ancestry', () => {
   beforeAll(async () => {
@@ -37,7 +37,7 @@ describe('story post related URL projection hostname ancestry', () => {
 
 async function drainProjection(postId: string): Promise<void> {
   for (let iteration = 0; iteration < 20; iteration += 1) {
-    const result = await reconcileStoryPostRelatedUrlProjection({ postId })
+    const result = await processOwnedStoryProjectionPage(postId)
     if (!result.continue) return
   }
   throw new Error(`Projection for ${postId} did not drain`)

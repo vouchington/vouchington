@@ -28,21 +28,17 @@ import {
 import {
   advanceStoryPostRelatedUrlProjectionSourceCursor,
   advanceStoryPostRelatedUrlProjectionSourcePhase,
-  claimStoryPostRelatedUrlProjectionWork,
   completeStoryPostRelatedUrlProjectionWork,
-  hasClaimableStoryPostRelatedUrlProjectionWork,
   isStoryPostRelatedUrlProjectionWorkCurrent,
-  markStoryPostRelatedUrlProjection,
   releaseStoryPostRelatedUrlProjectionWork,
 } from './story-post-related-url-projection-work.mts'
 
-export { markStoryPostRelatedUrlProjection }
+type ProjectionPageResult = ProjectionResult & { completed?: true }
 
-export async function reconcileStoryPostRelatedUrlProjection(
-  options: { continueDispatcherAfterCompletion?: boolean; postId?: string } = {},
-): Promise<ProjectionResult> {
-  const work = await claimStoryPostRelatedUrlProjectionWork(options.postId)
-  if (!work) return { processed: 0, continue: false }
+/** Processes one persisted lease; dispatch selection and continuation belong to the caller. */
+export async function processStoryPostRelatedUrlProjectionPage(
+  work: ProjectionWork,
+): Promise<ProjectionPageResult> {
   try {
     if (!(await drainStoryPostRelatedUrlProjectionInvalidation(work)))
       return { processed: 0, continue: false }
@@ -50,10 +46,7 @@ export async function reconcileStoryPostRelatedUrlProjection(
     if (recoveredCrawlEffects === null) return { processed: 0, continue: false }
     if (recoveredCrawlEffects > 0) return { processed: recoveredCrawlEffects, continue: true }
     if (!work.source_completed_at) return await projectSourcePage(work)
-    return await prunePage(
-      work,
-      options.continueDispatcherAfterCompletion ?? options.postId === undefined,
-    )
+    return await prunePage(work)
   } finally {
     await releaseStoryPostRelatedUrlProjectionWork(work)
   }
@@ -92,10 +85,7 @@ async function projectSourcePageWithCurrentLease(work: ProjectionWork): Promise<
   return { processed: advanced ? rows.length : 0, continue: advanced }
 }
 
-async function prunePage(
-  work: ProjectionWork,
-  continueDispatcher: boolean,
-): Promise<ProjectionResult> {
+async function prunePage(work: ProjectionWork): Promise<ProjectionPageResult> {
   const STORY_POST_RELATED_URL_PROJECTION_PAGE_SIZE = getStoriesWorkLimit(
     'post_related_url_projection_page_size',
   )
@@ -134,8 +124,8 @@ async function prunePage(
     const completed = await completeStoryPostRelatedUrlProjectionWork(work)
     return {
       processed: 0,
-      continue:
-        completed && continueDispatcher && (await hasClaimableStoryPostRelatedUrlProjectionWork()),
+      continue: false,
+      ...(completed ? { completed: true as const } : {}),
     }
   }
   const relationIds: string[] = []
