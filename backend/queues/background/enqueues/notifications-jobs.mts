@@ -1,6 +1,6 @@
 import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
-import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundJob } from './define-job.mts'
+import { BULK_ORDERING, DISPATCH, RETRY, TASK, VISIBILITY } from './notifications-job-options.mts'
 import {
   NOTIFICATIONS_DOMAIN as DOMAIN,
   type ApplyMediaDeliveryRegistryRecordData,
@@ -25,18 +25,6 @@ import {
   type ReferralSignupNotificationData,
   type ReplayMediaDeliveryRegistryData,
 } from './notifications-domain.mts'
-
-const BACKOFF = { type: 'exponential', delay: 1000, jitter: 0.5 } as const
-const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFail: 100 } as const
-const TASK = { priority: PRIORITY_TASK } as const
-const DISPATCH = { priority: PRIORITY_DISPATCH } as const
-const BULK_ORDERING = { key: 'notifications:bulk' } as const
-const VISIBILITY = {
-  ...DISPATCH,
-  ordering: BULK_ORDERING,
-  // A failed page must retry indefinitely: nothing re-enqueues the rest of its chain.
-  ...pagedDispatchJobOptions('notifications'),
-} as const
 
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(
   DOMAIN,
