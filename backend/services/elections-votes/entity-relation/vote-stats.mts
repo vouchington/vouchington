@@ -18,6 +18,7 @@ import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-main
 import { findRssFeedIdsByTopicIds } from '@services/entity-relations/rss-feed-ids-by-topic-ids'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
+import { randomUUID } from 'node:crypto'
 import { entityRelationElectionTables } from './target.mts'
 import { lockEntityRelationVoteStatsPostPublicationScopes } from './vote-stats-batch-publication-locks.mts'
 
@@ -133,7 +134,8 @@ export function enqueueTopHashtagRefreshIfUpdated(
 export function enqueuePostNotificationReconciliationIfUpdated(
   target: EntityRelationElectionTarget,
   postId: string | undefined,
-  enqueue: (postId: string) => unknown = enqueueReconcilePostNotifications,
+  enqueue: (postId: string) => unknown = postId =>
+    enqueueReconcilePostNotifications(postId, randomUUID()),
 ): void {
   if (
     postId &&

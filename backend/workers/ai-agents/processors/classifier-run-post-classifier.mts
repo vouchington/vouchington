@@ -8,6 +8,7 @@ import {
   executePostClassifierRun,
 } from '@agents/post-classifier'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
+import { randomUUID } from 'node:crypto'
 import {
   createPostClassifierRunAdapter,
   type PostClassifierConfiguration,
@@ -57,7 +58,7 @@ export function createPostClassifierRegistration(
       )
     },
     async afterCompleted(subject) {
-      if (subject.postId) await enqueueReconcilePostNotifications(subject.postId)
+      if (subject.postId) await enqueueReconcilePostNotifications(subject.postId, randomUUID())
     },
   }
 }

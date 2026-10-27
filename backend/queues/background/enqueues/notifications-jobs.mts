@@ -1,11 +1,13 @@
 import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
-import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundJob } from './define-job.mts'
+import { BULK_ORDERING, DISPATCH, RETRY, TASK, VISIBILITY } from './notifications-job-options.mts'
 import {
   NOTIFICATIONS_DOMAIN as DOMAIN,
   type ApplyMediaDeliveryRegistryRecordData,
   type CommunityActivityDigestScheduleData,
   type CommunityActivityDigestDispatchData,
+  type ReconcileContentVisibilityData,
+  type ReconcileMembershipVisibilityData,
   type ConversationMessageNotificationData,
   type CopyrightIntentData,
   type CopyrightSweepContinuation,
@@ -24,16 +26,12 @@ import {
   type ReplayMediaDeliveryRegistryData,
 } from './notifications-domain.mts'
 
-const BACKOFF = { type: 'exponential', delay: 1000, jitter: 0.5 } as const
-const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFail: 100 } as const
-const TASK = { priority: PRIORITY_TASK } as const
-const DISPATCH = { priority: PRIORITY_DISPATCH } as const
-
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(
   DOMAIN,
   {
     name: 'processReconcilePostNotifications',
     ...DISPATCH,
+    ordering: BULK_ORDERING,
     ...pagedDispatchJobOptions('notifications'),
   },
 )
@@ -41,7 +39,18 @@ export const NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB =
   defineBackgroundJob<ReconcileRssFeedItemNotificationsData>(DOMAIN, {
     name: 'processReconcileRssFeedItemNotifications',
     ...DISPATCH,
+    ordering: BULK_ORDERING,
     ...pagedDispatchJobOptions('notifications'),
+  })
+export const NOTIFICATIONS_CONTENT_VISIBILITY_JOB =
+  defineBackgroundJob<ReconcileContentVisibilityData>(DOMAIN, {
+    name: 'processReconcileContentVisibility',
+    ...VISIBILITY,
+  })
+export const NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB =
+  defineBackgroundJob<ReconcileMembershipVisibilityData>(DOMAIN, {
+    name: 'processReconcileMembershipVisibility',
+    ...VISIBILITY,
   })
 export const NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB =
   defineBackgroundJob<DeliverNotificationPushData>(DOMAIN, {
@@ -157,10 +166,11 @@ export const NOTIFICATIONS_RECONCILE_MEDIA_REGISTRY_JOB =
     ...DISPATCH,
     ...RETRY,
   })
-
 export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_RECONCILE_POST_JOB,
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
+  NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+  NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
   NOTIFICATIONS_DELETE_JOB,

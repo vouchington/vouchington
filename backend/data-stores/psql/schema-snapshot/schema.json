@@ -70245,13 +70245,27 @@
         "idx_notifications__publication_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id) WHERE (publication_post_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id, user_id, id) WHERE (publication_post_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
               "column": "publication_post_id",
               "descending": false,
               "expression": "publication_post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -70265,13 +70279,27 @@
         "idx_notifications__publication_rss_feed_item_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id) WHERE (publication_rss_feed_item_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id, user_id, id) WHERE (publication_rss_feed_item_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
               "column": "publication_rss_feed_item_id",
               "descending": false,
               "expression": "publication_rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -111382,8 +111410,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "jsonb"
+        },
+        "change_id": {
+          "collation": null,
+          "comment": "Opaque notification change identity; stable for replay of this snapshot and refreshed on every generation bump, including a new row after acknowledgement.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
         },
         "created_at": {
           "collation": null,
@@ -111393,18 +111432,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "generation": {
           "collation": null,
-          "comment": "Monotonic per-item generation fence; stale workers cannot acknowledge newer snapshots.",
+          "comment": "Monotonic fence while this item remains pending; acknowledgement deletes the row and a later snapshot starts a new generation sequence.",
           "defaultExpression": "1",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "bigint"
         },
         "rss_feed_item_id": {
@@ -111426,7 +111465,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         }
       },

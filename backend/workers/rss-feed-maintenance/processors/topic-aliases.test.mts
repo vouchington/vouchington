@@ -1,4 +1,5 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
+import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestPost,
@@ -147,7 +148,7 @@ describe('topic-aliases processors', () => {
     )
 
     await expect(
-      processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+      processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id], changeId: alias!.id }),
     ).resolves.toEqual({ hasMore: true, lastPostId: expect.any(String) })
     const continuation = (await readAllQueueJobs(rssFeedMaintenance)).find(
       job =>
@@ -157,6 +158,7 @@ describe('topic-aliases processors', () => {
     expect(continuation?.data).toEqual({
       afterPostId: expect.any(String),
       topicAliasIds: [alias!.id],
+      changeId: alias!.id,
     })
   })
 
@@ -194,7 +196,10 @@ describe('topic-aliases processors', () => {
     })
     try {
       await expect(
-        processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+        processInvalidatePostsForTopicAliases({
+          topicAliasIds: [alias!.id],
+          changeId: randomUUID(),
+        }),
       ).rejects.toBe(failure)
     } finally {
       addSpy.mockRestore()
@@ -230,24 +235,30 @@ describe('topic-aliases processors', () => {
       ),
     )
     const failure = new Error(`Owned worker continuation admission failure ${suffix}`)
-    const originalAdd = rssFeedMaintenance.add
-    const addSpy = vi.spyOn(rssFeedMaintenance, 'add').mockImplementation((name, data, options) => {
+    const originalAddBulk = rssFeedMaintenance.addBulk
+    const addSpy = vi.spyOn(rssFeedMaintenance, 'addBulk').mockImplementation(jobs => {
       if (
-        name === 'processInvalidatePostsForTopicAliases' &&
-        data &&
-        typeof data === 'object' &&
-        'topicAliasIds' in data &&
-        Array.isArray(data.topicAliasIds) &&
-        data.topicAliasIds.includes(alias!.id) &&
-        'afterPostId' in data &&
-        typeof data.afterPostId === 'string'
+        jobs.some(
+          job =>
+            job.name === 'processInvalidatePostsForTopicAliases' &&
+            typeof job.data === 'object' &&
+            job.data !== null &&
+            'topicAliasIds' in job.data &&
+            Array.isArray(job.data.topicAliasIds) &&
+            job.data.topicAliasIds.includes(alias!.id) &&
+            'afterPostId' in job.data &&
+            typeof job.data.afterPostId === 'string',
+        )
       )
         return Promise.reject(failure)
-      return originalAdd.call(rssFeedMaintenance, name, data, options)
+      return originalAddBulk.call(rssFeedMaintenance, jobs)
     })
     try {
       await expect(
-        processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+        processInvalidatePostsForTopicAliases({
+          topicAliasIds: [alias!.id],
+          changeId: randomUUID(),
+        }),
       ).rejects.toBe(failure)
     } finally {
       addSpy.mockRestore()

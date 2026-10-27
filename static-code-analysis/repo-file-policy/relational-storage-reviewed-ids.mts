@@ -117,6 +117,10 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'moderation_report_judgements.run_id',
     'GlideMQ report-judgement run identity; queue jobs live outside PostgreSQL, while this unique correlation key supports exact result polling and retry replay.',
   ],
+  [
+    'rss_feed_item_category_snapshot_reconciliations.change_id',
+    'Opaque notification enqueue identity with no owning entity row; stable across exact snapshot replay and fresh after each edit or acknowledged-row recreation.',
+  ],
 ])
 
 // Ids recorded at write time and never joined for authorization. They outlive their source row.

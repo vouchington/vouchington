@@ -2,10 +2,12 @@ import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-
 import { randomUUID } from 'node:crypto'
 import '@services/elections-votes'
 import { Queue, Worker, type Job } from 'glide-mq'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { notifications } from '@queues/notifications/queues'
 import { QUEUE_NAME } from '@queues/rss-feed-maintenance/config'
+import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
+import { topicsWorkConfig } from '@services/topics/work-limits'
 import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { getRssFeedCategories, upsertRssFeedCategories } from '@services/rss-feeds/categories'
@@ -22,6 +24,8 @@ import {
   setRssFeedOwningTopicVoteScore,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { processRssFeedMaintenanceJob } from './processors.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -38,14 +42,14 @@ async function runJob(name: string, data: Record<string, unknown>): Promise<unkn
       connection: workerQueueConnection,
       prefix,
       concurrency: 1,
-      blockTimeout: 1000,
+      blockTimeout: 100,
     })
     worker.on('error', error => completed.reject(error))
     worker.on('failed', (_failed, error) => completed.reject(error))
     worker.on('completed', (done: Job, result) => {
       if (done.id === job.id) completed.resolve(result)
     })
-    return await completed.promise
+    return await waitForRealGlideEvent(completed.promise, `RSS maintenance ${name}`)
   } finally {
     await worker?.close()
     await queue.obliterate({ force: true })
@@ -180,30 +184,71 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
   })
 
   it('invalidates real post aliases and enqueues notification reconciliation', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+        alias_post_invalidation_batch_size: 1,
+      }),
+    )
     const suffix = randomUUID()
     const user = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ name: `Post ${suffix}`, slug: `post-${suffix}` })
     const [alias] = await createTopicAliases(topic.id, `post-tag-${suffix}`)
-    const post = await createTestPost({ user, title: `Post ${suffix}` })
-    await createTopHashtagPostSourceForTest({
-      postId: post.id,
-      topicAliasId: alias!.id,
-      userId: user.id,
-      authoredToken: `#post-${suffix}`,
+    const posts = await Promise.all(
+      [0, 1].map(index => createTestPost({ user, title: `Post ${index} ${suffix}` })),
+    )
+    await Promise.all(
+      posts.map(post =>
+        createTopHashtagPostSourceForTest({
+          postId: post.id,
+          topicAliasId: alias!.id,
+          userId: user.id,
+          authoredToken: `#post-${suffix}`,
+        }),
+      ),
+    )
+    const changeId = randomUUID()
+    const laterChangeId = randomUUID()
+    const ownedJobs: Job[] = []
+    onTestFinished(async () => {
+      await Promise.all(ownedJobs.map(job => job.remove()))
     })
-
-    const result = await runJob('processInvalidatePostsForTopicAliases', {
-      topicAliasIds: [alias!.id],
+    const data = { topicAliasIds: [alias!.id], changeId }
+    const first = posts.map(post => post.id).toSorted()[0]!
+    expect(await runJob('processInvalidatePostsForTopicAliases', data)).toEqual({
+      lastPostId: first,
+      hasMore: true,
     })
-    expect(result).toMatchObject({ lastPostId: post.id, hasMore: false })
-    expect(
-      (
-        await notifications.searchJobs({
-          name: 'notifications.processReconcilePostNotifications',
-          data: { postId: post.id },
-        })
-      ).length,
-    ).toBeGreaterThan(0)
+    await runJob('processInvalidatePostsForTopicAliases', data)
+    const pages = await rssFeedMaintenance.searchJobs({
+      name: 'processInvalidatePostsForTopicAliases',
+      data: { changeId },
+    })
+    ownedJobs.push(...pages)
+    expect(pages).toHaveLength(1)
+    expect(pages[0]!.data).toEqual({ ...data, afterPostId: first })
+    await runJob('processInvalidatePostsForTopicAliases', pages[0]!.data as Record<string, unknown>)
+    const original = await notifications.searchJobs({
+      name: 'notifications.processReconcilePostNotifications',
+      data: { changeId },
+    })
+    ownedJobs.push(...original)
+    expect(original.map(job => (job.data as { postId: string }).postId).toSorted()).toEqual(
+      posts.map(post => post.id).toSorted(),
+    )
+    await runJob('processInvalidatePostsForTopicAliases', { ...data, changeId: laterChangeId })
+    const later = await notifications.searchJobs({
+      name: 'notifications.processReconcilePostNotifications',
+      data: { changeId: laterChangeId },
+    })
+    const laterPages = await rssFeedMaintenance.searchJobs({
+      name: 'processInvalidatePostsForTopicAliases',
+      data: { changeId: laterChangeId },
+    })
+    ownedJobs.push(...later, ...laterPages)
+    expect(later).toHaveLength(1)
+    expect(later[0]!.id).not.toBe(
+      original.find(job => (job.data as { postId: string }).postId === first)!.id,
+    )
   })
 
   it('consumes durable alias category-mapping reconciliation work', async () => {

@@ -12,13 +12,13 @@ describe('notification publication schema', () => {
       {
         indexname: 'idx_notifications__publication_post_id',
         indexdef: expect.stringContaining(
-          'USING btree (publication_post_id) WHERE (publication_post_id IS NOT NULL)',
+          'USING btree (publication_post_id, user_id, id) WHERE (publication_post_id IS NOT NULL)',
         ),
       },
       {
         indexname: 'idx_notifications__publication_rss_feed_item_id',
         indexdef: expect.stringContaining(
-          'USING btree (publication_rss_feed_item_id) WHERE (publication_rss_feed_item_id IS NOT NULL)',
+          'USING btree (publication_rss_feed_item_id, user_id, id) WHERE (publication_rss_feed_item_id IS NOT NULL)',
         ),
       },
     ])

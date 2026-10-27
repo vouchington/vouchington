@@ -46,6 +46,7 @@ export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
   itemsToUpsert: RssFeedItemWithHash[],
   existingRows: RssFeedItemEnqueueRow[],
   upsertedRows: UpsertedRssFeedItemRow[],
+  notificationChangeId: string,
   options: PostUpsertEnqueueOptions = {},
 ) => {
   const allRowsWithGuids = mergeRssFeedItemRows(itemsToUpsert, existingRows, upsertedRows)
@@ -61,7 +62,10 @@ export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
   await Promise.all([
     enqueueEmbeddingsAndAutotagger(fanoutRowsWithGuids),
     invalidateRssFeedItemsInChunks(fanoutRowsWithGuids.map(row => row.id)),
-    enqueueRssFeedItemNotificationReconciliationInChunks(fanoutRowsWithGuids.map(row => row.id)),
+    enqueueRssFeedItemNotificationReconciliationInChunks(
+      fanoutRowsWithGuids.map(row => row.id),
+      notificationChangeId,
+    ),
   ])
   const languageDetectionEnqueue = enqueueRssFeedItemLanguageDetection(
     options.languageDetectionRows ?? upsertedRows,
@@ -77,12 +81,14 @@ export const enqueueRssFeedItemPostUpsertJobs = async (
   itemsToUpsert: RssFeedItemWithHash[],
   existingRows: RssFeedItemEnqueueRow[],
   upsertedRows: UpsertedRssFeedItemRow[],
+  notificationChangeId: string,
   options: PostUpsertEnqueueOptions = {},
 ) => {
   const { rows } = await enqueueRssFeedItemPostUpsertJobsWithCompletion(
     itemsToUpsert,
     existingRows,
     upsertedRows,
+    notificationChangeId,
     options,
   )
   return rows
@@ -126,8 +132,13 @@ async function enqueueBulkAutotaggerRssFeedItemsInChunks(
   await enqueueChunks(jobs, enqueueBulkAutotaggerRssFeedItems)
 }
 
-async function enqueueRssFeedItemNotificationReconciliationInChunks(rssFeedItemIds: string[]) {
-  await enqueueChunks(rssFeedItemIds, enqueueBulkReconcileRssFeedItemNotifications)
+async function enqueueRssFeedItemNotificationReconciliationInChunks(
+  rssFeedItemIds: string[],
+  notificationChangeId: string,
+) {
+  await enqueueChunks(rssFeedItemIds, async chunk => {
+    await enqueueBulkReconcileRssFeedItemNotifications(chunk, notificationChangeId)
+  })
 }
 
 async function invalidateRssFeedItemsInChunks(rssFeedItemIds: string[]) {

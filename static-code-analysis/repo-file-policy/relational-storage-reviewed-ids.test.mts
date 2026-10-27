@@ -83,6 +83,12 @@ describe('reviewed token and audit snapshot identifiers', () => {
         noFreshness,
       ),
     ).toEqual([])
+    expect(
+      checkRelationalStorage(
+        snapshot('rss_feed_item_category_snapshot_reconciliations', { change_id: column('uuid') }),
+        noFreshness,
+      ),
+    ).toEqual([])
   })
 
   it('reviews exact columns only, so the same names on a new table are still rejected', () => {
@@ -94,6 +100,7 @@ describe('reviewed token and audit snapshot identifiers', () => {
         session_id: column('uuid'),
         access_token_id: column('uuid'),
         run_id: column('uuid'),
+        change_id: column('uuid'),
       }),
       noFreshness,
     )
@@ -104,6 +111,7 @@ describe('reviewed token and audit snapshot identifiers', () => {
       expect.stringContaining('new_records.session_id'),
       expect.stringContaining('new_records.access_token_id'),
       expect.stringContaining('new_records.run_id'),
+      expect.stringContaining('new_records.change_id'),
     ])
   })
 
@@ -127,6 +135,11 @@ describe('reviewed token and audit snapshot identifiers', () => {
     ['oauth_native_session_token_mints', 'session_id', 'audit snapshot identifier'],
     ['oauth_native_session_token_mints', 'access_token_id', 'audit snapshot identifier'],
     ['moderation_report_judgements', 'run_id', 'token, cursor or protocol identifier'],
+    [
+      'rss_feed_item_category_snapshot_reconciliations',
+      'change_id',
+      'token, cursor or protocol identifier',
+    ],
   ])('reports %s.%s as stale once the column gains a foreign key', (table, name, label) => {
     const value = snapshot(table, { [name]: column('uuid') })
     value.tables[table]!.foreignKeys[`${name}_fk`] = foreignKey(name)

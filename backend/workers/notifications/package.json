@@ -37,6 +37,7 @@
     "glide-mq": "^0.20.0"
   },
   "devDependencies": {
+    "@data-stores/valkey-core": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/modmail": "workspace:^",
     "@types/web-push": "^3.6.4",
