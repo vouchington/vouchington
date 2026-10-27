@@ -1754,7 +1754,6 @@ rules:
       - 'backend/services/elections-votes/entity-relation/publication-capture.test.mts'
       - 'backend/services/elections-votes/entity-relation/vote-stats-batch-locks.test.mts'
       - 'backend/services/elections-votes/entity-relation/vote-stats-publication-lock.test.mts'
-      - 'backend/services/moderation-analytics/moderation-transparency-rollup-lifecycle.test.mts'
       - 'backend/test-helpers/polling.test.mts'
     options:
       roots:
