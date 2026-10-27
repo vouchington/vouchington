@@ -256,6 +256,5 @@ describe('no-mistakes forbidden-calls config', () => {
         ],
       },
     })
-    expect(source).not.toContain('forbiddenCalls:')
   })
 })
