@@ -9,6 +9,9 @@ import type { TestProjectConfiguration } from 'vitest/config'
 // Node-run CI script stays free of. This module holds only literals plus a type-only import (erased
 // under Node type stripping).
 //
+// A `*.<provider>.eval.test.mts` file is a dispatch-only eval owned by `backend-evals-projects.mts`;
+// the projects whose globs would also match it exclude `*.eval.test.mts`.
+//
 // Keep each `include` a literal string array: no-mistakes selects tests by reading these arrays
 // statically and rejects any other expression (see
 // docs/development/reference-explain-test-selection-and-vitest-ownership.md).
@@ -77,7 +80,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000' },
       include: ['backend/**/*.openai*.test.mts'],
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
-      exclude: ['**/node_modules/**', '**/.git/**'],
+      exclude: ['**/node_modules/**', '**/.git/**', '**/*.eval.test.mts'],
       globalSetup: './test-helpers/vitest.setup.data-stores.mts',
       setupFiles: [
         './test-helpers/vitest.setup.request-query-timing.mts',
@@ -101,7 +104,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000' },
       include: ['backend/**/*.anthropic*.test.mts'],
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
-      exclude: ['**/node_modules/**', '**/.git/**'],
+      exclude: ['**/node_modules/**', '**/.git/**', '**/*.eval.test.mts'],
       globalSetup: './test-helpers/vitest.setup.data-stores.mts',
       setupFiles: [
         './test-helpers/vitest.setup.request-query-timing.mts',

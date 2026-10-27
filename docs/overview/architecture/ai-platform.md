@@ -146,10 +146,10 @@ C12's receipt-health instrumentation monitors
 old pending requests, unfinished runs, unrequested eligible subjects and terminal failures. Alarm
 payloads contain only bounded identifiers and diagnostic counts, never prompt or content text.
 
-The credentialed golden regression set
+The golden regression set, a dispatch-only eval that no pull request or nightly run executes,
 checks fixed synthetic inputs through production prompts, bindings and threshold snapshots. It
 asserts complete candidate coverage and expected decision bands with reviewed tolerance, and
-records provider call count and elapsed time. It is neither calibration nor a quality evaluation.
+records provider call count and elapsed time. It is a regression check, not a calibration.
 
 ## Schema and client handoff
 

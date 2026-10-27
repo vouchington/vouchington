@@ -9,6 +9,7 @@ import {
 } from './test-helpers/vitest-config/aliases.mts'
 import { backendCoreProjects } from './test-helpers/vitest-config/backend-core-projects.mts'
 import { backendCredentialedTestProjects } from './test-helpers/vitest-config/backend-credentialed-projects.mts'
+import { backendEvalTestProjects } from './test-helpers/vitest-config/backend-evals-projects.mts'
 import { backendDataProjects } from './test-helpers/vitest-config/backend-data-projects.mts'
 import {
   coverageConfig,
@@ -90,6 +91,7 @@ export default defineConfig({
       ...backendCoreProjects,
       ...backendDataProjects,
       ...backendCredentialedTestProjects,
+      ...backendEvalTestProjects,
       {
         extends: true,
         resolve: {
