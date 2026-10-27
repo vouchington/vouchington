@@ -34,6 +34,7 @@
     "undici": "^8.12.3"
   },
   "devDependencies": {
+    "@queues/bloom-filters": "workspace:^",
     "@types/pg-copy-streams": "^1.2.5",
     "@voucha/test-helpers": "workspace:^"
   }

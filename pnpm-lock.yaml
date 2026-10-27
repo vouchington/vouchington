@@ -11718,6 +11718,9 @@ importers:
         specifier: ^8.12.3
         version: 8.12.3
     devDependencies:
+      '@queues/bloom-filters':
+        specifier: workspace:^
+        version: link:../../queues/bloom-filters
       '@types/pg-copy-streams':
         specifier: ^1.2.5
         version: 1.2.5
