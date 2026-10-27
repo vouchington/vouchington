@@ -1,5 +1,5 @@
-import { read } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import { beginTransaction, currentReadPool, withTransactionOptions } from '@data-stores/psql'
+import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import { isSlug, isUUID } from '@modules/utils'
 import {
   buildOrderedInputCtes,
@@ -29,6 +29,29 @@ type TopicMetricsBatchRow = {
   bookmarks__updated_at: Date | null
 }
 
+// Default custom and generic plans seq-scan topics, aliases, and RSS relations. On the shared
+// fast-test database that plan hits the 2s statement timeout. `set_config` in the same statement
+// does not change that statement's plan, so the setting is a prior statement in one transaction.
+const TOPIC_METRICS_PLAN_SETTING = `/* getTopicMetricsByAnyBatchSettings */
+  SELECT set_config('enable_seqscan', 'off', true)`
+
+async function readTopicMetricsBatch(
+  statement: string,
+  values: readonly unknown[],
+  options: QueryOptions,
+) {
+  const readOn = async (query: QueryExecutor) => {
+    await query(TOPIC_METRICS_PLAN_SETTING)
+    return query<TopicMetricsBatchRow>(statement, values)
+  }
+  if (options.query) return readOn(options.query)
+  if (options.client) return withTransactionOptions(options, readOn)
+  await using transaction = await beginTransaction({ client: currentReadPool() })
+  const result = await readOn(transaction)
+  await transaction.commit()
+  return result
+}
+
 export const getTopicMetricsByAnyBatch = async (
   idsOrSlugs: string[],
   options: QueryOptions = {},
@@ -47,7 +70,7 @@ export const getTopicMetricsByAnyBatch = async (
     { cteName: 'input_data', sqlType: 'uuid', inputs: partitions.get('id') ?? [] },
     { cteName: 'slug_input_data', sqlType: 'text', inputs: partitions.get('slug') ?? [] },
   ])
-  const { rows } = await read<TopicMetricsBatchRow>(
+  const { rows } = await readTopicMetricsBatch(
     `/* getTopicMetricsByAnyBatch */\n    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic input CTE interpolation\n    -- breaks structural SQL parsing; id_lookups/slug_lookups filter deleted and merged topics.\n    WITH ${buildTopicMetricsBatchQuery(inputCtes.ctes)}`,
     inputCtes.values,
     options,

@@ -57,6 +57,11 @@ const primaryReadScope = new AsyncLocalStorage<boolean>()
 export function withPrimaryReads<T>(callback: () => Promise<T>): Promise<T> {
   return primaryReadScope.run(true, callback)
 }
+
+/** The pool `read()` uses in this async context, including inside `withPrimaryReads`. */
+export function currentReadPool(): pg.Pool {
+  return primaryReadScope.getStore() ? writePool : readPool
+}
 export const query: Psql['query'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeQuery(input, valuesOrOptions, options))
 export const read: Psql['read'] = (input, valuesOrOptions, options) =>

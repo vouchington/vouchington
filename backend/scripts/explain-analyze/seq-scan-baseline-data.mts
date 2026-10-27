@@ -2,6 +2,8 @@
 // These fingerprints appeared in both captures; remove each entry when its scan is fixed.
 // PR #3018 removed 48 story-hydration rss_feeds/topics fingerprints after keyed RSS feed
 // hydration passed paired custom/generic captures (2026-10-17T02-25-09-194Z).
+// getTopicMetricsByAnyBatch plans with enable_seqscan=off, so its seq-scan fingerprints
+// are absent in both plan modes on the 100-id seed.
 export const BASELINE_FINGERPRINTS = [
   'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_custom_plan|force_custom_plan:posts',
   'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_custom_plan|force_custom_plan:topics',
@@ -49,11 +51,6 @@ export const BASELINE_FINGERPRINTS = [
   'story-hydration-preview-3-after|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
   'story-hydration-preview-3-first|2|getRssFeedItemEmbedsByItems:force_custom_plan|force_custom_plan:crawls',
   'story-hydration-preview-3-first|2|getRssFeedItemEmbedsByItems:force_generic_plan|force_generic_plan:crawls',
-  'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:rss_feed_item_categories',
-  'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:rss_feeds',
-  'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_custom_plan|force_custom_plan:topics',
-  'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_generic_plan|force_generic_plan:topic_aliases',
-  'topic-metrics-batch|0|getTopicMetricsByAnyBatch:force_generic_plan|force_generic_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',

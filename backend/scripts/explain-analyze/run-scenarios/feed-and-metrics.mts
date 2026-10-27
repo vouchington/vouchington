@@ -140,7 +140,13 @@ export async function runFeedAndMetricScenarios() {
       rss_feed_items: 'Topic metrics aggregate matching RSS items across the seed window.',
     },
   })
-  await runAndCapture('topic-metrics-batch', () => getTopicMetricsByAnyBatch(seedAllTopicIds))
+  await runAndCapture(
+    'topic-metrics-batch',
+    () => getTopicMetricsByAnyBatch(seedAllTopicIds),
+    undefined,
+    'getTopicMetricsByAnyBatch',
+    { localSettings: { enable_seqscan: 'off' } },
+  )
   const seedPostIds = Array.from({ length: 200 }, (_, index) => seedUuid(index, '05'))
   registerScenarioContract('post-metrics-batch', {
     expectations: [

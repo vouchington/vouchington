@@ -51,7 +51,8 @@ describe('detached cache refresh', () => {
       await refreshed.promise
       expect(values[0]).toMatchObject({ id: staleKey })
       expect(values[1]).toBeNull()
-      expect(profile.summarize()).toEqual({ totalQueries: 2, serialDepth: 1, repeats: [] })
+      // Each batch is its own read transaction: begin, plan setting, metrics statement, commit.
+      expect(profile.summarize()).toEqual({ totalQueries: 8, serialDepth: 4, repeats: [] })
 
       const awaitedProfile = createRequestQueryProfile()
       await awaitedProfile.run(async () => {
@@ -59,9 +60,12 @@ describe('detached cache refresh', () => {
         await getTopicMetricsByAnyBatch([coldKey])
       })
       expect(awaitedProfile.summarize()).toEqual({
-        totalQueries: 2,
-        serialDepth: 2,
-        repeats: [{ annotation, count: 2 }],
+        totalQueries: 8,
+        serialDepth: 8,
+        repeats: [
+          { annotation, count: 2 },
+          { annotation: 'getTopicMetricsByAnyBatchSettings', count: 2 },
+        ],
       })
     } finally {
       await caches.topic_metrics.delete(staleKey, coldKey)
@@ -84,7 +88,7 @@ describe('detached cache refresh', () => {
       const values = await profile.run(() => cachedBatch([staleKey]))
       await refreshed.promise
       expect(values[0]).toMatchObject({ id: staleKey })
-      expect(profile.summarize()).toEqual({ totalQueries: 1, serialDepth: 0, repeats: [] })
+      expect(profile.summarize()).toEqual({ totalQueries: 4, serialDepth: 0, repeats: [] })
     } finally {
       await caches.topic_metrics.delete(staleKey)
     }
