@@ -24,7 +24,7 @@ import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
-import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
 }
@@ -49,7 +49,7 @@ let urlId: string
 let testUser: PrivateUser
 async function drainStoryPostRelatedUrlProjection(postId: string): Promise<void> {
   for (let page = 0; page < 10_000; page += 1) {
-    const result = await reconcileStoryPostRelatedUrlProjection({ postId })
+    const result = await processOwnedStoryProjectionPage(postId)
     if (!result.continue) return
   }
   throw new Error('story post related URL projection did not drain')

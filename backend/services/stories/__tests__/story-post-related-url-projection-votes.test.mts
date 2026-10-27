@@ -1,3 +1,4 @@
+import { createTestStoryProjectionLease } from '../../../test-helpers/entities/story-projection-work.mts'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   clearTestStoryPostRelatedUrlVote,
@@ -10,17 +11,14 @@ import {
 import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
-import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import { writeStoryPostRelatedUrlProjectionRelations } from '../story-post-related-url-projection-relations.mts'
 import {
   decideStoryPostRelatedUrlProjectionRows,
   getStoryPostRelatedUrlProjectionSourcePageForWork,
   stageStoryPostRelatedUrlProjectionReceipts,
 } from '../story-post-related-url-projection-source.mts'
-import {
-  claimStoryPostRelatedUrlProjectionWork,
-  releaseStoryPostRelatedUrlProjectionWork,
-} from '../story-post-related-url-projection-work.mts'
+import { releaseStoryPostRelatedUrlProjectionWork } from '../story-post-related-url-projection-work.mts'
 
 describe('story post related URL projection votes', () => {
   beforeAll(async () => {
@@ -64,7 +62,7 @@ describe('story post related URL projection votes', () => {
 })
 
 async function stageProjectionRelations(postId: string) {
-  const work = await claimStoryPostRelatedUrlProjectionWork(postId)
+  const work = await createTestStoryProjectionLease(postId)
   if (!work) throw new Error('Expected projection work')
   const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
   const decisions = await decideStoryPostRelatedUrlProjectionRows(work, sourceRows)
@@ -87,7 +85,7 @@ async function createProjectablePost() {
 
 async function drainProjection(postId: string): Promise<void> {
   for (let iteration = 0; iteration < 20; iteration += 1) {
-    const result = await reconcileStoryPostRelatedUrlProjection({ postId })
+    const result = await processOwnedStoryProjectionPage(postId)
     if (!result.continue) return
   }
   throw new Error(`Projection for ${postId} did not drain`)

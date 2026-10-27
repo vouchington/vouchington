@@ -64,3 +64,54 @@ async function assertSeededStoryPostRelatedUrlProjectionCount(
     )
   }
 }
+
+/** An isolated empty-snapshot cohort for the real global dispatcher, never shared Vitest data. */
+export async function seedStoryProjectionDispatcherWitness() {
+  await using query = await beginTransaction()
+  const existing = await query(
+    `/* storyProjectionDispatcherWitness */ SELECT 1 FROM story_post_related_url_projection_jobs LIMIT 1`,
+  )
+  if (existing.rows.length)
+    throw new Error('Global story projection witness requires an empty jobs table')
+  const { rows: stories } = await query<{ id: string }>(
+    `/* storyProjectionDispatcherWitness */ INSERT INTO stories (title)
+      VALUES ('Native empty projection witness') RETURNING id`,
+  )
+  const storyId = stories[0]!.id
+  const { rows: posts } = await query<{ id: string }>(
+    `/* storyProjectionDispatcherWitness */ INSERT INTO posts (created_via, post_type, title,
+        bedrock_nova_multimodal_v1_content_sha256, llm_moderation_content_sha256)
+      SELECT 'system', 'story', 'Native empty projection witness',
+        decode(repeat('00', 32), 'hex'), decode(repeat('00', 32), 'hex')
+      FROM generate_series(1, 3)
+      RETURNING id`,
+  )
+  const postIds = posts.map(row => row.id).toSorted()
+  await query(
+    `/* storyProjectionDispatcherWitness */ INSERT INTO story_post_related_url_projection_jobs
+      (post_id, story_id, lease_token, leased_at, lease_expires_at)
+      SELECT id, $2::uuid,
+        CASE WHEN id = $3::uuid THEN uuidv7() END,
+        CASE WHEN id = $3::uuid THEN clock_timestamp() END,
+        CASE WHEN id = $3::uuid THEN clock_timestamp() + INTERVAL '1 day' END
+      FROM unnest($1::uuid[]) AS id`,
+    [postIds, storyId, postIds[2]],
+  )
+  await query.commit()
+  return { postIds, storyId }
+}
+
+export async function removeStoryProjectionDispatcherWitness(input: {
+  postIds: string[]
+  storyId: string
+}): Promise<void> {
+  await using query = await beginTransaction()
+  await query(
+    `/* storyProjectionDispatcherWitness */ DELETE FROM posts WHERE id = ANY($1::uuid[])`,
+    [input.postIds],
+  )
+  await query(`/* storyProjectionDispatcherWitness */ DELETE FROM stories WHERE id = $1`, [
+    input.storyId,
+  ])
+  await query.commit()
+}

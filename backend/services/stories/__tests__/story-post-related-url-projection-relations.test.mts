@@ -1,3 +1,4 @@
+import { createTestStoryProjectionLease } from '../../../test-helpers/entities/story-projection-work.mts'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createTestUserDirect,
@@ -15,7 +16,7 @@ import {
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
-import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
+import { processOwnedStoryProjectionPage } from '../../../test-helpers/services/stories/story-post-related-url-projection.mts'
 import { writeStoryPostRelatedUrlProjectionRelations } from '../story-post-related-url-projection-relations.mts'
 import { drainPendingStoryPostRelatedUrlProjectionCrawlEffects } from '../story-post-related-url-projection-relation-safety.mts'
 import {
@@ -24,7 +25,6 @@ import {
   stageStoryPostRelatedUrlProjectionReceipts,
 } from '../story-post-related-url-projection-source.mts'
 import {
-  claimStoryPostRelatedUrlProjectionWork,
   releaseStoryPostRelatedUrlProjectionWork,
   renewStoryPostRelatedUrlProjectionWorkLease,
 } from '../story-post-related-url-projection-work.mts'
@@ -37,9 +37,7 @@ describe('story post related URL projection relations', () => {
   it('persists the initial related URL vote aggregate before acknowledging its receipt', async () => {
     const { post } = await createProjectablePost('durable-election-aggregate')
 
-    await expect(
-      reconcileStoryPostRelatedUrlProjection({ postId: post.id }),
-    ).resolves.toMatchObject({
+    await expect(processOwnedStoryProjectionPage(post.id)).resolves.toMatchObject({
       processed: 2,
       continue: true,
     })
@@ -52,7 +50,7 @@ describe('story post related URL projection relations', () => {
 
   it('rejects renewal that waited on the job row past wall-clock expiry', async () => {
     const { post } = await createProjectablePost('lease-lock-expiry')
-    const work = await claimStoryPostRelatedUrlProjectionWork(post.id)
+    const work = await createTestStoryProjectionLease(post.id)
     if (!work) throw new Error('Expected projection work')
     await expect(renewStoryPostRelatedUrlProjectionWorkLease(work)).resolves.toBe(true)
     const locked = Promise.withResolvers<void>()
@@ -69,7 +67,7 @@ describe('story post related URL projection relations', () => {
 
   it('rejects a hostname block committed after receipt staging and before relation insertion', async () => {
     const { post, url } = await createProjectablePost('fenced-hostname-block')
-    const work = await claimStoryPostRelatedUrlProjectionWork(post.id)
+    const work = await createTestStoryProjectionLease(post.id)
     if (!work) throw new Error('Expected projection work')
     try {
       const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
@@ -91,7 +89,7 @@ describe('story post related URL projection relations', () => {
 
   it('rejects a referral rule committed after receipt staging and before relation insertion', async () => {
     const { post, url, user } = await createProjectablePost('fenced-referral-rule')
-    const work = await claimStoryPostRelatedUrlProjectionWork(post.id)
+    const work = await createTestStoryProjectionLease(post.id)
     if (!work) throw new Error('Expected projection work')
     try {
       const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
@@ -196,7 +194,7 @@ describe('story post related URL projection relations', () => {
     }
 
     await refreshStoryPostForStory(story.id)
-    const restarted = await claimStoryPostRelatedUrlProjectionWork(post.id)
+    const restarted = await createTestStoryProjectionLease(post.id)
     if (!restarted) throw new Error('Expected restarted projection work')
     const crawledUrlIds: string[] = []
     try {
@@ -228,7 +226,7 @@ describe('story post related URL projection relations', () => {
 })
 
 async function stageProjectionRelations(postId: string) {
-  const work = await claimStoryPostRelatedUrlProjectionWork(postId)
+  const work = await createTestStoryProjectionLease(postId)
   if (!work) throw new Error('Expected projection work')
   const sourceRows = await getStoryPostRelatedUrlProjectionSourcePageForWork(work)
   const decisions = await decideStoryPostRelatedUrlProjectionRows(work, sourceRows)
@@ -238,7 +236,7 @@ async function stageProjectionRelations(postId: string) {
 
 async function drainProjection(postId: string): Promise<void> {
   for (let iteration = 0; iteration < 20; iteration += 1) {
-    const result = await reconcileStoryPostRelatedUrlProjection({ postId })
+    const result = await processOwnedStoryProjectionPage(postId)
     if (!result.continue) return
   }
   throw new Error(`Projection for ${postId} did not drain`)

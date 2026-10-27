@@ -68,31 +68,25 @@ export async function markStoryPostRelatedUrlProjection(
   )
 }
 
-export async function claimStoryPostRelatedUrlProjectionWork(
-  postId?: string,
-  postIds?: readonly string[],
-): Promise<ProjectionWork | null> {
-  if (postIds?.length === 0) return null
+export async function claimStoryPostRelatedUrlProjectionWork(): Promise<ProjectionWork | null> {
   const { rows } = await write<ProjectionWork>(
     `/* claimStoryPostRelatedUrlProjection */
       WITH available AS (
         SELECT post_id FROM story_post_related_url_projection_jobs
-        WHERE ($1::uuid IS NULL OR post_id = $1)
-          AND ($3::uuid[] IS NULL OR post_id = ANY($3::uuid[]))
-          AND (lease_expires_at IS NULL OR lease_expires_at <= clock_timestamp())
+        WHERE lease_expires_at IS NULL OR lease_expires_at <= clock_timestamp()
         ORDER BY last_claimed_at NULLS FIRST, post_id LIMIT 1
       )
       UPDATE story_post_related_url_projection_jobs work
       SET lease_token = uuidv7(), leased_at = clock_timestamp(),
           last_claimed_at = clock_timestamp(),
-          lease_expires_at = clock_timestamp() + ($2::integer * INTERVAL '1 second')
+          lease_expires_at = clock_timestamp() + ($1::integer * INTERVAL '1 second')
       FROM available
       WHERE work.post_id = available.post_id
         AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= clock_timestamp())
       RETURNING work.post_id, work.story_id, work.generation, work.sweep_upper_bound_source_id,
         work.sweep_upper_bound_relation_id, work.relation_snapshot_at, work.cursor_source_id,
         work.source_completed_at, work.cursor_prune_id, work.lease_token`,
-    [postId ?? null, LEASE_SECONDS, postIds ?? null],
+    [LEASE_SECONDS],
   )
   return rows[0] ?? null
 }
