@@ -71,7 +71,9 @@ Staff can inspect bounded queues of active report-abuse and vote-weight penaltie
 annual review and confirm continued enforcement. The producer exposes
 `GET /api/v1/{report|vote}-integrity/penalties/review-due` and
 `POST /api/v1/{report|vote}-integrity/penalties/:id/reviews` to the same staff roles that
-can apply each penalty. Due queues use opaque `after` cursors, bounded `limit`, and `page_info`
+can apply each penalty. Admin MCP reaches the due queue with `review_due` on the existing
+penalty list tools and records a review with `review` on the existing lift tools. Recording a
+review, or lifting a report-abuse penalty, rejects a suspended administrator. Due queues use opaque `after` cursors, bounded `limit`, and `page_info`
 so staff can inspect later records without first deciding every older case. Swift and .NET have existing integrity penalty surfaces, but neither
 renders this review queue yet. [Clients #492](https://github.com/vouchington/vouchington-clients/issues/492)
 owns native presentation, route consumption, and behavioral evidence; native parity stays

@@ -111,6 +111,7 @@ app.route('/api/v1/report-integrity/penalties/:id').delete(async (ctx: Context) 
     currentUserCanApplyReportAbusePenalty,
     'DELETE:/api/v1/report-integrity/penalties/:id',
   )
+  assertNotSuspended(currentUser)
 
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'DELETE:/api/v1/report-integrity/penalties/:id', {
