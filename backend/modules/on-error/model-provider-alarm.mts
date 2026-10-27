@@ -42,7 +42,6 @@ export function recordModelProviderAlarm(context: ModelProviderAlarmContext): vo
 }
 
 function shouldCapture(key: string): boolean {
-  if (process.env.NODE_ENV === 'test') return true
   const now = Date.now()
   const last = lastReportedAt.get(key)
   if (last !== undefined && now - last < throttleMs) return false

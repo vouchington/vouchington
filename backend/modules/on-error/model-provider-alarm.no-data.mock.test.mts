@@ -38,8 +38,8 @@ const creditBalance = {
   status: 400,
 }
 
-// The throttle is module-level state -- vi.resetModules() plus a dynamic import per test gives each
-// test a fresh, unthrottled instance.
+// The throttle is module-level state, so vi.resetModules() plus a dynamic import gives each test a
+// fresh instance.
 describe('recordModelProviderAlarm', () => {
   beforeEach(() => {
     vi.resetModules()
@@ -69,7 +69,7 @@ describe('recordModelProviderAlarm', () => {
     })
   })
 
-  it('reports once an hour per kind and provider outside tests, and logs in development', async () => {
+  it('reports once an hour per kind and provider, and logs in development', async () => {
     vi.stubEnv('NODE_ENV', 'development')
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { recordModelProviderAlarm } = await import('./model-provider-alarm.mts')
