@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, onTestFinished } from 'vitest'
 import { randomBytes, randomUUID } from 'node:crypto'
 import {
   addDummyEmbeddingToPost,
@@ -16,8 +16,10 @@ import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 import { isFirstCommunityPost } from '../get.mts'
 import { enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts } from '../../../posts/ban-evasion-embedding-enqueues.mts'
+import { communitiesWorkConfig } from '@services/communities/work-limits'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('isFirstCommunityPost', () => {
   let owner: PrivateUser
@@ -94,6 +96,11 @@ describe('isFirstCommunityPost', () => {
   })
 
   it('enqueues detection when the embedded first post is after the first chunk', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(communitiesWorkConfig, {
+        embedded_first_posts_chunk_size: 1,
+      }),
+    )
     const member = await createTestUser()
     const random = createRandomString(8)
     await insertTestCommunityMember({ communityId: community.id, userId: member.id })
@@ -107,10 +114,7 @@ describe('isFirstCommunityPost', () => {
     })
     const contentSha256 = await addCurrentDummyEmbeddingToPost(postId)
 
-    await enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts([
-      ...Array.from({ length: 1000 }, () => randomUUID()),
-      postId,
-    ])
+    await enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts([randomUUID(), postId])
 
     await expect(getPostEmbeddingData(postId)).resolves.toMatchObject({
       ban_evasion_post_embedding_input_sha: contentSha256,
