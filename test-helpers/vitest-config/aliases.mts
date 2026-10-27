@@ -106,7 +106,7 @@ export function backendAliases({
   if (useWorkerRuntimeTestAdapter) {
     aliases.push({
       find: /^glide-mq$/,
-      replacement: resolve(process.cwd(), 'test-helpers/request-query-profile-worker.mts'),
+      replacement: resolve(process.cwd(), 'test-helpers/worker-query-profile.mts'),
     })
   }
 
