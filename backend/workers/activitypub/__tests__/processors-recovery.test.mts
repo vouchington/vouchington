@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { INBOX_RECOVERY_ENQUEUE_GRACE_MS } from '@queues/activitypub/config'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { rearmFailedDeliveries, recoverDeliveries } from '../processors/inbox.mts'
@@ -7,6 +7,10 @@ import { rearmFailedDeliveries, recoverDeliveries } from '../processors/inbox.mt
 const PAGE_SIZE = 3
 
 describe('ActivityPub inbox recovery processors', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('bulk-enqueues only the recoverable deliveries returned by the recovery boundary', async () => {
     const deliveries = makeDeliveries(2)
     const enqueueBulk = vi
@@ -120,9 +124,6 @@ describe('ActivityPub inbox recovery processors', () => {
   it('does not spend a replacement on an envelope still inside the enqueue grace', async () => {
     const nowMs = 1_700_000_000_000
     vi.useFakeTimers({ toFake: ['Date'], now: nowMs })
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
     const recent = {
       deliveryId: timestampToUuidv7LowerBound(nowMs - 1_000),
       requestDigest: randomUUID(),
