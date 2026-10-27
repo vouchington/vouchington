@@ -23,6 +23,7 @@ import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 
 import { syncDomainsWithDatabase } from './sync-db.mts'
+import { rebuildBloomForSource } from './sync-bloom.mts'
 
 describe('sync-db', () => {
   it('keeps both added and removed hostname invalidations durable when inline eviction fails', async () => {
@@ -228,34 +229,21 @@ describe('sync-db', () => {
   it.each(['url', 'email'] as const)(
     'invalidates the %s Bloom ready marker before enqueueing its rebuild',
     async sourceType => {
-      const suffix = randomSourceSuffix()
       const calls: string[] = []
-      const sourceId = await createTestBlacklistSource({
-        type: sourceType,
-        name: `sync-db-ready-${sourceType}-${suffix}`,
-        url: `https://example.com/${sourceType}-ready-blacklist.txt`,
-      })
-
-      await syncDomainsWithDatabase(
-        sourceId,
-        new Response(`ready-invalidated-${suffix}.com\n`),
-        sourceType,
-        {
-          invalidateEmailReadyMarker: async () => {
-            calls.push('invalidate-email')
-          },
-          invalidateUrlReadyMarker: async () => {
-            calls.push('invalidate-url')
-          },
-          enqueueEmailRebuild: async () => {
-            calls.push('enqueue-email')
-          },
-          enqueueUrlRebuild: async () => {
-            calls.push('enqueue-url')
-          },
+      await rebuildBloomForSource(sourceType, {
+        invalidateEmailReadyMarker: async () => {
+          calls.push('invalidate-email')
         },
-      )
-
+        invalidateUrlReadyMarker: async () => {
+          calls.push('invalidate-url')
+        },
+        enqueueEmailRebuild: async () => {
+          calls.push('enqueue-email')
+        },
+        enqueueUrlRebuild: async () => {
+          calls.push('enqueue-url')
+        },
+      })
       expect(calls).toEqual([`invalidate-${sourceType}`, `enqueue-${sourceType}`])
     },
   )

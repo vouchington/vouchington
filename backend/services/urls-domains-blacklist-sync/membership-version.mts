@@ -3,24 +3,17 @@ import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/s
 import { writeCommDiff } from './diff-files.mts'
 import type { MembershipDiffPaths } from './membership-diff-stage.mts'
 import { copyFreshSourceMembership, copySourceMembership } from './reader-membership-copy.mts'
-import type { ReadReplicaSourceVersion } from './replica-freshness.mts'
 
 const MAX_MEMBERSHIP_PREPARATIONS = 3
-
-export type MembershipPrepareHooks = {
-  readReplicaSourceVersion?: ReadReplicaSourceVersion
-  writeCommDiff?: typeof writeCommDiff
-}
 
 /** Rebuild only after another writer changed this source during off-lock preparation. */
 export async function applyWithPreparedMembership<T>(
   sourceId: DomainBlacklistSourceId,
   paths: MembershipDiffPaths,
   apply: (version: string | null) => Promise<T | null>,
-  hooks: MembershipPrepareHooks,
 ): Promise<T> {
   async function attempt(index: number): Promise<T> {
-    const version = await prepareVersionedMembership(sourceId, paths, index, hooks)
+    const version = await prepareVersionedMembership(sourceId, paths, index)
     const result = await apply(version)
     if (result !== null) return result
     if (index + 1 >= MAX_MEMBERSHIP_PREPARATIONS) {
@@ -35,24 +28,17 @@ async function prepareVersionedMembership(
   sourceId: DomainBlacklistSourceId,
   paths: MembershipDiffPaths,
   index: number,
-  hooks: MembershipPrepareHooks,
 ): Promise<string | null> {
   const version = await sourceVersion(sourceId)
   // Copy and diff stay outside the source lock. The first attempt uses the replica and
   // refuses a snapshot older than the version just read on the writer. A mismatch retries
   // from the writer.
   if (index === 0) {
-    await copyFreshSourceMembership(
-      sourceId,
-      paths.membershipPath,
-      version,
-      readPool,
-      hooks.readReplicaSourceVersion,
-    )
+    await copyFreshSourceMembership(sourceId, paths.membershipPath, version, readPool)
   } else {
     await copySourceMembership(sourceId, paths.membershipPath, writePool)
   }
-  await (hooks.writeCommDiff ?? writeCommDiff)(paths)
+  await writeCommDiff(paths)
   return version
 }
 

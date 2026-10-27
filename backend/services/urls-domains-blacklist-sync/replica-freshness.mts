@@ -1,5 +1,3 @@
-import type { PoolClient } from '@data-stores/psql'
-
 /** Retryable. glide-mq backs off while the replica's source version is older than the writer's. */
 export class ReplicaBehindError extends Error {
   constructor() {
@@ -9,12 +7,6 @@ export class ReplicaBehindError extends Error {
     this.name = 'ReplicaBehindError'
   }
 }
-
-export type ReadReplicaSourceVersion = (
-  client: PoolClient,
-  sourceId: string,
-  writerVersion: string | null,
-) => Promise<string | null>
 
 /** True when `candidate` is an older 32-bit xid than `baseline`, including wraparound. */
 function xidPrecedes(candidate: string, baseline: string): boolean {

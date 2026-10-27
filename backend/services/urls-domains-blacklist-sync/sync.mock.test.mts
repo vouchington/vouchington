@@ -84,12 +84,9 @@ describe('syncBlacklistSource', () => {
         String(sourceId),
         response,
         source.type,
-        undefined,
         {
-          cacheHeaders: {
-            etag: `"new-etag-${index}"`,
-            lastModifiedAt: new Date('Wed, 01 Jan 2025 00:00:00 GMT'),
-          },
+          etag: `"new-etag-${index}"`,
+          lastModifiedAt: new Date('Wed, 01 Jan 2025 00:00:00 GMT'),
         },
       )
     }

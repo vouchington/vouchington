@@ -1,4 +1,5 @@
 import onError from '@modules/on-error'
+import { UnrecoverableError, unrecoverable } from '@vouchington/queue-errors'
 import undici from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import {
@@ -21,14 +22,7 @@ import { ReplicaBehindError } from './replica-freshness.mts'
 export type { SyncBlacklistSourceResult } from './sync-types.mts'
 
 const FETCH_TIMEOUT_MS = 30_000
-
-/** Not retryable. glide-mq skips another attempt when `name` is UnrecoverableError. */
-class BlocklistUnmodifiedWithoutSyncError extends Error {
-  constructor() {
-    super('Blocklist source returned 304 to an unconditional request')
-    this.name = 'UnrecoverableError'
-  }
-}
+const UNCONDITIONAL_NOT_MODIFIED = 'Blocklist source returned 304 to an unconditional request'
 
 type SyncBlacklistDependencies = {
   getBlacklistSourceById: typeof getBlacklistSourceById
@@ -60,9 +54,7 @@ export async function syncBlacklistSourceById(
   try {
     await syncBlacklistSource(sourceId, source.url, source.type, syncDependencies)
   } catch (err) {
-    if (err instanceof ReplicaBehindError || err instanceof BlocklistUnmodifiedWithoutSyncError) {
-      throw err
-    }
+    if (err instanceof ReplicaBehindError || err instanceof UnrecoverableError) throw err
     onError(err instanceof Error ? err : createSyncFailedError(source.url, err))
   }
 }
@@ -80,7 +72,7 @@ export async function syncBlacklistSource(
   const response = await syncDependencies.fetchBlacklist(url, conditional ? cache : null)
 
   if (response.status === 304) {
-    if (!conditional) throw new BlocklistUnmodifiedWithoutSyncError()
+    if (!conditional) return unrecoverable(new Error(UNCONDITIONAL_NOT_MODIFIED))
     await syncDependencies.updateSourceCacheHeaders(sourceId, {
       etag: cache?.etag ?? null,
       lastModifiedAt: cache?.last_modified_at ?? null,
@@ -92,9 +84,12 @@ export async function syncBlacklistSource(
     throw createFetchError(response.status, response.statusText)
   }
 
-  return syncDependencies.syncDomainsWithDatabase(id, response, sourceType, undefined, {
-    cacheHeaders: getCacheHeadersFromResponse(response),
-  })
+  return syncDependencies.syncDomainsWithDatabase(
+    id,
+    response,
+    sourceType,
+    getCacheHeadersFromResponse(response),
+  )
 }
 
 function hasConditionalValidators(cache: SourceCacheHeaders | null): boolean {

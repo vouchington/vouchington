@@ -8,11 +8,7 @@ import {
   type TransactionQuery,
 } from '@data-stores/psql'
 import onError from '@modules/on-error'
-import {
-  rebuildBloomForSource,
-  defaultBloomRebuildDependencies,
-  type BloomRebuildDependencies,
-} from './sync-bloom.mts'
+import { rebuildBloomForSource, defaultBloomRebuildDependencies } from './sync-bloom.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
 import { persistDomainDiff } from './sync-db-domain-diff.mts'
@@ -23,19 +19,11 @@ import {
 } from './sync-cache.mts'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
-import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
+import { writeSortedDesiredDomains } from './diff-files.mts'
 import { stageBothDiffFiles, type MembershipDiffPaths } from './membership-diff-stage.mts'
 import { applyWithPreparedMembership, lockSourceForDiff } from './membership-version.mts'
-import type { ReadReplicaSourceVersion } from './replica-freshness.mts'
 
 type MembershipCacheHeaders = { etag: string | null; lastModifiedAt: Date | null }
-
-export type DomainDiffHooks = {
-  cacheHeaders?: MembershipCacheHeaders
-  readReplicaSourceVersion?: ReadReplicaSourceVersion
-  writeCommDiff?: typeof writeCommDiff
-  persistDomainDiff?: typeof persistDomainDiff
-}
 
 type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
 
@@ -46,10 +34,8 @@ export async function syncDomainsWithDatabase(
   sourceId: DomainBlacklistSourceId,
   response: Response,
   sourceType: 'url' | 'email' = 'url',
-  bloomRebuildDependencies?: BloomRebuildDependencies,
-  hooks: DomainDiffHooks = {},
+  cacheHeaders?: MembershipCacheHeaders,
 ): Promise<SyncBlacklistSourceResult> {
-  const bloom = bloomRebuildDependencies ?? defaultBloomRebuildDependencies
   await entityCacheWorkConfig.waitForInitialization()
   const directory = mkdtempSync(join(tmpdir(), BLOCKLIST_DIFF_DIRECTORY_PREFIX))
   const desiredPath = join(directory, 'desired')
@@ -67,24 +53,17 @@ export async function syncDomainsWithDatabase(
     // The first preparation uses the reader. A concurrent writer sync changes
     // the source row's MVCC version; then rebuild from the writer outside the
     // short apply lock so the second sync replaces, rather than unions, feeds.
-    const result = await applyWithPreparedMembership(
-      sourceId,
-      paths,
-      version =>
-        applyLockedDomainDiff(
-          sourceId,
-          sourceType,
-          client => stageBothDiffFiles(client, addedPath, removedPath),
-          version,
-          hooks.persistDomainDiff,
-          hooks.cacheHeaders,
-        ),
-      {
-        readReplicaSourceVersion: hooks.readReplicaSourceVersion,
-        writeCommDiff: hooks.writeCommDiff,
-      },
+    const result = await applyWithPreparedMembership(sourceId, paths, version =>
+      applyLockedDomainDiff(
+        sourceId,
+        sourceType,
+        client => stageBothDiffFiles(client, addedPath, removedPath),
+        version,
+      ),
     )
-    await rebuildBloomForSource(sourceType, bloom)
+    // The diff is already committed. Validators wait until the rebuild job is accepted,
+    // so a missed enqueue cannot leave an etag that makes the next fetch a 304.
+    await recordRebuildAndValidators(sourceId, sourceType, cacheHeaders)
     return result
   } finally {
     rmSync(directory, { recursive: true, force: true })
@@ -96,8 +75,6 @@ async function applyLockedDomainDiff(
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
   expectedVersion: string | null,
-  persist: typeof persistDomainDiff = persistDomainDiff,
-  cacheHeaders?: MembershipCacheHeaders,
 ): Promise<SyncBlacklistSourceResult | null> {
   await entityCacheWorkConfig.waitForInitialization()
   const client = await writePool.connect()
@@ -110,8 +87,6 @@ async function applyLockedDomainDiff(
       sourceType,
       stage,
       expectedVersion,
-      persist,
-      cacheHeaders,
     )
     if (!applied) return null
     await transaction.commit()
@@ -132,19 +107,32 @@ async function stageLockedDiff(
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
   expectedVersion: string | null,
-  persist: typeof persistDomainDiff,
-  cacheHeaders?: MembershipCacheHeaders,
 ): Promise<AppliedDomainDiff | null> {
   await stage(client)
   const version = await lockSourceForDiff(transaction, sourceId, sourceType)
   if (version !== expectedVersion) return null
-  const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType, persist)
-  // Validators commit with the diff. A later 304 must not see the previous etag after this body.
-  await recordAppliedMembership(transaction, sourceId, cacheHeaders)
-  return applied
+  return applyPreparedDomainDiff(transaction, sourceId, sourceType)
+}
+
+async function recordRebuildAndValidators(
+  sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
+  cacheHeaders: MembershipCacheHeaders | undefined,
+): Promise<void> {
+  await rebuildBloomForSource(sourceType, defaultBloomRebuildDependencies)
+  await recordAppliedMembership(sourceId, cacheHeaders)
 }
 
 async function recordAppliedMembership(
+  sourceId: DomainBlacklistSourceId,
+  cacheHeaders: MembershipCacheHeaders | undefined,
+): Promise<void> {
+  await using transaction = await beginTransaction()
+  await writeAppliedMembership(transaction, sourceId, cacheHeaders)
+  await transaction.commit()
+}
+
+async function writeAppliedMembership(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
   cacheHeaders: MembershipCacheHeaders | undefined,
@@ -175,12 +163,20 @@ async function applyPreparedDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
-  persist: typeof persistDomainDiff,
 ): Promise<AppliedDomainDiff> {
+  // Bump the source row in this transaction so a concurrent diff sees a new xmin.
+  // Cache validators stay unchanged until the rebuild job is accepted.
   const { rows: removedRows } = await query<{ count: string }>(
-    `/* syncDomainsWithDatabase */ SELECT COUNT(*)::text AS count FROM ${REMOVED_DOMAINS_TABLE}`,
+    `/* syncDomainsWithDatabase:bumpSourceVersion */
+     WITH bumped AS (
+       UPDATE domain_blocklist_sources
+       SET last_fetched_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+     )
+     SELECT COUNT(*)::text AS count FROM ${REMOVED_DOMAINS_TABLE}`,
+    [sourceId],
   )
-  const persisted = await persist(query, sourceId, sourceType)
+  const persisted = await persistDomainDiff(query, sourceId, sourceType)
   const inlineHostnameIds = await enqueueChangedHostnameCaches(query)
   return {
     result: {

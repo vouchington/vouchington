@@ -9,11 +9,8 @@ import {
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
 import { to as copyTo } from 'pg-copy-streams'
 import { sourceMembershipOrderSql } from './membership-copy-sql.mts'
-import {
-  ReplicaBehindError,
-  replicaVersionIsBehind,
-  type ReadReplicaSourceVersion,
-} from './replica-freshness.mts'
+import { ReplicaBehindError, replicaVersionIsBehind } from './replica-freshness.mts'
+import { readReplicaSourceVersionFromClient } from './replica-source-version.mts'
 import { parseSourceId } from './sync-utils.mts'
 
 /** Stream one source's membership, already ordered for `comm`. */
@@ -40,7 +37,6 @@ export async function copyFreshSourceMembership(
   destination: string,
   writerVersion: string | null,
   pool: typeof readPool = readPool,
-  readReplicaSourceVersion?: ReadReplicaSourceVersion,
 ): Promise<void> {
   await using transaction = await beginTransaction({ client: pool })
   await copyWhenReplicaHasWriterVersion(
@@ -48,7 +44,6 @@ export async function copyFreshSourceMembership(
     parseSourceId(sourceId),
     destination,
     writerVersion,
-    readReplicaSourceVersion ?? readReplicaSourceVersionFromClient,
   )
   await transaction.commit()
 }
@@ -58,29 +53,14 @@ async function copyWhenReplicaHasWriterVersion(
   sourceId: string,
   destination: string,
   writerVersion: string | null,
-  readReplicaSourceVersion: ReadReplicaSourceVersion,
 ): Promise<void> {
   // The version read and COPY must share one snapshot. READ COMMITTED could advance between them.
   await transaction(
     '/* copyFreshSourceMembership:isolation */ SET TRANSACTION ISOLATION LEVEL REPEATABLE READ',
   )
-  const replicaVersion = await readReplicaSourceVersion(transaction.client, sourceId, writerVersion)
+  const replicaVersion = await readReplicaSourceVersionFromClient(transaction.client, sourceId)
   if (replicaVersionIsBehind(replicaVersion, writerVersion)) throw new ReplicaBehindError()
   await copyMembershipFromClient(transaction.client, sourceId, destination)
-}
-
-async function readReplicaSourceVersionFromClient(
-  client: PoolClient,
-  sourceId: string,
-): Promise<string | null> {
-  const { rows } = await client.query<{ version: string }>(
-    `/* copyFreshSourceMembership:replicaVersion */
-     SELECT xmin::text AS version
-     FROM domain_blocklist_sources
-     WHERE id = $1::bigint`,
-    [sourceId],
-  )
-  return rows[0]?.version ?? null
 }
 
 async function copyMembershipFromClient(
