@@ -27,16 +27,14 @@ export function pagedDispatchBackoffStrategies() {
       'activitypub',
       'images',
       'memberships',
-    ].map(
-      dispatcher => [
-        `paged-dispatch-${dispatcher}`,
-        (attempt: number) =>
-          Math.min(
-            1000 * 2 ** Math.min(attempt, 20),
-            getPagedDispatchLimit(`${dispatcher}_backoff_ms`),
-          ),
-      ],
-    ),
+    ].map(dispatcher => [
+      `paged-dispatch-${dispatcher}`,
+      (attempt: number) =>
+        Math.min(
+          1000 * 2 ** Math.min(attempt, 20),
+          getPagedDispatchLimit(`${dispatcher}_backoff_ms`),
+        ),
+    ]),
   )
 }
 
