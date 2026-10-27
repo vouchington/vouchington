@@ -22,6 +22,12 @@ export const ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT = {
   reject: { from: ['pending'], to: 'deleted', atomicBoundary: 'single-row-mutation' },
   complete: { from: ['pending'], to: 'deleted', atomicBoundary: 'dedup-core-effect-envelope' },
   recover: { from: ['pending'], to: 'pending', atomicBoundary: 'bounded-read' },
+  reserveRecoveryRequeues: {
+    from: ['pending'],
+    to: 'pending',
+    atomicBoundary: 'bounded-update',
+  },
+  exhaustRecoveryRequeues: { from: ['pending'], to: 'failed', atomicBoundary: 'bounded-update' },
   rearm: { from: ['failed'], to: 'pending', atomicBoundary: 'bounded-locking-update' },
   expire: { from: ['pending', 'failed'], to: 'deleted', atomicBoundary: 'bounded-locking-delete' },
 } as const

@@ -55,7 +55,14 @@ export const ACTIVITYPUB_RECOVER_OUTBOUND_JOB =
   })
 export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubInboxDeliveryJob>(
   DOMAIN,
-  { name: 'processDelivery', priority: PRIORITY_TASK, ordering: INBOUND_ORDERING, ...INBOX },
+  {
+    name: 'processDelivery',
+    priority: PRIORITY_TASK,
+    ordering: INBOUND_ORDERING,
+    ...INBOX,
+    // Recovery needs the failed record to checkpoint a terminal stall before re-admission.
+    removeOnFail: false,
+  },
 )
 export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<RearmFailedDeliveriesData>(
   DOMAIN,

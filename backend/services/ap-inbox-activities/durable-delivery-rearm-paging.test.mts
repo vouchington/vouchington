@@ -14,6 +14,22 @@ import { apInboxActivitiesWorkConfig } from './work-limits.mts'
 registerActivityPubInboxAdmission()
 
 describe('ActivityPub rearm paging', () => {
+  it('does not spend the recovery budget when queue admission fails', async () => {
+    const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const reserved = await activityPubInboxDeliveryTransitions.reserveRecoveryRequeues([
+        delivery.deliveryId,
+      ])
+      expect(reserved.get(delivery.deliveryId)).toBe(1)
+      await activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues([
+        { deliveryId: delivery.deliveryId, count: 1 },
+      ])
+    }
+    expect(await activityPubInboxDeliveryTransitions.load(delivery.deliveryId)).toMatchObject({
+      outcome: 'applied',
+    })
+  })
+
   it('rearms failed deliveries one bounded page at a time', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(apInboxActivitiesWorkConfig, {

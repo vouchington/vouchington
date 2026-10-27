@@ -39,10 +39,11 @@ export async function acceptActivityPubInboxDelivery(
       )
       ON CONFLICT (request_digest) DO UPDATE
       SET request_digest = EXCLUDED.request_digest
-      RETURNING id, request_digest
+      RETURNING WITH (OLD AS old, NEW AS new)
+        new.id, new.request_digest, old.id IS NULL AS was_inserted
     `)
-    const row = rows[0] as DeliveryIdentityRow
-    return { outcome: 'applied', value: mapIdentity(row) }
+    const row = rows[0] as DeliveryIdentityRow & { was_inserted: boolean }
+    return { outcome: 'applied', value: mapIdentity(row), wasInserted: row.was_inserted }
   } catch (err) {
     return mapActivityPubInboxCapacityErrorOrThrow(err)
   }

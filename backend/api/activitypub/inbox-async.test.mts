@@ -159,6 +159,23 @@ describe('POST /ap/inbox durable worker path', () => {
 
     expect(response.body).toEqual({ received: true })
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(true)
+    const deliveryId = await getActivityPubInboxDeliveryIdForTest(activityId)
+    if (!deliveryId) throw new Error('Expected the accepted durable envelope')
+    const delivery = await loadTestDelivery(deliveryId)
+    if (!delivery) throw new Error('Expected the accepted durable envelope')
+
+    await createRequest()
+      .post('/ap/inbox')
+      .set('Host', INBOX_HOST)
+      .set('Signature', headers.signature)
+      .set('Digest', headers.digest)
+      .set('Date', headers.date)
+      .set('Content-Type', 'application/activity+json')
+      .send(body)
+      .expect(202)
+
+    // Exact replay cannot create a fresh attempt; bounded recovery owns missing-job admission.
+    expect(await activitypub.getJob(`activitypub-inbox__${delivery.requestDigest}`)).toBeNull()
   })
 })
 

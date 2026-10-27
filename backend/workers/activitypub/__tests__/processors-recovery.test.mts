@@ -7,12 +7,20 @@ const PAGE_SIZE = 3
 describe('ActivityPub inbox recovery processors', () => {
   it('bulk-enqueues only the recoverable deliveries returned by the recovery boundary', async () => {
     const deliveries = makeDeliveries(2)
-    const enqueueBulk = vi.fn<VitestLooseMock>().mockResolvedValue(deliveries)
+    const enqueueBulk = vi
+      .fn<VitestLooseMock>()
+      .mockResolvedValue(
+        deliveries.map(delivery => ({ id: `activitypub-inbox__${delivery.requestDigest}` })),
+      )
 
     await expect(
       recoverDeliveries(undefined, {
         readRecoverable: async () => deliveries,
-        getFailure: async () => undefined,
+        getJobStatus: async () => ({ state: 'missing' }),
+        reserveRequeues: async deliveryIds => new Map(deliveryIds.map(id => [id, 1])),
+        releaseUnadmittedRequeues: async () => undefined,
+        exhaustRecoveryRequeues: async () => undefined,
+        removeFailed: async () => false,
         exhaust: async () => ({ outcome: 'stale' }),
         enqueueBulk,
         enqueueContinuation: async () => null,
@@ -20,6 +28,58 @@ describe('ActivityPub inbox recovery processors', () => {
       }),
     ).resolves.toEqual({ enqueued: 2, hasMore: false })
     expect(enqueueBulk).toHaveBeenCalledWith(deliveries)
+  })
+
+  it.each(['missing', 'stale-terminal'] as const)(
+    'refunds an unadmitted %s replacement when queue admission rejects',
+    async state => {
+      const deliveries = makeDeliveries(1)
+      const admissionError = new Error('Valkey unavailable')
+      const releaseUnadmittedRequeues = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
+      const enqueueContinuation = vi.fn<VitestLooseMock>().mockResolvedValue(null)
+      await expect(
+        recoverDeliveries(undefined, {
+          readRecoverable: async () => deliveries,
+          getJobStatus: async () => ({ state }),
+          exhaust: async () => ({ outcome: 'stale' }),
+          removeFailed: async () => false,
+          reserveRequeues: async deliveryIds => new Map(deliveryIds.map(id => [id, 1])),
+          releaseUnadmittedRequeues,
+          exhaustRecoveryRequeues: async () => undefined,
+          enqueueBulk: async () => {
+            throw admissionError
+          },
+          enqueueContinuation,
+          pageSize: () => PAGE_SIZE,
+        }),
+      ).rejects.toBe(admissionError)
+      expect(releaseUnadmittedRequeues).toHaveBeenCalledWith([
+        { deliveryId: deliveries[0]!.deliveryId, count: 1 },
+      ])
+      expect(enqueueContinuation).not.toHaveBeenCalled()
+    },
+  )
+
+  it('refunds a replacement reservation when another admission owns the same job id', async () => {
+    const deliveries = makeDeliveries(1)
+    const releaseUnadmittedRequeues = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
+    await expect(
+      recoverDeliveries(undefined, {
+        readRecoverable: async () => deliveries,
+        getJobStatus: async () => ({ state: 'missing' }),
+        exhaust: async () => ({ outcome: 'stale' }),
+        removeFailed: async () => false,
+        reserveRequeues: async deliveryIds => new Map(deliveryIds.map(id => [id, 1])),
+        releaseUnadmittedRequeues,
+        exhaustRecoveryRequeues: async () => undefined,
+        enqueueBulk: async () => [],
+        enqueueContinuation: async () => null,
+        pageSize: () => PAGE_SIZE,
+      }),
+    ).resolves.toEqual({ enqueued: 0, hasMore: false })
+    expect(releaseUnadmittedRequeues).toHaveBeenCalledWith([
+      { deliveryId: deliveries[0]!.deliveryId, count: 1 },
+    ])
   })
 
   it('re-arms one short page of failed deliveries without a continuation', async () => {

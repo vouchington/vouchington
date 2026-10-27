@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_envelopes (
   sender_allowed_at TIMESTAMPTZ,
   failed_at TIMESTAMPTZ,
   first_failed_at TIMESTAMPTZ,
+  recovery_requeue_count INTEGER NOT NULL DEFAULT 0,
   retention_expires_at TIMESTAMPTZ,
   last_error TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS activitypub_inbox_envelopes (
     failed_at IS NULL OR last_error IS NOT NULL
   ),
   CONSTRAINT activitypub_inbox_envelopes__last_error_bounded CHECK (last_error IS NULL OR LENGTH(last_error) <= 1000),
+  CONSTRAINT activitypub_inbox_envelopes__recovery_requeue_count_nonnegative CHECK (recovery_requeue_count >= 0),
   CONSTRAINT activitypub_inbox_envelopes__failed_requires_first_failed CHECK (failed_at IS NULL OR first_failed_at IS NOT NULL),
   CONSTRAINT activitypub_inbox_envelopes__first_failed_requires_retention CHECK (first_failed_at IS NULL OR retention_expires_at IS NOT NULL),
   CONSTRAINT activitypub_inbox_envelopes__verified_first_failure_retention CHECK (verified_at IS NULL OR first_failed_at IS NOT NULL OR retention_expires_at IS NULL),
@@ -58,6 +60,9 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_envelopes__recovery
   ON activitypub_inbox_envelopes (id) WHERE failed_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_envelopes__failed_rearm
+  ON activitypub_inbox_envelopes (id) WHERE failed_at IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_inbox_envelopes__remote_actor_id
   ON activitypub_inbox_envelopes (remote_actor_id) WHERE remote_actor_id IS NOT NULL;
@@ -84,6 +89,7 @@ COMMENT ON COLUMN activitypub_inbox_envelopes.verified_at IS 'When the worker fi
 COMMENT ON COLUMN activitypub_inbox_envelopes.sender_allowed_at IS 'Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.';
 COMMENT ON COLUMN activitypub_inbox_envelopes.failed_at IS 'Set only after the queue exhausts retryable operational attempts; manual rearm clears it.';
 COMMENT ON COLUMN activitypub_inbox_envelopes.first_failed_at IS 'Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.';
+COMMENT ON COLUMN activitypub_inbox_envelopes.recovery_requeue_count IS 'Bounded recovery replacement reservations since intake or manual rearm; refunded when admission fails or deduplicates, but a crash between reservation and refund may consume one slot.';
 COMMENT ON COLUMN activitypub_inbox_envelopes.retention_expires_at IS 'Maximum retention deadline for an unverified or previously failed durable delivery.';
 COMMENT ON COLUMN activitypub_inbox_envelopes.last_error IS 'Latest bounded operational failure message for recovery and operator diagnostics.';
 

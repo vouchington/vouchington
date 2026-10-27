@@ -1,21 +1,18 @@
-import { DelayedError, type Job } from 'glide-mq'
-import { UnrecoverableError } from '@vouchington/queue-errors'
 import {
   enqueueBulkActivityPubInboxDeliveries,
-  getActivityPubInboxDeliveryFailure,
+  getActivityPubInboxDeliveryJobStatus,
+  removeFailedActivityPubInboxDelivery,
   enqueueRecoverActivityPubInboxDeliveriesContinuation,
   enqueueRearmFailedActivityPubInboxDeliveriesContinuation,
 } from '@queues/activitypub/enqueues/inbox'
-import {
-  activityPubInboxDeliveryTransitions,
-  getActivityPubInboxStorageSnapshot,
-  processDurableActivityPubInboxDelivery,
-} from '@services/ap-inbox-activities'
+import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
 import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/work-limits'
-import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub/types'
+export { cleanupExpiredDeliveries } from './inbox-cleanup.mts'
+export type { CleanupExpiredDeliveriesDependencies } from './inbox-cleanup.mts'
+export { processDelivery } from './inbox-delivery.mts'
 
 export type RecoverDeliveriesDependencies = {
-  getFailure: typeof getActivityPubInboxDeliveryFailure
+  getJobStatus: typeof getActivityPubInboxDeliveryJobStatus
   exhaust: (
     deliveryId: string,
     error: unknown,
@@ -26,6 +23,14 @@ export type RecoverDeliveriesDependencies = {
   enqueueContinuation: typeof enqueueRecoverActivityPubInboxDeliveriesContinuation
   pageSize: () => number
   enqueueBulk: typeof enqueueBulkActivityPubInboxDeliveries
+  removeFailed: typeof removeFailedActivityPubInboxDelivery
+  reserveRequeues: (
+    deliveryIds: readonly string[],
+  ) => ReturnType<typeof activityPubInboxDeliveryTransitions.reserveRecoveryRequeues>
+  releaseUnadmittedRequeues: typeof activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues
+  exhaustRecoveryRequeues: (
+    deliveryIds: readonly string[],
+  ) => ReturnType<typeof activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues>
 }
 
 export type RearmFailedDeliveriesDependencies = {
@@ -36,12 +41,16 @@ export type RearmFailedDeliveriesDependencies = {
 }
 
 const recoverDeliveriesDependencies: RecoverDeliveriesDependencies = {
-  getFailure: getActivityPubInboxDeliveryFailure,
+  getJobStatus: getActivityPubInboxDeliveryJobStatus,
   exhaust: activityPubInboxDeliveryTransitions.exhaust,
   readRecoverable: afterId => activityPubInboxDeliveryTransitions.recover(undefined, afterId),
   enqueueContinuation: enqueueRecoverActivityPubInboxDeliveriesContinuation,
   pageSize: () => getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size'),
   enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
+  removeFailed: removeFailedActivityPubInboxDelivery,
+  reserveRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues,
+  releaseUnadmittedRequeues: activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues,
+  exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues,
 }
 
 const rearmFailedDeliveriesDependencies: RearmFailedDeliveriesDependencies = {
@@ -51,60 +60,94 @@ const rearmFailedDeliveriesDependencies: RearmFailedDeliveriesDependencies = {
   pageSize: () => getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size'),
 }
 
-export type CleanupExpiredDeliveriesDependencies = {
-  expire: (
-    category: Parameters<typeof activityPubInboxDeliveryTransitions.expire>[0],
-    limit?: number,
-  ) => ReturnType<typeof activityPubInboxDeliveryTransitions.expire>
-  getSnapshot: typeof getActivityPubInboxStorageSnapshot
-  log: (event: Record<string, unknown>) => void
-}
-
-const cleanupExpiredDeliveriesDependencies: CleanupExpiredDeliveriesDependencies = {
-  expire: activityPubInboxDeliveryTransitions.expire,
-  getSnapshot: getActivityPubInboxStorageSnapshot,
-  log: event => console.info(JSON.stringify(event)),
-}
-
-export async function processDelivery(
-  data: ActivityPubInboxDeliveryJob,
-  options: { isFinalAttempt: boolean; moveToDelayed: Job['moveToDelayed'] },
-): Promise<void> {
-  try {
-    const result = await processDurableActivityPubInboxDelivery(data.deliveryId)
-    if (result.outcome !== 'deferred') return
-
-    await options.moveToDelayed(result.deferredUntil.getTime())
-  } catch (err) {
-    if (err instanceof DelayedError) throw err
-    if (isTerminalProtocolError(err)) {
-      await activityPubInboxDeliveryTransitions.reject(data.deliveryId)
-      throw new UnrecoverableError(err instanceof Error ? err.message : String(err))
-    }
-    if (options.isFinalAttempt) {
-      await activityPubInboxDeliveryTransitions.exhaust(data.deliveryId, err)
-    }
-    throw err
-  }
-}
-
 export async function recoverDeliveries(
   afterId?: string,
   dependencies: RecoverDeliveriesDependencies = recoverDeliveriesDependencies,
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const deliveries = await dependencies.readRecoverable(afterId)
   if (deliveries.length === 0) return { enqueued: 0, hasMore: false }
-  const pending = []
+  const replacementCandidates = []
   for (const delivery of deliveries) {
     // oxlint-disable-next-line no-await-in-loop -- one bounded page limits terminal job lookups
-    const failure = await dependencies.getFailure(delivery)
-    if (failure === undefined) pending.push(delivery)
-    else {
+    const status = await dependencies.getJobStatus(delivery)
+    if (
+      status.state === 'missing' ||
+      status.state === 'completed' ||
+      status.state === 'stale-terminal'
+    ) {
+      replacementCandidates.push(delivery)
+    } else if (status.state === 'failed') {
       // oxlint-disable-next-line no-await-in-loop -- checkpoint a terminal stall before continuing this bounded page
-      await dependencies.exhaust(delivery.deliveryId, new Error(failure))
+      const checkpoint = await dependencies.exhaust(delivery.deliveryId, new Error(status.reason))
+      if (checkpoint.outcome === 'applied') {
+        // oxlint-disable-next-line no-await-in-loop -- preserve the checkpoint-before-removal order per row
+        await dependencies.removeFailed(delivery)
+      }
     }
   }
-  const jobs = await dependencies.enqueueBulk(pending)
+  const reservations = await dependencies.reserveRequeues(
+    replacementCandidates.map(delivery => delivery.deliveryId),
+  )
+  const saturated = []
+  for (const delivery of replacementCandidates) {
+    if (reservations.has(delivery.deliveryId)) continue
+    // oxlint-disable-next-line no-await-in-loop -- recheck the bounded page before terminalizing a row
+    const status = await dependencies.getJobStatus(delivery)
+    if (
+      status.state === 'missing' ||
+      status.state === 'completed' ||
+      status.state === 'stale-terminal'
+    ) {
+      saturated.push(delivery.deliveryId)
+    }
+  }
+  await dependencies.exhaustRecoveryRequeues(saturated)
+  const pending = replacementCandidates.filter(delivery => reservations.has(delivery.deliveryId))
+  let jobs: Awaited<ReturnType<typeof dependencies.enqueueBulk>>
+  try {
+    jobs = await dependencies.enqueueBulk(pending)
+  } catch (err) {
+    // GlideMQ bulk admission is non-atomic: a thrown batch may have admitted some rows.
+    // Only a still-missing job proves its reservation was unused. If Valkey cannot answer,
+    // retain the reservation conservatively rather than permit an unbounded retry loop.
+    const unadmitted = []
+    let lookupError: unknown
+    for (const delivery of pending) {
+      try {
+        // oxlint-disable-next-line no-await-in-loop -- inspect only this failed bounded batch
+        const status = await dependencies.getJobStatus(delivery)
+        if (status.state === 'missing' || status.state === 'stale-terminal') {
+          unadmitted.push({
+            deliveryId: delivery.deliveryId,
+            count: reservations.get(delivery.deliveryId)!,
+          })
+        }
+      } catch (err) {
+        lookupError = err
+        break
+      }
+    }
+    await dependencies.releaseUnadmittedRequeues(unadmitted)
+    if (lookupError) {
+      throw new AggregateError([err, lookupError], 'ActivityPub inbox admission result unknown', {
+        cause: err,
+      })
+    }
+    throw err
+  }
+  const admittedJobIds = new Set(jobs.map(job => job.id))
+  await dependencies.releaseUnadmittedRequeues(
+    pending.flatMap(delivery =>
+      admittedJobIds.has(`activitypub-inbox__${delivery.requestDigest}`)
+        ? []
+        : [
+            {
+              deliveryId: delivery.deliveryId,
+              count: reservations.get(delivery.deliveryId)!,
+            },
+          ],
+    ),
+  )
   // ast-grep-ignore: pagination-no-exact-limit-has-next -- bounded page continuation ends on an empty page at an exact boundary
   const hasMore = deliveries.length >= dependencies.pageSize()
   if (hasMore) {
@@ -132,66 +175,4 @@ export async function rearmFailedDeliveries(
     await dependencies.enqueueContinuation(lastId)
   }
   return { enqueued: deliveries.length, hasMore }
-}
-
-export async function cleanupExpiredDeliveries(
-  dependencies: CleanupExpiredDeliveriesDependencies = cleanupExpiredDeliveriesDependencies,
-): Promise<{
-  batches: number
-  deletedRows: number
-  deletedRawBodyBytes: number
-  budgetExhausted: boolean
-}> {
-  const batchSize = getApInboxActivitiesWorkLimit('cleanup_batch_size')
-  const maximumBatches = getApInboxActivitiesWorkLimit('cleanup_maximum_batches')
-  let batches = 0
-  let deletedRows = 0
-  let deletedRawBodyBytes = 0
-  let lastBatchWasFull = false
-  let budgetExhausted = false
-  const categories = ['unverified', 'verified-operational'] as const
-
-  for (const [categoryIndex, category] of categories.entries()) {
-    while (batches < maximumBatches) {
-      // oxlint-disable-next-line no-await-in-loop -- each committed batch determines whether the bounded cleanup should continue
-      const batch = await dependencies.expire(category, batchSize)
-      lastBatchWasFull = batch.deletedRows === batchSize
-      if (batch.deletedRows > 0) {
-        batches += 1
-        deletedRows += batch.deletedRows
-        deletedRawBodyBytes += batch.deletedRawBodyBytes
-        dependencies.log({
-          event: 'activitypub_inbox_cleanup_batch',
-          category,
-          deletedRows: batch.deletedRows,
-          deletedRawBodyBytes: batch.deletedRawBodyBytes,
-        })
-      }
-      if (!lastBatchWasFull) break
-    }
-    if (batches >= maximumBatches) {
-      budgetExhausted = lastBatchWasFull || categoryIndex < categories.length - 1
-      break
-    }
-  }
-
-  const snapshot = await dependencies.getSnapshot()
-  dependencies.log({
-    event: 'activitypub_inbox_cleanup_snapshot',
-    ...snapshot,
-    cleanupBatches: batches,
-    budgetExhausted,
-  })
-  return { batches, deletedRows, deletedRawBodyBytes, budgetExhausted }
-}
-
-function isTerminalProtocolError(error: unknown): boolean {
-  const typed = error as { status?: unknown; statusCode?: unknown }
-  const status =
-    typeof typed?.status === 'number'
-      ? typed.status
-      : typeof typed?.statusCode === 'number'
-        ? typed.statusCode
-        : 500
-  return status >= 400 && status < 500 && status !== 408 && status !== 429
 }

@@ -1,5 +1,6 @@
 import {
-  getActivityPubInboxDeliveryFailure,
+  getActivityPubInboxDeliveryJobStatus,
+  removeFailedActivityPubInboxDelivery,
   enqueueBulkActivityPubInboxDeliveries,
 } from '../queues/activitypub/enqueues/inbox.mts'
 import {
@@ -18,7 +19,12 @@ export function scopedActivityPubInboxProcessors(deliveryId: string) {
   return {
     recoverDeliveries: () =>
       recoverDeliveries(undefined, {
-        getFailure: getActivityPubInboxDeliveryFailure,
+        getJobStatus: getActivityPubInboxDeliveryJobStatus,
+        reserveRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues,
+        releaseUnadmittedRequeues:
+          activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues,
+        exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues,
+        removeFailed: removeFailedActivityPubInboxDelivery,
         exhaust: activityPubInboxDeliveryTransitions.exhaust,
         readRecoverable: () => activityPubInboxDeliveryTransitions.recover(ids),
         enqueueBulk: enqueueBulkActivityPubInboxDeliveries,

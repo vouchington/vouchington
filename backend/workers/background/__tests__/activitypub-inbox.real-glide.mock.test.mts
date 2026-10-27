@@ -13,7 +13,8 @@ import { background } from '@queues/background/queues'
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
 import {
   enqueueActivityPubInboxDelivery,
-  getActivityPubInboxDeliveryFailure,
+  getActivityPubInboxDeliveryJobStatus,
+  removeFailedActivityPubInboxDelivery,
   enqueueBulkActivityPubInboxDeliveries,
   enqueueRecoverActivityPubInboxDeliveriesContinuation,
 } from '@queues/activitypub/enqueues/inbox'
@@ -88,7 +89,7 @@ describe('activitypub durable inbox through the production background processor'
     const loaded = await activityPubInboxDeliveryTransitions.load(delivered.deliveryId)
     if (loaded.outcome === 'stale') throw new Error('Expected the signed envelope')
     const acceptedAgain = await activityPubInboxDeliveryTransitions.accept(loaded.value)
-    expect(acceptedAgain).toEqual({ outcome: 'applied', value: delivered })
+    expect(acceptedAgain).toEqual({ outcome: 'applied', value: delivered, wasInserted: false })
     await enqueueActivityPubInboxDelivery(delivered)
     const queued = await background.getJob(`activitypub-inbox__${delivered.requestDigest}`)
     try {
@@ -139,7 +140,12 @@ describe('activitypub durable inbox through the production background processor'
       await expect(
         recoverDeliveries(undefined, {
           readRecoverable: () => activityPubInboxDeliveryTransitions.recover([delivery.deliveryId]),
-          getFailure: data => getActivityPubInboxDeliveryFailure(data, harness.queue),
+          getJobStatus: data => getActivityPubInboxDeliveryJobStatus(data, harness.queue),
+          reserveRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues,
+          releaseUnadmittedRequeues:
+            activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues,
+          exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues,
+          removeFailed: data => removeFailedActivityPubInboxDelivery(data, harness.queue),
           exhaust: activityPubInboxDeliveryTransitions.exhaust,
           enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
           enqueueContinuation: enqueueRecoverActivityPubInboxDeliveriesContinuation,
@@ -155,7 +161,7 @@ describe('activitypub durable inbox through the production background processor'
       expect((await background.getJob(continuationId))?.data).toEqual({
         afterId: delivery.deliveryId,
       })
-      expect(await (await harness.queue.getJob(failed.id))?.getState()).toBe('failed')
+      expect(await harness.queue.getJob(failed.id)).toBeNull()
     } finally {
       await (await background.getJob(continuationId))?.remove()
       await harness.close()

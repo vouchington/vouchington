@@ -14,6 +14,9 @@ import {
 import {
   rearmFailedActivityPubInboxDeliveries,
   recoverActivityPubInboxDeliveries,
+  reserveActivityPubInboxRecoveryRequeues,
+  exhaustActivityPubInboxRecoveryRequeues,
+  releaseUnadmittedActivityPubInboxRecoveryRequeues,
 } from './durable-delivery-transition-recovery.mts'
 import { ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT as contract } from './durable-delivery-transition-contract.mts'
 import { expireActivityPubInboxDeliveries } from './durable-delivery-expiry.mts'
@@ -31,6 +34,13 @@ export const activityPubInboxDeliveryTransitions = {
   reject: Object.assign(rejectActivityPubInboxDelivery, { contract: contract.reject }),
   complete: Object.assign(completeActivityPubInboxDelivery, { contract: contract.complete }),
   recover: Object.assign(recoverActivityPubInboxDeliveries, { contract: contract.recover }),
+  reserveRecoveryRequeues: Object.assign(reserveActivityPubInboxRecoveryRequeues, {
+    contract: contract.reserveRecoveryRequeues,
+  }),
+  exhaustRecoveryRequeues: Object.assign(exhaustActivityPubInboxRecoveryRequeues, {
+    contract: contract.exhaustRecoveryRequeues,
+  }),
+  releaseUnadmittedRecoveryRequeues: releaseUnadmittedActivityPubInboxRecoveryRequeues,
   rearm: Object.assign(rearmFailedActivityPubInboxDeliveries, { contract: contract.rearm }),
   expire: Object.assign(expireActivityPubInboxDeliveries, { contract: contract.expire }),
 } as const

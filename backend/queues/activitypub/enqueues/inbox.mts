@@ -1,4 +1,7 @@
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { createRetryingCommandClient } from '@data-stores/valkey-glide-mq/glide-mq-command-client'
+import { acquireTerminalJobRemoval } from '@data-stores/valkey-glide-mq/terminal-job-removal'
+import { workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { background } from '@queues/background/queues'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
@@ -31,34 +34,80 @@ const enqueueCleanupJob = createBackgroundEnqueue(ACTIVITYPUB_CLEANUP_EXPIRED_DE
 export async function enqueueActivityPubInboxDelivery(
   data: ActivityPubInboxDeliveryJob,
 ): EnqueueReturnType {
-  const jobs = await enqueueBulkReactivatingFinished({
-    queue: background,
-    inputs: [data],
-    jobIdOf: input => deliveryJobOptions(input).jobId,
-    enqueueBulk: async inputs => {
-      const job = await enqueueDeliveryJob(inputs[0]!, deliveryJobOptions(inputs[0]!))
-      return job ? [job] : []
-    },
-  })
-  return jobs[0] ?? null
+  return enqueueDeliveryJob(data, deliveryJobOptions(data))
 }
 
 /** A terminal transport stall may bypass the domain processor's failure checkpoint. */
-export async function getActivityPubInboxDeliveryFailure(
+export async function getActivityPubInboxDeliveryJobStatus(
   data: ActivityPubInboxDeliveryJob,
   queue: Pick<typeof background, 'getJob'> = background,
-): Promise<string | undefined> {
+): Promise<
+  | { state: 'missing' | 'live' | 'completed' | 'stale-terminal' }
+  | { state: 'failed'; reason: string }
+> {
   const job = await queue.getJob(deliveryJobOptions(data).jobId!)
+  if (!job) return { state: 'missing' }
+  const state = await job.getState()
   if (
-    !job ||
     typeof job.data !== 'object' ||
     job.data === null ||
     !('deliveryId' in job.data) ||
-    job.data.deliveryId !== data.deliveryId ||
-    (await job.getState()) !== 'failed'
-  )
-    return undefined
-  return job.failedReason ?? 'ActivityPub inbox job failed outside its processor'
+    job.data.deliveryId !== data.deliveryId
+  ) {
+    // A previous envelope with this exact digest may have completed and been deleted.
+    // Its retained terminal record must not block a newly inserted replay envelope.
+    if (state === 'failed' || state === 'completed') return { state: 'stale-terminal' }
+    if (state === 'unknown') return { state: 'missing' }
+    return { state: 'live' }
+  }
+  if (state === 'failed') {
+    return {
+      state: 'failed',
+      reason: job.failedReason ?? 'ActivityPub inbox job failed outside its processor',
+    }
+  }
+  if (state === 'completed') return { state: 'completed' }
+  if (state === 'unknown') return { state: 'missing' }
+  return { state: 'live' }
+}
+
+/** Release a failed delivery id only after its durable failure checkpoint commits. */
+export async function removeFailedActivityPubInboxDelivery(
+  data: ActivityPubInboxDeliveryJob,
+  queue: Pick<typeof background, 'name'> = background,
+  prefix = workerQueuePrefix ?? 'glide',
+): Promise<boolean> {
+  const jobId = deliveryJobOptions(data).jobId!
+  const dedicated = createRetryingCommandClient('activitypub-inbox-failed-removal')
+  try {
+    const claim = await acquireTerminalJobRemoval(
+      dedicated.client,
+      `${prefix}:{${queue.name}}`,
+      jobId,
+    )
+    if (claim.state !== 'terminal') {
+      await claim.release()
+      return false
+    }
+    try {
+      const raw = await claim.readData()
+      const retained = raw === null ? null : (JSON.parse(raw.toString()) as unknown)
+      if (
+        claim.terminalState !== 'failed' ||
+        typeof retained !== 'object' ||
+        retained === null ||
+        !('deliveryId' in retained) ||
+        retained.deliveryId !== data.deliveryId
+      ) {
+        return false
+      }
+      return await claim.remove()
+    } finally {
+      await claim.release()
+    }
+  } finally {
+    await dedicated.close()
+  }
 }
 
 export function enqueueBulkActivityPubInboxDeliveries(inputs: ActivityPubInboxDeliveryJob[]) {
