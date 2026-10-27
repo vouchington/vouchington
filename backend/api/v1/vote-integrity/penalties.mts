@@ -120,6 +120,7 @@ app.route('/api/v1/vote-integrity/penalties/:id').delete(async (ctx: Context) =>
     currentUserCanApplyVoteRingPenalty,
     'DELETE:/api/v1/vote-integrity/penalties/:id',
   )
+  assertNotSuspended(currentUser)
 
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid penalty ID')
   validateRequestContract(ctx, 'DELETE:/api/v1/vote-integrity/penalties/:id', { path: ctx.params })
