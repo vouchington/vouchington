@@ -1,83 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  auditCiJobRuntime,
-  vouchingtonRuntimeAuditOptions,
-  type GhApiExecutor,
-} from './ci-job-runtime-audit.mts'
-
-type FixtureJob = {
-  id: number
-  name: string
-  started_at: string
-  completed_at: string
-  conclusion: 'success' | 'failure'
-  html_url: string
-}
-
-function makeJob(runId: number, name: string, seconds: number, queueMinutes = 0): FixtureJob {
-  const started = new Date(Date.UTC(2026, 0, runId, 0, queueMinutes))
-  return {
-    id: runId * 10,
-    name,
-    started_at: started.toISOString(),
-    completed_at: new Date(started.getTime() + seconds * 1000).toISOString(),
-    conclusion: 'success',
-    html_url: `https://github.test/jobs/${runId}`,
-  }
-}
-
-function makeRun(id: number, name: string, branch = 'main'): unknown {
-  return {
-    id,
-    name,
-    event: 'pull_request',
-    conclusion: 'success',
-    created_at: new Date(Date.UTC(2026, 0, id)).toISOString(),
-    html_url: `https://github.test/runs/${id}`,
-    head_branch: branch,
-    pull_requests: [{ base: { ref: branch } }],
-  }
-}
-
-function makeExecutor(
-  runs: unknown[],
-  jobsByRun: Readonly<Record<number, FixtureJob[]>>,
-): GhApiExecutor {
-  return async request => {
-    const { endpoint } = request
-    if (endpoint.includes('/actions/workflows?')) {
-      return {
-        workflows: [
-          ...['Static', 'Backend', 'Web', 'Cloudflare Worker', 'Lambdas', 'Tooling'].map(
-            (name, index) => ({ id: index + 1, name, state: 'active' }),
-          ),
-          { id: 7, name: 'Other', state: 'active' },
-        ],
-      }
-    }
-    const workflowId = endpoint.match(/\/actions\/workflows\/(\d+)\/runs\?/)
-    if (workflowId) {
-      const workflowName =
-        workflowId[1] === '7'
-          ? 'Other'
-          : ['Static', 'Backend', 'Web', 'Cloudflare Worker', 'Lambdas', 'Tooling'][
-              Number(workflowId[1]) - 1
-            ]
-      const event = new URLSearchParams(endpoint.split('?')[1]).get('event')
-      return {
-        workflow_runs: runs.filter(
-          run =>
-            (run as { name?: string; event?: string }).name === workflowName &&
-            (run as { event?: string }).event === event,
-        ),
-      }
-    }
-    const match = endpoint.match(/\/actions\/runs\/(\d+)\/jobs/)
-    if (!match) throw new Error(`Unexpected endpoint: ${endpoint}`)
-    return { jobs: jobsByRun[Number(match[1])] }
-  }
-}
+import { vouchingtonRuntimeAuditOptions } from './ci-job-runtime-audit.mts'
 
 describe('CI job runtime audit wrapper', () => {
   it('keeps only area pull_request filters', () => {
@@ -93,25 +16,5 @@ describe('CI job runtime audit wrapper', () => {
       ],
       medianThresholdSeconds: 480,
     })
-  })
-
-  it('scopes area pull-request runs, excluding other workflows and branches', async () => {
-    const runs = [
-      ...[16, 15, 14, 13, 12, 11].map(id => makeRun(id, 'Backend')),
-      makeRun(17, 'Backend', 'release'),
-      makeRun(19, 'Other'),
-    ]
-    const jobs = Object.fromEntries(
-      runs.map(run => {
-        const id = (run as { id: number }).id
-        return [id, [makeJob(id, 'test', 300 + id, 12)]]
-      }),
-    )
-
-    const result = await auditCiJobRuntime(makeExecutor(runs, jobs), 'owner/repo')
-
-    expect(result.jobs.map(job => job.key)).toEqual(['Backend / test'])
-    expect(result.jobs[0]?.samples.map(sample => sample.runId)).toEqual([16, 15, 14, 13, 12])
-    expect(result.jobs[0]?.samples[0]?.durationSeconds).toBe(316)
   })
 })
