@@ -48,4 +48,45 @@ describe('report model receipt after target deletion', () => {
       restore()
     }
   })
+
+  it('cannot replay a story-post receipt after the post is hard-deleted', async () => {
+    const author = await createTestUserDirect()
+    const postId = await insertTestPost({
+      title: 'Story post receipt subject',
+      slug: `story-receipt-${randomUUID()}`,
+      createdById: author.id,
+      markdown: '',
+      postType: 'story',
+    })
+    await spendCapConfig.waitForInitialization()
+    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
+    const callModel = makeAgentModelCaller({
+      title: 'Receipt title',
+      ai_summary_markdown: 'Summary.',
+    })
+    const params = {
+      agentSlug: 'story-post',
+      operationId: `${postId}:force-job`,
+      postId,
+      promptVersion: 'story-post-receipt-test',
+      selection: TEST_OPENAI_SELECTION,
+      input: 'Fixed story context',
+      safetyIdentifier: author.id,
+      callModel,
+    }
+    const key = agentCallOperationKey(params.agentSlug, params.operationId)
+    try {
+      await expect(callReceiptedAgentModel(params)).resolves.toMatchObject({
+        output: { title: 'Receipt title', ai_summary_markdown: 'Summary.' },
+      })
+      await hardDeleteTestPost(postId)
+      await expect(getAgentCallReceipt(key)).resolves.toMatchObject({ result_ciphertext: 'erased' })
+      await expect(callReceiptedAgentModel(params)).rejects.toMatchObject({
+        name: 'UnrecoverableError',
+      })
+      expect(callModel).toHaveBeenCalledOnce()
+    } finally {
+      restore()
+    }
+  })
 })

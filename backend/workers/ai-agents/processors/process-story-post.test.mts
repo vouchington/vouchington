@@ -87,6 +87,14 @@ describe('process-story-post', () => {
 
     const updated = await getPostByAny(result.post.id)
     expect(updated?.ai_summary_markdown).toBe('Agent summary.')
+    expect(callStoryPostAgentSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(Array),
+      expect.anything(),
+      undefined,
+      result.post.id,
+      result.post.id,
+    )
   })
 
   it('processStoryPost — does not call agent if ai_summary_markdown already set', async () => {
@@ -151,6 +159,32 @@ describe('process-story-post', () => {
 
     const updated = await getPostByAny(result.post.id)
     expect(updated?.title).toBe(originalTitle)
+  })
+
+  it('processStoryPost — keeps the post id when a forced refresh changes the operation id', async () => {
+    callStoryPostAgentSpy.mockResolvedValueOnce({
+      title: 'Forced title',
+      ai_summary_markdown: 'Forced summary.',
+    })
+    const { story, testUser } = await makeStoryWithItem()
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
+    const job = {
+      id: 'force-job',
+      data: { post_id: result.post.id, force: true },
+    } as Job<StoryPostJobData>
+
+    await processStoryPost(job)
+
+    expect(callStoryPostAgentSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(Array),
+      expect.anything(),
+      undefined,
+      `${result.post.id}:force-job`,
+      result.post.id,
+    )
   })
 
   it('processStoryPost — returns null for unknown post_id', async () => {

@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
 import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
-import { findAiUsageRecordForResponseId, findAiUsageRecordForAgent } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  findAiUsageRecordForAgent,
+  findAiUsageRecordForResponseId,
+  insertTestPost,
+} from '@voucha/test-helpers'
 import {
   makeAgentModelCaller,
   makeModelCallResult,
@@ -21,14 +26,44 @@ const makeStory = (overrides: Partial<Story> = {}): Story =>
     ...overrides,
   }) as Story
 
+async function ownedStoryPost(overrides: Partial<Story> = {}) {
+  const author = await createTestUserDirect()
+  const postId = await insertTestPost({
+    title: 'Owned story post',
+    slug: `story-post-${randomUUID()}`,
+    createdById: author.id,
+    markdown: '',
+    postType: 'story',
+  })
+  return { story: makeStory(overrides), postId }
+}
+
 const itemSummaries = [
   { title: 'Article One', summary: 'Summary of article one.' },
   { title: 'Article Two', summary: 'Summary of article two.' },
 ]
 
+function callOwnedStoryPostAgent(
+  story: Story,
+  postId: string,
+  selection: Parameters<typeof callStoryPostAgent>[2],
+  callModel: StoryPostModelCaller,
+  operationId = story.id,
+) {
+  return callStoryPostAgent(story, itemSummaries, selection, callModel, operationId, postId)
+}
+
 describe('callStoryPostAgent', () => {
+  it('refuses a story-post call that does not name the post', async () => {
+    const callModel = makeAgentModelCaller({ title: 'T', ai_summary_markdown: 'S.' })
+    await expect(
+      callStoryPostAgent(makeStory(), itemSummaries, TEST_MODEL_SELECTION, callModel),
+    ).rejects.toThrow('Story post receipts require the story post id')
+  })
+
   it('stops replay when the prompt or schema contract version changes', async () => {
     const operationId = randomUUID()
+    const { postId } = await ownedStoryPost()
     const callModel = makeAgentModelCaller({
       title: 'First title',
       ai_summary_markdown: 'First summary.',
@@ -36,6 +71,7 @@ describe('callStoryPostAgent', () => {
     const params = {
       agentSlug: 'story-post',
       operationId,
+      postId,
       promptVersion: 'story-post-test-v1',
       selection: TEST_MODEL_SELECTION,
       input: 'A fixed story prompt',
@@ -50,46 +86,46 @@ describe('callStoryPostAgent', () => {
   })
 
   it('reuses a completed paid receipt after a downstream retry', async () => {
-    const story = makeStory()
+    const { story, postId } = await ownedStoryPost()
     const callModel = makeAgentModelCaller({
       title: 'First title',
       ai_summary_markdown: 'First summary.',
     })
-    const first = await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
-    const second = await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
+    const first = await callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, callModel)
+    const second = await callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, callModel)
 
     expect(second).toEqual(first)
     expect(callModel).toHaveBeenCalledOnce()
   })
 
   it('stops changed story input or model selection from billing the same operation twice', async () => {
-    const story = makeStory()
+    const { story, postId } = await ownedStoryPost()
     const first = makeAgentModelCaller({ title: 'First', ai_summary_markdown: 'First.' })
-    await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, first)
+    await callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, first)
 
     const retry = makeAgentModelCaller({ title: 'Duplicate', ai_summary_markdown: 'Duplicate.' })
     await expect(
-      callStoryPostAgent(
+      callOwnedStoryPostAgent(
         { ...story, title: 'Retitled after dispatch' },
-        itemSummaries,
+        postId,
         TEST_MODEL_SELECTION,
         retry,
       ),
     ).rejects.toThrow('request changed after reservation')
     await expect(
-      callStoryPostAgent(story, itemSummaries, TEST_OPENAI_SELECTION, retry),
+      callOwnedStoryPostAgent(story, postId, TEST_OPENAI_SELECTION, retry),
     ).rejects.toThrow('request changed after reservation')
     expect(first).toHaveBeenCalledOnce()
     expect(retry).not.toHaveBeenCalled()
   })
 
   it('allows an explicit new operation identity to make a fresh paid call', async () => {
-    const story = makeStory()
+    const { story, postId } = await ownedStoryPost()
     const callModel = makeAgentModelCaller({ title: 'First', ai_summary_markdown: 'First.' })
-    await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
-    await callStoryPostAgent(
+    await callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, callModel)
+    await callOwnedStoryPostAgent(
       story,
-      itemSummaries,
+      postId,
       TEST_MODEL_SELECTION,
       callModel,
       `${story.id}:force-job`,
@@ -98,29 +134,29 @@ describe('callStoryPostAgent', () => {
   })
 
   it('does not call the provider again after an ambiguous paid attempt', async () => {
-    const story = makeStory()
+    const { story, postId } = await ownedStoryPost()
     const callModel: StoryPostModelCaller = () =>
       Promise.reject(new Error('response lost after dispatch'))
     await expect(
-      callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel),
+      callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, callModel),
     ).rejects.toThrow('response lost after dispatch')
 
     const retry = makeAgentModelCaller({ title: 'Duplicate', ai_summary_markdown: 'Duplicate.' })
     await expect(
-      callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, retry),
+      callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, retry),
     ).rejects.toThrow('uncertain receipt')
     expect(retry).not.toHaveBeenCalled()
   })
 
   it('keeps a second job from calling the provider while the first paid call stalls', async () => {
-    const story = makeStory()
+    const { story, postId } = await ownedStoryPost()
     const started = Promise.withResolvers<void>()
     const provider = Promise.withResolvers<Awaited<ReturnType<StoryPostModelCaller>>>()
     const callModel: StoryPostModelCaller = () => {
       started.resolve()
       return provider.promise
     }
-    const first = callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
+    const first = callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, callModel)
     await started.promise
 
     const duplicate = makeAgentModelCaller({
@@ -128,7 +164,7 @@ describe('callStoryPostAgent', () => {
       ai_summary_markdown: 'Duplicate.',
     })
     await expect(
-      callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, duplicate),
+      callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, duplicate),
     ).rejects.toThrow('uncertain receipt')
     expect(duplicate).not.toHaveBeenCalled()
 
@@ -137,9 +173,10 @@ describe('callStoryPostAgent', () => {
   })
 
   it('returns the title and summary the model wrote', async () => {
-    const result = await callStoryPostAgent(
-      makeStory(),
-      itemSummaries,
+    const { story, postId } = await ownedStoryPost()
+    const result = await callOwnedStoryPostAgent(
+      story,
+      postId,
       TEST_MODEL_SELECTION,
       makeAgentModelCaller({
         title: 'Concise Headline Here',
@@ -154,9 +191,10 @@ describe('callStoryPostAgent', () => {
   })
 
   it('truncates the title to 100 characters', async () => {
-    const result = await callStoryPostAgent(
-      makeStory(),
-      itemSummaries,
+    const { story, postId } = await ownedStoryPost()
+    const result = await callOwnedStoryPostAgent(
+      story,
+      postId,
       TEST_MODEL_SELECTION,
       makeAgentModelCaller({ title: 'A'.repeat(150), ai_summary_markdown: 'Summary.' }),
     )
@@ -171,10 +209,11 @@ describe('callStoryPostAgent', () => {
       'Fallback Title',
     ],
     ['"Story" when the story has no title either', { title: null }, 'Story'],
-  ])('falls back to %s', async (_name, story, expected) => {
-    const result = await callStoryPostAgent(
-      makeStory(story),
-      itemSummaries,
+  ])('falls back to %s', async (_name, storyOverrides, expected) => {
+    const { story, postId } = await ownedStoryPost(storyOverrides)
+    const result = await callOwnedStoryPostAgent(
+      story,
+      postId,
       TEST_MODEL_SELECTION,
       makeAgentModelCaller({ title: '', ai_summary_markdown: 'Summary.' }),
     )
@@ -184,9 +223,9 @@ describe('callStoryPostAgent', () => {
 
   it('passes the story id as the safety identifier and the selection to the model caller', async () => {
     const callModel = makeAgentModelCaller({ title: 'Test', ai_summary_markdown: 'Summary.' })
-    const story = makeStory()
+    const { story, postId } = await ownedStoryPost()
 
-    await callStoryPostAgent(story, itemSummaries, TEST_OPENAI_SELECTION, callModel)
+    await callOwnedStoryPostAgent(story, postId, TEST_OPENAI_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining('Article One'),
@@ -205,7 +244,8 @@ describe('callStoryPostAgent', () => {
         ),
       )
 
-    await callStoryPostAgent(makeStory(), itemSummaries, TEST_MODEL_SELECTION, callModel)
+    const { story, postId } = await ownedStoryPost()
+    await callOwnedStoryPostAgent(story, postId, TEST_MODEL_SELECTION, callModel)
 
     await expect(findAiUsageRecordForResponseId(responseId)).resolves.toMatchObject({
       agent_slug: 'story-post',
@@ -216,8 +256,7 @@ describe('callStoryPostAgent', () => {
   })
 
   it('records usage from a failed/incomplete response before rethrowing', async () => {
-    // story-post has no post/community scope, so a queued retry after this failure is the only
-    // chance to attribute the charge: the call site must record from the thrown error.
+    // Record the billed incomplete response from the thrown error before it propagates.
     const callModel: StoryPostModelCaller = () =>
       Promise.reject(
         new OpenAIResponseNotCompletedError('OpenAI response incomplete: max_output_tokens', {
@@ -229,8 +268,9 @@ describe('callStoryPostAgent', () => {
         } as Response),
       )
 
+    const { story, postId } = await ownedStoryPost()
     await expect(
-      callStoryPostAgent(makeStory(), itemSummaries, TEST_OPENAI_SELECTION, callModel),
+      callOwnedStoryPostAgent(story, postId, TEST_OPENAI_SELECTION, callModel),
     ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
     await expect(

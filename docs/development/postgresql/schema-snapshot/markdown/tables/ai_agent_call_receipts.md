@@ -13,7 +13,7 @@ Not partitioned — growth: unbounded.
 | `agent_slug`                     | `ai_agent_call_receipt_agent_slugs` | no       |                              |          |           |           | Agent that reserved the paid call.                                                                                                                     |
 | `request_sha256`                 | `text`                              | no       |                              |          |           |           | SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review. |
 | `copyright_notice_submission_id` | `uuid`                              | yes      |                              |          |           |           | Retention owner for copyright guidance and appeal results; null for other agents.                                                                      |
-| `post_id`                        | `uuid`                              | yes      |                              |          |           |           | Reported post or comment; hard deletion erases the result while retaining the paid operation key.                                                      |
+| `post_id`                        | `uuid`                              | yes      |                              |          |           |           | Story post being written, or a reported post or comment. Hard deletion erases the result while retaining the paid operation key.                       |
 | `reported_user_id`               | `uuid`                              | yes      |                              |          |           |           | Reported user; hard deletion erases the result while retaining the paid operation key.                                                                 |
 | `hostname_id`                    | `uuid`                              | yes      |                              |          |           |           | Reported URL hostname; hard deletion erases the result while retaining the paid operation key.                                                         |
 | `rss_feed_item_id`               | `uuid`                              | yes      |                              |          |           |           | Reported RSS feed item; hard deletion erases the result while retaining the paid operation key.                                                        |
@@ -35,6 +35,7 @@ Not partitioned — growth: unbounded.
   CHECK (
   CASE
       WHEN (agent_slug = 'report-judgement'::ai_agent_call_receipt_agent_slugs) THEN ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1) OR ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0) AND (NOT (result_ciphertext IS DISTINCT FROM 'erased'::text))))
+      WHEN (agent_slug = 'story-post'::ai_agent_call_receipt_agent_slugs) THEN ((num_nonnulls(reported_user_id, hostname_id, rss_feed_item_id) = 0) AND ((post_id IS NOT NULL) OR ((post_id IS NULL) AND (NOT (result_ciphertext IS DISTINCT FROM 'erased'::text)))))
       ELSE (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0)
   END)
   ```

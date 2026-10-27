@@ -84,6 +84,56 @@ describe('report call receipt target retention', () => {
   })
 })
 
+describe('story-post call receipt subject', () => {
+  it('rejects a story-post receipt that does not name a post', async () => {
+    await expect(
+      reserveAgentCallReceipt(operationKey(), 'story-post', digest),
+    ).rejects.toMatchObject({ code: 'P0001' })
+  })
+
+  it('keeps two story-post receipts for one post', async () => {
+    const postId = await insertOwnedStoryPost()
+    await expect(
+      reserveAgentCallReceipt(operationKey(), 'story-post', digest, undefined, undefined, postId),
+    ).resolves.toBe(true)
+    await expect(
+      reserveAgentCallReceipt(operationKey(), 'story-post', digest, undefined, undefined, postId),
+    ).resolves.toBe(true)
+  })
+
+  it('erases a story-post result when its post is hard-deleted and keeps the paid operation', async () => {
+    const postId = await insertOwnedStoryPost()
+    const key = operationKey()
+    await expect(
+      reserveAgentCallReceipt(key, 'story-post', digest, undefined, undefined, postId),
+    ).resolves.toBe(true)
+    await completeAgentCallReceipt(key, 'encrypted-story-result')
+    await hardDeleteTestPost(postId)
+    await expect(getAgentCallReceipt(key)).resolves.toEqual({
+      request_sha256: digest,
+      result_ciphertext: 'erased',
+    })
+    await expect(completeAgentCallReceipt(key, 'late-story-result')).rejects.toBeInstanceOf(Error)
+    await expect(
+      reserveAgentCallReceipt(key, 'story-post', digest, undefined, undefined, postId),
+    ).resolves.toBe(false)
+    await expect(
+      reserveAgentCallReceipt(operationKey(), 'story-post', digest, undefined, undefined, postId),
+    ).rejects.toMatchObject({ code: '23503' })
+  })
+})
+
+async function insertOwnedStoryPost(): Promise<string> {
+  const author = await createTestUserDirect()
+  return insertTestPost({
+    title: 'Owned story post receipt',
+    slug: `story-receipt-${randomUUID()}`,
+    createdById: author.id,
+    markdown: '',
+    postType: 'story',
+  })
+}
+
 async function createTarget(entityType: ReportReceiptTarget['entityType']): Promise<{
   target: ReportReceiptTarget
   remove(): Promise<void>

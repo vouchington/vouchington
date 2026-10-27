@@ -66,6 +66,7 @@ describe('story-post receipt admission by slug', () => {
             }),
           ),
         post.id,
+        post.id,
       )
     } finally {
       restoreAdmission()
