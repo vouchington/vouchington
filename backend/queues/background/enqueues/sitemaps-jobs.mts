@@ -20,7 +20,7 @@ const DEFAULTS = {
 export type SitemapArchiveBackfillData = { afterDay?: string }
 
 type PostType = string
-export type SitemapPostDayData = { postType: PostType; day: string }
+export type SitemapPostDayData = { postType: PostType; day: string; generationId?: string }
 
 export const SITEMAPS_POST_DAY_JOB = defineBackgroundJob<SitemapPostDayData>(SITEMAPS_DOMAIN, {
   name: 'processUpdatePostDaySitemap',
@@ -43,12 +43,15 @@ export const SITEMAPS_POSTS_INDEX_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   ordering: SITEMAPS_ORDERING.indexes,
   ...DEFAULTS,
 })
-export const SITEMAPS_FAMILY_JOB = defineBackgroundJob<{ family: string }>(SITEMAPS_DOMAIN, {
-  name: 'processUpdateFamilySitemap',
-  priority: PRIORITY_TASK,
-  ordering: SITEMAPS_ORDERING.indexes,
-  ...DEFAULTS,
-})
+export const SITEMAPS_FAMILY_JOB = defineBackgroundJob<{ family: string; generationId?: string }>(
+  SITEMAPS_DOMAIN,
+  {
+    name: 'processUpdateFamilySitemap',
+    priority: PRIORITY_TASK,
+    ordering: SITEMAPS_ORDERING.indexes,
+    ...DEFAULTS,
+  },
+)
 export const SITEMAPS_ROOT_INDEX_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   name: 'processUpdateRootIndex',
   priority: PRIORITY_TASK,

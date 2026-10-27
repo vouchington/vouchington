@@ -3,7 +3,8 @@ import { buffer } from 'node:stream/consumers'
 import type { Readable } from 'node:stream'
 import { gunzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { generateSitemapPage, type GenerationPageDependencies } from './generation-page.mts'
+import { generateSitemapPage } from './generation-page.mts'
+import type { GenerationPageDependencies } from './generation-page-types.mts'
 import type { SitemapGenerationProgress } from './generation-storage.mts'
 import { applyStoragePrefix } from './storage-prefix.mts'
 import type { PostDayManifest } from './storage.mts'
@@ -106,5 +107,52 @@ describe('bounded sitemap publication', () => {
     expect(objects.get(indexKey)).toBe(publishedIndex)
     expect(retired.at(-1)?.pageCount).toBe(1)
     expect(retired.at(-1)?.generationId).not.toBe(final.manifest?.generation_id)
+  })
+  it('no-ops a continuation whose generation is gone or replaced instead of starting one', async () => {
+    let progress: SitemapGenerationProgress | null = null
+    const started: SitemapGenerationProgress[] = []
+    const dependencies: GenerationPageDependencies<SitemapFamilyEntry> = {
+      getProgress: async () => progress,
+      getManifest: async () => null,
+      putProgress: async value => {
+        started.push(value)
+        progress = value
+      },
+      deleteProgress: async () => {
+        progress = null
+      },
+      readPage: async () => [],
+      pageStorageKey: (generationId, page) => `families/topics/${generationId}/${page}.xml`,
+      pageRoutePath: (generationId, page) => `sitemaps/topics/${generationId}/${page}.xml`,
+      indexStorageKey: 'sitemaps/families/topics.xml',
+      retireGeneration: async () => {},
+      toUrl: entry => ({ loc: `https://test.com${entry.path}`, lastmod: '2026-04-01' }),
+    }
+
+    // The chain's generation was published and its progress deleted.
+    await expect(generateSitemapPage(1, dependencies, new Date(), 'gone')).resolves.toMatchObject({
+      hasMore: false,
+      stale: true,
+    })
+    expect(started).toHaveLength(0)
+
+    // A newer root-started generation replaced the one this continuation expects.
+    progress = {
+      generation_id: 'newer',
+      started_at: new Date().toISOString(),
+      content_hash: '',
+      high_water_id: null,
+      after_id: null,
+      after_path: null,
+      page_count: 0,
+      finished: false,
+      previous_generation_id: null,
+      previous_page_count: 0,
+    }
+    await expect(generateSitemapPage(1, dependencies, new Date(), 'older')).resolves.toMatchObject({
+      stale: true,
+    })
+    expect(started).toHaveLength(0)
+    expect(progress.generation_id).toBe('newer')
   })
 })

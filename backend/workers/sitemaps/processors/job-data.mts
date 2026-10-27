@@ -32,3 +32,9 @@ export function requireJobString(value: unknown, fieldName: string): string {
 
   throw new Error(`${fieldName} is required`)
 }
+
+/** Present only on a continuation job; root jobs omit it and may start a generation. */
+export function optionalGenerationId(value: unknown): { generationId?: string } {
+  if (value === undefined || value === null) return {}
+  return { generationId: requireJobString(value, 'generationId') }
+}

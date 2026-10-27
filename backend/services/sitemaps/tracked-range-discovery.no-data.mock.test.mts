@@ -31,15 +31,15 @@ describe('findTrackedDayRangeFromS3', () => {
     mockSend
       .mockResolvedValueOnce({
         Contents: [
-          { Key: 'posts/2026/05/10/0.xml.gz/metadata.json' },
-          { Key: 'posts/not-a-day/0.xml.gz/metadata.json' },
+          { Key: 'posts/2026/05/10/discussion/index.xml' },
+          { Key: 'posts/not-a-day/discussion/index.xml' },
         ],
         NextContinuationToken: 'page-2',
       } as never)
       .mockResolvedValueOnce({
         Contents: [
-          { Key: 'posts/2026/01/02/0.xml.gz/metadata.json' },
-          { Key: 'posts/2026/12/31/0.xml.gz/metadata.json' },
+          { Key: 'posts/2026/01/02/discussion/index.xml' },
+          { Key: 'posts/2026/12/31/discussion/index.xml' },
         ],
       } as never)
 
@@ -57,8 +57,10 @@ describe('findTrackedDayRangeFromS3', () => {
     })
   })
 
-  it('returns null when S3 has no valid tracked-day keys', async () => {
-    mockSend.mockResolvedValueOnce({ Contents: [{ Key: 'posts/README.md' }] } as never)
+  it('returns null when S3 has no published index (a lone _progress.json is not a published day)', async () => {
+    mockSend.mockResolvedValueOnce({
+      Contents: [{ Key: 'posts/README.md' }, { Key: 'posts/2026/05/10/discussion/_progress.json' }],
+    } as never)
 
     await expect(findTrackedDayRangeFromS3()).resolves.toBeNull()
   })
@@ -66,7 +68,7 @@ describe('findTrackedDayRangeFromS3', () => {
   it('applies and strips the configured storage prefix', async () => {
     process.env.SITEMAP_S3_PREFIX = '/preview/'
     mockSend.mockResolvedValueOnce({
-      Contents: [{ Key: 'preview/posts/2026/07/13/0.xml.gz/metadata.json' }],
+      Contents: [{ Key: 'preview/posts/2026/07/13/discussion/index.xml' }],
     } as never)
 
     await expect(findTrackedDayRangeFromS3()).resolves.toEqual({

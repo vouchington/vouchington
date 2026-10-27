@@ -62,6 +62,30 @@ describe('sitemaps handler routing', () => {
     })
   })
 
+  it('hands a continuation its generation id and rejects a malformed one', async () => {
+    const processors = makeProcessors()
+
+    await run(processors, 'processUpdatePostDaySitemap', {
+      postType: 'discussion',
+      day: '2026-06-10',
+      generationId: 'gen-1',
+    })
+    await run(processors, 'processUpdateFamilySitemap', { family: 'topics', generationId: 'gen-1' })
+
+    expect(processors.processUpdatePostDaySitemap).toHaveBeenCalledWith({
+      postType: 'discussion',
+      day: '2026-06-10',
+      generationId: 'gen-1',
+    })
+    expect(processors.processUpdateFamilySitemap).toHaveBeenCalledWith({
+      family: 'topics',
+      generationId: 'gen-1',
+    })
+    await expect(async () =>
+      run(processors, 'processUpdateFamilySitemap', { family: 'topics', generationId: '' }),
+    ).rejects.toThrow('generationId is required')
+  })
+
   it('routes index jobs through validated data', async () => {
     const processors = makeProcessors()
 
@@ -70,7 +94,7 @@ describe('sitemaps handler routing', () => {
     await run(processors, 'processUpdatePostsIndex')
     await run(processors, 'processUpdateRootIndex')
 
-    expect(processors.processUpdateFamilySitemap).toHaveBeenCalledWith('landing-pages')
+    expect(processors.processUpdateFamilySitemap).toHaveBeenCalledWith({ family: 'landing-pages' })
     expect(processors.processUpdatePostTypeIndex).toHaveBeenCalledWith('review')
     expect(processors.processUpdatePostsIndex).toHaveBeenCalledWith()
     expect(processors.processUpdateRootIndex).toHaveBeenCalledWith()

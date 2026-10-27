@@ -159,7 +159,7 @@ describe('tracked-range-cache', () => {
       .mockResolvedValueOnce({
         Contents: discoveredDays.map(day => {
           const [year, month, date] = day.split('-')
-          return { Key: applyStoragePrefix(`posts/${year}/${month}/${date}/article/metadata.json`) }
+          return { Key: applyStoragePrefix(`posts/${year}/${month}/${date}/article/index.xml`) }
         }),
       } as never)
       .mockResolvedValueOnce({} as never)

@@ -53,7 +53,7 @@ describe('sitemap processors', () => {
 
     await processUpdatePostDaySitemap({ postType: 'review', day: '2026-06-01' })
 
-    expect(generateSpy).toHaveBeenCalledWith('review', '2026-06-01')
+    expect(generateSpy).toHaveBeenCalledWith('review', '2026-06-01', undefined, undefined)
     expect(invalidateSpy).toHaveBeenCalledWith()
     expect(typeIndexSpy).toHaveBeenCalledWith('review')
     expect(postsIndexSpy).toHaveBeenCalledWith()
@@ -64,7 +64,8 @@ describe('sitemap processors', () => {
     vi.spyOn(updatePostDaySitemapDependencies, 'generatePostDaySitemapFiles').mockResolvedValue({
       manifest: null,
       hasMore: true,
-      continuationId: 'next-page',
+      generationId: 'gen-1',
+      continuationId: 'gen-1-2',
     })
     const continuation = vi
       .spyOn(updatePostDaySitemapDependencies, 'enqueuePostDaySitemapContinuation')
@@ -79,10 +80,52 @@ describe('sitemap processors', () => {
     await processUpdatePostDaySitemap({ postType: 'review', day: '2026-06-01' })
 
     expect(continuation).toHaveBeenCalledWith(
-      { postType: 'review', day: '2026-06-01' },
-      'next-page',
+      { postType: 'review', day: '2026-06-01', generationId: 'gen-1' },
+      'gen-1-2',
     )
     expect(typeIndex).not.toHaveBeenCalled()
+    expect(invalidate).not.toHaveBeenCalled()
+  })
+
+  it('no-ops a stale post-day continuation without chaining or publishing indexes', async () => {
+    const generate = vi
+      .spyOn(updatePostDaySitemapDependencies, 'generatePostDaySitemapFiles')
+      .mockResolvedValue({ manifest, hasMore: false, stale: true })
+    const continuation = vi.spyOn(
+      updatePostDaySitemapDependencies,
+      'enqueuePostDaySitemapContinuation',
+    )
+    const typeIndex = vi.spyOn(updatePostDaySitemapDependencies, 'enqueueUpdatePostTypeIndex')
+    const invalidate = vi.spyOn(updatePostDaySitemapDependencies, 'invalidateSitemaps')
+
+    await processUpdatePostDaySitemap({
+      postType: 'review',
+      day: '2026-06-01',
+      generationId: 'gen-old',
+    })
+
+    expect(generate).toHaveBeenCalledWith('review', '2026-06-01', undefined, 'gen-old')
+    expect(continuation).not.toHaveBeenCalled()
+    expect(typeIndex).not.toHaveBeenCalled()
+    expect(invalidate).not.toHaveBeenCalled()
+  })
+
+  it('no-ops a stale family continuation without chaining or publishing the root index', async () => {
+    const generate = vi
+      .spyOn(updateSitemapIndexDependencies, 'generateSitemapFamilyFiles')
+      .mockResolvedValue({ manifest, hasMore: false, stale: true })
+    const continuation = vi.spyOn(
+      updateSitemapIndexDependencies,
+      'enqueueFamilySitemapContinuation',
+    )
+    const rootIndex = vi.spyOn(updateSitemapIndexDependencies, 'enqueueUpdateRootIndex')
+    const invalidate = vi.spyOn(updateSitemapIndexDependencies, 'invalidateSitemaps')
+
+    await processUpdateFamilySitemap({ family: 'topics', generationId: 'gen-old' })
+
+    expect(generate).toHaveBeenCalledWith('topics', undefined, 'gen-old')
+    expect(continuation).not.toHaveBeenCalled()
+    expect(rootIndex).not.toHaveBeenCalled()
     expect(invalidate).not.toHaveBeenCalled()
   })
 
@@ -121,9 +164,9 @@ describe('sitemap processors', () => {
       .spyOn(updateSitemapIndexDependencies, 'invalidateSitemaps')
       .mockResolvedValue(undefined)
 
-    await processUpdateFamilySitemap('topics')
+    await processUpdateFamilySitemap({ family: 'topics' })
 
-    expect(familySpy).toHaveBeenCalledWith('topics')
+    expect(familySpy).toHaveBeenCalledWith('topics', undefined, undefined)
     expect(invalidateSpy).toHaveBeenCalledWith()
     expect(rootIndexSpy).toHaveBeenCalledWith()
   })

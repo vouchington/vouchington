@@ -1,8 +1,10 @@
 import { processRetiredSitemapCleanup } from './processors/retired-cleanup.mts'
-import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
-import type { TrackedDayRange } from '@services/sitemaps/types'
 import {
-  getMonthlyBackfillPage,
+  runMonthlyBackfillArchivePage,
+  type ArchiveBackfillDependencies,
+} from './processors/archive-backfill.mts'
+import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
+import {
   getNightlyBackfillEntries,
   getWeeklyBackfillEntries,
 } from '@services/sitemaps/backfill-utils'
@@ -13,8 +15,6 @@ import {
   generatePostsIndex,
   generateRootIndex,
 } from '@services/sitemaps/generation'
-import { getTrackedDayRange } from '@services/sitemaps/storage'
-import { getSitemapsWorkLimit } from '@services/sitemaps/work-limits'
 import { cleanupRetiredSitemapGenerations } from '@services/sitemaps/retired-generation-cleanup'
 import {
   enqueueBulkUpdatePostDaySitemaps,
@@ -93,15 +93,27 @@ export async function processUpdatePostDaySitemap(
   {
     postType,
     day,
+    generationId,
   }: {
     postType: (typeof SITEMAP_CONFIG.POST_TYPES)[number]
     day: string
+    /** Set only on a continuation; it no-ops when that generation is gone or replaced. */
+    generationId?: string
   },
   dependencies = updatePostDaySitemapDependencies,
 ): Promise<void> {
-  const result = await dependencies.generatePostDaySitemapFiles(postType, day)
-  if (result.hasMore && result.continuationId) {
-    await dependencies.enqueuePostDaySitemapContinuation({ postType, day }, result.continuationId)
+  const result = await dependencies.generatePostDaySitemapFiles(
+    postType,
+    day,
+    undefined,
+    generationId,
+  )
+  if (result.stale) return
+  if (result.hasMore && result.continuationId && result.generationId) {
+    await dependencies.enqueuePostDaySitemapContinuation(
+      { postType, day, generationId: result.generationId },
+      result.continuationId,
+    )
     return
   }
   await dependencies.invalidateSitemaps()
@@ -128,12 +140,24 @@ export async function processUpdatePostsIndex(
 }
 
 export async function processUpdateFamilySitemap(
-  family: (typeof SITEMAP_CONFIG.FAMILY_TYPES)[number],
+  {
+    family,
+    generationId,
+  }: {
+    family: (typeof SITEMAP_CONFIG.FAMILY_TYPES)[number]
+    /** Set only on a continuation; it no-ops when that generation is gone or replaced. */
+    generationId?: string
+  },
   dependencies = updateSitemapIndexDependencies,
 ): Promise<void> {
-  const result = await dependencies.generateSitemapFamilyFiles(family)
-  if (result.hasMore && result.continuationId) {
-    await dependencies.enqueueFamilySitemapContinuation(family, result.continuationId)
+  const result = await dependencies.generateSitemapFamilyFiles(family, undefined, generationId)
+  if (result.stale) return
+  if (result.hasMore && result.continuationId && result.generationId) {
+    await dependencies.enqueueFamilySitemapContinuation(
+      family,
+      result.generationId,
+      result.continuationId,
+    )
     return
   }
   await Promise.all([dependencies.invalidateSitemaps(), dependencies.enqueueUpdateRootIndex()])
@@ -170,25 +194,7 @@ export async function processWeeklyBackfillMonthDispatcher(): Promise<void> {
   await enqueueBulkUpdatePostDaySitemaps(entries)
 }
 
-/**
- * One bounded page of the archive backfill: the next days after `afterDay`, then a continuation
- * from this page's last day, so the ever-growing archive never fans out in a single job.
- */
-export async function processMonthlyBackfillArchiveDispatcher(
+export const processMonthlyBackfillArchiveDispatcher = (
   afterDay?: string,
-  dependencies: Pick<
-    typeof backfillDispatcherDependencies,
-    'enqueueBulkUpdatePostDaySitemaps' | 'enqueueMonthlyBackfillArchiveContinuation'
-  > = backfillDispatcherDependencies,
-): Promise<{ enqueued: number; hasMore: boolean }> {
-  const trackedRange = (await getTrackedDayRange()) as TrackedDayRange | null
-  const page = getMonthlyBackfillPage(new Date(), trackedRange, SITEMAP_CONFIG.POST_TYPES, {
-    afterDay,
-    pageDays: getSitemapsWorkLimit('archive_backfill_day_page_size'),
-  })
-  if (page.entries.length > 0) await dependencies.enqueueBulkUpdatePostDaySitemaps(page.entries)
-  if (page.hasMore && page.lastDay) {
-    await dependencies.enqueueMonthlyBackfillArchiveContinuation(page.lastDay)
-  }
-  return { enqueued: page.entries.length, hasMore: page.hasMore }
-}
+  dependencies: ArchiveBackfillDependencies = backfillDispatcherDependencies,
+) => runMonthlyBackfillArchivePage(afterDay, dependencies)

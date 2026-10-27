@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
-import type { SitemapUrl } from './types.mts'
+import type { GenerationPageDependencies, SourceEntry } from './generation-page-types.mts'
 import { createGzipFileFromUtf8Chunks, deleteTemporaryGzipFile } from './gzip.mts'
 import type { SitemapGenerationProgress } from './generation-storage.mts'
 import { putSitemapObjectFile, type PostDayManifest } from './storage.mts'
@@ -8,41 +8,31 @@ import { buildSitemapUrl } from './url-builder.mts'
 import { iterateSitemapIndexXml, iterateUrlsetXml } from './xml-builder.mts'
 import { getSitemapsWorkLimit } from './work-limits.mts'
 
-type SourceEntry = { id: string; path?: string }
-
-export type GenerationPageDependencies<T extends SourceEntry> = {
-  getProgress: () => Promise<SitemapGenerationProgress | null>
-  getManifest: () => Promise<PostDayManifest | null>
-  putProgress: (progress: SitemapGenerationProgress) => Promise<void>
-  deleteProgress: () => Promise<void>
-  readPage: (options: {
-    highWaterId?: string
-    afterId?: string
-    afterPath?: string
-    limit: number
-  }) => Promise<T[]>
-  pageStorageKey: (generationId: string, page: number) => string
-  pageRoutePath: (generationId: string, page: number) => string
-  indexStorageKey: string
-  retireGeneration: (generationId: string, pageCount: number) => Promise<void>
-  afterPublication?: () => Promise<void>
-  toUrl: (entry: T) => SitemapUrl
-}
-
 export type GenerationPageResult = {
   manifest: PostDayManifest | null
   hasMore: boolean
   continuationId?: string
+  generationId?: string
+  /** A continuation found its generation gone or replaced; it did no work. */
+  stale?: true
 }
 
-/** One durable, capped source page. The stable index is the final publication write. */
+/**
+ * One durable, capped source page. The stable index is the final publication write. A continuation
+ * passes the generation it expects and no-ops when that generation is gone or replaced; only root
+ * jobs (no expected generation) may start one.
+ */
 export async function generateSitemapPage<T extends SourceEntry>(
   maxRows: number,
   dependencies: GenerationPageDependencies<T>,
   now = new Date(),
+  expectedGenerationId?: string,
 ): Promise<GenerationPageResult> {
   let progress = await dependencies.getProgress()
   const publishedManifest = await dependencies.getManifest()
+  if (expectedGenerationId && progress?.generation_id !== expectedGenerationId) {
+    return { manifest: publishedManifest, hasMore: false, stale: true }
+  }
   const ageMs = progress ? now.getTime() - Date.parse(progress.started_at) : 0
   if (
     progress &&
@@ -68,6 +58,7 @@ export async function generateSitemapPage<T extends SourceEntry>(
     progress = null
   }
   if (!progress) {
+    if (expectedGenerationId) return { manifest: publishedManifest, hasMore: false, stale: true }
     const previousManifest = publishedManifest
     progress = {
       generation_id: randomUUID(),
@@ -138,6 +129,7 @@ export async function generateSitemapPage<T extends SourceEntry>(
       return {
         manifest: null,
         hasMore: true,
+        generationId: progress.generation_id,
         continuationId: `${progress.generation_id}-${progress.page_count + 1}`,
       }
     }

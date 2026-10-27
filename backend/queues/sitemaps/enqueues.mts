@@ -121,7 +121,7 @@ export const enqueueUpdateFamilySitemap = (
 }
 
 export const enqueuePostDaySitemapContinuation = (
-  entry: PostDayJobData,
+  entry: PostDayJobData & { generationId: string },
   continuationId: string,
 ): EnqueueReturnType =>
   enqueueUpdatePostDaySitemapJob(entry, {
@@ -133,10 +133,11 @@ export const enqueuePostDaySitemapContinuation = (
 
 export const enqueueFamilySitemapContinuation = (
   family: SitemapFamilyJobData['family'],
+  generationId: string,
   continuationId: string,
 ): EnqueueReturnType =>
   enqueueUpdateFamilySitemapJob(
-    { family },
+    { family, generationId },
     {
       ordering: SITEMAPS_ORDERING.indexes,
       jobId: `sitemap-family-${family}-${continuationId}`,

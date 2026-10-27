@@ -26,6 +26,7 @@ export async function generatePostDaySitemapFiles(
   postType: SitemapPostType,
   day: string,
   now = new Date(),
+  expectedGenerationId?: string,
 ): Promise<GenerationPageResult> {
   return generateSitemapPage<SitemapPostWithId>(
     getSitemapsWorkLimit('generation_page_row_limit'),
@@ -59,6 +60,7 @@ export async function generatePostDaySitemapFiles(
       toUrl: buildPostSitemapUrl,
     },
     now,
+    expectedGenerationId,
   )
 }
 
