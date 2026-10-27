@@ -54,30 +54,34 @@ describe('post seed diagnostics', () => {
         await lockNotice.ready
         expect(await tryPostSeedDiagnosticsLock(transaction, lockKey)).toBe(false)
         const blocked = Promise.allSettled([waitForPostSeedDiagnosticsLock(transaction, lockKey)])
-        // Start sampling only once PostgreSQL reports the wait, so the observer's first
-        // sample sees it well inside the session statement_timeout.
-        await lockNotice.wait(blocked)
-        diagnostics.startObserver(backendContext)
         let observationError: Error | undefined
         try {
-          await Promise.race([
-            observation.then(result => {
-              if (result.status === 'rejected') throw result.error
-              return undefined
-            }),
-            blocked.then(([result]) => {
-              if (result.status === 'rejected') throw result.reason
-              throw new Error('Lock acquisition completed before observer sampled it')
-            }),
-          ])
-        } catch (err) {
-          observationError = asError(err)
+          // Start sampling only once PostgreSQL reports the wait, so the observer's first
+          // sample sees it well inside the session statement_timeout.
+          await lockNotice.wait(blocked)
+          diagnostics.startObserver(backendContext)
+          try {
+            await Promise.race([
+              observation.then(result => {
+                if (result.status === 'rejected') throw result.error
+                return undefined
+              }),
+              blocked.then(([result]) => {
+                if (result.status === 'rejected') throw result.reason
+                throw new Error('Lock acquisition completed before observer sampled it')
+              }),
+            ])
+          } catch (err) {
+            observationError = asError(err)
+          }
+        } finally {
+          await blocker.rollback()
+          await blocked
+          await lockNotice.close()
         }
-        await blocker.rollback()
         const [blockedResult] = await blocked
         if (observationError !== undefined) throw observationError
         if (blockedResult.status === 'rejected') throw blockedResult.reason
-        await lockNotice.close()
         await expect(
           diagnostics.operation('clearance', 7, () =>
             rejectPostSeedDiagnosticsOperation(transaction),
