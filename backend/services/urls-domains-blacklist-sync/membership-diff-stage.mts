@@ -37,7 +37,6 @@ async function stageDiffFile(client: PoolClient, table: string, path: string): P
   await client.query(
     `/* syncDomainsWithDatabase */ CREATE TEMP TABLE ${table} (domain TEXT NOT NULL)`,
   )
-  // no-mistakes-disable-next-line postgres-required-predicates: COPY FROM STDIN loads one diff file into a temporary staging table
   const copyStream = client.query(
     copyFrom(`/* syncDomainsWithDatabase */ COPY ${table} (domain) FROM STDIN`),
   )

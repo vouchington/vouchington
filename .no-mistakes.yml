@@ -1,3 +1,5 @@
+reportUnusedDisableDirectives: report
+
 # Export spellings verified against @data-stores/psql and the named Glide clients.
 # Reviewed existing per-item calls are tracked by #2523; remediation removes allow entries.
 effects:
@@ -5248,3 +5250,56 @@ rules:
       roots: [.agents/skills]
       requiredFile: SKILL.md
       codeExtensions: [md]
+
+  # Source: docs/development/tests.md test-suite rules (#3163). Tests and helpers share one
+  # database, so they never execute DDL, TRUNCATE, ALTER SYSTEM, pg_sleep, or
+  # session_replication_role; failure tests inject a throwing executor instead.
+  - name: tests do not mutate shared database state
+    rule: postgres-no-test-state-mutation
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames:
+        [TransactionQuery, QueryExecutor, PoolClient, QueryOptions, OwnedTransaction]
+      testGlobs:
+        - '**/*.test.{ts,tsx,mts}'
+        - '**/*.spec.{ts,tsx,mts}'
+        - '**/vitest.setup*.{ts,mts}'
+      helperRoots:
+        - '**/test-helpers/**/*.{ts,mts}'
+      unanalyzable: advise
+
+  # Source: #3160. Fix React compiler and hook findings in web source instead of suppressing them.
+  - name: React compiler and hook rules are never suppressed in web source
+    rule: forbidden-lint-suppressions
+    scope: repository
+    options:
+      files:
+        - 'web/app/**/*.{js,jsx,mjs,mts,ts,tsx}'
+        - 'web/components/**/*.{js,jsx,mjs,mts,ts,tsx}'
+        - 'web/hooks/**/*.{js,jsx,mjs,mts,ts,tsx}'
+        - 'web/lib/**/*.{js,jsx,mjs,mts,ts,tsx}'
+      ruleIds:
+        - react/react-compiler
+        - react/error-boundaries
+        - react/globals
+        - react/immutability
+        - react/incompatible-library
+        - react/preserve-manual-memoization
+        - react/purity
+        - react/refs
+        - react/set-state-in-effect
+        - react/set-state-in-render
+        - react/static-components
+        - react/unsupported-syntax
+        - react/use-memo
+        - react/void-use-memo
+        - react/capitalized-calls
+        - react/exhaustive-effect-dependencies
+        - react/hooks
+        - react/memo-dependencies
+        - react/no-deriving-state-in-effects
+      rulePrefixes: [react-hooks-js/]
+      # A blanket disable would also hide the React compiler and hook rules.
+      banBlanketDisable: true
