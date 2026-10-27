@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import undici from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { BLACKLISTS } from '@services/urls-domains-blacklist/sources-constants'
+import { ReplicaBehindError } from './replica-freshness.mts'
 import {
   BlocklistUnmodifiedWithoutSyncError,
   createBlacklistFetchHeaders,
-  ReplicaBehindError,
   syncBlacklistSource,
   syncBlacklistSourceById,
 } from './sync.mts'

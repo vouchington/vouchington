@@ -19,7 +19,7 @@ import { syncDomainsWithDatabase } from './sync-db.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
 import { readWriterWalLsn, ReplicaBehindError } from './replica-freshness.mts'
 export type { SyncBlacklistSourceResult } from './sync-types.mts'
-export { readWriterWalLsn, ReplicaBehindError } from './replica-freshness.mts'
+export { readWriterWalLsn } from './replica-freshness.mts'
 
 const FETCH_TIMEOUT_MS = 30_000
 
