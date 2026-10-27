@@ -90,7 +90,7 @@ describe('classifier run supersession (real PG)', () => {
     )
   })
 
-  it('settles a changed promptless configuration without replaying the immutable receipt', async () => {
+  it('supersedes a changed promptless configuration and reserves its own receipt', async () => {
     const setup = await createSyntheticFixture()
     await requestSyntheticRun(setup)
     const run = await reserveSyntheticRun(setup)
@@ -98,13 +98,14 @@ describe('classifier run supersession (real PG)', () => {
 
     const replacement = await supersedeStaleClassifierRun(setup.adapter, target(run))
 
-    expect(replacement).toBeNull()
-    const [facts] = await getClassifierRunFacts(setup.post.id, setup.slug)
-    expect(facts).toMatchObject({ id: run.runId, provider_attempts_started: 0 })
-    expect(facts!.configuration_sha256.equals(run.configurationSha256)).toBe(true)
-    expect(facts!.superseded_at).not.toBeNull()
+    expect(replacement?.runId).not.toBe(run.runId)
+    expect(replacement?.configurationSha256.equals(run.configurationSha256)).toBe(false)
+    const [old, current] = await getClassifierRunFacts(setup.post.id, setup.slug)
+    expect(old).toMatchObject({ id: run.runId, provider_attempts_started: 0 })
+    expect(old!.superseded_at).not.toBeNull()
+    expect(current).toMatchObject({ id: replacement?.runId, superseded_at: null })
     const [request] = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
-    expect(request!.run_identity_id).toBe(run.runId)
+    expect(request!.run_identity_id).toBe(replacement?.runId)
     expect(request!.run_settled_at).not.toBeNull()
     expect(request!.no_work_at).toBeNull()
     expect((await listPendingClassifierRunRequests(setup.adapter, null, 10)).items).toEqual([])

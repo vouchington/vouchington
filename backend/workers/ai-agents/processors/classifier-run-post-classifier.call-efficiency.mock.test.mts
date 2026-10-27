@@ -8,7 +8,6 @@ import {
   efficiencyWindow,
   reportedContentVersion,
   reserveSeededRun,
-  reserveSeededRunOutcome,
 } from '@voucha/test-helpers/classifier-call-efficiency-run'
 import { describeClassifierCallEfficiency } from '@voucha/test-helpers/classifier-call-efficiency-tests'
 import {
@@ -156,7 +155,7 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
     })
   })
 
-  it('does not dispatch or bill a changed enabled-question configuration at the same content identity', async () => {
+  it('bills a changed enabled-question configuration once at the same content identity', async () => {
     const provider = installEfficiencyProvider()
     const window = efficiencyWindow()
     const { community, post, inputSha256 } = await createApprovedClassifierPost(
@@ -169,28 +168,34 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
       trackRunId(first.runId)
       expect(await deliverRun(POST_CLASSIFIER_SLUG, first)).toBe('completed')
       await setPostClassifierToggleForTest(community.id, 'politics-averse', true)
-      const second = await reserveSeededRunOutcome(POST_CLASSIFIER_SLUG, seed)
-      expect(second).toEqual({ kind: 'no-work' })
-      expect(provider.requests).toHaveLength(1)
+      const second = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      trackRunId(second.runId)
+      expect(second.runId).not.toBe(first.runId)
+      expect(second.configurationSha256.equals(first.configurationSha256)).toBe(false)
+      expect(await deliverRun(POST_CLASSIFIER_SLUG, second)).toBe('completed')
+      expect(provider.requests).toHaveLength(2)
       expect(provider.requests[0]).toHaveLength(1)
+      expect(provider.requests[1]).toHaveLength(2)
       expect(await listAiUsageRecordsForClassifierRun(first.runId)).toHaveLength(1)
+      expect(await listAiUsageRecordsForClassifierRun(second.runId)).toHaveLength(1)
       expect(await getSubjectClassifierRunFacts(seed.subject, POST_CLASSIFIER_SLUG)).toMatchObject([
         { id: first.runId, provider_attempts_started: 1 },
+        { id: second.runId, provider_attempts_started: 1 },
       ])
       expect(
         await getSubjectClassifierRunRequestFacts(seed.subject, POST_CLASSIFIER_SLUG),
-      ).toMatchObject([{ run_identity_id: first.runId, run_settled_at: expect.any(Date) }])
+      ).toMatchObject([{ run_identity_id: second.runId, run_settled_at: expect.any(Date) }])
       const { version, runs } = await reportedContentVersion(window, POST_CLASSIFIER_SLUG, seed)
-      expect(runs).toHaveLength(1)
+      expect(runs).toHaveLength(2)
       expect(version).toMatchObject({
-        runs: 1,
-        billedRuns: 1,
-        reclassifications: 0,
-        providerCalls: 1,
-        attemptsStarted: 1,
+        runs: 2,
+        billedRuns: 2,
+        reclassifications: 1,
+        providerCalls: 2,
+        attemptsStarted: 2,
         maxProviderCallsPerRun: 1,
         runsOverOneCall: 0,
-        costMicrounits: '2000',
+        costMicrounits: '4000',
       })
     })
   })
