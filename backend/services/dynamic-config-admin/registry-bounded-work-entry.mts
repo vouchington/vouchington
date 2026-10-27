@@ -6,21 +6,28 @@ export function defineBoundedWorkNamespace(options: {
   config: DynamicConfigLike
   label: string
   maxValues: Record<string, number>
+  minValues?: Record<string, number>
   descriptions: Record<string, string>
 }) {
-  const { namespace, config, label, maxValues, descriptions } = options
+  const { namespace, config, label, maxValues, minValues, descriptions } = options
   if (config.key !== `dynamic-config:${namespace}`)
     throw new TypeError('Bounded work namespace must match its DynamicConfig key')
   const fields = Object.keys(config.defaultFields).toSorted()
   if (JSON.stringify(fields) !== JSON.stringify(Object.keys(maxValues).toSorted()))
     throw new TypeError('Bounded work maxima must cover exactly the configured fields')
+  if (minValues && Object.keys(minValues).some(field => !fields.includes(field)))
+    throw new TypeError('Bounded work minima contain an unknown field')
   for (const field of fields) {
     const value = config.defaultFields[field]
     const maximum = maxValues[field]
+    const minimum = minValues?.[field] ?? 1
     if (
       typeof value !== 'number' ||
       !Number.isSafeInteger(value) ||
       value < 1 ||
+      !Number.isSafeInteger(minimum) ||
+      minimum < 1 ||
+      minimum > value ||
       !Number.isSafeInteger(maximum) ||
       maximum! < value
     )
@@ -37,7 +44,7 @@ export function defineBoundedWorkNamespace(options: {
         field,
         {
           description,
-          minValue: 1,
+          minValue: minValues?.[field] ?? 1,
           maxValue: maxValues[field],
           integer: true,
         },

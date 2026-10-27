@@ -1,4 +1,5 @@
 import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
+import { runSitemapPageScenarios } from './run-scenarios/sitemap-pages.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
 import { runPublicationScopePageScenarios } from './run-scenarios/publication-scope-pages.mts'
 import { runDispatchWorkPlanScenarios } from './run-scenarios/dispatch-work-plans.mts'
@@ -53,6 +54,7 @@ import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-c
 
 // A failing step is recorded and the run continues, so one run reports every failure.
 const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
+  runSitemapPageScenarios,
   runBloomReconciliationScenarios,
   runMaterializedViewRefreshScenarios,
   runHostnameBlocklistScenario,

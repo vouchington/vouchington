@@ -38,22 +38,27 @@ describe('worker fetch handler — routing and caching', () => {
     }
 
     const firstResponse = await worker.fetch(
-      new Request('https://voucha.ai/sitemaps/discussion/2026-03-04/3.xml', {
-        headers: {
-          cookie: 'st=session; dt=device; foo=bar',
+      new Request(
+        'https://voucha.ai/sitemaps/discussion/2026-03-04/11111111-1111-4111-8111-111111111111/3.xml',
+        {
+          headers: {
+            cookie: 'st=session; dt=device; foo=bar',
+          },
         },
-      }),
+      ),
       env,
       createContext(env),
     )
     const secondResponse = await worker.fetch(
-      new Request('https://voucha.ai/sitemaps/discussion/2026-03-04/3.xml'),
+      new Request(
+        'https://voucha.ai/sitemaps/discussion/2026-03-04/11111111-1111-4111-8111-111111111111/3.xml',
+      ),
       env,
       createContext(env),
     )
 
     expect(capturedRequest?.url).toBe(
-      'https://sitemaps.example.com/posts/2026/03/04/discussion/3.xml',
+      'https://sitemaps.example.com/posts/2026/03/04/discussion/11111111-1111-4111-8111-111111111111/3.xml',
     )
     expect(capturedRequest?.headers.get('cookie')).toBeNull()
     expect(capturedRequest?.headers.get('x-cf-worker-secret')).toBeNull()

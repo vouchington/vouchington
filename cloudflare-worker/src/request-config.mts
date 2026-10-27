@@ -26,8 +26,8 @@ export type WorkerRequestConfig = {
 
 export function getWorkerRequestConfig(env: Env): WorkerRequestConfig {
   return {
-    sitemapCacheTtlSeconds: toPositiveNumber(
-      env.SITEMAP_CACHE_TTL_SECONDS,
+    sitemapCacheTtlSeconds: Math.min(
+      toPositiveNumber(env.SITEMAP_CACHE_TTL_SECONDS, DEFAULT_SITEMAP_CACHE_TTL_SECONDS),
       DEFAULT_SITEMAP_CACHE_TTL_SECONDS,
     ),
     staticCacheTtlSeconds: toPositiveNumber(

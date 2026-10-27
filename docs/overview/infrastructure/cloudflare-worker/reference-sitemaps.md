@@ -13,7 +13,7 @@ Supported sitemap route overrides:
 - `/sitemaps/{post_type}.xml` -> `/sitemaps/types/{post_type}.xml` for supported post types only
 - `/sitemaps/{post_type}/YYYY-MM-DD/index.xml` -> `/posts/YYYY/MM/DD/{post_type}/index.xml`
   for valid calendar dates only
-- `/sitemaps/{post_type}/YYYY-MM-DD/{page}.xml` -> `/posts/YYYY/MM/DD/{post_type}/{page}.xml`
+- `/sitemaps/{post_type}/YYYY-MM-DD/{generation_id}/{page}.xml` -> `/posts/YYYY/MM/DD/{post_type}/{generation_id}/{page}.xml`
   for valid calendar dates only
 - `/sitemaps/{family}.xml` -> `/sitemaps/families/{family}.xml` for supported dynamic families only
-- `/sitemaps/{family}/{page}.xml` -> `/families/{family}/{page}.xml`
+- `/sitemaps/{family}/{generation_id}/{page}.xml` -> `/families/{family}/{generation_id}/{page}.xml`

@@ -1,8 +1,8 @@
 import { open } from 'node:fs/promises'
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { GetObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { S3Buckets, S3ImagesClient } from '@modules/aws'
 import type { SitemapFamilyType, SitemapPostType, TrackedDayRange } from './types.mts'
-import { buildFamilyMetaStorageKey, buildPostDayMetaStorageKey } from './generated-paths.mts'
+import { buildFamilyIndexStorageKey, buildPostDayIndexStorageKey } from './generated-paths.mts'
 import { applyStoragePrefix } from './storage-prefix.mts'
 import {
   getTrackedDayRangeFromCache,
@@ -14,13 +14,12 @@ import { findTrackedDayRangeFromS3 } from './tracked-range-discovery.mts'
 const TRACKED_RANGE_STORAGE_KEY = 'sitemaps/meta/posts-tracked-range.json'
 export type PostDayManifest = {
   active_page_count: number
-  highest_written_page: number
+  generation_id: string
   generated_at: string
-  content_hashes: Record<string, string>
+  content_hash: string
 }
 export type SitemapFamilyManifest = PostDayManifest
-
-async function putSitemapObject(
+export async function putSitemapObject(
   key: string,
   body: string | Uint8Array,
   options: {
@@ -45,6 +44,7 @@ export async function putSitemapObjectFile(
   options: {
     contentType: string
     contentEncoding?: string
+    manifest?: PostDayManifest
   },
 ): Promise<void> {
   await using fileHandle = await open(filePath, 'r')
@@ -55,6 +55,9 @@ export async function putSitemapObjectFile(
       Body: fileHandle.createReadStream(),
       ContentType: options.contentType,
       ...(options.contentEncoding ? { ContentEncoding: options.contentEncoding } : {}),
+      ...(options.manifest
+        ? { Metadata: { 'sitemap-manifest': JSON.stringify(options.manifest) } }
+        : {}),
     }),
   )
 }
@@ -63,32 +66,32 @@ export function getPostDayManifest(
   postType: SitemapPostType,
   day: string,
 ): Promise<PostDayManifest | null> {
-  return getJsonObject<PostDayManifest>(buildPostDayMetaStorageKey(postType, day))
-}
-
-export async function putPostDayManifest(
-  postType: SitemapPostType,
-  day: string,
-  manifest: PostDayManifest,
-): Promise<void> {
-  await putSitemapObject(buildPostDayMetaStorageKey(postType, day), JSON.stringify(manifest), {
-    contentType: 'application/json; charset=utf-8',
-  })
+  return getPublishedSitemapManifest(buildPostDayIndexStorageKey(postType, day))
 }
 
 export function getSitemapFamilyManifest(
   family: SitemapFamilyType,
 ): Promise<SitemapFamilyManifest | null> {
-  return getJsonObject<SitemapFamilyManifest>(buildFamilyMetaStorageKey(family))
+  return getPublishedSitemapManifest(buildFamilyIndexStorageKey(family))
 }
 
-export async function putSitemapFamilyManifest(
-  family: SitemapFamilyType,
-  manifest: SitemapFamilyManifest,
-): Promise<void> {
-  await putSitemapObject(buildFamilyMetaStorageKey(family), JSON.stringify(manifest), {
-    contentType: 'application/json; charset=utf-8',
-  })
+/** Index body and compact manifest share one S3 commit; unfinished uploads cannot change this truth. */
+/* no-mistakes: integration=aws */
+async function getPublishedSitemapManifest(key: string): Promise<PostDayManifest | null> {
+  try {
+    const response = await S3ImagesClient.send(
+      new HeadObjectCommand({
+        Bucket: S3Buckets.sitemaps,
+        Key: applyStoragePrefix(key),
+      }),
+    )
+    const manifest = response.Metadata?.['sitemap-manifest']
+    if (!manifest) throw new Error('Published sitemap index is missing its manifest')
+    return JSON.parse(manifest) as PostDayManifest
+  } catch (err) {
+    if (isMissingS3ObjectError(err)) return null
+    throw err
+  }
 }
 
 export async function getTrackedDayRange(): Promise<TrackedDayRange | null> {
@@ -143,7 +146,7 @@ async function persistTrackedDayRange(range: TrackedDayRange): Promise<void> {
   })
 }
 
-async function getJsonObject<T>(key: string): Promise<T | null> {
+export async function getJsonObject<T>(key: string): Promise<T | null> {
   try {
     const response = await S3ImagesClient.send(
       new GetObjectCommand({
