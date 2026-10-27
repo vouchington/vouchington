@@ -61,7 +61,6 @@ export async function cleanupActivityPubReplayPage(
      SELECT is_singleton FROM activitypub_replay_rejection_floors FOR UPDATE`,
   )
   // The inbox UUIDv7 primary key supplies the oldest eligible rows.
-  // no-mistakes-disable-next-line query-reached-per-item: capped oldest eligible ledger page
   const { rows } = await query<Key>(
     `/* no-mistakes: deadlock-safe -- the floor row is locked first, then one ordered indexed ledger page; waiting preserves contiguous floor advancement. */
        /* listActivityPubReplayRetentionCandidates */
@@ -74,7 +73,6 @@ export async function cleanupActivityPubReplayPage(
   if (page.length === 0) {
     return { deleted: 0, hasMore: false, continuationPosition: null }
   }
-  // no-mistakes-disable-next-line query-reached-per-item: selected capped UUID page
   const removed = await query<Key>(
     `/* deleteActivityPubReplayRetentionCandidates */
        DELETE FROM activitypub_inbox_activities WHERE id = ANY($1::uuid[]) AND id < $2::uuid
@@ -82,7 +80,6 @@ export async function cleanupActivityPubReplayPage(
     [page.map(item => item.id), ageBound],
   )
   // Admission holds a share lock on the same floor row. Deletion and floor advance commit together.
-  // no-mistakes-disable-next-line query-reached-per-item: one durable floor update per capped page
   await advanceReplayRejectionFloor(query, removed.rows)
   const hasMore = rows.length > options.batchSize
   return {
