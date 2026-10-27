@@ -23,6 +23,7 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.1",
     "glide-mq": "^0.20.0",
     "valkyries": "^0.13.0"
   }
