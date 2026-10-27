@@ -144361,10 +144361,6 @@
     },
     "verified_identities": {
       "checkConstraints": {
-        "verified_identities_check": {
-          "definition": "CHECK ((last_verified_at >= first_verified_at))",
-          "validated": true
-        },
         "verified_identities_identity_fingerprint_check": {
           "definition": "CHECK ((octet_length(identity_fingerprint) = 32))",
           "validated": true
@@ -144391,16 +144387,6 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "last_verified_at": {
-          "comment": "Most recent successful verification time.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
         "revoked_at": {
           "comment": "When the document verification was revoked, if applicable.",
           "dataType": "timestamp with time zone",
@@ -144409,20 +144395,10 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
-        },
-        "transferred_at": {
-          "comment": "When the document verification was transferred, if applicable.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 3
         }
       },
-      "comment": "Permanent minimum anti-reuse record: a keyed document hash and verification lifecycle dates only, with no account or provider identity.",
+      "comment": "Permanent minimum anti-reuse record: a keyed document hash with first-verification and revocation dates only, with no account or provider identity.",
       "foreignKeys": {},
       "indexes": {
         "verified_identities_pkey": {

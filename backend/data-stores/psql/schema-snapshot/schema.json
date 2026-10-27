@@ -137450,7 +137450,6 @@
     },
     "verified_identities": {
       "checkConstraints": {
-        "verified_identities_check": "CHECK ((last_verified_at >= first_verified_at))",
         "verified_identities_identity_fingerprint_check": "CHECK ((octet_length(identity_fingerprint) = 32))"
       },
       "columns": {
@@ -137476,17 +137475,6 @@
           "ordinalPosition": 1,
           "type": "bytea"
         },
-        "last_verified_at": {
-          "collation": null,
-          "comment": "Most recent successful verification time.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
         "revoked_at": {
           "collation": null,
           "comment": "When the document verification was revoked, if applicable.",
@@ -137495,22 +137483,11 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "transferred_at": {
-          "collation": null,
-          "comment": "When the document verification was transferred, if applicable.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 3,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Permanent minimum anti-reuse record: a keyed document hash and verification lifecycle dates only, with no account or provider identity.",
+      "comment": "Permanent minimum anti-reuse record: a keyed document hash with first-verification and revocation dates only, with no account or provider identity.",
       "foreignKeys": {},
       "growth": "unbounded",
       "indexes": {
