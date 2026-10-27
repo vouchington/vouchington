@@ -5301,3 +5301,5 @@ rules:
         - react/memo-dependencies
         - react/no-deriving-state-in-effects
       rulePrefixes: [react-hooks-js/]
+      # A blanket disable would also hide the React compiler and hook rules.
+      banBlanketDisable: true
