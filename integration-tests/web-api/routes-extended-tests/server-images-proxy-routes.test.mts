@@ -59,7 +59,7 @@ describe('routes-extended', () => {
     referrerUserId = referrerUser.id
     const referrerUserSecondary = await createTestUser()
     referrerUserSecondaryId = referrerUserSecondary.id
-  }, 20_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -76,7 +76,7 @@ describe('routes-extended', () => {
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
     }
-  }, 15_000)
+  })
 
   describe('proxy — recordProxyReferralAttribution', () => {
     it('persists the referral attribution when the referrer exists', async () => {

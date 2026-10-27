@@ -137,7 +137,7 @@ export function installRoutesExtendedHarness(
         }),
       harness.userCookieHeader,
     )
-  }, 20_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -161,7 +161,7 @@ export function installRoutesExtendedHarness(
     } else {
       options.unset(globalThis, 'window')
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

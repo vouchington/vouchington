@@ -22,7 +22,7 @@ describe('web/lib/api/server/proxy — integration', () => {
     backendBaseUrl = await listenOnFetchSafeLoopback(backendServer)
     process.env.API_BASE_URL = backendBaseUrl
     process.env.NEXT_PUBLIC_API_BASE_URL = backendBaseUrl
-  }, 15_000)
+  })
 
   afterAll(async () => {
     backendServer.closeAllConnections()
@@ -41,7 +41,7 @@ describe('web/lib/api/server/proxy — integration', () => {
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
     }
-  }, 15_000)
+  })
 
   describe('recordProxyReferralAttribution', () => {
     it('records attribution against the real backend and returns a Response', async () => {
