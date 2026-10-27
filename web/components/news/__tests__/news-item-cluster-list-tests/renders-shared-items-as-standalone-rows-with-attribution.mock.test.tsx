@@ -258,4 +258,4 @@ describe('NewsItemClusterList', () => {
       '/user/sharer-two',
     )
   })
-}, 10_000)
+})
