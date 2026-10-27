@@ -178,7 +178,7 @@ describe('trending-topics', () => {
           .query({ min_score: 10, after: createTrendingTopicCursorBefore(topicId2, 6) })
           .expect(200)
         expect(belowThreshold.body.results).toEqual([])
-      }, 30_000)
+      })
 
       it('should support after cursor for pagination', async () => {
         // Create multiple trending topics in parallel — each dataset is independent.

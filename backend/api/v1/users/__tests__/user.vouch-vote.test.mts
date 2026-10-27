@@ -18,7 +18,7 @@ describe('User vouch vote routes', () => {
       .put(`/api/v1/users/${target.id}/vouch-vote`)
       .send({ choice: 'like' })
       .expect(401)
-  }, 30_000)
+  })
 
   it('PUT /api/v1/users/:id/vouch-vote rejects self-votes with 403', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -29,8 +29,9 @@ describe('User vouch vote routes', () => {
       .put(`/api/v1/users/${voter.id}/vouch-vote`)
       .send({ choice: 'disavow' })
       .expect(403)
-  }, 30_000)
+  })
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
   it('PUT /api/v1/users/:id/vouch-vote (like) does not mute or unfollow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -53,6 +54,7 @@ describe('User vouch vote routes', () => {
     expect(muteRelations).toHaveLength(0)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
   it('PUT /api/v1/users/:id/vouch-vote (dislike) does not mute or unfollow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -75,6 +77,7 @@ describe('User vouch vote routes', () => {
     expect(muteRelations).toHaveLength(0)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
   it('PUT /api/v1/users/:id/vouch-vote (disavow) records the vote, auto-mutes, and soft-deletes the follow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -100,6 +103,7 @@ describe('User vouch vote routes', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
   it('Neutral retract does not unmute or restore the follow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()

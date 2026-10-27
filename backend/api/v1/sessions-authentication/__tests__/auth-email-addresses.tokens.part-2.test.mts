@@ -31,7 +31,7 @@ describe('Email Address Authentication Routes', () => {
     const did = v7()
     const sid = v7()
     await createDeviceAndSessionTokens({ did, sid })
-  }, 30_000)
+  })
 
   afterEach(async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)

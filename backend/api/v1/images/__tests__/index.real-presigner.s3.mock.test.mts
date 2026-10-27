@@ -7,6 +7,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 
 describe('POST /api/v1/images/upload-url', () => {
+  // no-mistakes-timeout-reason: live S3 presign request latency
   it(
     'returns a real signed S3 upload URL in test mode',
     { timeout: 30_000 },

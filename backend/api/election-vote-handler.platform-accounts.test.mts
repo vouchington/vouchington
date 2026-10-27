@@ -38,6 +38,5 @@ describe('election-vote-handler platform accounts (via PUT /api/v1/topics/:id/vo
         'Official and automated accounts cannot create community trust signals.',
       )
     },
-    30_000,
   )
 })

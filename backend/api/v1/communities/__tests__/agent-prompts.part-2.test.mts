@@ -239,7 +239,7 @@ describe('Community Agent Prompts Routes', () => {
       await request
         .post(`/api/v1/communities/${community.slug}/agent-prompts/${prompt.id}/allocations`)
         .expect(204)
-    }, 30_000)
+    })
   })
 
   describe('DELETE /api/v1/communities/:slug/agent-prompts/:promptId/allocations', () => {
@@ -287,6 +287,6 @@ describe('Community Agent Prompts Routes', () => {
       await request
         .delete(`/api/v1/communities/${community.slug}/agent-prompts/${prompt.id}/allocations`)
         .expect(204)
-    }, 30_000)
+    })
   })
 })
