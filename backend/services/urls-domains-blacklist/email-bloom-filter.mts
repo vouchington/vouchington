@@ -3,10 +3,8 @@ import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { createAsyncGeneratorFromCursor, read, type PoolClient } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
-import {
-  invalidateBlocklistReadyMarker,
-  rebuildCurrentBlocklistBloomFilter,
-} from './bloom-rebuild.mts'
+import { invalidateBlocklistReadyMarker } from './bloom-generation.mts'
+import { rebuildCurrentBlocklistBloomFilter } from './bloom-rebuild.mts'
 import { blocklistBloomReadyKey } from './ready-marker.mts'
 import {
   addDomainsToBlocklistBloomFilter,

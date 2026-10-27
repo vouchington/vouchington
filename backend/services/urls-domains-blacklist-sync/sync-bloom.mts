@@ -25,11 +25,18 @@ export async function rebuildBloomForSource(
   sourceType: 'url' | 'email',
   dependencies: BloomRebuildDependencies,
 ): Promise<void> {
+  // A failed bump must not leave the filter unavailable with no rebuild queued.
   if (sourceType === 'email') {
-    await dependencies.invalidateEmailReadyMarker()
-    await dependencies.enqueueEmailRebuild()
+    try {
+      await dependencies.invalidateEmailReadyMarker()
+    } finally {
+      await dependencies.enqueueEmailRebuild()
+    }
   } else {
-    await dependencies.invalidateUrlReadyMarker()
-    await dependencies.enqueueUrlRebuild()
+    try {
+      await dependencies.invalidateUrlReadyMarker()
+    } finally {
+      await dependencies.enqueueUrlRebuild()
+    }
   }
 }

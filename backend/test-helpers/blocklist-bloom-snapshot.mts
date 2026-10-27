@@ -1,4 +1,4 @@
-import type { PoolClient } from '@data-stores/psql'
+import { beginTransaction, type PoolClient } from '@data-stores/psql'
 import { vi } from 'vitest'
 import type * as UrlBlocklistBatches from '../services/urls-domains-blacklist/bloom-filter-batches.mts'
 
@@ -58,4 +58,15 @@ async function readBlocklistRebuildSnapshot(
   const row = rows[0]
   if (!row) throw new Error('blocklist rebuild snapshot was not readable')
   return { readOnly: row.read_only === 'on', snapshot: row.snapshot }
+}
+
+/** A primary transaction that has an id but has not committed, so no snapshot can see it. */
+export async function openUncommittedPrimaryTransaction() {
+  const transaction = await beginTransaction()
+  const { rows } = await transaction<{ id: string }>(
+    '/* openUncommittedPrimaryTransaction */ SELECT pg_current_xact_id()::text AS id',
+  )
+  const id = rows[0]?.id
+  if (!id) throw new Error('uncommitted transaction id was not assigned')
+  return { id, rollback: () => transaction.rollback() }
 }

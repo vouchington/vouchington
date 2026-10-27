@@ -1,6 +1,8 @@
 import type { Job } from 'glide-mq'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as urlBlocklistBatches from '@services/urls-domains-blacklist/bloom-filter-batches'
+import { bloomValkeyClient } from '@data-stores/valkey/clients'
+import { blocklistBloomReadyKey } from '@services/urls-domains-blacklist/ready-marker'
 import { wrapSingleProcessor } from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import {
   BLOOM_FILTER_DEFAULTS,
@@ -105,6 +107,8 @@ describe('sync bloom lag', () => {
         {},
       )
       await run({ id: URL_BLOCKLIST_REBUILD_JOB_ID, opts: {} } as Job)
+      // The snapshot predates the second commit, so ready must stay withheld until the follow-up.
+      expect(await bloomValkeyClient.get(blocklistBloomReadyKey('url-blocklist'))).toBeNull()
       expect(await bloomQueue.getJob(URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID)).toBeTruthy()
       await followUp.done
       expect(await checkBloomFilters([second])).toEqual([true])

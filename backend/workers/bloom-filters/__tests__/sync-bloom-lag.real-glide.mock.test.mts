@@ -1,5 +1,6 @@
 import type { Job, Worker } from 'glide-mq'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { bloomValkeyClient } from '@data-stores/valkey/clients'
 import { createBatchWorker } from '@data-stores/valkey-glide-mq'
 import {
   BLOOM_FILTER_LOCK_DURATION_MS,
@@ -12,10 +13,8 @@ import { bloomFilters as bloomQueue } from '@queues/bloom-filters/queues'
 import type { RebuildBloomFilterData } from '@queues/bloom-filters/types'
 import { checkBloomFilters } from '@services/urls-domains-blacklist/bloom-filter'
 import { withBlocklistBloomFilterLock } from '@services/urls-domains-blacklist/bloom-filter-lock'
-import {
-  bumpBlocklistBloomGeneration,
-  rebuildCurrentBlocklistBloomFilter,
-} from '@services/urls-domains-blacklist/bloom-rebuild'
+import { bumpBlocklistBloomGeneration } from '@services/urls-domains-blacklist/bloom-generation'
+import { rebuildCurrentBlocklistBloomFilter } from '@services/urls-domains-blacklist/bloom-rebuild'
 import { syncDomainsWithDatabase } from '@services/urls-domains-blacklist-sync/sync-db'
 import { createTestBlacklistSource, deleteTestBlacklistSource } from '@voucha/test-helpers'
 import {
@@ -105,6 +104,7 @@ describe('sync bloom lag on real GlideMQ', () => {
   it('does not throw when a failed compare-and-set finds the follow-up group-waiting', async () => {
     await removeUrlBlocklistJobs()
     const held = holdUrlBlocklistLock()
+    const readyKey = 'bloom-filter:url-blocklist:ready:cas-group-waiting'
     try {
       await held.ready
       await bumpBlocklistBloomGeneration('url-blocklist')
@@ -112,12 +112,13 @@ describe('sync bloom lag on real GlideMQ', () => {
       await expect(
         rebuildCurrentBlocklistBloomFilter({
           filter: 'url-blocklist',
-          readyKey: 'bloom-filter:url-blocklist:ready:cas-group-waiting',
+          readyKey,
           stream: async () => {
             await bumpBlocklistBloomGeneration('url-blocklist')
           },
         }),
       ).resolves.toBeUndefined()
+      expect(await bloomValkeyClient.get(readyKey)).toBeNull()
       const followUp = await bloomQueue.getJob(URL_BLOCKLIST_REBUILD_FOLLOW_UP_JOB_ID)
       expect(await followUp?.getState()).toBe('group-waiting')
       await bumpBlocklistBloomGeneration('url-blocklist', '999999999999999')
@@ -127,6 +128,7 @@ describe('sync bloom lag on real GlideMQ', () => {
     } finally {
       await held.release()
       await bumpBlocklistBloomGeneration('url-blocklist')
+      await bloomValkeyClient.unlink([readyKey])
       await removeUrlBlocklistJobs()
     }
   })

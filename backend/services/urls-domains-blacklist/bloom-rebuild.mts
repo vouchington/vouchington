@@ -1,63 +1,29 @@
 import { bloomValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
-import {
-  beginTransaction,
-  readPool,
-  write,
-  type PoolClient,
-  type QueryExecutor,
-} from '@data-stores/psql'
+import { beginTransaction, readPool, type PoolClient, type QueryExecutor } from '@data-stores/psql'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
+import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
+import {
+  blocklistBloomGenerationKey,
+  blocklistBloomVisibilityRetriesKey,
+  generationIsBeyondPrimary,
+  generationVisibleThrough,
+  readBlocklistBloomGeneration,
+  replaceStaleBlocklistBloomGeneration,
+  type BlocklistBloomFilterName,
+} from './bloom-generation.mts'
 import { newBloomReadyMarkerValue } from './ready-marker.mts'
+import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
 
-export type BlocklistBloomFilterName = 'url-blocklist' | 'email-blocklist'
-
-const bumpBlocklistBloomGenerationScript = registerScript(
-  loadScript('bump-blocklist-bloom-generation.lua', import.meta.url),
-)
 const publishBlocklistReadyMarkerIfGenerationScript = registerScript(
   loadScript('publish-blocklist-ready-marker-if-generation.lua', import.meta.url),
 )
 
-const absentGeneration = '0'
-const generationPattern = /^(\d+):(\d+)$/
+/** The counter outlives a stuck rebuild by at most this long, then expires on its own. */
+const visibilityRetriesTtlSeconds = 3_600
 
-function blocklistBloomGenerationKey(filter: BlocklistBloomFilterName): string {
-  return `bloom-filter:${filter}:generation`
-}
-
-export async function bumpBlocklistBloomGeneration(
-  filter: BlocklistBloomFilterName,
-  visibleThrough?: string,
-): Promise<string> {
-  const version = visibleThrough ?? (await readPrimaryTransactionId())
-  const value = await bloomValkeyClient.invokeScript(bumpBlocklistBloomGenerationScript, {
-    keys: [blocklistBloomGenerationKey(filter)],
-    args: [version],
-  })
-  return generationText(value)
-}
-
-/** Unlink the ready marker after the bump, including when the bump throws. */
-export async function invalidateBlocklistReadyMarker(
-  filter: BlocklistBloomFilterName,
-  readyKey: string,
-): Promise<number> {
-  let removed = 0
-  try {
-    await bumpBlocklistBloomGeneration(filter)
-  } finally {
-    removed = await bloomValkeyClient.unlink([readyKey])
-  }
-  return removed
-}
-
-async function readBlocklistBloomGeneration(filter: BlocklistBloomFilterName): Promise<string> {
-  const value = await bloomValkeyClient.get(blocklistBloomGenerationKey(filter))
-  if (value === null) return absentGeneration
-  return generationText(value)
-}
+type SnapshotOutcome = 'streamed' | 'not-visible'
 
 /**
  * The stored id is the primary transaction that must be visible in this connection's snapshot.
@@ -83,11 +49,12 @@ export async function rebuildCurrentBlocklistBloomFilter(input: {
   stream: (client: PoolClient) => Promise<void>
 }): Promise<void> {
   const generation = await readBlocklistBloomGeneration(input.filter)
-  const streamed = await streamBlocklistOnReplicaSnapshot(generation, input.stream)
-  if (!streamed) {
-    await enqueueRebuildBloomFilter({ filter: input.filter })
+  const outcome = await streamBlocklistOnReplicaSnapshot(generation, input.stream)
+  if (outcome === 'not-visible') {
+    await retryWhenGenerationNotVisible(input.filter, generation)
     return
   }
+  await bloomValkeyClient.unlink([blocklistBloomVisibilityRetriesKey(input.filter)])
   const published = await publishBlocklistReadyMarkerIfGeneration({
     filter: input.filter,
     readyKey: input.readyKey,
@@ -97,14 +64,38 @@ export async function rebuildCurrentBlocklistBloomFilter(input: {
   if (!published) await enqueueRebuildBloomFilter({ filter: input.filter })
 }
 
+/**
+ * A generation beyond the primary can never become visible, so it is replaced from the primary's
+ * current id. Otherwise the replica is only behind: retry, but only as many times as the cap.
+ */
+async function retryWhenGenerationNotVisible(
+  filter: BlocklistBloomFilterName,
+  generation: string,
+): Promise<void> {
+  if (await generationIsBeyondPrimary(generation)) {
+    await replaceStaleBlocklistBloomGeneration(filter, generation)
+    await enqueueRebuildBloomFilter({ filter })
+    return
+  }
+  const retriesKey = blocklistBloomVisibilityRetriesKey(filter)
+  const retries = await bloomValkeyClient.incr(retriesKey)
+  await bloomValkeyClient.expire(retriesKey, visibilityRetriesTtlSeconds)
+  if (retries > getUrlsDomainsBlacklistWorkLimit('blocklist_bloom_visibility_retries')) {
+    await bloomValkeyClient.unlink([retriesKey])
+    onError(new Error(`${filter} rebuild gave up: replica never saw generation ${generation}`))
+    return
+  }
+  await enqueueRebuildBloomFilter({ filter })
+}
+
 async function streamBlocklistOnReplicaSnapshot(
   generation: string,
   stream: (client: PoolClient) => Promise<void>,
-): Promise<boolean> {
+): Promise<SnapshotOutcome> {
   await using transaction = await beginTransaction({ client: readPool })
-  if (!(await blocklistReplicaSnapshotCanStream(transaction, generation))) return false
+  if (!(await blocklistReplicaSnapshotCanStream(transaction, generation))) return 'not-visible'
   await streamVisibleBlocklist(transaction, stream)
-  return true
+  return 'streamed'
 }
 
 async function blocklistReplicaSnapshotCanStream(
@@ -139,25 +130,4 @@ async function publishBlocklistReadyMarkerIfGeneration(input: {
     },
   )
   return Number(published) === 1
-}
-
-function generationVisibleThrough(generation: string): string | undefined {
-  return generationPattern.exec(generation)?.[2]
-}
-
-async function readPrimaryTransactionId(): Promise<string> {
-  const { rows } = await write<{ id: string }>(
-    sql`/* bumpBlocklistBloomGeneration */ SELECT pg_current_xact_id()::text AS id`,
-  )
-  const id = rows[0]?.id
-  if (!id) throw new Error('PostgreSQL did not return a transaction id')
-  return id
-}
-
-function generationText(value: unknown): string {
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'bigint' || Buffer.isBuffer(value)) {
-    return value.toString()
-  }
-  return absentGeneration
 }

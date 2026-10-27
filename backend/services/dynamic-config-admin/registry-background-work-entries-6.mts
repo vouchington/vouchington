@@ -26,6 +26,8 @@ export const backgroundWorkRegistryEntries6 = {
     descriptions: {
       email_bloom_batch_size: 'Email bloom batch size for urls domains blacklist processing.',
       bloom_batch_size: 'Bloom batch size for urls domains blacklist processing.',
+      blocklist_bloom_visibility_retries:
+        'Rebuild retries while the replica has not yet replayed the latest blocklist commit.',
     },
   }),
   'classifier-runs-work-config': defineBoundedWorkNamespace({
