@@ -1,18 +1,29 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
 import { signPath } from '@vouchington/utils/url-signing'
-import {
-  sanitizeRssFeedItemContentHtml,
-  sanitizeRssFeedItemContentHtmlBatch,
-} from './sanitize-content-html.mts'
+
+type SanitizeRssFeedItemContentHtml =
+  (typeof import('./sanitize-content-html.mts'))['sanitizeRssFeedItemContentHtml']
+type SanitizeRssFeedItemContentHtmlBatch =
+  (typeof import('./sanitize-content-html.mts'))['sanitizeRssFeedItemContentHtmlBatch']
+
+let sanitizeRssFeedItemContentHtml: SanitizeRssFeedItemContentHtml
+let sanitizeRssFeedItemContentHtmlBatch: SanitizeRssFeedItemContentHtmlBatch
 
 describe('RSS sanitizer absolute sideload URLs', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com/')
     vi.stubEnv('VOUCHA_SIDELOAD_SIGNING_KEYS', TEST_SIDELOAD_SIGNING_KEY)
+    vi.resetModules()
+    const sanitizer = await import('./sanitize-content-html.mts')
+    sanitizeRssFeedItemContentHtml = sanitizer.sanitizeRssFeedItemContentHtml
+    sanitizeRssFeedItemContentHtmlBatch = sanitizer.sanitizeRssFeedItemContentHtmlBatch
   })
 
-  afterAll(() => vi.unstubAllEnvs())
+  afterAll(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
 
   it('emits an absolute signed sideload URL for a single item', async () => {
     const html = await sanitizeRssFeedItemContentHtml({
