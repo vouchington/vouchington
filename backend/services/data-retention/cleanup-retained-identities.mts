@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
+import { COMMUNITY_BRIDGE_FAMILY } from './retained-community-bridge-family.mts'
 function retainedRelationReferences(subjectType: string): [string, string][] {
   return electedRelationMetadata.flatMap(metadata =>
     metadata.subject_type === subjectType
@@ -10,13 +11,7 @@ function retainedRelationReferences(subjectType: string): [string, string][] {
   )
 }
 export const ROOT_FAMILIES = {
-  community_bridge: {
-    table: 'post_publication_community_identities',
-    references: [
-      ['communities', 'id'],
-      ['classifier_runs', 'community_identity_id'],
-    ],
-  },
+  community_bridge: COMMUNITY_BRIDGE_FAMILY,
   user: {
     table: 'retained_user_identities',
     references: [
