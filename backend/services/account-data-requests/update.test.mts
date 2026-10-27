@@ -37,7 +37,7 @@ describe('expireDataRequests', () => {
 
     await expireUserDataRequestForTest(request.id)
 
-    const s3Keys = await expireDataRequests()
+    const s3Keys = await expireDataRequests(undefined, [request.id])
     expect(s3Keys).toContain(orphanedS3Key)
 
     const row = await getUserDataRequestStatusAndS3KeyForTest(request.id)
@@ -59,7 +59,7 @@ describe('expireDataRequests', () => {
     ).toBe(true)
     await clearUserDataRequestExpiryForTest(request.id)
 
-    const s3Keys = await expireDataRequests()
+    const s3Keys = await expireDataRequests(undefined, [request.id])
     expect(s3Keys).not.toContain(indefiniteS3Key)
 
     const row = await getUserDataRequestStatusAndS3KeyForTest(request.id)
