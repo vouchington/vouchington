@@ -16,7 +16,7 @@ POLL_INTERVAL_SECONDS=0.5
 STARTUP_POLL_ATTEMPTS=$((STARTUP_TIMEOUT_SECONDS * 2))
 
 # Start server in background
-NODE_ENV=test PORT="$PORT" node entrypoints/api/serve.mts > "$SERVER_OUTPUT_LOG" 2>&1 &
+NODE_ENV=test PORT="$PORT" node --import ./test-helpers/s3-test-environment.mts entrypoints/api/serve.mts > "$SERVER_OUTPUT_LOG" 2>&1 &
 SERVER_PID=$!
 
 # Small delay to ensure log file is created and initial output is written
