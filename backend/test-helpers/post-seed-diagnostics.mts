@@ -39,6 +39,26 @@ export async function holdPostSeedDiagnosticsLock(
   )
 }
 
+/** The exact lock tag PostgreSQL names in its "still waiting" notice for the held lock. */
+export async function getPostSeedDiagnosticsLockTag(
+  holder: QueryExecutor,
+  lockKey: string,
+): Promise<string> {
+  const { rows } = await holder<{ lock_tag: string }>(
+    `/* postSeedDiagnosticsTestLockTag */
+    SELECT 'advisory lock [' || database::text || ',' || classid::text || ',' ||
+      objid::text || ',' || objsubid::text || ']' AS lock_tag
+    FROM pg_locks
+    WHERE pid = pg_backend_pid() AND locktype = 'advisory' AND mode = 'ExclusiveLock' AND granted
+      AND objsubid = 1
+      AND classid::bigint = ((hashtextextended($1, 0) >> 32) & 4294967295)
+      AND objid::bigint = (hashtextextended($1, 0) & 4294967295)`,
+    [lockKey],
+  )
+  if (rows.length !== 1) throw new Error('Holder does not own the exact diagnostics lock')
+  return rows[0].lock_tag
+}
+
 export async function tryPostSeedDiagnosticsLock(
   query: QueryExecutor,
   lockKey: string,
