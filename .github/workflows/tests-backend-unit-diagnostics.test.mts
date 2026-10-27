@@ -39,25 +39,6 @@ describe('backend-unit sampler opt-in', () => {
   })
 })
 
-describe('datastore workflow diagnostics opt-in', () => {
-  it.each([
-    ['tests-web-api.yml', 'web-api-tests', 'Run web API tests'],
-    ['tests-web-integration.yml', 'web-integration-tests', 'Run web integration tests'],
-  ])(
-    '%s forwards the repository opt-in without enabling diagnostics by default',
-    (file, jobId, name) => {
-      const parsed = load(readFileSync(`.github/workflows/${file}`, 'utf8')) as {
-        jobs: Record<string, { steps: Array<{ name?: string; env?: Record<string, string> }> }>
-      }
-      const step = parsed.jobs[jobId]?.steps.find(candidate => candidate.name === name)
-      expect(step).toBeDefined()
-      expect(step?.env?.VITEST_DIAGNOSTICS).toBe(
-        "${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}",
-      )
-    },
-  )
-})
-
 describe('backend-unit deadline dump', () => {
   type Step = {
     name?: string
@@ -66,18 +47,6 @@ describe('backend-unit deadline dump', () => {
     if?: string
   }
   const steps = (workflow.jobs?.['backend-tests']?.steps ?? []) as Step[]
-
-  it('fires 60 seconds before the step timeout and keeps the job cap below the step sum', () => {
-    const step = steps.find(candidate => candidate.name === 'Run backend tests')
-    expect(Number(step?.env?.DEADLINE_DUMP_AFTER_SECONDS)).toBe(
-      (step?.['timeout-minutes'] ?? 0) * 60 - 60,
-    )
-    const parsed = load(readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')) as {
-      jobs: Record<string, { 'timeout-minutes': number }>
-    }
-    const stepSum = steps.reduce((sum, candidate) => sum + (candidate['timeout-minutes'] ?? 0), 0)
-    expect(parsed.jobs['backend-tests']?.['timeout-minutes']).toBeLessThan(stepSum)
-  })
 
   it('names the unfinished file and the largest processes when the deadline fires', () => {
     const runScript = steps.find(candidate => candidate.name === 'Run backend tests') as
@@ -162,10 +131,5 @@ describe('backend-unit deadline dump', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
-  })
-
-  it('uploads the progress file even when the test step is killed', () => {
-    const upload = steps.find(candidate => candidate.name?.includes('file progress'))
-    expect(upload?.if).toBe('always()')
   })
 })

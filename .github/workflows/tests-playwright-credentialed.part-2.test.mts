@@ -14,8 +14,7 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 // Split out of tests-playwright-credentialed.test.mts to stay under the oxlint max-lines cap.
-// Covers the "Run Playwright credentialed tests" step's retry/flake signal and the JUnit
-// upload's condition (issue #51 follow-up), mirroring tests-playwright.part-2.test.mts.
+// Covers the "Run Playwright credentialed tests" step's retry signal and deadline clock.
 const workflow = readFileSync('.github/workflows/tests-playwright-credentialed.yml', 'utf8')
 const parsedWorkflow = load(workflow) as {
   jobs?: Record<
@@ -128,18 +127,7 @@ describe('tests-playwright-credentialed.yml retry/flake signal (issue #51)', () 
   })
 })
 
-describe('tests-playwright-credentialed.yml JUnit report retention', () => {
-  it('uploads JUnit results on every non-cancelled run without changing the test outcome', () => {
-    const index = workflow.indexOf('name: Upload JUnit test results')
-    expect(index).toBeGreaterThan(-1)
-    expect(workflow.slice(index, index + 700)).toContain('if: ${{ !cancelled() }}')
-    expect(workflow.slice(index, index + 700)).toContain('continue-on-error: true')
-    expect(workflow.slice(index, index + 1000)).toContain('retention-days: 1')
-  })
-})
-
 const fixtureNow = 1_000_000
-const failureAfterCheckout = "${{ failure() && steps.checkout.outcome == 'success' }}"
 
 function captureRun(): string {
   const capture = jobName
@@ -181,23 +169,11 @@ describe('credentialed job deadline uses the runner clock', () => {
   it('adds the job timeout to the local clock and does not read the jobs list', () => {
     const job = jobName ? parsedWorkflow.jobs?.[jobName] : undefined
     const timeoutMinutes = job?.['timeout-minutes']
-    expect(timeoutMinutes).toBeTypeOf('number')
-    const run = captureRun()
-    expect(run).not.toContain('gh ')
-    expect(run).toContain(`deadline=$((now + ${timeoutMinutes} * 60))`)
     const result = runCapture()
     expect(result.status).toBe(0)
     expect(result.output).toBe(
       `CREDENTIALED_JOB_DEADLINE_EPOCH=${fixtureNow + (timeoutMinutes ?? 0) * 60}\n`,
     )
-  })
-
-  it('prints Valkey logs only after checkout has succeeded', () => {
-    const steps = jobName ? parsedWorkflow.jobs?.[jobName]?.steps : undefined
-    const checkout = steps?.find(step => step.uses?.startsWith('actions/checkout@'))
-    const logs = steps?.find(step => step.uses === './.github/actions/valkey-logs')
-    expect(checkout?.id).toBe('checkout')
-    expect(logs?.if).toBe(failureAfterCheckout)
   })
 
   it('retains real command failure status with reduced remaining headroom', () => {

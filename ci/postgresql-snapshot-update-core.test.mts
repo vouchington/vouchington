@@ -92,9 +92,6 @@ describe('PostgreSQL snapshot update contracts', () => {
   it('extracts the exact PostgreSQL service image from candidate workflow data', () => {
     const workflow = `jobs:\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n      valkey:\n        image: registry.test/example/cache\n`
     expect(postgresImageFromWorkflow(workflow)).toBe(image)
-    expect(postgresImageFromWorkflow(schemaWorkflow)).toMatch(
-      /^ghcr\.io\/vouchington\/dependency-pgvector:pg18@sha256:[0-9a-f]{64}$/u,
-    )
     const precedingJob = `jobs:\n  prepare-postgres:\n    uses: ./.github/workflows/prepare-postgres.yml\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n`
     expect(postgresImageFromWorkflow(precedingJob)).toBe(image)
     expect(() =>

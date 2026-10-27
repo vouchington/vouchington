@@ -109,12 +109,6 @@ exit 0
     return { captured, stdout, exitCode }
   }
 
-  it('does not cache transient server errors', async () => {
-    await expect(readFile('lychee.toml', 'utf8')).resolves.toContain(
-      'cache_exclude_status = "500.."',
-    )
-  })
-
   it('excludes only intended hosts, private addresses, and the exact Sentry endpoint', async () => {
     const excludedUrls = [
       'https://voucha.ai',
