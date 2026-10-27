@@ -5,6 +5,7 @@ import {
   type PartitionPolicy,
 } from '../data-stores/psql/schema-growth-registry.mts'
 import { EXPLICIT_BOUNDED_TABLES } from './schema-growth-bounded-policies.mts'
+import { CLASSIFIER_RETENTION_POLICIES } from './schema-growth-classifier-retention.mts'
 
 export type SchemaGrowthClass = 'bounded' | 'unbounded'
 export type SchemaIdPolicy = 'uuidv7' | 'natural-or-provider' | 'static-identity' | 'no-id'
@@ -67,6 +68,7 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['membership_microsoft_store_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['community_agent_prompts', sharedParentUuidv7('agent_prompts')],
   ['rss_feed_items', sharedParentUuidv7('rss_feed_item_guids')],
+  ['classifier_runs', sharedParentUuidv7('classifier_run_identities')],
   ['migrations', naturalOrProviderId('The checked-in migration filename is the key.')],
   ['auth_session_retention_cleanup_cursors', naturalOrProviderId('Finite cleanup-name key.')],
   ['history_retention_cursors', naturalOrProviderId('Finite cleanup-name key.')],
@@ -99,11 +101,15 @@ export function buildSchemaGrowthRegistry(
       const partition = PARTITION_POLICIES.get(table) ?? null
       const unboundedRationale = UNBOUNDED_UNPARTITIONED_TABLES.get(table)
       const boundedRationale = EXPLICIT_BOUNDED_TABLES.get(table)
-      if (!partition && !unboundedRationale && !boundedRationale) {
+      const retentionPolicy = CLASSIFIER_RETENTION_POLICIES.get(table)
+      if (!partition && !unboundedRationale && !boundedRationale && !retentionPolicy) {
         throw new Error(`Unclassified schema growth table: ${table}`)
       }
-      const growth: SchemaGrowthClass = boundedRationale ? 'bounded' : 'unbounded'
-      const noPartitionRationale = partition ? undefined : (unboundedRationale ?? boundedRationale)
+      const growth: SchemaGrowthClass =
+        boundedRationale || retentionPolicy ? 'bounded' : 'unbounded'
+      const noPartitionRationale = partition
+        ? undefined
+        : (unboundedRationale ?? boundedRationale ?? retentionPolicy?.reason)
       return {
         table,
         growth,

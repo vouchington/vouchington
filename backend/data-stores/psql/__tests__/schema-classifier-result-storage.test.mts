@@ -138,12 +138,6 @@ describe('classifier result storage', () => {
 
     expect(facts).toEqual([
       {
-        parent: 'classifier_decision_batch_candidates',
-        child: 'classifier_decision_batch_candidates__default',
-        strategy: 'RANGE (batch_id)',
-        bound: 'DEFAULT',
-      },
-      {
         parent: 'community_prompt_classifier_results',
         child: 'community_prompt_classifier_results__default',
         strategy: 'RANGE (batch_id)',
@@ -158,7 +152,7 @@ describe('classifier result storage', () => {
       {
         parent: 'topic_classifier_results',
         child: 'topic_classifier_results__default',
-        strategy: 'RANGE (topic_id)',
+        strategy: 'RANGE (batch_id)',
         bound: 'DEFAULT',
       },
     ])

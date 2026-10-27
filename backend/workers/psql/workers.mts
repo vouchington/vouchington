@@ -3,8 +3,10 @@ import { getWorkerConcurrency } from '@modules/queue-config'
 import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import type {
   PsqlJobs,
-  RefreshMaterializedViewData,
   ModerationRetentionJobData,
+  PsqlPartitionJobData,
+  PsqlRetentionJobData,
+  RefreshMaterializedViewData,
 } from '@queues/psql/types'
 import { QUEUE_NAME } from '@queues/psql/config'
 import processPsql from './processors.mts'
@@ -17,7 +19,14 @@ export const psql = createWorker(
     return deferPostgresConnectionTimeout(job, async () =>
       job.name === 'moderationRetentionCleanup'
         ? processModerationRetentionCleanup(job as Job<ModerationRetentionJobData>)
-        : processPsql(job.name as PsqlJobs, job.data as Partial<RefreshMaterializedViewData>),
+        : processPsql(
+            job.name as PsqlJobs,
+            job.data as Partial<
+              RefreshMaterializedViewData & PsqlPartitionJobData & PsqlRetentionJobData
+            >,
+            undefined,
+            job.id,
+          ),
     )
   },
   {

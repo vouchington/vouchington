@@ -28,7 +28,7 @@ describe('upsertRssFeedItems requests C6 for each item (real PG)', () => {
     const stored = await getRssFeedItemById(item!.id)
     const requests = await requestsOf(item!.id)
     expect(requests).toHaveLength(1)
-    expect(requests[0]).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+    expect(requests[0]).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
     expect(
       requests[0]!.input_sha256.equals(
         createRssFeedItemEmbeddingContent(stored!.data).content_sha256,
@@ -75,7 +75,7 @@ describe('upsertRssFeedItems requests C9 story clustering for each item (real PG
 
     const [story] = await storyRequestsOf(item!.id)
     const [tagging] = await requestsOf(item!.id)
-    expect(story).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+    expect(story).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
     expect(story!.input_sha256.equals(tagging!.input_sha256)).toBe(true)
     expect(await readClassifierRunDispatcherJobsForTest(item!.id)).toEqual([])
   })

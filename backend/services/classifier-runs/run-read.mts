@@ -1,8 +1,10 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import {
   readCompleteClassifierDecision,
+  readCompleteClassifierDecisionForActiveRun,
   readCompleteClassifierDecisionIfExistsFromPrimary,
 } from '@services/classifiers/read-complete-decision'
+import { isClassifierBatchWithinRetention } from '@services/classifiers/retention-window'
 import sql from 'sql-template-strings'
 import {
   assertPersistedDecisionMatchesRun,
@@ -59,9 +61,19 @@ export async function readClassifierRunOutcomes<C, L, E>(
     return { local, remoteDecision: null }
   }
   const candidateKind = remoteCandidateKind(lease)
-  const remoteDecision = options.query
-    ? await readCompleteClassifierDecision(options.query, row.decision_batch_id, candidateKind)
-    : await readCompleteClassifierDecisionIfExistsFromPrimary(row.decision_batch_id, candidateKind)
+  const remoteDecision = !isClassifierBatchWithinRetention(row.decision_batch_id)
+    ? await readCompleteClassifierDecisionForActiveRun(
+        query,
+        lease.runId,
+        row.decision_batch_id,
+        candidateKind,
+      )
+    : options.query
+      ? await readCompleteClassifierDecision(options.query, row.decision_batch_id, candidateKind)
+      : await readCompleteClassifierDecisionIfExistsFromPrimary(
+          row.decision_batch_id,
+          candidateKind,
+        )
   if (!remoteDecision) throw new Error('classifier run lost its committed remote decision')
   assertPersistedDecisionMatchesRun(
     lease,

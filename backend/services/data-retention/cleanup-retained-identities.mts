@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
-
 function retainedRelationReferences(subjectType: string): [string, string][] {
   return electedRelationMetadata.flatMap(metadata =>
     metadata.subject_type === subjectType
@@ -10,7 +9,6 @@ function retainedRelationReferences(subjectType: string): [string, string][] {
       : [],
   )
 }
-
 export const ROOT_FAMILIES = {
   user: {
     table: 'retained_user_identities',
@@ -90,6 +88,8 @@ export const ROOT_FAMILIES = {
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
       ['image_deletion_post_updates', 'post_id'],
+      ['classifier_run_identities', 'post_id'],
+      ['classifier_run_requests', 'post_id'],
       ...retainedRelationReferences('post'),
     ],
   },
@@ -99,6 +99,8 @@ export const ROOT_FAMILIES = {
       ['rss_feed_items', 'id'],
       ['post_publication_rss_feed_item_identities', 'id'],
       ['notifications', 'publication_rss_feed_item_id'],
+      ['classifier_run_identities', 'rss_feed_item_id'],
+      ['classifier_run_requests', 'rss_feed_item_id'],
       ...retainedRelationReferences('rss_feed_item'),
     ],
   },
@@ -125,9 +127,8 @@ export async function cleanupRetainedIdentityRoots(
   pageSize = 1_000,
   idsByFamily?: Partial<Record<RetainedIdentityFamily, readonly string[]>>,
 ): Promise<RetainedIdentityCleanupPage[]> {
-  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000) {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000)
     throw new RangeError('Retained identity cleanup page size must be between 1 and 1000')
-  }
   const results: RetainedIdentityCleanupPage[] = []
   for (const family of Object.keys(ROOT_FAMILIES) as RetainedIdentityFamily[]) {
     const ids = idsByFamily?.[family]
@@ -140,7 +141,6 @@ export async function cleanupRetainedIdentityRoots(
   }
   return results
 }
-
 async function cleanupRetainedIdentityFamily(
   family: RetainedIdentityFamily,
   pageSize: number,

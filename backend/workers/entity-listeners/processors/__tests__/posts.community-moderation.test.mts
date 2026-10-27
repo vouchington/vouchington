@@ -55,7 +55,7 @@ describe('post entity listener community moderation request', () => {
 
     expect(
       await getClassifierRunRequestFacts(postId, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
-    ).toMatchObject([{ input_sha256: content_sha256, run_id: null, stale_at: null }])
+    ).toMatchObject([{ input_sha256: content_sha256, run_identity_id: null, stale_at: null }])
     expect(await readCommunityModerationDispatchers(postId)).toHaveLength(1)
   })
 

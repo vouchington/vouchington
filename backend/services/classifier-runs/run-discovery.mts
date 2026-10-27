@@ -111,7 +111,7 @@ export async function listPendingClassifierRunRequests<C, L, E>(
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE classifier.slug = ${adapter.slug}
       AND request.id > COALESCE(${after}::uuid, ${FIRST_UUID}::uuid)
-      AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
+      AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
     ORDER BY request.id
     LIMIT ${limit}
   `),

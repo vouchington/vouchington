@@ -173,7 +173,7 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
       expect(await agentDispatchers(fixture)).toHaveLength(1)
       expect(
         await getSubjectClassifierRunRequestFacts(fixture.subject, AUTOTAGGER_AGENT_SLUG),
-      ).toMatchObject([{ run_id: null, no_work_at: null, stale_at: null }])
+      ).toMatchObject([{ run_identity_id: null, no_work_at: null, stale_at: null }])
     })
 
     it('asks only what C6 did not apply, in one billed provider call, and adds what it accepts', async () => {
@@ -275,7 +275,7 @@ describe('C7 reasoning autotagger through the shared lifecycle (real PG, mocked 
       expect(await agentDispatchers(fixture)).toEqual([])
       expect(
         await getSubjectClassifierRunRequestFacts(fixture.subject, AUTOTAGGER_AGENT_SLUG),
-      ).toMatchObject([{ run_id: null }])
+      ).toMatchObject([{ run_identity_id: null }])
       await expect(run()).resolves.toEqual({ kind: 'replay' })
       expect(await agentDispatchers(fixture)).toHaveLength(1)
     })

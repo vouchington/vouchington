@@ -3,13 +3,58 @@ import {
   runViews,
   runConfigDriven,
   createMonthlyPartitions,
+  createClassifierResultRange,
+  retireClassifierResultRange,
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
 import { runDataRetentionCleanup } from '@services/data-retention'
-import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
+import { createHash } from 'node:crypto'
+import { enqueueDataRetentionCleanupContinuation } from '@queues/psql/enqueues'
+import {
+  dataRetentionConfig,
+  getClassifierRetentionDays,
+  getDataRetentionLimits,
+} from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
-import type { PsqlJobs, RefreshMaterializedViewData } from '@queues/psql/types'
+import type {
+  PsqlJobs,
+  PsqlPartitionJobData,
+  PsqlRetentionJobData,
+  RefreshMaterializedViewData,
+} from '@queues/psql/types'
+
+function unfinishedClassifierSweeps(
+  result: Awaited<ReturnType<typeof runDataRetentionCleanup>>['classifierRecords'],
+): string[] {
+  const has = (sweep: keyof typeof result) => result[sweep]?.hasMore ?? false
+  const children = has('runCandidates') || has('agentTopics') || has('localOutcomes')
+  const runs = has('runs') || children
+  const results =
+    runs || has('topicResults') || has('storyResults') || has('communityPromptResults')
+  const candidates = results || has('decisionCandidates')
+  const calls = candidates || has('calls')
+  const batches = calls || has('batches')
+  const requests = runs || has('requests')
+  const identities = requests || has('deletedSubjectIdentities')
+  return (
+    [
+      ['runCandidates', has('runCandidates')],
+      ['agentTopics', has('agentTopics')],
+      ['localOutcomes', has('localOutcomes')],
+      ['runs', runs],
+      ['topicResults', runs || has('topicResults')],
+      ['storyResults', runs || has('storyResults')],
+      ['communityPromptResults', runs || has('communityPromptResults')],
+      ['decisionCandidates', candidates],
+      ['calls', calls],
+      ['batches', batches],
+      ['requests', requests],
+      ['deletedSubjectIdentities', identities],
+      ['versionedIdentities', has('versionedIdentities')],
+    ] as const
+  ).flatMap(([sweep, pending]) => (pending ? [sweep] : []))
+}
 
 type ProcessPsqlDependencies = {
   cleanupPartitions: typeof cleanupPartitions
@@ -24,8 +69,9 @@ type ProcessPsqlDependencies = {
 
 export default async function processPsql(
   jobName: PsqlJobs,
-  data?: Partial<RefreshMaterializedViewData>,
+  data?: Partial<RefreshMaterializedViewData & PsqlPartitionJobData & PsqlRetentionJobData>,
   dependencies?: Partial<ProcessPsqlDependencies>,
+  jobId?: string,
 ) {
   switch (jobName) {
     case 'runMigrations':
@@ -35,14 +81,34 @@ export default async function processPsql(
     case 'runConfigDriven':
       return (dependencies?.runConfigDriven ?? runConfigDriven)()
     case 'createPartitions':
-      return (dependencies?.createPartitions ?? createMonthlyPartitions)()
+      return data?.classifierRange
+        ? createClassifierResultRange(data.classifierRange)
+        : (dependencies?.createPartitions ?? createMonthlyPartitions)()
     case 'cleanupPartitions':
+      if (data?.classifierRange) {
+        await dataRetentionConfig.waitForInitialization()
+        return retireClassifierResultRange(data.classifierRange, getClassifierRetentionDays())
+      }
       return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup': {
       await dataRetentionConfig.waitForInitialization()
-      return (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)(
-        getDataRetentionLimits(),
-      )
+      const cleanup = dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup
+      const result = data?.continuation
+        ? await cleanup(getDataRetentionLimits(), {
+            classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
+          })
+        : await cleanup(getDataRetentionLimits())
+      const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
+      if (activeClassifierSweeps.length > 0) {
+        if (!jobId) throw new Error('Data retention continuation needs the current job ID')
+        const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
+        await enqueueDataRetentionCleanupContinuation({
+          runId,
+          step: (data?.continuation?.step ?? 0) + 1,
+          activeClassifierSweeps,
+        })
+      }
+      return result
     }
     case 'refreshMaterializedView': {
       if (!data?.viewName) {

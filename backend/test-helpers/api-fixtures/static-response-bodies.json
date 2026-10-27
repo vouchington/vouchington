@@ -3098,6 +3098,9 @@
       }
     ]
   },
+  "web.admin.psql.jobs.classifier-range": {
+    "success": true
+  },
   "web.admin.psql.jobs.default": {
     "success": true
   },

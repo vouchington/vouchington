@@ -129,6 +129,19 @@ export const engineeringOpsApiFixtureCases: ApiFixtureCase[] = [
     migratedFrom: ['backend/api/v1/psql/index.mts'],
   }),
   fixtureCase({
+    id: 'web.admin.psql.jobs.classifier-range',
+    method: 'POST',
+    path: '/api/v1/psql/jobs',
+    route: { routeTemplate: '/api/v1/psql/jobs' },
+    requestBody: {
+      type: 'createPartitions',
+      classifierRange: { fromDate: '2020-02-01', toDate: '2020-02-02', maxDefaultRows: 100 },
+    },
+    responseSchemaKey: 'web.admin.psql.jobs.default',
+    status: 200,
+    migratedFrom: ['backend/api/v1/psql/index.mts'],
+  }),
+  fixtureCase({
     id: 'web.admin.psql.jobs.default',
     method: 'POST',
     path: '/api/v1/psql/jobs',

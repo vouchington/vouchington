@@ -52,7 +52,7 @@ describe('C7 request and gate (real PG)', () => {
     const { lease } = await completeTaggingRunForTest(fixture)
 
     expect(await agentRequests(fixture.subject)).toMatchObject([
-      { input_sha256: lease.inputSha256, run_id: null, no_work_at: null, stale_at: null },
+      { input_sha256: lease.inputSha256, run_identity_id: null, no_work_at: null, stale_at: null },
     ])
   })
 
@@ -148,7 +148,7 @@ describe('C7 reservation (real PG)', () => {
     expect(captured).not.toContain(applied)
     expect(captured).toEqual(expect.arrayContaining(rest))
     expect(await agentRequests(fixture.subject)).toMatchObject([
-      { run_id: first.run.runId, no_work_at: null },
+      { run_identity_id: first.run.runId, no_work_at: null },
     ])
   })
 

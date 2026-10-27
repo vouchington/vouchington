@@ -62,7 +62,7 @@ export async function insertTestAiUsageRecord(
       RETURNING id
     )
     INSERT INTO ai_usage_records (
-      id, community_id, post_id, classifier_run_id, latency_milliseconds, agent_slug,
+      id, community_id, post_id, classifier_run_identity_id, latency_milliseconds, agent_slug,
       model_provider, provider_transport, model, service_tier_id, input_tokens,
       cached_input_tokens, cache_write_5m_input_tokens, cache_write_1h_input_tokens, output_tokens,
       pricing_status, cost_microunits, currency_code

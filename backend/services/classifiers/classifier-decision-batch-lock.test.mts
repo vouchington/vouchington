@@ -3,7 +3,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { getClassifierBorrowedDecisionFacts } from '../../test-helpers/data-stores/psql/classifier-borrowed-transactions.mts'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import { runTestClassifierBatchConflict } from '@voucha/test-helpers/classifier-decision-batch-conflict'
-import { insertClassifierDecisionBatch } from './write-decision-lineage.mts'
+import { insertClassifierDecisionBatch } from './classifier-decision-batch-insert.mts'
 
 describe('classifier decision batch advisory lock', () => {
   it('serializes uppercase and lowercase spellings of one batch UUID', async () => {

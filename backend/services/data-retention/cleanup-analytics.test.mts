@@ -111,6 +111,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         webPushSubscriptionTombstones: emptyWindow,
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
+        classifierRecords: emptyWindow,
       }),
     ).resolves.toMatchObject({
       retainedIdentityRoots: [],
@@ -140,6 +141,22 @@ describe('cleanupAnalyticsLocalFiles', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      classifierRecords: {
+        runCandidates: { scanned: 0, deleted: 0, hasMore: false },
+        agentTopics: { scanned: 0, deleted: 0, hasMore: false },
+        localOutcomes: { scanned: 0, deleted: 0, hasMore: false },
+        runs: { scanned: 0, deleted: 0, hasMore: false },
+        topicResults: { scanned: 0, deleted: 0, hasMore: false },
+        storyResults: { scanned: 0, deleted: 0, hasMore: false },
+        communityPromptResults: { scanned: 0, deleted: 0, hasMore: false },
+        decisionCandidates: { scanned: 0, deleted: 0, hasMore: false },
+        calls: { scanned: 0, deleted: 0, hasMore: false },
+        batches: { scanned: 0, deleted: 0, hasMore: false },
+        requests: { scanned: 0, deleted: 0, hasMore: false },
+        deletedSubjectIdentities: { scanned: 0, deleted: 0, hasMore: false },
+        versionedIdentities: { scanned: 0, deleted: 0, hasMore: false },
+        identities: { scanned: 0, deleted: 0, hasMore: false },
+      },
     })
     await flushFirehose()
     expect(firehoseSender).toHaveBeenCalled()

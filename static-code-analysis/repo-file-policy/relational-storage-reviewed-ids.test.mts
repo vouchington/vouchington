@@ -43,6 +43,19 @@ function snapshot(tableName: string, columns: Record<string, ReturnType<typeof c
 const noFreshness = { enforceCatalogFreshness: false }
 
 describe('reviewed token and audit snapshot identifiers', () => {
+  it('keeps classifier keyset positions without FKs while rejecting the same names elsewhere', () => {
+    const columns = { cursor_id: column('uuid'), cursor_child_id: column('uuid') }
+    expect(
+      checkRelationalStorage(snapshot('classifier_retention_cursors', columns), noFreshness),
+    ).toEqual([])
+    expect(checkRelationalStorage(snapshot('new_cursors', columns), noFreshness)).toEqual([
+      expect.stringContaining('new_cursors.cursor_id: UUID reference without a target foreign key'),
+      expect.stringContaining(
+        'new_cursors.cursor_child_id: UUID reference without a target foreign key',
+      ),
+    ])
+  })
+
   it('accepts a reviewed token and a reviewed audit snapshot id without a foreign key', () => {
     expect(
       checkRelationalStorage(snapshot('post_votes', { device_id: column('uuid') }), noFreshness),

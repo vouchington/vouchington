@@ -26,7 +26,7 @@ export async function requestClassifierRuns(
     FROM classifiers classifier
     WHERE classifier.id = request.classifier_id AND classifier.slug = ANY(${slugs}::text[])
       AND request.input_sha256 <> ${input.inputSha256}
-      AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
+      AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
       AND `.append(requestSubject(input.subject)),
   )
   const conflict =
@@ -43,7 +43,9 @@ export async function requestClassifierRuns(
     ORDER BY classifier.id
     ON CONFLICT `
       .append(conflict)
-      .append(' DO UPDATE SET run_id = NULL, no_work_at = NULL, stale_at = NULL'),
+      .append(
+        ' DO UPDATE SET run_identity_id = NULL, run_settled_at = NULL, no_work_at = NULL, stale_at = NULL',
+      ),
   )
 }
 
@@ -69,7 +71,7 @@ export async function requestRssFeedItemClassifierRuns(
     WHERE classifier.id = request.classifier_id AND classifier.slug = ANY(${slugs}::text[])
       AND item.id = request.rss_feed_item_id AND item.id = ANY(${ids}::uuid[])
       AND request.input_sha256 <> item.bedrock_nova_multimodal_v1_content_sha256
-      AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
+      AND request.run_settled_at IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NULL
   `)
   await query(sql`/* insertRssFeedItemClassifierRunRequests */
     INSERT INTO classifier_run_requests (classifier_id, rss_feed_item_id, input_sha256)
@@ -98,7 +100,7 @@ export async function settleClassifierRunRequest(
   settlement: ClassifierRunRequestSettlement,
 ): Promise<void> {
   const runId = settlement.kind === 'run' ? settlement.runId : null
-  const unsettled = sql` AND request.run_id IS NULL AND request.no_work_at IS NULL
+  const unsettled = sql` AND request.run_settled_at IS NULL AND request.no_work_at IS NULL
       AND request.stale_at IS NULL`
   const scope =
     settlement.kind !== 'stale'
@@ -109,7 +111,8 @@ export async function settleClassifierRunRequest(
   await query(
     sql`/* settleClassifierRunRequest */
     UPDATE classifier_run_requests request
-    SET run_id = ${runId},
+    SET run_identity_id = ${runId},
+      run_settled_at = CASE WHEN ${settlement.kind === 'run'} THEN clock_timestamp() END,
       no_work_at = CASE WHEN ${settlement.kind === 'no-work'} THEN clock_timestamp() END,
       stale_at = CASE WHEN ${settlement.kind === 'stale'} THEN clock_timestamp() END
     FROM classifiers classifier
@@ -126,6 +129,7 @@ export async function reopenClassifierRunRequests(
   runId: string,
 ): Promise<void> {
   await query(sql`/* reopenClassifierRunRequests */
-    UPDATE classifier_run_requests SET run_id = NULL WHERE run_id = ${runId}
+    UPDATE classifier_run_requests SET run_identity_id = NULL, run_settled_at = NULL
+    WHERE run_identity_id = ${runId}
   `)
 }

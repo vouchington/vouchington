@@ -29984,6 +29984,26 @@
     "PsqlJobRequest": {
       "additionalProperties": false,
       "properties": {
+        "classifierRange": {
+          "additionalProperties": false,
+          "properties": {
+            "fromDate": {
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "type": "string"
+            },
+            "maxDefaultRows": {
+              "maximum": 5000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "toDate": {
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "type": "string"
+            }
+          },
+          "required": ["fromDate", "toDate"],
+          "type": "object"
+        },
         "type": {
           "enum": [
             "cleanupPartitions",

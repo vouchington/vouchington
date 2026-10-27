@@ -51,6 +51,11 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   // History checkpoints may outlive deletion of their raw candidate rows.
   'history_retention_cursors.cursor_id',
   'history_retention_cursors.sweep_cutoff_id',
+  // Classifier keyset positions are traversal values and survive deletion of scanned cache rows.
+  'classifier_retention_cursors.cursor_id',
+  'classifier_retention_cursors.cursor_child_id',
+  'classifier_retention_cursors.cursor_classifier_id',
+  'classifier_retention_cursors.cursor_prompt_version_id',
   'follower_distribution_deliveries.delivery_id',
   'membership_google_play_recovery_cursors.cursor_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id',

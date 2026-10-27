@@ -24,7 +24,8 @@ export type ClassifierRunRequestFacts = {
   id: string
   classifier_slug: string
   input_sha256: Buffer
-  run_id: string | null
+  run_identity_id: string | null
+  run_settled_at: Date | null
   no_work_at: Date | null
   stale_at: Date | null
 }
@@ -71,8 +72,8 @@ export async function getSubjectClassifierRunRequestFacts(
 ): Promise<ClassifierRunRequestFacts[]> {
   const { rows } =
     await write<ClassifierRunRequestFacts>(sql`/* getSubjectClassifierRunRequestFacts */
-    SELECT request.id, classifier.slug AS classifier_slug, request.input_sha256, request.run_id,
-      request.no_work_at, request.stale_at
+    SELECT request.id, classifier.slug AS classifier_slug, request.input_sha256, request.run_identity_id,
+      request.run_settled_at, request.no_work_at, request.stale_at
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE request.post_id IS NOT DISTINCT FROM ${subject.postId}::uuid

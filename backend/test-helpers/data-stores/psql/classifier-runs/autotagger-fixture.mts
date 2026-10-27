@@ -30,6 +30,7 @@ import {
 } from '../../../index.mts'
 import { setTestRssFeedDiscoverable } from '../../../entities/rss-feeds-discovery.mts'
 import { updateTopicEmbeddingData } from '../../../entities/topics.mts'
+import { withRealClassifierClock } from '../../../classifier-retention-clock.mts'
 
 export { TAGGING_CLASSIFIER_SLUG }
 
@@ -144,9 +145,12 @@ export function requestAutotaggerRun(fixture: {
 /** The request approval writes, then the reservation the dispatcher makes, without queueing a job. */
 export async function reserveAutotaggerRun(fixture: Parameters<typeof requestAutotaggerRun>[0]) {
   await requestAutotaggerRun(fixture)
-  const reserved = await reserveClassifierRun(createAutotaggerRunAdapter(), fixture.subject)
-  if (reserved.kind !== 'reserved') throw new Error(`Expected a reservation, got ${reserved.kind}`)
-  return reserved.run
+  return withRealClassifierClock(async () => {
+    const reserved = await reserveClassifierRun(createAutotaggerRunAdapter(), fixture.subject)
+    if (reserved.kind !== 'reserved')
+      throw new Error(`Expected a reservation, got ${reserved.kind}`)
+    return reserved.run
+  })
 }
 
 /** A live lease on the subject's freshly reserved run, for exercising C6's input building directly. */
