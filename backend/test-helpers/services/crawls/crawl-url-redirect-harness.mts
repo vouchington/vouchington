@@ -73,7 +73,7 @@ export function useCrawlUrlRedirectHarness(): CrawlUrlRedirectHarness {
         throw new AggregateError(failures, 'Owned crawl DNS cleanup failed')
       }
     }
-    onTestFinished(() => (cleanup ??= drainOwnedCrawls()), 30_000)
+    onTestFinished(() => (cleanup ??= drainOwnedCrawls()))
   })
 
   function crawlUrlForTest(...args: Parameters<typeof crawlUrl>) {

@@ -17,7 +17,7 @@ export function useRouteRateLimitConfigSnapshot(): void {
     await routeRateLimitConfig.waitForInitialization()
     routeRateLimitConfig.unsubscribe()
     originalRouteRateLimitConfig = routeRateLimitConfig.getFields()
-  }, 30_000)
+  })
 
   afterEach(async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
