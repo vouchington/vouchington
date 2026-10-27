@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs'
-import { lstat, mkdtemp, readdir, rm } from 'node:fs/promises'
+import { lstat, mkdtemp, readdir, rm, utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { Readable } from 'node:stream'
@@ -27,7 +27,7 @@ export function createFeedListDirectory(): Promise<string> {
   return mkdtemp(join(tmpdir(), `${FEED_LIST_DIRECTORY_PREFIX}${process.pid}-`))
 }
 
-/** Drop every process's feed-list directories once they are older than one hour. */
+/** Drop feed-list directories older than one hour. A live job refreshes the directory mtime. */
 export async function sweepExpiredFeedListDirectories(now = Date.now()): Promise<void> {
   const names = await readdir(tmpdir())
   await Promise.all(
@@ -72,9 +72,22 @@ export async function prepareFeedListDiff(
   lists: readonly FeedListChunkSource[],
   directory: string,
 ): Promise<void> {
+  await touchFeedListDirectory(directory)
+  await writeNumberedFeedList(lists, directory)
+}
+
+async function writeNumberedFeedList(
+  lists: readonly FeedListChunkSource[],
+  directory: string,
+): Promise<void> {
   const numbered = join(directory, 'numbered')
   await pipeline(Readable.from(numberedLines(lists)), createWriteStream(numbered))
+  await diffFeedList(numbered, directory)
+}
+
+async function diffFeedList(numbered: string, directory: string): Promise<void> {
   await sortAndDiff(numbered, directory)
+  await touchFeedListDirectory(directory)
 }
 
 /** One pass over the deduped file. `total` includes feeds the reader already has. */
@@ -83,6 +96,7 @@ export async function readFeedListPage(
   cursor: string | undefined,
   pageSize: number,
 ): Promise<FeedListPage> {
+  await touchFeedListDirectory(directory)
   const dedupedLines = linesOf(join(directory, 'deduped'))
   const added = linesOf(join(directory, 'added'))
   let pending = await added.next()
@@ -108,6 +122,11 @@ export async function readFeedListPage(
     await added.return(undefined)
   }
   return { page, newEntries, total }
+}
+
+async function touchFeedListDirectory(directory: string): Promise<void> {
+  const now = new Date()
+  await utimes(directory, now, now)
 }
 
 function isMissingFile(err: unknown): boolean {

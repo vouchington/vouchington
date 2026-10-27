@@ -123,4 +123,23 @@ describe('sweepExpiredFeedListDirectories', () => {
       rmSync(unrelated, { recursive: true, force: true })
     }
   })
+
+  it('keeps a directory whose page read refreshed the mtime', async () => {
+    const directory = await createFeedListDirectory()
+    writeFileSync(join(directory, 'deduped'), '')
+    writeFileSync(join(directory, 'added'), '')
+    const expiredAt = new Date(Date.now() - FEED_LIST_DIRECTORY_MAX_AGE_MS - 5_000)
+    await utimes(directory, expiredAt, expiredAt)
+    try {
+      await expect(readFeedListPage(directory, undefined, 1)).resolves.toEqual({
+        page: [],
+        newEntries: [],
+        total: 0,
+      })
+      await sweepExpiredFeedListDirectories()
+      expect(existsSync(directory)).toBe(true)
+    } finally {
+      if (existsSync(directory)) await removeFeedListDirectory(directory)
+    }
+  })
 })
