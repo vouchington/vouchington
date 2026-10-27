@@ -115,7 +115,7 @@ describe('runDataRetentionCleanup', () => {
       userDeletedNotifications: { deleted: 0, hasMore: false },
       moderationEmailSends: { deleted: 0, hasMore: false },
     })
-  }, 30_000)
+  })
 })
 
 describe('cleanupAbandonedBlueskyLinkSessions', () => {

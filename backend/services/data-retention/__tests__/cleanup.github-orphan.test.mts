@@ -62,5 +62,5 @@ describe('GitHub orphan account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       github_account_id: activeAccountId,
     })
-  }, 30_000)
+  })
 })

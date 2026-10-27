@@ -57,5 +57,5 @@ describe('X orphan account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       x_account_id: activeAccountId,
     })
-  }, 30_000)
+  })
 })
