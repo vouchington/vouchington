@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { withTestOwnedAdvisoryWait } from '@voucha/test-helpers/advisory-client-lock-observer'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   getTestPostgresAdvisoryLockHolderProcessId,
   insertTestUrlHostname,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import {
   getHostnameElectionVote,
@@ -25,26 +25,44 @@ describe('hostname vote request lock', () => {
       entered.resolve()
       await release.promise
     })
-    await entered.promise
-    const holderPid = await getTestPostgresAdvisoryLockHolderProcessId({
-      key: `vote-request:hostname:${user.id.toLowerCase()}:${hostnameId.toLowerCase()}`,
+    void holder.catch(entered.reject)
+    let managed = false
+    let holderRelease: Promise<void> | undefined
+    const releaseHolder = () => {
+      release.resolve()
+      return (holderRelease ??= holder)
+    }
+    onTestFinished(async () => {
+      if (managed) await Promise.allSettled([releaseHolder()])
+      else await releaseHolder()
     })
+    await entered.promise
+    const key = `vote-request:hostname:${user.id.toLowerCase()}:${hostnameId.toLowerCase()}`
+    const holderPid = await getTestPostgresAdvisoryLockHolderProcessId({ key })
     const request = createRequest()
     await request.authenticateAs(user)
-    const deletion = request
-      .delete(`/api/v1/hostnames/${hostnameId}/vote`)
-      .expect(204)
-      .then(
-        () => undefined,
-        (err: unknown) => err,
-      )
-
-    await waitForTestPostgresLockWaiter(holderPid, 'lockElectionVoteRequest')
-    await upsertHostnameElectionVotes(user.id, [{ entityId: hostnameId, score: 1 }])
-    release.resolve()
-    await expect(deletion).resolves.toBeUndefined()
-    await holder
-
+    const requestId = crypto.randomUUID()
+    managed = true
+    await withTestOwnedAdvisoryWait(
+      {
+        holderProcessId: holderPid,
+        key,
+        queryMarker: 'lockElectionVoteRequest',
+        requestId,
+        releaseHolder,
+      },
+      async waitForLock => {
+        const deletion = request
+          .delete(`/api/v1/hostnames/${hostnameId}/vote`)
+          .set('x-request-id', requestId)
+          .expect(204)
+          .then(() => undefined)
+        await waitForLock(deletion)
+        await upsertHostnameElectionVotes(user.id, [{ entityId: hostnameId, score: 1 }])
+        await releaseHolder()
+        await deletion
+      },
+    )
     await expect(getHostnameElectionVote(user.id, hostnameId)).resolves.toBeNull()
   })
 })
