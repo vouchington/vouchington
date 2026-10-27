@@ -109,6 +109,14 @@ async function cleanSettledFailedJobs(
   }
 }
 
+function reportReconcileFailure(err: unknown): void {
+  onError(
+    err instanceof Error
+      ? err
+      : new Error('Background response reconciliation failed', { cause: err }),
+  )
+}
+
 function hasReactivatableStableId(job: Job<AIAgentJobData>): boolean {
   if (job.name === 'report-judgement') {
     return 'run_id' in job.data && job.data.run_id != null
