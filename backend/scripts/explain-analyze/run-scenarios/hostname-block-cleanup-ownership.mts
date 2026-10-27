@@ -13,9 +13,9 @@ const PENDING_CLEANUP_ROOT_NOISE_COUNT = 1_000
 export async function runHostnameBlockOwnershipLookupScenarios(): Promise<void> {
   const fixture = await prepareHostnameCleanupOwnershipFixture()
   const seededRows = {
-    url_hostnames: SEEDED_ROWS_BY_RELATION.url_hostnames + PENDING_CLEANUP_ROOT_NOISE_COUNT + 3,
+    url_hostnames: SEEDED_ROWS_BY_RELATION.url_hostnames + PENDING_CLEANUP_ROOT_NOISE_COUNT + 4,
     url_hostname_blocks:
-      SEEDED_ROWS_BY_RELATION.url_hostname_blocks + PENDING_CLEANUP_ROOT_NOISE_COUNT + 2,
+      SEEDED_ROWS_BY_RELATION.url_hostname_blocks + PENDING_CLEANUP_ROOT_NOISE_COUNT + 3,
   }
   registerScenarioContract('hostname-block-pending-ancestor-owner', {
     seededRows,
@@ -59,7 +59,7 @@ export async function runHostnameBlockOwnershipLookupScenarios(): Promise<void> 
       await using query = await beginTransaction()
       await getPendingDescendantCleanupRootHostnames(
         query,
-        crypto.randomUUID(),
+        fixture.topBlockId,
         Array.from({ length: 25 }, (_, index) => `${fixture.deepReversed}.leaf-${index}`),
       )
     },
@@ -74,6 +74,7 @@ async function prepareHostnameCleanupOwnershipFixture() {
   const broadHostname = `broad.${topHostname}`
   const deepHostname = `deep.${broadHostname}`
   const leafHostname = `leaf.${deepHostname}`
+  const topBlockId = crypto.randomUUID()
   const noiseSuffix = `-${suffix}.example.test`
   await using query = await beginTransaction()
   await query(sql`/* prepareHostnameCleanupOwnershipFixture:hostnames */
@@ -81,16 +82,18 @@ async function prepareHostnameCleanupOwnershipFixture() {
     SELECT 'cleanup-plan-noise-' || ordinal || ${noiseSuffix}, CURRENT_TIMESTAMP
     FROM generate_series(1, ${PENDING_CLEANUP_ROOT_NOISE_COUNT}) ordinal
     UNION ALL VALUES
+      (${topHostname}, CURRENT_TIMESTAMP),
       (${broadHostname}, CURRENT_TIMESTAMP),
       (${deepHostname}, CURRENT_TIMESTAMP),
       (${leafHostname}, CURRENT_TIMESTAMP)
   `)
   await query(sql`/* prepareHostnameCleanupOwnershipFixture:roots */
     WITH roots AS MATERIALIZED (
-      SELECT uuidv7() AS id, hostname.id AS hostname_id
+      SELECT CASE WHEN hostname.hostname = ${topHostname} THEN ${topBlockId}::uuid
+        ELSE uuidv7() END AS id, hostname.id AS hostname_id
       FROM url_hostnames hostname
       WHERE hostname.hostname LIKE ${`cleanup-plan-noise-%${noiseSuffix}`}
-        OR hostname.hostname = ANY(${[broadHostname, deepHostname]}::text[])
+        OR hostname.hostname = ANY(${[topHostname, broadHostname, deepHostname]}::text[])
     )
     INSERT INTO url_hostname_blocks (
       id, url_hostname_id, relation_cleanup_root_block_id,
@@ -102,6 +105,7 @@ async function prepareHostnameCleanupOwnershipFixture() {
   await write(`/* prepareHostnameCleanupOwnershipFixture:analyze */
     ANALYZE url_hostnames, url_hostname_blocks`)
   return {
+    topBlockId,
     leafHostname,
     deepReversed: deepHostname.split('.').toReversed().join('.'),
   }
