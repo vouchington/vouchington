@@ -1,6 +1,7 @@
 import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertClassifierRunCandidates } from '../../../../services/classifier-runs/run-candidates.mts'
+import { insertClassifierRunCommunityPrompts } from '../../../../services/classifier-runs/run-community-prompts.mts'
 
 export type ClassifierRunFacts = {
   id: string
@@ -104,6 +105,14 @@ export async function getClassifierRunCandidateTopicIdsForTest(runId: string): P
 /** Exercises production candidate capture with the shared test database query resource. */
 export function captureClassifierRunCandidatesForTest(runId: string, topicIds: readonly string[]) {
   return insertClassifierRunCandidates(write, runId, topicIds)
+}
+
+/** Exercises production community-prompt persistence with the shared test database query resource. */
+export function insertClassifierRunCommunityPromptsForTest(
+  runId: string,
+  promptIds: readonly string[],
+) {
+  return insertClassifierRunCommunityPrompts(write, runId, promptIds)
 }
 
 /** Community prompt ids stored for one owned run, in configuration order. */

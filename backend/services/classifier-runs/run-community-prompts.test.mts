@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
 import {
   createCommunityModerationFixture,
   reserveCommunityModerationFixtureRun,
@@ -7,10 +6,10 @@ import {
 import {
   getClassifierRunCommunityPromptIdsForTest,
   getClassifierRunConfigurationCommunityPromptIdsForTest,
+  insertClassifierRunCommunityPromptsForTest,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { describe, expect, it } from 'vitest'
-import { insertClassifierRunCommunityPrompts } from './run-community-prompts.mts'
 
 describe('classifier run community prompts (real PG)', () => {
   it('stores each pinned prompt as a child of the reserved run, in configuration order', async () => {
@@ -36,7 +35,7 @@ describe('classifier run community prompts (real PG)', () => {
     const runId = await reserveSyntheticRunId()
 
     await expect(
-      insertClassifierRunCommunityPrompts(write, runId, [randomUUID()]),
+      insertClassifierRunCommunityPromptsForTest(runId, [randomUUID()]),
     ).rejects.toMatchObject({ code: '23503' })
   })
 })
