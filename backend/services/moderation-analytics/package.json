@@ -28,7 +28,7 @@
     "@services/memberships": "workspace:^",
     "@services/users": "workspace:^",
     "http-errors": "^2.0.1",
-    "p-map": "^7.1.0",
+    "p-map": "^7.1.1",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.13.0"
   },

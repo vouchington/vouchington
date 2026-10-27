@@ -65,7 +65,7 @@
     "@vouchington/queue-errors": "^0.2.0",
     "glide-mq": "^0.19.0",
     "openai": "^7.43.0",
-    "p-map": "^7.1.0"
+    "p-map": "^7.1.1"
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",
