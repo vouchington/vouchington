@@ -82,6 +82,39 @@ describe('ActivityPub inbox recovery processors', () => {
     ])
   })
 
+  it('retains the reservation when a failed admission cannot be checked in Valkey', async () => {
+    const deliveries = makeDeliveries(1)
+    const admissionError = new Error('bulk admission unavailable')
+    const lookupError = new Error('job status unavailable')
+    const releaseUnadmittedRequeues = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
+    let statusReads = 0
+
+    await expect(
+      recoverDeliveries(undefined, {
+        readRecoverable: async () => deliveries,
+        getJobStatus: async () => {
+          statusReads += 1
+          if (statusReads === 1) return { state: 'missing' }
+          throw lookupError
+        },
+        exhaust: async () => ({ outcome: 'stale' }),
+        removeFailed: async () => false,
+        reserveRequeues: async deliveryIds => new Map(deliveryIds.map(id => [id, 1])),
+        releaseUnadmittedRequeues,
+        exhaustRecoveryRequeues: async () => undefined,
+        enqueueBulk: async () => {
+          throw admissionError
+        },
+        enqueueContinuation: async () => null,
+        pageSize: () => PAGE_SIZE,
+      }),
+    ).rejects.toMatchObject({
+      errors: [admissionError, lookupError],
+      cause: admissionError,
+    })
+    expect(releaseUnadmittedRequeues).toHaveBeenCalledWith([])
+  })
+
   it('re-arms one short page of failed deliveries without a continuation', async () => {
     const page = makeDeliveries(PAGE_SIZE - 1)
     const { dependencies, rearmFailed, enqueueBulk, enqueueContinuation } = rearmBoundary([page])
