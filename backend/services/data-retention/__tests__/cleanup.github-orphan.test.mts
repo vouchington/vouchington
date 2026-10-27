@@ -62,5 +62,5 @@ describe('GitHub orphan account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       github_account_id: activeAccountId,
     })
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 })

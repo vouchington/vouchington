@@ -42,7 +42,7 @@ describe('votes-upsert', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(true)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(0)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('disavowing a user (-2) auto-mutes and soft-deletes the existing follow', async () => {
     const target = await createTestUser()
@@ -64,7 +64,7 @@ describe('votes-upsert', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('retracting a disavow (0) does not unmute or restore the follow', async () => {
     const target = await createTestUser()
@@ -89,7 +89,7 @@ describe('votes-upsert', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('clearing a disavow keeps its committed mute and unfollow side effects', async () => {
     const target = await createTestUser()
@@ -104,7 +104,7 @@ describe('votes-upsert', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('keeps the last semantic choice for duplicate target votes', async () => {
     const target = await createTestUser()
@@ -129,7 +129,7 @@ describe('votes-upsert', () => {
 
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('completes with a user agent while its transaction holds the final write-pool client', async () => {
     const target = await createTestUser()
@@ -156,7 +156,7 @@ describe('votes-upsert', () => {
       if (failures.length === 1) throw failures[0]
       if (failures.length > 1) throw new AggregateError(failures, 'Vote and cleanup failed')
     })
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   async function waitForUpdatedVouchStats(userId: string, expected: { up: number; down: number }) {
     const latest = await getUserVouchElectionById(userId)

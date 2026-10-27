@@ -170,5 +170,5 @@ describe('vote weight penalty review API', () => {
       .query({ after, limit: 1 })
       .expect(200)
     expect(remaining.body.results.map((penalty: { id: string }) => penalty.id)).not.toContain(dueId)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 })

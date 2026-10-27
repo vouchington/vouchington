@@ -101,7 +101,7 @@ describe('cleanup retention windows', () => {
     expect(await referralAttributionExistsById(secondEligibleId)).toBe(false)
     expect(await referralAttributionExistsById(atUpperBoundId)).toBe(true)
     expect(await referralAttributionExistsById(afterUpperBoundId)).toBe(true)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('only deletes orphaned OAuth accounts inside the bounded retention window', async () => {
     const window = createTestRetentionWindow()
@@ -152,7 +152,7 @@ describe('cleanup retention windows', () => {
     expect(await oauthAccountExistsByProviderUserId('github', afterUpperBoundProviderUserId)).toBe(
       true,
     )
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 })
 
 describe('retention publication capture', () => {

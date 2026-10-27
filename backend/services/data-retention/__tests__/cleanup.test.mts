@@ -201,7 +201,7 @@ describe('cleanupSoftDeletedUsers', () => {
 
     expect(result).toEqual({ deleted: 1, hasMore: false })
     expect(await getTestUserRaw(user.id)).toBeNull()
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('does NOT delete recently soft-deleted users', async () => {
     const window = createTestRetentionWindow()
@@ -214,7 +214,7 @@ describe('cleanupSoftDeletedUsers', () => {
 
     expect(result).toEqual({ deleted: 0, hasMore: false })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('keeps a retention-eligible user while its durable deletion request is incomplete', async () => {
     const window = createTestRetentionWindow()
@@ -225,7 +225,7 @@ describe('cleanupSoftDeletedUsers', () => {
 
     await expect(cleanupSoftDeletedUsers(window)).resolves.toEqual({ deleted: 0, hasMore: false })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('hard-deletes retention-eligible users after durable deletion completion and without a request', async () => {
     const window = createTestRetentionWindow()
@@ -246,7 +246,7 @@ describe('cleanupSoftDeletedUsers', () => {
     await expect(cleanupSoftDeletedUsers(window)).resolves.toEqual({ deleted: 2, hasMore: false })
     await expect(getTestUserRaw(completedRequestUser.id)).resolves.toBeNull()
     await expect(getTestUserRaw(legacyUser.id)).resolves.toBeNull()
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('rejects invalid batch options', async () => {
     await expect(cleanupSoftDeletedUsers({ batchSize: 0, maxBatches: 1 })).rejects.toThrow(

@@ -40,7 +40,7 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(cleanupOrphanedOAuthAccounts(window)).resolves.toMatchObject({ deleted: 1 })
     expect(await oauthAccountExistsByProviderUserId('github', oldId)).toBe(false)
     expect(await oauthAccountExistsByProviderUserId('github', recentId)).toBe(true)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('keeps deletion bounded by the configured batch count', async () => {
     const window = createTestRetentionWindow()
@@ -64,7 +64,7 @@ describe('orphaned OAuth account cleanup', () => {
         await oauthAccountExistsByProviderUserId('facebook', secondId),
       ].filter(Boolean),
     ).toHaveLength(1)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('reaches later providers on the next daily capped run despite an early backlog', async () => {
     const window = createTestRetentionWindow()
@@ -103,7 +103,7 @@ describe('orphaned OAuth account cleanup', () => {
         await Promise.all(firstIds.map(id => oauthAccountExistsByProviderUserId(firstProvider, id)))
       ).filter(Boolean),
     ).toHaveLength(1)
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('preserves an old orphaned LinkedIn account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
@@ -154,7 +154,7 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       linkedin_account_id: activeAccount.account_id,
     })
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('preserves an old orphaned Facebook account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
@@ -205,7 +205,7 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       facebook_account_id: activeAccountId,
     })
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('preserves an old orphaned Microsoft account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
@@ -259,7 +259,7 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       microsoft_account_id: activeAccount.account_id,
     })
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 
   it('rejects table and column identifiers outside the configured provider allowlist', async () => {
     await expect(

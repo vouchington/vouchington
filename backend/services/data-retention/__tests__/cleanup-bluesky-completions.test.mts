@@ -115,7 +115,7 @@ describe('runDataRetentionCleanup', () => {
       userDeletedNotifications: { deleted: 0, hasMore: false },
       moderationEmailSends: { deleted: 0, hasMore: false },
     })
-  })
+  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
 })
 
 describe('cleanupAbandonedBlueskyLinkSessions', () => {
