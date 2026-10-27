@@ -81,7 +81,7 @@ describe('capped per-domain job counts through real GlideMQ', () => {
       }
       await harness.add(
         OPENAI_MODERATION_POST_JOB,
-        { id: randomUUID() },
+        { versionId: randomUUID() },
         {
           ...UNGROUPED,
           delay: FAR_FUTURE_DELAY_MS,

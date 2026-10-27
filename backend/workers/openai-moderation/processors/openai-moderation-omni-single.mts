@@ -18,27 +18,27 @@ import {
 } from '@services/openai-moderation'
 import { getPostByAny } from '@services/posts/get'
 import type { Job } from 'glide-mq'
-import { isOpenAIRateLimitError } from '@vouchington/ai/openai'
-import { getOpenAIRateLimitDelayMs, handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
+import { handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import {
-  beginPostModerationAttempt,
   checkPostClearance,
-  failPostModerationAttempt,
+  commitCurrentPostModerationVersions,
+  enqueuePostModerationRecovery,
+  readCurrentAutomatedPostModerationAttempt,
   reconcilePostModerationWork,
-  releasePostModerationAttemptForRateLimit,
 } from '@services/post-clearance'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import {
   enqueueReconcilePostModerationContinuation,
   enqueueBackfillImageModerationContinuation,
   enqueueBackfillPostModerationContinuation,
-  enqueueCreatePostModerationBatch,
   enqueueCreateImageModerationBatch,
-  enqueueCreatePostModeration,
 } from '@queues/openai-moderation/enqueues'
-import { enqueueSpamDetection } from '@queues/moderation-signals/enqueues'
 
-type OpenAIModerationJobData = { id?: string; afterId?: string } & PostModerationReconciliationData
+type OpenAIModerationJobData = {
+  id?: string
+  versionId?: string
+  afterId?: string
+} & PostModerationReconciliationData
 
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
@@ -46,42 +46,8 @@ export async function handleOpenAIModerationOmniSingleJob(
 ): Promise<unknown> {
   try {
     switch (job.name) {
-      case OPENAI_MODERATION_POST_JOB.name: {
-        if (!job.data.id) throw new Error('Post job requires id in job.data')
-        const post = await getPostByAny(job.data.id, { readOnly: false })
-        if (!post) return null
-        const attempt = await beginPostModerationAttempt(post.id, 'openai_omni')
-        if (!attempt) return { success: true, applied: false }
-        try {
-          const result = await upsertPostOpenAIModeration(post, { readOnly: false, attempt })
-          await enqueueReconcilePostNotifications(post.id, attempt.id)
-
-          if (result.skipped) {
-            /* v8 ignore start -- valid post rows require text content; service-level tests cover direct no-content handling */
-            if (result.reason === 'no_content_to_moderate') {
-              await markPostOpenAIModerationNoContent(post.id, attempt)
-              await checkPostClearance(post.id)
-            } else if (result.reason === 'content_changed') {
-              await failPostModerationAttempt(attempt, 'content_changed')
-            }
-            /* v8 ignore stop */
-          } else {
-            await checkPostClearance(post.id)
-          }
-
-          return { success: true }
-        } catch (err) {
-          if (isOpenAIRateLimitError(err)) {
-            // The provider never evaluated the post: give the attempt back instead of spending
-            // one of the three that end in staff review.
-            await releasePostModerationAttemptForRateLimit(attempt, getOpenAIRateLimitDelayMs(err))
-            throw err
-          }
-          const failure = await failPostModerationAttempt(attempt, classifyModerationError(err))
-          if (failure.exhausted) await checkPostClearance(post.id)
-          throw err
-        }
-      }
+      case OPENAI_MODERATION_POST_JOB.name:
+        return await moderatePostVersion(job.data.versionId)
       case OPENAI_MODERATION_IMAGE_JOB.name: {
         if (!job.data.id) throw new Error('Image job requires id in job.data')
         const result = await upsertImageOpenAIModeration(job.data.id)
@@ -90,7 +56,7 @@ export async function handleOpenAIModerationOmniSingleJob(
       case OPENAI_MODERATION_BACKFILL_POSTS_JOB.name:
         return await runBackfillPage(job.data.afterId, {
           listPage: listUnmoderatedPostIdPage,
-          enqueueBatch: enqueueCreatePostModerationBatch,
+          enqueueBatch: enqueueUnmoderatedPostModeration,
           enqueueContinuation: enqueueBackfillPostModerationContinuation,
         })
       case OPENAI_MODERATION_BACKFILL_IMAGES_JOB.name:
@@ -108,14 +74,12 @@ export async function handleOpenAIModerationOmniSingleJob(
           postIds,
           job.data.cursor,
         )
-        await Promise.all(
-          reconciliation.due.map(({ post_id: postId, source }) =>
-            source === 'openai_omni'
-              ? enqueueCreatePostModeration(postId, { deduplicationKey: 'recovery' })
-              : enqueueSpamDetection(postId, { deduplicationKey: 'recovery' }),
+        await Promise.all([
+          ...reconciliation.due.map(row =>
+            enqueuePostModerationRecovery(row.version_id, row.source),
           ),
-        )
-        await Promise.all(reconciliation.exhausted_post_ids.map(checkPostClearance))
+          ...reconciliation.exhausted_post_ids.map(checkPostClearance),
+        ])
         if (reconciliation.nextCursor)
           await enqueueReconcilePostModerationContinuation(reconciliation.nextCursor, postIds)
         return {
@@ -132,6 +96,31 @@ export async function handleOpenAIModerationOmniSingleJob(
   }
 }
 
+async function moderatePostVersion(versionId: string | undefined): Promise<unknown> {
+  if (!versionId) throw new Error('Post job requires versionId in job.data')
+  const attempt = await readCurrentAutomatedPostModerationAttempt(versionId, 'openai_omni')
+  if (!attempt) return { success: true, applied: false }
+  const post = await getPostByAny(attempt.post_id, { readOnly: false })
+  if (!post) return { success: true, applied: false }
+  const result = await upsertPostOpenAIModeration(post, { readOnly: false, attempt })
+  if (result.skipped && result.reason === 'content_changed') {
+    return { success: true, applied: false }
+  }
+  await enqueueReconcilePostNotifications(post.id, attempt.id)
+  if (result.skipped && result.reason === 'no_content_to_moderate') {
+    await markPostOpenAIModerationNoContent(post.id, attempt)
+  }
+  await checkPostClearance(post.id)
+  return { success: true }
+}
+
+async function enqueueUnmoderatedPostModeration(postIds: readonly string[]): Promise<void> {
+  const versions = await commitCurrentPostModerationVersions(postIds)
+  await Promise.all(
+    versions.map(version => enqueuePostModerationRecovery(version.id, 'openai_omni')),
+  )
+}
+
 // One bounded page per dispatcher run. The continuation ranks behind the moderation jobs this page
 // just enqueued, so no more than one page of them ever waits.
 async function runBackfillPage(
@@ -146,11 +135,4 @@ async function runBackfillPage(
   await page.enqueueBatch(ids)
   if (hasMore) await page.enqueueContinuation(ids.at(-1)!)
   return { enqueued: ids.length, hasMore }
-}
-
-function classifyModerationError(error: unknown): string {
-  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
-    return error.code.slice(0, 100)
-  }
-  return error instanceof Error ? error.name.slice(0, 100) : 'unknown_error'
 }

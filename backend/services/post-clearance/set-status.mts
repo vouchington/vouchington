@@ -3,7 +3,10 @@ import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { reviveClassifierRunRequests } from '@services/classifier-run-revival'
 import { lockPostPublication } from '@services/post-publication'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
-import { ensureCurrentPostModerationVersion } from './moderation-ledger.mts'
+import {
+  admitAutomatedPostModeration,
+  ensureCurrentPostModerationVersion,
+} from './moderation-ledger.mts'
 import { recordPostClearancePublicationChange } from './publication-change.mts'
 import { CLEARANCE_CHANGE_TYPES } from './status-constants.mts'
 import { runPostClearanceTransaction } from './status-transaction.mts'
@@ -150,7 +153,8 @@ async function writePostClearanceStatus(
     return { id: row.id, community_id: row.community_id }
   }
   const change = await runPostClearanceTransaction(transactionOptions, run)
-  if (change && !transactionOptions.query && !transactionOptions.client)
-    void enqueueRefreshTopHashtags()
+  const ownsCommit = !transactionOptions.query && !transactionOptions.client
+  if (change && ownsCommit) void enqueueRefreshTopHashtags()
+  if (change && ownsCommit && decision.platformOverride) await admitAutomatedPostModeration(postId)
   return change
 }

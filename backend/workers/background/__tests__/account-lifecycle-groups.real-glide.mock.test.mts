@@ -69,7 +69,7 @@ describe('account-lifecycle and article-sync groups through real GlideMQ', () =>
         ),
       ])
       await twoStarted.promise
-      const other = await harness.add(OPENAI_MODERATION_POST_JOB, { id: randomUUID() })
+      const other = await harness.add(OPENAI_MODERATION_POST_JOB, { versionId: randomUUID() })
 
       // Both workers have free slots; the group parked every account job past the second.
       await otherDomainRan.promise
@@ -116,7 +116,7 @@ describe('account-lifecycle and article-sync groups through real GlideMQ', () =>
         ),
       )
       await firstStarted.promise
-      const other = await harness.add(OPENAI_MODERATION_POST_JOB, { id: randomUUID() })
+      const other = await harness.add(OPENAI_MODERATION_POST_JOB, { versionId: randomUUID() })
 
       await otherDomainRan.promise
       expect(started).toHaveLength(1)

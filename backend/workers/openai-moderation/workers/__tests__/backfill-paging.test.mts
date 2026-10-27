@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Job } from 'glide-mq'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, insertTestPost, readAllQueueJobs } from '@voucha/test-helpers'
+import { getTestPostModerationVersionOwners } from '@voucha/test-helpers/post-moderation-attempt-state'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import {
@@ -54,15 +55,15 @@ describe('openai moderation post backfill paging', () => {
         // Never more than one page of moderation jobs waits behind its dispatcher.
         expect(moderationJobs).toHaveLength(result.enqueued)
         expect(result.enqueued).toBeLessThanOrEqual(PAGE_SIZE)
-        for (const job of moderationJobs) {
-          const id = (job.data as { id: string }).id
+        const owners = await getTestPostModerationVersionOwners(
+          moderationJobs.map(job => (job.data as { versionId: string }).versionId),
+        )
+        const pagePostIds = owners.map(owner => owner.post_id)
+        for (const id of pagePostIds) {
           if (mine.has(id)) enqueuedOnce.set(id, (enqueuedOnce.get(id) ?? 0) + 1)
         }
-        // The continuation ranks behind the page's tasks and carries the page's last id.
-        const last = moderationJobs
-          .map(job => (job.data as { id: string }).id)
-          .toSorted()
-          .at(-1)
+        // The continuation ranks behind the page's tasks and carries the page's last post id.
+        const last = pagePostIds.toSorted().at(-1)
         expect(continuations.map(job => job.data)).toEqual(
           result.hasMore ? [{ afterId: last }] : [],
         )

@@ -17,7 +17,16 @@ const taskJob = (name: string) =>
 /** A backfill dispatcher enqueues one page of ids after `afterId`, then continues from its last id. */
 export type OpenAIModerationBackfillData = { afterId?: string }
 
-export const OPENAI_MODERATION_POST_JOB = taskJob('post')
+// GlideMQ retries the provider call. The attempt row stays open until a disposition or the deadline.
+export const OPENAI_MODERATION_POST_JOB = defineBackgroundJob<{ versionId: string }>(
+  OPENAI_MODERATION_DOMAIN,
+  {
+    name: 'post',
+    priority: PRIORITY_TASK,
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 60_000, jitter: 0.2 },
+  },
+)
 export const OPENAI_MODERATION_IMAGE_JOB = taskJob('image')
 export const OPENAI_MODERATION_BACKFILL_POSTS_JOB =
   defineBackgroundJob<OpenAIModerationBackfillData>(OPENAI_MODERATION_DOMAIN, {

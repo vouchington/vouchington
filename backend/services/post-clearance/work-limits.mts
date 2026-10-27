@@ -3,26 +3,17 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   reconciliation_batch_size: 100,
-  attempt_lease_minutes: 4,
-  first_retry_minutes: 5,
-  later_retry_minutes: 20,
 }
 
-/** Hard ceilings for the current runtime configuration contract. */
+/** Hard ceiling for the current runtime configuration contract. */
 export const postClearanceWorkMaxValues = {
   reconciliation_batch_size: 1000,
-  attempt_lease_minutes: 96,
-  first_retry_minutes: 120,
-  later_retry_minutes: 480,
 }
 
 export const postClearanceWorkConfig = new DynamicConfig({
   key: 'post-clearance-work-config',
   fieldTypes: {
     reconciliation_batch_size: 'number',
-    attempt_lease_minutes: 'number',
-    first_retry_minutes: 'number',
-    later_retry_minutes: 'number',
   },
   defaultFields,
 })

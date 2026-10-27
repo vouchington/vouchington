@@ -38,7 +38,9 @@ describe('moderation-signals domain through real GlideMQ', () => {
         [MODERATION_SIGNALS_BAN_EVASION_JOB.name]: () => void seen.push('ban'),
       },
     })
-    const spam = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
+    const spam = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, {
+      versionId: randomUUID(),
+    })
     await expect(harness.settled(spam)).resolves.toBe('completed')
     const ban = await harness.add(MODERATION_SIGNALS_BAN_EVASION_JOB, {
       communityId: randomUUID(),
@@ -54,14 +56,20 @@ describe('moderation-signals domain through real GlideMQ', () => {
       connection,
       createProcessor: createBackgroundProcessor,
     })
-    const spam = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
+    const spam = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, {
+      versionId: randomUUID(),
+    })
     const ban = await harness.add(MODERATION_SIGNALS_BAN_EVASION_JOB, {
       communityId: randomUUID(),
       userId: randomUUID(),
     })
 
     expect(getBackgroundDomainDefinition('moderation-signals').rateLimit).toBeUndefined()
-    expect(spam.opts).toMatchObject({ attempts: 1, priority: 10 })
+    expect(spam.opts).toMatchObject({
+      attempts: 3,
+      priority: 10,
+      backoff: { type: 'exponential', delay: 60_000, jitter: 0.2 },
+    })
     expect(spam.opts.ordering?.key).toBe('moderation-signals')
     expect(ban.opts).toMatchObject({
       attempts: 3,
@@ -71,7 +79,7 @@ describe('moderation-signals domain through real GlideMQ', () => {
     expect(ban.opts.ordering?.key).toBe('moderation-signals')
   })
 
-  it('fails a spam-detection job after its single attempt', async () => {
+  it('fails a spam-detection job once its attempts are spent', async () => {
     harness = await startBackgroundHarness({
       connection,
       createProcessor: createBackgroundProcessor,
@@ -81,7 +89,11 @@ describe('moderation-signals domain through real GlideMQ', () => {
         },
       },
     })
-    const spam = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
+    const spam = await harness.add(
+      MODERATION_SIGNALS_SPAM_DETECTION_JOB,
+      { versionId: randomUUID() },
+      { attempts: 1 },
+    )
 
     await expect(harness.settled(spam)).resolves.toBe('failed')
     expect((await harness.queue.getJob(spam.id))?.attemptsMade).toBe(1)
@@ -111,7 +123,9 @@ describe('moderation-signals domain through real GlideMQ', () => {
     const jobs = []
     try {
       for (let index = 0; index < JOBS; index += 1) {
-        const job = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
+        const job = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, {
+          versionId: randomUUID(),
+        })
         jobs.push(job)
       }
       await allRunning.promise
@@ -141,7 +155,9 @@ describe('moderation-signals domain through real GlideMQ', () => {
       order.push('released')
       release.resolve()
     })
-    const held = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
+    const held = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, {
+      versionId: randomUUID(),
+    })
     await harness.activated(held, 1)
     const sibling = await harness.add(MODERATION_SIGNALS_BAN_EVASION_JOB, {
       communityId: randomUUID(),

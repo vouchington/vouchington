@@ -2,25 +2,22 @@ import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { postClearanceWorkConfig } from './work-limits.mts'
+import { openAiModerationQueue } from '@queues/openai-moderation/queues'
 import {
   createTestUser,
   expireTestPostModerationVersion,
-  getTestPostModerationRetryDelayMinutes,
   getPostClearanceStatus,
   insertTestPost,
-  makeTestPostModerationWorkAvailable,
   safeUsername,
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
-import {
-  countTestPostModerationIncompleteWork,
-  getTestPostModerationWorkAttemptCount,
-} from '@voucha/test-helpers/post-moderation-attempt-state'
+import { countTestPostModerationIncompleteWork } from '@voucha/test-helpers/post-moderation-attempt-state'
+import { isDeduplicatedEnqueue } from '@voucha/test-helpers/queue-jobs'
 import {
   beginPostModerationAttempt,
   completePostModerationAttempt,
+  enqueuePostModerationRecovery,
   ensureCurrentPostModerationVersion,
-  failPostModerationAttempt,
   reconcilePostModerationWork,
   recordPostModerationDisposition,
 } from './moderation-ledger.mts'
@@ -177,7 +174,7 @@ describe('post moderation ledger', () => {
     expect(await getPostClearanceStatus(postId)).toBe('pending')
   })
 
-  it('owns T+5/T+20 retries in PostgreSQL and fences late completions', async () => {
+  it('reuses one attempt and one stable job id', async () => {
     const postId = await insertTestPost({
       title: `ledger-retries-${crypto.randomUUID()}`,
       slug: `ledger-retries-${crypto.randomUUID()}`,
@@ -187,38 +184,42 @@ describe('post moderation ledger', () => {
     })
 
     const first = await beginPostModerationAttempt(postId, 'openai_omni')
-    expect(first?.attempt_number).toBe(1)
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
-    await expect(beginPostModerationAttempt(postId, 'openai_omni')).resolves.toBeNull()
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
-    await expect(failPostModerationAttempt(first!, 'provider_error')).resolves.toEqual({
-      recorded: true,
-      exhausted: false,
-    })
-    await expect(
-      completePostModerationAttempt(first!, {
-        disposition: 'pass',
-        reasonCode: 'late_provider_pass',
-      }),
-    ).resolves.toBe(false)
-
-    expect(await getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).toBe(5)
-
-    await makeTestPostModerationWorkAvailable(first!.version_id, 'openai_omni')
     const second = await beginPostModerationAttempt(postId, 'openai_omni')
-    expect(second?.attempt_number).toBe(2)
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(2)
-    await failPostModerationAttempt(second!, 'provider_error')
-    expect(await getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).toBe(20)
+    expect(first?.attempt_number).toBe(1)
+    expect(second).toMatchObject({ id: first?.id, attempt_number: 1 })
+    const job = await openAiModerationQueue.getJob(`${first!.version_id}__openai_omni`)
+    expect(job?.data).toEqual({ versionId: first!.version_id })
+    await expect(
+      completePostModerationAttempt(first!, { disposition: 'pass', reasonCode: 'provider_pass' }),
+    ).resolves.toBe(true)
+    await expect(
+      completePostModerationAttempt(first!, { disposition: 'pass', reasonCode: 'provider_pass' }),
+    ).resolves.toBe(false)
+  })
 
-    await makeTestPostModerationWorkAvailable(first!.version_id, 'openai_omni')
-    const third = await beginPostModerationAttempt(postId, 'openai_omni')
-    expect(third?.attempt_number).toBe(3)
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(3)
-    await expect(failPostModerationAttempt(third!, 'provider_error')).resolves.toEqual({
-      recorded: true,
-      exhausted: true,
+  it('re-enqueues a committed version that lost its job without another disposition', async () => {
+    const postId = await insertTestPost({
+      title: `ledger-recovery-${crypto.randomUUID()}`,
+      slug: `ledger-recovery-${crypto.randomUUID()}`,
+      markdown: 'ordinary content',
+      createdById: userId,
+      clearanceStatus: 'pending',
     })
+    const version = await ensureCurrentPostModerationVersion(postId)
+    expect(await openAiModerationQueue.getJob(`${version.id}__openai_omni`)).toBeFalsy()
+
+    const page = await reconcilePostModerationWork(undefined, [postId])
+    expect(page.due).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ version_id: version.id, source: 'openai_omni' }),
+        expect.objectContaining({ version_id: version.id, source: 'spam_detection' }),
+      ]),
+    )
+    const enqueued = await enqueuePostModerationRecovery(version.id, 'openai_omni')
+    expect(isDeduplicatedEnqueue(enqueued)).toBe(false)
+    const again = await enqueuePostModerationRecovery(version.id, 'openai_omni')
+    expect(isDeduplicatedEnqueue(again)).toBe(true)
+    expect(await countTestPostModerationIncompleteWork(postId)).toBe(2)
   })
 
   it('moves unresolved current-version work to review at the hard deadline', async () => {
@@ -232,7 +233,7 @@ describe('post moderation ledger', () => {
     const version = await ensureCurrentPostModerationVersion(postId)
     await expireTestPostModerationVersion(version.id)
 
-    const reconciliation = await reconcilePostModerationWork()
+    const reconciliation = await reconcilePostModerationWork(undefined, [postId])
     expect(reconciliation.exhausted_post_ids).toContain(postId)
     await checkPostClearance(postId)
     expect(await getPostClearanceStatus(postId)).toBe('in_review')

@@ -15,7 +15,6 @@ import {
   createTestUser,
   createSystemUser,
   getPostLLMModerationContentSha256,
-  getTestPostModerationRetryDelayMinutes,
   getLatestPostClearanceDecision,
   getLatestPostClearanceTransparencyCategories,
   getTestPostClearanceState,
@@ -25,6 +24,7 @@ import {
   markImageDeleted,
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
+import { countTestPostModerationAttempts } from '@voucha/test-helpers/post-moderation-attempt-state'
 import { createPostModerationContent } from './content.mts'
 import { getPostModerationInput } from './moderation-input.mts'
 import { getPostImages, setPostImages } from './images.mts'
@@ -134,12 +134,8 @@ describe('setPostImages clearance rollback', () => {
       createPostModerationContent(currentPost!).content_sha256,
     )
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
-    await expect(
-      getTestPostModerationRetryDelayMinutes(postId, 'openai_omni'),
-    ).resolves.not.toBeNull()
-    await expect(
-      getTestPostModerationRetryDelayMinutes(postId, 'spam_detection'),
-    ).resolves.not.toBeNull()
+    await expect(countTestPostModerationAttempts(postId, 'openai_omni')).resolves.toBe(1)
+    await expect(countTestPostModerationAttempts(postId, 'spam_detection')).resolves.toBe(1)
   })
 
   it('restores an automated rejection without creating another moderation event', async () => {

@@ -19,6 +19,7 @@ import {
   insertTestPostImage,
   setPostAiSummaryMarkdownForTest,
 } from '@voucha/test-helpers'
+import { getTestPostModerationVersionOwner } from '@voucha/test-helpers/post-moderation-attempt-state'
 import { lockPostPublication } from '@services/post-publication'
 import { getPostImages, setPostImages } from './images.mts'
 import { rollbackPostImages } from './images-rollback.mts'
@@ -50,9 +51,10 @@ describe('setPostImages', () => {
     const enqueued = watchContentChangedEnqueues(postId)
     await setPostImages(creator!, post, [{ image_id: imageId, order_index: 0 }])
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
-    await expect(enqueued.spam).resolves.toMatchObject({ contentSha256: content_sha256 })
+    const spam = await enqueued.spam
+    expect(spam.contentSha256.equals(content_sha256)).toBe(true)
     const moderation = await enqueued.moderation
-    expect(moderation?.deduplicationKey).toContain(content_sha256.toString('hex'))
+    expect(moderation.contentSha256.equals(content_sha256)).toBe(true)
   })
   it('rolls back image changes when the post update enqueue fails', async () => {
     const creator = await createTestUser()
@@ -224,22 +226,25 @@ describe('setPostImages', () => {
 })
 
 function watchContentChangedEnqueues(postId: string): {
-  spam: Promise<{ contentSha256?: Buffer | string } | undefined>
-  moderation: Promise<{ deduplicationKey?: string } | undefined>
+  spam: Promise<{ versionId: string; contentSha256: Buffer }>
+  moderation: Promise<{ versionId: string; contentSha256: Buffer }>
 } {
-  const spam = Promise.withResolvers<{ contentSha256?: Buffer | string } | undefined>()
-  const moderation = Promise.withResolvers<{ deduplicationKey?: string } | undefined>()
+  const spam = Promise.withResolvers<{ versionId: string; contentSha256: Buffer }>()
+  const moderation = Promise.withResolvers<{ versionId: string; contentSha256: Buffer }>()
   const enqueueSpam = spamEnqueues.enqueueSpamDetection
   const enqueueModeration = moderationEnqueues.enqueueCreatePostModeration
-  vi.spyOn(spamEnqueues, 'enqueueSpamDetection').mockImplementation(async (id, options) => {
-    const result = await enqueueSpam(id, options)
-    if (id === postId) spam.resolve(options)
+  vi.spyOn(spamEnqueues, 'enqueueSpamDetection').mockImplementation(async versionId => {
+    const result = await enqueueSpam(versionId)
+    const owner = await getTestPostModerationVersionOwner(versionId)
+    if (owner?.post_id === postId) spam.resolve({ versionId, contentSha256: owner.content_sha256 })
     return result
   })
   vi.spyOn(moderationEnqueues, 'enqueueCreatePostModeration').mockImplementation(
-    async (id, options) => {
-      const result = await enqueueModeration(id, options)
-      if (id === postId) moderation.resolve(options)
+    async versionId => {
+      const result = await enqueueModeration(versionId)
+      const owner = await getTestPostModerationVersionOwner(versionId)
+      if (owner?.post_id === postId)
+        moderation.resolve({ versionId, contentSha256: owner.content_sha256 })
       return result
     },
   )

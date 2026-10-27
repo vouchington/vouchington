@@ -9411,6 +9411,12 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/moderation-signals':
+        specifier: workspace:^
+        version: link:../../queues/moderation-signals
+      '@queues/openai-moderation':
+        specifier: workspace:^
+        version: link:../../queues/openai-moderation
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql

@@ -9,11 +9,7 @@ import {
 import { readClassifierRunDispatcherJobsForTest } from '@voucha/test-helpers/classifier-run-queue-jobs'
 import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
-import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
-import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
-import { background } from '@queues/background/queues'
-import { MODERATION_SIGNALS_SPAM_DETECTION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
-import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
+import { countTestPostModerationAttempts } from '@voucha/test-helpers/post-moderation-attempt-state'
 import { classifierRunDispatcherJobId } from '../../../queues/ai-agents/enqueues/classifier-run.mts'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import type { PrivateUser } from '@services/users/types'
@@ -66,26 +62,7 @@ describe('create.admin-bypass', () => {
       name: 'classifier-run-dispatcher',
     })
     expect(dispatcherJobs[0]!.data).toEqual(taggingData)
-    expect(
-      (await readAllQueueJobs(background)).filter(
-        job =>
-          job.name === OPENAI_MODERATION_POST_JOB.name &&
-          job.data !== null &&
-          typeof job.data === 'object' &&
-          'id' in job.data &&
-          job.data.id === post.id,
-      ),
-    ).toEqual([])
-    expect(
-      (await readAllQueueJobs(moderationSignalsQueue)).filter(
-        job =>
-          job.name === MODERATION_SIGNALS_SPAM_DETECTION_JOB.name &&
-          job.data !== null &&
-          typeof job.data === 'object' &&
-          'id' in job.data &&
-          job.data.id === post.id,
-      ),
-    ).toEqual([])
+    expect(await countTestPostModerationAttempts(post.id)).toBe(0)
   })
 
   it('createPost still requests community moderation for non-admin auto-approved publications', async () => {

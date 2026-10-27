@@ -2,15 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { RateLimitError } from 'openai'
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
+import { beginPostModerationAttempt } from '@services/post-clearance'
+import { createPostModerationContent } from '@services/posts/content'
+import { getPostByAny } from '@services/posts/get'
 import {
   createTestUser,
-  getTestPostModerationRetryDelayMinutes,
+  getPostModerationData,
   insertTestPost,
+  setPostModerationContentSha256,
 } from '@voucha/test-helpers'
-import {
-  getTestPostModerationWorkAttemptCount,
-  getTestPostModerationWorkHoldMs,
-} from '@voucha/test-helpers/post-moderation-attempt-state'
+import { getTestPostModerationAttemptStateForPost } from '@voucha/test-helpers/post-moderation-attempt-state'
 import { handleOpenAIModerationOmniSingleJob } from '../../processors/openai-moderation-omni-single.mts'
 
 const requestOpenAIModeration = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -32,13 +33,22 @@ async function insertPendingPost(): Promise<string> {
   })
 }
 
-function makeJob(id: string): Job<{ id: string }> {
-  return { data: { id }, name: 'openai-moderation.post' } as Job<{ id: string }>
+async function beginOpenAttempt(postId: string): Promise<string> {
+  const post = await getPostByAny(postId)
+  if (!post) throw new Error('missing rate-limit fixture')
+  await setPostModerationContentSha256(postId, createPostModerationContent(post).content_sha256)
+  const attempt = await beginPostModerationAttempt(postId, 'openai_omni')
+  return attempt!.version_id
+}
+
+function makeJob(versionId: string): Job<{ versionId: string }> {
+  return { data: { versionId }, name: 'openai-moderation.post' } as Job<{ versionId: string }>
 }
 
 describe('openai moderation post job under a provider rate limit', () => {
-  it('requeues for the Retry-After without recording a ledger attempt', async () => {
+  it('throws the provider delay and leaves the attempt open', async () => {
     const postId = await insertPendingPost()
+    const versionId = await beginOpenAttempt(postId)
     const rateLimited = new RateLimitError(
       429,
       {},
@@ -47,25 +57,33 @@ describe('openai moderation post job under a provider rate limit', () => {
     )
     requestOpenAIModeration.mockRejectedValueOnce(rateLimited)
 
-    const thrown: unknown = await handleOpenAIModerationOmniSingleJob(makeJob(postId)).catch(
+    const thrown: unknown = await handleOpenAIModerationOmniSingleJob(makeJob(versionId)).catch(
       (err: unknown) => err,
     )
 
     expect(thrown).toMatchObject({ name: 'RateLimitError', delayMs: 30_000, cause: rateLimited })
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(0)
-    const holdMs = await getTestPostModerationWorkHoldMs(postId, 'openai_omni')
-    expect(holdMs).toBeGreaterThan(25_000)
-    expect(holdMs).toBeLessThanOrEqual(30_000)
+    await expect(getTestPostModerationAttemptStateForPost(postId, 'openai_omni')).resolves.toEqual({
+      completed_at: null,
+      attempt_number: 1,
+    })
+    await expect(getPostModerationData(postId)).resolves.toMatchObject({
+      is_flagged_by_openai_omni_moderation: null,
+    })
   })
 
-  it('still records a failed attempt for any other provider failure', async () => {
+  it('leaves the attempt open when the provider fails for another reason', async () => {
     const postId = await insertPendingPost()
+    const versionId = await beginOpenAttempt(postId)
     const outage = new Error('provider down')
     requestOpenAIModeration.mockRejectedValueOnce(outage)
 
-    await expect(handleOpenAIModerationOmniSingleJob(makeJob(postId))).rejects.toBe(outage)
-
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBe(1)
-    expect(await getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).toBe(5)
+    await expect(handleOpenAIModerationOmniSingleJob(makeJob(versionId))).rejects.toBe(outage)
+    await expect(getTestPostModerationAttemptStateForPost(postId, 'openai_omni')).resolves.toEqual({
+      completed_at: null,
+      attempt_number: 1,
+    })
+    await expect(getPostModerationData(postId)).resolves.toMatchObject({
+      is_flagged_by_openai_omni_moderation: null,
+    })
   })
 })

@@ -93,10 +93,12 @@ projections together. Google purchase acknowledgement remains a separate durable
 The membership overview returns no next-processing timestamp because queue scheduling is not a
 PostgreSQL lifecycle fact.
 
-Moderation reconciliation admits expired and retryable work through the same bounded candidate
-page. Terminal dispositions are written only for that admitted page; lease and disposition updates
-commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because
-polling does not necessarily remove active rows from the work predicate.
+Moderation reconciliation pages current versions that have no disposition. A version past its
+deadline receives an incomplete disposition and goes to staff review. A version still inside its
+deadline is re-enqueued on GlideMQ with a job id taken from the version and source. GlideMQ owns
+retries and leases. Billing stays a per-request report and is not read to skip work. Batch
+embedding listings use a fixed ID boundary and keyset continuation because polling does not
+necessarily remove active rows from the work predicate.
 
 Posts owns embedding-trigger bookkeeping alongside deletion so a terminal skip cannot hide a newly
 eligible first community post. Community services retain ban-evasion detection policy; the deleted

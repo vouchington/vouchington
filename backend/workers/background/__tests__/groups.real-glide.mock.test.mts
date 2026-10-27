@@ -57,7 +57,7 @@ describe('background domain groups through real GlideMQ', () => {
         Array.from({ length: 6 }, () => harness!.add(SES_INBOUND_PROCESS_JOB, sesData())),
       )
       await firstStarted.promise
-      const other = await harness.add(OPENAI_MODERATION_POST_JOB, { id: randomUUID() })
+      const other = await harness.add(OPENAI_MODERATION_POST_JOB, { versionId: randomUUID() })
 
       // The second worker has a free slot and older ses jobs ahead of this one in the stream. It
       // reaches the other domain's job only because the group parked every ses job past the first.
@@ -102,7 +102,7 @@ describe('background domain groups through real GlideMQ', () => {
     })
     const limited = await harness.add(
       OPENAI_MODERATION_POST_JOB,
-      { id: randomUUID() },
+      { versionId: randomUUID() },
       { attempts: 3 },
     )
     await harness.activated(limited, 1)

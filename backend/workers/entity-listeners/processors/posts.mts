@@ -1,6 +1,5 @@
 import { repairEntityBloomKeys } from '@services/entity-cache/repair-entity-keys'
 import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
-import { enqueueCreatePostModeration } from '@queues/openai-moderation/enqueues'
 import { enqueuePostMentions } from '@queues/post-mentions/enqueues'
 import { enqueueClassifierRunDispatcher } from '@queues/ai-agents/enqueues/classifier-run'
 import { requestApprovedPostClassifierRuns } from '@services/classifier-runs'
@@ -11,14 +10,17 @@ import { createPostModerationContent } from '@services/posts/content'
 import { getPostModerationInput } from '@services/posts/moderation-input'
 import { isPlatformAccount } from '@services/users'
 import { getPrivateUserByAny } from '@services/users/get'
-import { enqueueDetectBanEvasion, enqueueSpamDetection } from '@queues/moderation-signals/enqueues'
+import { enqueueDetectBanEvasion } from '@queues/moderation-signals/enqueues'
 import { isFirstCommunityPost } from '@services/communities/ban-evasion'
 import { requestCommunityModerationRunForPost } from '@services/communities/publications/moderation-run'
 import onError from '@modules/on-error'
 import { enqueueLanguageDetection } from '@queues/content-analysis/enqueues'
-import { resetPostClearanceIfContentCurrent } from '@services/post-clearance'
+import {
+  admitAutomatedPostModeration,
+  beginPostModerationAttempt,
+  resetPostClearanceIfContentCurrent,
+} from '@services/post-clearance'
 import { autoSubscribePostCreator } from './auto-subscribe-post-creator.mts'
-import { makeModerationDeduplicationKey } from './moderation-deduplication-key.mts'
 import { handlePostCommentAction } from './comment-actions.mts'
 import { recoverPostCreatedEffects } from './post-created-recovery.mts'
 
@@ -45,8 +47,6 @@ export const processPostCreated = async (
   if (!post) return
   await repairEntityBloomKeys('posts', id)
   const bypassCreateModeration = post.clearance_status === 'approved' && post.post_type !== 'story'
-  const { content_sha256 } = createPostModerationContent(post)
-  const moderationDeduplicationKey = makeModerationDeduplicationKey(post, content_sha256)
   if (post.created_by_id) {
     const creator = await getPrivateUserByAny(post.created_by_id)
     if (creator && !isPlatformAccount(creator)) {
@@ -59,14 +59,8 @@ export const processPostCreated = async (
     enqueueCreatePostEmbedding(post.id),
     enqueuePostMentions(post.id),
     !bypassCreateModeration
-      ? enqueueCreatePostModeration(post.id, { deduplicationKey: moderationDeduplicationKey })
+      ? admitAutomatedPostModeration(post.id)
       : requestTaggingForApprovedPost(post.id),
-    !bypassCreateModeration
-      ? enqueueSpamDetection(post.id, {
-          contentSha256: content_sha256,
-          deduplicationKey: moderationDeduplicationKey,
-        })
-      : Promise.resolve(),
   ])
 
   if (post.community_id && post.created_by_id) {
@@ -100,26 +94,23 @@ export const processPostUpdated = async ({
   if (!post) return
   await repairEntityBloomKeys('posts', id)
 
-  const { content_sha256 } = createPostModerationContent(post)
-  const moderationDeduplicationKey = makeModerationDeduplicationKey(post, content_sha256)
   if (contentChanged) {
+    const { content_sha256 } = createPostModerationContent(post)
     const reset = await resetPostClearanceIfContentCurrent(id, content_sha256, {
       alreadyReset: clearanceAlreadyReset,
     })
     if (!reset) return
     // The edited content gets its own durable C8 request; a published post only.
     await requestCommunityModerationRunForPost(id)
-    await enqueueSpamDetection(id, {
-      contentSha256: content_sha256,
-      deduplicationKey: moderationDeduplicationKey,
-    })
   }
 
   await Promise.all([
     enqueueLanguageDetection('post', id),
     enqueueCreatePostEmbedding(post.id),
-    enqueueCreatePostModeration(post.id, { deduplicationKey: moderationDeduplicationKey }),
-    enqueuePostMentions(post.id),
+    contentChanged
+      ? admitAutomatedPostModeration(id)
+      : beginPostModerationAttempt(id, 'openai_omni'),
+    enqueuePostMentions(id),
   ])
 
   await handlePostCommentAction(post.id)

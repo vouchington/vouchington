@@ -13,7 +13,12 @@ import {
   safeUsername,
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
+import { getTestPostModerationAttemptStateForPost } from '@voucha/test-helpers/post-moderation-attempt-state'
 import type { PrivateUser } from '@services/users/types'
+import {
+  beginPostModerationAttempt,
+  recordPostModerationDisposition,
+} from '@services/post-clearance'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 import { processSpamDetection } from './processors.mts'
 
@@ -40,8 +45,9 @@ describe('processSpamDetection', () => {
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
     await setPostLLMModerationContentSha256(postId, content_sha256)
+    const attempt = await beginPostModerationAttempt(postId, 'spam_detection')
 
-    await expect(processSpamDetection(postId)).resolves.toBe(true)
+    await expect(processSpamDetection(attempt!.version_id)).resolves.toBe(true)
 
     const state = await getPostSpamDetectionState(postId)
     expect(state?.spam_detection_created_at).toBeInstanceOf(Date)
@@ -67,9 +73,10 @@ describe('processSpamDetection', () => {
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
     await setPostLLMModerationContentSha256(postId, content_sha256)
+    const attempt = await beginPostModerationAttempt(postId, 'spam_detection')
     await setPostLLMModerationContentSha256(postId, Buffer.alloc(32, 1))
 
-    await expect(processSpamDetection(postId)).resolves.toBe(false)
+    await expect(processSpamDetection(attempt!.version_id)).resolves.toBe(false)
 
     await expect(getPostSpamDetectionState(postId)).resolves.toMatchObject({
       spam_detection_created_at: null,
@@ -77,25 +84,35 @@ describe('processSpamDetection', () => {
     })
   })
 
-  it('returns false before analysis when the queued content hash is stale', async () => {
+  it('returns false when the version already has a spam disposition', async () => {
     const suffix = Math.random().toString(36).slice(2, 10)
     const postId = await insertTestPost({
       createdById: user.id,
       markdown: `A normal discussion about rewards ${suffix}`,
-      slug: `spam-processor-queued-stale-${suffix}`,
-      title: `Spam processor queued stale ${suffix}`,
+      slug: `spam-processor-disposed-${suffix}`,
+      title: `Spam processor disposed ${suffix}`,
     })
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
     await setPostLLMModerationContentSha256(postId, content_sha256)
+    const attempt = await beginPostModerationAttempt(postId, 'spam_detection')
+    await recordPostModerationDisposition({
+      versionId: attempt!.version_id,
+      source: 'spam_detection',
+      attemptId: attempt!.id,
+      disposition: 'pass',
+      reasonCode: 'provider_pass',
+    })
 
-    await expect(processSpamDetection(postId, Buffer.alloc(32, 3).toString('hex'))).resolves.toBe(
-      false,
-    )
-
+    await expect(processSpamDetection(attempt!.version_id)).resolves.toBe(false)
+    await expect(
+      getTestPostModerationAttemptStateForPost(postId, 'spam_detection'),
+    ).resolves.toEqual({
+      completed_at: null,
+      attempt_number: 1,
+    })
     await expect(getPostSpamDetectionState(postId)).resolves.toMatchObject({
-      spam_detection_created_at: null,
-      spam_detection_flagged: null,
+      spam_detection_flagged: false,
     })
   })
 
@@ -116,8 +133,9 @@ describe('processSpamDetection', () => {
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
     await setPostLLMModerationContentSha256(postId, content_sha256)
+    const attempt = await beginPostModerationAttempt(postId, 'spam_detection')
 
-    await expect(processSpamDetection(postId)).resolves.toBe(true)
+    await expect(processSpamDetection(attempt!.version_id)).resolves.toBe(true)
 
     await expect(getTestPenaltiesByPostId(postId, user.id)).resolves.toEqual([
       expect.objectContaining({ reason: 'referral_link_in_post', user_id: user.id }),

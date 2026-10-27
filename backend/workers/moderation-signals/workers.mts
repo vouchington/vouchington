@@ -8,8 +8,8 @@ import { processSpamDetection } from './processors.mts'
 
 export const moderationSignalsHandlers = [
   backgroundHandler(MODERATION_SIGNALS_SPAM_DETECTION_JOB, async job => {
-    if (!job.data.id) throw new Error('Spam detection job requires id in job.data')
-    const applied = await processSpamDetection(job.data.id, job.data.contentSha256)
+    if (!job.data.versionId) throw new Error('Spam detection job requires versionId in job.data')
+    const applied = await processSpamDetection(job.data.versionId)
     return { success: true, applied }
   }),
   backgroundHandler(MODERATION_SIGNALS_BAN_EVASION_JOB, async job => {
