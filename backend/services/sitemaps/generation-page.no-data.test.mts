@@ -1,13 +1,19 @@
-import { readFile } from 'node:fs/promises'
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { buffer } from 'node:stream/consumers'
+import type { Readable } from 'node:stream'
 import { gunzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { generateSitemapPage, type GenerationPageDependencies } from './generation-page.mts'
 import type { SitemapGenerationProgress } from './generation-storage.mts'
+import { applyStoragePrefix } from './storage-prefix.mts'
 import type { PostDayManifest } from './storage.mts'
 import type { SitemapFamilyEntry } from './types.mts'
 
 describe('bounded sitemap publication', () => {
-  afterEach(() => vi.unstubAllEnvs())
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
   it('keeps the previous index live across a cap and a failed staged upload', async () => {
     vi.stubEnv('SITEMAP_BASE_URL', 'https://test.com')
     const entries: SitemapFamilyEntry[] = [
@@ -30,7 +36,8 @@ describe('bounded sitemap publication', () => {
       generated_at: '2026-03-01T00:00:00.000Z',
       content_hash: 'previous-content',
     }
-    const objects = new Map<string, string>([['sitemaps/families/topics.xml', 'previous-index']])
+    const indexKey = applyStoragePrefix('sitemaps/families/topics.xml')
+    const objects = new Map<string, string>([[indexKey, 'previous-index']])
     const retired: Array<{ generationId: string; pageCount: number }> = []
     let failNextPage = true
     const dependencies: GenerationPageDependencies<SitemapFamilyEntry> = {
@@ -62,35 +69,41 @@ describe('bounded sitemap publication', () => {
         loc: `https://test.com${entry.path}`,
         lastmod: entry.updated_at.toISOString(),
       }),
-      putObjectFile: async (key, filePath, options) => {
-        if (options.manifest) manifest = options.manifest
-        if (key.endsWith('/2.xml') && failNextPage) throw new Error('staged upload failed')
-        objects.set(key, gunzipSync(await readFile(filePath)).toString())
-      },
     }
+    vi.spyOn(S3Client.prototype, 'send').mockImplementation(async command => {
+      if (!(command instanceof PutObjectCommand)) throw new Error('Unexpected S3 command')
+      const input = command.input
+      const key = input.Key!
+      const body = await buffer(input.Body as Readable)
+      const manifestMetadata = input.Metadata?.['sitemap-manifest']
+      if (manifestMetadata) manifest = JSON.parse(manifestMetadata) as PostDayManifest
+      if (key.endsWith('/2.xml') && failNextPage) throw new Error('staged upload failed')
+      objects.set(key, gunzipSync(body).toString())
+      return {} as never
+    })
 
     const first = await generateSitemapPage(1, dependencies)
     expect(first).toMatchObject({ manifest: null, hasMore: true })
-    expect(objects.get('sitemaps/families/topics.xml')).toBe('previous-index')
+    expect(objects.get(indexKey)).toBe('previous-index')
     expect(manifest?.generation_id).toBe('11111111-1111-4111-8111-111111111111')
     const stagedGenerationId = currentProgress()?.generation_id
 
     await expect(generateSitemapPage(1, dependencies)).rejects.toThrow('staged upload failed')
-    expect(objects.get('sitemaps/families/topics.xml')).toBe('previous-index')
+    expect(objects.get(indexKey)).toBe('previous-index')
     expect(currentProgress()?.page_count).toBe(1)
 
     failNextPage = false
     const final = await generateSitemapPage(1, dependencies)
     expect(final).toMatchObject({ hasMore: false, manifest: { active_page_count: 2 } })
-    expect(objects.get('sitemaps/families/topics.xml')).toContain(
+    expect(objects.get(indexKey)).toContain(
       `https://test.com/sitemaps/topics/${stagedGenerationId}/2.xml`,
     )
     expect(progress).toBeNull()
 
-    const publishedIndex = objects.get('sitemaps/families/topics.xml')
+    const publishedIndex = objects.get(indexKey)
     const repaged = await generateSitemapPage(2, dependencies)
     expect(repaged.manifest).toEqual(final.manifest)
-    expect(objects.get('sitemaps/families/topics.xml')).toBe(publishedIndex)
+    expect(objects.get(indexKey)).toBe(publishedIndex)
     expect(retired.at(-1)?.pageCount).toBe(1)
     expect(retired.at(-1)?.generationId).not.toBe(final.manifest?.generation_id)
   })

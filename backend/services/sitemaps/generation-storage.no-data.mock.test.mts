@@ -136,7 +136,7 @@ describe('retired sitemap S3 operations', () => {
 
     await expect(
       cleanupRetiredSitemapGenerations(new Date('2026-10-25T00:00:00.000Z')),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       deletedPages: 0,
       hasMore: true,
     })

@@ -27,7 +27,6 @@ export type GenerationPageDependencies<T extends SourceEntry> = {
   retireGeneration: (generationId: string, pageCount: number) => Promise<void>
   afterPublication?: () => Promise<void>
   toUrl: (entry: T) => SitemapUrl
-  putObjectFile?: typeof putSitemapObjectFile
 }
 
 export type GenerationPageResult = {
@@ -113,7 +112,7 @@ export async function generateSitemapPage<T extends SourceEntry>(
           .digest('hex')
       }
       try {
-        await (dependencies.putObjectFile ?? putSitemapObjectFile)(
+        await putSitemapObjectFile(
           dependencies.pageStorageKey(progress.generation_id, page),
           file.filePath,
           { contentType: 'application/xml; charset=utf-8', contentEncoding: 'gzip' },
@@ -167,15 +166,11 @@ export async function generateSitemapPage<T extends SourceEntry>(
     content_hash: progress.content_hash,
   }
   try {
-    await (dependencies.putObjectFile ?? putSitemapObjectFile)(
-      dependencies.indexStorageKey,
-      index.filePath,
-      {
-        contentType: 'application/xml; charset=utf-8',
-        contentEncoding: 'gzip',
-        manifest,
-      },
-    )
+    await putSitemapObjectFile(dependencies.indexStorageKey, index.filePath, {
+      contentType: 'application/xml; charset=utf-8',
+      contentEncoding: 'gzip',
+      manifest,
+    })
   } finally {
     await deleteTemporaryGzipFile(index.filePath)
   }

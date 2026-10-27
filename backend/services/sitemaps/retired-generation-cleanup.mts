@@ -24,7 +24,7 @@ export const retiredCleanupDependencies = {
 export async function cleanupRetiredSitemapGenerations(
   now = new Date(),
   dependencies = retiredCleanupDependencies,
-): Promise<{ deletedPages: number; hasMore: boolean }> {
+): Promise<{ deletedPages: number; hasMore: boolean; resumeToken: string }> {
   const pageBudget = dependencies.getSitemapsWorkLimit('retired_generation_delete_page_size')
   const recordLimit = dependencies.getSitemapsWorkLimit('retired_generation_record_scan_limit')
   const afterKey = await dependencies.getRetiredSitemapCursor()
@@ -32,6 +32,7 @@ export async function cleanupRetiredSitemapGenerations(
   let lastCompletedKey = afterKey
   let deletedPages = 0
   let interrupted = false
+  let partialProgress = ''
 
   for (const key of listing.keys) {
     // oxlint-disable-next-line no-await-in-loop -- each record consumes the remaining run budget before cursor advance
@@ -61,6 +62,7 @@ export async function cleanupRetiredSitemapGenerations(
       // oxlint-disable-next-line no-await-in-loop -- persist the partial page before the next scheduled run
       await dependencies.putRetiredSitemapGeneration({ ...record, next_page: lastPage + 1 })
       interrupted = true
+      partialProgress = `${key}@${lastPage + 1}`
       break
     }
     // oxlint-disable-next-line no-await-in-loop -- remove only the generation whose pages were deleted
@@ -70,5 +72,6 @@ export async function cleanupRetiredSitemapGenerations(
 
   const hasMore = listing.hasMore || interrupted
   await dependencies.putRetiredSitemapCursor(hasMore ? lastCompletedKey : null)
-  return { deletedPages, hasMore }
+  // Names the durable state the next job resumes from, so a retried pass derives the same id.
+  return { deletedPages, hasMore, resumeToken: `${lastCompletedKey ?? ''}|${partialProgress}` }
 }

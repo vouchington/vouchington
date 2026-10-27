@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
   type SitemapArchiveBackfillData,
@@ -177,12 +177,14 @@ export const enqueueMonthlyBackfillArchiveContinuation = (afterDay: string): Enq
 
 const enqueueRetiredSitemapCleanupJob = createBackgroundEnqueue(SITEMAPS_RETIRED_CLEANUP_JOB)
 
+// The id names the durable cleanup state the next job resumes from. Every pass advances that state,
+// so each step gets a new id while a retried parent re-derives the same one and collapses.
 /** Resumes the durable cleanup cursor in a new bounded job, without waiting for worker completion. */
-export const enqueueRetiredSitemapCleanupContinuation = (): EnqueueReturnType =>
+export const enqueueRetiredSitemapCleanupContinuation = (resumeToken: string): EnqueueReturnType =>
   enqueueRetiredSitemapCleanupJob(
     {},
     {
-      jobId: `${SITEMAPS_RETIRED_CLEANUP_JOB.name}__${randomUUID()}`,
+      jobId: `${SITEMAPS_RETIRED_CLEANUP_JOB.name}__${createHash('sha256').update(resumeToken).digest('hex').slice(0, 32)}`,
       ordering: SITEMAPS_ORDERING.dispatcher,
       removeOnComplete: true,
       removeOnFail: true,

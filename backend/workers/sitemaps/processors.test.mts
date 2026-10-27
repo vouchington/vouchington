@@ -139,7 +139,7 @@ describe('sitemap processors', () => {
         enqueueRetiredSitemapCleanupContinuation: vi.fn<VitestLooseMock>(),
         cleanupRetiredSitemapGenerations: vi
           .fn<VitestLooseMock>()
-          .mockResolvedValue({ deletedPages: 0, hasMore: false }),
+          .mockResolvedValue({ deletedPages: 0, hasMore: false, resumeToken: '' }),
       },
       new Date('2026-06-10T08:00:00.000Z'),
     )
@@ -187,6 +187,7 @@ describe('sitemap processors', () => {
     vi.spyOn(backfillDispatcherDependencies, 'cleanupRetiredSitemapGenerations').mockResolvedValue({
       deletedPages: 0,
       hasMore: false,
+      resumeToken: '',
     })
 
     await processNightlyBackfillWeekDispatcher(

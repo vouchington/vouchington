@@ -15,5 +15,6 @@ export async function processRetiredSitemapCleanup(
   now = new Date(),
 ): Promise<void> {
   const result = await dependencies.cleanupRetiredSitemapGenerations(now)
-  if (result.hasMore) await dependencies.enqueueRetiredSitemapCleanupContinuation()
+  if (result.hasMore)
+    await dependencies.enqueueRetiredSitemapCleanupContinuation(result.resumeToken)
 }

@@ -52,7 +52,7 @@ describe('retired sitemap cleanup', () => {
       new Date('2026-10-25T00:00:00.000Z'),
       dependencies,
     )
-    expect(partial).toEqual({ deletedPages: 2, hasMore: true })
+    expect(partial).toMatchObject({ deletedPages: 2, hasMore: true })
     expect(deleted).toEqual([
       'families/topics/11111111-1111-4111-8111-111111111111/1.xml',
       'families/topics/11111111-1111-4111-8111-111111111111/2.xml',
