@@ -1,4 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
+import { getOAuthFriendReferenceConnectBatchSize } from './work-limits.mts'
 
 type FriendProvider = 'facebook' | 'github' | 'x'
 
@@ -40,4 +41,24 @@ export async function resolveFriendReferencePage(
     [accountId],
   )
   return { resolved: updated.rowCount ?? 0, hasMore: remaining.length > 0 }
+}
+
+/** Resolve one connect-time page and clear the pending marker once drained. */
+export async function resolveConnectedFriendReferences(
+  query: TransactionQuery,
+  provider: FriendProvider,
+  accountId: string,
+): Promise<void> {
+  const page = await resolveFriendReferencePage(
+    query,
+    provider,
+    accountId,
+    getOAuthFriendReferenceConnectBatchSize(),
+  )
+  if (page.hasMore) return
+  await query(
+    `/* completeConnectedFriendResolution */ UPDATE ${provider}_accounts
+     SET friend_references_resolve_pending_at = NULL WHERE id = $1::uuid`,
+    [accountId],
+  )
 }

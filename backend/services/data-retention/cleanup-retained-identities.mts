@@ -1,66 +1,16 @@
 import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
-import { electedRelationMetadata } from '@services/users/relation-impact-targets'
+import {
+  retainedRelationReferences,
+  RETAINED_USER_REFERENCES,
+} from './retained-user-references.mts'
 import { COMMUNITY_BRIDGE_FAMILY } from './retained-community-bridge-family.mts'
-function retainedRelationReferences(subjectType: string): [string, string][] {
-  return electedRelationMetadata.flatMap(metadata =>
-    metadata.subject_type === subjectType
-      ? [[`retained_${metadata.table_name}`, 'subject_id'] as [string, string]]
-      : [],
-  )
-}
 export const ROOT_FAMILIES = {
   community_bridge: COMMUNITY_BRIDGE_FAMILY,
   user: {
     table: 'retained_user_identities',
-    references: [
-      ['users', 'id'],
-      ['images', 'created_by_id'],
-      ['retained_image_identities', 'created_by_id'],
-      ['image_surface_placement_activations', 'bound_by_id'],
-      ['image_surface_placement_activations', 'uploaded_by_id'],
-      ['user_deletion_requests', 'user_id'],
-      ['user_deletion_requests', 'requested_by_id'],
-      ['membership_changes', 'user_id'],
-      ['membership_changes', 'changed_by_id'],
-      ['membership_grants', 'granted_by_id'],
-      ['membership_grants', 'revoked_by_id'],
-      ['membership_refunds', 'user_id'],
-      ['membership_refunds', 'issued_by_id'],
-      ['membership_administrator_refund_operation_requests', 'issued_by_id'],
-      ['membership_sources', 'user_id'],
-      ['oauth_authorization_server_events', 'user_id'],
-      ['oauth_native_session_token_mints', 'user_id'],
-      ['oauth_grant_retention_anchors', 'user_id'],
-      ['copyright_decision_rationales', 'account_user_id'],
-      ['copyright_decision_rationales', 'recorded_by_id'],
-      ['post_moderation_dispositions', 'actor_user_id'],
-      ['post_clearance_changes', 'changed_by_id'],
-      ['community_post_review_changes', 'changed_by_id'],
-      ['copyright_notice_lifecycle_changes', 'changed_by_id'],
-      ['fediverse_instance_integration_changes', 'changed_by_id'],
-      ['media_delivery_registry_changes', 'changed_by_id'],
-      ['moderation_appeal_lifecycle_changes', 'changed_by_id'],
-      ['moderation_appeals', 'original_decided_by_id'],
-      ['review_dispute_lifecycle_changes', 'changed_by_id'],
-      ['rss_feed_setting_changes', 'changed_by_id'],
-      ['mcp_call_audit_events', 'actor_user_id'],
-      ['moderator_actions', 'actor_user_id'],
-      ['moderator_actions', 'target_user_id'],
-      ['user_legal_preservation_holds', 'account_user_id'],
-      ['user_legal_preservation_holds', 'placed_by_id'],
-      ['user_legal_preservation_holds', 'released_by_id'],
-      ['copyright_repeat_infringer_incidents', 'account_user_id'],
-      ['copyright_repeat_infringer_reviews', 'account_user_id'],
-      ['copyright_notice_targets', 'surface_owner_user_id'],
-      ['copyright_territorial_notice_receipts', 'requester_user_id'],
-      ['copyright_territorial_redress_requests', 'submitted_by_id'],
-      ['copyright_trusted_flaggers', 'created_by_id'],
-      ['copyright_trusted_flagger_changes', 'changed_by_id'],
-      ['copyright_dsa_statement_submission_attempts', 'replayed_by_id'],
-      ...retainedRelationReferences('user'),
-    ],
+    references: RETAINED_USER_REFERENCES,
   },
   membership: {
     table: 'retained_membership_identities',

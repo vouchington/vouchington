@@ -11,8 +11,7 @@ import { invalidateVerifiedEmailCache } from '@services/contribution-gating/emai
 import onError from '@modules/on-error'
 import { createCodedError } from '@vouchington/sentry'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
-import { resolveFriendReferencePage } from './resolve-friend-reference-page.mts'
-import { getOAuthFriendReferenceConnectBatchSize } from './work-limits.mts'
+import { resolveConnectedFriendReferences } from './resolve-friend-reference-page.mts'
 
 type OAuthAccountConnectionPostCommitDependencies = {
   enqueueVoteWeightRecalculation: typeof enqueueRecalculateUserVoteWeight
@@ -104,19 +103,7 @@ export async function connectOAuthAccountToActiveUser(
     throw createHttpError(404, `${provider} account not found`)
   }
   if (hasFriends) {
-    const page = await resolveFriendReferencePage(
-      query,
-      provider,
-      rows[0].id,
-      getOAuthFriendReferenceConnectBatchSize(),
-    )
-    if (!page.hasMore) {
-      await query(
-        `/* completeConnectedFriendResolution */ UPDATE ${config.table}
-         SET friend_references_resolve_pending_at = NULL WHERE id = $1::uuid`,
-        [rows[0].id],
-      )
-    }
+    await resolveConnectedFriendReferences(query, provider, rows[0].id)
   }
 }
 
