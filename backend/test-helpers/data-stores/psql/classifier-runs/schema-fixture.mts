@@ -81,6 +81,7 @@ export async function createClassifierRunSchemaFixture(options: {
       }
   const configurationJson = JSON.stringify({ fixture: randomUUID() })
   const inputSha256 = Buffer.alloc(32, 1)
+  const insertedIds: string[] = []
 
   async function insertRun(input: ClassifierRunInsert = {}) {
     const json = input.configurationJson ?? configurationJson
@@ -96,6 +97,7 @@ export async function createClassifierRunSchemaFixture(options: {
       decisionBatchId: input.decisionBatchId === undefined ? null : input.decisionBatchId,
       communityId: community?.id ?? null,
     })
+    insertedIds.push(inserted)
     return inserted
   }
 
@@ -126,9 +128,8 @@ export async function createClassifierRunSchemaFixture(options: {
     deleteActor: () =>
       write(sql`/* deleteClassifierRunSchemaActor */ DELETE FROM users WHERE id = ${actor.id}`),
     dispose: () =>
-      write(
-        sql`/* disposeClassifierRunSchemaFixture */ DELETE FROM classifier_runs WHERE id = ${id}`,
-      ),
+      write(sql`/* disposeClassifierRunSchemaFixture */
+        DELETE FROM classifier_runs WHERE id = ANY(${insertedIds}::uuid[])`),
   }
 }
 

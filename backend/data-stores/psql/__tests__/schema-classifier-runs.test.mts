@@ -40,15 +40,15 @@ describe('classifier run schema', () => {
     ).toEqual([])
   })
 
-  it('fences one receipt per content and prompt identity, and stamps the community', async () => {
+  it('fences one receipt per content, prompt and configuration identity, and stamps the community', async () => {
     const { classifierId } = await createClassifierFixture()
     const fixture = await createFixture({ classifierId, community: true })
 
     expect((await fixture.read())?.community_identity_id).toBe(fixture.communityId)
     await expect(fixture.insertRun()).rejects.toMatchObject({ code: '23505' })
-    await expect(
-      fixture.insertRun({ configurationJson: JSON.stringify({ other: 1 }) }),
-    ).rejects.toMatchObject({ code: '23505' })
+    expect(await fixture.insertRun({ configurationJson: JSON.stringify({ other: 1 }) })).not.toBe(
+      fixture.id,
+    )
     await expect(fixture.insertRun({ inputSha256: Buffer.alloc(32, 7) })).resolves.toEqual(
       expect.any(String),
     )
@@ -80,6 +80,9 @@ describe('classifier run schema', () => {
       rss_feed_item_id: classifier.rssFeedItemId,
       community_identity_id: null,
     })
+    expect(await fixture.insertRun({ configurationJson: JSON.stringify({ other: 1 }) })).not.toBe(
+      fixture.id,
+    )
     await expect(
       fixture.insertRun({ postId: classifier.postId, rssFeedItemId: classifier.rssFeedItemId }),
     ).rejects.toMatchObject({ code: '23514' })
