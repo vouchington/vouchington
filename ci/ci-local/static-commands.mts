@@ -120,7 +120,12 @@ export const staticCommands: CiLocalCommand[] = [
   ),
   workflowCommand(
     'repo Node static checks',
-    'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy',
+    'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails',
+    'static-code-analysis.yml',
+  ),
+  workflowCommand(
+    'dependency license policy',
+    'pnpm run dependency-license-policy',
     'static-code-analysis.yml',
   ),
   workflowCommand(

@@ -98,7 +98,31 @@ jobs:
       - run: pnpm exec syncpack lint && pnpm exec syncpack format --check
         timeout-minutes: 2
       - name: Repo Node static checks
-        run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
+        run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails
+        timeout-minutes: 5
+      - name: Dependency license policy
+        # The audit fetches the whole dependency store into a temporary directory (#4172). Pull
+        # requests and merge groups run it only when a dependency input changes; scheduled and
+        # manual runs always run it.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        shell: bash
+        run: |
+          if [[ "$EVENT_NAME" == pull_request || "$EVENT_NAME" == merge_group ]]; then
+            # A pull request compares its own layer (HEAD^1, the synthetic-merge parent); a merge
+            # group compares the combined base and head.
+            range=HEAD^1
+            if [[ "$EVENT_NAME" == merge_group ]]; then
+              git fetch --no-tags --depth=1 origin "$BASE_SHA"
+              range="$BASE_SHA"
+            fi
+            if git diff --quiet "$range" HEAD -- pnpm-lock.yaml pnpm-workspace.yaml static-code-analysis/dependency-license-policy; then
+              echo 'skipped: no dependency input changed'
+              exit 0
+            fi
+          fi
+          pnpm run dependency-license-policy
         timeout-minutes: 5
       - name: Check Trivy policy
         run: pnpm exec vouchington trivy-policy --cleanup-url-prefix https://github.com/vouchington/vouchington/issues/
