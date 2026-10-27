@@ -5,7 +5,6 @@ import { getBackgroundResponseJobContext } from './background-response-job-conte
 
 export interface BackgroundResponseRegistration {
   responseId: string
-  kind: 'job' | 'recovery-job'
   createdAt: Date
 }
 
@@ -27,11 +26,16 @@ interface ClaimRegisteredResponseUsageParams {
   communityId?: string | null
   postId?: string | null
   registration?: BackgroundResponseRegistration
+  /** Set only by classifier clients, which never register a background response. */
   classifier?: ClassifierUsageAttribution
   createdAt?: Date
 }
 
-/** A response id is the exact once billing fence across normal and recovery paths. */
+/**
+ * Writes the ai_usage_records row, then clears the response id its owning job saved. A failure to
+ * clear it is reported rather than thrown: failing a successful model call would replay the paid
+ * processor, and the next retry only re-checks a finished response.
+ */
 export async function claimRegisteredResponseUsage({
   registration,
   responseId,
@@ -39,31 +43,21 @@ export async function claimRegisteredResponseUsage({
   classifier,
   ...usage
 }: ClaimRegisteredResponseUsageParams): Promise<void> {
-  const options = {
+  await recordAiUsage({
     responseId: registration?.responseId ?? responseId,
     createdAt: registration?.createdAt ?? createdAt,
     classifierRunId: classifier?.runId,
     latencyMs: classifier?.latencyMs,
     ...usage,
-  }
-  await recordAiUsage(options)
-  if (registration?.kind === 'job') {
-    const job = getBackgroundResponseJobContext()
-    if (!job)
-      throw new Error(
-        `Background response lost its GlideMQ job context: ${registration.responseId}`,
-      )
-    // The ledger write above is the durable billing fence. If clearing job data fails, recovery
-    // can use that key to settle the retained response id. Do not fail a successful model call:
-    // that would replay the paid processor before it can mark its completed phase.
-    try {
-      await job.settle(registration.responseId)
-    } catch (err) {
-      onError(
-        err instanceof Error
-          ? err
-          : new Error('Failed to settle billed response in job data', { cause: err }),
-      )
-    }
+  })
+  if (!registration) return
+  try {
+    await getBackgroundResponseJobContext()?.settle(registration.responseId)
+  } catch (err) {
+    onError(
+      err instanceof Error
+        ? err
+        : new Error('Failed to settle billed response in job data', { cause: err }),
+    )
   }
 }

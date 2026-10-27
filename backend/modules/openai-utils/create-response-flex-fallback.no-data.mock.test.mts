@@ -79,8 +79,8 @@ describe('OpenAI flex capacity fallback', () => {
       )
       .mockResolvedValueOnce(completedStream())
     const onResponseCreated = vi
-      .fn<(responseId: string) => Promise<void>>()
-      .mockResolvedValue(undefined)
+      .fn<(responseId: string) => Promise<boolean>>()
+      .mockResolvedValue(true)
     const hooks = makeHooks()
 
     const result = await runWithOpenAIResponseAttemptHooks(hooks, () =>

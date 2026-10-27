@@ -23,7 +23,6 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@services/ai-usage": "workspace:^",
-    "@ts-shared/utils": "workspace:^",
     "@vouchington/ai": "^0.3.0",
     "openai": "^7.43.0"
   },

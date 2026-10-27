@@ -47,7 +47,9 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
 
   it('sends one background streaming request and parses the completed response from the SSE bytes', async () => {
     replay.respondWith(loadRecordedResponse('openai/responses-stream-text-completed.http'))
-    const onResponseCreated = vi.fn<(responseId: string) => Promise<void>>(() => Promise.resolve())
+    const onResponseCreated = vi.fn<(responseId: string) => Promise<boolean>>(() =>
+      Promise.resolve(true),
+    )
 
     const response = await runWithBackgroundResponseHooks({ onResponseCreated }, () =>
       createOpenAIResponse({ model: 'gpt-6-luna', input: INPUT }),

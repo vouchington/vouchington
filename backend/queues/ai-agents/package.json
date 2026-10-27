@@ -15,7 +15,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",

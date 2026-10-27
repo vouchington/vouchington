@@ -1,16 +1,13 @@
 import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
-import {
-  PAGED_DISPATCHER_MAX_STALLED_COUNT,
-  withPagedDispatcherStallBudget,
-} from '@data-stores/valkey-glide-mq/worker-stall-budget'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
 import { isModelProviderError } from '@vouchington/ai/providers'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
-import { runWithJobTokenAccumulator } from '@agents/_shared'
+import { agentCallOperationKey, runWithJobTokenAccumulator } from '@agents/_shared'
 import { runWithBackgroundResponseJob } from '@agents/_shared/background-response-job-context'
-import { jobWouldIncurSpend } from '../processors/job-would-incur-spend.mts'
+import { getAgentCallReceipt } from '@services/ai-usage/agent-call-receipts'
+import { getStoryPostSpendState } from '../processors/process-story-post.mts'
 import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
 import {
   AI_AGENT_JOB_PRODUCES_SPEND,
@@ -32,9 +29,8 @@ import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { registerSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
 import {
-  assertNoUnsettledBackgroundResponses,
   createBackgroundResponseJobContext,
-  reconcileJobBackgroundResponses,
+  recoverJobBackgroundResponses,
 } from '../processors/background-response-job.mts'
 
 type AIAgentsWorkerDeps = {
@@ -77,8 +73,7 @@ export async function processAIAgentWorkerJob(
 ): Promise<unknown> {
   const dependencies = { ...defaultDeps, ...deps }
   const responseContext = createBackgroundResponseJobContext(job)
-  await reconcileJobBackgroundResponses(job, responseContext)
-  if (job.data.backgroundResponseProcessorCompleted) return undefined
+  if (await recoverJobBackgroundResponses(job, responseContext)) return undefined
 
   // Daily spend ceiling (#8773) before the OpenAI-error catch. reconcile-* jobs stay exempt so they
   // can still cancel orphaned billed responses. A breach parks only this job until the queried day
@@ -109,10 +104,9 @@ export async function processAIAgentWorkerJob(
     }
   }
 
-  let result: unknown
   try {
     // recordAgentResponseUsage feeds every billed call into this job's tokenLimiter total.
-    result = await runWithBackgroundResponseJob(responseContext, () =>
+    return await runWithBackgroundResponseJob(responseContext, () =>
       runWithJobTokenAccumulator(
         () => dependencies.processAIAgent(job),
         totalTokens => job.reportTokens(totalTokens),
@@ -131,26 +125,59 @@ export async function processAIAgentWorkerJob(
     if (isModelProviderError(err)) return handleModelProviderError(err, job)
     return dependencies.handleOpenAIRateLimit(err, job)
   }
-  if ((job.data.backgroundResponses?.length ?? 0) > 0) {
-    await job.updateData({ ...job.data, backgroundResponseProcessorCompleted: true })
-    await reconcileJobBackgroundResponses(job, responseContext)
-  }
-  assertNoUnsettledBackgroundResponses(job)
-  return result
 }
 
 function jobProducesSpend(job: Job<AIAgentJobData>): boolean {
   return AI_AGENT_JOB_PRODUCES_SPEND[job.name as AIAgentJobName]
 }
 
+// DB predicates run only after the cheap static filter and an active breach, so spend-free
+// story-post retries do not pay a round trip on every dispatch.
+async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
+  if (job.name === 'story-post') {
+    const data = job.data as import('@queues/ai-agents/types').StoryPostJobData
+    const state = await getStoryPostSpendState(data.post_id, data.force ?? false)
+    if (!state?.wouldCallModel) return false
+    // The processor resolves a slug to this same post.id before choosing the paid-call receipt.
+    const operationId = data.force ? `${state.postId}:${job.id}` : state.postId
+    return !(await getAgentCallReceipt(agentCallOperationKey('story-post', operationId)))
+  }
+  const receiptIdentity = existingReceiptIdentity(job)
+  if (receiptIdentity) {
+    const [agentSlug, operationId] = receiptIdentity
+    // A completed receipt only replays local writes. An uncertain one must reach the processor
+    // too, so it can stop permanently for review instead of being parked by the spend gate.
+    if (await getAgentCallReceipt(agentCallOperationKey(agentSlug, operationId))) return false
+  }
+  return true
+}
+
+function existingReceiptIdentity(job: Job<AIAgentJobData>): [string, string] | null {
+  if (job.name === 'report-judgement') {
+    const data = job.data as import('@queues/ai-agents/types').ReportJudgementJobData
+    return [
+      'report-judgement',
+      data.rerun_by_id
+        ? job.id
+        : `${data.entity_type}:${data.entity_id}:${data.triggering_report_id}`,
+    ]
+  }
+  if (job.name === 'copyright-appeal-recommendation') {
+    const data = job.data as import('@queues/ai-agents/types').CopyrightAppealRecommendationJobData
+    return ['copyright-appeal-recommendation', data.submission_id]
+  }
+  if (job.name === 'copyright-submission-guidance') {
+    const data = job.data as import('@queues/ai-agents/types').CopyrightSubmissionGuidanceJobData
+    return ['copyright-submission-guidance', data.submission_id]
+  }
+  return null
+}
+
 export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Worker {
   const dependencies = { ...defaultDeps, ...deps }
   return dependencies.createWorker(
     dependencies.queueName,
-    withPagedDispatcherStallBudget<AIAgentJobData, unknown>(
-      dependencies.queueName,
-      (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job, dependencies),
-    ),
+    (job: Job<AIAgentJobData>): Promise<unknown> => processAIAgentWorkerJob(job, dependencies),
     {
       dedicatedCommandClient: true,
       concurrency: dependencies.concurrency,
@@ -162,7 +189,6 @@ export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Wo
       },
       lockDuration: 300_000,
       stalledInterval: 30_000,
-      maxStalledCount: PAGED_DISPATCHER_MAX_STALLED_COUNT,
       // Only the `classifier-run` job names this strategy; every other job keeps its own backoff.
       backoffStrategies: { [CLASSIFIER_RUN_BACKOFF.type]: classifierRunBackoffMs },
     },

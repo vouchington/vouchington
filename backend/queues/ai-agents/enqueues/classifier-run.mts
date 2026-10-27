@@ -1,6 +1,5 @@
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
-import type { Job, JobOptions } from 'glide-mq'
+import type { JobOptions } from 'glide-mq'
 import { trackJobEnqueue } from '@services/analytics'
 import {
   AI_AGENTS_QUEUE_NAME,
@@ -10,12 +9,7 @@ import {
   CLASSIFIER_RUN_BACKOFF,
 } from '../config.mts'
 import { ai_agents } from '../queues.mts'
-import type {
-  AIAgentJobData,
-  ClassifierRunDispatcherJobData,
-  ClassifierRunJobData,
-} from '../types.mts'
-import { failedAiJobHasNoPendingResponses } from './failed-job-recovery.mts'
+import type { ClassifierRunDispatcherJobData, ClassifierRunJobData } from '../types.mts'
 
 export function classifierRunJobId(runId: string): string {
   return `classifier_run_${runId}`
@@ -35,9 +29,9 @@ function classifierRunOptions(runId: string): JobOptions {
     priority: AGENT_PRIORITY['classifier-run'],
     jobId: classifierRunJobId(runId),
     removeOnComplete: true,
-    // C7 autotagger can leave a billed background response in job data after terminal stall.
-    // The durable reconciler releases this stable identity only after those IDs settle.
-    removeOnFail: false,
+    // The Postgres receipt is authoritative. Removing failed queue jobs releases this stable
+    // identity so the durable reconciler can enqueue another attempt.
+    removeOnFail: true,
   }
 }
 
@@ -47,8 +41,8 @@ function classifierRunDispatcherOptions(data: ClassifierRunDispatcherJobData): J
     priority: AGENT_PRIORITY['classifier-run-dispatcher'],
     jobId: classifierRunDispatcherJobId(data),
     removeOnComplete: true,
-    // The durable request row is authoritative; guarded cleanup releases failed jobs.
-    removeOnFail: false,
+    // The durable request row is authoritative; a failed dispatcher is retried by the sweep.
+    removeOnFail: true,
   }
 }
 
@@ -72,47 +66,20 @@ const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction({
 export async function enqueueClassifierRunDispatcher(
   data: ClassifierRunDispatcherJobData,
 ): Promise<void> {
-  await enqueueBulkReactivatingFinished({
-    queue: ai_agents,
-    inputs: [data],
-    jobIdOf: classifierRunDispatcherJobId,
-    enqueueBulk: async inputs => {
-      const item = inputs[0]
-      if (!item) return []
-      const job = await ai_agents.add(
-        'classifier-run-dispatcher',
-        item,
-        classifierRunDispatcherOptions(item),
-      )
-      trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'classifier-run-dispatcher')
-      return job ? [job] : []
-    },
-    canRemoveFailed: failedAiJobHasNoPendingResponses,
-  })
+  await ai_agents.add('classifier-run-dispatcher', data, classifierRunDispatcherOptions(data))
+  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'classifier-run-dispatcher')
 }
 
-/** Reoffers a failed dispatcher from its durable request, without touching a live job. */
+/** Adds the dispatchers for a page of requests; a dispatcher that still exists is skipped. */
 export async function enqueueBulkClassifierRunDispatchers(
   items: readonly ClassifierRunDispatcherJobData[],
 ): Promise<void> {
   if (items.length === 0) return
-  await enqueueBulkReactivatingFinished({
-    queue: ai_agents,
-    inputs: [...items],
-    jobIdOf: classifierRunDispatcherJobId,
-    enqueueBulk: enqueueClassifierRunDispatcherBatch,
-    canRemoveFailed: failedAiJobHasNoPendingResponses,
-  })
+  await enqueueClassifierRunDispatcherBatch([...items])
 }
 
 export async function enqueueClassifierRun(data: ClassifierRunJobData): Promise<void> {
-  await enqueueBulkReactivatingFinished({
-    queue: ai_agents,
-    inputs: [data],
-    jobIdOf: item => classifierRunJobId(item.runId),
-    enqueueBulk: enqueueClassifierRunBatch,
-    canRemoveFailed: classifierRunHasNoPendingResponses,
-  })
+  await ai_agents.add('classifier-run', data, classifierRunOptions(data.runId))
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'classifier-run')
 }
 
@@ -127,22 +94,11 @@ export async function enqueueBulkClassifierRuns(
   if (items.length === 0) return []
   const runIdByJobId = new Map(items.map(item => [classifierRunJobId(item.runId), item.runId]))
   // glide-mq omits a skipped job; the Vitest queue shim keeps a null in its place.
-  const added: readonly ({ id?: string } | null)[] = await enqueueBulkReactivatingFinished({
-    queue: ai_agents,
-    inputs: [...items],
-    jobIdOf: item => classifierRunJobId(item.runId),
-    enqueueBulk: enqueueClassifierRunBatch,
-    canRemoveFailed: classifierRunHasNoPendingResponses,
-  })
+  const added: readonly ({ id?: string } | null)[] = await enqueueClassifierRunBatch([...items])
   return added.flatMap(job => {
     const runId = job?.id === undefined ? undefined : runIdByJobId.get(job.id)
     return runId === undefined ? [] : [runId]
   })
-}
-
-function classifierRunHasNoPendingResponses(job: Job): boolean {
-  const data = job.data as AIAgentJobData
-  return (data.backgroundResponses?.length ?? 0) === 0
 }
 
 /** Whether the run's stable-id job is still retained in any queue state. */

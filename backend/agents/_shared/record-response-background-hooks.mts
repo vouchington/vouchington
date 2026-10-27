@@ -1,6 +1,5 @@
 import { enqueueRecoverBackgroundResponse } from '@queues/ai-agents/enqueues/recover-background-response'
-import { latchAccountingUncertainty } from '@services/ai-usage'
-import { getUtcDayFromDate } from '@ts-shared/utils/dates'
+import onError from '@modules/on-error'
 import { getBackgroundResponseJobContext } from './background-response-job-context.mts'
 import type { BackgroundResponseHooks } from './create-response.mts'
 import type { BackgroundResponseRegistration } from './record-response-usage-ledger.mts'
@@ -22,33 +21,28 @@ export function createBackgroundResponseRegistrationHooks(
   return {
     hooks: {
       onResponseCreated: async responseId => {
-        const job = getBackgroundResponseJobContext()
+        const response = {
+          responseId,
+          agentSlug: params.agentSlug,
+          communityId: params.communityId ?? null,
+          postId: params.postId ?? null,
+          createdAt: params.createdAt.toISOString(),
+        }
         try {
-          if (job) {
-            await job.register({
-              responseId,
-              agentSlug: params.agentSlug,
-              communityId: params.communityId ?? null,
-              postId: params.postId ?? null,
-              createdAt: params.createdAt.toISOString(),
-            })
-            registration = { responseId, kind: 'job', createdAt: params.createdAt }
-            return
-          }
-          await enqueueRecoverBackgroundResponse({
-            responseId,
-            agentSlug: params.agentSlug,
-            communityId: params.communityId ?? null,
-            postId: params.postId ?? null,
-            createdAt: params.createdAt.toISOString(),
-          })
-          registration = { responseId, kind: 'recovery-job', createdAt: params.createdAt }
+          // A job saves its own response id; an inline call admits a delayed job to check it.
+          const job = getBackgroundResponseJobContext()
+          await (job ? job.register(response) : enqueueRecoverBackgroundResponse(response))
+          registration = { responseId, createdAt: params.createdAt }
+          return true
         } catch (err) {
-          await latchAccountingUncertainty({
-            requestDay: getUtcDayFromDate(params.createdAt),
-            source: 'unknown_billed_attempt',
-          })
-          throw err
+          // Recovery is a cheap guard against a paid replay. Losing it must not fail the call, but
+          // an unsaved response stays an unknown billed attempt if the call then fails.
+          onError(
+            err instanceof Error
+              ? err
+              : new Error('Background response registration failed', { cause: err }),
+          )
+          return false
         }
       },
     },

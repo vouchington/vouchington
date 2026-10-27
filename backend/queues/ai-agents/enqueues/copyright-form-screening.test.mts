@@ -27,7 +27,7 @@ describe('copyright form screening enqueue recovery', () => {
           backoff: AI_AGENTS_DEFAULTS.backoff,
           priority: AGENT_PRIORITY['copyright-form-screening'],
           removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-          removeOnFail: false,
+          removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
           deduplication: { id: jobId, mode: 'simple' },
           ordering: { key: jobId, concurrency: 1 },
         },

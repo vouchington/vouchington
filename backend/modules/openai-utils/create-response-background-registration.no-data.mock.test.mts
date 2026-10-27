@@ -36,7 +36,7 @@ describe('background OpenAI response registration integration', () => {
     openAIMocks.cancel.mockReset()
   })
 
-  it('notifies hooks after the response id is created with the created response id', async () => {
+  it('notifies hooks with the created response id', async () => {
     const response = makeSdkTextResponse('hello', { id: 'resp-hooked' })
     openAIMocks.create.mockResolvedValueOnce(
       makeResponseStream([
@@ -49,8 +49,8 @@ describe('background OpenAI response registration integration', () => {
       ]),
     )
     const onResponseCreated = vi
-      .fn<(responseId: string) => Promise<void>>()
-      .mockResolvedValue(undefined)
+      .fn<(responseId: string) => Promise<boolean>>()
+      .mockResolvedValue(true)
 
     await runWithBackgroundResponseHooks({ onResponseCreated }, () =>
       createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
@@ -80,9 +80,10 @@ describe('background OpenAI response registration integration', () => {
       makeSdkResponse({ status: 'cancelled', id: 'resp-barrier' }),
     )
     const responseCreated = Promise.withResolvers<void>()
-    const onResponseCreated = vi.fn<(responseId: string) => Promise<void>>(async () => {
+    const onResponseCreated = vi.fn<(responseId: string) => Promise<boolean>>(async () => {
       responseCreated.resolve()
       await registrationGate
+      return true
     })
 
     const response = runWithBackgroundResponseHooks({ onResponseCreated }, () =>

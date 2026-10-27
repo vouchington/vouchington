@@ -30,13 +30,6 @@ export type ReconcileClassifierRunsJobData = {
   after?: string | null
 }
 
-export type ReconcileBackgroundResponsesJobData = {
-  phase?: 'failed' | 'cleanup'
-  failedOffset?: number
-  sweepId?: string
-  page?: number
-}
-
 export type StoryPostJobData = {
   post_id: string
   /** When true, re-summarize even if ai_summary_markdown is already set (used by story refresh). */
@@ -95,8 +88,6 @@ export type JobBackgroundResponse = {
 
 export type BackgroundResponseJobData = {
   backgroundResponses?: JobBackgroundResponse[]
-  /** The paid processor succeeded; a delayed settlement must not run it again. */
-  backgroundResponseProcessorCompleted?: boolean
 }
 
 export type SpendCapRecheckJobData = {
@@ -120,7 +111,6 @@ export type AIAgentJobData = (
   | StoryPostJobData
   | BackfillReportJudgementsJobData
   | ReconcileClassifierRunsJobData
-  | ReconcileBackgroundResponsesJobData
   | AutoDispatchJudgementJobData
 ) &
   SpendCapDelayedData &

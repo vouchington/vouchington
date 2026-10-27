@@ -110,7 +110,7 @@ appeal resolution,
 dispute resolution,
 report judgement and
 story-post summarization. Their terminal provider metadata settles
-usage directly, outside the direct OpenAI background-response reconciler.
+usage directly, outside direct OpenAI background-response recovery.
 
 Copyright email intake, form screening and appeal recommendation are separate agents owned by the
 DMCA work; they are not classifiers or part of Epic C. See the

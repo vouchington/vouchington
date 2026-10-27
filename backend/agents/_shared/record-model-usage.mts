@@ -24,13 +24,13 @@ export interface RecordModelUsageParams {
   communityId?: string | null
   postId?: string | null
   // Set only inside a direct-OpenAI background-response scope. Unset for a foreground request that
-  // never registers a response -- there is no sweeper race to guard there, so recording falls
+  // never registers a response -- there is no saved response id to clear there, so recording falls
   // straight through to recordAiUsage.
   registration?: BackgroundResponseRegistration
   classifier?: ClassifierUsageAttribution
   // The request's start time, for a foreground request recorded after its request day (see
   // RecordAiUsageOptions.createdAt in @services/ai-usage/record.mts). Ignored when
-  // a background response registered: its createdAt is the authoritative request time.
+  // `registration` is set: its own createdAt is the more authoritative request time.
   createdAt?: Date
 }
 
@@ -81,7 +81,5 @@ export async function recordModelUsage(
     onError(err instanceof Error ? err : new Error('AI usage ledger write failed', { cause: err }))
     const requestDay = getUtcDayFromDate(registration?.createdAt ?? createdAt ?? new Date())
     await latchUncertainty({ requestDay, source: 'ledger_write_failed' })
-    // Keep a completed paid result available to its caller. A job-owned response id remains in
-    // job data for accounting recovery; the uncertainty latch blocks more spend meanwhile.
   }
 }

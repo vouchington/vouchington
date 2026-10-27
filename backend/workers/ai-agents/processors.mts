@@ -17,7 +17,6 @@ import {
 import { processBackfillReportJudgements } from './processors/process-backfill-report-judgements.mts'
 import { processAutoDispatchJudgement } from './processors/process-auto-dispatch-judgement.mts'
 import { processReconcileAutoDispatchJudgements } from './processors/process-reconcile-auto-dispatch-judgements.mts'
-import { processReconcileBackgroundResponses } from './processors/process-reconcile-background-responses.mts'
 import { processReconcileCopyrightAgentDispatches } from './processors/process-reconcile-copyright-agent-dispatches.mts'
 import { processReconcileClassifierRuns } from './processors/process-reconcile-classifier-runs.mts'
 
@@ -81,10 +80,6 @@ export function processAIAgent(job: Job<AIAgentJobData>): Promise<unknown> {
       return processReconcileAutoDispatchJudgements()
     case 'recover-background-response':
       throw new Error('Response recovery must settle before processor dispatch')
-    case 'reconcile-background-responses':
-      return processReconcileBackgroundResponses(
-        job as Job<import('@queues/ai-agents/types').ReconcileBackgroundResponsesJobData>,
-      )
     case 'reconcile-copyright-agent-dispatches':
       return processReconcileCopyrightAgentDispatches(
         {},

@@ -144,7 +144,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('latches an APIUserAbortError from create after dispatch', async () => {
+  it('does not latch an APIUserAbortError from create after dispatch', async () => {
     const error = new APIUserAbortError()
     openAIMocks.create.mockRejectedValueOnce(error)
     const onUnknownBilledAttempt = vi.fn<
@@ -159,10 +159,7 @@ describe('OpenAI response attempt accounting boundary', () => {
     ).rejects.toBe(error)
 
     expect(openAIMocks.create).toHaveBeenCalledTimes(1)
-    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith({
-      requestStartedAt: expect.any(Date),
-      error,
-    })
+    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
   it('does not latch or call OpenAI when the request signal is already aborted', async () => {

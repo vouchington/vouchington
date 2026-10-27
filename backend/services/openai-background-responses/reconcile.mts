@@ -1,10 +1,5 @@
 import onError from '@modules/on-error'
-import {
-  hasRecordedAiUsageResponseId,
-  latchAccountingUncertainty,
-  recordAiUsage,
-} from '@services/ai-usage'
-import { getUtcDayFromDate } from '@ts-shared/utils/dates'
+import { recordAiUsage } from '@services/ai-usage'
 import {
   isOpenAIResponseNotCompletedError,
   isOpenAINotFoundError,
@@ -14,105 +9,71 @@ import { retrieveOpenAIResponse, cancelOpenAIResponse } from '@modules/openai-ut
 import { openAIUsageToModelUsage, type OpenAIUsageLike } from '@vouchington/ai/providers'
 import type { BackgroundResponseToReconcile } from './types.mts'
 
-export type ReconcileBackgroundResponseResult =
-  | 'still-active'
-  | 'expired'
-  | 'recorded'
-  | 'already-recorded'
-  | 'accounting-uncertain'
-  | 'no-usage'
-  | 'terminal-no-usage'
+export type ReconcileBackgroundResponseResult = 'still-active' | 'settled'
 
-/** Reconciles an AI job's persisted response id. */
+type TerminalResponse = {
+  usage?: OpenAIUsageLike | null
+  model?: string
+  service_tier?: string | null
+}
+
+/**
+ * Checks a saved response before a paid replay. Usage is recorded best effort: a missing or
+ * unwritable record is reported and dropped, since billing is downstream reporting. A response
+ * still running is cancelled for a replaying worker, and left alone for the delayed recovery job
+ * of an inline call, whose caller may still be waiting on it.
+ */
 export async function reconcileBackgroundResponse(
   candidate: BackgroundResponseToReconcile,
-  mode: 'worker' | 'inline' = 'worker',
+  mode: 'worker' | 'inline',
 ): Promise<ReconcileBackgroundResponseResult> {
-  if (await hasRecordedAiUsageResponseId(candidate.responseId)) {
-    return 'already-recorded'
-  }
-
   let raw: Awaited<ReturnType<typeof retrieveOpenAIResponse>>
   try {
     raw = await retrieveOpenAIResponse(candidate.responseId)
   } catch (err) {
-    if (!isOpenAINotFoundError(err)) throw err
-    await latchAccountingUncertainty({
-      requestDay: getUtcDayFromDate(candidate.createdAt),
-      source: 'unknown_billed_attempt',
-    })
-    onError(
-      new Error(`Background OpenAI response passed retrieval retention: ${candidate.responseId}`, {
-        cause: err,
-      }),
-    )
-    return 'expired'
+    if (isOpenAINotFoundError(err)) return 'settled'
+    throw err
   }
 
-  let usage: OpenAIUsageLike | undefined
-  let model: string | undefined
-  let serviceTier: string | undefined
+  let terminal: TerminalResponse
   try {
-    const completed = validateCompletedResponse(raw)
-    usage = completed.usage ?? undefined
-    model = completed.model
-    serviceTier = completed.service_tier ?? undefined
-    if (!usage) {
-      // A completed call was billed, but without usage its cost is unknown.
-      await latchAccountingUncertainty({
-        requestDay: getUtcDayFromDate(candidate.createdAt),
-        source: 'unknown_billed_attempt',
-      })
-      return 'no-usage'
-    }
+    terminal = validateCompletedResponse(raw)
   } catch (err) {
     if (!isOpenAIResponseNotCompletedError(err)) throw err
     if (err.status !== 'failed' && err.status !== 'incomplete' && err.status !== 'cancelled') {
-      // A worker replay must settle a live paid call before it can dispatch another. An inline
-      // recovery job only observes its original call, which may still be serving the requester.
-      if (mode === 'worker') await cancelOpenAIResponse(candidate.responseId)
-      return 'still-active'
+      if (mode === 'inline') return 'still-active'
+      await cancelOpenAIResponse(candidate.responseId)
+      return 'settled'
     }
-    if (!err.usage) {
-      // Provider usage can lag a terminal state. Policy settles this ID with unknown billed
-      // usage and latches uncertainty instead of retaining it indefinitely.
-      await latchAccountingUncertainty({
-        requestDay: getUtcDayFromDate(candidate.createdAt),
-        source: 'unknown_billed_attempt',
-      })
-      return 'terminal-no-usage'
-    }
-    usage = err.usage
-    model = err.model
-    serviceTier = err.service_tier ?? undefined
+    terminal = err
   }
+  if (terminal.usage) await recordBestEffort(candidate, terminal.usage, terminal)
+  return 'settled'
+}
 
-  if (!usage) throw new Error(`Terminal OpenAI response has no usage: ${candidate.responseId}`)
+async function recordBestEffort(
+  candidate: BackgroundResponseToReconcile,
+  usage: OpenAIUsageLike,
+  response: TerminalResponse,
+): Promise<void> {
   try {
-    const options = {
+    await recordAiUsage({
       responseId: candidate.responseId,
       agentSlug: candidate.agentSlug,
       communityId: candidate.communityId,
       postId: candidate.postId,
-      provider: 'openai' as const,
-      transport: 'direct' as const,
-      model: model ?? 'unknown-model',
-      serviceTier: serviceTier ?? 'unknown-tier',
+      provider: 'openai',
+      transport: 'direct',
+      model: response.model ?? 'unknown-model',
+      serviceTier: response.service_tier ?? 'unknown-tier',
       usage: openAIUsageToModelUsage(usage),
       createdAt: candidate.createdAt,
-    }
-    await recordAiUsage({ ...options, resolveLiveScopeOnInsert: true })
-    return 'recorded'
+    })
   } catch (err) {
     onError(
       err instanceof Error
         ? err
-        : new Error('Background OpenAI usage ledger write failed', { cause: err }),
+        : new Error('Background OpenAI usage write failed', { cause: err }),
     )
-    await latchAccountingUncertainty({
-      requestDay: getUtcDayFromDate(candidate.createdAt),
-      source: 'ledger_write_failed',
-    })
-    return 'accounting-uncertain'
   }
 }

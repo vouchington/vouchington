@@ -10,8 +10,6 @@ export interface RecordAiUsageOptions {
   /** The community this call is scoped to, if any. Most non-moderation agents have none. */
   communityId?: string | null
   postId?: string | null
-  /** Lock and resolve live scopes in the INSERT for a delayed job response. */
-  resolveLiveScopeOnInsert?: boolean
   /**
    * The classifier run whose reserved provider attempt made this call. Only classifier clients set
    * it; the per-run usage report (`@services/classifier-runs`) joins on it. Recording stays
@@ -30,9 +28,16 @@ export interface RecordAiUsageOptions {
   /** The service tier the provider actually served, not the requested tier. */
   serviceTier: string
   usage: ModelUsage
-  /** Use the caller's transaction for atomic domain and accounting writes. */
+  /** Runs inside the caller's transaction instead of a fresh connection. */
   query?: QueryExecutor
-  /** Original creation time for UUIDv7 day bucketing after delayed response recovery. */
+  /**
+   * The response's true creation time (the request's start time), for a background
+   * response recorded after its request day. daily-total.mts buckets spend by id-range, and
+   * ai_usage_records.id's UUIDv7 timestamp otherwise defaults to "now" -- the moment this INSERT
+   * runs, not the moment the request started -- so a response created before UTC midnight but
+   * recorded after it would misattribute its cost to the following day. Omit for a foreground
+   * response, which always records the same tick it completes.
+   */
   createdAt?: Date
 }
 
@@ -45,7 +50,6 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
     responseId,
     communityId,
     postId,
-    resolveLiveScopeOnInsert,
     classifierRunId,
     latencyMs,
     agentSlug,
@@ -100,10 +104,8 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
         )
         SELECT
           ai_usage_record_id,
-          CASE WHEN ${resolveLiveScopeOnInsert ?? false} THEN (SELECT id FROM communities
-            WHERE id = ${communityId ?? null} FOR KEY SHARE) ELSE ${communityId ?? null} END,
-          CASE WHEN ${resolveLiveScopeOnInsert ?? false} THEN (SELECT id FROM posts
-            WHERE id = ${postId ?? null} FOR KEY SHARE) ELSE ${postId ?? null} END,
+          ${communityId ?? null},
+          ${postId ?? null},
           ${classifierRunId ?? null},
           ${agentSlug},
           ${provider},

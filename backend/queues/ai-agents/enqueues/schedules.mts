@@ -3,15 +3,9 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import {
-  AGENT_PRIORITY,
-  AI_AGENTS_DEFAULTS,
-  AI_AGENTS_QUEUE_NAME,
-  getBackgroundResponseReconcileConcurrency,
-} from '../config.mts'
+import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, AI_AGENTS_QUEUE_NAME } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import { enqueueReconcileAutoDispatchJudgements } from './reconcile-auto-dispatch.mts'
-import { enqueueReconcileBackgroundResponses } from './reconcile-background-responses.mts'
 import { enqueueReconcileCopyrightAgentDispatches } from './reconcile-copyright-agent-dispatches.mts'
 import { enqueueReconcileClassifierRuns } from './reconcile-classifier-runs.mts'
 
@@ -76,29 +70,6 @@ export const scheduledJobManifest = defineScheduledJobManifest(AI_AGENTS_QUEUE_N
         schedule: '*/5 * * * *',
         description: 'Re-enqueue undispatched AI moderation judgements (crash recovery)',
         trigger: enqueueReconcileAutoDispatchJudgements,
-      },
-    ],
-  },
-  {
-    schedulerId: 'reconcileBackgroundResponses',
-    repeat: { pattern: '*/5 * * * *' },
-    template: {
-      name: 'reconcile-background-responses',
-      opts: () => ({
-        ...reconcilerOptions('reconcile-background-responses'),
-        ordering: {
-          key: 'ai_background_response_reconcile',
-          concurrency: getBackgroundResponseReconcileConcurrency(),
-        },
-      }),
-    },
-    operatorSurfaces: [
-      {
-        kind: 'scheduled-jobs',
-        id: 'reconcileBackgroundResponses',
-        schedule: '*/5 * * * *',
-        description: 'Cancel/retrieve/record orphaned OpenAI background responses (crash recovery)',
-        trigger: enqueueReconcileBackgroundResponses,
       },
     ],
   },

@@ -60,7 +60,6 @@ export const REGISTRY_ORDER = [
   'language-detection-work-config',
   'report-integrity-work-config',
   'images-work-config',
-  'ai-agents-queue-config',
   'openai-moderation-work-config',
   'entity-cache-work-config',
   'hostname-blocking-work-config',

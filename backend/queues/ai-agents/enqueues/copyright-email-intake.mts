@@ -17,7 +17,7 @@ function buildCopyrightEmailIntakeJob(intakeId: string): {
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-      removeOnFail: false,
+      removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
       priority: AGENT_PRIORITY['copyright-email-intake'],
       deduplication: { id: `copyright_email_intake_${intakeId}`, mode: 'simple' },
       ordering: { key: `copyright_email_intake_${intakeId}`, concurrency: 1 },

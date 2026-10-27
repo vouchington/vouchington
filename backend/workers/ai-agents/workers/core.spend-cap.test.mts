@@ -144,7 +144,7 @@ describe('processAIAgentWorkerJob -- daily AI spend cap', () => {
   })
 
   it('skips the check entirely for a reconcile job, even with a total over the cap', async () => {
-    const job = mockJob({ name: 'reconcile-background-responses' })
+    const job = mockJob({ name: 'reconcile-auto-dispatch-judgements' })
     const getSpendCapFields = vi.fn<() => { enabled: boolean; daily_cap_microunits: number }>()
     const getDailyAiCostTotalMicrounits = vi.fn<() => Promise<DailyAiCostTotal>>()
     const processAIAgent = vi

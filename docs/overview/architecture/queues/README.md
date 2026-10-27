@@ -205,23 +205,13 @@ still marked, so the queue is not a second source of truth and there is no dead-
 - **Spend admission is single-sourced.** Every call that can incur billed model spend goes through
   one spend-cap decision point, and capped jobs park until the daily rollover instead of failing.
   The coordinator that releases them is deliberately not behind the provider limiter.
+- **Background OpenAI responses are owned by the job that created them.** AI worker calls save
+  each provider response id in their GlideMQ job, and a retry checks it before it can pay for
+  another call. Conversation titles generated inline from an API request admit a delayed recovery
+  job instead. Usage recording is best effort and a retry may call the provider again; the daily
+  spend cap reads whatever usage rows exist.
 - **Embedding cache deletion leaves safe Bloom false positives.** Writes add membership; operator
   actions and detected failures own full rebuilds. Retention does not schedule a full rebuild.
-- **Background OpenAI responses keep their recovery owner.** AI worker calls persist each provider
-  response id in their GlideMQ job before draining it. A replay retrieves or cancels unsettled
-  responses before it can dispatch another paid call; terminal failed jobs retain those ids for a
-  bounded recovery sweep. Every job in the shared AI queue keeps its failed record until guarded
-  cleanup: count retention on an unrelated failure can otherwise evict the job holding the only
-  unsettled response id. The response-id ledger key prevents duplicate accounting. Conversation
-  titles generated inline from an API request admit a delayed settlement job after the provider
-  reports its response id. Normal completion and delayed recovery share the same accounting fence;
-  recovery never generates another title. A job can outlive a post or community, so recovery
-  records the provider charge with deleted scopes nulled. An unknown billing outcome closes the
-  spend gate for that request day.
-- **Classifier control jobs recover from durable requests.** A failed dispatcher or sweep page can
-  retain its stable queue ID for diagnosis. Its next admission releases that terminal ID only after
-  any saved provider responses settle; a waiting or running job keeps its claim. This lets the
-  request sweep continue without losing a pending response owner.
 - **Deletion and money paths recover from durable rows.** Account deletion, membership refunds and
   OAuth exchange keep their work in PostgreSQL with fenced leases, so terminal queue failure can
   never silently mark the work complete or issue a duplicate refund.

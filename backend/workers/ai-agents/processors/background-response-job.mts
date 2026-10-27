@@ -8,16 +8,19 @@ import type { BackgroundResponseJobContext } from '@agents/_shared/background-re
 const RECONCILE_CONCURRENCY = 5
 const RECHECK_DELAY_MS = 5 * 60_000
 
+/** Saves each provider response id in the job's own data so a retry can find it. */
 export function createBackgroundResponseJobContext(
   job: Job<AIAgentJobData>,
 ): BackgroundResponseJobContext {
   let pendingUpdate: Promise<void> = Promise.resolve()
   const update = (change: (responses: JobBackgroundResponse[]) => JobBackgroundResponse[]) => {
-    const next = pendingUpdate.then(() => {
-      const responses = job.data.backgroundResponses ?? []
-      return job.updateData({ ...job.data, backgroundResponses: change(responses) })
-    })
-    pendingUpdate = next.catch(reportFailedJobDataUpdate)
+    const next = pendingUpdate.then(() =>
+      job.updateData({
+        ...job.data,
+        backgroundResponses: change(job.data.backgroundResponses ?? []),
+      }),
+    )
+    pendingUpdate = next.catch(onError)
     return next
   }
   return {
@@ -32,57 +35,28 @@ export function createBackgroundResponseJobContext(
   }
 }
 
-function reportFailedJobDataUpdate(err: unknown): void {
-  // The caller receives this rejection too. Keep the serialization tail usable for a later
-  // response while retaining a diagnostic if the caller aborts before its own report.
-  onError(
-    err instanceof Error
-      ? err
-      : new Error('OpenAI response job data update failed', { cause: err }),
-  )
-}
-
-/** Settle provider IDs before a replay can dispatch another paid response. */
-export async function reconcileJobBackgroundResponses(
+/**
+ * Checks the response ids saved on a job before it can replay a paid call. Returns true for the
+ * delayed inline-call recovery job, which does nothing else: it observes its original call and
+ * rechecks later while that call is still running.
+ */
+export async function recoverJobBackgroundResponses(
   job: Job<AIAgentJobData>,
   context: BackgroundResponseJobContext,
-): Promise<void> {
-  await settlePersistedBackgroundResponses(job, context)
-  if ((job.data.backgroundResponses?.length ?? 0) === 0) return
-  await job.moveToDelayed(Date.now() + RECHECK_DELAY_MS)
-}
-
-/** Reconciles response IDs already persisted on the current job. */
-async function settlePersistedBackgroundResponses(
-  job: Job<AIAgentJobData>,
-  context: BackgroundResponseJobContext,
-): Promise<void> {
-  const responses = job.data.backgroundResponses ?? []
-  if (responses.length === 0) return
-  await pMap(
-    responses,
+): Promise<boolean> {
+  const inline = job.name === 'recover-background-response'
+  const active = await pMap(
+    job.data.backgroundResponses ?? [],
     async response => {
-      try {
-        const result = await reconcileBackgroundResponse(
-          { ...response, createdAt: new Date(response.createdAt) },
-          job.name === 'recover-background-response' ? 'inline' : 'worker',
-        )
-        if (result !== 'still-active' && result !== 'accounting-uncertain') {
-          await context.settle(response.responseId)
-        }
-      } catch (err) {
-        onError(
-          err instanceof Error
-            ? err
-            : new Error('Background response job recovery failed', { cause: err }),
-        )
-      }
+      const result = await reconcileBackgroundResponse(
+        { ...response, createdAt: new Date(response.createdAt) },
+        inline ? 'inline' : 'worker',
+      )
+      if (result === 'settled') await context.settle(response.responseId)
+      return result === 'still-active'
     },
-    { concurrency: RECONCILE_CONCURRENCY, stopOnError: false },
+    { concurrency: RECONCILE_CONCURRENCY },
   )
-}
-
-export function assertNoUnsettledBackgroundResponses(job: Job<AIAgentJobData>): void {
-  if ((job.data.backgroundResponses?.length ?? 0) === 0) return
-  throw new Error(`AI job completed with unsettled OpenAI background responses: ${job.id}`)
+  if (inline && active.includes(true)) await job.moveToDelayed(Date.now() + RECHECK_DELAY_MS)
+  return inline
 }

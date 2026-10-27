@@ -1,14 +1,10 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import {
-  AI_AGENTS_QUEUE_NAME,
-  AI_AGENTS_DEFAULTS,
-  AGENT_PRIORITY,
-  getBackgroundResponseRecoveryConcurrency,
-} from '../config.mts'
+import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { BackgroundResponseJobData, JobBackgroundResponse } from '../types.mts'
 
 export const BACKGROUND_RESPONSE_RECOVERY_DELAY_MS = 3 * 60_000
+const BACKGROUND_RESPONSE_RECOVERY_CONCURRENCY = 2
 
 export function backgroundResponseRecoveryJobId(responseId: string): string {
   return `ai_background_response_recovery_${responseId}`
@@ -23,24 +19,21 @@ const enqueueRecovery = createEnqueueFunction<
   jobName: 'recover-background-response',
 })
 
-/** The response-created hook awaits admission; the ledger response key fences normal completion. */
+/** Admits a delayed job to check an inline call's response; the hook awaits admission. */
 export function enqueueRecoverBackgroundResponse(response: JobBackgroundResponse) {
   return enqueueRecovery(
     {
       backgroundResponses: [response],
-      // This job owns settlement only. It must never dispatch another paid model request.
-      backgroundResponseProcessorCompleted: true,
     },
     {
       ...AI_AGENTS_DEFAULTS,
       removeOnComplete: true,
-      removeOnFail: false,
       delay: BACKGROUND_RESPONSE_RECOVERY_DELAY_MS,
       jobId: backgroundResponseRecoveryJobId(response.responseId),
       priority: AGENT_PRIORITY['recover-background-response'],
       ordering: {
         key: 'ai_background_response_recovery',
-        concurrency: getBackgroundResponseRecoveryConcurrency(),
+        concurrency: BACKGROUND_RESPONSE_RECOVERY_CONCURRENCY,
       },
     },
   )

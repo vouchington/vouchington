@@ -106,7 +106,6 @@ describe('recordAgentResponseUsage response ID storage', () => {
         transport: 'direct' as const,
         registration: {
           responseId: registrationId,
-          kind: 'recovery-job' as const,
           createdAt: createdAt(day),
         },
         createdAt: createdAt(day),
@@ -140,8 +139,7 @@ describe('recordAgentResponseUsage response ID storage', () => {
       const recoveryJob = await ai_agents.getJob(backgroundResponseRecoveryJobId(registrationId))
       if (recoveryJob) await recoveryJob.remove()
       const registration = background.getRegistration()
-      if (!registration || registration.kind !== 'recovery-job')
-        throw new Error('Expected an inline registration')
+      if (!registration) throw new Error('Expected an inline registration')
       await recordAgentResponseUsage({
         response: response(' invalid'),
         agentSlug: slug,

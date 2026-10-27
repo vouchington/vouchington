@@ -1,18 +1,11 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { JobOptions } from 'glide-mq'
 import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { BackfillReportJudgementsJobData, ReportJudgementJobData } from '../types.mts'
-import { failedAiJobHasNoPendingResponses } from './failed-job-recovery.mts'
 
 type MissingJudgementEntity = { entityType: string; entityId: string; triggeringReportId: string }
-type ReportJudgementInput = MissingJudgementEntity & {
-  rerunById?: string | null
-  contextHash?: string | null
-  runId?: string | null
-}
 
 function buildReportJudgementJob(
   entityType: string,
@@ -35,7 +28,7 @@ function buildReportJudgementJob(
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-      removeOnFail: false,
+      removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
       priority: AGENT_PRIORITY['report-judgement'],
       ...(runId ? { jobId: `report_judgement_${runId}` } : {}),
       // Skip deduplication on manual re-runs so the staff-triggered job is
@@ -56,21 +49,6 @@ function buildReportJudgementJob(
   }
 }
 
-const enqueueReportJudgementRunBatch = createBulkEnqueueFunction({
-  queue: ai_agents,
-  queueName: AI_AGENTS_QUEUE_NAME,
-  jobName: 'report-judgement',
-  buildJob: (input: ReportJudgementInput) =>
-    buildReportJudgementJob(
-      input.entityType,
-      input.entityId,
-      input.triggeringReportId,
-      input.rerunById,
-      input.contextHash,
-      input.runId,
-    ),
-})
-
 /**
  * Awaitable variant for manual staff-triggered re-runs: propagates enqueue failures so the
  * caller can surface an error instead of falsely reporting the job as queued.
@@ -83,27 +61,16 @@ export async function enqueueReportJudgement(
   contextHash?: string | null,
   runId?: string | null,
 ): Promise<void> {
-  const input = { entityType, entityId, triggeringReportId, rerunById, contextHash, runId }
-  if (!runId) {
-    const { data, opts } = buildReportJudgementJob(
-      entityType,
-      entityId,
-      triggeringReportId,
-      rerunById,
-      contextHash,
-      runId,
-    )
-    await ai_agents.add('report-judgement', data, opts)
-    trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'report-judgement')
-    return
-  }
-  await enqueueBulkReactivatingFinished({
-    queue: ai_agents,
-    inputs: [input],
-    jobIdOf: item => `report_judgement_${item.runId}`,
-    enqueueBulk: enqueueReportJudgementRunBatch,
-    canRemoveFailed: failedAiJobHasNoPendingResponses,
-  })
+  const { data, opts } = buildReportJudgementJob(
+    entityType,
+    entityId,
+    triggeringReportId,
+    rerunById,
+    contextHash,
+    runId,
+  )
+  await ai_agents.add('report-judgement', data, opts)
+  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'report-judgement')
 }
 
 // Bulk enqueue for backfill dispatcher: one addBulk call per batch, not one per entity.
@@ -141,7 +108,6 @@ export function enqueueBackfillReportJudgements(): ReturnType<
     {},
     {
       priority: 100,
-      removeOnFail: false,
       deduplication: { id: 'backfill_report_judgements', mode: 'throttle', ttl: 3_600_000 },
     },
   )

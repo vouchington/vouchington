@@ -2,15 +2,13 @@ import type {
   ResponseCreateParamsStreaming,
   ResponseInput,
 } from 'openai/resources/responses/responses'
-import {
-  shouldLatchUnknownBilledOpenAIAttempt,
-  type CompletedOpenAIResponse,
-} from '@vouchington/ai/openai'
+import type { CompletedOpenAIResponse } from '@vouchington/ai/openai'
 import {
   streamOpenAIResponseEvents,
   getOpenAIResponseAttemptHooks,
   type ResponseStreamLike,
 } from '@modules/openai-utils/create-response'
+import { shouldLatchUnknownBilledAttempt } from '@modules/openai-utils/latch-policy'
 import { withOpenAIFlexFallback } from '@modules/openai-utils/flex-fallback'
 import { createOpenAICompatibleResponseWithRetries } from '@modules/openai-utils/response-retry'
 import client from './client.mts'
@@ -56,7 +54,7 @@ export async function createOpenRouterResponse(
     try {
       return await drainOpenRouterResponse(stream)
     } catch (err) {
-      if (shouldLatchUnknownBilledOpenAIAttempt(err)) {
+      if (shouldLatchUnknownBilledAttempt(err)) {
         await getOpenAIResponseAttemptHooks()?.onUnknownBilledAttempt({
           requestStartedAt,
           error: err,

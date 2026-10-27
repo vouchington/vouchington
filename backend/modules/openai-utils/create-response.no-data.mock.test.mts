@@ -166,8 +166,8 @@ describe('OpenAI response integration boundary', () => {
       )
 
       const onResponseCreated = vi
-        .fn<(responseId: string) => Promise<void>>()
-        .mockResolvedValue(undefined)
+        .fn<(responseId: string) => Promise<boolean>>()
+        .mockResolvedValue(true)
       const onUnknownBilledAttempt = vi.fn<
         (attempt: { requestStartedAt: Date; error: unknown }) => Promise<void>
       >(() => Promise.resolve())

@@ -1,17 +1,9 @@
 import type { JobOptions } from 'glide-mq'
-import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import onError from '@modules/on-error'
+import { trackJobEnqueue } from '@services/analytics'
 import { AI_AGENTS_QUEUE_NAME, AI_AGENTS_DEFAULTS, AGENT_PRIORITY } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import type { DisputeResolutionJobData } from '../types.mts'
-import { failedAiJobHasNoPendingResponses } from './failed-job-recovery.mts'
-
-type DisputeResolutionInput = {
-  disputeId: string
-  requestToken: string
-  rerunById?: string | null
-}
 
 function buildDisputeResolutionJob(
   disputeId: string,
@@ -30,7 +22,7 @@ function buildDisputeResolutionJob(
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
-      removeOnFail: false,
+      removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
       priority: AGENT_PRIORITY['dispute-resolution'],
       // Skip deduplication on manual re-runs so the staff-triggered job is
       // not silently dropped by a pending automatic job.
@@ -46,24 +38,6 @@ function buildDisputeResolutionJob(
   }
 }
 
-const enqueueDisputeResolutionBatch = createBulkEnqueueFunction({
-  queue: ai_agents,
-  queueName: AI_AGENTS_QUEUE_NAME,
-  jobName: 'dispute-resolution',
-  buildJob: (input: DisputeResolutionInput) =>
-    buildDisputeResolutionJob(input.disputeId, input.requestToken, input.rerunById),
-})
-
-function enqueueRecoverableDisputeResolution(input: DisputeResolutionInput) {
-  return enqueueBulkReactivatingFinished({
-    queue: ai_agents,
-    inputs: [input],
-    jobIdOf: item => `dispute_resolution_${item.requestToken}`,
-    enqueueBulk: enqueueDisputeResolutionBatch,
-    canRemoveFailed: failedAiJobHasNoPendingResponses,
-  })
-}
-
 /**
  * Enqueues a dispute-resolution agent run for the given dispute.
  * Fire-and-forget — errors are swallowed via onError.
@@ -73,7 +47,9 @@ export function enqueueDisputeResolution(
   requestToken: string,
   rerunById?: string | null,
 ): void {
-  enqueueRecoverableDisputeResolution({ disputeId, requestToken, rerunById }).catch(onError)
+  const { data, opts } = buildDisputeResolutionJob(disputeId, requestToken, rerunById)
+  ai_agents.add('dispute-resolution', data, opts).catch(onError)
+  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'dispute-resolution')
 }
 
 /**
@@ -85,7 +61,9 @@ export async function enqueueDisputeResolutionQueued(
   requestToken: string,
   rerunById?: string | null,
 ): Promise<string> {
-  const [job] = await enqueueRecoverableDisputeResolution({ disputeId, requestToken, rerunById })
+  const { data, opts } = buildDisputeResolutionJob(disputeId, requestToken, rerunById)
+  const job = await ai_agents.add('dispute-resolution', data, opts)
   if (!job) throw new Error('Dispute resolution rerun was not admitted to the queue')
+  trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'dispute-resolution')
   return job.id
 }

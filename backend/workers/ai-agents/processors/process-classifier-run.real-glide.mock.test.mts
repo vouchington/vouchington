@@ -79,52 +79,44 @@ describe('classifier run processor (real GlideMQ)', () => {
 
   it('does not reach the provider after the durable attempt budget is exhausted, and keeps the local outcome', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-provider-key')
-    await spendCapConfig.waitForInitialization()
-    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, { enabled: false })
-    try {
-      const request = vi.mocked(fetchStructuredDecisionProvider)
-      request.mockRejectedValue(new Error('Unexpected provider request'))
-      const { post, inputSha256, subject, run } = await reserveRun(true, true)
-      const adapter = createPostClassifierRunAdapter(detectorPackage.version)
-      const target = {
-        runId: run.runId,
-        subject,
-        inputSha256,
-        configurationSha256: run.configurationSha256,
-        leaseSeconds: 60,
-      }
-      for (let attempt = 0; attempt < CLASSIFIER_RUN_ATTEMPTS; attempt++) {
-        const claim = await claimClassifierRun(adapter, target)
-        if (claim.kind !== 'claimed') throw new Error(`Unexpected claim: ${claim.kind}`)
-        await expect(
-          startClassifierProviderAttempt(adapter, {
-            lease: claim.lease,
-            maxAttempts: CLASSIFIER_RUN_ATTEMPTS,
-          }),
-        ).resolves.toBe('started')
-        await expireClassifierRunLeaseForTest(run.runId)
-      }
-
-      await expect(
-        processClassifierRun(
-          classifierRunJobFor(toClassifierRunJobData(POST_CLASSIFIER_SLUG, run)),
-        ),
-      ).resolves.toEqual({ kind: 'terminal' })
-
-      expect(request).not.toHaveBeenCalled()
-      await expect(getClassifierRunFacts(post.id, POST_CLASSIFIER_SLUG)).resolves.toMatchObject([
-        {
-          provider_attempts_started: CLASSIFIER_RUN_ATTEMPTS,
-          terminal_failure_kind: 'attempts-exhausted',
-          terminal_failed_at: expect.any(Date),
-        },
-      ])
-      await expect(getPostClassifierLocalOutcomeFacts(run.runId)).resolves.toMatchObject({
-        is_flagged: expect.any(Boolean),
-      })
-    } finally {
-      restore()
+    const request = vi.mocked(fetchStructuredDecisionProvider)
+    request.mockRejectedValue(new Error('Unexpected provider request'))
+    const { post, inputSha256, subject, run } = await reserveRun(true, true)
+    const adapter = createPostClassifierRunAdapter(detectorPackage.version)
+    const target = {
+      runId: run.runId,
+      subject,
+      inputSha256,
+      configurationSha256: run.configurationSha256,
+      leaseSeconds: 60,
     }
+    for (let attempt = 0; attempt < CLASSIFIER_RUN_ATTEMPTS; attempt++) {
+      const claim = await claimClassifierRun(adapter, target)
+      if (claim.kind !== 'claimed') throw new Error(`Unexpected claim: ${claim.kind}`)
+      await expect(
+        startClassifierProviderAttempt(adapter, {
+          lease: claim.lease,
+          maxAttempts: CLASSIFIER_RUN_ATTEMPTS,
+        }),
+      ).resolves.toBe('started')
+      await expireClassifierRunLeaseForTest(run.runId)
+    }
+
+    await expect(
+      processClassifierRun(classifierRunJobFor(toClassifierRunJobData(POST_CLASSIFIER_SLUG, run))),
+    ).resolves.toEqual({ kind: 'terminal' })
+
+    expect(request).not.toHaveBeenCalled()
+    await expect(getClassifierRunFacts(post.id, POST_CLASSIFIER_SLUG)).resolves.toMatchObject([
+      {
+        provider_attempts_started: CLASSIFIER_RUN_ATTEMPTS,
+        terminal_failure_kind: 'attempts-exhausted',
+        terminal_failed_at: expect.any(Date),
+      },
+    ])
+    await expect(getPostClassifierLocalOutcomeFacts(run.runId)).resolves.toMatchObject({
+      is_flagged: expect.any(Boolean),
+    })
   })
 
   it('releases an exhausted queue identity and executes all remote topics exactly once on recovery', async () => {
@@ -191,9 +183,7 @@ describe('classifier run processor (real GlideMQ)', () => {
       await enqueueClassifierRun(data)
       await exhausted
       expect(attempts).toBe(CLASSIFIER_RUN_ATTEMPTS)
-      const retained = await ai_agents.getJob(jobId)
-      expect(await retained?.getState()).toBe('failed')
-      expect(retained?.data.backgroundResponses).toBeUndefined()
+      expect(await ai_agents.getJob(jobId)).toBeNull()
       expect(request).not.toHaveBeenCalled()
       unavailable = false
       const recovered = waitForWorkerJob(worker, 'completed', jobId)

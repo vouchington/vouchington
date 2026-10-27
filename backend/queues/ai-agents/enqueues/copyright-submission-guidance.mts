@@ -8,7 +8,6 @@ const jobIdFor = (submissionId: string) => `copyright_submission_guidance_${subm
 export async function enqueueCopyrightSubmissionGuidance(submissionId: string): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
-    removeOnFail: false,
     jobId: jobIdFor(submissionId),
     priority: AGENT_PRIORITY['copyright-submission-guidance'],
     deduplication: { id: `copyright_submission_guidance_${submissionId}`, mode: 'simple' },
