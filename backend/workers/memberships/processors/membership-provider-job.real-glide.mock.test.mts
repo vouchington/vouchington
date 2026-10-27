@@ -1,6 +1,7 @@
 import { generateKeyPairSync, randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { Queue, QueueEvents, Worker, type Job, type JobOptions } from 'glide-mq'
+import { throwRateLimited } from '@vouchington/queue-errors'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueCommandClient, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import * as httpDispatchers from '../../../modules/utils/http.mts'
@@ -201,7 +202,7 @@ describe('membership provider job when the execution lease is lost before releas
 
   it.each([
     ['a pending Google Play purchase', () => new GooglePlayPurchasePendingError()],
-    ['a provider rate limit', () => new Worker.RateLimitError()],
+    ['a provider rate limit', providerRateLimitSignal],
     [
       'an unavailable provider configuration',
       () => new MembershipProviderUnavailableError('unset'),
@@ -221,3 +222,13 @@ describe('membership provider job when the execution lease is lost before releas
     expect(moveToDelayed).not.toHaveBeenCalled()
   })
 })
+
+function providerRateLimitSignal(): unknown {
+  try {
+    return throwRateLimited(2_000, new Error('provider rate limit'), {
+      RateLimitError: Worker.RateLimitError,
+    })
+  } catch (err) {
+    return err
+  }
+}
