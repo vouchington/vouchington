@@ -56,6 +56,27 @@ describe('vote weight penalty review API', () => {
     }
   })
 
+  it('rejects a suspended administrator before lifting a penalty', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const target = await createTestUser()
+    const penaltyId = await insertTestVoteWeightPenaltyRecord({
+      userId: target.id,
+      createdById: admin.id,
+    })
+    await suspendTestUser(admin.id)
+    try {
+      const request = createRequest()
+      await request.authenticateAs(admin)
+      const response = await request.delete(`${path}/${penaltyId}`).expect(403)
+      expect(response.body.code).toBe(ACCOUNT_SUSPENDED)
+      expect(await getVoteWeightPenaltyByIdFromPrimary(penaltyId)).toMatchObject({
+        revoked_at: null,
+      })
+    } finally {
+      await unsuspendTestUser(admin.id)
+    }
+  })
+
   it('rejects a suspended administrator before recording a review', async () => {
     const admin = await createTestUser({ administrator: true })
     const target = await createTestUser()
