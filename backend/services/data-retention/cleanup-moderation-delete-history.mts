@@ -102,7 +102,19 @@ export async function deleteExpiredModerationHistory(
         DELETE FROM moderation_report_judgements judgement
         WHERE judgement.id = ANY(${ids}::uuid[])
           AND judgement.dispatched_at IS NOT NULL
-          AND judgement.dispatched_at < ${now}::timestamptz - interval '90 days'
+          AND judgement.dispatched_at < ${now}::timestamptz - interval '6 years'
+          AND NOT EXISTS (
+            SELECT 1 FROM user_legal_preservation_holds preservation_hold
+            WHERE preservation_hold.account_user_id = judgement.reported_user_id
+              AND preservation_hold.released_at IS NULL
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM posts judged_post
+            JOIN user_legal_preservation_holds preservation_hold
+              ON preservation_hold.account_user_id = judged_post.created_by_id
+              AND preservation_hold.released_at IS NULL
+            WHERE judged_post.id = judgement.post_id
+          )
           AND (
             (judgement.post_id IS NOT NULL AND EXISTS (
               SELECT 1 FROM moderation_report_judgements newer

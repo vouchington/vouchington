@@ -1,23 +1,16 @@
-import { EMBEDDING_COLUMNS, EMBEDDINGS_TABLE, TABLE_MAP } from '../config.mts'
+import { applySingleEmbedding, type SingleEmbeddingTarget } from './apply.mts'
 import { createBedrockEmbedding } from './request.mts'
 import { requireDenseEmbedding } from './require-dense-embedding.mts'
 import { lookupExistingEmbedding } from '../lookup.mts'
 import { insertCentralizedEmbeddingsBulk } from '../centralized-table.mts'
 import { isEntityLockedForBatch } from '../batch/locks.mts'
 import { sha256 } from '@modules/utils'
-import { write } from '@data-stores/psql'
-import pgvector from 'pgvector/pg'
 import { trackAIEmbeddingShortCircuit } from '@services/analytics'
 
-type CreateEmbeddingJobData = {
-  type: 'post' | 'topic' | 'rss_feed_item'
-  id: string
-  content: string
-}
+type CreateEmbeddingJobData = SingleEmbeddingTarget & { content: string }
 
 export const createSingleEmbedding = async (data: CreateEmbeddingJobData): Promise<void> => {
   const content_sha256 = sha256(data.content)
-  const tableName = TABLE_MAP[data.type]
 
   if (await isEntityLockedForBatch(data.type, data.id)) {
     trackAIEmbeddingShortCircuit({ reason: 'batch_lock', entityType: data.type })
@@ -28,26 +21,7 @@ export const createSingleEmbedding = async (data: CreateEmbeddingJobData): Promi
 
   if (existingEmbedding) {
     trackAIEmbeddingShortCircuit({ reason: 'centralized_cache', entityType: data.type })
-    await write(
-      `/* createSingleEmbedding cache-hit */
-      UPDATE ${tableName} AS entity
-      SET ${EMBEDDING_COLUMNS.input_sha256} = existing.content_sha256,
-        ${EMBEDDING_COLUMNS.embedding} = existing.embedding,
-        ${EMBEDDING_COLUMNS.created_at} = NOW(),
-        ${EMBEDDING_COLUMNS.input_token_count} = COALESCE(
-          existing.input_token_count,
-          CASE WHEN entity.${EMBEDDING_COLUMNS.input_sha256} = existing.content_sha256
-            THEN entity.${EMBEDDING_COLUMNS.input_token_count}
-            ELSE NULL
-          END
-        )
-      FROM ${EMBEDDINGS_TABLE} existing
-      WHERE existing.content_sha256 = $1
-        AND entity.id = $2
-        AND entity.${EMBEDDING_COLUMNS.content_sha256} = $1
-    `,
-      [content_sha256, data.id],
-    )
+    await applySingleEmbedding(data, content_sha256, existingEmbedding)
     return
   }
 
@@ -59,22 +33,5 @@ export const createSingleEmbedding = async (data: CreateEmbeddingJobData): Promi
 
   await insertCentralizedEmbeddingsBulk([{ content_sha256, embedding, input_token_count }])
 
-  await write(
-    `/* createSingleEmbedding */
-    UPDATE ${tableName}
-    SET ${EMBEDDING_COLUMNS.input_sha256} = $1,
-      ${EMBEDDING_COLUMNS.embedding} = $2,
-      ${EMBEDDING_COLUMNS.created_at} = NOW(),
-      ${EMBEDDING_COLUMNS.input_token_count} = COALESCE(
-        $4,
-        CASE WHEN ${EMBEDDING_COLUMNS.input_sha256} = $1
-          THEN ${EMBEDDING_COLUMNS.input_token_count}
-          ELSE NULL
-        END
-      )
-    WHERE id = $5
-      AND ${EMBEDDING_COLUMNS.content_sha256} = $3
-  `,
-    [content_sha256, pgvector.toSql(embedding), content_sha256, input_token_count, data.id],
-  )
+  await applySingleEmbedding(data, content_sha256, { embedding, input_token_count })
 }

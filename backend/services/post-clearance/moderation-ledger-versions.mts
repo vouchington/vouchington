@@ -52,6 +52,12 @@ export async function ensureCurrentPostModerationVersion(
       SELECT selected_version.id, source::post_moderation_sources
       FROM selected_version
       CROSS JOIN unnest($3::text[]) AS source
+      WHERE NOT EXISTS (
+        SELECT 1 FROM post_moderation_dispositions disposition
+        WHERE disposition.version_id = selected_version.id
+          AND disposition.source = source::post_moderation_sources
+          AND disposition.disposition <> 'incomplete'
+      )
       ORDER BY selected_version.id ASC NULLS LAST,
         source::post_moderation_sources ASC NULLS LAST
       ON CONFLICT (version_id, source) DO NOTHING

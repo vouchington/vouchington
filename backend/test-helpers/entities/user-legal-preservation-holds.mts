@@ -32,6 +32,17 @@ export async function releasePreservationHoldForTest(
     SET released_at = CURRENT_TIMESTAMP, released_by_id = ${releasedById} WHERE id = ${holdId}`)
 }
 
+/** Releases a hold at a chosen time so retention windows can be tested without waiting. */
+export async function releasePreservationHoldAtForTest(
+  holdId: string,
+  releasedById: string,
+  releasedAt: Date,
+): Promise<void> {
+  await runInTransaction(sql`/* releaseTestPreservationHoldAt */
+    UPDATE user_legal_preservation_holds
+    SET released_at = ${releasedAt}, released_by_id = ${releasedById} WHERE id = ${holdId}`)
+}
+
 export async function stampPreservationHoldReleasedAtOnlyForTest(holdId: string): Promise<void> {
   await runInTransaction(sql`/* stampTestPreservationHoldReleasedAtOnly */
     UPDATE user_legal_preservation_holds SET released_at = CURRENT_TIMESTAMP WHERE id = ${holdId}`)

@@ -27,6 +27,7 @@
     "@services/classifier-run-revival": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/contribution-gating": "workspace:^",
+    "@services/media-delivery-safety": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/oauth": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",

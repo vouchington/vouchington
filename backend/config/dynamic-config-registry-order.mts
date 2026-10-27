@@ -72,6 +72,7 @@ export const REGISTRY_ORDER = [
   'oauth-x-work-config',
   'ses-inbound-work-config',
   'background-queue-config',
+  'psql-queue-config',
   'background-cpu-queue-config',
   'crawl-dispatch-work-config',
   'crawler-refresh-work-config',

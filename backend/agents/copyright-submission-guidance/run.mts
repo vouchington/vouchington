@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto'
-import { callReceiptedAgentModel } from '@agents/_shared'
+import { callAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
   appendCopyrightSubmissionGuidance,
+  hasCopyrightSubmissionGuidance,
   getCopyrightSubmissionGuidanceSource,
 } from '@services/copyright-notices/submission-guidance'
 import {
@@ -20,19 +21,19 @@ export async function runCopyrightSubmissionGuidanceAgent(
   submissionId: string,
   selection: ModelSelection,
   callModel: CopyrightSubmissionGuidanceModelCaller = callCopyrightSubmissionGuidanceModel,
-  operationId = submissionId,
 ): Promise<CopyrightSubmissionGuidanceKind | null> {
+  if (
+    await hasCopyrightSubmissionGuidance(submissionId, COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION)
+  )
+    return null
   const filing = await getCopyrightSubmissionGuidanceSource(submissionId)
   if (!filing) return null
   const modelInput = wrapExternalContent(
     await sanitizePromptInjection(JSON.stringify(filing.input)),
     { source: 'copyright_submission', contentType: filing.kind },
   )
-  const { output: guidance, model } = await callReceiptedAgentModel({
+  const { output: guidance, model } = await callAgentModel({
     agentSlug: 'copyright-submission-guidance',
-    promptVersion: COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
-    operationId,
-    copyrightNoticeSubmissionId: submissionId,
     selection,
     input: modelInput,
     safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),

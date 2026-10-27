@@ -57,7 +57,6 @@
     "valkyries": "^0.13.0"
   },
   "devDependencies": {
-    "@services/ai-usage": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",

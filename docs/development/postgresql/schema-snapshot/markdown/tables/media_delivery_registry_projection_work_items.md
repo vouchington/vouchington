@@ -36,6 +36,7 @@ _none_
 
 **Indexes:**
 
+- `idx_med_dlvry_rgstry_prjctn_wrk_itms__failed_change`: `CREATE INDEX idx_med_dlvry_rgstry_prjctn_wrk_itms__failed_change ON public.media_delivery_registry_projection_work_items USING btree (failed_change_id) WHERE (failed_change_id IS NOT NULL)`
 - `idx_media_delivery_registry_projection_work_items__available`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__available ON public.media_delivery_registry_projection_work_items USING btree (available_at, media_delivery_registry_record_id) WHERE ((lease_token IS NULL) AND (failed_change_id IS NULL))`
 - `idx_media_delivery_registry_projection_work_items__expired`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__expired ON public.media_delivery_registry_projection_work_items USING btree (lease_expires_at, media_delivery_registry_record_id) WHERE ((lease_token IS NOT NULL) AND (failed_change_id IS NULL))`
 - `idx_media_delivery_registry_projection_work_items__failed`: `CREATE INDEX idx_media_delivery_registry_projection_work_items__failed ON public.media_delivery_registry_projection_work_items USING btree (media_delivery_registry_record_id, generation, failed_change_id) WHERE (failed_change_id IS NOT NULL)`

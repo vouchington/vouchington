@@ -45,7 +45,6 @@ WHERE completed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_post_moderation_work_items__incomplete_version_source
 ON post_moderation_work_items (version_id, source)
 WHERE completed_at IS NULL;
-
 CREATE TABLE IF NOT EXISTS post_moderation_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   version_id UUID NOT NULL,
@@ -90,6 +89,11 @@ CREATE TABLE IF NOT EXISTS post_moderation_dispositions (
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__version_source_id
 ON post_moderation_dispositions (version_id, source, id DESC);
+CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__terminal_version_source
+ON post_moderation_dispositions (version_id, source)
+WHERE disposition <> 'incomplete';
+COMMENT ON INDEX idx_post_moderation_dispositions__terminal_version_source IS
+  'Bounds current-version work admission when older incomplete outcomes remain in the disposition ledger.';
 CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__actor_user_id
 ON post_moderation_dispositions (actor_user_id)
 WHERE actor_user_id IS NOT NULL;

@@ -7,12 +7,16 @@ import {
 import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
 import type { runDataRetentionCleanup } from '@services/data-retention'
 import { psql } from '@queues/psql/queues'
-import type { PsqlRetentionJobData } from '@queues/psql/types'
+import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
 import type { PartitionDropOutcome } from '@data-stores/psql/migration-runner/monthly-partitions'
 
 const cleanupPartitions = vi.fn<() => Promise<PartitionDropOutcome[]>>()
 const createPartitions = vi.fn<() => Promise<void>>()
+const noAIRetention = Object.fromEntries(
+  AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }]),
+)
 const emptyCleanupResult = {
+  ...noAIRetention,
   classifierRecords: { runs: { hasMore: false } },
 } as Awaited<ReturnType<typeof runDataRetentionCleanup>>
 const dataRetentionCleanup =
@@ -107,6 +111,7 @@ describe('processPsql', () => {
       await Promise.all(continuationIds.map(async id => (await psql.getJob(id))?.remove()))
     })
     const hasMore = {
+      ...noAIRetention,
       classifierRecords: { runs: { hasMore: true } },
     } as Awaited<ReturnType<typeof runDataRetentionCleanup>>
     const cleanup = vi
@@ -147,6 +152,7 @@ describe('processPsql', () => {
     })
     const result = (topicResults: boolean, requests: boolean) =>
       ({
+        ...noAIRetention,
         classifierRecords: {
           topicResults: { hasMore: topicResults },
           requests: { hasMore: requests },
@@ -197,6 +203,10 @@ describe('processPsql', () => {
     const result = (effects: boolean, notices: boolean) =>
       ({
         classifierRecords: {},
+        textEmbeddingCache: { hasMore: false },
+        terminalEmbeddingBatches: { hasMore: false },
+        oldMediaDeliveryChanges: { hasMore: false },
+        oldProviderResponseKeys: { hasMore: false },
         deliveredMembershipEntitlementEffects: { hasMore: effects },
         endedMembershipRenewalNotices: { hasMore: notices },
         terminalGooglePlayAcknowledgments: { hasMore: false },

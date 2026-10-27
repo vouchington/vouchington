@@ -15,6 +15,7 @@ import { deleteExpiredModerationHistory } from './cleanup-moderation-delete-hist
 
 const now = new Date('2026-10-23T12:00:00.000Z')
 const expiredAt = new Date('2024-09-01T12:00:00.000Z')
+const expiredJudgementAt = new Date('2019-09-01T12:00:00.000Z')
 
 describe('terminal moderation history expiry', () => {
   it('deletes a terminal case only after its report, and expires an old action', async () => {
@@ -69,10 +70,10 @@ describe('terminal moderation history expiry', () => {
     ).toBe(1)
   })
 
-  it('deletes only a superseded dispatched judgement after ninety days', async () => {
+  it('deletes only a superseded dispatched judgement after six years', async () => {
     const target = await createTestUser()
     const olderId = await insertTestReportJudgement({ entityType: 'user', entityId: target.id })
-    await dispatchTestRetentionJudgement(olderId, expiredAt)
+    await dispatchTestRetentionJudgement(olderId, expiredJudgementAt)
     expect(
       await deleteExpiredModerationHistory(
         'judgements',
@@ -82,7 +83,7 @@ describe('terminal moderation history expiry', () => {
       ),
     ).toBe(0)
     const newerId = await insertTestReportJudgement({ entityType: 'user', entityId: target.id })
-    await dispatchTestRetentionJudgement(newerId, expiredAt)
+    await dispatchTestRetentionJudgement(newerId, expiredJudgementAt)
     expect(
       await deleteExpiredModerationHistory(
         'judgements',

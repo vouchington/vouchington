@@ -56,9 +56,10 @@ async function cleanupModerationRecordPage(
   options: ModerationRecordCleanupOptions,
 ): Promise<{ deleted: number; hasMore: boolean }> {
   await using transaction = await beginTransaction()
-  if (kind === 'actions') {
-    // Hold placement/release writes this table, so its state cannot change during the delete page.
-    await transaction(sql`/* cleanupModerationRecordPage.lockActionHolds */
+  if (kind === 'judgements' || kind === 'actions') {
+    // Hold placement/release writes this table, so a hold placed after eligibility is read waits
+    // until this page commits and its state cannot change during the delete page.
+    await transaction(sql`/* cleanupModerationRecordPage.lockHolds */
       LOCK TABLE user_legal_preservation_holds IN SHARE MODE
     `)
   }
@@ -75,7 +76,10 @@ async function cleanupModerationRecordPage(
   `)
   const cursor = progress[0]
   if (!cursor) throw new Error(`Missing moderation retention cursor: ${kind}`)
-  const productionUpperDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1_000)
+  const productionUpperDate =
+    kind === 'judgements'
+      ? judgementRetentionCutoff(now)
+      : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1_000)
   const upperDate =
     options.upperBoundDate && options.upperBoundDate < productionUpperDate
       ? options.upperBoundDate
@@ -113,4 +117,11 @@ async function cleanupModerationRecordPage(
   `)
   await transaction.commit()
   return { deleted, hasMore }
+}
+
+function judgementRetentionCutoff(now: Date): Date {
+  const cutoff = new Date(now)
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 6)
+  if (cutoff.getUTCMonth() !== now.getUTCMonth()) cutoff.setUTCDate(0)
+  return cutoff
 }

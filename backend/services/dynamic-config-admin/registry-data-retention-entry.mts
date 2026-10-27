@@ -11,7 +11,7 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
     topic_import_attempt_batch_size: {
       description: 'Topic import attempt rows per retention page.',
       minValue: 1,
-      maxValue: 250,
+      maxValue: DATA_RETENTION_MAX_VALUES.topic_import_attempt_batch_size,
       integer: true,
     },
     moderation_batch_size: {
@@ -51,6 +51,18 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
         'Maximum eligible partition children checked for holds or in-flight rows in one admin status request. Remaining children are marked check-pending and rechecked during cleanup.',
       minValue: 1,
       maxValue: DATA_RETENTION_MAX_VALUES.partition_status_probe_limit,
+      integer: true,
+    },
+    ai_retention_page_size: {
+      description: 'Maximum rows in each persisted AI retention page.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.ai_retention_page_size,
+      integer: true,
+    },
+    ai_retention_max_pages_per_run: {
+      description: 'Maximum persisted AI retention pages in one cleanup run.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.ai_retention_max_pages_per_run,
       integer: true,
     },
     classifier_retention_days: {

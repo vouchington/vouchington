@@ -10,8 +10,6 @@ export const EMBEDDING_COLUMNS = {
   input_token_count: 'bedrock_nova_multimodal_v1_input_token_count',
 } as const
 
-export const IMAGE_EMBEDDINGS_TABLE = 'bedrock_nova_multimodal_v1_image_embeddings'
-
 export const EMBEDDING_DIMENSION = NOVA_EMBEDDING_DEFAULTS.dimension
 export const BEDROCK_NOVA_MULTIMODAL_MODEL_ID = NOVA_EMBEDDING_DEFAULTS.modelId
 export const BEDROCK_NOVA_MULTIMODAL_MODEL_NAME = 'nova-2-multimodal-embeddings-v1'

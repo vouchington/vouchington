@@ -1,5 +1,6 @@
 import { MODERATION_RETENTION_BOUNDED_TABLES } from './schema-growth-moderation-retention.mts'
 import { MODERATION_BOUNDED_TABLES } from './schema-growth-bounded-moderation.mts'
+import { EXTRA_BOUNDED_TABLES_CONTINUED } from './schema-growth-bounded-extra-continued.mts'
 
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ...MODERATION_RETENTION_BOUNDED_TABLES,
@@ -8,6 +9,38 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
     'image_deletion_post_updates',
     'At most one runtime-bounded pending post page per unfinished image deletion; acknowledged admissions delete receipts, so cardinality tracks active work rather than retained deletion history.',
+  ],
+  [
+    'bedrock_embedding_batches',
+    'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
+  ],
+  [
+    'bedrock_embedding_batch_entities',
+    'Batch member rows cascade when a terminal parent batch expires.',
+  ],
+  [
+    'ai_usage_provider_response_keys',
+    'Provider response identities expire after 90 days through bounded UUIDv7 deletion batches.',
+  ],
+  [
+    'post_moderation_work_items',
+    'One source work item per live moderation version; parent deletion cascades it.',
+  ],
+  [
+    'post_moderation_attempts',
+    'Provider attempts cascade when their owning moderation work is deleted.',
+  ],
+  [
+    'media_delivery_registry_changes',
+    'A persisted raw UUIDv7 cursor removes only old superseded transitions; current, failed replay, and completed withheld transitions are retained.',
+  ],
+  [
+    'media_delivery_change_retention_cursors',
+    'A checked true primary key permits one delivery-transition sweep position.',
+  ],
+  [
+    'bedrock_nova_multimodal_v1_embeddings',
+    'Recomputable text vectors are removed by capped age-based deletion batches.',
   ],
   [
     'classifier_retention_cursors',
@@ -169,32 +202,5 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'user_topic_import_attempts',
     'Completed response replays and abandoned attempts expire after 48 hours, and bounded cleanup deletes both classes, bounding cardinality to recent topic-import traffic.',
   ],
-  [
-    'post_admission_quota_consumptions',
-    'Committed quota rows are retained for seven days, while policy windows are capped at one day; bounded cleanup keeps cardinality tied to recent admission traffic.',
-  ],
-  [
-    'topic_alias_category_mapping_reconciliations',
-    'One coalesced row per alias with pending category-mapping work; successful reconciliation deletes the row, bounding cardinality to the active backlog.',
-  ],
-  [
-    'rss_feed_item_category_snapshot_reconciliations',
-    'One coalesced row per RSS item with pending category snapshot work; successful exact-generation reconciliation deletes the row, bounding cardinality to the active backlog.',
-  ],
-  [
-    'rss_feed_item_source_category_snapshots',
-    'One current snapshot per RSS feed-to-item source row; the source primary key bounds cardinality to live RSS feed item sources.',
-  ],
-  [
-    'post_publication_dirty_work',
-    'One coalesced row per exact publication dependency scope; successful exact-generation acknowledgement deletes the row, bounding cardinality to the active backlog.',
-  ],
-  [
-    'post_publication_dirty_work_keys',
-    'Retained keys cannot outlive their cascade-deleted dirty-work parent, so cardinality is bounded by the active backlog. The table remains partitioned by dirty_work_id because one active high-fanout scope can still contain enough keys to benefit from target-scoped pruning.',
-  ],
-  [
-    'post_publication_reconciliation_audit_cursors',
-    'One checkpoint per named operator scan bounds the audit state independently of post cardinality.',
-  ],
+  ...EXTRA_BOUNDED_TABLES_CONTINUED,
 ])

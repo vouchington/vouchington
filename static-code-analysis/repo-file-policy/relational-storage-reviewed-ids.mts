@@ -20,6 +20,13 @@ function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
 
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
+  ...reviewed(
+    'Persisted retention keyset bound; the referenced row can be deleted before the next page and must not be a foreign key.',
+    [
+      'media_delivery_change_retention_cursors.cursor_change_id',
+      'media_delivery_change_retention_cursors.sweep_upper_bound_change_id',
+    ],
+  ),
   [
     'moderation_record_cleanup_cursors.cursor_record_id',
     'Deletion-stable moderation keyset position survives examined record deletion; it is not a relationship.',

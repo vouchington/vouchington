@@ -1,6 +1,6 @@
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { isUUID } from '@modules/utils'
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, withPrimaryReads } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
@@ -109,7 +109,23 @@ async function appendCopyrightAppealRecommendation(input: {
   await transaction.commit()
 }
 
+/** Start-of-job check on the primary: a stored recommendation means the work is already done. */
+async function hasCopyrightAppealRecommendation(
+  submissionId: string,
+  promptVersion: string,
+): Promise<boolean> {
+  const { rows } = await withPrimaryReads(() =>
+    read<{ exists: boolean }>(sql`/* hasCopyrightAppealRecommendation */
+      SELECT EXISTS (
+        SELECT 1 FROM copyright_notice_appeal_recommendations
+        WHERE copyright_notice_submission_id = ${submissionId} AND prompt_version = ${promptVersion}
+      ) AS exists`),
+  )
+  return rows[0]?.exists ?? false
+}
+
 export const copyrightAppealRecommendations = {
+  has: hasCopyrightAppealRecommendation,
   get: getCopyrightAppealForRecommendation,
   append: appendCopyrightAppealRecommendation,
 }

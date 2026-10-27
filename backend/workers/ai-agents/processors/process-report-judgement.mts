@@ -19,7 +19,6 @@ export async function processReportJudgement(
       triggeringReportId: triggering_report_id,
       rerunById: rerun_by_id ?? null,
       runId: run_id ?? null,
-      operationId: rerun_by_id ? job.id : `${entity_type}:${entity_id}:${triggering_report_id}`,
     },
     await loadServiceModelSelection('report-judgement'),
     callModel,

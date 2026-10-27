@@ -12,7 +12,9 @@ export async function getHistoryTablesWithoutMutationGuards() {
         AND NOT EXISTS (
           SELECT 1 FROM pg_trigger trigger_row JOIN pg_proc function_row ON function_row.oid = trigger_row.tgfoid
           WHERE trigger_row.tgrelid = table_row.oid AND NOT trigger_row.tgisinternal
-            AND function_row.proname = 'fn_reject_mutation'
+            AND (function_row.proname = 'fn_reject_mutation'
+              OR (table_row.relname = 'media_delivery_registry_changes'
+                AND function_row.proname = 'fn_reject_media_delivery_registry_change_retention'))
             AND (trigger_row.tgtype::integer & 26) = 26
         ) ORDER BY table_row.relname
     `),

@@ -10,6 +10,8 @@ export type DataRetentionConfig = {
   moderation_batch_size: number
   moderation_max_batches_per_run: number
   ses_bounce_retention_days: number
+  ai_retention_page_size: number
+  ai_retention_max_pages_per_run: number
 }
 
 /** The per-cleanup limits one retention run applies. Every cleanup in the run takes both. */
@@ -29,6 +31,8 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   moderation_batch_size: 25,
   moderation_max_batches_per_run: 4,
   ses_bounce_retention_days: 90,
+  ai_retention_page_size: 500,
+  ai_retention_max_pages_per_run: 10,
 }
 
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
@@ -40,6 +44,8 @@ export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   moderation_batch_size: 100,
   moderation_max_batches_per_run: 20,
   ses_bounce_retention_days: 365,
+  ai_retention_page_size: 500,
+  ai_retention_max_pages_per_run: 10,
 }
 
 export const dataRetentionConfig = new DynamicConfig({
@@ -53,6 +59,8 @@ export const dataRetentionConfig = new DynamicConfig({
     moderation_batch_size: 'number',
     moderation_max_batches_per_run: 'number',
     ses_bounce_retention_days: 'number',
+    ai_retention_page_size: 'number',
+    ai_retention_max_pages_per_run: 'number',
   },
   defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
 })
@@ -92,4 +100,11 @@ export function getModerationRecordCleanupLimits(): DataRetentionLimits {
 
 export function getSesBounceRetentionDays(): number {
   return readField('ses_bounce_retention_days')
+}
+
+export function getAIRetentionPageLimits(): DataRetentionLimits {
+  return {
+    batchSize: readField('ai_retention_page_size'),
+    maxBatches: readField('ai_retention_max_pages_per_run'),
+  }
 }
