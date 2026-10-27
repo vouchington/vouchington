@@ -1,7 +1,6 @@
+import { assertTestRelationPublicationLockOrder } from '@voucha/test-helpers/entity-relation-publication-order'
 import { createHash, randomUUID } from 'node:crypto'
-import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import {
-  beginTransaction,
   getEntityRelation,
   getTopicAliasIdForTest,
   createTestUser,
@@ -11,7 +10,7 @@ import {
   insertUnlinkedTopicAliasForTest,
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { createEntityRelationElectionTarget } from './target.mts'
 import { updateEntityRelationElectionVoteStatsFromPrimary } from './vote-stats.mts'
@@ -57,41 +56,16 @@ describe('single entity relation vote stats publication locking', () => {
       relation,
       { enqueueVoteStats: false },
     )
-    const relationLocked = Promise.withResolvers<void>()
-    const releaseRelation = Promise.withResolvers<void>()
-    const holder = holdRelationRowLock()
-
-    async function holdRelationRowLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* single vote stats alias lock test */ SELECT 1 FROM relation__rss_feed_item__category__topic_alias WHERE id = $1 FOR UPDATE`,
-        [row.id],
-      )
-      relationLocked.resolve()
-      await releaseRelation.promise
-
-      await query.commit()
-    }
-    await relationLocked.promise
-
-    const updating = updateEntityRelationElectionVoteStatsFromPrimary(target)
-    try {
-      await vi.waitFor(async () => {
-        await expect(lockTopicAliasPublicationScopeWithTimeout(aliasId)).rejects.toMatchObject({
-          code: '55P03',
-        })
-      })
-    } finally {
-      releaseRelation.resolve()
-    }
-    await holder
-    await updating
-
-    async function lockTopicAliasPublicationScopeWithTimeout(aliasId: string): Promise<void> {
-      await using query = await beginTransaction()
-      await query(`/* single vote stats alias lock timeout */ SET LOCAL lock_timeout = '50ms'`)
-      await lockTopicAliasPublicationScopes(query, [aliasId])
-      await query.commit()
-    }
+    await assertTestRelationPublicationLockOrder({
+      table: 'relation__rss_feed_item__category__topic_alias',
+      relationId: row.id,
+      scope: 'topic_alias',
+      scopeId: aliasId,
+      update: () => updateEntityRelationElectionVoteStatsFromPrimary(target),
+    })
+    const [updated] = (await getEntityRelation(relation.table_name, itemId, aliasId)) as Array<{
+      votes_score_net: number
+    }>
+    expect(updated?.votes_score_net).toBeGreaterThan(0)
   })
 })
