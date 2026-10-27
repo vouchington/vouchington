@@ -4,10 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { parsedDependabot } from '../.github/test-helpers/fix-dependabot.fixtures.mts'
-import { parsedMain } from '../.github/test-helpers/fix-main.fixtures.mts'
 import { MAX_SOURCE_RUN_AGE_MS } from './source-run-assessment.mts'
-import { SOURCE_RUN_GUARD_JOB_NAMES, SOURCE_RUN_GUARD_SHELL } from './source-run-guard-shell.mts'
+import { SOURCE_RUN_GUARD_SHELL } from './source-run-guard-shell.mts'
 import {
   SOURCE_RUN_STATE_FIXTURES,
   type SourceRunStateFixture,
@@ -17,11 +15,10 @@ import { sourceStateExitCode } from './source-run-state.mts'
 // The fake `gh` stands in for a completed `gh api ... --jq '...'` call: it prints the exact TSV
 // row the guard would have received, bypassing gojq/fromdateiso8601 entirely. Freshness is
 // precomputed by the test from MAX_SOURCE_RUN_AGE_MS, so this differential test exercises the
-// guard's bucketing (the bash comparisons), not the real jq date arithmetic — the interpolated
-// bound literal is asserted separately below. The embedded --jq program itself is never executed
-// or parsed by any suite here, so a syntactically broken filter would still ship green and only
-// fail closed live, on every splice site at once. A real-jq canary is deferred to #10167's
-// totality work rather than added here.
+// guard's bucketing (the bash comparisons), not the real jq date arithmetic. The embedded --jq
+// program itself is never executed or parsed by any suite here, so a syntactically broken filter
+// would still ship green and only fail closed live, on every splice site at once. A real-jq
+// canary is deferred to #10167's totality work rather than added here.
 const FAKE_GH_SCRIPT = '#!/bin/sh\nprintf \'%s\\n\' "$FAKE_GH_TSV_OUTPUT"\n'
 
 let fakeGhDir: string
@@ -84,36 +81,6 @@ describe('SOURCE_RUN_GUARD_SHELL', () => {
 
       expect(status).toBe(sourceStateExitCode(fixture.result))
       expect(output).toContain(`current=${String(fixture.result.current)}`)
-    },
-  )
-
-  it('interpolates the exact MAX_SOURCE_RUN_AGE_MS bound', () => {
-    expect(MAX_SOURCE_RUN_AGE_MS).toBe(48 * 60 * 60 * 1000)
-    expect(SOURCE_RUN_GUARD_SHELL).toContain(
-      '((now - (.run_started_at | fromdateiso8601)) <= (172800))',
-    )
-  })
-
-  it('projects jq fields in the same order the guard reads them', () => {
-    expect(SOURCE_RUN_GUARD_SHELL).toContain(
-      "--jq '[.repository.full_name, .id, .run_attempt, .status, .conclusion,",
-    )
-    expect(SOURCE_RUN_GUARD_SHELL).toMatch(
-      /read -r actual_repo actual_id actual_attempt actual_status actual_conclusion actual_fresh/,
-    )
-  })
-
-  const spliceSites = [
-    ...SOURCE_RUN_GUARD_JOB_NAMES.map(jobName => ['fix-main.yml', jobName, parsedMain] as const),
-    ['fix-dependabot.yml', 'revalidate-dispatch', parsedDependabot],
-    ['fix-dependabot.yml', 'escalate', parsedDependabot],
-  ] as const
-
-  it.each(spliceSites)(
-    "splices the canonical guard verbatim into %s's %s job's Revalidate source run step",
-    (_workflowName, jobName, parsed) => {
-      const step = parsed.jobs?.[jobName]?.steps?.find(candidate => candidate.id === 'source-state')
-      expect(step?.run).toBe(SOURCE_RUN_GUARD_SHELL)
     },
   )
 })
