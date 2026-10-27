@@ -57,6 +57,42 @@ describe('blocklist membership apply', () => {
     }
   })
 
+  it('applies an injected snapshot when the replica check is omitted', async () => {
+    const suffix = sourceNameSuffix()
+    const kept = `kept-${suffix}.example`
+    const added = `added-${suffix}.example`
+    const name = `copy-hook-${suffix}`
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name,
+      url: 'https://example.com/copy-hook.txt',
+    })
+    await insertTestDomainBlacklist(kept, name)
+    let copied = false
+    try {
+      const result = await syncDomainsWithDatabase(
+        sourceId,
+        new Response(`${kept}\n${added}\n`),
+        'url',
+        undefined,
+        {
+          writerLsn: '0/20',
+          copySourceMembership: async (_sourceId, destination) => {
+            copied = true
+            writeFileSync(destination, `${kept}\n`)
+          },
+        },
+      )
+      expect(copied).toBe(true)
+      expect(result.domainsAdded).toBe(1)
+      await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual(
+        [added, kept].toSorted(),
+      )
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
+  })
+
   it('counts domainsAdded from the rows the insert actually returns', async () => {
     const suffix = sourceNameSuffix()
     const kept = `kept-${suffix}.example`
