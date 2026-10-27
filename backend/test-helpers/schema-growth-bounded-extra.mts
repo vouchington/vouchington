@@ -11,18 +11,6 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'At most one runtime-bounded pending post page per unfinished image deletion; acknowledged admissions delete receipts, so cardinality tracks active work rather than retained deletion history.',
   ],
   [
-    'bedrock_embedding_batches',
-    'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
-  ],
-  [
-    'bedrock_embedding_batch_entities',
-    'Batch member rows cascade when a terminal parent batch expires.',
-  ],
-  [
-    'ai_usage_provider_response_keys',
-    'Provider response identities expire after 90 days through bounded UUIDv7 deletion batches.',
-  ],
-  [
     'post_moderation_work_items',
     'One source work item per live moderation version; parent deletion cascades it.',
   ],
