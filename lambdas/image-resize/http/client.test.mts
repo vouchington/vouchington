@@ -179,25 +179,21 @@ describe('fetchImageFromUrl', () => {
   })
 
   it('should reject image larger than max size', async () => {
-    const largeData = Buffer.alloc(100 * 1024 * 1024)
-    mockFetchWithPinnedDns.mockResolvedValue(
-      imageResponse({
-        body: largeData,
-        contentLength: '104857600',
-      }) as never,
-    )
+    const overLimitData = Buffer.alloc(11)
+    const response = imageResponse({ body: overLimitData, contentLength: '11' })
+    const readBody = vi.spyOn(response.body, Symbol.asyncIterator)
+    mockFetchWithPinnedDns.mockResolvedValue(response as never)
 
-    const errTooLarge = await fetchImageFromUrl(
-      'https://example.com/large.jpg',
-      30000,
-      10 * 1024 * 1024,
-      { fetchWithPinnedDns: mockFetchWithPinnedDns },
-    ).catch(err => err)
+    const errTooLarge = await fetchImageFromUrl('https://example.com/large.jpg', 30000, 10, {
+      fetchWithPinnedDns: mockFetchWithPinnedDns,
+    }).catch(err => err)
     expect(errTooLarge).toBeInstanceOf(HttpOperationError)
     expect((errTooLarge as HttpOperationError).statusCode).toBe(413)
     expect(() => {
       throw errTooLarge
     }).toThrow('Image too large')
+    expect(readBody).not.toHaveBeenCalled()
+    expect(response.body.cancel).toHaveBeenCalled()
   })
 
   it('should handle content-type with charset', async () => {
