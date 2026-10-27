@@ -1797,7 +1797,6 @@ rules:
     # Remaining polling violations are tracked by #2145.
     exclude:
       - 'backend/test-helpers/community-restriction-writer-race.mts'
-      - 'backend/test-helpers/entities/memberships-lifecycle.mts'
       - 'backend/test-helpers/entities/memberships/locks.mts'
       - 'backend/test-helpers/entities/memberships/locks/action-while-user-locked.mts'
       - 'backend/test-helpers/entities/memberships/locks/stripe-catalog-fk-hold.mts'
