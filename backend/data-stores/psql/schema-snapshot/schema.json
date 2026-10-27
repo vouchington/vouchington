@@ -12854,6 +12854,160 @@
       },
       "uniqueConstraints": {}
     },
+    "classifier_run_community_prompts": {
+      "checkConstraints": {
+        "classifier_run_community_prompts_ordinal_check": "CHECK ((ordinal >= 0))"
+      },
+      "columns": {
+        "community_agent_prompt_id": {
+          "collation": null,
+          "comment": "Community prompt the configuration asks; deleting the prompt removes this child and leaves the run receipt.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "ordinal": {
+          "collation": null,
+          "comment": "Zero-based position of the prompt in the configuration order, preserved for deterministic question order.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "run_id": {
+          "collation": null,
+          "comment": "Run whose configuration asks these prompts; the children are removed with the run.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Community moderation prompts pinned when the run was reserved, in configuration order. The configuration JSON keeps the same ids and rule text for replay.",
+      "foreignKeys": {
+        "classifier_run_community_prompts_run_id_fkey": {
+          "columns": ["run_id"],
+          "definition": "FOREIGN KEY (run_id) REFERENCES classifier_runs(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_runs",
+          "validated": true
+        },
+        "fk_classifier_run_community_prompts__community_agent_prompt": {
+          "columns": ["community_agent_prompt_id"],
+          "definition": "FOREIGN KEY (community_agent_prompt_id) REFERENCES community_agent_prompts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "community_agent_prompts",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_classifier_run_community_prompts__community_agent_prompt": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_community_prompts__community_agent_prompt ON public.classifier_run_community_prompts USING btree (community_agent_prompt_id, run_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_agent_prompt_id",
+              "descending": false,
+              "expression": "community_agent_prompt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "pk_classifier_run_community_prompts": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX pk_classifier_run_community_prompts ON public.classifier_run_community_prompts USING btree (run_id, ordinal)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "ordinal",
+              "descending": false,
+              "expression": "ordinal",
+              "nullsFirst": false,
+              "opclass": "int4_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_community_prompts__community_agent_prompt": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_community_prompts__community_agent_prompt ON public.classifier_run_community_prompts USING btree (run_id, community_agent_prompt_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_agent_prompt_id",
+              "descending": false,
+              "expression": "community_agent_prompt_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["run_id", "ordinal"],
+        "definition": "PRIMARY KEY (run_id, ordinal)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "classifier_run_identities": {
       "checkConstraints": {
         "chk_classifier_run_identities__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
@@ -13702,7 +13856,7 @@
         },
         "configuration_json": {
           "collation": null,
-          "comment": "PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.",
+          "comment": "PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns and child rows.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
