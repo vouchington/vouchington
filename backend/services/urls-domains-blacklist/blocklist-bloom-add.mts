@@ -2,6 +2,7 @@ import { bloomValkeyClient } from '@data-stores/valkey'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 import type { RebuildBloomFilterData } from '@queues/bloom-filters/types'
 import onError from '@modules/on-error'
+import { bumpBlocklistBloomGeneration } from './bloom-rebuild.mts'
 import { normalizeDomain } from './normalize-domain.mts'
 import { unlinkReadyMarkerIfValue } from './ready-marker.mts'
 import { enqueueRebuildBloomFilterBestEffort } from './rebuild-enqueue.mts'
@@ -99,6 +100,7 @@ async function recoverBlocklistBloomFilterAfterAddFailure(
     const readyValue = await readReadyMarkerOrRepair(target)
     if (readyValue === null) return
 
+    await bumpBlocklistBloomGeneration(target.filter)
     await enqueueRebuildBloomFilter({ filter: target.filter })
     await unlinkReadyMarkerIfValue(target.readyKey, readyValue)
   } catch (err) {

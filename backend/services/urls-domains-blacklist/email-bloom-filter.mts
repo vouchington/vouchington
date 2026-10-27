@@ -3,7 +3,12 @@ import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
-import { blocklistBloomReadyKey, newBloomReadyMarkerValue } from './ready-marker.mts'
+import {
+  bumpBlocklistBloomGeneration,
+  rebuildCurrentBlocklistBloomFilter,
+  type BlocklistBloomRebuildOptions,
+} from './bloom-rebuild.mts'
+import { blocklistBloomReadyKey } from './ready-marker.mts'
 import {
   addDomainsToBlocklistBloomFilter,
   blocklistBloomAddTarget,
@@ -31,6 +36,7 @@ function getEmailBloomFilter() {
 const BLOOM_READY_KEY = blocklistBloomReadyKey('email-blocklist')
 
 export async function invalidateEmailBlocklistReadyMarker(): Promise<number> {
+  await bumpBlocklistBloomGeneration('email-blocklist')
   return bloomValkeyClient.unlink([BLOOM_READY_KEY])
 }
 
@@ -122,10 +128,16 @@ async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
   }
 }
 
-export async function rebuildEmailBloomFilter(): Promise<void> {
+export async function rebuildEmailBloomFilter(
+  options?: BlocklistBloomRebuildOptions,
+): Promise<void> {
   await withBlocklistBloomFilterLock('email-blocklist', async () => {
-    await getEmailBloomFilter().rebuildFromStream(emailBlocklistBatchesFromDb())
-    await bloomValkeyClient.set(BLOOM_READY_KEY, newBloomReadyMarkerValue())
+    await rebuildCurrentBlocklistBloomFilter({
+      filter: 'email-blocklist',
+      readyKey: BLOOM_READY_KEY,
+      stream: () => getEmailBloomFilter().rebuildFromStream(emailBlocklistBatchesFromDb()),
+      afterSnapshot: options?.afterSnapshot,
+    })
   })
 }
 

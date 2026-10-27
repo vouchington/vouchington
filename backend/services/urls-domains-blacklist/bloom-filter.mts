@@ -3,7 +3,12 @@ import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
-import { blocklistBloomReadyKey, newBloomReadyMarkerValue } from './ready-marker.mts'
+import {
+  bumpBlocklistBloomGeneration,
+  rebuildCurrentBlocklistBloomFilter,
+  type BlocklistBloomRebuildOptions,
+} from './bloom-rebuild.mts'
+import { blocklistBloomReadyKey } from './ready-marker.mts'
 import {
   addDomainsToBlocklistBloomFilter,
   blocklistBloomAddTarget,
@@ -34,6 +39,7 @@ function getBloomFilter() {
 const BLOOM_READY_KEY = blocklistBloomReadyKey('url-blocklist')
 
 export async function invalidateUrlBlocklistReadyMarker(): Promise<number> {
+  await bumpBlocklistBloomGeneration('url-blocklist')
   return bloomValkeyClient.unlink([BLOOM_READY_KEY])
 }
 
@@ -92,10 +98,14 @@ export async function addDomainsToBloomFilter(
   )
 }
 
-export async function rebuildBloomFilter(): Promise<void> {
+export async function rebuildBloomFilter(options?: BlocklistBloomRebuildOptions): Promise<void> {
   await withBlocklistBloomFilterLock('url-blocklist', async () => {
-    await getBloomFilter().rebuildFromStream(urlBlocklistBatchesFromDb())
-    await bloomValkeyClient.set(BLOOM_READY_KEY, newBloomReadyMarkerValue())
+    await rebuildCurrentBlocklistBloomFilter({
+      filter: 'url-blocklist',
+      readyKey: BLOOM_READY_KEY,
+      stream: () => getBloomFilter().rebuildFromStream(urlBlocklistBatchesFromDb()),
+      afterSnapshot: options?.afterSnapshot,
+    })
   })
 }
 
