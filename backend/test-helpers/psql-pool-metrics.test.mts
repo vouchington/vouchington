@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createServer, connect } from 'node:net'
-import { advisoryLockPool, jobSerializationPool, readPool, writePool } from './setup.mts'
+import {
+  advisoryLockPool,
+  jobSerializationPool,
+  readPool,
+  writePool,
+} from '../data-stores/psql/setup.mts'
 
-type PsqlPoolSocketHandles = { active: ReadonlySet<object>; owned: ReadonlySet<object> }
+import type { PsqlPoolSocketHandles } from './psql-pool-metrics.mts'
 
 describe('PostgreSQL pool metrics', () => {
   it('reports the initialized write, read, advisory, and job serialization pools', () => {
@@ -60,6 +65,25 @@ describe('PostgreSQL pool metrics', () => {
       serializationClient.release()
       for (const socket of acceptedSockets) socket.destroy()
       await new Promise<void>(resolve => server.close(() => resolve()))
+    }
+  })
+  it('recognizes connected pools from a reset module graph without duplicate listeners', async () => {
+    vi.resetModules()
+    const runtime = await import('../data-stores/psql/runtime.mts')
+    const client = await runtime.jobSerializationPool.connect()
+    try {
+      const handle = Reflect.get(Reflect.get(client, 'connection').stream, '_handle') as object
+      const { registerCurrentPsqlPoolMetrics } = await import('./psql-pool-metrics.mts')
+      await registerCurrentPsqlPoolMetrics()
+      const listeners = runtime.jobSerializationPool.listenerCount('connect')
+      await registerCurrentPsqlPoolMetrics()
+      expect(getRegisteredPsqlPoolSocketHandles()?.active.has(handle)).toBe(true)
+      expect(getRegisteredPsqlPoolSocketHandles()?.owned.has(handle)).toBe(true)
+      expect(runtime.jobSerializationPool.listenerCount('connect')).toBe(listeners)
+    } finally {
+      client.release()
+      await runtime.close()
+      vi.resetModules()
     }
   })
 })

@@ -40,17 +40,16 @@ const tcpResourceTracker = trackerGlobal[trackerKey] ?? {
 }
 trackerGlobal[trackerKey] = tcpResourceTracker
 
-export function registerPsqlPoolMetricsForTestEnvironment(
-  pools: PsqlPools,
-  environment: string | undefined,
-): boolean {
-  if (environment !== 'test') return false
-
-  installTcpResourceHook()
+export function registerPsqlPoolMetrics(pools: PsqlPools): void {
+  installPsqlPoolSocketTracking()
   for (const pool of [pools.write, pools.read, pools.advisoryLock, pools.jobSerialization]) {
-    if (tcpResourceTracker.registeredPools.has(pool)) continue
-    tcpResourceTracker.registeredPools.add(pool)
-    pool.on('connect', client => markPoolTcpResource(client))
+    if (!tcpResourceTracker.registeredPools.has(pool)) {
+      tcpResourceTracker.registeredPools.add(pool)
+      pool.on('connect', client => markPoolTcpResource(client))
+    }
+    // A reset module graph can connect before its pools are registered at the next checkpoint.
+    const clients: unknown = Reflect.get(pool, '_clients')
+    if (Array.isArray(clients)) for (const client of clients) markPoolTcpResource(client)
   }
 
   const target = globalThis as typeof globalThis & Record<symbol, PsqlPoolMetricsProvider>
@@ -69,7 +68,17 @@ export function registerPsqlPoolMetricsForTestEnvironment(
       owned: new Set([...active].filter(resource => tcpResourceTracker.owned.has(resource))),
     }
   }
-  return true
+}
+
+export async function registerCurrentPsqlPoolMetrics(): Promise<void> {
+  const { writePool, readPool, advisoryLockPool, jobSerializationPool } =
+    await import('../data-stores/psql/runtime.mts')
+  registerPsqlPoolMetrics({
+    write: writePool,
+    read: readPool,
+    advisoryLock: advisoryLockPool,
+    jobSerialization: jobSerializationPool,
+  })
 }
 
 type PsqlPools = {
@@ -79,7 +88,7 @@ type PsqlPools = {
   jobSerialization: pg.Pool
 }
 
-function installTcpResourceHook(): void {
+export function installPsqlPoolSocketTracking(): void {
   if (tcpResourceTracker.hookInstalled) return
   tcpResourceTracker.hookInstalled = true
   createHook({
@@ -94,7 +103,7 @@ function installTcpResourceHook(): void {
   }).enable()
 }
 
-function markPoolTcpResource(client: pg.PoolClient | undefined): void {
+function markPoolTcpResource(client: unknown): void {
   if (typeof client !== 'object' || client === null) return
   const connection = Reflect.get(client, 'connection')
   if (typeof connection !== 'object' || connection === null) return

@@ -73,6 +73,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/psql-pool-metrics.test.mts',
         'backend/test-helpers/post-search-query-syntax.test.mts',
         'backend/test-helpers/dynamic-config.test.mts',
         'backend/test-helpers/services/posts/test-support.test.mts',
@@ -180,6 +181,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       setupFiles: [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+        './test-helpers/vitest.setup.psql-pool-metrics.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
