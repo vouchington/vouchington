@@ -157,6 +157,8 @@ describe('OpenAI flex capacity fallback', () => {
   })
 
   it('records an unknown model when the flex request names none', async () => {
+    vi.resetModules()
+    const { createOpenAIResponse } = await import('./create-response.mts')
     const { model: _model, ...withoutModel } = flexParams
     mocks.create
       .mockResolvedValueOnce(makeFlexCapacityFailedStream())
