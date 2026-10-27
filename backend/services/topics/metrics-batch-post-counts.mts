@@ -18,11 +18,21 @@ export function topicPostCountCtes(): string {
       UNION ALL
       SELECT 'review'::post_types, requested.id, rating.post_id
       FROM requested_topic_ids requested
-      JOIN post_review_topic_ratings rating ON rating.topic_id = requested.id
+      JOIN LATERAL (
+        SELECT rating.post_id
+        FROM post_review_topic_ratings rating
+        WHERE rating.topic_id = requested.id
+        GROUP BY rating.post_id
+      ) rating ON TRUE
       UNION ALL
       SELECT 'data_point'::post_types, requested.id, mapping.post_id
       FROM requested_topic_ids requested
-      JOIN post_data_point_topics mapping ON mapping.topic_id = requested.id
+      JOIN LATERAL (
+        SELECT mapping.post_id
+        FROM post_data_point_topics mapping
+        WHERE mapping.topic_id = requested.id
+        GROUP BY mapping.post_id
+      ) mapping ON TRUE
     ),
     -- Same predicate as view_public_post_eligibility. Pin each post by primary key
     -- before those filters so a topic page does not scan posts.
