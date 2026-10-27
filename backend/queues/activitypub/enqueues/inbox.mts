@@ -40,12 +40,11 @@ export async function enqueueActivityPubInboxDelivery(
 /** A terminal transport stall may bypass the domain processor's failure checkpoint. */
 export async function getActivityPubInboxDeliveryJobStatus(
   data: ActivityPubInboxDeliveryJob,
-  queue: Pick<typeof background, 'getJob'> = background,
 ): Promise<
   | { state: 'missing' | 'live' | 'completed' | 'stale-terminal' }
   | { state: 'failed'; reason: string }
 > {
-  const job = await queue.getJob(deliveryJobOptions(data).jobId!)
+  const job = await background.getJob(deliveryJobOptions(data).jobId!)
   if (!job) return { state: 'missing' }
   const state = await job.getState()
   if (
@@ -74,15 +73,13 @@ export async function getActivityPubInboxDeliveryJobStatus(
 /** Release a failed delivery id only after its durable failure checkpoint commits. */
 export async function removeFailedActivityPubInboxDelivery(
   data: ActivityPubInboxDeliveryJob,
-  queue: Pick<typeof background, 'name'> = background,
-  prefix = workerQueuePrefix ?? 'glide',
 ): Promise<boolean> {
   const jobId = deliveryJobOptions(data).jobId!
   const dedicated = createRetryingCommandClient('activitypub-inbox-failed-removal')
   try {
     const claim = await acquireTerminalJobRemoval(
       dedicated.client,
-      `${prefix}:{${queue.name}}`,
+      `${workerQueuePrefix ?? 'glide'}:{${background.name}}`,
       jobId,
     )
     if (claim.state !== 'terminal') {

@@ -12,7 +12,6 @@ import {
   rearmFailedDeliveries,
   recoverDeliveries,
 } from '../workers/activitypub/processors/inbox.mts'
-import { activityPubInboxRecoveryClockPastEnqueueGrace } from './activitypub-inbox-enqueue-grace.mts'
 
 /** The maintenance processors of the durable inbox, each limited to the one delivery id. */
 export function scopedActivityPubInboxProcessors(deliveryId: string) {
@@ -31,8 +30,6 @@ export function scopedActivityPubInboxProcessors(deliveryId: string) {
         enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
         enqueueContinuation: () => Promise.resolve(null),
         pageSize: () => 2,
-        // The scoped envelope is the subject, so treat it as already past the enqueue grace.
-        now: () => activityPubInboxRecoveryClockPastEnqueueGrace(deliveryId),
       }),
     rearmFailedDeliveries: () =>
       rearmFailedDeliveries(undefined, {
