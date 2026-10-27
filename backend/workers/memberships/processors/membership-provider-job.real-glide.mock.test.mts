@@ -201,7 +201,7 @@ describe('membership provider job when the execution lease is lost before releas
 
   it.each([
     ['a pending Google Play purchase', () => new GooglePlayPurchasePendingError()],
-    ['a provider rate limit', () => new Worker.RateLimitError(2_000)],
+    ['a provider rate limit', () => new Worker.RateLimitError()],
     [
       'an unavailable provider configuration',
       () => new MembershipProviderUnavailableError('unset'),
