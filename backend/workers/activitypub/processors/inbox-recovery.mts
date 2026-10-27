@@ -8,7 +8,7 @@ import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activiti
 import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/work-limits'
 import { isInsideActivityPubInboxEnqueueGrace } from './inbox-enqueue-grace.mts'
 
-export type RecoverDeliveriesDependencies = {
+type RecoverDeliveriesDependencies = {
   getJobStatus: typeof getActivityPubInboxDeliveryJobStatus
   exhaust: (
     deliveryId: string,

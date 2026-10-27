@@ -7,7 +7,6 @@ import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/wor
 export { cleanupExpiredDeliveries } from './inbox-cleanup.mts'
 export { processDelivery } from './inbox-delivery.mts'
 export { recoverDeliveries } from './inbox-recovery.mts'
-export type { RecoverDeliveriesDependencies } from './inbox-recovery.mts'
 
 export type RearmFailedDeliveriesDependencies = {
   rearmFailed: (afterId?: string) => ReturnType<typeof activityPubInboxDeliveryTransitions.rearm>

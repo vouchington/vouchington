@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { skipActivityPubInboxEnqueueGrace } from '@voucha/test-helpers/activitypub-inbox-enqueue-grace'
-import { recoverDeliveries, type RecoverDeliveriesDependencies } from './inbox-recovery.mts'
+import { recoverDeliveries } from './inbox-recovery.mts'
+
+type RecoverDeliveriesDependencies = NonNullable<Parameters<typeof recoverDeliveries>[1]>
 
 const rows = ['a', 'b', 'c'].map(id => ({ deliveryId: `delivery-${id}`, requestDigest: id }))
 type Status = Awaited<ReturnType<RecoverDeliveriesDependencies['getJobStatus']>>
