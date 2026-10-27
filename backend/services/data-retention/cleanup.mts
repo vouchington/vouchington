@@ -1,5 +1,5 @@
 import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
-import type { RetainedIdentityFamily } from './retained-identity-families.mts'
+import type { RetainedIdentityFamily } from './cleanup-retained-identities.mts'
 /* oxlint-disable max-lines -- central retention orchestration keeps all bounded cleanup results together. */
 // Data retention necessarily accesses tables owned by other services. This cross-service SQL is intentional:
 // the retention job must hard-delete orphaned OAuth rows that have no owning service
