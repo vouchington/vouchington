@@ -21,7 +21,11 @@ describe('final user purge continuation', () => {
     onTestFinished(async () => {
       await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
     })
-    const userPurge = { userId: randomUUID(), communityId: randomUUID(), afterModeratorId: '' }
+    const userPurge = {
+      userId: randomUUID(),
+      communityId: randomUUID(),
+      afterModeratorId: randomUUID(),
+    }
     const pending = {
       ...settled,
       softDeletedUsers: { deleted: 0, hasMore: true, userPurge },

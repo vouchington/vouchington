@@ -2,6 +2,8 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { archiveCommunity } from '@services/communities/archive'
 import { transferCommunityOwnershipForUserPurge } from '@services/communities/ownership-transfer'
 import { lockCommunityMembershipRoles } from '@services/communities/bans/lock'
+import { invalidateCommunityMemberUserMetrics } from '@services/communities/members/invalidate-user-metrics'
+import { invalidate } from '@services/entity-cache/invalidate'
 import sql from 'sql-template-strings'
 import { getCommunityPurgeBatchSize, getCommunityModeratorScanPageSize } from './config.mts'
 import type { UserPurgeAfterCommit, UserPurgeCursor } from './user-purge-types.mts'
@@ -52,6 +54,7 @@ export async function cleanupUserOwnedCommunities(
     afterCommit: [],
   }
   const communitiesToArchive: Community[] = []
+  const transferred: { communityId: string; successorId: string }[] = []
   let continuation: UserPurgeCursor | undefined
   for (const community of rows) {
     const remainingRows = limit - result.processed
@@ -72,10 +75,24 @@ export async function cleanupUserOwnedCommunities(
       continuation = settled.userPurge
       break
     }
-    if (settled.afterCommit) result.afterCommit.push(settled.afterCommit)
+    if (settled.afterCommit && settled.successorId) {
+      result.afterCommit.push(settled.afterCommit)
+      transferred.push({ communityId: community.id, successorId: settled.successorId })
+    }
     if (result.processed >= limit) break
   }
-  await archiveOwnedCommunities(query, userId, communitiesToArchive)
+  const archivedIds = await archiveOwnedCommunities(query, userId, communitiesToArchive)
+  const touchedIds = [...archivedIds, ...transferred.map(transfer => transfer.communityId)]
+  if (touchedIds.length > 0) {
+    const successorIds = transferred.map(transfer => transfer.successorId)
+    // The purge transaction bypasses the interactive wrappers' invalidation, so settle it once per page.
+    result.afterCommit.push(async () => {
+      await Promise.all([
+        invalidate.communities(...touchedIds),
+        invalidateCommunityMemberUserMetrics(...successorIds),
+      ])
+    })
+  }
   if (continuation) return { ...result, userPurge: continuation }
   // A stale scope must return to global discovery before any owner memberships are removed.
   if (cursor && rows.length === 0) return { ...result, userPurge: undefined }
@@ -93,6 +110,7 @@ async function settleOwnedCommunity(
   archive?: boolean
   userPurge?: UserPurgeCursor
   afterCommit?: UserPurgeAfterCommit
+  successorId?: string
 }> {
   const pageSize = Math.min(getCommunityModeratorScanPageSize(), remainingRows)
   const { rows } = await query<{
@@ -131,7 +149,9 @@ async function settleOwnedCommunity(
       page.user_id,
     )
     // An account or role changed under the lifecycle locks: keep the rest of this page eligible.
-    return afterCommit ? { scanned: page.scanned, afterCommit } : resume(page.member_id)
+    return afterCommit
+      ? { scanned: page.scanned, afterCommit, successorId: page.user_id }
+      : resume(page.member_id)
   }
   if (page.scanned === pageSize && page.last_id) return resume(page.last_id)
   return { scanned: page.scanned, archive: true }
@@ -141,8 +161,8 @@ async function archiveOwnedCommunities(
   query: TransactionQuery,
   ownerUserId: string,
   communities: Community[],
-): Promise<void> {
-  if (communities.length === 0) return
+): Promise<string[]> {
+  if (communities.length === 0) return []
   const communityIds = communities.map(community => community.id).toSorted()
   const { rows } = await query<{ id: string }>(sql`/* cleanupUserOwnedCommunities:lockForArchive */
     SELECT community.id FROM communities community
@@ -157,6 +177,7 @@ async function archiveOwnedCommunities(
     // oxlint-disable-next-line no-await-in-loop -- the bounded archive set is locked and settled in global community order.
     await archiveOwnedCommunity(query, id, ownerUserId) // no-mistakes-disable-line query-reached-per-item: bounded locked archive page delegates to the canonical per-community archive service.
   }
+  return rows.map(row => row.id)
 }
 
 async function archiveOwnedCommunity(

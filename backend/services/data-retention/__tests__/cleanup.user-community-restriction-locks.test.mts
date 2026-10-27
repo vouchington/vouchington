@@ -82,7 +82,7 @@ describe('community purge restriction lock order', () => {
 
       const [purgeResult, restrictionError] = await Promise.all([purge, restriction])
       expect(restrictionError).toMatchObject({ status: 403 })
-      expect(purgeResult.afterCommit).toHaveLength(1)
+      expect(purgeResult.afterCommit).toHaveLength(2)
       await expect(
         getCommunityMember(transferredCommunity.id, successor.id),
       ).resolves.toMatchObject({ role: 'owner' })
