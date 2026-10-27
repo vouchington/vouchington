@@ -8,7 +8,8 @@ import { iterateFeedListEntries, type FeedListSourceType, type ParsedFeedEntry }
 import { entryFromLine, feedUrlFromLine, linesOf, numberedLine } from './feed-list-lines.mts'
 import { sortAndDiff } from './feed-list-sort.mts'
 
-const KAGI_FEED_LIST_DIRECTORY_PREFIX = `kagi-feed-list-${process.pid}-`
+const FEED_LIST_DIRECTORY_PREFIX = 'kagi-feed-list-'
+const FEED_LIST_RUN_DIRECTORY = /^kagi-feed-list-\d+-/
 export const FEED_LIST_DIRECTORY_MAX_AGE_MS = 60 * 60 * 1000
 
 export type FeedListChunkSource = {
@@ -23,15 +24,15 @@ type FeedListPage = {
 }
 
 export function createFeedListDirectory(): Promise<string> {
-  return mkdtemp(join(tmpdir(), KAGI_FEED_LIST_DIRECTORY_PREFIX))
+  return mkdtemp(join(tmpdir(), `${FEED_LIST_DIRECTORY_PREFIX}${process.pid}-`))
 }
 
-/** Drop this process's feed-list directories once they are older than one hour. */
+/** Drop every process's feed-list directories once they are older than one hour. */
 export async function sweepExpiredFeedListDirectories(now = Date.now()): Promise<void> {
   const names = await readdir(tmpdir())
   await Promise.all(
     names.map(async name => {
-      if (!name.startsWith(KAGI_FEED_LIST_DIRECTORY_PREFIX)) return
+      if (!isFeedListRunDirectory(name)) return
       const directory = join(tmpdir(), name)
       let info: Awaited<ReturnType<typeof lstat>>
       try {
@@ -55,11 +56,15 @@ export async function removeFeedListDirectory(directory: string): Promise<void> 
     fromRoot.length === 0 ||
     fromRoot.startsWith('..') ||
     isAbsolute(fromRoot) ||
-    !name.startsWith(KAGI_FEED_LIST_DIRECTORY_PREFIX)
+    !isFeedListRunDirectory(name)
   ) {
     throw new Error('feed list directory is outside the temporary run prefix')
   }
   await rm(resolved, { recursive: true, force: true })
+}
+
+function isFeedListRunDirectory(name: string): boolean {
+  return FEED_LIST_RUN_DIRECTORY.test(name)
 }
 
 /** Stream every changed list once, keep the last entry per URL, and diff it against the reader. */

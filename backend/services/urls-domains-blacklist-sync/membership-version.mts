@@ -3,14 +3,12 @@ import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/s
 import { writeCommDiff } from './diff-files.mts'
 import type { MembershipDiffPaths } from './membership-diff-stage.mts'
 import { copyFreshSourceMembership, copySourceMembership } from './reader-membership-copy.mts'
-import { ReplicaBehindError } from './replica-freshness.mts'
+import type { ReadReplicaSourceVersion } from './replica-freshness.mts'
 
 const MAX_MEMBERSHIP_PREPARATIONS = 3
 
 export type MembershipPrepareHooks = {
-  writerLsn: string
-  replicaCoversWriterLsn?: (writerLsn: string) => Promise<boolean>
-  copySourceMembership?: typeof copySourceMembership
+  readReplicaSourceVersion?: ReadReplicaSourceVersion
   writeCommDiff?: typeof writeCommDiff
 }
 
@@ -41,29 +39,21 @@ async function prepareVersionedMembership(
 ): Promise<string | null> {
   const version = await sourceVersion(sourceId)
   // Copy and diff stay outside the source lock. The first attempt uses the replica and
-  // refuses a snapshot from before the job's writer LSN. A mismatch retries from the writer.
-  if (index === 0) await copyReplicaMembership(sourceId, paths.membershipPath, hooks)
-  else await copySourceMembership(sourceId, paths.membershipPath, writePool)
+  // refuses a snapshot older than the version just read on the writer. A mismatch retries
+  // from the writer.
+  if (index === 0) {
+    await copyFreshSourceMembership(
+      sourceId,
+      paths.membershipPath,
+      version,
+      readPool,
+      hooks.readReplicaSourceVersion,
+    )
+  } else {
+    await copySourceMembership(sourceId, paths.membershipPath, writePool)
+  }
   await (hooks.writeCommDiff ?? writeCommDiff)(paths)
   return version
-}
-
-async function copyReplicaMembership(
-  sourceId: DomainBlacklistSourceId,
-  destination: string,
-  hooks: MembershipPrepareHooks,
-): Promise<void> {
-  // An injected snapshot does not open a client. The replica hook decides whether to apply it.
-  if (hooks.replicaCoversWriterLsn) {
-    if (!(await hooks.replicaCoversWriterLsn(hooks.writerLsn))) throw new ReplicaBehindError()
-    await (hooks.copySourceMembership ?? copySourceMembership)(sourceId, destination, readPool)
-    return
-  }
-  if (hooks.copySourceMembership) {
-    await hooks.copySourceMembership(sourceId, destination, readPool)
-    return
-  }
-  await copyFreshSourceMembership(sourceId, destination, hooks.writerLsn, readPool)
 }
 
 async function sourceVersion(sourceId: DomainBlacklistSourceId): Promise<string | null> {

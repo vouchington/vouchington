@@ -26,13 +26,13 @@ import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
 import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
 import { stageBothDiffFiles, type MembershipDiffPaths } from './membership-diff-stage.mts'
 import { applyWithPreparedMembership, lockSourceForDiff } from './membership-version.mts'
-import { copySourceMembership } from './reader-membership-copy.mts'
-import { readWriterWalLsn } from './replica-freshness.mts'
+import type { ReadReplicaSourceVersion } from './replica-freshness.mts'
+
+type MembershipCacheHeaders = { etag: string | null; lastModifiedAt: Date | null }
 
 export type DomainDiffHooks = {
-  writerLsn?: string
-  replicaCoversWriterLsn?: (writerLsn: string) => Promise<boolean>
-  copySourceMembership?: typeof copySourceMembership
+  cacheHeaders?: MembershipCacheHeaders
+  readReplicaSourceVersion?: ReadReplicaSourceVersion
   writeCommDiff?: typeof writeCommDiff
   persistDomainDiff?: typeof persistDomainDiff
 }
@@ -57,8 +57,6 @@ export async function syncDomainsWithDatabase(
   const addedPath = join(directory, 'added')
   const removedPath = join(directory, 'removed')
   try {
-    // The job captures this before the fetch. Direct callers capture it here, still before COPY.
-    const writerLsn = hooks.writerLsn ?? (await readWriterWalLsn())
     await writeSortedDesiredDomains(response, desiredPath)
     const paths: MembershipDiffPaths = {
       membershipPath,
@@ -79,11 +77,10 @@ export async function syncDomainsWithDatabase(
           client => stageBothDiffFiles(client, addedPath, removedPath),
           version,
           hooks.persistDomainDiff,
+          hooks.cacheHeaders,
         ),
       {
-        writerLsn,
-        replicaCoversWriterLsn: hooks.replicaCoversWriterLsn,
-        copySourceMembership: hooks.copySourceMembership,
+        readReplicaSourceVersion: hooks.readReplicaSourceVersion,
         writeCommDiff: hooks.writeCommDiff,
       },
     )
@@ -100,6 +97,7 @@ async function applyLockedDomainDiff(
   stage: (client: PoolClient) => Promise<void>,
   expectedVersion: string | null,
   persist: typeof persistDomainDiff = persistDomainDiff,
+  cacheHeaders?: MembershipCacheHeaders,
 ): Promise<SyncBlacklistSourceResult | null> {
   await entityCacheWorkConfig.waitForInitialization()
   const client = await writePool.connect()
@@ -113,6 +111,7 @@ async function applyLockedDomainDiff(
       stage,
       expectedVersion,
       persist,
+      cacheHeaders,
     )
     if (!applied) return null
     await transaction.commit()
@@ -134,20 +133,42 @@ async function stageLockedDiff(
   stage: (client: PoolClient) => Promise<void>,
   expectedVersion: string | null,
   persist: typeof persistDomainDiff,
+  cacheHeaders?: MembershipCacheHeaders,
 ): Promise<AppliedDomainDiff | null> {
   await stage(client)
   const version = await lockSourceForDiff(transaction, sourceId, sourceType)
   if (version !== expectedVersion) return null
   const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType, persist)
-  // The timestamp records a committed diff and bumps xmin with the membership writes.
-  await transaction(
+  // Validators commit with the diff. A later 304 must not see the previous etag after this body.
+  await recordAppliedMembership(transaction, sourceId, cacheHeaders)
+  return applied
+}
+
+async function recordAppliedMembership(
+  query: TransactionQuery,
+  sourceId: DomainBlacklistSourceId,
+  cacheHeaders: MembershipCacheHeaders | undefined,
+): Promise<void> {
+  if (cacheHeaders) {
+    await query(
+      `/* syncDomainsWithDatabase:recordMembershipDiff */
+       UPDATE domain_blocklist_sources
+       SET membership_diff_applied_at = CURRENT_TIMESTAMP,
+           etag = $2,
+           last_modified_at = $3,
+           last_fetched_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [sourceId, cacheHeaders.etag, cacheHeaders.lastModifiedAt],
+    )
+    return
+  }
+  await query(
     `/* syncDomainsWithDatabase:recordMembershipDiff */
      UPDATE domain_blocklist_sources
      SET membership_diff_applied_at = CURRENT_TIMESTAMP
      WHERE id = $1`,
     [sourceId],
   )
-  return applied
 }
 
 async function applyPreparedDomainDiff(

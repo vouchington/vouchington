@@ -4,7 +4,6 @@ import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { BLACKLISTS } from '@services/urls-domains-blacklist/sources-constants'
 import { ReplicaBehindError } from './replica-freshness.mts'
 import {
-  BlocklistUnmodifiedWithoutSyncError,
   createBlacklistFetchHeaders,
   syncBlacklistSource,
   syncBlacklistSourceById,
@@ -30,7 +29,6 @@ const dependencies = {
   getSourceCacheHeaders,
   updateSourceCacheHeaders,
   syncDomainsWithDatabase,
-  writerLsn: '0/1',
 }
 
 describe('syncBlacklistSource', () => {
@@ -87,12 +85,18 @@ describe('syncBlacklistSource', () => {
         response,
         source.type,
         undefined,
-        { writerLsn: '0/1' },
+        {
+          cacheHeaders: {
+            etag: `"new-etag-${index}"`,
+            lastModifiedAt: new Date('Wed, 01 Jan 2025 00:00:00 GMT'),
+          },
+        },
       )
     }
 
     expect(fetchSpy).toHaveBeenCalledTimes(BLACKLISTS.length)
     expect(syncDomainsWithDatabase).toHaveBeenCalledTimes(BLACKLISTS.length)
+    expect(updateSourceCacheHeaders).not.toHaveBeenCalled()
   })
 
   it('builds conditional request headers from cached metadata', () => {
@@ -146,40 +150,10 @@ describe('syncBlacklistSource', () => {
     expect(syncDomainsWithDatabase).not.toHaveBeenCalled()
   })
 
-  it('refetches without validators when a 304 arrives before a successful diff', async () => {
+  it('rejects a 304 to an unconditional request without fetching again', async () => {
     getSourceCacheHeaders.mockResolvedValue({
       etag: '"old-etag"',
       last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
-      membership_diff_applied_at: null,
-    })
-    const unmodified = {
-      ok: false,
-      status: 304,
-      statusText: 'Not Modified',
-    } as unknown as UndiciResponse
-    const fresh = {
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: new Headers(),
-    } as unknown as UndiciResponse
-    fetchSpy.mockResolvedValueOnce(unmodified).mockResolvedValueOnce(fresh)
-
-    await expect(
-      syncBlacklistSource(7, 'https://example.com/list.txt', 'url', dependencies),
-    ).resolves.toEqual(syncResult)
-
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
-    for (const call of fetchSpy.mock.calls) {
-      expect(call[1].headers).toEqual({ 'Accept-Encoding': 'gzip, deflate, br' })
-    }
-    expect(syncDomainsWithDatabase).toHaveBeenCalledTimes(1)
-  })
-
-  it('fails when the source stays unmodified before a successful diff', async () => {
-    getSourceCacheHeaders.mockResolvedValue({
-      etag: '"old-etag"',
-      last_modified_at: null,
       membership_diff_applied_at: null,
     })
     fetchSpy.mockResolvedValue({
@@ -188,10 +162,14 @@ describe('syncBlacklistSource', () => {
       statusText: 'Not Modified',
     } as unknown as UndiciResponse)
 
-    await expect(
-      syncBlacklistSource(7, 'https://example.com/list.txt', 'url', dependencies),
-    ).rejects.toBeInstanceOf(BlocklistUnmodifiedWithoutSyncError)
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    const failure = syncBlacklistSource(7, 'https://example.com/list.txt', 'url', dependencies)
+
+    await expect(failure).rejects.toMatchObject({
+      name: 'UnrecoverableError',
+      message: 'Blocklist source returned 304 to an unconditional request',
+    })
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(fetchSpy.mock.calls[0]![1].headers).toEqual({ 'Accept-Encoding': 'gzip, deflate, br' })
     expect(syncDomainsWithDatabase).not.toHaveBeenCalled()
     expect(updateSourceCacheHeaders).not.toHaveBeenCalled()
   })
@@ -235,18 +213,20 @@ describe('syncBlacklistSource', () => {
       statusText: 'Not Modified',
     } as unknown as UndiciResponse)
 
-    await expect(
-      syncBlacklistSourceById(1, {
-        ...dependencies,
-        getBlacklistSourceById: async () => ({
-          id: '1',
-          type: 'url',
-          name: 'example',
-          url: 'https://example.com/list.txt',
-        }),
+    const failure = syncBlacklistSourceById(1, {
+      ...dependencies,
+      getBlacklistSourceById: async () => ({
+        id: '1',
+        type: 'url',
+        name: 'example',
+        url: 'https://example.com/list.txt',
       }),
-    ).rejects.toBeInstanceOf(BlocklistUnmodifiedWithoutSyncError)
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+    await expect(failure).rejects.toMatchObject({
+      name: 'UnrecoverableError',
+      message: 'Blocklist source returned 304 to an unconditional request',
+    })
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
   it('records other sync failures without failing the job', async () => {

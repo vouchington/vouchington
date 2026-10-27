@@ -89,28 +89,34 @@ describe('readFeedListPage', () => {
 })
 
 describe('sweepExpiredFeedListDirectories', () => {
-  it('removes this process prefix only after it is older than one hour', async () => {
+  it('removes every process prefix only after it is older than one hour', async () => {
+    const otherPid = process.pid === 1 ? 2 : 1
     const expired = await createFeedListDirectory()
+    const expiredOther = mkdtempSync(join(tmpdir(), `kagi-feed-list-${otherPid}-`))
     const boundary = await createFeedListDirectory()
-    const fresh = await createFeedListDirectory()
+    const freshOther = mkdtempSync(join(tmpdir(), `kagi-feed-list-${otherPid}-`))
     const unrelated = mkdtempSync(join(tmpdir(), 'not-kagi-'))
     const recorded = await lstat(boundary)
-    await utimes(expired, new Date(recorded.mtimeMs - 5_000), new Date(recorded.mtimeMs - 5_000))
-    await utimes(fresh, new Date(recorded.mtimeMs + 10_000), new Date(recorded.mtimeMs + 10_000))
+    const aged = new Date(recorded.mtimeMs - 5_000)
+    const freshAt = new Date(recorded.mtimeMs + 10_000)
+    await utimes(expired, aged, aged)
+    await utimes(expiredOther, aged, aged)
+    await utimes(freshOther, freshAt, freshAt)
     try {
       await sweepExpiredFeedListDirectories(recorded.mtimeMs + FEED_LIST_DIRECTORY_MAX_AGE_MS)
       expect(existsSync(expired)).toBe(false)
+      expect(existsSync(expiredOther)).toBe(false)
       expect(existsSync(boundary)).toBe(true)
-      expect(existsSync(fresh)).toBe(true)
+      expect(existsSync(freshOther)).toBe(true)
       expect(existsSync(unrelated)).toBe(true)
 
       await sweepExpiredFeedListDirectories(recorded.mtimeMs + FEED_LIST_DIRECTORY_MAX_AGE_MS + 1)
       expect(existsSync(boundary)).toBe(false)
-      expect(existsSync(fresh)).toBe(true)
+      expect(existsSync(freshOther)).toBe(true)
       expect(existsSync(unrelated)).toBe(true)
     } finally {
       if (existsSync(boundary)) await removeFeedListDirectory(boundary)
-      if (existsSync(fresh)) await removeFeedListDirectory(fresh)
+      if (existsSync(freshOther)) await removeFeedListDirectory(freshOther)
       rmSync(unrelated, { recursive: true, force: true })
     }
   })

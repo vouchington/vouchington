@@ -1,4 +1,4 @@
-import { readdirSync, writeFileSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import {
@@ -9,12 +9,13 @@ import {
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
 } from '@voucha/test-helpers'
+import { getSourceCacheHeaders } from '@services/urls-domains-blacklist/sources'
 import { BLOCKLIST_DIFF_DIRECTORY_PREFIX, syncDomainsWithDatabase } from './sync-db.mts'
 import { ReplicaBehindError } from './replica-freshness.mts'
 import { persistDomainDiff } from './sync-db-domain-diff.mts'
 
 describe('blocklist membership apply', () => {
-  it('refuses an injected stale membership snapshot before copying it', async () => {
+  it('refuses a stale replica version on the connection that would copy membership', async () => {
     const suffix = sourceNameSuffix()
     const kept = `kept-${suffix}.example`
     const name = `stale-snapshot-${suffix}`
@@ -24,8 +25,7 @@ describe('blocklist membership apply', () => {
       url: 'https://example.com/stale-snapshot.txt',
     })
     await insertTestDomainBlacklist(kept, name)
-    let seenLsn: string | undefined
-    let copied = false
+    let readOnCopyClient = false
     const before = new Set(diffDirectories())
     try {
       await expect(
@@ -35,59 +35,17 @@ describe('blocklist membership apply', () => {
           'url',
           undefined,
           {
-            writerLsn: '0/20',
-            replicaCoversWriterLsn: async writerLsn => {
-              seenLsn = writerLsn
-              return false
-            },
-            copySourceMembership: async (_sourceId, destination) => {
-              copied = true
-              writeFileSync(destination, `stale-${suffix}.example\n`)
+            readReplicaSourceVersion: async (client, _sourceId, writerVersion) => {
+              readOnCopyClient = typeof client.query === 'function'
+              return precedingSourceVersion(writerVersion)
             },
           },
         ),
       ).rejects.toBeInstanceOf(ReplicaBehindError)
-      expect(seenLsn).toBe('0/20')
-      expect(copied).toBe(false)
+      expect(readOnCopyClient).toBe(true)
       await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([kept])
       await expect(getTestBlacklistMembershipDiffAppliedAt(sourceId)).resolves.toBeNull()
       expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
-    } finally {
-      await deleteTestBlacklistSource(sourceId)
-    }
-  })
-
-  it('applies an injected snapshot when the replica check is omitted', async () => {
-    const suffix = sourceNameSuffix()
-    const kept = `kept-${suffix}.example`
-    const added = `added-${suffix}.example`
-    const name = `copy-hook-${suffix}`
-    const sourceId = await createTestBlacklistSource({
-      type: 'url',
-      name,
-      url: 'https://example.com/copy-hook.txt',
-    })
-    await insertTestDomainBlacklist(kept, name)
-    let copied = false
-    try {
-      const result = await syncDomainsWithDatabase(
-        sourceId,
-        new Response(`${kept}\n${added}\n`),
-        'url',
-        undefined,
-        {
-          writerLsn: '0/20',
-          copySourceMembership: async (_sourceId, destination) => {
-            copied = true
-            writeFileSync(destination, `${kept}\n`)
-          },
-        },
-      )
-      expect(copied).toBe(true)
-      expect(result.domainsAdded).toBe(1)
-      await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual(
-        [added, kept].toSorted(),
-      )
     } finally {
       await deleteTestBlacklistSource(sourceId)
     }
@@ -104,25 +62,24 @@ describe('blocklist membership apply', () => {
       url: 'https://example.com/added-count.txt',
     })
     await insertTestDomainBlacklist(kept, name)
+    const lastModifiedAt = new Date('2025-01-01T00:00:00.000Z')
     try {
       const result = await syncDomainsWithDatabase(
         sourceId,
         new Response(`${kept}\n${added}\n`),
         'url',
         undefined,
-        {
-          writerLsn: '0/20',
-          replicaCoversWriterLsn: async () => true,
-          copySourceMembership: async (_sourceId, destination) => {
-            writeFileSync(destination, '')
-          },
-        },
+        { cacheHeaders: { etag: '"list-v2"', lastModifiedAt } },
       )
       expect(result.domainsAdded).toBe(1)
       await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual(
         [added, kept].toSorted(),
       )
       await expect(getTestBlacklistMembershipDiffAppliedAt(sourceId)).resolves.toBeInstanceOf(Date)
+      await expect(getSourceCacheHeaders(sourceId)).resolves.toMatchObject({
+        etag: '"list-v2"',
+        last_modified_at: lastModifiedAt,
+      })
     } finally {
       await deleteTestBlacklistSource(sourceId)
     }
@@ -181,6 +138,7 @@ describe('blocklist membership apply', () => {
           'url',
           undefined,
           {
+            cacheHeaders: { etag: '"should-roll-back"', lastModifiedAt: null },
             persistDomainDiff: async (query, id, sourceType) => {
               await persistDomainDiff(query, id, sourceType)
               throw new Error('persist failed')
@@ -191,12 +149,19 @@ describe('blocklist membership apply', () => {
       expect(await countBlacklistEntriesBySource(sourceId)).toBe(1)
       await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([kept])
       await expect(getTestBlacklistMembershipDiffAppliedAt(sourceId)).resolves.toBeNull()
+      await expect(getSourceCacheHeaders(sourceId)).resolves.toMatchObject({ etag: null })
       expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
     } finally {
       await deleteTestBlacklistSource(sourceId)
     }
   })
 })
+
+function precedingSourceVersion(version: string | null): string {
+  if (version === null) return '2'
+  const previous = (BigInt(version) - 1n) & 0xffffffffn
+  return previous === 0n ? '4294967295' : previous.toString()
+}
 
 function diffDirectories(): string[] {
   return readdirSync(tmpdir()).filter(name => name.startsWith(BLOCKLIST_DIFF_DIRECTORY_PREFIX))
