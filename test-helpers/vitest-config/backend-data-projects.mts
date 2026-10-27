@@ -19,6 +19,7 @@ const backendDataStoreTestDefaults = {
     './backend/test-helpers/vitest.setup.sentry-mock.mts',
     './test-helpers/vitest.setup.request-query-timing.mts',
     './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+    './test-helpers/vitest.setup.psql-pool-metrics.mts',
     './test-helpers/vitest.setup.dynamic-config-isolation.mts',
     './test-helpers/vitest.setup.glide-mq-workers.mts',
     './backend/test-helpers/vitest.setup.aws-mocks.mts',
@@ -60,6 +61,7 @@ const backendMocksProject = {
       './backend/test-helpers/vitest.setup.sentry-mock.mts',
       './test-helpers/vitest.setup.request-query-timing.mts',
       './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+      './test-helpers/vitest.setup.psql-pool-metrics.mts',
       './test-helpers/vitest.setup.dynamic-config-isolation.mts',
       './test-helpers/vitest.setup.glide-mq-workers.mts',
       './backend/test-helpers/vitest.setup.aws-mocks.mts',
@@ -81,6 +83,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       include: [
         'backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,mcp,worker-runtime,workers}/**/*.test.mts',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/psql-pool-metrics.test.mts',
         'backend/test-helpers/post-search-query-syntax.test.mts',
         'backend/test-helpers/dynamic-config.test.mts',
         'backend/test-helpers/services/posts/test-support.test.mts',

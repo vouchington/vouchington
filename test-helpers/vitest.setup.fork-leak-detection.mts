@@ -17,6 +17,7 @@ import {
   waitForResourceCloseCallbacks,
 } from 'vouchington-tooling/vitest-diagnostics'
 import { settleSharedBackgroundJobs } from './shared-background-worker.mts'
+import { registerCurrentPsqlPoolMetrics } from '../backend/test-helpers/psql-pool-metrics.mts'
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
@@ -66,6 +67,8 @@ afterEach(async ({ task }) => {
   // Runnable shared-worker jobs check out pool clients. Count sockets only after they finish;
   // a client still checked out then is still growth. Parked jobs are not waited on.
   if (await settleSharedBackgroundJobs()) await waitForResourceCloseCallbacks()
+  // Tests can replace the runtime module graph with vi.resetModules().
+  await registerCurrentPsqlPoolMetrics()
   // Collapse only registered PostgreSQL pool handshakes into the checkpoint
   // that observes them. Unmatched socket growth remains visible to the detector.
   const settlement = await waitForForkLeakHandshakeSettle({

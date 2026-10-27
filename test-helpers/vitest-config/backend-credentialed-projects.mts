@@ -57,6 +57,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       setupFiles: [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+        './test-helpers/vitest.setup.psql-pool-metrics.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         // The real-presigner test serves requests through the profiled API test server.
@@ -81,6 +82,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       setupFiles: [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+        './test-helpers/vitest.setup.psql-pool-metrics.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
@@ -104,6 +106,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       setupFiles: [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+        './test-helpers/vitest.setup.psql-pool-metrics.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
