@@ -256,22 +256,25 @@ describe('moderation summary dispatcher clock skew', () => {
   })
 
   it.each([
-    { trackingKey: 'daily:2030-01-07', vacationBoundary: false, activityAt: null },
-    { trackingKey: 'weekly:2030-W02', vacationBoundary: false, activityAt: null },
-    { trackingKey: 'daily:2030-01-07', vacationBoundary: true, activityAt: null },
-    { trackingKey: 'daily:2025-01-06', vacationBoundary: false, activityAt: '2025-01-06' },
+    { cadence: 'daily' as const, vacationBoundary: false, excludeActivity: false },
+    { cadence: 'weekly' as const, vacationBoundary: false, excludeActivity: false },
+    { cadence: 'daily' as const, vacationBoundary: true, excludeActivity: false },
+    { cadence: 'daily' as const, vacationBoundary: false, excludeActivity: true },
   ])(
-    'delivers claimed $trackingKey once (vacation boundary=$vacationBoundary)',
-    async ({ trackingKey, vacationBoundary, activityAt }) => {
-      const userId = await createClockSkewModerationSummaryFixture(activityAt, vacationBoundary)
+    'delivers a $cadence claim once when the queued window is ahead of the worker (vacation=$vacationBoundary, excludeActivity=$excludeActivity)',
+    async ({ cadence, vacationBoundary, excludeActivity }) => {
+      const queuedWindowEnd = new Date(Date.now() + 2 * 60 * 1000)
+      const { userId, trackingKey, queuedDate } = await createClockSkewModerationSummaryFixture(
+        queuedWindowEnd,
+        { cadence, excludeActivity, vacationBoundary },
+      )
       expect(await claimModerationEmailSend(userId, trackingKey)).toBe(true)
       expect(await claimModerationEmailSend(userId, trackingKey)).toBe(false)
-      const queuedDate = activityAt ? '2025-01-06' : '2030-01-07'
       const input = {
         userId,
         trackingKey,
         windowStart: '2019-01-01T00:00:00.000Z',
-        windowEnd: `${queuedDate}T00:00:00.500Z`,
+        windowEnd: queuedWindowEnd.toISOString(),
       }
       const variables = {
         generatedForDate: queuedDate,
@@ -279,19 +282,16 @@ describe('moderation summary dispatcher clock skew', () => {
         settingsUrl: 'https://voucha.ai/my/notification-settings',
         communities: [],
       }
-      const workerNow = new Date(new Date(input.windowEnd).getTime() - 1000)
 
-      await processSendCommunityModerationSummaryEmail(input, variables, workerNow)
+      await processSendCommunityModerationSummaryEmail(input, variables)
 
       expect(ses.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({ subject: `Community moderation summary for ${queuedDate}` }),
       )
       const message = vi.mocked(ses.sendEmail).mock.calls[0]?.[0]
-      expect(message?.text?.includes('Clock skew moderation activity')).toBe(activityAt === null)
+      expect(message?.text?.includes('Clock skew moderation activity')).toBe(!excludeActivity)
       await expect(hasModerationEmailSent(userId, trackingKey)).resolves.toBe(true)
-      await expect(
-        processSendCommunityModerationSummaryEmail(input, variables, workerNow),
-      ).resolves.toBeNull()
+      await expect(processSendCommunityModerationSummaryEmail(input, variables)).resolves.toBeNull()
       expect(ses.sendEmail).toHaveBeenCalledTimes(1)
     },
   )

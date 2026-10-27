@@ -12,6 +12,7 @@ import { insertTestCommunityVacation } from './entities/community-member-vacatio
 import {
   claimModerationEmailSend,
   formatLocalDate,
+  getIsoWeekKey,
 } from '../services/communities/moderation-summary-emails.mts'
 
 async function getTestModerationEmailTimezone(userId: string): Promise<string> {
@@ -38,9 +39,9 @@ export async function claimCurrentModerationSummaryForTest(userId: string): Prom
 }
 
 export async function createClockSkewModerationSummaryFixture(
-  activityAt: string | null,
-  vacationBoundary: boolean,
-): Promise<string> {
+  queuedWindowEnd: Date,
+  options: { cadence: 'daily' | 'weekly'; excludeActivity: boolean; vacationBoundary: boolean },
+): Promise<{ userId: string; trackingKey: string; queuedDate: string }> {
   const user = await createTestUser()
   const community = await insertTestCommunity({ createdById: user.id })
   await insertTestCommunityMember({
@@ -49,13 +50,14 @@ export async function createClockSkewModerationSummaryFixture(
     role: 'owner',
     approvedById: user.id,
   })
-  if (vacationBoundary) {
+  if (options.vacationBoundary) {
+    const vacationEndsAt = new Date(queuedWindowEnd.getTime() - 500)
     await setTestCommunityDigestVacationSuppression(community.id, user.id, true)
     await insertTestCommunityVacation({
       communityId: community.id,
       userId: user.id,
-      startsAt: '2030-01-06T23:00:00.000Z',
-      endsAt: '2030-01-07T00:00:00.000Z',
+      startsAt: new Date(vacationEndsAt.getTime() - 60 * 60 * 1000).toISOString(),
+      endsAt: vacationEndsAt.toISOString(),
     })
   }
   const postId = await insertTestPost({
@@ -64,12 +66,17 @@ export async function createClockSkewModerationSummaryFixture(
     createdById: user.id,
     markdown: 'Needs review.',
     communityId: community.id,
-    createdAt: new Date(activityAt ?? '2020-01-01T00:00:00.000Z'),
+    createdAt: options.excludeActivity
+      ? new Date(queuedWindowEnd.getTime() - 1)
+      : new Date('2020-01-01T00:00:00.000Z'),
   })
   await insertTestPendingCommunityPostReview({
     communityId: community.id,
     postId,
     submittedById: user.id,
   })
-  return user.id
+  const queuedDate = formatLocalDate(queuedWindowEnd, 'UTC')
+  const trackingKey =
+    options.cadence === 'weekly' ? `weekly:${getIsoWeekKey(queuedDate)}` : `daily:${queuedDate}`
+  return { userId: user.id, trackingKey, queuedDate }
 }

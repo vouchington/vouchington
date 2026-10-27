@@ -22,8 +22,8 @@ import { isModerationSummaryJobCurrent } from '@services/communities/moderation-
 export const processSendCommunityModerationSummaryEmail = async (
   input: EmailTemplateInput,
   variables: ProcessSendCommunityModerationSummaryEmailVariables,
-  now = new Date(),
 ): Promise<unknown> => {
+  const now = new Date()
   let renderVariables = variables
   const recipient = await resolveEmailRecipient(input)
   if (recipient.status === 'skipped') {
