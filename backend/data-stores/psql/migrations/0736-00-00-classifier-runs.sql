@@ -266,6 +266,34 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__story
 CREATE INDEX IF NOT EXISTS idx_classifier_run_candidates__rss_feed_item
   ON classifier_run_candidates (rss_feed_item_id, run_id) WHERE rss_feed_item_id IS NOT NULL;
 
+-- Community moderation prompts pinned in the run configuration. The configuration JSON keeps the
+-- same ids and the rule text as the replay envelope. Deleting a prompt removes its child; the run
+-- receipt and envelope stay. Unlike classifier_run_candidates, these ids are part of the
+-- configuration the receipt deduplicates on.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS classifier_run_community_prompts (
+  run_id UUID NOT NULL REFERENCES classifier_runs (id) ON DELETE CASCADE,
+  community_agent_prompt_id UUID NOT NULL,
+  ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
+  CONSTRAINT pk_classifier_run_community_prompts PRIMARY KEY (run_id, ordinal)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_community_prompts__community_agent_prompt
+  ON classifier_run_community_prompts (run_id, community_agent_prompt_id);
+CREATE INDEX IF NOT EXISTS idx_classifier_run_community_prompts__community_agent_prompt
+  ON classifier_run_community_prompts (community_agent_prompt_id, run_id);
+
+-- community_agent_prompts is created in 0140, so this foreign key is cross-file. The table is
+-- empty on a fresh bootstrap, so validating it in the same ledger entry is a short scan.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+ALTER TABLE classifier_run_community_prompts
+  ADD CONSTRAINT fk_classifier_run_community_prompts__community_agent_prompt
+  FOREIGN KEY (community_agent_prompt_id)
+  REFERENCES community_agent_prompts (id) ON DELETE CASCADE
+  NOT VALID;
+ALTER TABLE classifier_run_community_prompts
+  VALIDATE CONSTRAINT fk_classifier_run_community_prompts__community_agent_prompt;
+
 -- C7's answer: the captured candidate topics its tool-using agent reported as true of the subject.
 -- Facts only, so a row is the whole answer (no probability, threshold or negative result); the
 -- writer takes the topics from this run's own classifier_run_candidates, so the answer is always a
@@ -315,7 +343,7 @@ COMMENT ON COLUMN classifier_runs.rss_feed_item_id IS
 COMMENT ON COLUMN classifier_runs.input_sha256 IS
   'Subject content digest used to fence stale classification effects.';
 COMMENT ON COLUMN classifier_runs.configuration_json IS
-  'PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns.';
+  'PostgreSQL-canonical JSONB replay envelope preserving question array order; relational facts are materialized in sibling typed columns and child rows.';
 COMMENT ON COLUMN classifier_runs.configuration_sha256 IS
   'SHA256 of the PostgreSQL JSONB text representation, identifying the exact replay configuration.';
 COMMENT ON COLUMN classifier_runs.prompt_version_id IS
@@ -378,6 +406,15 @@ COMMENT ON COLUMN classifier_run_candidates.rss_feed_item_id IS
   'Standalone RSS item candidate asked about in the run''s single provider call; an item removed from the platform leaves the set with it. Exactly one candidate column is set.';
 COMMENT ON COLUMN classifier_run_candidates.ordinal IS
   'Zero-based position of the candidate in the captured candidate order, preserved for deterministic question order.';
+
+COMMENT ON TABLE classifier_run_community_prompts IS
+  'Community moderation prompts pinned when the run was reserved, in configuration order. The configuration JSON keeps the same ids and rule text for replay.';
+COMMENT ON COLUMN classifier_run_community_prompts.run_id IS
+  'Run whose configuration asks these prompts; the children are removed with the run.';
+COMMENT ON COLUMN classifier_run_community_prompts.community_agent_prompt_id IS
+  'Community prompt the configuration asks; deleting the prompt removes this child and leaves the run receipt.';
+COMMENT ON COLUMN classifier_run_community_prompts.ordinal IS
+  'Zero-based position of the prompt in the configuration order, preserved for deterministic question order.';
 
 COMMENT ON TABLE post_classifier_local_outcomes IS
   'Insert-only C5 local detector outcome retained once per run, including runs that ended terminal before their remote outcomes became durable.';
