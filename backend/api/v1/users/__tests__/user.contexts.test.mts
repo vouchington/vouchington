@@ -76,7 +76,7 @@ describe('User vouch-context route', () => {
       stderr.mockRestore()
       vi.unstubAllEnvs()
     }
-  }, 30_000)
+  })
 
   it('GET /api/v1/users/:id/vouch-context returns empty totals for self-target', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -116,7 +116,7 @@ describe('User vouch-context route', () => {
     expect(response.body.negative_by_following.users.map((u: { id: string }) => u.id)).toContain(
       flipper.id,
     )
-  }, 30_000)
+  })
 
   // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
   it('GET /api/v1/users/:id/vouch-context excludes voters whose likes_visibility hides them', async () => {
@@ -142,5 +142,5 @@ describe('User vouch-context route', () => {
     const response = await request.get(`/api/v1/users/${target.id}/vouch-context`).expect(200)
 
     expect(response.body.positive_by_following.total).toBe(0)
-  }, 30_000)
+  })
 })
