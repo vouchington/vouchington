@@ -14,7 +14,6 @@ export async function copySourceMembership(
   const id = parseSourceId(sourceId)
   const client = await pool.connect()
   try {
-    // no-mistakes-disable-next-line postgres-required-predicates: source id is a validated integer literal because COPY TO STDOUT cannot bind parameters
     const copy = client.query(
       copyTo(
         `/* copySourceMembership */
