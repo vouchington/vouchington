@@ -31778,7 +31778,14 @@
           "type": "string"
         },
         "landing_url": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "signed_up_at": {
           "anyOf": [

@@ -875,8 +875,8 @@ CREATE TABLE IF NOT EXISTS session_referral_attributions (
   referrer_user_id  UUID        REFERENCES users(id) ON DELETE SET NULL,
   -- ON DELETE SET NULL: preserve attribution records even if the attributed user deletes their account
   user_id      UUID        REFERENCES users(id) ON DELETE SET NULL,
-  landing_url  TEXT        NOT NULL,
-  CHECK (char_length(landing_url) <= 2048),
+  landing_url  TEXT,
+  CHECK (landing_url IS NULL OR char_length(landing_url) <= 2048),
   CHECK (referrer_user_id != user_id),
 
   -- UTM tracking parameters
@@ -910,11 +910,16 @@ CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__anonymous_id
   ON session_referral_attributions (id)
   WHERE user_id IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__unscrubbed_id
+  ON session_referral_attributions (id)
+  WHERE landing_url IS NOT NULL OR utm_source IS NOT NULL OR utm_medium IS NOT NULL
+    OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL;
+
 COMMENT ON TABLE session_referral_attributions IS 'Tracks which user referred a session, linking anonymous sessions to referrers for attribution. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions.';
 COMMENT ON COLUMN session_referral_attributions.session_id IS 'The anonymous session that was referred. Not a FK — sessions live outside PostgreSQL.';
 COMMENT ON COLUMN session_referral_attributions.referrer_user_id IS 'The user who referred this session. NULL if the referrer deleted their account.';
 COMMENT ON COLUMN session_referral_attributions.user_id IS 'The user who signed up from this referral. NULL until signup or if user deletes account.';
-COMMENT ON COLUMN session_referral_attributions.landing_url IS 'The URL the referred session landed on (max 2048 chars).';
+COMMENT ON COLUMN session_referral_attributions.landing_url IS 'The URL the referred session landed on (max 2048 chars), cleared after its short attribution window.';
 COMMENT ON COLUMN session_referral_attributions.utm_source IS 'UTM source parameter from the referral URL (e.g. google, newsletter).';
 COMMENT ON COLUMN session_referral_attributions.utm_medium IS 'UTM medium parameter from the referral URL (e.g. cpc, email).';
 COMMENT ON COLUMN session_referral_attributions.utm_campaign IS 'UTM campaign name from the referral URL.';

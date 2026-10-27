@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, createTestUserWithAge } from '@voucha/test-helpers'
-import { useAutomaticWithholdingSwitch } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
+import {
+  overrideAutomaticWithholdingSinceForTest,
+  useAutomaticWithholdingSwitch,
+} from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { readTestAutomaticWithholdingOutcome } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding-reads'
-import { recordTestConfigChange } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
 import {
   createClearScreenedForm,
   createSignedInCopyrightForm,
@@ -46,38 +48,36 @@ describe('automatic withholding gates', () => {
     '2024-03-01T00:00:00.001Z',
     '2024-12-31T23:59:59.999Z',
     '2025-01-01T00:00:00.001Z',
-  ])('uses the audited %s switch-on as an inclusive receipt boundary', async instant => {
+  ])('uses the current %s switch-on as an inclusive receipt boundary', async instant => {
     await switchOn()
     const since = new Date(instant)
-    const key = `withholding-edge-${crypto.randomUUID()}`
-    await recordTestConfigChange(
-      key,
-      since,
-      { automaticProvisionalWithholding: false },
-      { automaticProvisionalWithholding: true },
-    )
-    const window = { enabled: true, since: await findSwitchOnTime(key) }
-    expect(window.since).toEqual(since)
+    const restoreSince = await overrideAutomaticWithholdingSinceForTest(since)
+    try {
+      const window = { enabled: true, since: await findSwitchOnTime() }
+      expect(window.since).toEqual(since)
 
-    const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
-    for (const [delta, expectedReason] of [
-      [-1, 'received_before_switch_on'],
-      [0, null],
-      [1, null],
-    ] as const) {
-      const { intake } = await createSignedInCopyrightForm(
-        1,
-        { claimant, poster },
-        { now: new Date(since.getTime() + delta) },
-      )
-      const eligibility = await checkAutomaticWithholdingEligibility(
-        intake.copyright_notice_submission_id,
-        window,
-      )
-      expect(eligibility.reason).toBe(expectedReason)
-      expect(eligibility).toMatchObject(
-        expectedReason === null ? { claimantId: claimant.id } : { reason: expectedReason },
-      )
+      const [claimant, poster] = await Promise.all([createTestUser(), createTestUser()])
+      for (const [delta, expectedReason] of [
+        [-1, 'received_before_switch_on'],
+        [0, null],
+        [1, null],
+      ] as const) {
+        const { intake } = await createSignedInCopyrightForm(
+          1,
+          { claimant, poster },
+          { now: new Date(since.getTime() + delta) },
+        )
+        const eligibility = await checkAutomaticWithholdingEligibility(
+          intake.copyright_notice_submission_id,
+          window,
+        )
+        expect(eligibility.reason).toBe(expectedReason)
+        expect(eligibility).toMatchObject(
+          expectedReason === null ? { claimantId: claimant.id } : { reason: expectedReason },
+        )
+      }
+    } finally {
+      restoreSince()
     }
   })
 

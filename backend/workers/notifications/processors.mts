@@ -156,13 +156,7 @@ export async function processReferralSignupNotification(data: {
   await dispatchCreatedNotificationPushes(createdNotifications)
 }
 
-export async function processReferralClickNotification(data: {
-  referrerId: string
-  landingUrl: string
-}) {
-  const createdNotifications = await createReferralClickNotification(
-    data.referrerId,
-    data.landingUrl,
-  )
+export async function processReferralClickNotification(data: { referrerId: string }) {
+  const createdNotifications = await createReferralClickNotification(data.referrerId)
   await dispatchCreatedNotificationPushes(createdNotifications)
 }

@@ -21,6 +21,17 @@ DECLARE
   new_row JSONB;
 BEGIN
   IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;
+  -- Only the bounded history-retention transaction may delete these four audit families.
+  -- Other append-only tables and every UPDATE retain the ordinary mutation guard.
+  IF TG_OP = 'DELETE'
+    AND TG_TABLE_NAME IN (
+      'dynamic_configuration_revisions',
+      'rss_feed_setting_changes',
+      'fediverse_instance_integration_changes',
+      'community_agent_prompt_revisions'
+    )
+    AND current_setting('app.history_retention_cleanup', true) = 'on'
+  THEN RETURN OLD; END IF;
   IF TG_OP = 'UPDATE' THEN
     old_row := to_jsonb(OLD);
     new_row := to_jsonb(NEW);

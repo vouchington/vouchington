@@ -104,6 +104,13 @@ scheduled run.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
 
+History retention keeps a durable high-water cursor for age-only referral scrubbing, referral
+expiry, and pending imports. A completed pass advances its fixed age boundary rather than starting
+again at the oldest row. Each bounded page first checks for one still-eligible row behind the
+cursor, so a late commit cannot be lost. The referral check uses only rows that still carry URL or
+campaign details; once cleared, a retained click does not consume future scrub pages. Histories
+whose eligibility can change when a newer same-key row arrives still revisit their raw range.
+
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong
   there too. Branch on `error.name`, `code` or `status`, never `error.message`.

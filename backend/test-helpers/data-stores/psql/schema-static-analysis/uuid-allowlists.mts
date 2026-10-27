@@ -40,10 +40,9 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'payment_operational_cleanup_cursors.cursor_id',
     'Operational keyset position survives deletion of the swept row; it is not a relationship.',
   ],
-  [
-    'auth_session_retention_cleanup_cursors.cursor_id',
-    'Keyset scan position survives deletion of the scanned auth, session, or subscription row.',
-  ],
+  ['auth_session_retention_cleanup_cursors.cursor_id', 'Deleted-row keyset, not a relation.'],
+  ['history_retention_cursors.cursor_id', 'Deleted-row keyset position, not a relationship.'],
+  ['history_retention_cursors.sweep_cutoff_id', 'Frozen sweep end, not a relationship.'],
   [
     'auth_session_retention_cleanup_cursors.cursor_partition_key',
     'Subscription partition tie-breaker survives deletion of its user and subscription rows.',

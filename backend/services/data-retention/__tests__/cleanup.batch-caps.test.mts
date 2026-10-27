@@ -49,6 +49,7 @@ function emptyScopedOptions(now: Date) {
     retainedRelationIdentityKeys: {},
     retainedMediaBindingIds: [],
     softDeletedUsers: emptyWindow,
+    histories: emptyWindow,
     orphanedOAuthAccounts: emptyWindow,
     expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
     expiredOAuthServerArtifacts: emptyWindow,

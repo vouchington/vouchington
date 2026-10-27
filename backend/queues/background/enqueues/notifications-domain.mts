@@ -10,7 +10,7 @@ export const NOTIFICATIONS_DOMAIN = defineBackgroundDomain({
 export type EmptyNotificationsJobData = Record<string, never>
 export type FollowNotificationData = { followeeId: string; followerId: string }
 export type ReferralSignupNotificationData = { referrerId: string; newUserId: string }
-export type ReferralClickNotificationData = { referrerId: string; landingUrl: string }
+export type ReferralClickNotificationData = { referrerId: string }
 export type DeleteNotificationData = { userId: string; notificationId: string }
 export type ConversationMessageNotificationData = {
   conversationId: string
