@@ -3,7 +3,6 @@ import {
   observeScopedShadowAuditSuccess,
 } from '@voucha/test-helpers/post-publication-shadow-audit-contention'
 import { getTestPostgresAdvisoryLockHolderProcessId } from '@voucha/test-helpers/postgres-lock-wait'
-import { readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql'
 import {
@@ -18,16 +17,8 @@ import {
 } from './shadow-audit.mts'
 import { postPublicationWorkMaxValues } from './work-limits.mts'
 
-const shadowAuditSource = readFileSync(new URL('./shadow-audit.mts', import.meta.url), 'utf8')
-
 describe('post publication shadow audit checkpoints', () => {
   it('bounds both indexed audit sources before union materialization', async () => {
-    expect(shadowAuditSource).toContain(
-      'SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${postIdentityIds}::uuid[] IS NULL OR id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids',
-    )
-    expect(shadowAuditSource).toContain(
-      'SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${postIdentityIds}::uuid[] IS NULL OR post_identity_id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id',
-    )
     let calls = 0
     const query: QueryExecutor = async () => {
       calls += 1

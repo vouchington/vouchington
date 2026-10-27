@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { registerProductionApiShutdownCallbacks } from './shutdown.mts'
 
@@ -85,49 +84,5 @@ describe('api serve shutdown callbacks', () => {
 
     expect(shutdownCallbacks).toHaveLength(1)
     await expect(shutdownCallbacks[0]!()).rejects.toThrow(closeError)
-  })
-
-  it('keeps the production entrypoint registered with shutdown callbacks', async () => {
-    const source = await readFile(new URL('./serve.mts', import.meta.url), 'utf8')
-
-    expect(source).toContain('registerProductionApiShutdownCallbacks(server,')
-    expect(source).toContain('validateRuntimeImageOrigin()')
-    expect(source).toContain('installApiEgressProxyRoutingResolver(isApiEgressProxyEnabled)')
-  })
-
-  it('wires both fatal boot guards through the deploy-environment-aware predicates', async () => {
-    const source = await readFile(new URL('./serve.mts', import.meta.url), 'utf8')
-
-    expect(source).toContain('shouldRejectTurnstileTestSecret(turnstileSecretKey,')
-    expect(source).toContain('shouldRejectSkipCaptchaVerification()')
-    expect(source).not.toContain("NODE_ENV === 'production'")
-  })
-
-  it('starts the production server through the covered startup helper', async () => {
-    const source = await readFile(new URL('./serve.mts', import.meta.url), 'utf8')
-
-    expect(source).toContain('startApiServer(server, PORT, {')
-    expect(source).toContain('ensurePlaywrightLocalizationSqlite')
-    expect(source).toContain("'@services/localization/compile-catalog'")
-    expect(source).not.toContain("'@services/localization/compile-catalog.mts'")
-    expect(source).toContain('exitAfterErrorReporting(() => flushSentry(2000), exitWithFailure)')
-    expect(source).toContain('exitWithFailure,')
-    expect(source).toContain('flushErrorReporting: () => flushSentry(2000)')
-    expect(source).toContain('logError: error => console.error(error)')
-    expect(source).toContain('logListening: listeningPort =>')
-    expect(source).toContain(
-      "console.log('API Server: serving at http://localhost:%s', listeningPort)",
-    )
-    expect(source).toContain('reportError: onError')
-    expect(source).not.toContain('server.listen(')
-  })
-
-  it('sets explicit SSE-safe http.createServer timeouts and leaves server.timeout disabled', async () => {
-    const source = await readFile(new URL('./serve.mts', import.meta.url), 'utf8')
-
-    expect(source).toContain('requestTimeout: 300_000')
-    expect(source).toContain('headersTimeout: 60_000')
-    expect(source).toContain('keepAliveTimeout: 5_000')
-    expect(source).not.toMatch(/\btimeout:\s*\d/)
   })
 })

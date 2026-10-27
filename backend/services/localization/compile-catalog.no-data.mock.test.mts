@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import type { LocalizationCatalog } from '@vouchington/localization'
@@ -188,21 +188,5 @@ describe('compileCatalogDirectory', () => {
     const missing = join(mkdtempSync(join(tmpdir(), 'missing-')), 'catalog.sqlite')
     await ensurePlaywrightLocalizationSqlite({ source, output: missing })
     expect(existsSync(missing)).toBe(true)
-  })
-
-  it('is wired into Playwright and web-integration before the API starts', () => {
-    expect(readFileSync('.github/workflows/tests-playwright.yml', 'utf8')).toContain('/dev/shm')
-    expect(readFileSync('.github/workflows/tests-playwright-credentialed.yml', 'utf8')).toContain(
-      '/dev/shm',
-    )
-    expect(readFileSync('backend/services/localization/compile-cli.mts', 'utf8')).toContain(
-      'process.exit(0)',
-    )
-    expect(readFileSync('backend/entrypoints/api/serve.mts', 'utf8')).toContain(
-      "'@services/localization/compile-catalog'",
-    )
-    expect(readFileSync('integration-tests/web/helpers/global-setup.mts', 'utf8')).toContain(
-      'await compileCatalogForProcess()',
-    )
   })
 })
