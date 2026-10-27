@@ -44483,7 +44483,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "etag": {
           "comment": "HTTP ETag from the last fetch, for conditional requests.",
@@ -44525,6 +44525,16 @@
           "nullable": true,
           "ordinalPosition": 6
         },
+        "membership_diff_applied_at": {
+          "comment": "When the last membership diff for this source committed. Conditional fetches skip only while this is set.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
         "name": {
           "comment": "Unique lowercase identifier for this blacklist source.",
           "dataType": "text",
@@ -44553,7 +44563,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "url": {
           "comment": "URL where the blacklist can be fetched from.",
