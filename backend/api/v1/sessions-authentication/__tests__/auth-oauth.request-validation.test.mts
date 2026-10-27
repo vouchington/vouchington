@@ -25,7 +25,7 @@ describe('DELETE /api/v1/auth/oauth/:provider/connect - request contract validat
     user = await createTestUser()
     await insertTestOAuthAccount('google', providerUserId, `${providerUserId}@test.com`)
     await connectTestOAuthAccount('google', user.id, providerUserId)
-  }, 15_000)
+  })
 
   it('returns a bare 401 without a provider diagnostic for an anonymous invalid provider', async () => {
     const response = await createRequest()

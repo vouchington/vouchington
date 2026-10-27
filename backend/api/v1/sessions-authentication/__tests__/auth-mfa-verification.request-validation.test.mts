@@ -25,7 +25,7 @@ describe('MFA login verification - request contract validation', () => {
         .send({ login_attempt_id: attemptId, code: '000000' })
         .expect(expectedStatus)
     }
-  }, 20_000)
+  })
 
   it('does not charge malformed passkey requests, while a valid-shaped failed factor still counts', async () => {
     const attempt = {
@@ -56,7 +56,7 @@ describe('MFA login verification - request contract validation', () => {
       .post(route)
       .send({ login_attempt_id: attemptId, response: invalidFactor })
       .expect(429)
-  }, 20_000)
+  })
 
   it('does not charge malformed TOTP reauthentication requests, while valid-shaped failures still exhaust the budget', async () => {
     const user = await createTestUser()
@@ -73,7 +73,7 @@ describe('MFA login verification - request contract validation', () => {
     for (const expectedStatus of MFA_FAILURE_STATUSES) {
       await request.post(route).send({ code: '000000' }).expect(expectedStatus)
     }
-  }, 20_000)
+  })
 
   it.each([
     {

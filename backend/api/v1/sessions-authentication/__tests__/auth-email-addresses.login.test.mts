@@ -47,7 +47,7 @@ describe('Email Address Authentication Routes', () => {
     anonymousSessionId = sid
     deviceToken = tokens.deviceToken.token
     sessionToken = tokens.sessionToken.token
-  }, 30_000)
+  })
 
   afterEach(async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
