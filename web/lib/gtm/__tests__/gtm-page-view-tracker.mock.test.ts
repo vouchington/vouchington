@@ -1,49 +1,56 @@
 import { createElement } from 'react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render } from '@testing-library/react'
-let mockPathname = '/'
-const { pushEvent } = vi.hoisted(() => ({
-  pushEvent: vi.fn<VitestLooseMock>(),
-}))
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 
-vi.mock(import('next/navigation'), () => ({
-  usePathname: () => mockPathname,
-}))
-
-vi.mock(import('../data-layer'), () => ({
-  pushEvent,
-}))
+vi.mock<typeof import('next/navigation')>(import('next/navigation'), () => navMockModule)
 
 import { GtmPageViewTracker } from '../gtm-page-view-tracker'
 
+const nav = createNavMock()
+
 describe('GtmPageViewTracker', () => {
   beforeEach(() => {
-    mockPathname = '/'
-    pushEvent.mockReset()
+    nav.reset()
+    delete window.dataLayer
   })
 
-  it('pushes a page_view event on mount and pathname change when gtmId is valid', () => {
-    const { rerender } = render(createElement(GtmPageViewTracker, { gtmId: 'GTM-ABC123' }))
+  afterEach(() => {
+    delete window.dataLayer
+    nav.reset()
+  })
 
-    expect(pushEvent).toHaveBeenCalledTimes(1)
-    expect(pushEvent).toHaveBeenCalledWith({ event: 'page_view', page_path: '/' })
+  it('pushes page views for the current pathname and subsequent route changes', () => {
+    nav.setPathname('/')
+    const { container, rerender } = render(
+      createElement(GtmPageViewTracker, { gtmId: 'GTM-ABC123' }),
+    )
 
-    mockPathname = '/topics'
+    expect(container.firstChild).toBeNull()
+    expect(window.dataLayer).toEqual([{ event: 'page_view', page_path: '/' }])
+
+    nav.setPathname('/topics')
     rerender(createElement(GtmPageViewTracker, { gtmId: 'GTM-ABC123' }))
 
-    expect(pushEvent).toHaveBeenCalledTimes(2)
-    expect(pushEvent).toHaveBeenLastCalledWith({ event: 'page_view', page_path: '/topics' })
+    expect(window.dataLayer).toEqual([
+      { event: 'page_view', page_path: '/' },
+      { event: 'page_view', page_path: '/topics' },
+    ])
   })
 
-  it('does nothing when gtmId is absent', () => {
+  it('does not push a page view when gtmId is absent', () => {
+    nav.setPathname('/topics')
+
     render(createElement(GtmPageViewTracker))
 
-    expect(pushEvent).not.toHaveBeenCalled()
+    expect(window.dataLayer).toBeUndefined()
   })
 
-  it('does nothing when gtmId is invalid', () => {
+  it('does not push a page view when gtmId is invalid', () => {
+    nav.setPathname('/topics')
+
     render(createElement(GtmPageViewTracker, { gtmId: 'invalid-id' }))
 
-    expect(pushEvent).not.toHaveBeenCalled()
+    expect(window.dataLayer).toBeUndefined()
   })
 })
