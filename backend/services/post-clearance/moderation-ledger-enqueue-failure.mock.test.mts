@@ -1,7 +1,5 @@
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import { createPostModerationContent } from '@services/posts/content'
-import { getPostByAny } from '@services/posts/get'
 import {
   createTestUser,
   insertTestPost,
@@ -32,9 +30,7 @@ describe('post moderation enqueue after the version commit', () => {
       markdown: 'Enqueue failure fixture.',
       clearanceStatus: 'pending',
     })
-    const post = await getPostByAny(postId)
-    if (!post) throw new Error('missing enqueue failure fixture')
-    await setPostModerationContentSha256(postId, createPostModerationContent(post).content_sha256)
+    await setPostModerationContentSha256(postId, randomBytes(32))
     const failure = new Error('valkey down')
     enqueueCreatePostModeration.mockRejectedValueOnce(failure)
 
@@ -54,9 +50,7 @@ describe('post moderation enqueue after the version commit', () => {
       markdown: 'Enqueue failure wrap fixture.',
       clearanceStatus: 'pending',
     })
-    const post = await getPostByAny(postId)
-    if (!post) throw new Error('missing enqueue failure fixture')
-    await setPostModerationContentSha256(postId, createPostModerationContent(post).content_sha256)
+    await setPostModerationContentSha256(postId, randomBytes(32))
     enqueueCreatePostModeration.mockRejectedValueOnce('boom')
 
     await beginPostModerationAttempt(postId, 'openai_omni')
