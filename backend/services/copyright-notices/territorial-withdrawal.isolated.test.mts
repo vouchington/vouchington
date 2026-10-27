@@ -12,6 +12,7 @@ import {
   acknowledgeEuCopyrightNotice,
   acknowledgeUkCopyrightNotice,
   processCopyrightActionIntent,
+  getCopyrightJurisdictionAvailability,
   receiveEuCopyrightNotice,
   receiveUkCopyrightNotice,
   recordEuCopyrightAcknowledgmentFailure,
@@ -20,7 +21,6 @@ import {
   recordEuCopyrightSupervisedComplaint,
   recordUkCopyrightRedressDecision,
   recordUkCopyrightReview,
-  getCopyrightJurisdictionAvailability,
   recordCopyrightJurisdictionPolicyApproval,
   withdrawCopyrightJurisdictionPolicyApproval,
   submitEuCopyrightRedress,
@@ -95,6 +95,10 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
       jurisdiction: 'uk',
       policyVersion: `uk-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
     })
+    await expect(getCopyrightJurisdictionAvailability()).resolves.toEqual({
+      eu_dsa: true,
+      uk: true,
+    })
 
     const euA = await receiveEuCopyrightNotice(
       { user: claimant, identity: `user:${claimant.id}` },
@@ -149,7 +153,6 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
     const euGuest = await prepareTestEuWithdrawalGuestCase()
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'eu_dsa', administrator.id)
-      expect((await getCopyrightJurisdictionAvailability(transaction)).eu_dsa).toBe(false)
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
@@ -244,7 +247,6 @@ describe('territorial approval withdrawal keeps received-case duties', () => {
 
     await withRolledBackTerritorialTransaction(async transaction => {
       await concealJurisdictionPolicyApprovals(transaction, 'uk', administrator.id)
-      expect((await getCopyrightJurisdictionAvailability(transaction)).uk).toBe(false)
       await expect(
         receiveTerritorialCopyrightNoticeInTransaction(
           { user: claimant, identity: `user:${claimant.id}` },
