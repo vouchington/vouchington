@@ -19,7 +19,6 @@ import { createImageUploadsWorker } from '../processors/create-image-uploads-wor
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('image upload worker', () => {
-  // no-mistakes-timeout-reason: real GlideMQ worker startup and cleanup while content-analysis slots stay busy
   it('publishes completion while all content-analysis slots are busy and work remains pending', async () => {
     const prefix = `image-uploads-${randomUUID()}`
     const uploads = new Queue(IMAGE_UPLOADS_QUEUE_NAME, {
@@ -59,7 +58,16 @@ describe('image upload worker', () => {
           await releaseAnalysis.promise
           return { success: true }
         },
-        { connection: workerQueueConnection, prefix, concurrency, blockTimeout: 100 },
+        {
+          connection: workerQueueConnection,
+          prefix,
+          concurrency,
+          blockTimeout: 100,
+          // Priority jobs stay scheduled until this worker promotes them. The default
+          // interval is five seconds, the same as this project's test budget, so a
+          // startup pass that misses the add dies at the timeout.
+          promotionInterval: 50,
+        },
       )
       await analysisWorker.waitUntilReady()
       await analysis.addBulk(
@@ -120,5 +128,5 @@ describe('image upload worker', () => {
       await analysis.close()
       restoreStaydown()
     }
-  }, 15_000)
+  })
 })
