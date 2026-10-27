@@ -10,11 +10,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { paginationConfig } from '@services/pagination/config'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
-import {
-  buildReportPageInfo,
-  encodeReportCursor,
-  type ModerationReportSort,
-} from '@services/moderation-reports'
+import { buildReportPageInfo, type ModerationReportSort } from '@services/moderation-reports'
 import { reportCursorScope } from '@services/moderation-reports/cursor'
 
 const FLAT_SORTS: ModerationReportSort[] = [
@@ -186,10 +182,14 @@ describe('GET /api/v1/reports flat pagination matrix', () => {
   }
 
   function encodeOwnedCursor(id: string, sort: ModerationReportSort): string {
-    return encodeReportCursor(
-      { id, cursor_report_count: 1, cursor_severity_rank: 0 },
+    const cursor = buildReportPageInfo(
+      [{ id, cursor_report_count: 1, cursor_severity_rank: 0 }],
+      false,
+      false,
       { sort, status: 'pending', scope: reportCursorScope('staff', null) },
-    )
+    ).start_cursor
+    if (cursor === null) throw new Error('expected a report cursor')
+    return cursor
   }
 
   // The measured traversal at the limit under test. Stops once every owned report has been
