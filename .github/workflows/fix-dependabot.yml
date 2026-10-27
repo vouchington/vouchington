@@ -47,7 +47,7 @@ jobs:
         timeout-minutes: 1
         with:
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - name: Revalidate source run
         timeout-minutes: 2
@@ -177,7 +177,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - uses: jonathanong/auto-harness/actions/harness-prompt-context@8325525ec675f738a3969cb92ce20477f38dcf71 # v1.0.2
         timeout-minutes: 2
@@ -205,7 +205,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
 
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
 
       - name: Revalidate source run
@@ -337,7 +337,7 @@ jobs:
       needs.render-prompt.outputs.source-current == 'true' &&
       needs.revalidate-dispatch.outputs.current == 'true' &&
       needs.check-duplicates.outputs.skip != 'true'
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
     permissions:
       contents: read
     secrets:
@@ -377,7 +377,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 1
         with:
           target: ${{ needs.triage-and-rerun.outputs.pr_number }}
@@ -514,7 +514,7 @@ jobs:
       - name: Comment failure on Dependabot PR
         timeout-minutes: 1
         if: steps.check.outputs.post == 'true'
-        uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+        uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         with:
           status: failed
           target: ${{ needs.triage-and-rerun.outputs.pr_number }}

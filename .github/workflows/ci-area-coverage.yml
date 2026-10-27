@@ -34,7 +34,7 @@ jobs:
         with:
           fetch-depth: 2
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - name: Download full LCOV artifacts
         timeout-minutes: 5

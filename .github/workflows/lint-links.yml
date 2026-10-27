@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   lint-links:
-    uses: vouchington/vouchington-tooling/.github/workflows/lint-links.yml@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+    uses: vouchington/vouchington-tooling/.github/workflows/lint-links.yml@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
     with:
       lychee-version: '0.24.2'
       excluded-urls: |
