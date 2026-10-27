@@ -32,7 +32,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/postgres": "^0.1.0",
-    "p-map": "^7.1.0",
+    "p-map": "^7.1.1",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.13.0"
   }

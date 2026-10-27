@@ -70,7 +70,7 @@
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.19.0",
     "http-assert": "^1.5.0",
-    "p-map": "^7.1.0"
+    "p-map": "^7.1.1"
   },
   "devDependencies": {
     "@data-stores/valkey-core": "workspace:^",

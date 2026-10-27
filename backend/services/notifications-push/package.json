@@ -27,7 +27,7 @@
     "@modules/feed-query-builders": "workspace:^",
     "@services/notifications": "workspace:^",
     "@vouchington/postgres": "^0.1.0",
-    "p-map": "^7.1.0",
+    "p-map": "^7.1.1",
     "sql-template-strings": "^2.2.2",
     "web-push": "^3.6.7"
   },
