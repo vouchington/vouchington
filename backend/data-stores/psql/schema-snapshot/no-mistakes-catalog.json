@@ -2239,6 +2239,10 @@
           "definition": "CHECK ((octet_length(raw_body) <= 1048576))",
           "validated": true
         },
+        "activitypub_inbox_envelopes__recovery_requeue_count_nonnegative": {
+          "definition": "CHECK ((recovery_requeue_count >= 0))",
+          "validated": true
+        },
         "activitypub_inbox_envelopes__request_digest_sha256": {
           "definition": "CHECK ((request_digest ~ '^[0-9a-f]{64}$'::text))",
           "validated": true
@@ -2333,7 +2337,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "date_header": {
           "comment": "Exact inbound Date header evaluated relative to received_at during queued verification.",
@@ -2403,7 +2407,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "raw_body": {
           "comment": "Exact inbound request bytes, bounded to 1 MiB and deleted after a final protocol outcome.",
@@ -2424,6 +2428,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 16
+        },
+        "recovery_requeue_count": {
+          "comment": "Bounded recovery replacement reservations since intake or manual rearm; refunded when admission fails or deduplicates, but a crash between reservation and refund may consume one slot.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 21
         },
         "remote_actor_id": {
           "comment": "Verified signing actor checkpoint. Actor deletion is restricted while the durable delivery remains.",
@@ -2473,7 +2487,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "sender_allowed_at": {
           "comment": "Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.",
@@ -2513,7 +2527,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "verified_at": {
           "comment": "When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.",
@@ -2582,6 +2596,29 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_inbox_envelopes__failed_rearm": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_inbox_envelopes__failed_rearm ON public.activitypub_inbox_envelopes USING btree (id) WHERE (failed_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(failed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_activitypub_inbox_envelopes__recovery": {

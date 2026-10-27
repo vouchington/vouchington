@@ -2245,6 +2245,7 @@
         "activitypub_inbox_envelopes__first_failed_requires_retention": "CHECK (((first_failed_at IS NULL) OR (retention_expires_at IS NOT NULL)))",
         "activitypub_inbox_envelopes__last_error_bounded": "CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))",
         "activitypub_inbox_envelopes__raw_body_bounded": "CHECK ((octet_length(raw_body) <= 1048576))",
+        "activitypub_inbox_envelopes__recovery_requeue_count_nonnegative": "CHECK ((recovery_requeue_count >= 0))",
         "activitypub_inbox_envelopes__request_digest_sha256": "CHECK ((request_digest ~ '^[0-9a-f]{64}$'::text))",
         "activitypub_inbox_envelopes__request_method_length": "CHECK (((length((request_method)::text) >= 1) AND (length((request_method)::text) <= 16)))",
         "activitypub_inbox_envelopes__request_method_uppercase": "CHECK (((request_method)::text = upper((request_method)::text)))",
@@ -2310,7 +2311,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "timestamp with time zone"
         },
         "date_header": {
@@ -2387,7 +2388,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "raw_body": {
@@ -2411,6 +2412,17 @@
           "nullable": false,
           "ordinalPosition": 16,
           "type": "timestamp with time zone"
+        },
+        "recovery_requeue_count": {
+          "collation": null,
+          "comment": "Bounded recovery replacement reservations since intake or manual rearm; refunded when admission fails or deduplicates, but a crash between reservation and refund may consume one slot.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 21,
+          "type": "integer"
         },
         "remote_actor_id": {
           "collation": null,
@@ -2464,7 +2476,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "sender_allowed_at": {
@@ -2508,7 +2520,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "verified_at": {
@@ -2575,6 +2587,26 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_inbox_envelopes__failed_rearm": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_inbox_envelopes__failed_rearm ON public.activitypub_inbox_envelopes USING btree (id) WHERE (failed_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(failed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_activitypub_inbox_envelopes__recovery": {
