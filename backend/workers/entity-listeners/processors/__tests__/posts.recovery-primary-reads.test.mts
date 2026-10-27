@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ai_agents } from '@queues/ai-agents/queues'
@@ -17,16 +16,6 @@ import { insertTestUrlDirect } from '@voucha/test-helpers/entities/urls'
 import { recoverPostCreatedEffects } from '../post-created-recovery.mts'
 
 describe('post-created recovery primary reads', () => {
-  it('passes primary-read options for every durable recovery input', () => {
-    const recoverySource = readFileSync(
-      new URL('../post-created-recovery.mts', import.meta.url),
-      'utf8',
-    )
-    expect(recoverySource).toContain('getPostRecoverySourceUrlIds(post.id, { readOnly: false })')
-    expect(recoverySource).toContain('getUrlById(urlId, { readOnly: false })')
-    expect(recoverySource).toContain('getPostStoryByPostId(post.id, { readOnly: false })')
-  })
-
   it('routes durable recovery queries exclusively through the write pool', async () => {
     const postId = randomUUID()
     const observed = await Promise.all([

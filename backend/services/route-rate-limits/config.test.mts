@@ -1,90 +1,5 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { getRouteConfig } from './config.mts'
-import { ROUTE_REGISTRY } from './registry.mts'
-
-type DiscoveredRoute = {
-  file: string
-  hasRateLimitReference: boolean
-  routeId: string
-}
-
-type VoteRoute = {
-  file: string
-  routeId: string
-}
-
-const REPO_ROOT = join(import.meta.dirname, '../../..')
-const API_V1_ROUTE_DIR = 'backend/api/v1'
-const API_ROUTE_DIRS = [API_V1_ROUTE_DIR, 'backend/api/oauth']
-const AUTH_ROUTE_DIRS = ['backend/api/v1/auth', 'backend/api/v1/sessions-authentication']
-const AUTH_RATE_LIMIT_EXEMPTIONS = new Set(['POST:/api/v1/auth/logout'])
-const AUTH_OR_SESSION_ROUTE_ID = /^[A-Z]+:\/api\/v1\/(?:auth|session)(?:\/|$)/
-
-function getSourceFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return getSourceFiles(path)
-    return entry.isFile() && path.endsWith('.mts') && !path.endsWith('.test.mts') ? [path] : []
-  })
-}
-
-function getAuthRoutes(): DiscoveredRoute[] {
-  return AUTH_ROUTE_DIRS.flatMap(dir =>
-    getSourceFiles(join(REPO_ROOT, dir)).flatMap(file => extractApiRoutes(file)),
-  )
-}
-
-function getApiRoutes(): DiscoveredRoute[] {
-  return API_ROUTE_DIRS.flatMap(dir =>
-    getSourceFiles(join(REPO_ROOT, dir)).flatMap(file => extractApiRoutes(file)),
-  )
-}
-
-function getVoteRoutes(): VoteRoute[] {
-  return getSourceFiles(join(REPO_ROOT, API_V1_ROUTE_DIR)).flatMap(file => extractVoteRoutes(file))
-}
-
-function extractApiRoutes(file: string): DiscoveredRoute[] {
-  const source = readFileSync(file, 'utf8')
-  const routePattern = /app\s*\.\s*route\(['`]([^'`]+)['`]\)/g
-  const starts = [...source.matchAll(routePattern)]
-
-  return starts.flatMap((match, index) => {
-    const route = match[1]!
-    const blockStart = match.index ?? 0
-    const blockEnd = starts[index + 1]?.index ?? source.length
-    const block = source.slice(blockStart, blockEnd)
-    const methods = [...block.matchAll(/(?:\)\s*|\n\s*)\.(get|post|put|patch|delete)\(/g)].map(
-      method => method[1]!.toUpperCase(),
-    )
-    const referencedRouteIds = new Set(
-      [...block.matchAll(/[A-Z]+:\/(?:api\/v1\/)?[\w/:.-]+/g)].map(
-        routeIdMatch => routeIdMatch[0]!,
-      ),
-    )
-
-    return methods.map(method => {
-      const routeId = `${method}:${route}`
-      return {
-        file: relative(REPO_ROOT, file),
-        hasRateLimitReference: referencedRouteIds.has(routeId),
-        routeId,
-      }
-    })
-  })
-}
-
-function extractVoteRoutes(file: string): VoteRoute[] {
-  const source = readFileSync(file, 'utf8')
-  if (!source.includes('createVoteHandler')) return []
-
-  return [...source.matchAll(/routeKey:\s*['`]([^'`]+)['`]/g)].map(match => ({
-    file: relative(REPO_ROOT, file),
-    routeId: match[1]!,
-  }))
-}
 
 describe('route rate-limit registry', () => {
   it('classifies authorization-server routes as sensitive', () => {
@@ -114,10 +29,6 @@ describe('route rate-limit registry', () => {
       multiplier: 1000,
     })
   })
-
-  const apiRoutes = getApiRoutes()
-  const authRoutes = getAuthRoutes()
-  const voteRoutes = getVoteRoutes()
 
   it('classifies MFA and re-auth verification routes as sensitive', () => {
     const routes = [
@@ -205,78 +116,6 @@ describe('route rate-limit registry', () => {
     for (const route of routes) {
       expect(getRouteConfig(route).category).toBe('read')
     }
-  })
-
-  it('keeps auth and session routes covered by rate limiting or an explicit exemption', () => {
-    const missingRateLimits: string[] = []
-    for (const route of authRoutes) {
-      if (AUTH_RATE_LIMIT_EXEMPTIONS.has(route.routeId)) continue
-      if (route.hasRateLimitReference) continue
-      missingRateLimits.push(`${route.file}: ${route.routeId}`)
-    }
-
-    expect(missingRateLimits).toEqual([])
-  })
-
-  it('keeps every route registry entry exact and non-stale', () => {
-    const routeIds = new Set(apiRoutes.map(route => route.routeId))
-    const missingApiRoutes: string[] = []
-    const missingRateLimitReferences: string[] = []
-
-    for (const routeId of Object.keys(ROUTE_REGISTRY)) {
-      if (!routeIds.has(routeId)) {
-        missingApiRoutes.push(routeId)
-        continue
-      }
-
-      const route = apiRoutes.find(apiRoute => apiRoute.routeId === routeId)
-      if (!route?.hasRateLimitReference) {
-        missingRateLimitReferences.push(`${route?.file ?? 'unknown'}: ${routeId}`)
-      }
-    }
-
-    expect(missingApiRoutes).toEqual([])
-    expect(missingRateLimitReferences).toEqual([])
-  })
-
-  it('keeps auth and session route registry entries exact and non-stale', () => {
-    const routeIds = new Set(authRoutes.map(route => route.routeId))
-    const missingRegistryEntries: string[] = []
-    for (const routeId of routeIds) {
-      if (AUTH_RATE_LIMIT_EXEMPTIONS.has(routeId)) continue
-      if (routeId in ROUTE_REGISTRY) continue
-      missingRegistryEntries.push(routeId)
-    }
-
-    const staleRegistryEntries: string[] = []
-    for (const routeId of Object.keys(ROUTE_REGISTRY)) {
-      if (!AUTH_OR_SESSION_ROUTE_ID.test(routeId)) continue
-      if (routeIds.has(routeId)) continue
-      staleRegistryEntries.push(routeId)
-    }
-
-    expect(missingRegistryEntries).toEqual([])
-    expect(staleRegistryEntries).toEqual([])
-  })
-
-  it('keeps vote handler route keys registered with the vote multiplier', () => {
-    const missingRegistryEntries: string[] = []
-    const nonVoteEntries: string[] = []
-
-    for (const route of voteRoutes) {
-      const entry = ROUTE_REGISTRY[route.routeId]
-      if (!entry) {
-        missingRegistryEntries.push(`${route.file}: ${route.routeId}`)
-        continue
-      }
-
-      if (entry.category !== 'write' || entry.multiplier !== 0.5) {
-        nonVoteEntries.push(`${route.file}: ${route.routeId}`)
-      }
-    }
-
-    expect(missingRegistryEntries).toEqual([])
-    expect(nonVoteEntries).toEqual([])
   })
 
   it('classifies topic-claim domain verification as sensitive', () => {

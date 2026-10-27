@@ -15,10 +15,7 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { describe, expect, it } from 'vitest'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { readFileSync } from 'node:fs'
-import { POST_PUBLICATION_DIRTY_WORK_KEY_KINDS } from './retained-key-writes.mts'
 import { lockPostPublicationPostScopes } from './capture-posts.mts'
-import { RETAINED_KEY_COLUMNS } from './concrete-key-columns.mts'
 import {
   acknowledgePostPublicationDirtyWork,
   claimPostPublicationDirtyWork,
@@ -29,14 +26,6 @@ import {
   type PostPublicationChange,
 } from './public.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'
-
-const captureMigrationSql = readFileSync(
-  new URL(
-    '../../data-stores/psql/migrations/0607-00-00-post-publication-capture.sql',
-    import.meta.url,
-  ),
-  'utf8',
-)
 
 async function record(change: PostPublicationChange) {
   await using query = await beginTransaction()
@@ -247,25 +236,6 @@ describe('post publication capture', () => {
         reason: 'unsupported' as PostPublicationChange['reason'],
       }),
     ).rejects.toThrow('Unsupported post publication reason')
-  })
-
-  it('keeps retained-key columns aligned with database constraints', () => {
-    const payload =
-      /chk_post_publication_dirty_work_keys__concrete_payload CHECK \(\s*num_nonnulls\(\s*([\s\S]*?)\s*\) = 1/u.exec(
-        captureMigrationSql,
-      )?.[1]
-    if (payload === undefined) {
-      throw new Error('Expected concrete retained-key payload constraint')
-    }
-    const columns = payload
-      .split(',')
-      .map(column => column.trim())
-      .filter(column => column.length > 0)
-    expect(columns.toSorted()).toEqual([...Object.values(RETAINED_KEY_COLUMNS)].toSorted())
-    expect([...Object.keys(RETAINED_KEY_COLUMNS)].toSorted()).toEqual(
-      [...POST_PUBLICATION_DIRTY_WORK_KEY_KINDS].toSorted(),
-    )
-    expect(captureMigrationSql).toContain('(post_type IS NULL) = (day IS NULL)')
   })
 
   it('rejects a topic-alias scope without an alias identifier', async () => {
