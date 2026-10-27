@@ -86,10 +86,17 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   stay under an external service's rate limit.
 - **Honor upstream rate limits.** Classify an external 429 and its `Retry-After` through
   `@modules/queue-errors` so the affected job waits without consuming a domain failure attempt.
-- **Record the intent before an effect.** A paid or otherwise non-idempotent external call needs a
-  durable receipt before dispatch. A retry must reuse its recorded result or a provider-supported
-  idempotency key; an ambiguous billed attempt must not be sent again blindly. A resend blocked
-  after only positively unbilled capacity failures can release its pending reservation.
+- **Prevent double requests with cheap checks.** When a job starts, re-read the entity's current
+  state from the PostgreSQL primary and exit if the work is done or no longer applies (the result
+  row exists, the entity was deleted). Give jobs stable job or deduplication IDs derived from the
+  entity, so that duplicate enqueues collapse, and pass a provider idempotency key when the
+  provider supports one. Write the result and the state that marks it done in one transaction, so
+  that the next check sees it.
+- **Billing, telemetry, and analytics are downstream reporting only.** Record AI usage, spend, and
+  metrics as each request happens so they can be queried and analyzed later. Runtime business logic
+  never reads them to decide what to do, and writing them never gates or deduplicates work: no
+  unique reservation key, receipt ledger, or "may have been billed, stop for review" state. After a
+  lost response, a retry may call the provider again; the usage records show both calls.
 - **Mark moderation summaries after local send checks and before SES.** A failed preference or
   suppression lookup can retry without a send mark. A definitive sending-rate rejection clears
   the mark for a queue retry; an unknown send outcome keeps it to prevent duplicate mail.
@@ -117,7 +124,7 @@ For sweeps and cleanup jobs, apply the [bounded-iteration adapter](../../.agents
 - **Replay only idempotent "ensure" effects.** A reconciler or sweep re-runs forever, so an on-create effect in it repeats.
 - **A sweep never writes the rows it selects by `updated_at`, unless the write is a lease.** Otherwise the write bumps its own trigger and the sweep never ends. A bounded stale-row recovery sweep with a fixed staleness cutoff may touch the rows it enqueues, because the touch makes them ineligible until they stall again.
 - **Every state-driven sweep and reconciler has a convergence test:** a second run writes and enqueues nothing. Recurring jobs that do unconditional periodic work (such as a scheduled materialized-view refresh) are exempt.
-- **Make a paid or external call idempotent.** A stall retries the job and pays twice. Pass a provider idempotency key, or persist a claim/state row and reconcile it after a lost response; a bare receipt row does not prevent a repeat charge. See the [durable-transition matrix](reference-backend-queues-durable-transition-matrix.md).
+- **Avoid repeating a paid or external call where it is cheap to.** A stall retries the job. Check the entity's state at job start, use stable job IDs, and pass a provider idempotency key when one exists; accept the rare repeat that slips past these checks rather than adding a reservation ledger. See the [durable-transition matrix](reference-backend-queues-durable-transition-matrix.md).
 - **No secrets or PII in payloads.** Numeric `removeOnComplete`/`removeOnFail` retention keeps payloads in Valkey, readable by anyone with queue access, and `scrubJobData` scrubs only failure logs, not stored data. Pass ids and load the data in the processor; login tokens, invite codes, and presigned URLs stay in the processor. `removeOnFail: true` removes the payload on terminal failure, including a stall past the limit, while a waiting or active job still holds it. See the [replay-safe job reference](reference-backend-queues-define-a-replay-safe-job.md).
 
 ## Placement and validation
