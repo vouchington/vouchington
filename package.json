@@ -30,6 +30,7 @@
     "test:backend:anthropic": "node ci/run-vitest-project-group.mts backend-anthropic",
     "test:backend:openrouter": "node ci/run-vitest-project-group.mts backend-openrouter",
     "test:backend:lightpanda": "node ci/run-vitest-project-group.mts backend-lightpanda",
+    "eval:backend": "node ci/run-vitest-project-group.mts evals",
     "test:backend:postgres-schema": "node ci/run-vitest-project-group.mts backend-postgres-schema",
     "test:email-templates": "node ci/run-vitest-project-group.mts email-templates",
     "test:ts-shared": "node ci/run-vitest-project-group.mts ts-shared",

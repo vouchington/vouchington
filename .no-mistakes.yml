@@ -3097,6 +3097,8 @@ rules:
         backend-openai: [backend-credentialed]
         backend-openrouter: [backend-credentialed]
         backend-lightpanda: [backend-credentialed]
+        backend-evals-openrouter: [backend-credentialed]
+        backend-evals-anthropic: [backend-credentialed]
         web: [web]
         web-storybook: [storybook]
         web-storybook-browser: [storybook]
@@ -4248,6 +4250,10 @@ rules:
         # 39276118528 was cancelled at the 10m job ceiling while the plan step is allowed 10m.
         - job: '.github/workflows/explain-analyze.yml#explain-analyze'
           maxMinutes: 20
+        # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
+        # allowed 4m each after the shared backend setup.
+        - job: '.github/workflows/evals-backend.yml#backend-evals'
+          maxMinutes: 20
 
   - name: tracked TypeScript files belong to a tsconfig program
     rule: tsconfig-file-coverage
@@ -4346,6 +4352,7 @@ rules:
           ]
         .github/workflows/dispatch-completed-deploy.yml: [dispatch]
         .github/workflows/docs-publish.yml: [publish]
+        .github/workflows/evals-backend.yml: [backend-evals, prepare-postgres]
         .github/workflows/explain-analyze.yml: [explain-analyze, prepare-postgres]
         .github/workflows/fix-dependabot.yml:
           [
@@ -4453,6 +4460,8 @@ rules:
       requiredDirectEdges:
         - - '.github/workflows/explain-analyze.yml#prepare-postgres'
           - '.github/workflows/explain-analyze.yml#explain-analyze'
+        - - '.github/workflows/evals-backend.yml#prepare-postgres'
+          - '.github/workflows/evals-backend.yml#backend-evals'
         - - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
           - '.github/workflows/checks-backend-smoke.yml#smoke'
         - - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
@@ -4493,6 +4502,7 @@ rules:
           - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
           - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
           - '.github/workflows/explain-analyze.yml#prepare-postgres'
+          - '.github/workflows/evals-backend.yml#prepare-postgres'
         .github/workflows/checks-backend-smoke.yml:
           - '.github/workflows/backend.yml#backend-smoke'
         .github/workflows/checks-static.yml:
@@ -4583,6 +4593,7 @@ rules:
         .github/workflows/cancel-replaced-merge-group-runs.yml: 'the reusable callee owns the concurrency group'
         .github/workflows/cleanup-artifacts.yml: 'the reusable callee owns the concurrency group'
         .github/workflows/pnpm-dedupe.yml: 'the reusable callee owns the concurrency group'
+        .github/workflows/evals-backend.yml: 'parallel-safe idempotent manual evals'
         .github/workflows/explain-analyze.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/initialize-smoke-test.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/label-pr.yml: 'idempotent PR labeling'

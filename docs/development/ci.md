@@ -131,7 +131,9 @@ reruns them because a rerun of a non-gating job gains nothing. The failed job st
 check, the Nightly run, and the Nightly alert still report it. Recorded provider responses replayed
 through `createProviderReplay` gate the
 same request handling deterministically; see [live-provider smoke checks](tests.md#live-provider-smoke-checks)
-for the conversion rules. To add such a job, see
+for the conversion rules. The credentialed jobs run live-provider tests, which only prove each call
+works; the model-quality evals spend a call per fixture, so `evals-backend.yml` runs them only on
+`workflow_dispatch` and no area DAG calls it. To add such a job, see
 [Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md).
 
 ## Automation

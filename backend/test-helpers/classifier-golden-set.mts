@@ -4,6 +4,8 @@ import {
   createStructuredDecisionClient,
   type StructuredDecisionClient,
 } from '@modules/structured-decisions'
+import { countedClientWithSignal, type CallCounter } from './classifier-golden-call-counter.mts'
+import { callWithDeadline, ProviderCallDeadlineError } from './provider-call-deadline.mts'
 
 export type ClassifierDecisionBand = 'below-lower' | 'between' | 'at-or-above-upper'
 
@@ -45,17 +47,6 @@ export function classifierGoldenBatchId(): string {
   return `${randomUuid.slice(0, 14)}7${randomUuid.slice(15)}`
 }
 
-type CallCounter = { count: number }
-
-function clientWithCallCounter(client: StructuredDecisionClient, counter: CallCounter) {
-  return {
-    decide: async (request: Parameters<typeof client.decide>[0], signal?: AbortSignal) => {
-      counter.count += 1
-      return client.decide(request, signal)
-    },
-  }
-}
-
 export function unexpectedClassifierGoldenBand(
   fixture: ClassifierGoldenFixture,
   candidate: ClassifierGoldenCandidate,
@@ -93,13 +84,24 @@ export function missingOrDuplicateClassifierGoldenResults(
   })
 }
 
+export type ClassifierGoldenRunOptions = {
+  /** Each fixture's provider call fails, naming the fixture, after this long. No retry. */
+  callDeadlineMs?: number
+  client?: StructuredDecisionClient
+}
+
 export async function runClassifierGoldenSet(
   cases: readonly ClassifierGoldenCase[],
   policy: ClassifierGoldenPolicy,
+  { callDeadlineMs = 10_000, client: providedClient }: ClassifierGoldenRunOptions = {},
 ): Promise<void> {
   const startedAt = performance.now()
-  const apiKey = process.env.OPENROUTER_API_KEY ?? ''
-  const client = createStructuredDecisionClient({ transport: 'openrouter', apiKey })
+  const client =
+    providedClient ??
+    createStructuredDecisionClient({
+      transport: 'openrouter',
+      apiKey: process.env.OPENROUTER_API_KEY ?? '',
+    })
   const callCounter: CallCounter = { count: 0 }
   const failures: string[] = []
   const fixtureCounts = new Map<string, number>()
@@ -107,8 +109,26 @@ export async function runClassifierGoldenSet(
   const unexpectedDetails = new Map<string, string[]>()
   let toleratedUnexpectedCount = 0
 
-  for (const { fixture, candidates, decide } of cases) {
-    const results = await decide(clientWithCallCounter(client, callCounter))
+  // Concurrent, and settled rather than raced, so one stall does not hide a second one.
+  const outcomes = await Promise.allSettled(
+    cases.map(({ fixture, decide }) =>
+      callWithDeadline(fixture.id, callDeadlineMs, signal =>
+        decide(countedClientWithSignal(client, callCounter, signal)),
+      ),
+    ),
+  )
+
+  for (const [index, outcome] of outcomes.entries()) {
+    const { fixture, candidates } = cases[index]!
+    if (outcome.status === 'rejected') {
+      const reason: unknown = outcome.reason
+      const message = reason instanceof Error ? reason.message : String(reason)
+      failures.push(
+        reason instanceof ProviderCallDeadlineError ? message : `${fixture.id}: ${message}`,
+      )
+      continue
+    }
+    const results = outcome.value
     const resultCandidateIds: string[] = []
     for (const result of results) {
       resultCandidateIds.push(result.candidateId)
