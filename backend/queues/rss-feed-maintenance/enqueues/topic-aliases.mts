@@ -21,15 +21,6 @@ const enqueueTopicAliasesUpdateJob = createEnqueueFunction<{ topicId: string }, 
   jobName: JOB_NAME,
 })
 
-const enqueueTopicAliasRemovalUpdateJob = createEnqueueFunction<
-  { topicId: string; removedTopicAliasId: string },
-  TopicAliasJobs
->({
-  queue: rssFeedMaintenance,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-})
-
 const enqueueReconcileTopicAliasCategoryMappingsJob = createEnqueueFunction<
   { topicAliasIds?: string[] },
   TopicAliasJobs
@@ -74,17 +65,6 @@ export const enqueueTopicAliasesUpdate = (
   priority?: number,
 ): EnqueueReturnType => {
   return enqueueTopicAliasesUpdateJob({ topicId }, { priority: priority ?? PRIORITY_DEFAULT })
-}
-
-export const enqueueTopicAliasRemovalUpdate = (
-  topicId: string,
-  removedTopicAliasId: string,
-  priority?: number,
-): EnqueueReturnType => {
-  return enqueueTopicAliasRemovalUpdateJob(
-    { topicId, removedTopicAliasId },
-    { priority: priority ?? PRIORITY_DEFAULT },
-  )
 }
 
 export const enqueueReconcileTopicAliasCategoryMappings = (
