@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkAvailability, MAX_VALUE_LENGTH } from './check.mts'
+import { checkAvailability } from './check.mts'
 import {
   createTestUser,
   createRandomString,
@@ -76,7 +76,7 @@ describe('checkAvailability', () => {
     })
 
     it('treats a name over the 255-char DB limit as available', async () => {
-      // 256 chars: exceeds the topics.name CHECK constraint but is within MAX_VALUE_LENGTH.
+      // 256 chars: exceeds the topics.name CHECK constraint but is within the 300-character availability limit.
       const longName = 'a'.repeat(256)
       const result = await checkAvailability('topic-name', longName)
       expect(result.available).toBe(true)
@@ -89,10 +89,10 @@ describe('checkAvailability', () => {
       await expect(checkAvailability('topic-slug', '   ')).rejects.toMatchObject({ status: 422 })
     })
 
-    it('throws 422 when the value exceeds MAX_VALUE_LENGTH', async () => {
-      await expect(
-        checkAvailability('topic-slug', 'a'.repeat(MAX_VALUE_LENGTH + 1)),
-      ).rejects.toMatchObject({ status: 422 })
+    it('throws 422 when the value exceeds 300 characters', async () => {
+      await expect(checkAvailability('topic-slug', 'a'.repeat(301))).rejects.toMatchObject({
+        status: 422,
+      })
     })
   })
 
