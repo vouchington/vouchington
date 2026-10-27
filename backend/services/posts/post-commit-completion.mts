@@ -6,10 +6,7 @@ export type PostCommitOperation = {
 }
 
 /** These operations start after commit; failures must not reject the durable response. */
-export async function settlePostCommitEffects(
-  operations: PostCommitOperation[],
-  reportError: typeof onError = onError,
-): Promise<void> {
+export async function settlePostCommitEffects(operations: PostCommitOperation[]): Promise<void> {
   const synchronousFailures = new Set<number>()
   const started = operations.map((operation, index) => {
     try {
@@ -30,7 +27,7 @@ export async function settlePostCommitEffects(
   )
   for (const error of errors) {
     try {
-      reportError(
+      onError(
         error instanceof Error ? error : new Error('Post-commit effect failed', { cause: error }),
       )
     } catch {
