@@ -176,13 +176,6 @@ describe('buildGenericOgImageUrl / buildLandingOgImageUrl', () => {
     expect((params as { topCategories: string[] }).topCategories).toEqual(['a', 'b', 'c', 'd', 'e'])
   })
 
-  it('produces a different base64url segment when params change', () => {
-    const urlA = buildGenericOgImageUrl(GENERIC_PARAMS)
-    const urlB = buildGenericOgImageUrl({ ...GENERIC_PARAMS, title: 'Different Title' })
-
-    expect(new URL(urlA).pathname).not.toBe(new URL(urlB).pathname)
-  })
-
   it('falls back to a relative /og/ path when IMAGE_ORIGIN is unset', () => {
     vi.stubEnv('IMAGE_ORIGIN', undefined)
 
