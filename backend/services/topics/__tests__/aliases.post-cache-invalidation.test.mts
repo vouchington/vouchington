@@ -89,18 +89,14 @@ describe('topic alias post-cache invalidation', () => {
       createdById: user.id,
     })
     const [alias] = await createTopicAliases(sourceTopicId, `cache-merge-${suffix}`)
-    await createCachedAliasPosts(alias!.id, user, suffix)
-    const [sourceTopic, destinationTopic] = await Promise.all([
-      getTopicByAny(sourceTopicId),
-      getTopicByAny(destinationTopicId),
-    ])
+    const sourceTopic = await getTopicByAny(sourceTopicId)
+    const destinationTopic = await getTopicByAny(destinationTopicId)
 
     const jobs = await captureAddedPublicationEffectsForScope(alias!.id, () =>
       mergeTopicAliases(user, sourceTopic!, destinationTopic!),
     )
 
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0]!.scope).toEqual({ type: 'topic_alias', id: alias!.id })
+    expect(jobs.map(job => job.scope)).toEqual([{ type: 'topic_alias', id: alias!.id }])
   })
 
   it('invalidates posts when a topic slug claims an unlinked alias', async () => {
