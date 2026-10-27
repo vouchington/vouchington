@@ -13,11 +13,25 @@ export function observeTestAdvisoryLockNotice(client: PoolClient, lockTag: strin
   return observeTestPostgresLockNotice(client, lockTag, 'ExclusiveLock')
 }
 
-export function observeTestTransactionLockNotice(client: PoolClient, transactionId: string) {
-  return observeTestPostgresLockNotice(client, `transaction ${transactionId}`, 'ShareLock')
+export function observeTestTransactionLockNotice(
+  client: PoolClient,
+  transactionId: string,
+  eligible: () => boolean = () => true,
+) {
+  return observeTestPostgresLockNotice(
+    client,
+    `transaction ${transactionId}`,
+    'ShareLock',
+    eligible,
+  )
 }
 
-function observeTestPostgresLockNotice(client: PoolClient, lockTag: string, mode: string) {
+function observeTestPostgresLockNotice(
+  client: PoolClient,
+  lockTag: string,
+  mode: string,
+  eligible: () => boolean = () => true,
+) {
   const noticed = Promise.withResolvers<void>()
   let processId: number | undefined
   let original: Settings | undefined
@@ -25,6 +39,7 @@ function observeTestPostgresLockNotice(client: PoolClient, lockTag: string, mode
   const applicationName = `copyright-lock-${crypto.randomUUID()}`
   const notice = (event: { message?: string }) => {
     if (
+      eligible() &&
       processId !== undefined &&
       event.message?.startsWith(
         `process ${processId} still waiting for ${mode} on ${lockTag} after `,
