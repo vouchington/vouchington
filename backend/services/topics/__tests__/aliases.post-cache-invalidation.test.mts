@@ -51,8 +51,7 @@ describe('topic alias post-cache invalidation', () => {
     await refresh.topic_metrics(topicId)
     expect(await caches.topic_metrics.get(topicId)).not.toBeNull()
     await unlinkTopicAlias(alias.id)
-    const cached = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
-    expect(cached.every(value => value !== null)).toBe(true)
+    await Promise.all(postIds.map(async id => expect(await caches.posts.get(id)).not.toBeNull()))
     expect(await caches.topic_metrics.get(topicId)).toBeNull()
   })
 
@@ -224,12 +223,8 @@ describe('topic alias post-cache invalidation', () => {
       await linkTopicAlias(topicId, alias.id)
 
       const cacheValues = await Promise.all(postIds.map(postId => caches.posts.get(postId)))
-      const invalidatedPostIds = postIds
-        .filter((_, index) => cacheValues[index] === null)
-        .toSorted()
-      const stillCachedPostIds = postIds
-        .filter((_, index) => cacheValues[index] !== null)
-        .toSorted()
+      const invalidatedPostIds = postIds.filter((_, i) => cacheValues[i] === null).toSorted()
+      const stillCachedPostIds = postIds.filter((_, i) => cacheValues[i] !== null).toSorted()
       expect(invalidatedPostIds).toEqual([firstPostId, secondPostId, thirdPostId])
       expect(stillCachedPostIds).toEqual([fourthPostId])
 
