@@ -64,8 +64,7 @@ export async function rebuildCurrentBlocklistBloomFilter(input: {
     return
   }
 
-  await input.stream()
-  await input.afterSnapshot?.()
+  await streamBlocklistThenAfterSnapshot(input)
   const published = await publishBlocklistReadyMarkerIfGeneration({
     filter: input.filter,
     readyKey: input.readyKey,
@@ -73,6 +72,15 @@ export async function rebuildCurrentBlocklistBloomFilter(input: {
     value: newBloomReadyMarkerValue(),
   })
   if (!published) await enqueueRebuildBloomFilter({ filter: input.filter })
+}
+
+/** The snapshot cursor is already closed, so the hook cannot add rows to this rebuild. */
+async function streamBlocklistThenAfterSnapshot(input: {
+  stream: () => Promise<void>
+  afterSnapshot?: () => Promise<void>
+}): Promise<void> {
+  await input.stream()
+  await input.afterSnapshot?.()
 }
 
 async function publishBlocklistReadyMarkerIfGeneration(input: {

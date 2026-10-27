@@ -100,12 +100,19 @@ async function recoverBlocklistBloomFilterAfterAddFailure(
     const readyValue = await readReadyMarkerOrRepair(target)
     if (readyValue === null) return
 
-    await bumpBlocklistBloomGeneration(target.filter)
-    await enqueueRebuildBloomFilter({ filter: target.filter })
+    await bumpGenerationAndEnqueueBlocklistRebuild(target)
     await unlinkReadyMarkerIfValue(target.readyKey, readyValue)
   } catch (err) {
     reportError(err)
   }
+}
+
+/** The bump must precede enqueue so the delayed job observes this failed add. */
+async function bumpGenerationAndEnqueueBlocklistRebuild(
+  target: BlocklistBloomAddTarget,
+): Promise<void> {
+  await bumpBlocklistBloomGeneration(target.filter)
+  await enqueueRebuildBloomFilter({ filter: target.filter })
 }
 
 async function readReadyMarkerOrRepair(
