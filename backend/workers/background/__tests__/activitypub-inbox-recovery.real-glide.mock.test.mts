@@ -9,7 +9,7 @@ import {
   removeFailedActivityPubInboxDelivery,
 } from '@queues/activitypub/enqueues/inbox'
 import { recoverDeliveries } from '@workers/activitypub/processors/inbox'
-import { activityPubInboxRecoveryClockPastEnqueueGrace } from '@workers/activitypub/processors/inbox-enqueue-grace'
+import { activityPubInboxRecoveryClockPastEnqueueGrace } from '@voucha/test-helpers/activitypub-inbox-enqueue-grace'
 import { registerActivityPubInboxAdmission } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import {
   createApprovedRemoteActor,

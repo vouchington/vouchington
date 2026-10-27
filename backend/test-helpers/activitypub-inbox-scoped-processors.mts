@@ -12,7 +12,7 @@ import {
   rearmFailedDeliveries,
   recoverDeliveries,
 } from '../workers/activitypub/processors/inbox.mts'
-import { activityPubInboxRecoveryClockPastEnqueueGrace } from '../workers/activitypub/processors/inbox-enqueue-grace.mts'
+import { activityPubInboxRecoveryClockPastEnqueueGrace } from './activitypub-inbox-enqueue-grace.mts'
 
 /** The maintenance processors of the durable inbox, each limited to the one delivery id. */
 export function scopedActivityPubInboxProcessors(deliveryId: string) {
