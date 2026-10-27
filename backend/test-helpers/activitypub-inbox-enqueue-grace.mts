@@ -1,4 +1,4 @@
-import { INBOX_RECOVERY_ENQUEUE_GRACE_MS } from '@queues/activitypub/config'
+import { INBOX_RECOVERY_ENQUEUE_GRACE_MS } from '../queues/activitypub/config.mts'
 
 // Same UUIDv7 timestamp layout as the production enqueue-grace check.
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
