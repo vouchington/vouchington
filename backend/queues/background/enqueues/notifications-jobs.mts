@@ -34,9 +34,8 @@ const BULK_ORDERING = { key: 'notifications:bulk' } as const
 const VISIBILITY = {
   ...DISPATCH,
   ordering: BULK_ORDERING,
-  attempts: 3,
-  removeOnComplete: 100,
-  removeOnFail: 100,
+  // A failed page must retry indefinitely: nothing re-enqueues the rest of its chain.
+  ...pagedDispatchJobOptions('notifications'),
 } as const
 
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(

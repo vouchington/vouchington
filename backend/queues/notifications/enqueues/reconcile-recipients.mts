@@ -17,6 +17,7 @@ import { background } from '@queues/background/queues'
 import type { JobOptions } from 'glide-mq'
 
 const CONTINUATION = { priority: PRIORITY_DISPATCH, removeOnComplete: true, removeOnFail: true }
+// Visibility pages retry indefinitely (see VISIBILITY), so removeOnFail never drops a chain.
 
 function bulkOrdering(kind: 'post' | 'rss', entityId: string) {
   return {

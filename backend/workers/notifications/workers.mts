@@ -3,8 +3,6 @@ import { background } from '@queues/background/queues'
 import {
   enqueueContinueReconcilePostNotifications,
   enqueueContinueReconcileRssFeedItemNotifications,
-  enqueueContinueContentVisibility,
-  enqueueContinueMembershipVisibility,
 } from '@queues/notifications/enqueues'
 import {
   backgroundHandler,
@@ -40,6 +38,7 @@ import {
   NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import * as processors from './processors.mts'
+import { enqueueVisibilityContinuations } from './visibility-continuations.mts'
 import { processCommunityActivityDigestScheduleTick } from './processors/community-activity-digest-schedule.mts'
 
 export const notificationsHandlers = [
@@ -183,18 +182,3 @@ export const notificationsHandlers = [
     processors.processReconcileMediaDeliveryRegistry,
   ),
 ]
-
-type EntityChange =
-  | { postId: string; rssFeedItemId?: never; changeId: string }
-  | { postId?: never; rssFeedItemId: string; changeId: string }
-type VisibilityResult = {
-  nextVisibilityCursor?: { userId: string; notificationId: string }
-  nextMembershipCursor?: { userId: string; notificationId: string }
-}
-
-async function enqueueVisibilityContinuations(data: EntityChange, result: VisibilityResult) {
-  if (result.nextVisibilityCursor)
-    await enqueueContinueContentVisibility({ ...data, after: result.nextVisibilityCursor })
-  if (result.nextMembershipCursor)
-    await enqueueContinueMembershipVisibility({ ...data, after: result.nextMembershipCursor })
-}

@@ -239,6 +239,8 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
       `notifications__content-visibility__post__${postId}__${changeId}__${after.userId}__${after.notificationId}`,
     )
     expect(job?.data).toEqual({ postId, changeId, after })
+    expect(job?.opts.attempts).toBe(2_147_483_647)
+    expect(job?.opts.backoff).toMatchObject({ type: 'paged-dispatch-notifications' })
     expect(job?.opts.ordering).toMatchObject({
       key: `notifications:bulk:post:${postId}`,
       concurrency: 1,
@@ -256,6 +258,7 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     )
     expect(job?.name).toBe('notifications.processReconcileMembershipVisibility')
     expect(job?.data).toEqual({ rssFeedItemId, changeId, after })
+    expect(job?.opts.attempts).toBe(2_147_483_647)
     expect(job?.opts.ordering).toMatchObject({
       key: `notifications:bulk:rss:${rssFeedItemId}`,
       concurrency: 1,
