@@ -194,7 +194,15 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
     },
+    "backend/modules/on-error": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
     "backend/modules/pagination": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/modules/rss-feed-cover-art": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": false,
     },

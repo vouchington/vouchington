@@ -1,209 +1,297 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFile } from 'node:fs/promises'
+import { Readable } from 'node:stream'
+import { gzipSync } from 'node:zlib'
+import { GetObjectCommand, S3Client, type GetObjectCommandOutput } from '@aws-sdk/client-s3'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { S3Buckets } from '@modules/aws'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import { addUrls } from '@services/urls/upsert'
-import { createTestUser } from '@voucha/test-helpers'
-import type { PrivateUser } from '@services/users/types'
-import { createCrawler } from '@services/crawlers'
-import { updateUrlHostname } from '@services/urls-hostnames/update'
-import { createCrawl } from './create.mts'
-import { updateCrawl } from './update.mts'
+import {
+  hardDeleteTestUrl,
+  insertTestUrlDirect,
+  type TestViewUrl,
+} from '../../test-helpers/entities/urls.mts'
+import { insertTestCrawl } from '../../test-helpers/entities/crawls.mts'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from './constants.mts'
-
-const mockRead = vi.fn<VitestLooseMock>()
-const mockDownloadCrawlHtmlToTempFile = vi.fn<VitestLooseMock>()
-
-const captureException = sentryCaptureExceptionMock
-
 import { getLatestHtmlByUrlIds } from './get-html-by-url-ids.mts'
 
-let user: PrivateUser
+type CrawlSnapshot = {
+  hash: string
+  hostname: string
+  urlId: string
+}
+
+type SnapshotOptions = {
+  completedAt: Date
+  hashByte?: number
+  htmlSnapshotUploadedAt?: Date
+  statusCode?: number
+}
+
+type S3Response = { html: string } | { error: Error }
 
 describe('getLatestHtmlByUrlIds', () => {
-  beforeAll(async () => {
-    user = await createTestUser()
-  })
+  it('selects recent uploaded snapshots and continues after download failures and missing objects', async () => {
+    const now = Date.now() + 14 * 24 * 60 * 60 * 1000
+    const freshTime = new Date(now - 60_000)
+    const previousTime = new Date(now - 2 * 60 * 60 * 1000)
+    const staleTime = new Date(now - (CRAWL_HTML_SNAPSHOT_RETENTION_DAYS + 1) * 24 * 60 * 60 * 1000)
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('queries only recent eligible 200 crawls and skips individual S3 download failures', async () => {
-    const firstHtml = createArtifact('/tmp/first.html', 18)
-    const thirdHtml = createArtifact('/tmp/third.html', 18)
-    const s3Error = new Error('incorrect header check')
-
-    mockRead.mockResolvedValueOnce({
-      rows: [
-        { hostname: 'example.com', url_id: 'url-1', html_sha256_hex: 'aaaa' },
-        { hostname: 'example.com', url_id: 'url-2', html_sha256_hex: 'bbbb' },
-        { hostname: 'example.org', url_id: 'url-3', html_sha256_hex: 'cccc' },
-      ],
+    const latestUrl = await createUrl('latest')
+    await insertSnapshot(latestUrl, {
+      completedAt: previousTime,
+      hashByte: 1,
+      htmlSnapshotUploadedAt: previousTime,
     })
-    mockDownloadCrawlHtmlToTempFile
-      .mockResolvedValueOnce(firstHtml)
-      .mockRejectedValueOnce(s3Error)
-      .mockResolvedValueOnce(thirdHtml)
-
-    const result = await getLatestHtmlByUrlIds(
-      ['url-1', 'url-2', 'url-3'],
-      {},
-      {
-        read: mockRead,
-        downloadCrawlHtmlToTempFile: mockDownloadCrawlHtmlToTempFile,
-      },
-    )
-    const query = mockRead.mock.calls[0]![0]
-
-    expect(query.text).toContain('c.response_status_code = 200')
-    expect(query.text).toContain('c.completed_at >=')
-    expect(query.text).toContain('c.html_sha256 IS NOT NULL')
-    expect(query.text).toContain('COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >=')
-    expect(query.text).toContain('ORDER BY u.id, c.completed_at DESC, c.id DESC')
-
-    expect(result).toEqual([firstHtml, thirdHtml])
-    expect(captureException).toHaveBeenCalledWith(s3Error, expect.anything())
-  })
-
-  it('uses the content hash S3 key returned by the SQL query', async () => {
-    const html = createArtifact('/tmp/current.html', 20)
-
-    mockRead.mockResolvedValueOnce({
-      rows: [
-        { hostname: 'example.com', url_id: 'url-2', crawl_id: 'crawl-2', html_sha256_hex: 'dddd' },
-      ],
-    })
-    mockDownloadCrawlHtmlToTempFile.mockResolvedValueOnce(html)
-
-    const result = await getLatestHtmlByUrlIds(
-      ['url-2'],
-      {},
-      {
-        read: mockRead,
-        downloadCrawlHtmlToTempFile: mockDownloadCrawlHtmlToTempFile,
-      },
-    )
-
-    expect(result).toEqual([html])
-    expect(mockDownloadCrawlHtmlToTempFile).toHaveBeenCalledWith('example.com', 'url-2', 'dddd')
-  })
-
-  it('reports rows missing the SQL-guaranteed content hash instead of building a null S3 key', async () => {
-    mockRead.mockResolvedValueOnce({
-      rows: [
-        { hostname: 'example.com', url_id: 'url-2', crawl_id: 'crawl-2', html_sha256_hex: null },
-      ],
+    const latest = await insertSnapshot(latestUrl, {
+      completedAt: freshTime,
+      hashByte: 2,
+      htmlSnapshotUploadedAt: freshTime,
     })
 
-    const result = await getLatestHtmlByUrlIds(
-      ['url-2'],
-      {},
-      {
-        read: mockRead,
-        downloadCrawlHtmlToTempFile: mockDownloadCrawlHtmlToTempFile,
-      },
-    )
-
-    expect(result).toEqual([])
-    expect(mockDownloadCrawlHtmlToTempFile).not.toHaveBeenCalled()
-    expect(captureException).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'Expected latest crawl HTML row to include html_sha256_hex',
-      }),
-      expect.anything(),
-    )
-  })
-
-  it.each([
-    new Date('2024-01-31T23:59:59.999Z'),
-    new Date('2024-02-01T00:00:00.001Z'),
-    new Date('2024-02-29T23:59:59.999Z'),
-    new Date('2024-03-01T00:00:00.001Z'),
-    new Date('2024-12-31T23:59:59.999Z'),
-    new Date('2025-01-01T00:00:00.001Z'),
-  ])('selects crawl snapshots on the inclusive seven-day cutoff at %s', async now => {
-    mockDownloadCrawlHtmlToTempFile.mockReset()
-    const cutoff = now.getTime() - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 86400000
-    const hostname = `snapshot-boundary-${randomUUID()}.example.com`
-    const cases = [
-      { edge: 'completion', delta: -1 },
-      { edge: 'completion', delta: 0 },
-      { edge: 'completion', delta: 1 },
-      { edge: 'upload', delta: -1 },
-      { edge: 'upload', delta: 0 },
-      { edge: 'upload', delta: 1 },
-      { edge: 'legacy-fallback', delta: -1 },
-      { edge: 'legacy-fallback', delta: 0 },
-      { edge: 'legacy-fallback', delta: 1 },
-    ] as const
-    const urls = await addUrls(
-      user.id,
-      cases.map(({ edge, delta }) => `https://${hostname}/${edge}-${delta}`),
-    )
-    await updateUrlHostname(urls[0]!.hostname.id, { is_crawlable: true })
-    const crawler = await createCrawler(user, {
-      hostname_id: urls[0]!.hostname.id,
-      crawler_type: 'fetch',
+    const failed = await insertSnapshot(await createUrl('failed'), {
+      completedAt: freshTime,
+      hashByte: 3,
+      htmlSnapshotUploadedAt: freshTime,
     })
-    const hashes = new Map<string, string>()
-    const expectedUrlIds: string[] = []
+    const afterFailure = await insertSnapshot(await createUrl('after-failure'), {
+      completedAt: freshTime,
+      hashByte: 4,
+      htmlSnapshotUploadedAt: freshTime,
+    })
+    const missing = await insertSnapshot(await createUrl('missing-object'), {
+      completedAt: freshTime,
+      hashByte: 5,
+      htmlSnapshotUploadedAt: freshTime,
+    })
+    const completionFallback = await insertSnapshot(await createUrl('completion-fallback'), {
+      completedAt: freshTime,
+      hashByte: 6,
+    })
+    const staleCompletionUrl = await createUrl('stale-completion')
+    await insertSnapshot(staleCompletionUrl, {
+      completedAt: staleTime,
+      hashByte: 7,
+      htmlSnapshotUploadedAt: freshTime,
+    })
+    const staleUploadUrl = await createUrl('stale-upload')
+    await insertSnapshot(staleUploadUrl, {
+      completedAt: freshTime,
+      hashByte: 8,
+      htmlSnapshotUploadedAt: staleTime,
+    })
+    const missingHashUrl = await createUrl('missing-hash')
+    await insertTestCrawl({
+      urlId: missingHashUrl.id,
+      statusCode: 200,
+      markdown: '',
+      completedAt: freshTime,
+    })
+    const failedStatusUrl = await createUrl('failed-status')
+    await insertSnapshot(failedStatusUrl, {
+      completedAt: freshTime,
+      hashByte: 9,
+      htmlSnapshotUploadedAt: freshTime,
+      statusCode: 404,
+    })
 
-    for (const [index, { edge, delta }] of cases.entries()) {
-      const crawl = await createCrawl(urls[index]!.id, crawler.id)
-      const hash = Buffer.alloc(32, index + 1)
-      hashes.set(urls[index]!.id, hash.toString('hex'))
-      const completedAt = edge === 'upload' ? now : new Date(cutoff + delta)
-      const uploadedAt =
-        edge === 'completion' ? now : edge === 'legacy-fallback' ? null : new Date(cutoff + delta)
-      await updateCrawl(crawl.id, urls[index]!.id, {
-        completed_at: completedAt,
-        html_sha256: hash,
-        html_snapshot_uploaded_at: uploadedAt,
-        response_status_code: 200,
-      })
-      if (delta >= 0) expectedUrlIds.push(urls[index]!.id)
-    }
-    mockDownloadCrawlHtmlToTempFile.mockResolvedValue(createArtifact('/tmp/boundary.html', 10))
-
-    await getLatestHtmlByUrlIds(
-      urls.map(url => url.id),
-      {},
-      {
-        downloadCrawlHtmlToTempFile: mockDownloadCrawlHtmlToTempFile,
-        now: () => now,
-      },
-    )
-
-    const actual = mockDownloadCrawlHtmlToTempFile.mock.calls.map(([, urlId, hash]) => [
-      urlId,
-      hash,
+    const downloadError = new Error('Owned S3 download failed')
+    const missingObjectError = new Error('Crawl HTML snapshot no longer exists')
+    missingObjectError.name = 'NoSuchKey'
+    const snapshots = [latest, failed, afterFailure, missing, completionFallback]
+    const ownedUrlIds = new Set([
+      latest.urlId,
+      failed.urlId,
+      afterFailure.urlId,
+      missing.urlId,
+      completionFallback.urlId,
+      staleCompletionUrl.id,
+      staleUploadUrl.id,
+      missingHashUrl.id,
+      failedStatusUrl.id,
     ])
-    const expected = expectedUrlIds.map(urlId => [urlId, hashes.get(urlId)])
-    const byUrlId = ([leftUrl]: (string | undefined)[], [rightUrl]: (string | undefined)[]) =>
-      (leftUrl ?? '').localeCompare(rightUrl ?? '')
-    expect(actual.toSorted(byUrlId)).toEqual(expected.toSorted(byUrlId))
+    const responses = new Map<string, S3Response>([
+      [s3Key(latest), { html: '<main>newest snapshot</main>' }],
+      [s3Key(failed), { error: downloadError }],
+      [s3Key(afterFailure), { html: '<main>download continued</main>' }],
+      [s3Key(missing), { error: missingObjectError }],
+      [s3Key(completionFallback), { html: '<main>completion timestamp fallback</main>' }],
+    ])
+    const downloads = stubOwnedCrawlS3Responses(ownedUrlIds, responses)
+
+    let files: Awaited<ReturnType<typeof getLatestHtmlByUrlIds>> = []
+    try {
+      files = await runWithServiceNow(now, () =>
+        getLatestHtmlByUrlIds([
+          latest.urlId,
+          failed.urlId,
+          afterFailure.urlId,
+          missing.urlId,
+          completionFallback.urlId,
+          staleCompletionUrl.id,
+          staleUploadUrl.id,
+          missingHashUrl.id,
+          failedStatusUrl.id,
+        ]),
+      )
+
+      const requested = snapshots.toSorted((left, right) => left.urlId.localeCompare(right.urlId))
+      const successful = [latest, afterFailure, completionFallback].toSorted((left, right) =>
+        left.urlId.localeCompare(right.urlId),
+      )
+      expect(downloads.requests).toEqual(
+        requested.map(snapshot => ({ bucket: S3Buckets.crawls, key: s3Key(snapshot) })),
+      )
+      expect(await Promise.all(files.map(file => readFile(file.filePath, 'utf8')))).toEqual(
+        successful.map(snapshot => {
+          const response = responses.get(s3Key(snapshot))
+          if (!response || !('html' in response)) throw new Error('Expected successful S3 fixture')
+          return response.html
+        }),
+      )
+      expect(
+        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === downloadError),
+      ).toHaveLength(1)
+      expect(
+        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === missingObjectError),
+      ).toHaveLength(0)
+    } finally {
+      try {
+        await Promise.all(files.map(file => file.cleanup()))
+      } finally {
+        downloads.restore()
+      }
+    }
   })
 
-  it('rejects an invalid snapshot decision time before reading', async () => {
-    await expect(
-      getLatestHtmlByUrlIds(
-        ['unused'],
-        {},
-        {
-          read: mockRead,
-          downloadCrawlHtmlToTempFile: mockDownloadCrawlHtmlToTempFile,
-          now: () => new Date(Number.NaN),
-        },
-      ),
-    ).rejects.toThrow('Invalid HTML snapshot decision time')
-    expect(mockRead).not.toHaveBeenCalled()
+  it('includes snapshots exactly on the retention cutoff for each date predicate', async () => {
+    const frozenNow = Date.now() + 30 * 24 * 60 * 60 * 1000
+    const cutoff = frozenNow - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    const freshTime = new Date(frozenNow - 60_000)
+    const boundaries = [
+      { predicate: 'completion', delta: -1 },
+      { predicate: 'completion', delta: 0 },
+      { predicate: 'completion', delta: 1 },
+      { predicate: 'upload', delta: -1 },
+      { predicate: 'upload', delta: 0 },
+      { predicate: 'upload', delta: 1 },
+      { predicate: 'fallback', delta: -1 },
+      { predicate: 'fallback', delta: 0 },
+      { predicate: 'fallback', delta: 1 },
+    ] as const
+    const snapshots: CrawlSnapshot[] = []
+    const expected: CrawlSnapshot[] = []
+    const htmlResponses = new Map<string, { html: string }>()
+
+    for (const [index, { predicate, delta }] of boundaries.entries()) {
+      const url = await createUrl(`cutoff-${predicate}-${delta}`)
+      const boundaryTime = new Date(cutoff + delta)
+      const snapshot = await insertSnapshot(url, {
+        completedAt: predicate === 'upload' ? freshTime : boundaryTime,
+        hashByte: index + 10,
+        ...(predicate === 'fallback'
+          ? {}
+          : {
+              htmlSnapshotUploadedAt: predicate === 'completion' ? freshTime : boundaryTime,
+            }),
+      })
+      snapshots.push(snapshot)
+      htmlResponses.set(s3Key(snapshot), { html: `<main>${predicate}:${delta}</main>` })
+      if (delta >= 0) expected.push(snapshot)
+    }
+
+    const downloads = stubOwnedCrawlS3Responses(
+      new Set(snapshots.map(snapshot => snapshot.urlId)),
+      htmlResponses,
+    )
+    let files: Awaited<ReturnType<typeof getLatestHtmlByUrlIds>> = []
+    try {
+      files = await runWithServiceNow(frozenNow, () =>
+        getLatestHtmlByUrlIds(snapshots.map(snapshot => snapshot.urlId)),
+      )
+      const selected = expected.toSorted((left, right) => left.urlId.localeCompare(right.urlId))
+      expect(downloads.requests).toEqual(
+        selected.map(snapshot => ({ bucket: S3Buckets.crawls, key: s3Key(snapshot) })),
+      )
+      expect(await Promise.all(files.map(file => readFile(file.filePath, 'utf8')))).toEqual(
+        selected.map(snapshot => htmlResponses.get(s3Key(snapshot))?.html),
+      )
+    } finally {
+      try {
+        await Promise.all(files.map(file => file.cleanup()))
+      } finally {
+        downloads.restore()
+      }
+    }
   })
 })
 
-function createArtifact(filePath: string, byteLength: number) {
-  return {
-    filePath,
-    byteLength,
-    cleanup: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+async function createUrl(path: string): Promise<TestViewUrl> {
+  const url = await insertTestUrlDirect(
+    null,
+    `https://crawl-html-${randomUUID()}.example.com/${path}`,
+  )
+  if (!url) throw new Error('Expected a public test URL')
+  onTestFinished(() => hardDeleteTestUrl(url.id))
+  return url
+}
+
+async function insertSnapshot(url: TestViewUrl, options: SnapshotOptions): Promise<CrawlSnapshot> {
+  const hash = Buffer.alloc(32, options.hashByte ?? 1)
+  await insertTestCrawl({
+    urlId: url.id,
+    statusCode: options.statusCode ?? 200,
+    markdown: '',
+    completedAt: options.completedAt,
+    htmlSha256: hash,
+    ...(options.htmlSnapshotUploadedAt
+      ? { htmlSnapshotUploadedAt: options.htmlSnapshotUploadedAt }
+      : {}),
+  })
+  return { hash: hash.toString('hex'), hostname: url.hostname.hostname, urlId: url.id }
+}
+
+function s3Key(snapshot: CrawlSnapshot): string {
+  return `${snapshot.hostname}/${snapshot.urlId}/${snapshot.hash}`
+}
+
+async function runWithServiceNow<T>(now: number, operation: () => Promise<T>): Promise<T> {
+  const clock = new AsyncLocalStorage<number>()
+  const originalNow = Date.now
+  // oxlint-disable vitest/prefer-mock-return-shorthand -- Return frozen time only in this AsyncLocalStorage scope; delegate unrelated calls.
+  const dateNow = vi.spyOn(Date, 'now').mockImplementation(() => clock.getStore() ?? originalNow())
+  // oxlint-enable vitest/prefer-mock-return-shorthand
+  try {
+    return await clock.run(now, operation)
+  } finally {
+    dateNow.mockRestore()
   }
+}
+
+function stubOwnedCrawlS3Responses(
+  ownedUrlIds: ReadonlySet<string>,
+  responses: ReadonlyMap<string, S3Response>,
+) {
+  const requests: Array<{ bucket: string | undefined; key: string | undefined }> = []
+  const previousSend = S3Client.prototype.send
+  const send = vi.spyOn(S3Client.prototype, 'send')
+  send.mockImplementation(async function (this: S3Client, command, ...args) {
+    const delegate = () => Reflect.apply(previousSend, this, [command, ...args])
+    if (!(command instanceof GetObjectCommand)) return delegate()
+    const { Bucket, Key } = command.input
+    const urlId = Key?.split('/')[1]
+    if (!urlId || !ownedUrlIds.has(urlId)) return delegate()
+    requests.push({ bucket: Bucket, key: Key })
+    if (Bucket !== S3Buckets.crawls || !Key) return delegate()
+    const response = responses.get(Key)
+    if (!response) return delegate()
+    if ('error' in response) throw response.error
+    const output: GetObjectCommandOutput = {
+      $metadata: { httpStatusCode: 200 },
+      Body: Readable.from([gzipSync(Buffer.from(response.html))]) as GetObjectCommandOutput['Body'],
+    }
+    return output
+  })
+  return { requests, restore: () => send.mockRestore() }
 }

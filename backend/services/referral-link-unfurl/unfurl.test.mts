@@ -27,7 +27,7 @@ describe('runReferralLinkUnfurl', () => {
     const fixture = await createReferralProgramFixture({ createdById: creator!.id })
     parentProgramId = fixture.referralProgramId
     parentHostname = fixture.hostname
-  }, 30_000)
+  })
 
   async function createPlusOwner(): Promise<PrivateUser> {
     const user = await createTestUserDirect()

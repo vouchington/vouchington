@@ -13,7 +13,7 @@ describe('POST /api/v1/app-attestation/challenge', () => {
     await routeRateLimitConfig.waitForInitialization()
     routeRateLimitConfig.unsubscribe()
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
-  }, 15_000)
+  })
 
   beforeEach(() => {
     overrideDynamicConfigFieldsForTest(appAttestationConfig, { enabled: true })

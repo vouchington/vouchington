@@ -2,6 +2,7 @@ import http from 'node:http'
 import { createApiRequestGuardedListener } from '../../backend/api/app.mts'
 import { buildWebClientInfoHeaders } from '@/lib/api/server/client-info'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
+import { createVerifiedMfaTestSession } from '../../backend/test-helpers/authenticated-session.mts'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { listenOnFetchSafeEphemeralPort } from '../web/helpers/ports.mts'
 
@@ -23,6 +24,15 @@ export async function createWebApiTestCookieHeader(
   return {
     Cookie: `dt=${deviceToken.token}; st=${sessionToken.token}`,
   }
+}
+
+export async function createWebApiMfaTestCookieHeader(
+  userId: string,
+): Promise<Record<string, string>> {
+  const { deviceToken, sessionToken } = await createVerifiedMfaTestSession(userId, {
+    user_agent: 'node',
+  })
+  return { Cookie: `dt=${deviceToken.token}; st=${sessionToken.token}` }
 }
 
 // In-process servers retain the same request metadata boundary as the production API listener.

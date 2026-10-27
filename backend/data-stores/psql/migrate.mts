@@ -10,6 +10,10 @@ import {
   createMonthlyPartitions,
 } from './migration-runner/monthly-partitions.mts'
 import {
+  createClassifierResultRange,
+  retireClassifierResultRange,
+} from './migration-runner/operator-classifier-partitions.mts'
+import {
   runConfigDriven as runConfigDrivenFromFolder,
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
@@ -27,8 +31,10 @@ export type RunViewsOptions = Partial<Omit<PlatformRunViewsOptions, 'folder' | '
 
 export {
   cleanupPartitions,
+  createClassifierResultRange,
   createMonthlyPartitions,
   refreshMaterializedView,
+  retireClassifierResultRange,
   type RunConfigDrivenOptions,
 }
 

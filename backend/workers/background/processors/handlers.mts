@@ -1,3 +1,9 @@
+import {
+  IMAGE_DELETION_PAGE_JOB,
+  IMAGE_DELETION_RECOVER_JOB,
+} from '@queues/background/enqueues/image-deletion-jobs'
+import { processImageDeletionPage } from '@services/images/delete'
+import { processImageDeletionRecovery } from './image-deletion.mts'
 import type { BackgroundHandler } from '@queues/background/types'
 import { accountLifecycleHandlers } from '@workers/account-lifecycle/workers'
 import { activitypubHandlers } from '@workers/activitypub/workers'
@@ -28,6 +34,8 @@ import { voteAggregationHandlers } from '@workers/vote-aggregation/workers'
 
 /** Every handler of every domain. The registry coverage test keeps this in step with the jobs. */
 export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
+  backgroundHandler(IMAGE_DELETION_PAGE_JOB, job => processImageDeletionPage(job.data.imageId)),
+  backgroundHandler(IMAGE_DELETION_RECOVER_JOB, processImageDeletionRecovery),
   ...sesInboundHandlers,
   ...openAiModerationHandlers,
   ...postMentionsHandlers,

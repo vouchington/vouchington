@@ -8,12 +8,8 @@ import {
   getTestActiveCommunityBan,
   reviewPendingTestModerationReportsByNotePrefixes,
 } from '../../../backend/test-helpers/index.mts'
-import {
-  loginAsTestUser as loginAsAdmin,
-  loginAsUser,
-  createSiteModeratorUser,
-} from '../../helpers/auth.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { loginAsAdmin, loginAsUser, createSiteModeratorUser } from '../../helpers/auth.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 
 test.describe.configure({ mode: 'serial' })
@@ -175,7 +171,7 @@ test.describe('Ban-evasion badge — Site Moderator', () => {
 })
 
 test.describe('Ban-evasion badge — SA confirm', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   let saReportId = ''
   let saConfirmCommunityId = ''

@@ -13,7 +13,7 @@ vi.doMock<typeof import('undici')>(import('undici'), async importOriginal => ({
   ...(await importOriginal()),
   fetch: fetchSpy,
 }))
-const { upsertFacebookAccount } = await import('./index.mts')
+const { prepareFacebookAccount } = await import('./index.mts')
 
 describe('Facebook provider email handling', () => {
   afterEach(() => fetchSpy.mockReset())
@@ -31,7 +31,7 @@ describe('Facebook provider email handling', () => {
         response({ id: providerUserId, name: 'Member', email: createRandomEmailAddress() }),
       )
 
-    const account = await upsertFacebookAccount('input-access')
+    const account = await (await prepareFacebookAccount('input-access')).persist()
 
     expect(account).toMatchObject({
       provider_user_id: providerUserId,

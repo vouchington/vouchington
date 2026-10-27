@@ -3,28 +3,75 @@ import {
   runViews,
   runConfigDriven,
   createMonthlyPartitions,
+  createClassifierResultRange,
+  retireClassifierResultRange,
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
+import { runDataRetentionCleanup } from '@services/data-retention'
+import { createHash } from 'node:crypto'
+import { enqueueDataRetentionCleanupContinuation } from '@queues/psql/enqueues'
 import {
-  runDataRetentionCleanup,
-  runMembershipOperationalCleanupPage,
-} from '@services/data-retention'
-import { enqueueMembershipRetentionContinuation } from '@queues/psql/enqueues'
-import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
+  dataRetentionConfig,
+  getClassifierRetentionDays,
+  getDataRetentionLimits,
+} from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
 import type {
-  MembershipRetentionContinuationData,
   PsqlJobs,
+  PsqlPartitionJobData,
+  PsqlRetentionJobData,
   RefreshMaterializedViewData,
 } from '@queues/psql/types'
+
+function unfinishedClassifierSweeps(
+  result: Awaited<ReturnType<typeof runDataRetentionCleanup>>['classifierRecords'],
+): string[] {
+  const has = (sweep: keyof typeof result) => result[sweep]?.hasMore ?? false
+  const children = has('runCandidates') || has('agentTopics') || has('localOutcomes')
+  const runs = has('runs') || children
+  const results =
+    runs || has('topicResults') || has('storyResults') || has('communityPromptResults')
+  const candidates = results || has('decisionCandidates')
+  const calls = candidates || has('calls')
+  const batches = calls || has('batches')
+  const requests = runs || has('requests')
+  const identities = requests || has('deletedSubjectIdentities')
+  return (
+    [
+      ['runCandidates', has('runCandidates')],
+      ['agentTopics', has('agentTopics')],
+      ['localOutcomes', has('localOutcomes')],
+      ['runs', runs],
+      ['topicResults', runs || has('topicResults')],
+      ['storyResults', runs || has('storyResults')],
+      ['communityPromptResults', runs || has('communityPromptResults')],
+      ['decisionCandidates', candidates],
+      ['calls', calls],
+      ['batches', batches],
+      ['requests', requests],
+      ['deletedSubjectIdentities', identities],
+      ['versionedIdentities', has('versionedIdentities')],
+    ] as const
+  ).flatMap(([sweep, pending]) => (pending ? [sweep] : []))
+}
+
+const MEMBERSHIP_FAMILIES = [
+  'deliveredMembershipEntitlementEffects',
+  'endedMembershipRenewalNotices',
+  'terminalGooglePlayAcknowledgments',
+] as const
+
+function unfinishedMembershipFamilies(
+  result: Awaited<ReturnType<typeof runDataRetentionCleanup>>,
+): string[] {
+  return MEMBERSHIP_FAMILIES.filter(family => result[family]?.hasMore)
+}
 
 type ProcessPsqlDependencies = {
   cleanupPartitions: typeof cleanupPartitions
   createPartitions: typeof createMonthlyPartitions
   dataRetentionCleanup: typeof runDataRetentionCleanup
-  membershipRetentionCleanupPage: typeof runMembershipOperationalCleanupPage
-  enqueueMembershipRetentionContinuation: typeof enqueueMembershipRetentionContinuation
   reconcileVoteDrift: typeof reconcilePostVoteDrift
   refreshMaterializedView: typeof refreshMaterializedView
   runConfigDriven: typeof runConfigDriven
@@ -34,7 +81,7 @@ type ProcessPsqlDependencies = {
 
 export default async function processPsql(
   jobName: PsqlJobs,
-  data?: Partial<RefreshMaterializedViewData & MembershipRetentionContinuationData>,
+  data?: Partial<RefreshMaterializedViewData & PsqlPartitionJobData & PsqlRetentionJobData>,
   dependencies?: Partial<ProcessPsqlDependencies>,
   jobId?: string,
 ) {
@@ -46,33 +93,36 @@ export default async function processPsql(
     case 'runConfigDriven':
       return (dependencies?.runConfigDriven ?? runConfigDriven)()
     case 'createPartitions':
-      return (dependencies?.createPartitions ?? createMonthlyPartitions)()
+      return data?.classifierRange
+        ? createClassifierResultRange(data.classifierRange)
+        : (dependencies?.createPartitions ?? createMonthlyPartitions)()
     case 'cleanupPartitions':
+      if (data?.classifierRange) {
+        await dataRetentionConfig.waitForInitialization()
+        return retireClassifierResultRange(data.classifierRange, getClassifierRetentionDays())
+      }
       return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup': {
-      // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue durable continuation in order.
       await dataRetentionConfig.waitForInitialization()
-      const result = await (dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup)(
-        getDataRetentionLimits(),
-      )
-      await enqueueMembershipContinuationIfNeeded(result, jobId, dependencies)
-      return result
-    }
-    case 'continueMembershipOperationalCleanup': {
-      if (
-        !data ||
-        typeof data.deliveredMembershipEntitlementEffects !== 'boolean' ||
-        typeof data.endedMembershipRenewalNotices !== 'boolean' ||
-        typeof data.terminalGooglePlayAcknowledgments !== 'boolean'
-      ) {
-        throw new Error('continueMembershipOperationalCleanup job requires family selection')
+      const cleanup = dependencies?.dataRetentionCleanup ?? runDataRetentionCleanup
+      const result = data?.continuation
+        ? await cleanup(getDataRetentionLimits(), {
+            classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
+            activeMembershipFamilies: data.continuation.activeMembershipFamilies,
+          })
+        : await cleanup(getDataRetentionLimits())
+      const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
+      const activeMembershipFamilies = unfinishedMembershipFamilies(result)
+      if (activeClassifierSweeps.length > 0 || activeMembershipFamilies.length > 0) {
+        if (!jobId) throw new Error('Data retention continuation needs the current job ID')
+        const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
+        await enqueueDataRetentionCleanupContinuation({
+          runId,
+          step: (data?.continuation?.step ?? 0) + 1,
+          activeClassifierSweeps,
+          activeMembershipFamilies,
+        })
       }
-      // ast-grep-ignore: no-three-sequential-awaits -- load limits, commit cleanup, then enqueue durable continuation in order.
-      await dataRetentionConfig.waitForInitialization()
-      const result = await (
-        dependencies?.membershipRetentionCleanupPage ?? runMembershipOperationalCleanupPage
-      )(getDataRetentionLimits(), data as MembershipRetentionContinuationData)
-      await enqueueMembershipContinuationIfNeeded(result, jobId, dependencies)
       return result
     }
     case 'refreshMaterializedView': {
@@ -86,23 +136,4 @@ export default async function processPsql(
     default:
       throw new Error(`Unknown job: ${jobName}`)
   }
-}
-
-type MembershipRetentionResult = Awaited<ReturnType<typeof runMembershipOperationalCleanupPage>>
-
-async function enqueueMembershipContinuationIfNeeded(
-  result: MembershipRetentionResult,
-  jobId: string | undefined,
-  dependencies?: Partial<ProcessPsqlDependencies>,
-): Promise<void> {
-  const next: MembershipRetentionContinuationData = {
-    deliveredMembershipEntitlementEffects: result.deliveredMembershipEntitlementEffects.hasMore,
-    endedMembershipRenewalNotices: result.endedMembershipRenewalNotices.hasMore,
-    terminalGooglePlayAcknowledgments: result.terminalGooglePlayAcknowledgments.hasMore,
-  }
-  if (!Object.values(next).some(Boolean)) return
-  if (!jobId) throw new Error('membership retention job requires an id for continuation')
-  await (
-    dependencies?.enqueueMembershipRetentionContinuation ?? enqueueMembershipRetentionContinuation
-  )(jobId, next)
 }

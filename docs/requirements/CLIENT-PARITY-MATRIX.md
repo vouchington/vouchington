@@ -52,6 +52,19 @@ header. Staff copyright queues expose a bounded first page of possible staydown 
 refresh. Native copyright filing and staff review remain tracked by the existing parity rows in
 `client-feature-parity.json`; this change does not claim new native UI evidence.
 
+## Classifier partition operations
+
+The staff engineering `POST /api/v1/psql/jobs` contract accepts an optional
+`classifierRange` with UTC `fromDate`, exclusive `toDate`, and `maxDefaultRows`
+for operator-created and operator-retired classifier result ranges. An omitted
+range keeps the crawl-only monthly action. Web exposes the range inputs and
+confirmation in the PostgreSQL operations page. The engineering operations
+surface is marked full for Swift and .NET in the feature matrix, so both native
+clients need dependent adoption of this request and confirmation flow before
+their engineering parity can include classifier ranges. No member-facing route
+or MCP tool changes. Native adoption is tracked in
+[vouchington-clients#497](https://github.com/vouchington/vouchington-clients/issues/497).
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending
@@ -244,3 +257,30 @@ site. Capable browsers prove possession of their registered key when renewing th
 bound sessions cannot use ordinary device-cookie renewal. Unsupported browsers retain unbound web
 sessions. Swift and .NET do not implement this browser protocol and keep their native token and
 attestation flows. Registration and renewal responses follow the external DBSC wire format.
+
+## Email verification codes
+
+Email sign-in and account email verification use the shared base32 code contract. Reauthentication
+codes are restricted to their requested flow, and requesting a replacement invalidates the older
+unused code for that same flow. Email reauthentication stays in the browser or device session that
+requested it; replacing one session’s challenge does not interrupt another session’s challenge.
+Web login links prefill the code and require deliberate submission.
+Swift and .NET OTP input, validation and deep-link presentation must adopt the producer contract;
+client implementation is dependent work and the producer lands first.
+
+## Fresh authentication for account settings
+
+Web prompts for fresh authentication before email-address changes, passkey or TOTP enrollment and
+removal, and provider connection changes, including Bluesky. The server consumes a separate proof for each mutation,
+revokes other sessions, and notifies the primary address captured before the change. Broker
+connections carry the proof at authorization initiation. An administrator must complete MFA in the
+current session before using staff authority; enrollment alone does not elevate that session.
+Fresh proof belongs to the requesting device and session. Users can prove control with their current
+primary email, authenticator, a selected owned passkey, or a fresh roundtrip through an already
+linked provider. Provider and passkey settings proofs do not add MFA assurance to that session.
+
+Swift and .NET must carry the fresh proof through the same settings actions and handle
+`MFA_REAUTH_REQUIRED` by prompting again. Native adoption requires the same provider and passkey proof options and recovery behavior.
+The producer lands first; existing native settings calls
+without a proof are rejected. Shared email request fixtures include the carrier, and native
+behavioral coverage must exercise successful changes, missing proofs, and revoked sessions.

@@ -121,5 +121,5 @@ describe('image upload worker', () => {
       await analysis.close()
       restoreStaydown()
     }
-  }, 15_000)
+  })
 })

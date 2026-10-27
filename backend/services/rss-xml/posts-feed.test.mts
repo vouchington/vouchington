@@ -33,7 +33,7 @@ describe('buildPostsRssFeed', () => {
       administrator: true,
     })
     adminSlugPrefix = `rss-admin-test-${randomHex()}`
-  }, 30_000)
+  })
 
   it('renders markdown to HTML in descriptions', async () => {
     const slug = `${uniqueSlugPrefix}-bold-${randomHex()}`
@@ -51,7 +51,7 @@ describe('buildPostsRssFeed', () => {
     // Must not contain raw markdown syntax
     expect(xml).not.toContain('**bold**')
     expect(xml).not.toContain('*italic*')
-  }, 30_000)
+  })
 
   it('renders links as HTML in descriptions', async () => {
     const slug = `${uniqueSlugPrefix}-link-${randomHex()}`
@@ -68,7 +68,7 @@ describe('buildPostsRssFeed', () => {
     expect(xml).toContain('Example')
     // Must not show raw markdown link syntax
     expect(xml).not.toContain('[Example](https://example.com)')
-  }, 30_000)
+  })
 
   it('does not contain script tags in descriptions', async () => {
     const slug = `${uniqueSlugPrefix}-xss-${randomHex()}`
@@ -87,7 +87,7 @@ describe('buildPostsRssFeed', () => {
     for (const desc of descriptions) {
       expect(desc).not.toContain('<script')
     }
-  }, 30_000)
+  })
 
   it('escapes HTML in non-admin post markdown', async () => {
     const slug = `${uniqueSlugPrefix}-escape-${randomHex()}`
@@ -105,7 +105,7 @@ describe('buildPostsRssFeed', () => {
     const matchingDesc = descriptions.find(d => d.includes('raw html'))
     expect(matchingDesc).toBeDefined()
     expect(matchingDesc).toContain('&lt;b&gt;')
-  }, 30_000)
+  })
 
   it('handles empty markdown', async () => {
     const slug = `${uniqueSlugPrefix}-empty-${randomHex()}`
@@ -121,7 +121,7 @@ describe('buildPostsRssFeed', () => {
     // Should still produce valid XML
     expect(xml).toContain('<?xml')
     expect(xml).toContain('<rss')
-  }, 30_000)
+  })
 
   it('does not proxy images (RSS readers need direct URLs)', async () => {
     const slug = `${uniqueSlugPrefix}-img-${randomHex()}`
@@ -138,7 +138,7 @@ describe('buildPostsRssFeed', () => {
     expect(matchingDesc).toBeDefined()
     expect(matchingDesc).not.toContain('/sideload/')
     expect(matchingDesc).toContain('https://example.com/photo.jpg')
-  }, 30_000)
+  })
 
   it('excludes deleted posts', async () => {
     const slug = `${uniqueSlugPrefix}-del-${randomHex()}`
@@ -157,7 +157,7 @@ describe('buildPostsRssFeed', () => {
 
     // Should not contain the deleted post content
     expect(xml).not.toContain('This post is deleted')
-  }, 30_000)
+  })
 
   it('produces valid RSS XML structure', async () => {
     const xml = await buildPostsRssFeed({ username: testUsername })
@@ -167,14 +167,14 @@ describe('buildPostsRssFeed', () => {
     expect(xml).toContain('<channel>')
     expect(xml).toContain('</channel>')
     expect(xml).toContain('</rss>')
-  }, 30_000)
+  })
 
   it('returns empty feed for non-existent user', async () => {
     const xml = await buildPostsRssFeed({ username: `nonexistent${randomHex()}` })
 
     expect(xml).toContain('<rss')
     expect(xml).not.toContain('<item>')
-  }, 30_000)
+  })
 
   it('rejects post types outside the RSS post catalog before querying', async () => {
     await expect(buildPostsRssFeed({ postType: 'story' })).rejects.toMatchObject({ status: 400 })
@@ -194,7 +194,7 @@ describe('buildPostsRssFeed', () => {
     const matchingDesc = descriptions.find(d => d.includes('example.com'))
     expect(matchingDesc).toBeDefined()
     expect(matchingDesc).toContain('nofollow')
-  }, 30_000)
+  })
 
   it('admin posts render raw HTML (allowHtml: true path)', async () => {
     const slug = `${adminSlugPrefix}-html-${randomHex()}`
@@ -213,7 +213,7 @@ describe('buildPostsRssFeed', () => {
     expect(matchingDesc).toContain('<b>admin bold</b>')
     // Sanitizer still runs: no script tags
     expect(matchingDesc).not.toContain('<script')
-  }, 30_000)
+  })
 
   it('admin post links have nofollow (sanitizer adds it after render)', async () => {
     const slug = `${adminSlugPrefix}-link-${randomHex()}`
@@ -230,5 +230,5 @@ describe('buildPostsRssFeed', () => {
     expect(matchingDesc).toBeDefined()
     // sanitizeRssHtml always adds nofollow regardless of nofollowLinks render option
     expect(matchingDesc).toContain('nofollow')
-  }, 30_000)
+  })
 })

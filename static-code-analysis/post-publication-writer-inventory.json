@@ -10,8 +10,7 @@
     "backend/services/posts/review-successions/mutations.mts",
     "backend/services/posts/images-rollback.mts",
     "backend/services/posts/update-story-post-agent-result.mts",
-    "backend/services/images/delete-rollback.mts",
-    "backend/services/images/delete-while-storage-locked.mts",
+    "backend/services/images/delete-page.mts",
     "backend/services/posts/archive.mts",
     "backend/services/posts/post-ratings.mts",
     "backend/services/posts/post-ratings/delete.mts",
@@ -62,6 +61,10 @@
     "backend/services/rss-feed-items/reconcile-categories.mts"
   ],
   "excluded_writers": [
+    {
+      "path": "backend/services/data-retention/cleanup-histories-queries.mts",
+      "reason": "deletes superseded RSS setting history while retaining each current feed decision; it does not change projected feed publication state"
+    },
     {
       "path": "backend/services/data-retention/cleanup-moderation-delete-sanctions.mts",
       "reason": "deletes only lifted user suspensions after twelve months; active suspensions that affect publication remain untouched"

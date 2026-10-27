@@ -72,6 +72,7 @@
     "@services/media-delivery-safety": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/messaging": "workspace:^",
+    "@services/mfa": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "@services/modmail": "workspace:^",
     "@services/my": "workspace:^",
@@ -118,7 +119,7 @@
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",
-    "valkyries": "^0.12.1"
+    "valkyries": "^0.13.0"
   },
   "devDependencies": {
     "@services/openai-agents": "workspace:^",

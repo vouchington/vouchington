@@ -5,9 +5,9 @@
  * file, so no re-export is needed for external consumers.
  */
 
-import { setTimeout as delay } from 'node:timers/promises'
-import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { runTestMembershipActionWithLockNotice } from '../membership-user-lock-notice.mts'
 import type { MembershipStatus } from '@voucha/types/entities/membership'
 
 // The owning service's change-recording helper is genuine business logic that this package must
@@ -114,52 +114,32 @@ export async function runTestActionAfterMembershipUserLock<T>(
   userId: string,
   startAction: () => Promise<T>,
 ): Promise<{ releasedAt: Date; result: T }> {
-  const locked = Promise.withResolvers<void>()
-  const release = Promise.withResolvers<void>()
-  const lockTransaction = holdMembershipUserLock()
-
-  async function holdMembershipUserLock(): Promise<void> {
-    await using transaction = await beginTransaction()
-    const query = transaction
-    await query(sql`/* runTestActionAfterMembershipUserLock:lock */
-        SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
-    locked.resolve()
-    await release.promise
-    await transaction.commit()
-  }
-  await locked.promise
-  const actionOutcome = Promise.allSettled([Promise.resolve().then(startAction)] as const)
-  let releasedAt: Date
-  try {
-    await waitForMembershipUserLock(actionOutcome)
-    await delay(100)
-    releasedAt = new Date()
-  } finally {
-    release.resolve()
-    await lockTransaction
-  }
-  const [outcome] = await actionOutcome
-  if (outcome.status === 'rejected') throw outcome.reason
-  return { releasedAt, result: outcome.value }
-}
-
-async function waitForMembershipUserLock(
-  actionOutcome: Promise<[PromiseSettledResult<unknown>]>,
-): Promise<void> {
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const { rows } = await write<{ blocked: boolean }>(
-      sql`/* waitForMembershipUserLock */ SELECT EXISTS (
-        SELECT 1 FROM pg_stat_activity
-        WHERE pid <> pg_backend_pid() AND state = 'active' AND wait_event_type = 'Lock'
-          AND query LIKE '%/* expireElapsedMemberships: lock user */%'
-      ) AS blocked`,
-    )
-    const [outcome] = await Promise.race([actionOutcome, Promise.resolve([undefined] as const)])
-    if (outcome?.status === 'rejected') throw outcome.reason
-    if (outcome?.status === 'fulfilled')
-      throw new Error('Membership action completed before waiting for the recipient lock')
-    if (rows[0]?.blocked) return
-    await delay(10)
-  }
-  throw new Error('Membership action did not wait for the recipient lock')
+  await using holder = await beginTransaction()
+  await holder(sql`/* runTestActionAfterMembershipUserLock:lock */
+    SELECT id FROM users WHERE id = ${userId} FOR UPDATE`)
+  const { rows } = await holder<{ transaction_id: string }>(sql`
+    /* runTestActionAfterMembershipUserLock:identity */
+    SELECT pg_current_xact_id()::text AS transaction_id
+  `)
+  const transactionId = rows[0]?.transaction_id
+  if (!transactionId) throw new Error('Membership holder has no transaction ID')
+  let releasedAt: Date | undefined
+  let releasePromise: Promise<void> | undefined
+  const releaseHolder = () =>
+    (releasePromise ??= (async () => {
+      const { rows: timestamps } = await holder<{ released_at: Date }>(sql`
+      /* runTestActionAfterMembershipUserLock:release */
+      SELECT clock_timestamp() AS released_at
+    `)
+      releasedAt = timestamps[0]?.released_at
+      await holder.commit()
+    })())
+  const result = await runTestMembershipActionWithLockNotice({
+    transactionId,
+    userId,
+    startAction,
+    releaseHolder,
+  })
+  if (!releasedAt) throw new Error('Membership holder did not report its release lower bound')
+  return { releasedAt, result }
 }

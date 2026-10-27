@@ -27,6 +27,7 @@ type BeginOAuthAuthorizationBody = {
   purpose: 'authenticate' | 'connect'
   callback_mode: 'web' | 'native'
   completion_proof_challenge?: string
+  re_auth_token?: string
 }
 
 app.route('/api/v1/auth/oauth/providers').get(async (ctx: Context) => {
@@ -85,6 +86,7 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
         ? body.completion_proof_challenge
         : undefined,
     currentUserId: currentUser?.id,
+    reAuthToken: body.re_auth_token,
     deviceId: sessionData.did,
     sessionId: sessionData.sid,
     expectedOrigin: getExpectedOrigin(ctx.req),

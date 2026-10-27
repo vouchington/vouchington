@@ -34,7 +34,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
       pathname: '/ref/%',
     })
     referralProgramId = fixture.referralProgramId
-  }, 30_000)
+  })
 
   it('official links appear as priority_group 0 and is_official true', async () => {
     const suffix = createRandomString(8)
@@ -59,7 +59,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
     expect(allLinks.links.find(item => item.id === link.id)?.referral_program_id).toBe(
       referralProgramId,
     )
-  }, 30_000)
+  })
 
   it('official links appear before personal links', async () => {
     const suffix = createRandomString(8)
@@ -95,7 +95,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
     expect(lastOfficialIdx).toBeGreaterThanOrEqual(0)
     expect(firstNonOfficialIdx).toBeGreaterThanOrEqual(0)
     expect(lastOfficialIdx).toBeLessThan(firstNonOfficialIdx)
-  }, 30_000)
+  })
 
   it('personal links still appear in groups 1-5', async () => {
     const suffix = createRandomString(8)
@@ -119,7 +119,7 @@ describe('getPrioritizedReferralLinks — official links', () => {
     expect(personalLink!.priority_group).toBeGreaterThanOrEqual(1)
     expect(personalLink!.priority_group).toBeLessThanOrEqual(5)
     expect(personalLink!.referral_program_id).toBe(referralProgramId)
-  }, 30_000)
+  })
 
   it('collectUsers does not fail for official links (user_id is not null for voucha)', async () => {
     const suffix = createRandomString(8)
@@ -140,5 +140,5 @@ describe('getPrioritizedReferralLinks — official links', () => {
       // user_id is set to voucha's actual user id (not null)
       expect(link.user_id).toBeTruthy()
     }
-  }, 30_000)
+  })
 })

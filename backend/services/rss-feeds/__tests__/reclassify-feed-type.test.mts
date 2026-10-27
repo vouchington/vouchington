@@ -32,7 +32,7 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
 
     const unchanged = await getRssFeedById(feed.id)
     expect(unchanged!.feed_type).toBe('video')
-  }, 30_000)
+  })
 
   it('updates feed_type to video for a YouTube channel URL when current type differs', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -62,7 +62,7 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
 
     const updated = await getRssFeedById(feed.id)
     expect(updated!.feed_type).toBe('video')
-  }, 30_000)
+  })
 
   it('filters out items with unknown or undefined media_type when classifying', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -88,7 +88,7 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
 
     const updated = await getRssFeedById(feed.id)
     expect(updated!.feed_type).toBe('podcast')
-  }, 30_000)
+  })
 
   it('does not update when the classified type matches the current feed_type', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -114,5 +114,5 @@ describe('reclassifyRssFeedTypeIfNeeded', () => {
 
     const unchanged = await getRssFeedById(feed.id)
     expect(unchanged!.feed_type).toBe('article')
-  }, 30_000)
+  })
 })

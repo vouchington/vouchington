@@ -7,17 +7,26 @@ import { encryptSecret } from '@modules/token-secrets'
 
 export const TEST_TOTP_SECRET = 'JBSWY3DPEHPK3PXP' // well-known test secret // gitleaks:allow
 
+export function generateTestTotpSecret(): string {
+  return new OTPAuth.Secret({ size: 20 }).base32
+}
+
 // An explicit `id` lets tests engineer tie-key (equal-timestamp) fixtures: `created_at` on
 // user_totp_authenticators is GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, so it can
 // only be controlled by crafting the UUIDv7 id itself (matching `msecs`, differing tail).
-export async function insertTestTotpAuthenticator(userId: string, suffix: string, id?: string) {
+export async function insertTestTotpAuthenticator(
+  userId: string,
+  suffix: string,
+  id?: string,
+  secret: string = TEST_TOTP_SECRET,
+) {
   const { rows } = await write(
     allowUnannotatedQuery(sql`
     INSERT INTO user_totp_authenticators (id, user_id, secret_ciphertext, name, verified_at)
     VALUES (
       ${id ?? v7()},
       ${userId},
-      ${encryptSecret(TEST_TOTP_SECRET, `totp-secret:${userId}`)},
+      ${encryptSecret(secret, `totp-secret:${userId}`)},
       ${`Test Authenticator ${suffix}`},
       NOW()
     )
@@ -63,9 +72,9 @@ export async function totpAuthenticatorExists(id: string): Promise<boolean> {
   return rows.length > 0
 }
 
-export function generateTestTotpCode(): string {
+export function generateTestTotpCode(secret: string = TEST_TOTP_SECRET): string {
   const totp = new OTPAuth.TOTP({
-    secret: OTPAuth.Secret.fromBase32(TEST_TOTP_SECRET),
+    secret: OTPAuth.Secret.fromBase32(secret),
     algorithm: 'SHA1',
     digits: 6,
     period: 30,

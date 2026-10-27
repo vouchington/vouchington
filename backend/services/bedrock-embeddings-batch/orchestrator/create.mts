@@ -19,13 +19,27 @@ import {
 } from './persist-batch.mts'
 import { getBedrockBatchRoutingEnvironment } from './routing-environment.mts'
 
+/** A prepared batch was never submitted; its original creation job may safely be retried. */
+export class BatchCreationDeferredError extends Error {
+  readonly reason: string
+  readonly delayMs: number
+
+  constructor(reason: string, delayMs: number) {
+    super(`Embedding batch creation deferred: ${reason}`)
+    this.reason = reason
+    this.delayMs = delayMs
+  }
+}
+
 export const createBatch = async (
   filePath: string,
   jobType: BatchJobType,
   entityCount: number,
   entityIdsFilePath: string,
-  metadata?: BatchMetadata,
-  source: BatchSource = {},
+  metadata: BatchMetadata | undefined,
+  source: BatchSource | undefined,
+  beforeSubmit: (preparingBatchId: string) => Promise<void>,
+  isLeaseHeld: () => boolean,
 ): Promise<string> => {
   const batchId = mintUUIDv7()
   const inputKey = `bedrock-embeddings-input/${batchId}/input.jsonl`
@@ -46,11 +60,15 @@ export const createBatch = async (
       entityCount,
       entityIdsFilePath,
       data: batchDocument('Preparing', inputS3Uri, outputS3Uri, batchMetadata),
-      urlId: source.urlId ?? null,
-      crawlId: source.crawlId ?? null,
+      urlId: source?.urlId ?? null,
+      crawlId: source?.crawlId ?? null,
     })
     batchPersisted = true
     await uploadBatchInput(filePath, inputKey)
+    await beforeSubmit(batchId)
+    // This synchronous check is adjacent to the external submit call. Once that call starts,
+    // ownership loss must not interrupt receipt persistence.
+    if (!isLeaseHeld()) throw new BatchCreationDeferredError('lease_lost', 0)
     const job = await createBedrockBatchJob(batchId, inputS3Uri, outputS3Uri, routingEnvironment)
     submittedJobArn = job.jobArn
     await markBatchSubmittedForPolling(

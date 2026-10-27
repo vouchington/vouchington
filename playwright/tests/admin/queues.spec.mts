@@ -1,9 +1,9 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 test.describe('Queue Dashboard', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
     await navigateTo(page, '/admin/queues')
@@ -158,7 +158,7 @@ test.describe('Queue Dashboard', () => {
 })
 
 test.describe('Queue Dashboard — kill switch error states', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('shows retry button for AI Agents section when queue stats endpoint fails', async ({
     page,

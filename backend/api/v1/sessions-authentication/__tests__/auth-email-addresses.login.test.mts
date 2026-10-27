@@ -22,7 +22,7 @@ import {
   EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
   EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD,
   EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,
-} from '@services/users/authentication-flows'
+} from '@services/users/email-auth-rate-limits'
 import { sanitizeEmailAddress } from '@services/email-address-validator'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'

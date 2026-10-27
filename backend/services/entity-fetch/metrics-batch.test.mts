@@ -83,50 +83,46 @@ describe('metrics-batch', () => {
     }
   })
 
-  it(
-    'getUserMetricsByAnyBatch excludes non-public authored posts from public counts',
-    { timeout: 30_000 },
-    async () => {
-      const fixture = await createUserProfileFixture({
-        suffix: `private-${randomUUID().slice(0, 12)}`,
-      })
+  it('getUserMetricsByAnyBatch excludes non-public authored posts from public counts', async () => {
+    const fixture = await createUserProfileFixture({
+      suffix: `private-${randomUUID().slice(0, 12)}`,
+    })
 
-      const privateDiscussion = await createTestPost({
-        user: fixture.owner,
-        post_type: 'discussion',
-        title: `Private discussion ${randomUUID().slice(0, 12)}`,
-        markdown: 'Hidden discussion',
-        broadcast: 'users',
-      })
+    const privateDiscussion = await createTestPost({
+      user: fixture.owner,
+      post_type: 'discussion',
+      title: `Private discussion ${randomUUID().slice(0, 12)}`,
+      markdown: 'Hidden discussion',
+      broadcast: 'users',
+    })
 
-      await createTestPost({
-        user: fixture.owner,
-        post_type: 'comment',
-        parent_post_id: privateDiscussion!.id,
-        root_post_id: privateDiscussion!.id,
-        markdown: 'Hidden comment',
-      })
+    await createTestPost({
+      user: fixture.owner,
+      post_type: 'comment',
+      parent_post_id: privateDiscussion!.id,
+      root_post_id: privateDiscussion!.id,
+      markdown: 'Hidden comment',
+    })
 
-      const privateReviewTopic = await createTestTopic({ user: fixture.owner })
+    const privateReviewTopic = await createTestTopic({ user: fixture.owner })
 
-      await createPost(fixture.owner, WEB_PROVENANCE, {
-        post_type: 'review',
-        title: `Private review ${randomUUID().slice(0, 12)}`,
-        markdown:
-          'This product has been a reliable part of my daily routine for several months now. The quality is consistently high and the value for money is excellent. I would recommend it to anyone looking for a dependable solution.',
-        broadcast: 'users',
-        review_topic_ratings: [{ topic_id: privateReviewTopic.id, rating: 4 }],
-      })
-      const [metrics] = await getUserMetricsByAnyBatch([fixture.owner.id])
+    await createPost(fixture.owner, WEB_PROVENANCE, {
+      post_type: 'review',
+      title: `Private review ${randomUUID().slice(0, 12)}`,
+      markdown:
+        'This product has been a reliable part of my daily routine for several months now. The quality is consistently high and the value for money is excellent. I would recommend it to anyone looking for a dependable solution.',
+      broadcast: 'users',
+      review_topic_ratings: [{ topic_id: privateReviewTopic.id, rating: 4 }],
+    })
+    const [metrics] = await getUserMetricsByAnyBatch([fixture.owner.id])
 
-      expect(metrics).toMatchObject({
-        id: fixture.owner.id,
-        count: {
-          reviews: 1,
-          discussions: 1,
-          comments: 1,
-        },
-      })
-    },
-  )
+    expect(metrics).toMatchObject({
+      id: fixture.owner.id,
+      count: {
+        reviews: 1,
+        discussions: 1,
+        comments: 1,
+      },
+    })
+  })
 })

@@ -5,17 +5,10 @@ import type { JobOptions } from 'glide-mq'
 export const QUEUE_NAME = 'psql'
 export const PRIORITY_DEFAULT = 10
 
-export const DATA_RETENTION_RETRY_OPTIONS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
-}
-export const DATA_RETENTION_ORDERING = { key: 'data_retention', concurrency: 1 }
-
 // Job names
 export const CREATE_PARTITIONS_JOB_NAME = 'createPartitions'
 export const CLEANUP_PARTITIONS_JOB_NAME = 'cleanupPartitions'
 export const DATA_RETENTION_JOB_NAME = 'dataRetentionCleanup'
-export const MEMBERSHIP_RETENTION_CONTINUATION_JOB_NAME = 'continueMembershipOperationalCleanup'
 export const REFRESH_MATERIALIZED_VIEW_JOB_NAME = 'refreshMaterializedView'
 export const RECONCILE_VOTE_DRIFT_JOB_NAME = 'reconcileVoteDrift'
 

@@ -103,12 +103,9 @@ export function enqueueReferralSignupNotification(
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueReferralClickNotification(
-  referrerId: string,
-  landingUrl: string,
-): Promise<void> {
+export function enqueueReferralClickNotification(referrerId: string): Promise<void> {
   return awaitReportedEnqueueAdmission(() =>
-    enqueueReferralClickNotificationJob({ referrerId, landingUrl }, {
+    enqueueReferralClickNotificationJob({ referrerId }, {
       deduplication: {
         id: `processReferralClickNotification__${referrerId}`,
         mode: 'debounce',

@@ -105,7 +105,7 @@ describe('create.admin-bypass', () => {
     expect(await findPostCreatedJobInNonFailedState(post.id)).toBeDefined()
     expect(
       await getClassifierRunRequestFacts(post.id, COMMUNITY_MODERATION_CLASSIFIER_SLUG),
-    ).toMatchObject([{ run_id: null, no_work_at: null, stale_at: null }])
+    ).toMatchObject([{ run_identity_id: null, no_work_at: null, stale_at: null }])
     const dispatcherJobs = await readClassifierRunDispatcherJobsForTest(post.id)
     expect(
       dispatcherJobs.filter(

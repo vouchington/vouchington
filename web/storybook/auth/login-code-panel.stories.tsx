@@ -54,8 +54,11 @@ export const EnterCode: Story = {
     const canvas = within(canvasElement)
     const input = canvas.getAllByRole('textbox')[0]!
 
-    await userEvent.type(input, 'a1b2c3d4')
-    await expect(submitCode).toHaveBeenCalledWith('A1B2C3D4')
+    await userEvent.type(input, 'a2b3c4d5e6')
+    const submit = canvas.getByRole('button', { name: 'Log in' })
+    await expect(submit).toBeEnabled()
+    await userEvent.click(submit)
+    await expect(submitCode).toHaveBeenCalledWith('A2B3C4D5E6')
   },
 }
 

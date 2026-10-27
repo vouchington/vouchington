@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
+import { insertTestTotpAuthenticator } from '@voucha/test-helpers/entities/totp'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 import { upsertSystemUser } from '@services/users/system-users'
 
@@ -16,7 +17,8 @@ describe('official-links', () => {
     await upsertSystemUser('voucha', 'official')
 
     regularUser = await createTestUserDirect()
-    adminUser = await createTestUserDirect()
+    adminUser = await createTestUserDirect({ withEmail: true })
+    await insertTestTotpAuthenticator(adminUser!.id, 'official-links-admin')
     await addUserRole(adminUser!.id, 'administrator')
 
     const fixture = await createReferralProgramFixture({ createdById: regularUser!.id })
@@ -36,7 +38,7 @@ describe('official-links', () => {
 
     it('GET /api/v1/referral-programs/:id/official-referral-links returns 200 for admin', async () => {
       const request = createRequest()
-      await request.authenticateAs(adminUser!)
+      await request.authenticateAsMfa(adminUser!)
 
       const res = await request
         .get(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
@@ -56,7 +58,7 @@ describe('official-links', () => {
 
     it('rejects malformed official-link bodies without creating a link', async () => {
       const request = createRequest()
-      await request.authenticateAs(adminUser!)
+      await request.authenticateAsMfa(adminUser!)
 
       const before = await request
         .get(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
@@ -76,7 +78,7 @@ describe('official-links', () => {
 
     it('POST /api/v1/referral-programs/:id/official-referral-links returns 201 for admin', async () => {
       const request = createRequest()
-      await request.authenticateAs(adminUser!)
+      await request.authenticateAsMfa(adminUser!)
 
       const res = await request
         .post(`/api/v1/referral-programs/${referralProgramId}/official-referral-links`)
@@ -112,7 +114,7 @@ describe('official-links', () => {
 
     it('POST /api/v1/referral-programs/:id/official-referral-links returns 409 on duplicate URL', async () => {
       const request = createRequest()
-      await request.authenticateAs(adminUser!)
+      await request.authenticateAsMfa(adminUser!)
 
       const duplicateUrl = `https://${testHostname}/ref/duplicate-${Date.now()}`
       await request
@@ -135,14 +137,14 @@ describe('official-links', () => {
 
     it('DELETE /api/v1/official-referral-links/:linkId returns 204 for admin', async () => {
       const request = createRequest()
-      await request.authenticateAs(adminUser!)
+      await request.authenticateAsMfa(adminUser!)
 
       await request.delete(`/api/v1/official-referral-links/${createdLinkId}`).expect(204)
     })
 
     it('DELETE /api/v1/official-referral-links/:linkId returns 404 for missing link', async () => {
       const request = createRequest()
-      await request.authenticateAs(adminUser!)
+      await request.authenticateAsMfa(adminUser!)
 
       await request
         .delete('/api/v1/official-referral-links/00000000-0000-0000-0000-000000000000')

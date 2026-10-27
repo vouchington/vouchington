@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS user_totp_authenticators (
   secret_ciphertext TEXT NOT NULL,
   name TEXT NOT NULL CHECK (char_length(name) >= 1 AND char_length(name) <= 100 AND TRIM(name) = name),
   verified_at TIMESTAMPTZ,
+  last_used_time_step BIGINT CHECK (last_used_time_step >= 0),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -36,6 +37,7 @@ COMMENT ON TABLE user_totp_authenticators IS 'TOTP authenticator apps registered
 COMMENT ON COLUMN user_totp_authenticators.user_id IS 'The user who registered this TOTP authenticator.';
 COMMENT ON COLUMN user_totp_authenticators.secret_ciphertext IS 'Encrypted TOTP shared secret ciphertext used to generate and verify time-based one-time passwords.';
 COMMENT ON COLUMN user_totp_authenticators.name IS 'User-chosen display name for this authenticator (1-100 chars, trimmed).';
+COMMENT ON COLUMN user_totp_authenticators.last_used_time_step IS 'The greatest successfully consumed TOTP counter, preventing reuse across authentication flows.';
 COMMENT ON COLUMN user_totp_authenticators.verified_at IS 'When the user first verified a code from this authenticator, confirming setup is complete. NULL means setup is incomplete and the authenticator is not active.';
 
 -- ==========================================================================

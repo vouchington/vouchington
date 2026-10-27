@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { createTestAuthCookies } from './auth.mts'
+import { createTestAuthCookies, createTestMfaAuthCookies } from './auth.mts'
 import type { WebIntegrationClient } from './client.mts'
 import { TEST_USER_ID, PLAYWRIGHT_CHROME_UA } from './constants.mts'
 
@@ -37,6 +37,14 @@ export async function authenticateTestUserWithDirectSessionTokens(
   client: WebIntegrationClient,
 ): Promise<void> {
   const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)
+  client.setCookie('dt', authCookies.dt!)
+  client.setCookie('st', authCookies.st!)
+}
+
+export async function authenticateAdminWithVerifiedMfa(
+  client: WebIntegrationClient,
+): Promise<void> {
+  const authCookies = await createTestMfaAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)
   client.setCookie('dt', authCookies.dt!)
   client.setCookie('st', authCookies.st!)
 }

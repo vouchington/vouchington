@@ -232,16 +232,14 @@ describe('processMembershipJob', () => {
     try {
       await processMembershipJob(job('dispatchMembershipRefundReconciliation'))
 
-      await expect
-        .poll(async () => readAllQueueJobs(memberships), { timeout: 5_000 })
-        .toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              data: expect.objectContaining({ operationId: operation.id }),
-              name: 'reconcileMembershipRefundOperation',
-            }),
-          ]),
-        )
+      expect(await readAllQueueJobs(memberships)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            data: expect.objectContaining({ operationId: operation.id }),
+            name: 'reconcileMembershipRefundOperation',
+          }),
+        ]),
+      )
     } finally {
       await cleanupRefundReconciliationOperationsForTest([operation.id])
       await memberships.obliterate({ force: true })

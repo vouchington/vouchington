@@ -17,7 +17,11 @@ const originalAppleNativeClientIds = process.env.APPLE_NATIVE_CLIENT_IDS
 process.env.APPLE_CLIENT_ID = appleClientId
 process.env.APPLE_NATIVE_CLIENT_IDS = nativeAppleClientId
 
-let upsertAppleAccount: typeof import('./index.mts').upsertAppleAccount
+let prepareAppleAccount: typeof import('./index.mts').prepareAppleAccount
+
+async function upsertAppleAccount(...args: Parameters<typeof prepareAppleAccount>) {
+  return (await prepareAppleAccount(...args)).persist(args[3])
+}
 
 describe('apple oauth', () => {
   beforeEach(async () => {
@@ -28,7 +32,7 @@ describe('apple oauth', () => {
       return { ...actual, fetch: fetchSpy }
     })
     const service = await import('./index.mts')
-    upsertAppleAccount = service.upsertAppleAccount
+    prepareAppleAccount = service.prepareAppleAccount
   })
 
   afterAll(() => {

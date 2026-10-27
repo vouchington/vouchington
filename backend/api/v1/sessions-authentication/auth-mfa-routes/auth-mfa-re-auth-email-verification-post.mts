@@ -1,9 +1,9 @@
 import type { Context } from '@jongleberry/api-server'
 import { sanitizeEmailAddress } from '@services/email-address-validator'
-import { createReAuthToken } from '@services/mfa'
 import { getPrimaryEmailAddress } from '@services/my/email-addresses'
-import { verifyEmailAddressLoginToken } from '@services/users/authentication'
+import { completeEmailReAuth } from '@services/users/email-reauth'
 import { assertNotSuspended } from '@services/users/suspension'
+import { assertEmailTokenVerificationAllowed } from '@services/users/email-auth-rate-limits'
 import app from '../../../app.mts'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
@@ -16,13 +16,19 @@ app.route('/api/v1/auth/mfa/re-auth/email/verification').post(async (ctx: Contex
   ctx.assert(body.code, 422, 'code is required')
 
   // Verify against the user's own primary email — never a caller-supplied address.
-  const rawEmail = await getPrimaryEmailAddress(currentUser.id)
+  const [rawEmail, session] = await Promise.all([
+    getPrimaryEmailAddress(currentUser.id),
+    ctx.getSessionTokenData(),
+  ])
   ctx.assert(rawEmail, 422, 'No email address associated with this account')
 
   const emailAddress = sanitizeEmailAddress(rawEmail)
-  const result = await verifyEmailAddressLoginToken(emailAddress, body.code)
-  if (!result.success) ctx.throw(401, 'Invalid or expired verification code')
-
-  const token = await createReAuthToken(currentUser.id)
+  await assertEmailTokenVerificationAllowed({
+    emailAddress,
+    ip: ctx.ip,
+    deviceId: session.did,
+    sessionId: session.sid,
+  })
+  const token = await completeEmailReAuth(currentUser.id, session, emailAddress, body.code)
   ctx.json({ re_auth_token: token })
 })

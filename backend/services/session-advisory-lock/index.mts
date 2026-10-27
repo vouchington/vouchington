@@ -1,4 +1,3 @@
-// no-mistakes-disable-file postgres-required-predicates: this protocol executes caller-supplied advisory lock and unlock statements, not relation reads
 import { advisoryLockPool } from '@data-stores/psql'
 import onError from '@modules/on-error'
 

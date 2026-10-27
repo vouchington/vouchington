@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '../../helpers/test.mts'
 import { navigateTo, scrollToLoadMore } from 'vouchington-tooling/playwright'
-import { loginAsUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser, loginAsUser } from '../../helpers/auth.mts'
 import { createCopyrightCaseFixture } from '../../helpers/create-copyright-case-fixture.mts'
 import { createParsedCopyrightEmailIntake } from '../../../backend/test-helpers/copyright-email-intake-fixtures.mts'
 
@@ -53,7 +53,7 @@ test('accepted case links retain poster scope in appeal and statutory counter-no
 
 test('staff review rationale hydrates for a genuine pending restriction', async ({ page }) => {
   const fixture = await createCopyrightCaseFixture()
-  await loginAsUser(page, fixture.moderator.id)
+  await loginAsMfaUser(page, fixture.moderator.id)
   await navigateTo(page, '/copyright/review-queue')
   const item = page
     .getByRole('article')
@@ -78,7 +78,7 @@ test('email review loads real parsed evidence and hydrates the private rationale
 }) => {
   const fixture = await createCopyrightCaseFixture()
   const intake = await createParsedCopyrightEmailIntake()
-  await loginAsUser(page, fixture.moderator.id)
+  await loginAsMfaUser(page, fixture.moderator.id)
   await navigateTo(page, '/copyright/email-review')
   const item = page.getByRole('button', { name: `Initial intake ${intake.id}`, exact: true })
   await revealOwnedQueueItem(page, item, '/api/v1/copyright-email-intakes/review-queue')

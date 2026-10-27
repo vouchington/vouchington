@@ -12,6 +12,7 @@ import {
 } from '../../test-helpers/schema-growth-test-policies.mts'
 import { PARTITION_POLICIES, UNBOUNDED_UNPARTITIONED_TABLES } from './schema-growth-registry.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
+import { CLASSIFIER_RETENTION_POLICIES } from '../../test-helpers/schema-growth-classifier-retention.mts'
 
 const uuidv7Identity = {
   idPolicy: 'uuidv7' as SchemaIdPolicy,
@@ -221,13 +222,15 @@ describe('schema growth registry', () => {
     })
     expect(PARTITION_POLICIES.get('topic_classifier_results')).toMatchObject({
       strategy: 'RANGE',
-      key: 'topic_id',
+      key: 'batch_id',
       children: 'default',
+      retentionOwner: 'operatorPartitionDrop',
     })
     expect(PARTITION_POLICIES.get('classifier_decision_batch_candidates')).toMatchObject({
       strategy: 'RANGE',
       key: 'batch_id',
       children: 'default',
+      retentionOwner: 'operatorPartitionDrop',
     })
     expect(PARTITION_POLICIES.get('story_classifier_results')).toMatchObject({
       strategy: 'RANGE',
@@ -240,6 +243,10 @@ describe('schema growth registry', () => {
       children: 'default',
     })
     expect(UNBOUNDED_UNPARTITIONED_TABLES.has('classifier_candidate_thresholds')).toBe(true)
+    expect(CLASSIFIER_RETENTION_POLICIES.get('classifier_decision_batches')).toMatchObject({
+      minimumDays: 90,
+      owner: 'data-retention',
+    })
   })
 
   it('classifies RSS feed item identity and content storage separately', () => {

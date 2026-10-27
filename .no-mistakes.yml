@@ -1752,13 +1752,8 @@ rules:
     # Remaining polling violations are tracked by #2145.
     exclude:
       - 'backend/services/elections-votes/entity-relation/publication-capture.test.mts'
-      - 'backend/services/elections-votes/entity-relation/vote-stats-batch-locks.test.mts'
       - 'backend/services/elections-votes/entity-relation/vote-stats-publication-lock.test.mts'
-      - 'backend/services/elections-votes/shared/request-lock.test.mts'
-      - 'backend/services/moderation-analytics/moderation-transparency-rollup-lifecycle.test.mts'
-      - 'backend/test-helpers/election-vote-stats.test.mts'
       - 'backend/test-helpers/polling.test.mts'
-      - 'backend/workers/memberships/processors/process-job.test.mts'
     options:
       roots:
         - vitest: true
@@ -1801,10 +1796,6 @@ rules:
     # Remaining polling violations are tracked by #2145.
     exclude:
       - 'backend/test-helpers/community-restriction-writer-race.mts'
-      - 'backend/test-helpers/election-vote-stats-jobs.mts'
-      - 'backend/test-helpers/election-vote-stats.mts'
-      - 'backend/test-helpers/election-vote-stats.test.mts'
-      - 'backend/test-helpers/entities/memberships-lifecycle.mts'
       - 'backend/test-helpers/entities/memberships/locks.mts'
       - 'backend/test-helpers/entities/memberships/locks/action-while-user-locked.mts'
       - 'backend/test-helpers/entities/memberships/locks/stripe-catalog-fk-hold.mts'
@@ -1812,8 +1803,6 @@ rules:
       - 'backend/test-helpers/polling.test.mts'
       - 'backend/test-helpers/post-delegated-fk-concurrency.mts'
       - 'backend/test-helpers/postgres-lock-wait.mts'
-      - 'backend/test-helpers/services/jwt-session/concurrent-user-agent.mts'
-      - 'backend/test-helpers/services/posts/search/test-support.mts'
     options:
       roots:
         - glob:
@@ -2648,6 +2637,33 @@ rules:
         - files: [web/package.json]
           requiredKeys: [devDependencies.jsdom]
 
+  - name: Playwright diagnostics survive failed or retried runs
+    rule: structured-config-policy
+    scope: repository
+    options:
+      policies:
+        - files: [.github/workflows/tests-playwright.yml]
+          requiredKeys: [jobs.playwright-tests.steps]
+          valueAssertions:
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload JUnit test results
+                if: '${{ !cancelled() }}'
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload Playwright test-results (traces, screenshots, videos)
+                if: "${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload wrangler logs
+                if: "${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
+
   - name: workspace package dependency graph has no cycles
     rule: workspace-package-cycles
     scope: repository
@@ -2793,9 +2809,6 @@ rules:
   - name: git identity is not mutated by repo scripts
     rule: no-git-identity-mutation
     scope: repository
-    options:
-      excludePaths:
-        - .github/workflows/runner-policy.test.mts
 
   - name: shell scripts pass shellcheck
     rule: shellcheck-runner
@@ -3084,6 +3097,8 @@ rules:
         backend-openai: [backend-credentialed]
         backend-openrouter: [backend-credentialed]
         backend-lightpanda: [backend-credentialed]
+        backend-evals-openrouter: [backend-credentialed]
+        backend-evals-anthropic: [backend-credentialed]
         web: [web]
         web-storybook: [storybook]
         web-storybook-browser: [storybook]
@@ -4235,6 +4250,10 @@ rules:
         # 39276118528 was cancelled at the 10m job ceiling while the plan step is allowed 10m.
         - job: '.github/workflows/explain-analyze.yml#explain-analyze'
           maxMinutes: 20
+        # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
+        # allowed 4m each after the shared backend setup.
+        - job: '.github/workflows/evals-backend.yml#backend-evals'
+          maxMinutes: 20
 
   - name: tracked TypeScript files belong to a tsconfig program
     rule: tsconfig-file-coverage
@@ -4275,10 +4294,7 @@ rules:
     rule: github-actions-test-timeout-literals
     scope: repository
     options:
-      allow:
-        - file: .github/workflows/docs-publish.test.mts
-          text: "'timeout-minutes': 9,"
-          reason: The exact job timeout is part of the immutable documentation-artifact contract.
+      allow: []
 
   - name: setup-aws steps pair caller and nested timeouts
     rule: github-actions-action-timeout-pair
@@ -4336,6 +4352,7 @@ rules:
           ]
         .github/workflows/dispatch-completed-deploy.yml: [dispatch]
         .github/workflows/docs-publish.yml: [publish]
+        .github/workflows/evals-backend.yml: [backend-evals, prepare-postgres]
         .github/workflows/explain-analyze.yml: [explain-analyze, prepare-postgres]
         .github/workflows/fix-dependabot.yml:
           [
@@ -4443,6 +4460,8 @@ rules:
       requiredDirectEdges:
         - - '.github/workflows/explain-analyze.yml#prepare-postgres'
           - '.github/workflows/explain-analyze.yml#explain-analyze'
+        - - '.github/workflows/evals-backend.yml#prepare-postgres'
+          - '.github/workflows/evals-backend.yml#backend-evals'
         - - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
           - '.github/workflows/checks-backend-smoke.yml#smoke'
         - - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
@@ -4483,6 +4502,7 @@ rules:
           - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
           - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
           - '.github/workflows/explain-analyze.yml#prepare-postgres'
+          - '.github/workflows/evals-backend.yml#prepare-postgres'
         .github/workflows/checks-backend-smoke.yml:
           - '.github/workflows/backend.yml#backend-smoke'
         .github/workflows/checks-static.yml:
@@ -4573,6 +4593,7 @@ rules:
         .github/workflows/cancel-replaced-merge-group-runs.yml: 'the reusable callee owns the concurrency group'
         .github/workflows/cleanup-artifacts.yml: 'the reusable callee owns the concurrency group'
         .github/workflows/pnpm-dedupe.yml: 'the reusable callee owns the concurrency group'
+        .github/workflows/evals-backend.yml: 'parallel-safe idempotent manual evals'
         .github/workflows/explain-analyze.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/initialize-smoke-test.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/label-pr.yml: 'idempotent PR labeling'
@@ -4776,6 +4797,8 @@ rules:
                 reason: 'Device and session ids are issued in signed tokens, not stored in a table',
               }
       allow:
+        - object: column:history_retention_cursors.sweep_cutoff_id
+          reason: 'Frozen UUIDv7 sweep end may outlive a deleted history row; it is an operational checkpoint, not a relationship.'
         - object: column:domain_blocklist_sources.url
           reason: 'Decision 13 external blocklist source address; exact URL is input to the downloader.'
         - object: column:urls.url

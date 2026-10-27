@@ -2,6 +2,7 @@ import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import type { ClassifierFixtureData } from './classifier-fixture-data.mts'
+import { completeClassifierFixtureBatch } from './classifier-fixture-completion.mts'
 
 type BatchOptions = { communityId?: string; shardOrdinal?: number; at?: Date }
 
@@ -89,19 +90,17 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
       VALUES (${batchId}, ${options.shardOrdinal ?? 0}) RETURNING id
     `)
     await transaction.commit()
-    return {
-      batchId,
-      callId: callRows[0]!.id,
-    }
+    return { batchId, callId: callRows[0]!.id }
   }
 
-  async function createStoryBatch() {
+  async function createStoryBatch(options: Pick<BatchOptions, 'at'> = {}) {
     await using transaction = await beginTransaction()
     const { rows } = await transaction<{ id: string }>(sql`
       /* createClassifierFixtureStoryBatch */
       INSERT INTO classifier_decision_batches (
-        classifier_id, prompt_version_id, rss_feed_item_id, scope_category
+        id, classifier_id, prompt_version_id, rss_feed_item_id, scope_category
       ) VALUES (
+        COALESCE(${options.at ? uuidv7({ msecs: options.at.getTime() }) : null}::uuid, uuidv7()),
         ${data.storyClassifierId}, ${data.storyPromptVersionId}, ${data.rssFeedItemId}, 'global'
       ) RETURNING id
     `)
@@ -188,6 +187,7 @@ export function buildClassifierFixtureOperations(data: ClassifierFixtureData) {
     deleteCall: (callId: string) =>
       write(sql`/* deleteClassifierFixtureCall */
         DELETE FROM classifier_decision_calls WHERE id = ${callId}`),
+    completeBatch: completeClassifierFixtureBatch,
     deleteCandidate: (candidateId: string) =>
       write(sql`/* deleteClassifierFixtureCandidate */
         DELETE FROM classifier_candidates WHERE id = ${candidateId}`),

@@ -15,7 +15,7 @@ describe('owned election queue terminal streams', () => {
     expect(end).toEqual({ id: job.id, failed: false })
     await job.remove()
     await expect(owned.observer.wait(job.id)).resolves.toEqual(end)
-  }, 30_000)
+  })
 
   it('reports a real failed job processed in another process by its exact returned ID', async () => {
     const owned = await acquireNativeElectionEventFixture()
@@ -32,7 +32,7 @@ describe('owned election queue terminal streams', () => {
       failed: true,
       failedReason: 'Owned worker processor failure',
     })
-  }, 30_000)
+  })
 
   it('rejects an unsatisfied exact-ID wait on close rather than fabricating completion', async () => {
     const owned = await acquireNativeElectionEventFixture()
@@ -45,5 +45,5 @@ describe('owned election queue terminal streams', () => {
     expect(await rejected).toMatchObject({ message: 'Owned election observer is closed' })
     await expect(owned.observer.wait('')).rejects.toThrow('concrete owned job ID')
     await owned.close()
-  }, 30_000)
+  })
 })

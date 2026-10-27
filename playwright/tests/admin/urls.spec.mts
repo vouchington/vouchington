@@ -4,11 +4,11 @@ import {
   requireTestValue,
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { recentSeedCrawlId } from '../../../backend/scripts/seeds/crawl-ids.mts'
 
 test.describe('Admin URLs', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('should redirect unauthenticated users to login', async ({ page }) => {
     await page.context().clearCookies()

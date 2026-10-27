@@ -1,11 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  STATIC_PAGE_PATHS,
-  buildStaticPageUrlEntries,
-  generateStaticPagesSitemap,
-} from '../static-pages.mts'
+import { generateStaticPagesSitemap } from '../static-pages.mts'
 
 let uploadedXml = ''
 
@@ -25,7 +21,7 @@ describe('static pages sitemap', () => {
     vi.unstubAllEnvs()
   })
 
-  it('builds static page url entries for the expected public paths', () => {
+  it('publishes each public static path once', async () => {
     const expectedPaths = [
       '/',
       '/news',
@@ -54,18 +50,17 @@ describe('static pages sitemap', () => {
       '/rewards-program-statuses',
       '/videos',
     ]
-    expect(STATIC_PAGE_PATHS).toHaveLength(expectedPaths.length)
-    expect(STATIC_PAGE_PATHS.toSorted()).toEqual(expectedPaths.toSorted())
-
-    const lastmod = '2026-03-08T08:00:00.000Z'
-    const entries = buildStaticPageUrlEntries(lastmod)
-    expect(entries).toHaveLength(expectedPaths.length)
-    expect(entries).toContainEqual({ loc: 'https://test.com/', lastmod })
-    expect(entries).toContainEqual({ loc: 'https://test.com/news', lastmod })
-    expect(entries).toContainEqual({ loc: 'https://test.com/stories', lastmod })
-    for (const entry of entries) {
-      expect(entry.lastmod).toBe(lastmod)
-      expect(entry.loc).toMatch(/^https:\/\/test\.com\//)
+    await generateStaticPagesSitemap({ putSitemapObjectFile })
+    const locs = [...uploadedXml.matchAll(/<loc>([^<]+)<\/loc>/g)].flatMap(match =>
+      match[1] === undefined ? [] : [match[1]],
+    )
+    const lastmods = [...uploadedXml.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].flatMap(match =>
+      match[1] === undefined ? [] : [match[1]],
+    )
+    expect(locs.toSorted()).toEqual(expectedPaths.map(path => `https://test.com${path}`).toSorted())
+    expect(lastmods).toHaveLength(expectedPaths.length)
+    for (const lastmod of lastmods) {
+      expect(new Date(lastmod).toISOString()).toBe(lastmod)
     }
   })
 

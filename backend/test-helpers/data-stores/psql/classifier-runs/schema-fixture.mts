@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { retainPublicationIdentityBridges } from '../../../../services/post-publication/identity-bridges.mts'
 import { insertTestCommunity } from '../../../entities/communities.mts'
 import { createTestPost } from '../../../entities/create-test-entities.mts'
@@ -37,6 +38,25 @@ export type ClassifierRunInsert = {
   classifierId?: string
 }
 
+export async function createClassifierDecisionBatchAt(input: {
+  classifierId: string
+  promptVersionId: string
+  postId: string
+  at: Date
+  completed: boolean
+}): Promise<string> {
+  const id = uuidv7({ msecs: input.at.getTime() })
+  await write(sql`/* createClassifierDecisionBatchAt */
+    INSERT INTO classifier_decision_batches (
+      id, classifier_id, prompt_version_id, post_id, scope_category,
+      input_sha256, completed_at
+    ) VALUES (
+      ${id}, ${input.classifierId}, ${input.promptVersionId}, ${input.postId}, 'global',
+      ${input.completed ? Buffer.alloc(32, 1) : null}, ${input.completed ? input.at : null}
+    )`)
+  return id
+}
+
 /**
  * A raw `classifier_runs` row for schema tests. It bypasses the lifecycle service on purpose, so
  * the constraints and guards are proved on their own.
@@ -61,6 +81,7 @@ export async function createClassifierRunSchemaFixture(options: {
       }
   const configurationJson = JSON.stringify({ fixture: randomUUID() })
   const inputSha256 = Buffer.alloc(32, 1)
+  const insertedIds: string[] = []
 
   async function insertRun(input: ClassifierRunInsert = {}) {
     const json = input.configurationJson ?? configurationJson
@@ -76,6 +97,7 @@ export async function createClassifierRunSchemaFixture(options: {
       decisionBatchId: input.decisionBatchId === undefined ? null : input.decisionBatchId,
       communityId: community?.id ?? null,
     })
+    insertedIds.push(inserted)
     return inserted
   }
 
@@ -106,9 +128,8 @@ export async function createClassifierRunSchemaFixture(options: {
     deleteActor: () =>
       write(sql`/* deleteClassifierRunSchemaActor */ DELETE FROM users WHERE id = ${actor.id}`),
     dispose: () =>
-      write(
-        sql`/* disposeClassifierRunSchemaFixture */ DELETE FROM classifier_runs WHERE id = ${id}`,
-      ),
+      write(sql`/* disposeClassifierRunSchemaFixture */
+        DELETE FROM classifier_runs WHERE id = ANY(${insertedIds}::uuid[])`),
   }
 }
 
@@ -127,12 +148,22 @@ async function insertClassifierRunRow(input: {
   if (input.communityId) {
     await retainPublicationIdentityBridges(transaction, 'community', [input.communityId])
   }
-  const { rows } = await transaction<{ id: string }>(sql`/* insertClassifierRunSchemaRow */
-    INSERT INTO classifier_runs (
-      classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
-      configuration_sha256, shared_actor_user_id, decision_batch_id
+  const { rows: identities } = await transaction<{ id: string }>(sql`
+    /* insertClassifierRunSchemaIdentity */
+    INSERT INTO classifier_run_identities (
+      classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_sha256
     ) VALUES (
       ${input.classifierId}, ${input.postId}, ${input.rssFeedItemId}, ${input.inputSha256},
+      digest(${input.configurationJson}::jsonb::text, 'sha256')
+    ) RETURNING id
+  `)
+  const identityId = identities[0]!.id
+  const { rows } = await transaction<{ id: string }>(sql`/* insertClassifierRunSchemaRow */
+    INSERT INTO classifier_runs (
+      id, classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
+      configuration_sha256, shared_actor_user_id, decision_batch_id
+    ) VALUES (
+      ${identityId}, ${input.classifierId}, ${input.postId}, ${input.rssFeedItemId}, ${input.inputSha256},
       ${input.configurationJson}::jsonb,
       COALESCE(${input.configurationSha256 ?? null}::bytea,
         digest(${input.configurationJson}::jsonb::text, 'sha256')),

@@ -115,7 +115,7 @@ describe('crawl-url.errors', () => {
       await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerTimeoutError)
 
       expect(await getLatestCrawlNetworkError(url!.id)).toBe('timeout')
-    }, 30_000)
+    })
 
     it('records network_error: dns for CrawlerNetworkError', async () => {
       const random = Math.random().toString(36).slice(2, 15)
@@ -137,7 +137,7 @@ describe('crawl-url.errors', () => {
       )
 
       expect(await getLatestCrawlNetworkError(url!.id)).toBe('dns')
-    }, 30_000)
+    })
 
     it('records network_error: dns for SSRF validation null-route DNS', async () => {
       const random = Math.random().toString(36).slice(2, 15)
@@ -168,7 +168,7 @@ describe('crawl-url.errors', () => {
       expect(dnsStats?.consecutive_dns_failures).toBe(1)
       expect(dnsStats?.last_dns_failure_at).toBeInstanceOf(Date)
       expect(resolveDnsCanary).toHaveBeenCalledTimes(1)
-    }, 30_000)
+    })
 
     it('records network_error: null for non-DNS CrawlerNetworkError (ECONNREFUSED)', async () => {
       const random = Math.random().toString(36).slice(2, 15)
@@ -190,7 +190,7 @@ describe('crawl-url.errors', () => {
       )
 
       expect(await getLatestCrawlNetworkError(url!.id)).toBeNull()
-    }, 30_000)
+    })
   })
 
   describe('crawlUrl - CrawlerResponseSizeExceededError handling', () => {
@@ -213,7 +213,7 @@ describe('crawl-url.errors', () => {
       await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerResponseSizeExceededError)
 
       expect(await getLatestCrawlStatusCode(url!.id)).toBe(413)
-    }, 30_000)
+    })
   })
 
   describe('crawlUrl - CrawlerHttpClientError handling', () => {
@@ -231,7 +231,7 @@ describe('crawl-url.errors', () => {
       await expect(crawlUrlForTest(url!.id)).rejects.toThrow(CrawlerHttpClientError)
 
       expect(await getLatestCrawlStatusCode(url!.id)).toBe(403)
-    }, 30_000)
+    })
   })
 
   describe('crawlUrl - non-crawler error handling', () => {
@@ -248,7 +248,7 @@ describe('crawl-url.errors', () => {
       await expect(crawlUrlForTest(url!.id)).rejects.toThrow('S3 upload failed')
 
       expect(await getLatestCrawlStatusCode(url!.id)).toBe(500)
-    }, 30_000)
+    })
 
     it('preserves response_status_code when post-processing fails after completion', async () => {
       const random = Math.random().toString(36).slice(2, 15)
@@ -277,7 +277,7 @@ describe('crawl-url.errors', () => {
       })
 
       expect(await getLatestCrawlStatusCode(url!.id)).toBe(200)
-    }, 30_000)
+    })
   })
 
   // keep generated shard bindings live for typecheck

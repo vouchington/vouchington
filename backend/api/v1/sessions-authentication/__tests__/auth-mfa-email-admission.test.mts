@@ -20,7 +20,7 @@ describe('MFA re-auth email admission', () => {
     const emailAddress = await getPrimaryEmailAddress(reAuthUser.id)
     const gate = holdQueueAdmission(
       emails,
-      'processSendEmailAddressLoginToken',
+      'processSendReauthenticationToken',
       data =>
         typeof data === 'object' &&
         data !== null &&

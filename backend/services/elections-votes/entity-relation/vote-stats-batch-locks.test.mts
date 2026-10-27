@@ -1,12 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  beginTransaction,
   createTestPost,
   createTestTopic,
   getEntityRelation,
   getTopicAliasIdForTest,
-  isTestPostPublicationScopeLockHeld,
   insertEntityRelation,
   insertTestRssFeedItem,
   insertTestRssFeedDirect,
@@ -15,6 +13,7 @@ import {
   setTestEntityRelationIdAndScore,
 } from '@voucha/test-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
+import { observeTestEntityRelationVoteStatsLock } from '@voucha/test-helpers/entity-relation-vote-stats-locks'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { getPublisherTypeTopics } from '../../topics/publisher-type-topics.mts'
 import { createEntityRelationElectionTarget } from './target.mts'
@@ -70,38 +69,12 @@ describe('entity relation vote stats batch locking', () => {
     if (!row) throw new Error('Expected post topic relation')
     await setTestEntityRelationIdAndScore(relation.table_name, post.id, topic.id, row.id, 1)
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    const relationLocked = Promise.withResolvers<void>()
-    const releaseRelation = Promise.withResolvers<void>()
-    const holder = holdRelationRowLock()
-
-    async function holdRelationRowLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* vote stats batch publication lock test */ SELECT 1 FROM relation__post__category__topic WHERE id = $1 FOR UPDATE`,
-        [row.id],
-      )
-      relationLocked.resolve()
-      await releaseRelation.promise
-
-      await query.commit()
-    }
-    await relationLocked.promise
-
-    const updating = updateEntityRelationElectionVoteStatsFromPrimaryBatch([target])
-    try {
-      await vi.waitFor(
-        async () => {
-          await expect(
-            isTestPostPublicationScopeLockHeld({ type: 'post', id: post.id }),
-          ).resolves.toBe(true)
-        },
-        { timeout: 10_000 },
-      )
-    } finally {
-      releaseRelation.resolve()
-    }
-    await holder
-    await updating
+    const proof = await observeTestEntityRelationVoteStatsLock(
+      target,
+      { type: 'post', postId: post.id },
+      query => updateEntityRelationElectionVoteStatsFromPrimaryBatch([target], { query }),
+    )
+    expect(proof.publicationLockHeld).toBe(true)
   })
 
   it('locks an RSS item hashtag alias scope before waiting on a target relation row', async () => {
@@ -136,38 +109,12 @@ describe('entity relation vote stats batch locking', () => {
     if (!row) throw new Error('Expected RSS item hashtag relation')
     await setTestEntityRelationIdAndScore(relation.table_name, itemId, aliasId, row.id, 1)
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    const relationLocked = Promise.withResolvers<void>()
-    const releaseRelation = Promise.withResolvers<void>()
-    const holder = holdRelationRowLock()
-
-    async function holdRelationRowLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* vote stats batch alias lock test */ SELECT 1 FROM relation__rss_feed_item__category__topic_alias WHERE id = $1 FOR UPDATE`,
-        [row.id],
-      )
-      relationLocked.resolve()
-      await releaseRelation.promise
-
-      await query.commit()
-    }
-    await relationLocked.promise
-
-    const updating = updateEntityRelationElectionVoteStatsFromPrimaryBatch([target])
-    try {
-      await vi.waitFor(
-        async () => {
-          await expect(
-            isTestPostPublicationScopeLockHeld({ type: 'topic_alias', id: aliasId }),
-          ).resolves.toBe(true)
-        },
-        { timeout: 10_000 },
-      )
-    } finally {
-      releaseRelation.resolve()
-    }
-    await holder
-    await updating
+    const proof = await observeTestEntityRelationVoteStatsLock(
+      target,
+      { type: 'topic_alias', topicAliasId: aliasId },
+      query => updateEntityRelationElectionVoteStatsFromPrimaryBatch([target], { query }),
+    )
+    expect(proof.publicationLockHeld).toBe(true)
   })
 
   it('locks publisher-topic feed scopes before waiting on a target relation row', async () => {
@@ -201,38 +148,12 @@ describe('entity relation vote stats batch locking', () => {
       1,
     )
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
-    const relationLocked = Promise.withResolvers<void>()
-    const releaseRelation = Promise.withResolvers<void>()
-    const holder = holdRelationRowLock()
-
-    async function holdRelationRowLock(): Promise<void> {
-      await using query = await beginTransaction()
-      await query(
-        `/* vote stats batch publisher feed lock test */
-      SELECT 1 FROM relation__topic__publisher_type__topic WHERE id = $1 FOR UPDATE`,
-        [row.id],
-      )
-      relationLocked.resolve()
-      await releaseRelation.promise
-
-      await query.commit()
-    }
-    await relationLocked.promise
-
-    const updating = updateEntityRelationElectionVoteStatsFromPrimaryBatch([target])
-    try {
-      await vi.waitFor(
-        async () => {
-          await expect(
-            isTestPostPublicationScopeLockHeld({ type: 'rss_feed', id: feed.id }),
-          ).resolves.toBe(true)
-        },
-        { timeout: 10_000 },
-      )
-    } finally {
-      releaseRelation.resolve()
-    }
-    await holder
-    await expect(updating).resolves.toEqual([target])
+    const proof = await observeTestEntityRelationVoteStatsLock(
+      target,
+      { type: 'rss_feed', rssFeedId: feed.id },
+      query => updateEntityRelationElectionVoteStatsFromPrimaryBatch([target], { query }),
+    )
+    expect(proof.publicationLockHeld).toBe(true)
+    expect(proof.result).toEqual([target])
   })
 })

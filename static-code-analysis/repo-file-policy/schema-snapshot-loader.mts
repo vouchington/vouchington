@@ -157,7 +157,7 @@ function validatePartitionPolicy(value: unknown, path: string, errors: string[])
   validateNullableOneOf(
     value.retentionOwner,
     `${path}.retentionOwner`,
-    ['cleanupPartitions', 'runDataRetentionCleanup'],
+    ['cleanupPartitions', 'runDataRetentionCleanup', 'operatorPartitionDrop'],
     errors,
   )
   validateOneOf(

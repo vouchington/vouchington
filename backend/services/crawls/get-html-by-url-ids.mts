@@ -1,57 +1,33 @@
-import { read, type QueryExecutor } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import { read } from '@data-stores/psql'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from './constants.mts'
 import sql from 'sql-template-strings'
 import { downloadCrawlHtmlToTempFile, type CrawlHtmlTempFile } from './s3.mts'
 import onError from '@modules/on-error'
 
-export type GetLatestHtmlByUrlIdsDependencies = {
-  read?: typeof read
-  downloadCrawlHtmlToTempFile?: typeof downloadCrawlHtmlToTempFile
-  onError?: typeof onError
-  now?: () => Date
-}
-
-function requireHtmlSha256Hex(htmlSha256Hex: unknown): string {
-  if (typeof htmlSha256Hex === 'string' && htmlSha256Hex.length > 0) return htmlSha256Hex
-  throw new Error('Expected latest crawl HTML row to include html_sha256_hex')
-}
-
-export const getLatestHtmlByUrlIds = async (
-  urlIds: string[],
-  queryOptions: QueryOptions = {},
-  dependencies: GetLatestHtmlByUrlIdsDependencies = {},
-): Promise<CrawlHtmlTempFile[]> => {
+export const getLatestHtmlByUrlIds = async (urlIds: string[]): Promise<CrawlHtmlTempFile[]> => {
   if (urlIds.length === 0) return []
 
-  const readRows = dependencies.read ?? read
-  const query: QueryExecutor = (input, values) => readRows(input, values, queryOptions)
-  const downloadCrawlHtml = dependencies.downloadCrawlHtmlToTempFile ?? downloadCrawlHtmlToTempFile
-  const reportError = dependencies.onError ?? onError
-  const sampledNowMs = (dependencies.now ?? (() => new Date()))().getTime()
-  if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
-    sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    Date.now() - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
 
-  const { rows } = await readLatestHtmlRows(query, urlIds, recentCutoffDate)
+  const { rows } = await readLatestHtmlRows(urlIds, recentCutoffDate)
 
   const results: CrawlHtmlTempFile[] = []
   for (const row of rows) {
     try {
-      const htmlSha256Hex = requireHtmlSha256Hex(row.html_sha256_hex)
       // oxlint-disable-next-line no-await-in-loop -- downloading sequentially is the memory bound: concurrent page bodies previously multiplied heap use.
-      const html = await downloadCrawlHtml(row.hostname, row.url_id, htmlSha256Hex)
+      const html = await downloadCrawlHtmlToTempFile(row.hostname, row.url_id, row.html_sha256_hex)
       if (html) results.push(html)
     } catch (err) {
-      reportError(err instanceof Error ? err : new Error(String(err)))
+      onError(err instanceof Error ? err : new Error(String(err)))
     }
   }
   return results
 }
 
-async function readLatestHtmlRows(query: QueryExecutor, urlIds: string[], recentCutoffDate: Date) {
-  return query<{ html_sha256_hex: string | null; hostname: string; url_id: string }>(
+async function readLatestHtmlRows(urlIds: string[], recentCutoffDate: Date) {
+  return read<{ html_sha256_hex: string; hostname: string; url_id: string }>(
     sql`/* getLatestHtmlByUrlIds */
     SELECT DISTINCT ON (u.id)
       c.id AS crawl_id,

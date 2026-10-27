@@ -10,14 +10,15 @@ export function TotpManagerSetup({ totp }: { totp: TotpManagerState }) {
     <TotpSetupFlow
       loading={totp.loading}
       setupCode={totp.setupCode}
+      setupVerificationProof={totp.setupVerificationProof}
       setupData={totp.setupData}
       setupName={totp.setupName}
       onStartSetup={totp.handleStartSetup}
+      onConfirmSetup={totp.handleConfirmSetup}
       onVerifySetup={totp.handleVerifySetup}
+      onCancelSetup={totp.handleCancelSetup}
       setSetupCode={totp.setSetupCode}
-      setSetupData={totp.setSetupData}
       setSetupName={totp.setSetupName}
-      setStep={totp.setStep}
     />
   )
 }

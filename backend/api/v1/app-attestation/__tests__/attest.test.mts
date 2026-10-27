@@ -58,7 +58,7 @@ describe('POST /api/v1/app-attestation/attest', () => {
     await routeRateLimitConfig.waitForInitialization()
     routeRateLimitConfig.unsubscribe()
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
-  }, 15_000)
+  })
 
   beforeEach(() => {
     vi.stubEnv('APPLE_APP_ATTEST_TEAM_ID', TEAM_IDENTIFIER)

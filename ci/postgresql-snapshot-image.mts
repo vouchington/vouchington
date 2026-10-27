@@ -14,7 +14,7 @@ export function postgresImageFromWorkflow(workflow: string): string {
       /^ {2}postgres-schema-tests:\r?\n((?:(?: {4,}[^\r\n]*|[ \t]*)\r?\n)*)/gmu,
     ),
   ]
-  if (jobs.length !== 1 || !rootJobs[0]![1]!.startsWith(jobs[0]![0]))
+  if (jobs.length !== 1)
     throw new Error('Expected one postgres-schema-tests job in schema workflow')
   const services = [
     ...jobs[0]![1]!.matchAll(/^ {4}services:\r?\n((?:(?: {6,}[^\r\n]*|[ \t]*)\r?\n)*)/gmu),

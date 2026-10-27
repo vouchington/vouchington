@@ -432,9 +432,17 @@ COMMENT ON COLUMN user_email_addresses.email_address IS 'Normalized (lowercase, 
 COMMENT ON COLUMN user_email_addresses.is_primary IS 'Whether this is the user''s primary email address.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+DO $$ BEGIN
+  CREATE TYPE email_address_token_purposes AS ENUM ('login', 're_auth', 'email_verification');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS email_address_login_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   email_address TEXT NOT NULL,
+  purpose email_address_token_purposes NOT NULL,
+  reauthentication_session_id UUID,
+  CHECK ((purpose = 're_auth') = (reauthentication_session_id IS NOT NULL)),
   CHECK (char_length(email_address) <= 255),
   CHECK (email_address = LOWER(email_address)),
   CHECK (email_address = TRIM(email_address)),
@@ -445,9 +453,12 @@ CREATE TABLE IF NOT EXISTS email_address_login_tokens (
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  logged_in_at TIMESTAMPTZ,
-  -- NULL = login token; non-NULL = email address verification token
+  consumed_at TIMESTAMPTZ,
+  invalidated_at TIMESTAMPTZ,
+  CHECK (consumed_at IS NULL OR invalidated_at IS NULL),
+  -- Authenticated address verification and reauthentication retain their owning user.
   user_id UUID REFERENCES users ON DELETE CASCADE,
+  CHECK ((purpose = 'login') = (user_id IS NULL)),
   UNIQUE (email_address, token)
 );
 
@@ -461,24 +472,44 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens__active
 ON email_address_login_tokens (email_address, token)
-WHERE logged_in_at IS NULL;
+WHERE consumed_at IS NULL AND invalidated_at IS NULL;
+
+-- One unused login code per address; reauthentication replacements are scoped to their actor SID.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens__pending_login
+ON email_address_login_tokens (email_address)
+WHERE purpose = 'login' AND consumed_at IS NULL AND invalidated_at IS NULL;
 
 -- one pending email verification token per user+email combination
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens__user_email_verify
 ON email_address_login_tokens (user_id, email_address)
-WHERE user_id IS NOT NULL;
+WHERE purpose = 'email_verification';
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens__pending_reauthentication
+ON email_address_login_tokens (reauthentication_session_id)
+WHERE purpose = 're_auth' AND consumed_at IS NULL AND invalidated_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__reauthentication_session_id
+ON email_address_login_tokens (reauthentication_session_id)
+WHERE reauthentication_session_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__user_id
+ON email_address_login_tokens (user_id) WHERE user_id IS NOT NULL;
 
 -- index for user lookup by email
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_email_addresses__email
   ON user_email_addresses (email_address);
 
-COMMENT ON TABLE email_address_login_tokens IS 'Short-lived tokens for email-based login and email verification flows.';
+COMMENT ON TABLE email_address_login_tokens IS 'Short-lived tokens scoped to email login, reauthentication, or address verification.';
 COMMENT ON COLUMN email_address_login_tokens.email_address IS 'The email address this token was sent to.';
 COMMENT ON COLUMN email_address_login_tokens.token IS 'Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification/login token sent to the user.';
-COMMENT ON COLUMN email_address_login_tokens.logged_in_at IS 'When the token was used to log in. NULL means the token is still pending.';
-COMMENT ON COLUMN email_address_login_tokens.user_id IS 'Non-NULL for email verification tokens; NULL for login tokens.';
+COMMENT ON COLUMN email_address_login_tokens.consumed_at IS 'When the token was successfully consumed for its declared authentication purpose.';
+COMMENT ON COLUMN email_address_login_tokens.user_id IS 'Owner of authenticated reauthentication or address-verification codes; NULL only for login codes.';
+COMMENT ON COLUMN email_address_login_tokens.purpose IS 'The authentication flow allowed to consume this token.';
+COMMENT ON COLUMN email_address_login_tokens.invalidated_at IS 'When a replacement code invalidated this unused token.';
+
+COMMENT ON COLUMN email_address_login_tokens.reauthentication_session_id IS 'The authenticated actor session allowed to consume this reauthentication code; NULL for other purposes.';
 
 -- ============================================================================
 -- phone numbers
@@ -533,7 +564,7 @@ CREATE TABLE IF NOT EXISTS phone_number_login_tokens (
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  logged_in_at TIMESTAMPTZ,
+  consumed_at TIMESTAMPTZ,
   UNIQUE (phone_number, token)
 );
 
@@ -546,7 +577,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_phone_number_login_tokens__active
   ON phone_number_login_tokens (phone_number, token)
-  WHERE logged_in_at IS NULL;
+  WHERE consumed_at IS NULL;
 
 -- index for user lookup by phone
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -556,7 +587,7 @@ ON user_phone_numbers (phone_number);
 COMMENT ON TABLE phone_number_login_tokens IS 'Short-lived tokens for phone-number-based login via SMS/voice.';
 COMMENT ON COLUMN phone_number_login_tokens.phone_number IS 'The phone number this token was sent to.';
 COMMENT ON COLUMN phone_number_login_tokens.token IS 'Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user.';
-COMMENT ON COLUMN phone_number_login_tokens.logged_in_at IS 'When the token was used to log in. NULL means the token is still pending.';
+COMMENT ON COLUMN phone_number_login_tokens.consumed_at IS 'When the token was successfully consumed for phone-number login.';
 
 -- One durable keyset position per auth and session retention sweep.
 CREATE TYPE auth_session_retention_cleanup_names AS ENUM (
@@ -875,8 +906,8 @@ CREATE TABLE IF NOT EXISTS session_referral_attributions (
   referrer_user_id  UUID        REFERENCES users(id) ON DELETE SET NULL,
   -- ON DELETE SET NULL: preserve attribution records even if the attributed user deletes their account
   user_id      UUID        REFERENCES users(id) ON DELETE SET NULL,
-  landing_url  TEXT        NOT NULL,
-  CHECK (char_length(landing_url) <= 2048),
+  landing_url  TEXT,
+  CHECK (landing_url IS NULL OR char_length(landing_url) <= 2048),
   CHECK (referrer_user_id != user_id),
 
   -- UTM tracking parameters
@@ -910,11 +941,16 @@ CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__anonymous_id
   ON session_referral_attributions (id)
   WHERE user_id IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_session_referral_attributions__unscrubbed_id
+  ON session_referral_attributions (id)
+  WHERE landing_url IS NOT NULL OR utm_source IS NOT NULL OR utm_medium IS NOT NULL
+    OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL;
+
 COMMENT ON TABLE session_referral_attributions IS 'Tracks which user referred a session, linking anonymous sessions to referrers for attribution. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions.';
 COMMENT ON COLUMN session_referral_attributions.session_id IS 'The anonymous session that was referred. Not a FK — sessions live outside PostgreSQL.';
 COMMENT ON COLUMN session_referral_attributions.referrer_user_id IS 'The user who referred this session. NULL if the referrer deleted their account.';
 COMMENT ON COLUMN session_referral_attributions.user_id IS 'The user who signed up from this referral. NULL until signup or if user deletes account.';
-COMMENT ON COLUMN session_referral_attributions.landing_url IS 'The URL the referred session landed on (max 2048 chars).';
+COMMENT ON COLUMN session_referral_attributions.landing_url IS 'The URL the referred session landed on (max 2048 chars), cleared after its short attribution window.';
 COMMENT ON COLUMN session_referral_attributions.utm_source IS 'UTM source parameter from the referral URL (e.g. google, newsletter).';
 COMMENT ON COLUMN session_referral_attributions.utm_medium IS 'UTM medium parameter from the referral URL (e.g. cpc, email).';
 COMMENT ON COLUMN session_referral_attributions.utm_campaign IS 'UTM campaign name from the referral URL.';

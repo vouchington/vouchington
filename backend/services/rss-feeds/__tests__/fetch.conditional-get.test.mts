@@ -60,7 +60,7 @@ describe('fetch.conditional-get', () => {
     await expect(
       getLatestRssFeedCrawlForFeedWithOptions(feed.id, { includeFeedData: true }),
     ).resolves.toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed withholds validators and stores items when the crawl body is gone', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -109,7 +109,7 @@ describe('fetch.conditional-get', () => {
     expect(mockCrawlerRss.mock.calls[0]?.[1]?.headers).toEqual({})
     expect(result).toHaveLength(1)
     expect(items.results).toHaveLength(1)
-  }, 30_000)
+  })
 
   it('fetchRssFeed still sends validators when a replayable crawl body remains', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -150,5 +150,5 @@ describe('fetch.conditional-get', () => {
       'If-None-Match': '"fresh-etag"',
     })
     expect(result).toEqual([])
-  }, 30_000)
+  })
 })

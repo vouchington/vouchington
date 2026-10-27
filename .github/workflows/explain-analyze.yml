@@ -127,6 +127,7 @@ jobs:
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
+          VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: node backend/scripts/check-rss-feed-crawl-tiers.mts
       - name: Seed development data
         # The copyright seed encrypts its review rows and hashes thread references.

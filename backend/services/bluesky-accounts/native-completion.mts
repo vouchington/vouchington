@@ -1,6 +1,8 @@
+import { lockCurrentBlueskyInitiatingSession } from './initiating-session.mts'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueOnUserUpdatedBestEffort } from '@queues/entity-listeners/enqueues'
+import type { AccountChangeSession } from '@services/mfa/active-account-session'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { connectBlueskyAccountInLockedTransaction } from './connect-locked.mts'
@@ -25,6 +27,7 @@ type CompletionRow = {
 
 export async function finalizeNativeBlueskyAccountLink(
   currentUserId: string,
+  currentSession: AccountChangeSession,
   flowId: string,
   completionToken: string,
   completionProofVerifier: string,
@@ -34,8 +37,14 @@ export async function finalizeNativeBlueskyAccountLink(
   if (!discovered) throw createHttpError(404, 'Bluesky link completion not found or expired')
   await using query = await beginTransaction()
 
-  await lockBlueskyAuthorizationOwner(currentUserId, discovered.bluesky_did, flowId, query)
-  const completion = await getLockedCompletion(flowId, query, completionNow)
+  const { actorSessionId, completion } = await lockNativeBlueskyCompletionAdmission(
+    currentUserId,
+    currentSession,
+    flowId,
+    discovered.bluesky_did,
+    query,
+    completionNow,
+  )
   assertCompletionOwnerAndToken(completion, currentUserId, flowId, completionToken)
   const proofChallenge = await getHandoffProofChallenge(flowId, currentUserId, query)
   if (!nativeCompletionProofMatches(completionProofVerifier, proofChallenge)) {
@@ -48,6 +57,7 @@ export async function finalizeNativeBlueskyAccountLink(
     completion.handle,
     flowId,
     query,
+    actorSessionId,
   )
   await write(
     sql`/* finalizeNativeBlueskyAccountLink:consume */
@@ -57,6 +67,41 @@ export async function finalizeNativeBlueskyAccountLink(
 
   await query.commit()
   await enqueueOnUserUpdatedBestEffort(currentUserId)
+}
+
+async function lockNativeBlueskyCompletionAdmission(
+  currentUserId: string,
+  currentSession: AccountChangeSession,
+  flowId: string,
+  did: string,
+  query: TransactionQuery,
+  completionNow: () => Date,
+): Promise<{ actorSessionId: string; completion: CompletionRow }> {
+  const actorSessionId = await lockCurrentBlueskyInitiatingSession(
+    currentUserId,
+    currentSession,
+    flowId,
+    query,
+  )
+  const completion = await lockBlueskyCompletionOwnerAndRead(
+    currentUserId,
+    did,
+    flowId,
+    query,
+    completionNow,
+  )
+  return { actorSessionId, completion }
+}
+
+async function lockBlueskyCompletionOwnerAndRead(
+  currentUserId: string,
+  did: string,
+  flowId: string,
+  query: TransactionQuery,
+  completionNow: () => Date,
+): Promise<CompletionRow> {
+  await lockBlueskyAuthorizationOwner(currentUserId, did, flowId, query)
+  return getLockedCompletion(flowId, query, completionNow)
 }
 
 async function findCompletion(flowId: string): Promise<{ bluesky_did: string } | undefined> {

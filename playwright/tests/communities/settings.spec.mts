@@ -4,7 +4,7 @@ import {
   withMonitoredPage,
   protectPlaywrightHookTimeouts,
 } from '../../helpers/test.mts'
-import { loginAsTestUser, loginAsUser } from '../../helpers/auth.mts'
+import { loginAsAdmin, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import {
   createTestUserWithAge,
@@ -39,7 +39,7 @@ test.describe('Community Settings', () => {
     COMMUNITY_SLUG = fixture.slug
 
     await withMonitoredPage(browser, testInfo, async page => {
-      await loginAsTestUser(page)
+      await loginAsAdmin(page)
       const communityId = await page.evaluate(
         async ({ name, slug }) => {
           const res = await fetch('/api/v1/communities', {
@@ -87,7 +87,7 @@ test.describe('Community Settings', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    await loginAsTestUser(page)
+    await loginAsAdmin(page)
     await navigateTo(page, `/communities/${COMMUNITY_SLUG}/settings`)
   })
 

@@ -30,6 +30,7 @@
     "test:backend:anthropic": "node ci/run-vitest-project-group.mts backend-anthropic",
     "test:backend:openrouter": "node ci/run-vitest-project-group.mts backend-openrouter",
     "test:backend:lightpanda": "node ci/run-vitest-project-group.mts backend-lightpanda",
+    "eval:backend": "node ci/run-vitest-project-group.mts evals",
     "test:backend:postgres-schema": "node ci/run-vitest-project-group.mts backend-postgres-schema",
     "test:email-templates": "node ci/run-vitest-project-group.mts email-templates",
     "test:ts-shared": "node ci/run-vitest-project-group.mts ts-shared",
@@ -154,7 +155,6 @@
     "eslint-plugin-vouchington": "^0.2.0",
     "gh-pr-attach-screenshots": "^0.2.0",
     "glide-mq": "^0.19.0",
-    "jose": "^6.2.13",
     "jscpd": "^5.4.1",
     "jsdom": "^30.1.3",
     "knip": "^6",
@@ -170,7 +170,7 @@
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.5",
-    "vouchington-tooling": "^0.74.0",
+    "vouchington-tooling": "^0.76.0",
     "yaml": "^2.9.1"
   },
   "engines": {

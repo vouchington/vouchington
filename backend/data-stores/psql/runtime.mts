@@ -6,7 +6,6 @@ import { createPsql, type Psql } from '@vouchington/postgres'
 import { resolveDatabaseConnectionString } from './connection-string-env.mts'
 import { withLibpqCompat } from './connection-string-utils.mts'
 import { getPsqlPoolConfiguration } from './pool-config.mts'
-import { registerPsqlPoolMetricsForTestEnvironment } from './pool-metrics.mts'
 import { startConfiguredPoolStatsSampler } from './pool-stats-sampler.mts'
 import { maybeCaptureQuery, runWithSingleQueryCapture } from './query-capture.mts'
 import { recordQueryTiming } from './query-timing.mts'
@@ -75,15 +74,6 @@ export const close: Psql['close'] = async () => {
   await Promise.all([psql.close(), jobSerializationPool.end()])
 }
 
-registerPsqlPoolMetricsForTestEnvironment(
-  {
-    write: writePool,
-    read: readPool,
-    advisoryLock: advisoryLockPool,
-    jobSerialization: jobSerializationPool,
-  },
-  process.env.NODE_ENV,
-)
 startConfiguredPoolStatsSampler(
   { ...psql, jobSerializationPool },
   poolConfiguration,

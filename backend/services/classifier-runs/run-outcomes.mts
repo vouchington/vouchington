@@ -45,7 +45,10 @@ export async function persistClassifierRunOutcomes<C, L, E>(
   } else {
     assertRemoteInputIdentity(lease, input.remoteDecision)
     assertRemoteInputCandidates(lease, input.remoteDecision)
-    const persisted = await persistClassifierDecision(input.remoteDecision, { query })
+    const persisted = await persistClassifierDecision(input.remoteDecision, {
+      query,
+      activeRunId: lease.runId,
+    })
     assertPersistedDecisionMatchesRun(
       lease,
       persisted.decision,

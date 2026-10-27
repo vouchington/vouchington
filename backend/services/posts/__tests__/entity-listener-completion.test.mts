@@ -8,6 +8,7 @@ import { entitiesListeners } from '../../../queues/entity-listeners/queues.mts'
 import { BACKGROUND_QUEUE_NAME } from '../../../queues/background/config.mts'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '../../../queues/background/enqueues/entity-listeners-jobs.mts'
 import { settlePostCommitEffects } from '../post-commit-completion.mts'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 
 const enqueue = createEnqueueFunction<
   { id: string },
@@ -67,28 +68,23 @@ describe('owned entity listener completion', () => {
     let durableResultFulfilled = false
     let admissionFailure: unknown
     let admissionRejected = false
-    const reports: unknown[] = []
     const [outcome] = await Promise.allSettled([
       withEntityListenerCompletion(
         [{ jobName: 'processPostUpdated', postSlug: slug }],
         async () => {
-          await settlePostCommitEffects(
-            [
-              {
-                start: () => {
-                  const admission = enqueue(circular)
-                  void admission.catch(err => {
-                    admissionFailure = err
-                    admissionRejected = true
-                  })
-                  return admission
-                },
+          await settlePostCommitEffects([
+            {
+              start: () => {
+                const admission = enqueue(circular)
+                void admission.catch(err => {
+                  admissionFailure = err
+                  admissionRejected = true
+                })
+                return admission
               },
-            ],
-            err => {
-              reports.push(err)
+              isRejectionReported: () => true,
             },
-          )
+          ])
           durableResultFulfilled = true
         },
       ),
@@ -96,7 +92,9 @@ describe('owned entity listener completion', () => {
     expect(durableResultFulfilled).toBe(true)
     expect(admissionRejected).toBe(true)
     expect(admissionFailure).toBeInstanceOf(Error)
-    expect(reports).toContain(admissionFailure)
+    expect(
+      sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === admissionFailure),
+    ).toHaveLength(1)
     expect(outcome!.status).toBe('rejected')
     if (outcome!.status !== 'rejected')
       throw new Error('Admission failure was incorrectly treated as completion')

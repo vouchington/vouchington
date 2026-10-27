@@ -26,7 +26,7 @@ describe('GET /api/v1/topics/compare', () => {
     slugB = topicB.slug
     topicIdA = topicA.id
     topicIdB = topicB.id
-  }, 30_000)
+  })
 
   it('returns 200 with expected fields for two valid slugs', async () => {
     const req = createRequest()

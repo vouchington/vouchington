@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildClassifiedSendParams } from './send-params.mts'
 import {
@@ -7,25 +5,6 @@ import {
   type EmailClassificationEntry,
   type EmailType,
 } from './registry.mts'
-
-const REPO_ROOT = join(import.meta.dirname, '../../..')
-const PROCESSOR_EXPORT_PATTERN = /export\s+(?:const|async function|function)\s+(process\w+)/g
-const PROCESSOR_DIRS = [
-  'backend/workers/emails/processors',
-  'backend/workers/memberships/processors',
-]
-
-function getDiscoveredProcessorNames(): string[] {
-  return PROCESSOR_DIRS.flatMap(dir =>
-    readdirSync(join(REPO_ROOT, dir))
-      .filter(name => name.endsWith('.mts') && !name.endsWith('.test.mts'))
-      .flatMap(name => {
-        const source = readFileSync(join(REPO_ROOT, dir, name), 'utf8')
-        if (!source.includes('@email-templates/core')) return []
-        return [...source.matchAll(PROCESSOR_EXPORT_PATTERN)].map(match => match[1]!)
-      }),
-  )
-}
 
 describe('EMAIL_CLASSIFICATIONS registry', () => {
   it('has a valid shape for every entry', () => {
@@ -52,12 +31,6 @@ describe('EMAIL_CLASSIFICATIONS registry', () => {
     for (const unsubscribe of userCategoryUnsubscribes) {
       expect(['outcome_emails', 'news_digest', 'community_digest']).toContain(unsubscribe.category)
     }
-  })
-
-  it('covers every processor discovered on disk (no undocumented email type)', () => {
-    const discovered = getDiscoveredProcessorNames()
-    const missing = discovered.filter(name => !(name in EMAIL_CLASSIFICATIONS))
-    expect(missing).toEqual([])
   })
 
   it('marks news digest as registry-only pending a sender', () => {

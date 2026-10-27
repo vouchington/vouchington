@@ -6,6 +6,7 @@ import { enqueuePsqlJob, fetchMigrations } from '@/lib/api/client/psql'
 import type { MigrationStatusResponse } from '@/types/api-responses'
 
 export type PartitionAction = 'createPartitions' | 'cleanupPartitions'
+export type ClassifierPartitionRange = { fromDate: string; toDate: string; maxDefaultRows?: number }
 export type PsqlAction =
   | 'runMigrations'
   | 'runViews'
@@ -19,14 +20,13 @@ export const PARTITION_ACTION_LABELS: Record<PartitionAction, string> = {
 }
 
 export const PARTITION_ACTION_DESCRIPTIONS: Record<PartitionAction, string> = {
-  createPartitions:
-    'This will create future date-based partitions for all partitioned tables. Safe to run at any time.',
+  createPartitions: 'This will create future monthly partitions for crawl and RSS history tables.',
   cleanupPartitions:
     'This will drop expired partitions that are past their retention period. Dropped partitions cannot be recovered.',
 }
 
 export const PARTITION_ACTION_TOOLTIPS: Record<PartitionAction, string> = {
-  createPartitions: 'Creates future date-based partitions for all partitioned tables',
+  createPartitions: 'Creates future monthly crawl and RSS history partitions',
   cleanupPartitions: 'Drops expired partitions that are past their retention period',
 }
 
@@ -39,6 +39,8 @@ export function usePostgreSQLAdminState() {
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
   const [pendingAction, setPendingAction] = useState<PartitionAction | null>(null)
+  const [pendingClassifierRange, setPendingClassifierRange] =
+    useState<ClassifierPartitionRange | null>(null)
   const esRef = useRef<EventSource | null>(null)
   const streamSnapshotAppliedRef = useRef(false)
   const loadDataPendingRef = useRef(false)
@@ -128,10 +130,10 @@ export function usePostgreSQLAdminState() {
     }
   }, [])
 
-  async function handleAction(type: PsqlAction) {
+  async function handleAction(type: PsqlAction, classifierRange?: ClassifierPartitionRange) {
     setActionLoading(prev => ({ ...prev, [type]: true }))
     try {
-      await enqueuePsqlJob(type)
+      await enqueuePsqlJob(type, classifierRange)
       onSuccess(`${type} job queued`)
       await loadData()
     } catch (err) {
@@ -144,19 +146,36 @@ export function usePostgreSQLAdminState() {
   async function confirmPartitionAction() {
     if (!pendingAction) return
     const action = pendingAction
+    const range = pendingClassifierRange
     setPendingAction(null)
-    await handleAction(action)
+    setPendingClassifierRange(null)
+    await handleAction(action, range ?? undefined)
+  }
+
+  function choosePartitionAction(action: PartitionAction | null) {
+    setPendingClassifierRange(null)
+    setPendingAction(action)
+  }
+
+  function chooseClassifierPartitionAction(
+    action: PartitionAction,
+    range: ClassifierPartitionRange,
+  ) {
+    setPendingClassifierRange(range)
+    setPendingAction(action)
   }
 
   return {
     actionLoading,
+    chooseClassifierPartitionAction,
+    choosePartitionAction,
     confirmPartitionAction,
     error,
     handleAction,
     loadData,
     loading,
     pendingAction,
-    setPendingAction,
+    pendingClassifierRange,
     status,
   }
 }

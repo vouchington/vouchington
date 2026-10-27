@@ -35,7 +35,7 @@ describe('deleteOfficialReferralLink', () => {
       pathname: '/refer/%',
     })
     referralProgramId = fixture.referralProgramId
-  }, 30_000)
+  })
 
   it('admin can soft-delete an official link (sets deleted_at and deleted_by_id)', async () => {
     const suffix = Math.random().toString(36).slice(7)

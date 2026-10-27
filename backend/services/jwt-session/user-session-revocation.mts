@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { QueryExecutor } from '@data-stores/psql/types'
+import type { QueryExecutor, TransactionQuery } from '@data-stores/psql/types'
 import {
   revokeSessionKey,
   revokeSessionKeys,
@@ -90,4 +90,21 @@ async function updateSessionRevocationRegistry(
   await using query = await beginTransaction()
   await revokeInTransaction(query)
   await query.commit()
+}
+
+/** Caller holds the live user and preserved actor fences in this same transaction. */
+export async function revokeOtherAuthenticatedSessions(
+  currentUserId: string,
+  actorSessionId: string,
+  options: { query: TransactionQuery },
+): Promise<void> {
+  await options.query(
+    `/* revokeOtherAuthenticatedSessions */
+     -- no-mistakes-disable-next-line postgres-required-predicates: user-wide revocation must update other sessions across all session-ID partitions
+     UPDATE user_sessions
+     SET revoked_at = clock_timestamp(), account_change_proof_hash = NULL,
+         account_change_proof_expires_at = NULL
+     WHERE user_id = $1 AND id <> $2 AND revoked_at IS NULL`,
+    [currentUserId, actorSessionId],
+  )
 }

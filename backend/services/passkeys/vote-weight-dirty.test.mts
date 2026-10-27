@@ -9,7 +9,13 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB } from '../../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
+import { addVerifiedEmailForUser } from '@voucha/test-helpers/entities/email-addresses'
+import {
+  createTestAccountChangeActor,
+  createTestAccountChangeProof,
+} from '@voucha/test-helpers/account-change'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestPasskeyVoteWeightDirtyUser,
@@ -30,6 +36,7 @@ describe('passkey vote-weight dirty markers', () => {
     )
     const at = new Date(Date.UTC(2005, 0, 1) + randomInt(0, 30_000_000))
     const { userId, afterId } = await createTestPasskeyVoteWeightDirtyUser(at)
+    await addVerifiedEmailForUser(userId, `tests+vote-weight-${userId}@voucha.ai`)
     const dirtyEvent = { userId, jobId: `voteWeight__${userId}__dirtyMarker` }
     await recalculateUserVoteWeight(userId)
     const release = holdBackgroundDomain('vote-aggregation')
@@ -53,8 +60,14 @@ describe('passkey vote-weight dirty markers', () => {
         createPasskey(userId, createTestVerifiedPasskeyRegistration(), 'Other'),
       )
       await recalculateUserVoteWeight(userId)
-      await runInsideTestWorkerProcessor(() =>
-        deletePasskeyWithMfaProtection(userId, protectedPasskey.id, undefined),
+      const actor = await createTestAccountChangeActor(userId)
+      await runInsideTestWorkerProcessor(async () =>
+        deletePasskeyWithMfaProtection(
+          userId,
+          protectedPasskey.id,
+          await createTestAccountChangeProof(userId, actor.session),
+          actor.session,
+        ),
       )
       expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeNull()
       expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).toContainEqual(dirtyEvent)
@@ -79,7 +92,11 @@ describe('passkey vote-weight dirty markers', () => {
       const registration = createTestVerifiedPasskeyRegistration()
       const passkey =
         action === 'create' ? undefined : await insertTestPasskey(user.id, safeUsername('owned'))
+      await addVerifiedEmailForUser(user.id, `tests+vote-weight-${user.id}@voucha.ai`)
       if (action === 'protected-delete') await insertTestPasskey(user.id, safeUsername('remaining'))
+      const actor =
+        action === 'protected-delete' ? await createTestAccountChangeActor(user.id) : undefined
+      const proof = actor ? await createTestAccountChangeProof(user.id, actor.session) : undefined
       const entered = Promise.withResolvers<void>()
       const release = Promise.withResolvers<void>()
       const failure = new Error('Owned passkey vote-weight admission failure')
@@ -87,14 +104,17 @@ describe('passkey vote-weight dirty markers', () => {
       let admitted: Awaited<ReturnType<typeof voteAggregation.add>> | undefined
       let admission: ReturnType<typeof voteAggregation.add> | undefined
       let operation: Promise<unknown> | undefined
+      let matchingAdmissions = 0
       const add = vi.spyOn(voteAggregation, 'add').mockImplementation((name, data, options) => {
         if (
+          name !== VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name ||
           typeof data !== 'object' ||
           data === null ||
           !('userId' in data) ||
           data.userId !== user.id
         )
           return originalAdd.call(voteAggregation, name, data, options)
+        matchingAdmissions += 1
         entered.resolve()
         admission = release.promise.then(async () => {
           if (outcome === 'failure') throw failure
@@ -111,7 +131,7 @@ describe('passkey vote-weight dirty markers', () => {
             ? createPasskey(user.id, registration, 'Admitted passkey')
             : action === 'delete'
               ? deletePasskey(user.id, passkey!.id)
-              : deletePasskeyWithMfaProtection(user.id, passkey!.id, undefined)
+              : deletePasskeyWithMfaProtection(user.id, passkey!.id, proof, actor!.session)
         ).then(result => {
           completed = true
           return result
@@ -128,6 +148,7 @@ describe('passkey vote-weight dirty markers', () => {
         expect(completed).toBe(false)
         release.resolve()
         await operation
+        expect(matchingAdmissions).toBe(1)
         const job = admitted ? await voteAggregation.getJob(admitted.id) : undefined
         expect(job?.data).toEqual(outcome === 'success' ? { userId: user.id } : undefined)
         expect(

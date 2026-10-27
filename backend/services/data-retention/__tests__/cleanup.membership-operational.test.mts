@@ -11,8 +11,8 @@ import {
 import {
   cleanupDeliveredMembershipEntitlementEffects,
   cleanupEndedMembershipRenewalNotices,
-  runMembershipOperationalCleanupPage,
 } from '../cleanup-membership-operational.mts'
+import { cleanupMembershipOperational } from '../cleanup-membership-operational-families.mts'
 
 const DAY_MS = 86_400_000
 
@@ -27,13 +27,14 @@ describe('membership operational retention', () => {
     const effect = await createDeliveredMembershipEffectForRetention(user.id, dueAt)
     const noticeId = await createEndedMembershipRenewalNoticeForRetention(user.id, dueAt)
 
-    const result = await runMembershipOperationalCleanupPage(
-      { batchSize: 100, maxBatches: 1 },
+    const window = { batchSize: 100, maxBatches: 1, lowerBoundDate: new Date(dueAt.getTime() - 1) }
+    const result = await cleanupMembershipOperational(
       {
-        deliveredMembershipEntitlementEffects: true,
-        endedMembershipRenewalNotices: false,
-        terminalGooglePlayAcknowledgments: false,
+        deliveredMembershipEntitlementEffects: window,
+        endedMembershipRenewalNotices: window,
+        terminalGooglePlayAcknowledgments: window,
       },
+      ['deliveredMembershipEntitlementEffects'],
     )
     expect(result.deliveredMembershipEntitlementEffects.deleted).toBeGreaterThan(0)
     expect(result.endedMembershipRenewalNotices).toEqual({ deleted: 0, hasMore: false })

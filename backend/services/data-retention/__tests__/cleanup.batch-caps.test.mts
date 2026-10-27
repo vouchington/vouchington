@@ -49,6 +49,7 @@ function emptyScopedOptions(now: Date) {
     retainedRelationIdentityKeys: {},
     retainedMediaBindingIds: [],
     softDeletedUsers: emptyWindow,
+    histories: emptyWindow,
     orphanedOAuthAccounts: emptyWindow,
     expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
     expiredOAuthServerArtifacts: emptyWindow,
@@ -69,6 +70,7 @@ function emptyScopedOptions(now: Date) {
     webPushSubscriptionTombstones: emptyWindow,
     oldModerationQueueClaims: emptyWindow,
     oldModerationMediaReveals: emptyWindow,
+    classifierRecords: emptyWindow,
   }
 }
 

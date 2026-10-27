@@ -1,3 +1,6 @@
+import { filterSessionRoles } from './assurance.mts'
+import type { DeviceContext, SessionClientBinding } from './types.mts'
+import { registerAuthenticatedSession } from './user-sessions.mts'
 import { registerPostCommitAction, type TransactionQuery } from '@data-stores/psql'
 import { trackAuthSessionEvent } from '@services/analytics'
 import {
@@ -5,6 +8,7 @@ import {
   RECHECK_AFTER_SECONDS,
   SESSION_CHECK_AFTER_SECONDS,
   type DeviceClass,
+  DEVICE_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { getUserSessionsRevokedBefore } from './session-revocation-keys.mts'
@@ -44,6 +48,7 @@ export async function getSessionIssuedAt(
 export function getSessionEnrichment(options: {
   uid: string | null
   roles?: readonly string[]
+  mfaVerifiedAt?: number
   membershipPlan?: string | null
   membershipExpiresAt?: Date | null
   trustTier?: number
@@ -53,7 +58,9 @@ export function getSessionEnrichment(options: {
 }) {
   if (options.uid === null) return {}
   return {
-    ...(options.roles !== undefined && { rol: options.roles }),
+    ...(options.roles !== undefined && {
+      rol: filterSessionRoles(options.roles, options.mfaVerifiedAt),
+    }),
     ...(options.membershipPlan !== undefined && { mpl: options.membershipPlan }),
     ...getMembershipExpiryClaim(options.membershipExpiresAt),
     ...(options.trustTier !== undefined && { tt: options.trustTier }),
@@ -70,4 +77,35 @@ export function recordSessionMintEvent(
 ): void {
   if (query) registerPostCommitAction(query, async () => trackAuthSessionEvent(event))
   else trackAuthSessionEvent(event)
+}
+
+export async function registerSessionMintMetadata(
+  options: {
+    did: string
+    sid: string
+    uid: string | null
+    deviceClass?: DeviceClass
+    deviceContext?: DeviceContext
+    authOrigin?: 'web' | 'native'
+    sessionExpiresAt?: Date
+    binding?: SessionClientBinding
+  },
+  query?: TransactionQuery,
+): Promise<void> {
+  await registerAuthenticatedSession(
+    {
+      did: options.did,
+      sid: options.sid,
+      uid: options.uid,
+      deviceClass: options.deviceClass,
+      deviceContext: options.deviceContext,
+      authOrigin: options.authOrigin,
+      expiresAt:
+        options.sessionExpiresAt ??
+        (options.binding?.client === 'web'
+          ? new Date(Date.now() + DEVICE_EXPIRATION_SECONDS * 1000)
+          : undefined),
+    },
+    { query },
+  )
 }

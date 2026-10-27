@@ -13,7 +13,7 @@ Not partitioned — growth: bounded.
 | `token`        | `text`                     | no       |                              |          |           |           | Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user. |
 | `created_at`   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                            |
 | `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                            |
-| `logged_in_at` | `timestamp with time zone` | yes      |                              |          |           |           | When the token was used to log in. NULL means the token is still pending.                  |
+| `consumed_at`  | `timestamp with time zone` | yes      |                              |          |           |           | When the token was successfully consumed for phone-number login.                           |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -36,7 +36,7 @@ _none_
 
 **Indexes:**
 
-- `idx_phone_number_login_tokens__active`: `CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (logged_in_at IS NULL)`
+- `idx_phone_number_login_tokens__active`: `CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (consumed_at IS NULL)`
 - `phone_number_login_tokens_phone_number_token_key`: `CREATE UNIQUE INDEX phone_number_login_tokens_phone_number_token_key ON public.phone_number_login_tokens USING btree (phone_number, token)`
 - `phone_number_login_tokens_pkey`: `CREATE UNIQUE INDEX phone_number_login_tokens_pkey ON public.phone_number_login_tokens USING btree (id)`
 - `phone_number_login_tokens_token_key`: `CREATE UNIQUE INDEX phone_number_login_tokens_token_key ON public.phone_number_login_tokens USING btree (token)`

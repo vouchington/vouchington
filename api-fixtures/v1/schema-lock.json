@@ -667,7 +667,7 @@
     },
     "GET:/api/v1/my/referral-clicks": {
       "fixtureIds": ["native.referral-clicks.mine.default", "web.referral-clicks.mine.default"],
-      "hash": "4798b6cd4a55766ff163f2519605c4f06994d7337f2f4a4c7db03cd5de58f340"
+      "hash": "545e40333919adda121fdb936e51e2f7120a754f464334bc468ad19c41c9ec7b"
     },
     "GET:/api/v1/my/removed-posts#include-platform": {
       "fixtureIds": [
@@ -1444,7 +1444,7 @@
       "hash": "4e08b0299f6aaa051f39f3ac907f5f863849bb7bf99269b46429ad539b12504b"
     },
     "POST:/api/v1/psql/jobs": {
-      "fixtureIds": ["web.admin.psql.jobs.default"],
+      "fixtureIds": ["web.admin.psql.jobs.classifier-range", "web.admin.psql.jobs.default"],
       "hash": "62b2946c19b0c95fe66dfc3ec6e4efc43021f2dc8d2945a27f6fc7efe4e5251e"
     },
     "POST:/api/v1/report-integrity/flags/:id/penalties": {
@@ -2787,7 +2787,7 @@
     },
     "referral-clicks.mine": {
       "fixtureIds": ["native.referral-clicks.mine.default", "web.referral-clicks.mine.default"],
-      "hash": "ee10a1df032e1f3528355c06951ee39c93a4c5fb8d177b38c50dd410057cd16a"
+      "hash": "0547802ffbc0bab64d12549a12d06d6c11295459c3b6e5ae44cb719b1da8bfac"
     },
     "referral-links.mine": {
       "fixtureIds": ["native.referral-links.mine.default", "web.referral-links.mine.default"],
@@ -2918,7 +2918,7 @@
       "hash": "9eb6a4cb3a4a5d79a64a0f478f54f6d118d8bbac2f124ee809d67fd3fa17651f"
     },
     "web.admin.psql.jobs.default": {
-      "fixtureIds": ["web.admin.psql.jobs.default"],
+      "fixtureIds": ["web.admin.psql.jobs.classifier-range", "web.admin.psql.jobs.default"],
       "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
     },
     "web.admin.psql.migrations.default": {

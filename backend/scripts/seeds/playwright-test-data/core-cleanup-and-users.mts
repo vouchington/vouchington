@@ -101,7 +101,7 @@ async function seedPlaywrightCleanupAndUsers(
   {
     const seedHash = hashToken('email-address-login-token', 'playwright-test-user-seed-token')
     await query(
-      `/* seedPlaywrightCleanupAndUsers */ INSERT INTO email_address_login_tokens (email_address, token, logged_in_at) VALUES ($1, $2, CURRENT_TIMESTAMP) ON CONFLICT (token) DO UPDATE SET email_address = EXCLUDED.email_address, logged_in_at = EXCLUDED.logged_in_at`,
+      `/* seedPlaywrightCleanupAndUsers */ INSERT INTO email_address_login_tokens (email_address, token, consumed_at, purpose) VALUES ($1, $2, CURRENT_TIMESTAMP, 'login') ON CONFLICT (token) DO UPDATE SET email_address = EXCLUDED.email_address, consumed_at = EXCLUDED.consumed_at`,
       [normalizedTestEmail, seedHash],
     )
   }

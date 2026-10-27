@@ -64,12 +64,11 @@ export async function findCurrentCopyrightJurisdictionPolicy(
   return rows[0] ?? null
 }
 
-/** `query` lets a test read availability inside a transaction that has concealed approvals. */
-export async function getCopyrightJurisdictionAvailability(query: QueryExecutor = read): Promise<{
+export async function getCopyrightJurisdictionAvailability(): Promise<{
   eu_dsa: boolean
   uk: boolean
 }> {
-  const { rows } = await query<{ jurisdiction: TerritorialCopyrightJurisdiction }>(sql`
+  const { rows } = await read<{ jurisdiction: TerritorialCopyrightJurisdiction }>(sql`
     /* getCopyrightJurisdictionAvailability */
     SELECT territory.jurisdiction
     FROM unnest(ARRAY['eu_dsa', 'uk']::copyright_jurisdictions[]) AS territory(jurisdiction)

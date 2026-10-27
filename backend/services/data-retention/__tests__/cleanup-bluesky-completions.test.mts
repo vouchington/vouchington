@@ -39,6 +39,7 @@ describe('runDataRetentionCleanup', () => {
       retainedMediaBindingIds: [],
       softDeletedUsers: emptyWindow,
       oldReferralAttributions: emptyWindow,
+      histories: emptyWindow,
       orphanedOAuthAccounts: emptyWindow,
       expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
       expiredOAuthServerArtifacts: emptyWindow,
@@ -59,6 +60,7 @@ describe('runDataRetentionCleanup', () => {
       webPushSubscriptionTombstones: emptyWindow,
       oldModerationQueueClaims: emptyWindow,
       oldModerationMediaReveals: emptyWindow,
+      classifierRecords: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -67,6 +69,10 @@ describe('runDataRetentionCleanup', () => {
     expect(result).toMatchObject({
       softDeletedUsers: { deleted: 0, hasMore: false },
       oldReferralAttributions: { deleted: 0, hasMore: false },
+      histories: {
+        dynamic_configuration_revisions: { scanned: 0, changed: 0, hasMore: false },
+        referral_attribution_scrub: { scanned: 0, changed: 0, hasMore: false },
+      },
       orphanedOAuthAccounts: { deleted: 0, hasMore: false },
       expiredOAuthAuthorizations: { deleted: 0, hasMore: false },
       expiredOAuthServerArtifacts: { deleted: 0, hasMore: false },
@@ -87,6 +93,15 @@ describe('runDataRetentionCleanup', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      classifierRecords: {
+        runCandidates: { scanned: 0, deleted: 0, hasMore: false },
+        agentTopics: { scanned: 0, deleted: 0, hasMore: false },
+        localOutcomes: { scanned: 0, deleted: 0, hasMore: false },
+        runs: { scanned: 0, deleted: 0, hasMore: false },
+        calls: { scanned: 0, deleted: 0, hasMore: false },
+        batches: { scanned: 0, deleted: 0, hasMore: false },
+        identities: { scanned: 0, deleted: 0, hasMore: false },
+      },
     })
   }, 30_000)
 })

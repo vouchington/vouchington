@@ -11,6 +11,7 @@ function requireS3Credentials(): void {
 }
 
 describe('S3ImagesClient', () => {
+  // no-mistakes-timeout-reason: live S3 presign request latency
   it(
     'supports creating presigned upload URLs in test mode',
     { timeout: 30_000 },
@@ -38,6 +39,7 @@ describe('S3ImagesClient', () => {
 })
 
 describe('S3ImageUploadsClient', () => {
+  // no-mistakes-timeout-reason: live S3 presign request latency
   it(
     'supports creating presigned upload URLs in test mode',
     { timeout: 30_000 },

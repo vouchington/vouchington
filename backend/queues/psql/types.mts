@@ -8,7 +8,6 @@ export type PsqlJobs =
   | 'cleanupPartitions'
   | 'dataRetentionCleanup'
   | 'moderationRetentionCleanup'
-  | 'continueMembershipOperationalCleanup'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -45,8 +44,22 @@ export type ModerationRetentionJobData = {
   }
 }
 
-export type MembershipRetentionContinuationData = {
-  deliveredMembershipEntitlementEffects: boolean
-  endedMembershipRenewalNotices: boolean
-  terminalGooglePlayAcknowledgments: boolean
+/** UTC calendar boundaries for one operator-managed, half-open UUIDv7 batch range. */
+export type ClassifierPartitionRange = {
+  fromDate: string
+  toDate: string
+  maxDefaultRows?: number
+}
+
+export type PsqlPartitionJobData = {
+  classifierRange?: ClassifierPartitionRange
+}
+
+export type PsqlRetentionJobData = {
+  continuation?: {
+    runId: string
+    step: number
+    activeClassifierSweeps: string[]
+    activeMembershipFamilies: string[]
+  }
 }

@@ -13,6 +13,7 @@ export async function startOAuthBrokerAuthorization(
     provider: BrokerOAuthProvider
     purpose: OAuthBrokerPurpose
     returnTo: string
+    requestReAuth?: () => Promise<string | null>
   },
   runtime: {
     lockManager?: BrokerLockManager
@@ -31,6 +32,11 @@ export async function startOAuthBrokerAuthorization(
   try {
     const lockManager = runtime.lockManager ?? navigator.locks
     if (!lockManager) throw new OAuthCancelledError(options.provider, 'Browser unsupported')
+    const reAuthToken = options.purpose === 'connect' ? await options.requestReAuth?.() : undefined
+    if (options.purpose === 'connect' && !reAuthToken) {
+      popup.close()
+      return
+    }
     await lockManager.request(
       'voucha-oauth-broker-authorization',
       { mode: 'exclusive', ifAvailable: true },
@@ -38,7 +44,11 @@ export async function startOAuthBrokerAuthorization(
         if (!lock) {
           throw new OAuthCancelledError(options.provider, 'Another authorization is in progress')
         }
-        const authorization = await beginOAuthAuthorization(options.provider, options.purpose)
+        const authorization = await beginOAuthAuthorization(
+          options.provider,
+          options.purpose,
+          reAuthToken ?? undefined,
+        )
         const popupWait = waitForOAuthBrokerPopup(
           popup,
           authorization.flow_id,
@@ -82,7 +92,7 @@ type OAuthBrokerReceiptMessage = {
   flowId: string
 }
 
-function waitForOAuthBrokerPopup(
+export function waitForOAuthBrokerPopup(
   popup: Window,
   flowId: string,
   expiresAt: string,

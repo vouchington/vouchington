@@ -1,6 +1,9 @@
 import type { QueryExecutor } from '@data-stores/psql'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import { followsCompletedClassifierRun } from '@services/classifier-run-revival'
+import sql from 'sql-template-strings'
 import type { ClassifierRunSubject } from './types.mts'
+
+export { followsCompletedClassifierRun }
 
 /**
  * Records, in the caller's transaction, that a classifier which runs after another one now has
@@ -33,22 +36,6 @@ export async function requestFollowOnClassifierRun(
       .append(conflict)
       .append(' DO UPDATE SET stale_at = NULL WHERE classifier_run_requests.stale_at IS NOT NULL'),
   )
-}
-
-/**
- * SQL over `request` (classifier_run_requests) selecting the requests whose subject has a completed,
- * current run of `classifierSlug` at the exact content the request asked for. A terminal failure
- * never completes a run and a superseded run is not current, so neither unlocks a follow-on.
- */
-export function followsCompletedClassifierRun(classifierSlug: string): SQLStatement {
-  return sql`EXISTS (
-      SELECT 1 FROM classifier_runs first_run
-      JOIN classifiers first_classifier ON first_classifier.id = first_run.classifier_id
-      WHERE first_classifier.slug = ${classifierSlug}
-        AND first_run.input_sha256 = request.input_sha256
-        AND first_run.completed_at IS NOT NULL AND first_run.superseded_at IS NULL
-        AND (first_run.post_id = request.post_id OR first_run.rss_feed_item_id = request.rss_feed_item_id)
-    )`
 }
 
 /** The pure-read twin of `followsCompletedClassifierRun` for one subject at one content version. */

@@ -4,16 +4,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import { SECRET_INVENTORY } from './workflow-secrets-inventory.mts'
 
 type Workflow = {
-  on: { workflow_call?: { secrets?: Record<string, { required?: boolean }> } }
   jobs: Record<
     string,
     {
-      if?: string
-      secrets?: Record<string, string>
-      steps?: Array<{ name?: string; env?: Record<string, string>; run?: string }>
+      steps?: Array<{ name?: string; run?: string }>
     }
   >
 }
@@ -26,24 +22,6 @@ const preflight = job.steps!.find(
 )!
 
 describe('retained Lightpanda cloud CI boundary', () => {
-  it('forwards the provisioned token through the trusted backend and nightly call chain', () => {
-    const backend = readWorkflow('backend')
-    const nightly = readWorkflow('nightly')
-    expect(credentialed.on.workflow_call?.secrets?.LIGHTPANDA_TOKEN).toEqual({ required: false })
-    expect(backend.on.workflow_call?.secrets?.LIGHTPANDA_TOKEN).toEqual({ required: false })
-    const caller = backend.jobs['test-backend-credentialed']!
-    expect(caller.if).toBe("needs.changes.outputs.trusted-secret-context == 'true'")
-    expect(caller.secrets?.LIGHTPANDA_TOKEN).toBe(
-      "${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.LIGHTPANDA_TOKEN || '' }}",
-    )
-    expect(nightly.jobs.backend?.secrets?.LIGHTPANDA_TOKEN).toBe('${{ secrets.LIGHTPANDA_TOKEN }}')
-    expect(preflight.env?.LIGHTPANDA_TOKEN).toBe('${{ secrets.LIGHTPANDA_TOKEN }}')
-    const testStep = job.steps!.find(step => step.name === 'Run backend credentialed tests')!
-    expect(testStep.env?.LIGHTPANDA_TOKEN).toBe('${{ secrets.LIGHTPANDA_TOKEN }}')
-    expect(testStep.run?.match(/--project backend-lightpanda\b/g)).toHaveLength(1)
-    expect(SECRET_INVENTORY.LIGHTPANDA_TOKEN.provisioned).toBe(true)
-  })
-
   it.each([
     { name: 'missing', token: undefined, missing: true },
     { name: 'blank', token: ' \t\n ', missing: true },

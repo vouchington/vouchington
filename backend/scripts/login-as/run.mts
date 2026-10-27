@@ -4,8 +4,8 @@
  * Creates or resolves a user by email address, assigns any requested roles, and
  * mints an OTP deep-link for live browser persona login via claude-in-chrome.
  *
- * The verify step at /login?emailAddress=…&otp=… auto-submits once when the tab
- * is focused and visible — no click and no CAPTCHA needed.
+ * The verify step at /login?emailAddress=…&otp=… prefills the code and waits for
+ * an explicit Log in click; the verify step requires no CAPTCHA.
  *
  * Usage:
  *   node backend/scripts/login-as/run.mts <email> [--role <slug>]...
@@ -15,7 +15,7 @@
  *
  * DNS note: brand-new emails (never logged in) trigger an MX lookup in
  * validateEmailAddress. Use a real-MX domain (e.g. @voucha.ai) and run with
- * network the first time. After the first successful login (logged_in_at set)
+ * network the first time. After the first successful login (consumed_at set)
  * the email is DNS-free on re-runs. The seeded admin (tests@voucha.ai) is
  * always DNS-free.
  *
@@ -29,6 +29,7 @@ import { gracefulShutdown } from '@data-stores/graceful-shutdown'
 import { upsertUser } from '@services/users/create'
 import { addUserRole } from '@services/users/roles-permissions'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
+import { getUserMfaStatus } from '@services/mfa'
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..', '..')
 const WEB_PROTOCOL =
@@ -67,7 +68,10 @@ const ALL_PERSONAS = [
   { label: 'Admin (SA)', email: 'qa-admin@voucha.ai', extraRoles: ['administrator'] },
 ]
 
-async function mintDeepLink(emailAddress: string, extraRoles: string[]): Promise<string> {
+async function mintDeepLink(
+  emailAddress: string,
+  extraRoles: string[],
+): Promise<{ url: string; administratorEnrollmentRequired: boolean }> {
   const workerPort = process.env['WORKER_PORT']
   if (!workerPort) throw new Error('WORKER_PORT is not set — run: source .env')
 
@@ -87,13 +91,23 @@ async function mintDeepLink(emailAddress: string, extraRoles: string[]): Promise
   }
 
   const user = await upsertUser({ emailAddress: normalizedEmail, sessionId: v7(), deviceId: v7() })
+  const administratorEnrollmentRequired =
+    extraRoles.includes('administrator') && !(await getUserMfaStatus(user.id)).hasMfa
   for (const role of extraRoles) {
+    if (role === 'administrator' && administratorEnrollmentRequired) continue
     await addUserRole(user.id, role)
   }
 
   const { token } = await createEmailAddressLoginToken(normalizedEmail)
   const url = `${WEB_PROTOCOL}://localhost:${workerPort}/login?emailAddress=${encodeURIComponent(normalizedEmail)}&otp=${token}`
-  return url
+  return { url, administratorEnrollmentRequired }
+}
+
+function printAdministratorEnrollmentStep(required: boolean): void {
+  if (!required) return
+  console.log(
+    '  Administrator access pending: use this member login link, enroll and verify TOTP or a passkey under My identity, then rerun login-as with the administrator role. Complete the MFA login after enrollment.',
+  )
 }
 
 async function main() {
@@ -105,10 +119,14 @@ async function main() {
   if (allMode) {
     console.log('Minting deep-links for all standard QA personas...\n')
     for (const persona of ALL_PERSONAS) {
-      const url = await mintDeepLink(persona.email, persona.extraRoles)
+      const { url, administratorEnrollmentRequired } = await mintDeepLink(
+        persona.email,
+        persona.extraRoles,
+      )
       console.log(persona.label)
       console.log(`  Email: ${persona.email}`)
       console.log(`  URL:   ${url}`)
+      printAdministratorEnrollmentStep(administratorEnrollmentRequired)
       console.log()
     }
     return
@@ -132,13 +150,14 @@ async function main() {
     }
   }
 
-  const url = await mintDeepLink(emailArg, extraRoles)
-  const rolesNote = extraRoles.length > 0 ? ` (roles: ${extraRoles.join(', ')})` : ''
+  const { url, administratorEnrollmentRequired } = await mintDeepLink(emailArg, extraRoles)
+  const rolesNote = extraRoles.length > 0 ? ` (requested roles: ${extraRoles.join(', ')})` : ''
   console.log(`Email: ${emailArg}${rolesNote}`)
   console.log(`URL:   ${url}`)
+  printAdministratorEnrollmentStep(administratorEnrollmentRequired)
   console.log()
   console.log(
-    'Navigate to this URL in claude-in-chrome. The verify step auto-submits once the tab is focused.',
+    'Navigate to this URL in claude-in-chrome. The verify step prefills the code; click Log in to continue.',
   )
 }
 

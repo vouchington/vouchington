@@ -1,4 +1,5 @@
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
+import { CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './classifier-run-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
@@ -7,7 +8,9 @@ import { NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './notific
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
+import { OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from '../../../operational-cursor-uuid-allowlist.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  ...CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'user_rss_feed_import_row_discoveries.generation',
@@ -33,19 +36,15 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'follower_distributions.cursor_recipient_id',
     'Deletion-stable recipient UUIDv7 keyset position, not a relationship.',
   ],
-  [
-    'retained_identity_cleanup_cursors.cursor_identity_id',
-    'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
-  ],
+  ...OPERATIONAL_CURSOR_UUID_COLUMNS_WITHOUT_KEYS,
   ...MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'payment_operational_cleanup_cursors.cursor_id',
     'Operational keyset position survives deletion of the swept row; it is not a relationship.',
   ],
-  [
-    'auth_session_retention_cleanup_cursors.cursor_id',
-    'Keyset scan position survives deletion of the scanned auth, session, or subscription row.',
-  ],
+  ['auth_session_retention_cleanup_cursors.cursor_id', 'Deleted-row keyset, not a relation.'],
+  ['history_retention_cursors.cursor_id', 'Deleted-row keyset position, not a relationship.'],
+  ['history_retention_cursors.sweep_cutoff_id', 'Frozen sweep end, not a relationship.'],
   [
     'auth_session_retention_cleanup_cursors.cursor_partition_key',
     'Subscription partition tie-breaker survives deletion of its user and subscription rows.',
@@ -172,10 +171,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'user_sessions.device_id',
     'No devices table exists; did is an ephemeral dt device-token claim paired with the persisted session id.',
   ],
-  [
-    'post_dispute_annotations.removed_by_id',
-    'Audit snapshot intentionally survives user deletion.',
-  ],
+  ['post_dispute_annotations.removed_by_id', 'Audit snapshot survives user deletion.'],
   [
     'review_dispute_lifecycle_changes.changed_by_id',
     'Audit snapshot intentionally survives user deletion.',

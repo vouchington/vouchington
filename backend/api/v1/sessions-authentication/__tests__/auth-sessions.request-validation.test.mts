@@ -34,7 +34,7 @@ describe('Auth sessions routes - request contract validation', () => {
     authCookies = cookies.filter(cookie => cookie.startsWith('dt=') || cookie.startsWith('st='))
     currentSessionId = login.body.session.sid as string
     userId = login.body.user.id as string
-  }, 15_000)
+  })
 
   describe('GET /api/v1/auth/sessions', () => {
     it('returns a bare 401 without a schema diagnostic for an anonymous malformed query', async () => {

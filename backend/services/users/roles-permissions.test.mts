@@ -7,7 +7,12 @@ import { clearJwtStaleIfCurrent, getJwtStaleKey } from '@data-stores/valkey/jwt-
 import { readTestJwtStaleMarker } from '@voucha/test-helpers/jwt-stale-markers'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
-import { countUserRoleAssignments, createTestUser, getTestUserRaw } from '@voucha/test-helpers'
+import {
+  countUserRoleAssignments,
+  createTestUser,
+  getTestUserRaw,
+  insertTestTotpAuthenticator,
+} from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { createVoteWeightDispatchUserAt } from '@voucha/test-helpers/vote-weight-dispatch'
@@ -24,12 +29,14 @@ describe('roles-permissions', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
+    await insertTestTotpAuthenticator(user.id, 'role-grant')
   })
   describe('addUserRole', () => {
     const jobName = 'vote-aggregation.processRecalculateUserVoteWeight'
 
     it('returns after its committed grant and both owned admissions settle', async () => {
       const grantedUser = await createTestUser()
+      await insertTestTotpAuthenticator(grantedUser.id, 'committed-grant')
       const staleKey = getJwtStaleKey(grantedUser.id)
       const queueGate = holdQueueAdmission(
         voteAggregation,
@@ -104,6 +111,7 @@ describe('roles-permissions', () => {
 
     it('keeps a committed role grant when vote-weight admission fails', async () => {
       const grantedUser = await createTestUser()
+      await insertTestTotpAuthenticator(grantedUser.id, 'post-commit-grant')
       const admissionError = new Error('Injected vote-weight queue admission failure')
       const originalAdd = voteAggregation.add
       const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
@@ -153,6 +161,7 @@ describe('roles-permissions', () => {
       const at = new Date(Date.UTC(2004, 0, 1) + randomInt(0, 30_000_000))
       const userId = await createVoteWeightDispatchUserAt(at)
       const afterId = v7({ msecs: at.getTime() - 1 })
+      await insertTestTotpAuthenticator(userId, 'role-grant-race')
       const baseline = await recalculateUserVoteWeight(userId)
       const release = holdBackgroundDomain('vote-aggregation')
       try {

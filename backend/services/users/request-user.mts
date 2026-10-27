@@ -1,7 +1,7 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import { getRequestCurrentUser } from '@modules/utils/request-context'
 import { getPrivateUserByAny } from './get.mts'
-import type { PrivateUser } from './types.mts'
+import type { BasicUser, PrivateUser } from './types.mts'
 
 /**
  * The acting user this request already loaded.
@@ -17,4 +17,13 @@ export async function loadRequestPrivateUser(
     if (stored?.id === userId) return stored
   }
   return getPrivateUserByAny(userId, options)
+}
+
+/** Hydration cannot restore a role filtered by the authenticated transport principal. */
+export function withAuthenticatedRoles(
+  privateUser: PrivateUser,
+  currentUser: BasicUser,
+): PrivateUser {
+  const roles = privateUser.roles.filter(role => currentUser.roles.includes(role))
+  return roles.length === privateUser.roles.length ? privateUser : { ...privateUser, roles }
 }

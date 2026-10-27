@@ -1,33 +1,28 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { psql as psqlQueue } from '@queues/psql/queues'
 import {
   deleteDynamicConfigFieldsForTest,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
-import {
-  dataRetentionConfig,
-  getDataRetentionLimits,
-  type DataRetentionLimits,
-} from '@services/data-retention/config'
-import { runMembershipOperationalCleanupPage } from '@services/data-retention'
+import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
+import type { runDataRetentionCleanup } from '@services/data-retention'
+import { psql } from '@queues/psql/queues'
+import type { PsqlRetentionJobData } from '@queues/psql/types'
 import type { PartitionDropOutcome } from '@data-stores/psql/migration-runner/monthly-partitions'
 
 const cleanupPartitions = vi.fn<() => Promise<PartitionDropOutcome[]>>()
 const createPartitions = vi.fn<() => Promise<void>>()
-const dataRetentionCleanup = vi.fn<(limits: DataRetentionLimits) => Promise<void>>()
+const emptyCleanupResult = {
+  classifierRecords: { runs: { hasMore: false } },
+} as Awaited<ReturnType<typeof runDataRetentionCleanup>>
+const dataRetentionCleanup =
+  vi.fn<(limits: DataRetentionLimits) => ReturnType<typeof runDataRetentionCleanup>>()
 const reconcileVoteDrift = vi.fn<() => Promise<void>>()
 const refreshMaterializedView = vi.fn<(viewName: string) => Promise<void>>()
 const runConfigDriven = vi.fn<() => Promise<void>>()
 const runMigrations = vi.fn<() => Promise<void>>()
 const runViews = vi.fn<() => Promise<void>>()
 import processPsql from '../processors.mts'
-
-const emptyMembershipResult = {
-  deliveredMembershipEntitlementEffects: { hasMore: false },
-  endedMembershipRenewalNotices: { hasMore: false },
-  terminalGooglePlayAcknowledgments: { hasMore: false },
-}
 
 describe('processPsql', () => {
   it.each([
@@ -41,7 +36,7 @@ describe('processPsql', () => {
   ] as const)('calls %s when selected', async (jobName, processor) => {
     processor.mockReset()
     if (jobName === 'dataRetentionCleanup')
-      dataRetentionCleanup.mockResolvedValue(emptyMembershipResult as never)
+      dataRetentionCleanup.mockResolvedValue(emptyCleanupResult)
 
     await processPsql(jobName, undefined, {
       cleanupPartitions,
@@ -58,7 +53,7 @@ describe('processPsql', () => {
 
   it('passes the data-retention-config limits to every retention cleanup', async () => {
     dataRetentionCleanup.mockReset()
-    dataRetentionCleanup.mockResolvedValue(emptyMembershipResult as never)
+    dataRetentionCleanup.mockResolvedValue(emptyCleanupResult)
     overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
       batch_size: 7,
       max_batches_per_run: 3,
@@ -69,98 +64,6 @@ describe('processPsql', () => {
     })
 
     expect(dataRetentionCleanup).toHaveBeenCalledExactlyOnceWith({ batchSize: 7, maxBatches: 3 })
-  })
-
-  it.each([
-    ['deliveredMembershipEntitlementEffects', true],
-    ['endedMembershipRenewalNotices', true],
-    ['terminalGooglePlayAcknowledgments', true],
-    ['none', false],
-  ] as const)(
-    'admits a retention continuation for %s remaining work',
-    async (remaining, expected) => {
-      const parentJobId = `membership-retention-test__${randomUUID()}`
-      const result = {
-        deliveredMembershipEntitlementEffects: {
-          hasMore: remaining === 'deliveredMembershipEntitlementEffects',
-        },
-        endedMembershipRenewalNotices: { hasMore: remaining === 'endedMembershipRenewalNotices' },
-        terminalGooglePlayAcknowledgments: {
-          hasMore: remaining === 'terminalGooglePlayAcknowledgments',
-        },
-      }
-      const selection = {
-        deliveredMembershipEntitlementEffects: result.deliveredMembershipEntitlementEffects.hasMore,
-        endedMembershipRenewalNotices: result.endedMembershipRenewalNotices.hasMore,
-        terminalGooglePlayAcknowledgments: result.terminalGooglePlayAcknowledgments.hasMore,
-      }
-      const identity = JSON.stringify([
-        parentJobId,
-        selection.deliveredMembershipEntitlementEffects,
-        selection.endedMembershipRenewalNotices,
-        selection.terminalGooglePlayAcknowledgments,
-      ])
-      const childJobId = `membership-retention__${createHash('sha256').update(identity).digest('hex').slice(0, 32)}`
-      onTestFinished(async () => {
-        const child = await psqlQueue.getJob(childJobId)
-        await child?.remove()
-      })
-      await processPsql(
-        'dataRetentionCleanup',
-        undefined,
-        { dataRetentionCleanup: async () => result as never },
-        parentJobId,
-      )
-      const child = await psqlQueue.getJob(childJobId)
-      expect(child !== null).toBe(expected)
-      expect(child?.name).toBe(expected ? 'continueMembershipOperationalCleanup' : undefined)
-      expect(child?.data).toEqual(expected ? selection : undefined)
-      expect(child?.opts.ordering).toEqual(
-        expected ? { key: 'data_retention', concurrency: 1 } : undefined,
-      )
-      const retryOptions = child?.opts
-        ? { attempts: child.opts.attempts, backoff: child.opts.backoff }
-        : null
-      expect(retryOptions).toEqual(
-        expected
-          ? { attempts: 3, backoff: { type: 'exponential', delay: 1000, jitter: 0.5 } }
-          : null,
-      )
-    },
-  )
-
-  it('continues only selected membership families and forwards the next unfinished selection', async () => {
-    const firstJobId = `membership-retention-test__${randomUUID()}`
-    const selected = {
-      deliveredMembershipEntitlementEffects: true,
-      endedMembershipRenewalNotices: false,
-      terminalGooglePlayAcknowledgments: true,
-    }
-    const next = {
-      deliveredMembershipEntitlementEffects: { hasMore: false },
-      endedMembershipRenewalNotices: { hasMore: false },
-      terminalGooglePlayAcknowledgments: { hasMore: true },
-    }
-    const cleanupPage = vi.fn<typeof runMembershipOperationalCleanupPage>(async () => next as never)
-    const nextSelection = {
-      deliveredMembershipEntitlementEffects: false,
-      endedMembershipRenewalNotices: false,
-      terminalGooglePlayAcknowledgments: true,
-    }
-    const childIdentity = JSON.stringify([firstJobId, false, false, true])
-    const childJobId = `membership-retention__${createHash('sha256').update(childIdentity).digest('hex').slice(0, 32)}`
-    onTestFinished(async () => {
-      const child = await psqlQueue.getJob(childJobId)
-      await child?.remove()
-    })
-    await processPsql(
-      'continueMembershipOperationalCleanup',
-      selected,
-      { membershipRetentionCleanupPage: cleanupPage },
-      firstJobId,
-    )
-    expect(cleanupPage).toHaveBeenCalledExactlyOnceWith(getDataRetentionLimits(), selected)
-    expect((await psqlQueue.getJob(childJobId))?.data).toEqual(nextSelection)
   })
 
   it('waits for stored retention limits to load on a cold start', async () => {
@@ -176,7 +79,7 @@ describe('processPsql', () => {
     const initialized = Promise.withResolvers<void>()
     vi.spyOn(dataRetentionConfig, 'waitForInitialization').mockReturnValue(initialized.promise)
     dataRetentionCleanup.mockReset()
-    dataRetentionCleanup.mockResolvedValue(emptyMembershipResult as never)
+    dataRetentionCleanup.mockResolvedValue(emptyCleanupResult)
 
     const processing = processPsql('dataRetentionCleanup', undefined, {
       dataRetentionCleanup: dataRetentionCleanup as never,
@@ -194,6 +97,139 @@ describe('processPsql', () => {
       initialized.resolve()
       await processing
     }
+  })
+
+  it('admits distinct deterministic continuation jobs until the capped sweep converges', async () => {
+    const initialJobId = `retention-test-${randomUUID()}`
+    const runId = createHash('sha256').update(initialJobId).digest('hex')
+    const continuationIds = [1, 2, 3].map(step => `data-retention-cleanup__${runId}__${step}`)
+    onTestFinished(async () => {
+      await Promise.all(continuationIds.map(async id => (await psql.getJob(id))?.remove()))
+    })
+    const hasMore = {
+      classifierRecords: { runs: { hasMore: true } },
+    } as Awaited<ReturnType<typeof runDataRetentionCleanup>>
+    const cleanup = vi
+      .fn<typeof runDataRetentionCleanup>()
+      .mockResolvedValueOnce(hasMore)
+      .mockResolvedValueOnce(hasMore)
+      .mockResolvedValue(emptyCleanupResult)
+
+    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
+    const first = await psql.getJob(continuationIds[0]!)
+    expect(first?.data).toMatchObject({ continuation: { runId, step: 1 } })
+
+    await processPsql(
+      'dataRetentionCleanup',
+      first?.data as PsqlRetentionJobData,
+      { dataRetentionCleanup: cleanup },
+      first!.id,
+    )
+    const second = await psql.getJob(continuationIds[1]!)
+    expect(second?.data).toMatchObject({ continuation: { runId, step: 2 } })
+
+    await processPsql(
+      'dataRetentionCleanup',
+      second?.data as PsqlRetentionJobData,
+      { dataRetentionCleanup: cleanup },
+      second!.id,
+    )
+    expect(await psql.getJob(continuationIds[2]!)).toBeNull()
+    expect(cleanup).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not restart a finished independent classifier sweep while another page drains', async () => {
+    const initialJobId = `retention-test-${randomUUID()}`
+    const runId = createHash('sha256').update(initialJobId).digest('hex')
+    const ids = [1, 2, 3].map(step => `data-retention-cleanup__${runId}__${step}`)
+    onTestFinished(async () => {
+      await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
+    })
+    const result = (topicResults: boolean, requests: boolean) =>
+      ({
+        classifierRecords: {
+          topicResults: { hasMore: topicResults },
+          requests: { hasMore: requests },
+        },
+      }) as Awaited<ReturnType<typeof runDataRetentionCleanup>>
+    const cleanup = vi
+      .fn<typeof runDataRetentionCleanup>()
+      .mockResolvedValueOnce(result(true, true))
+      .mockResolvedValueOnce(result(true, false))
+      .mockResolvedValue(result(false, false))
+
+    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
+    const first = await psql.getJob(ids[0]!)
+    const firstSweeps = (first!.data as PsqlRetentionJobData).continuation?.activeClassifierSweeps
+    expect(firstSweeps).toContain('requests')
+    expect(firstSweeps).toContain('topicResults')
+    await processPsql(
+      'dataRetentionCleanup',
+      first?.data as PsqlRetentionJobData,
+      {
+        dataRetentionCleanup: cleanup,
+      },
+      first!.id,
+    )
+    const second = await psql.getJob(ids[1]!)
+    const secondSweeps = (second!.data as PsqlRetentionJobData).continuation?.activeClassifierSweeps
+    expect(secondSweeps).toContain('topicResults')
+    expect(secondSweeps).not.toContain('requests')
+    await processPsql(
+      'dataRetentionCleanup',
+      second?.data as PsqlRetentionJobData,
+      {
+        dataRetentionCleanup: cleanup,
+      },
+      second!.id,
+    )
+    expect(await psql.getJob(ids[2]!)).toBeNull()
+    expect(cleanup).toHaveBeenCalledTimes(3)
+  })
+
+  it('continues only the membership families that exceeded their cap', async () => {
+    const initialJobId = `retention-test-${randomUUID()}`
+    const runId = createHash('sha256').update(initialJobId).digest('hex')
+    const ids = [1, 2].map(step => `data-retention-cleanup__${runId}__${step}`)
+    onTestFinished(async () => {
+      await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
+    })
+    const result = (effects: boolean, notices: boolean) =>
+      ({
+        classifierRecords: {},
+        deliveredMembershipEntitlementEffects: { hasMore: effects },
+        endedMembershipRenewalNotices: { hasMore: notices },
+        terminalGooglePlayAcknowledgments: { hasMore: false },
+      }) as Awaited<ReturnType<typeof runDataRetentionCleanup>>
+    const cleanup = vi
+      .fn<typeof runDataRetentionCleanup>()
+      .mockResolvedValueOnce(result(true, true))
+      .mockResolvedValueOnce(result(false, true))
+      .mockResolvedValue(result(false, false))
+
+    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
+    const first = await psql.getJob(ids[0]!)
+    expect(first?.opts.attempts).toBe(3)
+    expect((first!.data as PsqlRetentionJobData).continuation?.activeMembershipFamilies).toEqual([
+      'deliveredMembershipEntitlementEffects',
+      'endedMembershipRenewalNotices',
+    ])
+    await processPsql(
+      'dataRetentionCleanup',
+      first?.data as PsqlRetentionJobData,
+      { dataRetentionCleanup: cleanup },
+      first!.id,
+    )
+    expect(cleanup.mock.calls[1]?.[1]).toMatchObject({
+      activeMembershipFamilies: [
+        'deliveredMembershipEntitlementEffects',
+        'endedMembershipRenewalNotices',
+      ],
+    })
+    const second = await psql.getJob(ids[1]!)
+    expect((second!.data as PsqlRetentionJobData).continuation?.activeMembershipFamilies).toEqual([
+      'endedMembershipRenewalNotices',
+    ])
   })
 
   it('calls runConfigDriven when the job name is runConfigDriven', async () => {

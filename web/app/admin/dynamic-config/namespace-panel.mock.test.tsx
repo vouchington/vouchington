@@ -66,6 +66,38 @@ describe('DynamicConfigNamespacePanel', () => {
     vi.clearAllMocks()
   })
 
+  it('shows the copyright switch-on instant without an edit action', () => {
+    render(
+      <DynamicConfigNamespacePanel
+        details={{
+          ...namespace,
+          namespace: 'copyright',
+          label: 'Copyright',
+          field_count: 1,
+          config: { automaticProvisionalWithholdingSince: '2026-10-23T08:30:00.000Z' },
+          fields: [
+            {
+              name: 'automaticProvisionalWithholdingSince',
+              type: 'string',
+              value: '2026-10-23T08:30:00.000Z',
+              default_value: '',
+              description: 'Managed with the switch',
+            },
+          ],
+        }}
+        history={[]}
+        loading={false}
+        savingFields={{}}
+        updateField={vi.fn<UpdateField>()}
+      />,
+    )
+
+    expect(
+      screen.getByRole('textbox', { name: 'automaticProvisionalWithholdingSince' }),
+    ).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+  })
+
   it('renders config fields and change history', async () => {
     render(
       <DynamicConfigNamespacePanel

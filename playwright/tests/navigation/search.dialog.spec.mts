@@ -1,6 +1,6 @@
 import { navigateTo } from 'vouchington-tooling/playwright'
 import { test, expect } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 test.describe('Global Search', () => {
   test('should open search dialog with Cmd+K', async ({ page }) => {
@@ -227,7 +227,7 @@ test.describe('Pages tab', () => {
 })
 
 test.describe('Admin page shortcuts', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin user sees Queues shortcut when searching "queues"', async ({ page }) => {
     await navigateTo(page, '/')

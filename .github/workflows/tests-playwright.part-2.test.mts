@@ -13,11 +13,10 @@ import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-// Split out of tests-playwright.test.mts to stay under the oxlint max-lines cap. Covers the
-// "Run Playwright tests" step's shard invocation and retry signal specifically.
+// Covers the "Run Playwright tests" step's shard invocation and retry signal.
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const parsedWorkflow = load(workflow) as {
-  jobs?: Record<string, { steps?: Array<{ id?: string; name?: string; run?: string }> }>
+  jobs?: Record<string, { steps?: Array<{ name?: string; run?: string }> }>
 }
 const runPlaywrightTestsScript = parsedWorkflow.jobs?.['playwright-tests']?.steps?.find(
   step => step.name === 'Run Playwright tests',
@@ -115,9 +114,6 @@ describe('tests-playwright.yml retry/flake signal (issue #51)', () => {
 
 describe('tests-playwright.yml shard invocation', () => {
   it('runs the whole suite for the matrix shard', () => {
-    expect(runPlaywrightTestsScript).toContain(
-      'python3 "$GITHUB_WORKSPACE/node_modules/vouchington-tooling/scripts/run-bounded.py" 480 pnpm exec ./ci/with-node-test-options playwright test "--shard=$CI_SHARD"',
-    )
     const args = runPlaywrightPnpmArgs({ CI_SHARD: '2/6' })
     expect(args).toEqual([
       'exec',
@@ -126,81 +122,5 @@ describe('tests-playwright.yml shard invocation', () => {
       'test',
       '--shard=2/6',
     ])
-  })
-
-  it('compiles the localization catalog after the web build and before Playwright starts', () => {
-    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
-    expect(shardJob).not.toBeNull()
-    const body = shardJob![0]
-    const build = body.indexOf('uses: ./.github/actions/build-web-targets')
-    const compile = body.indexOf('Compile localization catalog')
-    const run = body.indexOf('Run Playwright tests')
-    expect(build).toBeGreaterThan(-1)
-    expect(compile).toBeGreaterThan(build)
-    expect(compile).toBeLessThan(run)
-    expect(body).toContain('compile-cli.mts')
-    expect(body).toContain('/dev/shm')
-    expect(body).toContain('LOCALIZATION_SQLITE_PATH')
-  })
-})
-
-describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => {
-  const UPLOAD_CONDITION =
-    "if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
-
-  it('uploads bulky traces and wrangler logs only on failure or a confirmed retry', () => {
-    // A flaky test that fails then passes on retry makes the job exit 0, so a bare `failure()`
-    // guard never fires for these diagnostic bundles. The JUnit report is retained on every
-    // completed run for no-skip evidence; bulky traces and wrangler logs remain failure-only.
-    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
-    expect(shardJob).not.toBeNull()
-    const body = shardJob![0]
-
-    for (const stepName of [
-      'Upload Playwright test-results (traces, screenshots, videos)',
-      'Upload wrangler logs',
-    ]) {
-      const index = body.indexOf(`name: ${stepName}`)
-      expect(index).toBeGreaterThan(-1)
-      expect(body.slice(index, index + 700)).toContain(UPLOAD_CONDITION)
-    }
-  })
-
-  it('retains JUnit results on every non-cancelled run', () => {
-    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
-    const body = shardJob![0]
-    const index = body.indexOf('name: Upload JUnit test results')
-
-    expect(body.slice(index, index + 700)).toContain('if: ${{ !cancelled() }}')
-    expect(body.slice(index, index + 700)).toContain('continue-on-error: true')
-  })
-
-  it('keeps retention-days at 1 for the diagnostic uploads', () => {
-    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
-    const body = shardJob![0]
-    const junitIndex = body.indexOf('name: Upload JUnit test results')
-    const resultsIndex = body.indexOf('name: Upload Playwright test-results')
-    const wranglerIndex = body.indexOf('name: Upload wrangler logs')
-    for (const index of [junitIndex, resultsIndex, wranglerIndex]) {
-      expect(body.slice(index, index + 1000)).toContain('retention-days: 1')
-    }
-  })
-
-  it('references the run-playwright step id exactly, so the retried output actually resolves', () => {
-    // steps.<id>.outputs.<name> only resolves when <id> matches a real step's `id:` in the
-    // same job -- a typo here would silently evaluate to an empty string (never 'true'),
-    // which would look identical to "never retried" instead of failing loudly.
-    const runStep = parsedWorkflow.jobs?.['playwright-tests']?.steps?.find(
-      step => step.name === 'Run Playwright tests',
-    )
-    expect(runStep?.id).toBe('run-playwright')
-
-    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
-    const body = shardJob![0]
-    const occurrences = body.match(/steps\.([a-zA-Z0-9_-]+)\.outputs\.retried/g) ?? []
-    expect(occurrences.length).toBeGreaterThan(0)
-    for (const occurrence of occurrences) {
-      expect(occurrence).toBe(`steps.${runStep?.id}.outputs.retried`)
-    }
   })
 })

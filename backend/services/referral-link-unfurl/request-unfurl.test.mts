@@ -8,7 +8,6 @@ import {
 } from '@voucha/test-helpers'
 import { getPrivateUserByAny } from '@services/users/get'
 import { getTopicBySlug } from '@services/topics/get'
-import { addUserRole } from '@services/users/roles-permissions'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
 import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
@@ -28,8 +27,7 @@ describe('requestReferralLinkUnfurl', () => {
   beforeAll(async () => {
     owner = await createTestUserDirect()
     otherUser = await createTestUserDirect()
-    const admin = await createTestUserDirect()
-    await addUserRole(admin!.id, 'administrator')
+    const admin = await createTestUserDirect({ administrator: true })
     adminUser = await getPrivateUserByAny(admin!.id)
 
     const amexProgram = await getTopicBySlug('amex-referral-program')

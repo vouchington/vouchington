@@ -9,6 +9,7 @@ import {
 } from './test-helpers/vitest-config/aliases.mts'
 import { backendCoreProjects } from './test-helpers/vitest-config/backend-core-projects.mts'
 import { backendCredentialedTestProjects } from './test-helpers/vitest-config/backend-credentialed-projects.mts'
+import { backendEvalTestProjects } from './test-helpers/vitest-config/backend-evals-projects.mts'
 import { backendDataProjects } from './test-helpers/vitest-config/backend-data-projects.mts'
 import {
   coverageConfig,
@@ -90,6 +91,7 @@ export default defineConfig({
       ...backendCoreProjects,
       ...backendDataProjects,
       ...backendCredentialedTestProjects,
+      ...backendEvalTestProjects,
       {
         extends: true,
         resolve: {
@@ -103,7 +105,7 @@ export default defineConfig({
             PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '2000',
           },
           setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
-          include: ['backend/**/*.real-glide.mock.test.mts'],
+          include: ['backend/**/*.real-glide.mock.test.mts', 'backend/**/*.real-glide.test.mts'],
           exclude: ['**/node_modules/**', '**/.git/**'],
           testTimeout: 5_000,
           hookTimeout: 5_000,

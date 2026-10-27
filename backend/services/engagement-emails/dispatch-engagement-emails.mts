@@ -1,9 +1,8 @@
 import { getUsersWorkLimit } from '@services/users/work-limits'
 import { getEngagementEmailsWorkLimit } from './work-limits.mts'
-/* oxlint-disable max-lines -- Engagement email query and formatting helpers are kept with their dispatcher. */
+/* oxlint-disable max-lines -- Recipient selection and claim/admission lifecycle share their dispatcher. */
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getMarketingPostalAddress, getSiteUrl } from '@modules/utils'
 import onError from '@modules/on-error'
 import { getRecommendedRssFeeds } from '@services/recommended-rss-feeds/get-recommendations'
 import { getRecommendedTopics } from '@services/recommended-topics/get-recommendations'
@@ -20,11 +19,11 @@ import {
   enqueueSendFollowTopicsEmail,
   enqueueSendPostReferralLinkEmail,
 } from '@queues/email-digests/enqueues'
-import type {
-  FollowNewsSourcesEmailProps,
-  FollowTopicsEmailProps,
-  PostReferralLinkEmailProps,
-} from '@email-templates/core'
+import {
+  buildFollowTopicsEmailVariables,
+  buildReferralProgramEmailVariables,
+  buildFollowNewsSourcesEmailVariables,
+} from './email-variables.mts'
 import pMap from 'p-map'
 
 type EngagementRecipientRow = {
@@ -32,32 +31,6 @@ type EngagementRecipientRow = {
   email_address: string
   username: string | null
   ui_locale: string | null
-}
-
-type TopicRecommendationInput = {
-  id: string
-  reason?: string | null
-}
-
-type TopicInput = {
-  name: string
-  slug: string
-}
-
-type ReferralProgramInput = {
-  id: string
-  link_count: number
-}
-
-type RssFeedInput = {
-  id: string
-  title: string
-  home_page_url?: { url: string } | null
-  rss_feed_url: { url: string }
-  topic: {
-    slug?: string | null
-    markdown?: string | null
-  }
 }
 
 export async function dispatchEngagementEmails(userIds?: readonly string[]): Promise<void> {
@@ -91,17 +64,9 @@ async function dispatchFollowTopicsEmail(recipient: EngagementRecipientRow): Pro
     if (recommendations.results.length === 0) return
 
     const topics = await getTopicsByAnyBatch(recommendations.results.map(result => result.id))
-    const items = buildFollowTopicsItems(recommendations.results, topics)
+    const props = buildFollowTopicsEmailVariables(recipient, recommendations.results, topics)
+    if (!props) return
 
-    if (items.length === 0) return
-
-    const props: FollowTopicsEmailProps = {
-      userName: recipient.username ?? undefined,
-      topics: items,
-      settingsUrl: getSiteUrl('/my/topics/following'),
-      unsubscribeUrl: getSiteUrl('/my/notification-settings'),
-      physicalAddress: getMarketingPostalAddress(),
-    }
     await enqueueSendFollowTopicsEmail(
       {
         userId: recipient.id,
@@ -128,32 +93,25 @@ async function dispatchPostReferralLinkEmails(
   if (programs.referral_programs.length === 0) return
 
   const topics = await getTopicsByAnyBatch(programs.referral_programs.map(program => program.id))
-  const referralPrograms = buildReferralProgramItems(programs.referral_programs, topics)
-
-  if (referralPrograms.length === 0) return
-
-  await pMap(recipients, recipient => dispatchPostReferralLinkEmail(recipient, referralPrograms), {
-    concurrency: 1,
-    stopOnError: false,
-  })
+  await pMap(
+    recipients,
+    recipient => dispatchPostReferralLinkEmail(recipient, programs.referral_programs, topics),
+    { concurrency: 1, stopOnError: false },
+  )
 }
 
 async function dispatchPostReferralLinkEmail(
   recipient: EngagementRecipientRow,
-  referralPrograms: PostReferralLinkEmailProps['referralPrograms'],
+  programs: Awaited<ReturnType<typeof getTrendingReferralPrograms>>['referral_programs'],
+  topics: Awaited<ReturnType<typeof getTopicsByAnyBatch>>,
 ): Promise<void> {
   let claimed = false
   try {
+    const props = buildReferralProgramEmailVariables(recipient, programs, topics)
+    if (!props) return
     if (!(await claimEngagementEmailSend(recipient.id, 'post_referral_link'))) return
     claimed = true
 
-    const props: PostReferralLinkEmailProps = {
-      userName: recipient.username ?? undefined,
-      referralPrograms,
-      settingsUrl: getSiteUrl('/my/referral-links'),
-      unsubscribeUrl: getSiteUrl('/my/notification-settings'),
-      physicalAddress: getMarketingPostalAddress(),
-    }
     await enqueueSendPostReferralLinkEmail(
       {
         userId: recipient.id,
@@ -193,17 +151,9 @@ async function dispatchFollowNewsSourcesEmail(recipient: EngagementRecipientRow)
     if (recommendations.results.length === 0) return
 
     const feeds = await getRssFeedsByIdBatch(recommendations.results.map(result => result.id))
-    const sources = buildFollowNewsSourceItems(feeds)
+    const props = buildFollowNewsSourcesEmailVariables(recipient, feeds)
+    if (!props) return
 
-    if (sources.length === 0) return
-
-    const props: FollowNewsSourcesEmailProps = {
-      userName: recipient.username ?? undefined,
-      sources,
-      settingsUrl: getSiteUrl('/my/news-sources'),
-      unsubscribeUrl: getSiteUrl('/my/notification-settings'),
-      physicalAddress: getMarketingPostalAddress(),
-    }
     await enqueueSendFollowNewsSourcesEmail(
       {
         userId: recipient.id,
@@ -241,55 +191,6 @@ function reportEngagementDispatchError(error: unknown, emailType: string, userId
   onError(reportableError)
 }
 /* c8 ignore stop */
-
-export function buildFollowTopicsItems(
-  recommendations: TopicRecommendationInput[],
-  topics: Array<TopicInput | null | undefined>,
-): FollowTopicsEmailProps['topics'] {
-  return recommendations
-    .map((result, index) => {
-      const topic = topics[index]
-      if (!topic) return null
-      return {
-        name: topic.name,
-        url: getSiteUrl(`/topic/${topic.slug}`),
-        reason: result.reason ?? undefined,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item != null)
-}
-
-export function buildReferralProgramItems(
-  programs: ReferralProgramInput[],
-  topics: Array<TopicInput | null | undefined>,
-): PostReferralLinkEmailProps['referralPrograms'] {
-  return programs
-    .map((program, index) => {
-      const topic = topics[index]
-      if (!topic) return null
-      return {
-        name: topic.name,
-        url: getSiteUrl(`/referral-program/${topic.slug}`),
-        linkCount: program.link_count,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item != null)
-}
-
-export function buildFollowNewsSourceItems(
-  feeds: Array<RssFeedInput | null | undefined>,
-): FollowNewsSourcesEmailProps['sources'] {
-  return feeds
-    .map(feed => {
-      if (!feed) return null
-      return {
-        name: feed.title,
-        url: getSiteUrl(`/source/${feed.topic.slug ?? feed.id}`),
-        description: feed.topic.markdown || undefined,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item != null)
-}
 
 type EngagementRecipientEmailType = 'follow_topics' | 'post_referral_link' | 'follow_news_sources'
 

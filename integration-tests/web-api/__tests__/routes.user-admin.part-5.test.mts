@@ -26,6 +26,7 @@ import { createHousehold } from '../../../backend/services/individuals-household
 import {
   createWebApiTestServer,
   createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../routes.mts'
 
@@ -61,7 +62,7 @@ describe('routes — user and admin', () => {
     const admin = await createTestUser({ administrator: true })
 
     await createWebApiTestCookieHeader(user.id)
-    adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
 
     const topic = await createTestTopic({ user: admin })
 
@@ -98,7 +99,7 @@ describe('routes — user and admin', () => {
       markdown: 'Web API test crawl markdown',
     })
     crawlId = crawl.id
-  }, 15_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -115,7 +116,7 @@ describe('routes — user and admin', () => {
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
     }
-  }, 15_000)
+  })
 
   describe('web server API admin routes', () => {
     it('getTopicAliasesSearch resolves', async () => {

@@ -2,16 +2,16 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { createRequestQueryOptionsListener } from '../../api/request-query-options.mts'
 import supertest from 'supertest'
 import fn, { createApiRequestGuardedListener } from '../../api/app.mts'
-// Register this package's v1 routes on the shared app singleton. Route
-// packages outside @voucha/api (rss, md, entrypoint infra) register their own
-// routes from their own test files to avoid dependency cycles.
 import '../../api/index.mts'
 import http from 'node:http'
 import { Buffer } from 'node:buffer'
 import type { PrivateUser } from '../../services/users/types.mts'
-import { createDeviceAndSessionTokens } from '../../services/jwt-session/index.mts'
+import {
+  createAuthenticatedTestSession,
+  createVerifiedMfaTestSession,
+  hasCurrentAdministratorRole,
+} from '../authenticated-session.mts'
 import type { FeatureFlags } from '../../services/feature-flags/index.mts'
-import { v7 } from 'uuid'
 import {
   listenOnLoopbackEphemeralPort,
   type LoopbackHost,
@@ -21,7 +21,6 @@ import { profileRequestQueries } from './request-query-profile.mts'
 import { withOwnedApiServer } from '../api-query-options-server.mts'
 
 type ApiTestListener = ReturnType<typeof createApiRequestGuardedListener>
-
 type ApiTestServerAddress = { host: LoopbackHost; port: number }
 
 type ApiTestServerState = {
@@ -39,7 +38,6 @@ type ApiTestServerGlobal = typeof globalThis & {
   [API_TEST_SERVER_MATCHER_KEY]?: typeof fn
 }
 
-// Route tests use cookie auth directly; dedicated suites cover the origin guard.
 const { host: serverHost, port: serverPort } = await sharedApiTestServerAddress()
 export const apiTestServerPort = serverPort
 const testRequestIpState = globalThis as typeof globalThis & {
@@ -49,13 +47,12 @@ const testRequestIpState = globalThis as typeof globalThis & {
 // Extend the supertest agent with authentication helper
 export interface AuthenticatedAgent extends supertest.Agent {
   authenticateAs: (user: PrivateUser) => Promise<void>
+  authenticateAsRaw: (user: PrivateUser) => Promise<void>
+  authenticateAsMfa: (user: PrivateUser) => Promise<void>
   setFeatureFlags: (overrides: FeatureFlags) => void
-  /** The raw cookie string set by authenticateAs; useful for combining with additional cookies */
   authCookie: string
   featureFlagCookie: string
-  /** The `did` minted by the most recent `authenticateAs` call. */
   did: string
-  /** The `sid` minted by the most recent `authenticateAs` call. */
   sid: string
   setClientInfo: (headers: Partial<Record<string, string>>) => void
 }
@@ -64,8 +61,6 @@ export const createRequest = (
   address: ApiTestServerAddress = { host: serverHost, port: serverPort },
 ): AuthenticatedAgent => {
   const requestUrlHost = address.host === '::1' ? '[::1]' : address.host
-  // Use the bound loopback URL directly so supertest never falls back to its
-  // hardcoded 127.0.0.1 URL (in supertest/lib/test.js Test.serverAddress()).
   const agent = supertest.agent(`http://${requestUrlHost}:${address.port}`) as AuthenticatedAgent
   agent.authCookie = ''
   agent.featureFlagCookie = ''
@@ -82,9 +77,6 @@ export const createRequest = (
     for (const [name, value] of Object.entries(headers)) this.set(name, value)
   }
 
-  // Set the CF Worker secret header so requests pass origin validation.
-  // In production, the Cloudflare Worker adds this header; in tests we bypass
-  // the worker and hit the backend directly, so we must add it ourselves.
   if (process.env.CF_WORKER_SECRET) {
     agent.set('x-cf-worker-secret', process.env.CF_WORKER_SECRET)
   }
@@ -97,18 +89,31 @@ export const createRequest = (
     }
   }
 
-  // Add authentication helper method
-  agent.authenticateAs = async function (user: PrivateUser) {
-    const did = v7()
-    const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({ did, uid: user.id })
+  function setAuthTokens(
+    request: AuthenticatedAgent,
+    tokens: Awaited<ReturnType<typeof createAuthenticatedTestSession>>,
+  ) {
+    const { deviceToken, sessionToken } = tokens
+    const did = deviceToken.payload.did
     const cookies = [`dt=${deviceToken.token}`, `st=${sessionToken.token}`]
+    request.did = did
+    request.sid = sessionToken.payload.sid
+    request.authCookie = cookies.join('; ')
+    request.jar.setCookies(cookies, address.host, '/')
+    syncCookieHeader(request)
+  }
 
-    this.did = did
-    this.sid = sessionToken.payload.sid
-    // Set cookies for all subsequent requests
-    this.authCookie = cookies.join('; ')
-    this.jar.setCookies(cookies, address.host, '/')
-    syncCookieHeader(this)
+  agent.authenticateAs = async function (user: PrivateUser) {
+    if (await hasCurrentAdministratorRole(user.id)) return this.authenticateAsMfa(user)
+    return this.authenticateAsRaw(user)
+  }
+
+  agent.authenticateAsRaw = async function (user: PrivateUser) {
+    setAuthTokens(this, await createAuthenticatedTestSession(user))
+  }
+
+  agent.authenticateAsMfa = async function (user: PrivateUser) {
+    setAuthTokens(this, await createVerifiedMfaTestSession(user.id))
   }
 
   agent.setFeatureFlags = function (overrides: FeatureFlags) {
@@ -135,11 +140,6 @@ export function formatTestRequestIp(processId: number, counter: number): string 
 
 function sharedApiTestServerAddress(): Promise<ApiTestServerAddress> {
   const state = globalThis as ApiTestServerGlobal
-  // `vi.resetModules()` re-evaluates this module and `@voucha/api/app`, producing a
-  // new `app` singleton (with its own routes, e.g. test-local routes registered by
-  // callers like error-handler.routes.test.mts). Repoint the dispatch target on every
-  // evaluation so the one persistent per-fork server never keeps forwarding to a
-  // stale pre-reset app.
   state[API_TEST_SERVER_LISTENER_KEY] = createApiRequestGuardedListener(fn.callback())
   state[API_TEST_SERVER_MATCHER_KEY] = fn
   state[API_TEST_SERVER_STATE_KEY] ??= createSharedApiTestServer(state)

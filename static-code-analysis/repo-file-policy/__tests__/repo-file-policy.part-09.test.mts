@@ -59,7 +59,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('rejects stale nested public post route directories', { timeout: 30_000 }, async () => {
+  it('rejects stale nested public post route directories', async () => {
     const dir = await makeRepo()
     await trackPostEnumSurfaces(dir, {
       postTypes: ['discussion', 'review', 'comment', 'topic_recommendation'],
@@ -145,7 +145,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('rejects stale nested public post collection routes', { timeout: 30_000 }, async () => {
+  it('rejects stale nested public post collection routes', async () => {
     const dir = await makeRepo()
     await trackPostEnumSurfaces(dir, {
       postTypes: ['discussion', 'review', 'comment', 'topic_recommendation'],
@@ -158,7 +158,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('rejects missing top-level public post collection pages', { timeout: 30_000 }, async () => {
+  it('rejects missing top-level public post collection pages', async () => {
     const dir = await makeRepo()
     await trackPostEnumSurfaces(dir, {
       postTypes: ['discussion', 'review', 'comment', 'topic_recommendation'],

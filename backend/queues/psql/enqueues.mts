@@ -1,20 +1,13 @@
-import { createHash } from 'node:crypto'
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import type { EnqueueReturnType } from '@voucha/types'
-import { getDeployEnvironment } from '@ts-shared/deploy-environment'
-import {
-  DATA_RETENTION_ORDERING,
-  DATA_RETENTION_RETRY_OPTIONS,
-  MEMBERSHIP_RETENTION_CONTINUATION_JOB_NAME,
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-  TOP_HASHTAGS_VIEW,
-} from './config.mts'
+import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
 import { psql } from './queues.mts'
 import type {
-  MembershipRetentionContinuationData,
+  ClassifierPartitionRange,
   PsqlJobs,
+  PsqlPartitionJobData,
+  PsqlRetentionJobData,
   RefreshMaterializedViewData,
 } from './types.mts'
 
@@ -33,58 +26,81 @@ function createPsqlEnqueue(jobName: PsqlJobs) {
 export const enqueueRunMigrations = createPsqlEnqueue('runMigrations')
 export const enqueueRunViews = createPsqlEnqueue('runViews')
 export const enqueueRunConfigDriven = createPsqlEnqueue('runConfigDriven')
-export const enqueueCreatePartitions = createPsqlEnqueue('createPartitions')
-export const enqueueCleanupPartitions = createPsqlEnqueue('cleanupPartitions')
-export const enqueueDataRetentionCleanup = createPsqlEnqueue('dataRetentionCleanup')
+export const enqueueReconcileVoteDrift = createPsqlEnqueue('reconcileVoteDrift')
 
-type MembershipRetentionContinuationInput = {
-  parentJobId: string
-  data: MembershipRetentionContinuationData
-}
-
-function retentionContinuationId(input: MembershipRetentionContinuationInput): string {
-  const { parentJobId, data } = input
-  const identity = JSON.stringify([
-    parentJobId,
-    data.deliveredMembershipEntitlementEffects,
-    data.endedMembershipRenewalNotices,
-    data.terminalGooglePlayAcknowledgments,
-  ])
-  return `membership-retention__${createHash('sha256').update(identity).digest('hex').slice(0, 32)}`
-}
-
-const enqueueBulkRetentionContinuations = createBulkEnqueueFunction({
+const enqueueRetentionJob = createEnqueueFunction<PsqlRetentionJobData, PsqlJobs>({
   queue: psql,
   queueName: QUEUE_NAME,
-  jobName: MEMBERSHIP_RETENTION_CONTINUATION_JOB_NAME,
-  defaults: {
-    ...DATA_RETENTION_RETRY_OPTIONS,
-    removeOnComplete: true,
-    removeOnFail: true,
-  },
-  buildJob: (input: MembershipRetentionContinuationInput, _index: number) => ({
-    data: input.data,
-    opts: {
-      jobId: retentionContinuationId(input),
-      priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
-      ordering: DATA_RETENTION_ORDERING,
-    },
-  }),
+  jobName: 'dataRetentionCleanup',
 })
+const retentionOrdering = { key: 'data_retention:cleanup', concurrency: 1 } as const
 
-/** A capped retention run schedules the next page under a stable, bounded child id. */
-export function enqueueMembershipRetentionContinuation(
-  parentJobId: string,
-  data: MembershipRetentionContinuationData,
+export const enqueueDataRetentionCleanup = (): EnqueueReturnType =>
+  enqueueRetentionJob({}, { priority: PRIORITY_DEFAULT, ordering: retentionOrdering })
+
+export function enqueueDataRetentionCleanupContinuation(
+  data: NonNullable<PsqlRetentionJobData['continuation']>,
 ) {
+  const jobId = `data-retention-cleanup__${data.runId}__${data.step}`
   return enqueueBulkReactivatingFinished({
     queue: psql,
-    inputs: [{ parentJobId, data }],
-    jobIdOf: retentionContinuationId,
-    enqueueBulk: enqueueBulkRetentionContinuations,
+    inputs: [{ continuation: data }],
+    jobIdOf: () => jobId,
+    enqueueBulk: async inputs => {
+      const jobs = await Promise.all(
+        inputs.map(input =>
+          enqueueRetentionJob(input, {
+            jobId,
+            priority: PRIORITY_DEFAULT,
+            ordering: retentionOrdering,
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+            removeOnComplete: true,
+            removeOnFail: true,
+          }),
+        ),
+      )
+      return jobs.filter(job => job !== null)
+    },
   })
 }
-export const enqueueReconcileVoteDrift = createPsqlEnqueue('reconcileVoteDrift')
+
+function createPartitionEnqueue(jobName: 'createPartitions' | 'cleanupPartitions') {
+  const enqueue = createEnqueueFunction<PsqlPartitionJobData, PsqlJobs>({
+    queue: psql,
+    queueName: QUEUE_NAME,
+    jobName,
+  })
+  return async (classifierRange?: ClassifierPartitionRange): EnqueueReturnType => {
+    if (!classifierRange) return enqueue({}, { priority: PRIORITY_DEFAULT })
+    const operation = jobName === 'createPartitions' ? 'create' : 'retire'
+    const jobId = `classifier-range__${operation}__${classifierRange.fromDate}_${classifierRange.toDate}`
+    const jobs = await enqueueBulkReactivatingFinished({
+      queue: psql,
+      inputs: [classifierRange],
+      jobIdOf: () => jobId,
+      enqueueBulk: async inputs => {
+        const added = await Promise.all(
+          inputs.map(range =>
+            enqueue(
+              { classifierRange: range },
+              {
+                priority: PRIORITY_DEFAULT,
+                jobId,
+                ordering: { key: 'classifier_partitions', concurrency: 1 },
+              },
+            ),
+          ),
+        )
+        return added.filter(job => job !== null)
+      },
+    })
+    return jobs[0]
+  }
+}
+
+export const enqueueCreatePartitions = createPartitionEnqueue('createPartitions')
+export const enqueueCleanupPartitions = createPartitionEnqueue('cleanupPartitions')
 
 const enqueueRefreshMaterializedViewJob = createEnqueueFunction<
   RefreshMaterializedViewData,

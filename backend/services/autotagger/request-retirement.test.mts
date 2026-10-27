@@ -106,7 +106,7 @@ describe('C6 request retirement (real PG)', () => {
       fixture.subject,
       TAGGING_CLASSIFIER_SLUG,
     )
-    expect(requests.map(request => request.run_id)).toEqual([run.runId])
+    expect(requests.map(request => request.run_identity_id)).toEqual([run.runId])
     expect(await sweepableSubjectIds()).not.toContain(fixture.itemId)
   })
 })

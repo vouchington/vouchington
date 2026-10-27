@@ -17,34 +17,6 @@ export type MembershipOperationalCleanupOptions = {
   now?: Date
 }
 
-export type MembershipRetentionSelection = {
-  deliveredMembershipEntitlementEffects: boolean
-  endedMembershipRenewalNotices: boolean
-  terminalGooglePlayAcknowledgments: boolean
-}
-
-/** Continue only membership families that exceeded the previous run's cap. */
-export async function runMembershipOperationalCleanupPage(
-  limits: DataRetentionLimits,
-  selection: MembershipRetentionSelection,
-) {
-  const options = applyRetentionLimits(limits, undefined)
-  const deliveredMembershipEntitlementEffects = selection.deliveredMembershipEntitlementEffects
-    ? await cleanupDeliveredMembershipEntitlementEffects(options)
-    : { deleted: 0, hasMore: false }
-  const endedMembershipRenewalNotices = selection.endedMembershipRenewalNotices
-    ? await cleanupEndedMembershipRenewalNotices(options)
-    : { deleted: 0, hasMore: false }
-  const terminalGooglePlayAcknowledgments = selection.terminalGooglePlayAcknowledgments
-    ? await cleanupTerminalGooglePlayAcknowledgments(options)
-    : { deleted: 0, hasMore: false }
-  return {
-    deliveredMembershipEntitlementEffects,
-    endedMembershipRenewalNotices,
-    terminalGooglePlayAcknowledgments,
-  }
-}
-
 type CursorKind = 'entitlement_effects' | 'renewal_notices' | 'google_acknowledgments'
 type CursorRow = { cursor_at: Date | null; cursor_id: string | null }
 type Candidate = { id: string; due_at: Date }

@@ -40,7 +40,7 @@ describe('legal preservation holds and final user purge', () => {
     await cleanupSoftDeletedUsers(window)
 
     expect(await getTestUserRaw(user.id)).toBeNull()
-  }, 30_000)
+  })
 
   it('skips a held account in batch selection while purging an eligible sibling', async () => {
     const window = createTestRetentionWindow()
@@ -56,7 +56,7 @@ describe('legal preservation holds and final user purge', () => {
 
     expect(await getTestUserRaw(sibling.id)).toBeNull()
     expect(await getTestUserRaw(held.id)).not.toBeNull()
-  }, 30_000)
+  })
 
   it('keeps a released hold and the identities it names after the account is hard-deleted', async () => {
     const window = createTestRetentionWindow()

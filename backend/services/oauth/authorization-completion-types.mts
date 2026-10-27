@@ -1,3 +1,4 @@
+import type { VerifiedLoginFirstFactor } from '@services/oauth-accounts/login-admission'
 import type { OAuthAccount } from '@services/oauth-accounts'
 import type { DeviceClass, DeviceContext } from '@services/jwt-session'
 import type { BrokerCallbackMode, BrokerOAuthProvider, BrokerPurpose } from './broker-config.mts'
@@ -55,13 +56,16 @@ export type DurableOAuthAuthorizationCompletion =
   | {
       kind: 'connected'
       userId: string
+      notificationEmailAddress?: string
       account: OAuthAccount
       provider: BrokerOAuthProvider
       newlyCompleted: boolean
     }
+  | { kind: 'reauthenticated'; account: OAuthAccount }
   | { kind: 'mfa_required'; userId: string; loginAttemptId: string }
   | {
       kind: 'authenticated'
+      firstFactor: VerifiedLoginFirstFactor
       userId: string
       deviceId: string
       sessionId: string

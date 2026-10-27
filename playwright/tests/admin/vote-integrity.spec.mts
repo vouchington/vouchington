@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import {
   createTestUser,
   insertTestPost,
@@ -12,7 +12,7 @@ import {
 const TEST_ADMIN_ID = '019f0000-0000-7000-8000-000000000000'
 
 test.describe('Admin Vote Integrity', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('browses only flag-sourced vote penalties and revokes one', async ({ page }) => {
     const penalizedUser = requireTestValue(

@@ -3068,7 +3068,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         },
         "ordering": {
           "concurrency": 1,
-          "key": "data_retention",
+          "key": "data_retention:cleanup",
         },
         "priority": 10,
         "removeOnComplete": 100,
@@ -3442,7 +3442,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "job_name": "dataRetentionCleanup",
     "queue_name": "psql",
     "schedule": "0 4 * * *",
-    "triggerName": "[anonymous]",
+    "triggerName": "enqueueDataRetentionCleanup",
   },
   {
     "description": "Start a bounded moderation-history sweep with immediate continuation",

@@ -25,6 +25,11 @@ flowchart LR
   for the API and workers to import and never imports a worker.
 - `backend/workers/<domain>/` owns processors. A processor parses the payload and calls a
   [service](../services/README.md); business logic never lives in the worker.
+- The PostgreSQL queue uses the same job names for scheduled crawl partition maintenance and
+  operator actions. Only an authenticated admin request carries explicit classifier batch bounds;
+  scheduled payloads remain empty, so classifier ranges are never created or retired on a schedule.
+  Explicit classifier ranges share one ordered lane. A bounded retention sweep publishes its next
+  page as a distinct queued job so a backlog drains without waiting for the next schedule.
 - `backend/worker-runtime/` wires workers, and `backend/entrypoints/{worker-cpu,worker-io}/` choose
   which run in a process. Infrastructure decides the deployed split; local development runs one
   process for everything.
@@ -77,12 +82,19 @@ page result before child admission, so a retry of a receipted parent reuses the 
 PostgreSQL cursor progress remains authoritative; a crash before the receipt can replay bounded,
 idempotent cleanup. Daily and operator seeds recover lost queue state or terminal failures.
 
+Image deletion fences delivery before processing posts that share the image. Each continuation
+commits a bounded page of post resets and deletion revisions with its cursor and pending listener
+admissions. Admission retries drain that receipt before mutating another page, so a lost queue
+acknowledgement cannot reset a post again. Image maintenance re-admits unfinished deletions;
+root admission coalesces overlapping sweeps so backpressure cannot accumulate dispatchers.
+Source storage and quarantined-image renders are removed only after the final page commits and
+its listener work is admitted. Quarantine deletion still requires a confirmed permanent copy.
+
 The data-retention schedule runs in deployed environments so staging exposes retention failures
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping. Membership retention pages persist their position. A capped run
-continues only the membership families with more eligible rows, keeping the backlog draining
-between schedules without replaying unrelated cleanup work. The scheduled run and its
-continuations share an ordering lane so they do not compete for the same cursor.
+enqueues a retention continuation step naming the membership families with more eligible rows,
+and that step reruns only those families, keeping the backlog draining between schedules.
 
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
@@ -108,6 +120,9 @@ continuations share an ordering lane so they do not compete for the same cursor.
   worker and one slow provider would stall unrelated domains.
   Bedrock Retry-After state is shared by its ordering lane and checked before provider work, so
   newly queued priority jobs observe the same cooldown while unrelated CPU domains keep running.
+  Embedding batch creation uses one ordering lane per entity type for fair admission, a shared
+  provider cooldown for 429 responses, and a renewable Valkey lease for its cross-type creation
+  cap. A quota-delayed type releases that lease before deferral, leaving other ready types eligible.
 - **Fan-out is paged.** Dispatchers and backfills enqueue one bounded page and continue through a
   cursor, so no run reads unbounded rows and priority stays meaningful.
 - **A paged import survives a lost dispatcher.** User RSS and admin topic imports share the
@@ -135,6 +150,7 @@ continuations share an ordering lane so they do not compete for the same cursor.
   each processor picks one contract: retryable (may duplicate) or at-most-once (a delivery marker is
   committed before the send, and may lose the email). Jobs marked sensitive are removed on either
   successful completion or failure so a credential never outlives the job.
+- **Reauthentication email loss is recoverable by the person requesting a new code.** Its sensitive job may duplicate delivery on a retry, but verification still consumes a purpose-scoped code once.
 - **Spend admission is single-sourced.** Every call that can incur billed model spend goes through
   one spend-cap decision point, and capped jobs park until the daily rollover instead of failing.
   The coordinator that releases them is deliberately not behind the provider limiter.
@@ -192,3 +208,12 @@ an active pass. Separate retained sweeps can revisit a row between passes: locki
 image lifecycle locks, and idempotent storage deletion keep those effects replayable, while
 extraction admission deduplicates in-flight work. Recovery advances only after its bounded page
 is admitted.
+
+### Account security notifications
+
+Account security notifications use the existing event-triggered email queue. The producer captures
+the old primary before a settings mutation and enqueues that direct address after session
+revocation; workers never resolve the recipient from the changed profile. Payloads are sensitive
+and removed at their terminal outcome. Notification delivery is advisory: terminal delivery failure
+is accepted loss, since account state cannot reconstruct a prior delivery address. Post-commit
+admission failures are reported without changing the committed settings result.

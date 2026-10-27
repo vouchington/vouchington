@@ -15,7 +15,7 @@ describe('app attestation routes - request contract validation', () => {
     await routeRateLimitConfig.waitForInitialization()
     routeRateLimitConfig.unsubscribe()
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
-  }, 15_000)
+  })
 
   beforeEach(() => {
     overrideDynamicConfigFieldsForTest(appAttestationConfig, { enabled: true })

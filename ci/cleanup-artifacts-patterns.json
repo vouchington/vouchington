@@ -14,6 +14,8 @@
     "backend-modules-junit",
     "backend-credentialed-junit",
     "backend-credentialed-anthropic-junit",
+    "backend-evals-openrouter-junit",
+    "backend-evals-anthropic-junit",
     "lambdas-junit",
     "postgres-schema-junit",
     "tooling-junit",

@@ -1,4 +1,3 @@
-// no-mistakes-disable-file unique-exports
 // barrel re-exports that are also available from their source files — intentional
 export type {
   Post,

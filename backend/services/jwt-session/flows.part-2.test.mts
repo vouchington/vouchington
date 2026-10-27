@@ -117,7 +117,7 @@ describe('flows warm and cold paths', () => {
       expect(result.uid).toBeNull()
       expect(result.st).not.toBe(sessionToken)
       await expectAuthSessionEvent(testDir, result.did, result.sid, 'refreshed_anonymous')
-    }, 20_000)
+    })
 
     it('warm path: applies user-wide revocation cutoff in the combined Valkey check', async () => {
       const user = await createTestUser()
@@ -271,7 +271,7 @@ describe('flows warm and cold paths', () => {
       expect(result.st).not.toBe(sessionToken)
       await expect(isSessionRevoked(sid, { userId: user.id })).resolves.toBe(false)
       await unsuspendTestUser(user.id)
-    }, 20_000)
+    })
 
     it('cold path: re-mints session with reloaded claims for a real, non-suspended user', async () => {
       const user = await createTestUser()
@@ -286,6 +286,6 @@ describe('flows warm and cold paths', () => {
       })
       expect(result.uid).toBe(user.id)
       expect(result.st).not.toBe(sessionToken)
-    }, 20_000)
+    })
   })
 })

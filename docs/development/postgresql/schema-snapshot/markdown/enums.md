@@ -210,6 +210,22 @@
 - `score`
 - `agent`
 
+## `classifier_retention_sweeps`
+
+- `run_candidates`
+- `agent_topics`
+- `local_outcomes`
+- `runs`
+- `calls`
+- `batches`
+- `identities`
+- `versioned_identities`
+- `requests`
+- `topic_results`
+- `story_results`
+- `community_prompt_results`
+- `decision_candidates`
+
 ## `classifier_run_terminal_failure_kinds`
 
 - `provider-error`
@@ -726,6 +742,12 @@
 - `relation__rss_feed_item__category__topic`
 - `relation__rss_feed_item__category__topic_alias`
 
+## `email_address_token_purposes`
+
+- `login`
+- `re_auth`
+- `email_verification`
+
 ## `email_security_verdicts`
 
 - `pass`
@@ -757,6 +779,17 @@
 
 - `all_followers`
 - `selected_followers`
+
+## `history_retention_cleanup_names`
+
+- `dynamic_configuration_revisions`
+- `rss_feed_setting_changes`
+- `fediverse_instance_integration_changes`
+- `community_agent_prompt_revisions`
+- `followed_user_import_requests`
+- `pending_user_import_requests`
+- `referral_attribution_scrub`
+- `referral_attribution_expiry`
 
 ## `http_request_methods`
 
@@ -1304,6 +1337,7 @@
 
 - `authenticate`
 - `connect`
+- `re_auth`
 
 ## `oauth_authorization_result_kinds`
 

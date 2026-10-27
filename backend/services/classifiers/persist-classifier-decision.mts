@@ -9,9 +9,10 @@ import {
   classifierDecisionInputFingerprint,
   normalizeClassifierDecisionInput,
 } from './decision-input.mts'
-import { readCompleteClassifierDecision } from './read-complete-decision.mts'
+import { readPersistedClassifierDecision } from './classifier-decision-readback.mts'
+import { insertClassifierDecisionBatch } from './classifier-decision-batch-insert.mts'
+import { persistAndCompleteClassifierDecision } from './classifier-decision-completion.mts'
 import {
-  completeClassifierDecisionBatch,
   lockClassifierDecisionBatch,
   readClassifierDecisionStoredCandidateSnapshots,
 } from './classifier-decision-batch-lifecycle.mts'
@@ -20,34 +21,37 @@ import {
   assertBatchMatchesInput,
   assertBatchInputFingerprintMatches,
   assertCandidateKindMatchesSubject,
-  assertCompletePersistence,
   assertExistingDecisionMatchesInput,
   assertReservedSnapshotsMatchInput,
   storedCandidateIds,
 } from './classifier-decision-persistence-validation.mts'
 import {
   captureClassifierDecisionStoredCandidateSnapshots,
-  insertClassifierDecisionBatch,
   insertClassifierDecisionCalls,
   loadClassifierDecisionPromptThresholds,
   loadReservedClassifierDecisionPromptThresholds,
 } from './write-decision-lineage.mts'
-import { insertClassifierDecisionResults } from './write-decision-results.mts'
 
 export async function persistClassifierDecision(
   input: PersistClassifierDecisionInput,
-  options: { query?: OwnedTransaction } = {},
+  options: { query?: OwnedTransaction; activeRunId?: string } = {},
 ): Promise<PersistClassifierDecisionResult> {
   const normalizedInput = normalizeClassifierDecisionInput(input)
   const candidateKind = classifierDecisionCandidateKind(normalizedInput)
   if (options.query) {
-    return persistClassifierDecisionWithQuery(options.query, normalizedInput, candidateKind)
+    return persistClassifierDecisionWithQuery(
+      options.query,
+      normalizedInput,
+      candidateKind,
+      options.activeRunId,
+    )
   }
   await using transaction = await beginTransaction()
   const result = await persistClassifierDecisionWithQuery(
     transaction,
     normalizedInput,
     candidateKind,
+    options.activeRunId,
   )
   await transaction.commit()
   return result
@@ -57,6 +61,7 @@ async function persistClassifierDecisionWithQuery(
   query: OwnedTransaction,
   originalInput: ReturnType<typeof normalizeClassifierDecisionInput>,
   candidateKind: ReturnType<typeof classifierDecisionCandidateKind>,
+  activeRunId?: string,
 ): Promise<PersistClassifierDecisionResult> {
   const inactive = await readInactiveClassifierTopicIds(
     query,
@@ -68,17 +73,18 @@ async function persistClassifierDecisionWithQuery(
   )
   const inputSha256 = classifierDecisionInputFingerprint(originalInput)
   const normalizedInput = omitInactiveTopicInput(originalInput, inactive)
-  const inserted = await insertClassifierDecisionBatch(query, normalizedInput)
+  const inserted = await insertClassifierDecisionBatch(query, normalizedInput, activeRunId)
   if (!inserted) {
     const batch = await lockClassifierDecisionBatch(query, normalizedInput.batchId)
     if (!batch) throw new Error('Classifier decision batch disappeared while persisting')
     assertBatchMatchesInput(batch, normalizedInput)
     if (batch.completedAt !== null) {
       assertBatchInputFingerprintMatches(batch, inputSha256)
-      const storedDecision = await readCompleteClassifierDecision(
+      const storedDecision = await readPersistedClassifierDecision(
         query,
         normalizedInput.batchId,
         candidateKind,
+        activeRunId,
       )
       const decision = omitInactiveTopicDecision(storedDecision, inactive)
       assertExistingDecisionMatchesInput(decision, normalizedInput)
@@ -90,10 +96,17 @@ async function persistClassifierDecisionWithQuery(
       candidateKind,
       originalInput,
       inputSha256,
+      activeRunId,
     )
   }
 
-  return persistNewClassifierDecision(query, normalizedInput, candidateKind, inputSha256)
+  return persistNewClassifierDecision(
+    query,
+    normalizedInput,
+    candidateKind,
+    inputSha256,
+    activeRunId,
+  )
 }
 
 async function persistNewClassifierDecision(
@@ -101,6 +114,7 @@ async function persistNewClassifierDecision(
   normalizedInput: ReturnType<typeof normalizeClassifierDecisionInput>,
   candidateKind: ReturnType<typeof classifierDecisionCandidateKind>,
   inputSha256: Buffer,
+  activeRunId?: string,
 ): Promise<PersistClassifierDecisionResult> {
   const configuration = await loadClassifierDecisionPromptThresholds(query, normalizedInput)
   assertCandidateKindMatchesSubject(
@@ -127,6 +141,7 @@ async function persistNewClassifierDecision(
     snapshots,
     configuration.thresholds,
     inputSha256,
+    activeRunId,
   )
 }
 
@@ -136,6 +151,7 @@ async function completeReservedClassifierDecision(
   candidateKind: ReturnType<typeof classifierDecisionCandidateKind>,
   originalInput: ReturnType<typeof normalizeClassifierDecisionInput>,
   inputSha256: Buffer,
+  activeRunId?: string,
 ): Promise<PersistClassifierDecisionResult> {
   const configuration = await loadReservedClassifierDecisionPromptThresholds(query, normalizedInput)
   assertCandidateKindMatchesSubject(
@@ -161,33 +177,6 @@ async function completeReservedClassifierDecision(
     snapshots,
     configuration.thresholds,
     inputSha256,
+    activeRunId,
   )
-}
-
-async function persistAndCompleteClassifierDecision(
-  query: OwnedTransaction,
-  normalizedInput: ReturnType<typeof normalizeClassifierDecisionInput>,
-  candidateKind: ReturnType<typeof classifierDecisionCandidateKind>,
-  calls: Awaited<ReturnType<typeof insertClassifierDecisionCalls>>,
-  snapshots: Awaited<ReturnType<typeof captureClassifierDecisionStoredCandidateSnapshots>>,
-  thresholds: { lower: number; upper: number },
-  inputSha256: Buffer,
-): Promise<PersistClassifierDecisionResult> {
-  const resultCount = await insertClassifierDecisionResults(
-    query,
-    normalizedInput,
-    calls,
-    snapshots,
-    thresholds,
-    candidateKind,
-  )
-  assertCompletePersistence(normalizedInput, calls.length, snapshots.size, resultCount)
-  await completeClassifierDecisionBatch(query, normalizedInput.batchId, inputSha256)
-  const decision = await readCompleteClassifierDecision(
-    query,
-    normalizedInput.batchId,
-    candidateKind,
-  )
-  assertExistingDecisionMatchesInput(decision, normalizedInput)
-  return { decision, replayed: false }
 }

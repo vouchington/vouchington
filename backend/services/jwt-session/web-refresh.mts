@@ -27,12 +27,18 @@ export async function refreshWebSessionFromDeviceToken(
     return null
   assertSessionClientBinding(device, userAgent, ja4)
   if (
-    await isSessionRevoked(device.refresh_sid, { userId: device.refresh_uid, issuedAt: device.iat })
+    await isSessionRevoked(device.refresh_sid, {
+      userId: device.refresh_uid,
+      issuedAt: device.iat,
+      mfaVerifiedAt: device.mfa_at ?? null,
+    })
   ) {
     return issueAnonSession(device.did, dt, device.dc)
   }
   const user = await fetchUser(device.refresh_uid)
-  const claims = user ? await getEnrichedSessionClaims(user) : null
+  const claims = user
+    ? await getEnrichedSessionClaims(user, { mfaVerifiedAt: device.mfa_at })
+    : null
   if (!claims) return issueAnonSession(device.did, dt, device.dc)
   const refreshed = await createRefreshedAuthenticatedSession({
     did: device.did,
@@ -43,7 +49,12 @@ export async function refreshWebSessionFromDeviceToken(
     ...claims,
     deviceClass: device.dc,
     deviceExpiresAt: device.exp,
-    clientBinding: { client: 'web', ua_hash: device.ua_hash, ja4_hash: device.ja4_hash },
+    clientBinding: {
+      client: 'web',
+      ua_hash: device.ua_hash,
+      ja4_hash: device.ja4_hash,
+      ...(device.mfa_at !== undefined && { mfa_at: device.mfa_at }),
+    },
     freshness: { type: 'reset' },
   })
   return {

@@ -62,7 +62,7 @@ describe('story clustering run reservation (real PG)', () => {
     expect(receipt!.input_sha256.equals(item.inputSha256)).toBe(true)
     expect(await readStoryRunCandidates(run.runId)).toEqual([{ rssFeedItemId: neighbor.itemId }])
     expect(await getSubjectClassifierRunRequestFacts(item.subject)).toMatchObject([
-      { run_id: run.runId, no_work_at: null, stale_at: null },
+      { run_identity_id: run.runId, no_work_at: null, stale_at: null },
     ])
   })
 
@@ -95,7 +95,7 @@ describe('story clustering run reservation (real PG)', () => {
       await getSubjectClassifierRunFacts(item.subject, STORY_CLUSTERING_CLASSIFIER_SLUG),
     ).toEqual([])
     expect(await getSubjectClassifierRunRequestFacts(item.subject)).toMatchObject([
-      { run_id: null, no_work_at: expect.any(Date) },
+      { run_identity_id: null, no_work_at: expect.any(Date) },
     ])
   })
 
@@ -109,7 +109,7 @@ describe('story clustering run reservation (real PG)', () => {
     expect(await reserveClassifierRun(adapter, item.subject)).toEqual({ kind: 'not-ready' })
 
     expect(await getSubjectClassifierRunRequestFacts(item.subject)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: null },
+      { run_identity_id: null, no_work_at: null, stale_at: null },
     ])
     await embedAutotaggerFeedItem(item.itemId, unit)
     expect((await reserveClassifierRun(adapter, item.subject)).kind).toBe('reserved')
@@ -200,7 +200,7 @@ describe('story clustering run configuration (real PG)', () => {
     await expect(reserveClassifierRun(unresolvable, item.subject)).rejects.toThrow('not found')
 
     expect(await getSubjectClassifierRunRequestFacts(item.subject)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: null },
+      { run_identity_id: null, no_work_at: null, stale_at: null },
     ])
     expect((await reserveClassifierRun(adapter, item.subject)).kind).toBe('reserved')
   })

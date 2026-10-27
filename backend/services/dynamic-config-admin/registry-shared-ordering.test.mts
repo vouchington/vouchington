@@ -23,10 +23,12 @@ describe('shared queue DynamicConfig admin fields', () => {
       }),
     ).toBe(1)
     expect(getBackgroundCpuOrderingLimits('ai-spend-cap').maxValue).toBe(1)
-    expect(getBackgroundCpuOrderingLimits('bedrock-embeddings:creation')).toMatchObject({
-      defaultValue: 1,
-      maxValue: 1,
-    })
+    for (const type of ['topics', 'posts', 'rss_feed_items', 'crawl_chunks', 'images']) {
+      expect(getBackgroundCpuOrderingLimits(`bedrock-embeddings:creation:${type}`)).toMatchObject({
+        defaultValue: 1,
+        maxValue: 1,
+      })
+    }
     expect(getBackgroundCpuOrderingLimits('crawl:boilerplate').defaultValue).toBe(4)
     expect(
       getBackgroundCpuOrderingLimits('crawl:018f7757-2e3e-7cc0-930c-25b612ca562a'),

@@ -15,6 +15,7 @@ import { describeClassifierUsageLedger } from './classifier-usage-ledger-tests.m
 import { countAiUsageRecordsForResponseId } from './entities/ai-usage.mts'
 import { sentryCaptureMessageMock } from './vitest.setup.sentry-mock.mts'
 import { withReservedAiUsageDay } from './with-reserved-ai-usage-day.mts'
+import { withCurrentClassifierUsage } from './classifier-current-usage.mts'
 
 /**
  * Drives one classifier's run lifecycle through the real structured-decision client over a fake
@@ -56,8 +57,11 @@ export function describeClassifierProviderFailures(driver: ClassifierFailureDriv
     )
 
     it('bills a retried outage exactly once and never reserves a second attempt for the same outcome', async () => {
-      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async day => {
+      await withCurrentClassifierUsage(async trackRunId => {
         const run = await driver.prepare()
+        trackRunId(run.runId)
+        const day = new Date().toISOString().slice(0, 10)
+        const uncertaintyBefore = await getAccountingUncertaintySource(day)
         const responseId = `decision-${randomUUID()}`
         const outage = failing(403, OUTAGE)
         const success = billed(responseId)
@@ -75,7 +79,7 @@ export function describeClassifierProviderFailures(driver: ClassifierFailureDriv
           terminal_failed_at: null,
         })
         await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
-        await expect(getAccountingUncertaintySource(day)).resolves.toBeNull()
+        await expect(getAccountingUncertaintySource(day)).resolves.toBe(uncertaintyBefore)
       })
     })
 

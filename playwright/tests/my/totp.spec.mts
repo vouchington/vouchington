@@ -1,74 +1,54 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
+import {
+  navigateTo,
+  randomSuffix,
+  generateTotpCode,
+  waitForBelowFoldHydration,
+} from 'vouchington-tooling/playwright'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { insertTestPasskey } from '../../../backend/test-helpers/index.mts'
+import { confirmAccountChange } from '../../helpers/account-confirmation.mts'
+import { insertTestTotpAuthenticator } from '../../../backend/test-helpers/entities/totp.mts'
 
-const MOCK_AUTHENTICATOR_ID = '00000000-0000-0000-0000-aabbccddeeff'
-
-function makeMockAuthenticator(name: string) {
-  return {
-    id: MOCK_AUTHENTICATOR_ID,
-    name,
-    created_at: new Date().toISOString(),
-  }
-}
-
-async function mockTotpSetupRoutes(page: Page, authenticatorName: string) {
-  const authenticator = makeMockAuthenticator(authenticatorName)
-  await page.route('**/api/v1/auth/totp', async route => {
-    if (route.request().method() !== 'POST') return route.continue()
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        authenticator,
-        secret: 'JBSWY3DPEHPK3PXP',
-        uri: `otpauth://totp/Test:tests%40voucha.ai?secret=JBSWY3DPEHPK3PXP&issuer=Test`,
-      }),
-    })
-  })
-  await page.route('**/api/v1/auth/totp/setup/verification', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ authenticator }),
-    })
-  })
-  return authenticator
-}
-
-async function performSetupFlow(page: Page, authenticatorName: string) {
+async function performSetupFlow(page: Page, userId: string, name: string): Promise<string> {
   const addButton = page.getByTestId('totp-add-authenticator-button')
-  const nameInput = page.getByTestId('totp-setup-name-input')
-
-  // Scroll TotpManager into view first so React can see it in the viewport
   await addButton.scrollIntoViewIfNeeded()
-
   await waitForBelowFoldHydration(page)
-
   await addButton.click()
-  await expect(nameInput).toBeVisible()
-  await expect(page.getByTestId('setup-flow-name-cancel')).toBeVisible()
-
-  await nameInput.fill(authenticatorName)
+  await page.getByTestId('totp-setup-name-input').pressSequentially(name)
+  const setupResponse = page.waitForResponse(
+    response =>
+      new URL(response.url()).pathname === '/api/v1/auth/totp' &&
+      response.request().method() === 'POST',
+  )
   await page.getByTestId('totp-start-setup-button').click()
-
+  await confirmAccountChange(page, userId)
+  const setup = (await (await setupResponse).json()) as {
+    authenticator: { id: string }
+    secret: string
+  }
   await expect(page.getByTestId('totp-setup-qr-prompt')).toBeVisible()
+  const verification = page.waitForResponse(
+    response =>
+      new URL(response.url()).pathname === '/api/v1/auth/totp/setup/verification' &&
+      response.request().method() === 'POST',
+  )
+  await page.getByTestId('setup-flow-confirm-identity').click()
+  await confirmAccountChange(page, userId)
   await expect(page.getByTestId('setup-flow-verify-and-save')).toBeVisible()
-  await expect(page.getByTestId('setup-flow-verify-cancel')).toBeVisible()
-
-  // Enter the 6-digit verification code — auto-submits at 6 digits
-  const otpInput = page.locator('input[inputmode="numeric"]').first()
-  await otpInput.pressSequentially('123456')
-
-  await expect(page.getByTestId(`totp-authenticator-item-${MOCK_AUTHENTICATOR_ID}`)).toBeVisible()
+  const freshCode = await generateTotpCode(page, setup.secret)
+  await page.locator('input[inputmode="numeric"]').pressSequentially(freshCode)
+  await verification
+  await expect(page.getByTestId(`totp-authenticator-item-${setup.authenticator.id}`)).toBeVisible()
+  return setup.authenticator.id
 }
 
 test.describe('TOTP authenticator management', () => {
-  test.use({ storageState: AUTH_STATE })
+  let userId: string
 
   test.beforeEach(async ({ page }) => {
+    const user = await withCleanUser(page)
+    userId = user.id
+    await insertTestTotpAuthenticator(userId, randomSuffix())
     await navigateTo(page, '/my/identity')
   })
 
@@ -77,88 +57,72 @@ test.describe('TOTP authenticator management', () => {
     await expect(page.getByTestId('totp-add-authenticator-button')).toBeVisible()
   })
 
-  test('adds a TOTP authenticator', async ({ page }) => {
-    const name = `Playwright App ${randomSuffix()}`
-    await mockTotpSetupRoutes(page, name)
+  test('adds a TOTP authenticator after confirming both stages', async ({ page }) => {
+    const id = await performSetupFlow(page, userId, `Playwright App ${randomSuffix()}`)
+    await expect(page.getByTestId(`totp-authenticator-item-${id}`)).toBeVisible()
+  })
 
-    await performSetupFlow(page, name)
+  test('cancels authenticator setup before and after creating a secret', async ({ page }) => {
+    await page.getByTestId('totp-add-authenticator-button').click()
+    await page.getByTestId('setup-flow-name-cancel').click()
+    await expect(page.getByTestId('totp-add-authenticator-button')).toBeVisible()
 
-    await expect(page.getByTestId(`totp-authenticator-item-${MOCK_AUTHENTICATOR_ID}`)).toBeVisible()
+    await page.getByTestId('totp-add-authenticator-button').click()
+    const setupResponse = page.waitForResponse(
+      response =>
+        new URL(response.url()).pathname === '/api/v1/auth/totp' &&
+        response.request().method() === 'POST',
+    )
+    await page.getByTestId('totp-start-setup-button').click()
+    await confirmAccountChange(page, userId)
+    await setupResponse
+    await expect(page.getByTestId('totp-setup-qr-prompt')).toBeVisible()
+    await expect(page.getByTestId('setup-flow-confirm-identity')).toBeEnabled()
+    await expect(page.locator('input[inputmode="numeric"]')).toHaveCount(0)
+    await page.getByTestId('setup-flow-verify-cancel').click()
+    await expect(page.getByTestId('totp-add-authenticator-button')).toBeVisible()
   })
 
   test('renames a TOTP authenticator', async ({ page }) => {
-    const name = `Playwright App ${randomSuffix()}`
+    const authenticator = await insertTestTotpAuthenticator(userId, randomSuffix())
     const newName = `Renamed App ${randomSuffix()}`
-
-    await mockTotpSetupRoutes(page, name)
-    await page.route(`**/api/v1/auth/totp/${MOCK_AUTHENTICATOR_ID}`, async route => {
-      if (route.request().method() !== 'PATCH') return route.continue()
-      await route.fulfill({ status: 204 })
-    })
-
-    await performSetupFlow(page, name)
-
-    const authenticatorItem = page.getByTestId(`totp-authenticator-item-${MOCK_AUTHENTICATOR_ID}`)
-    await authenticatorItem.getByTestId('totp-rename-button').click()
-    await expect(authenticatorItem.getByTestId('totp-rename-save')).toBeVisible()
-    await expect(authenticatorItem.getByTestId('totp-rename-cancel')).toBeVisible()
-
-    const renameInput = page.getByTestId('totp-rename-input')
-    await renameInput.fill(newName)
-    await renameInput.evaluate(el => (el.closest('form') as HTMLFormElement).requestSubmit())
-
-    await expect(authenticatorItem.getByTestId('totp-authenticator-name')).toHaveText(newName)
+    await navigateTo(page, '/my/identity')
+    const item = page.getByTestId(`totp-authenticator-item-${authenticator.id}`)
+    await item.getByTestId('totp-rename-button').click()
+    const input = item.getByTestId('totp-rename-input')
+    await input.clear()
+    await input.pressSequentially(newName)
+    await item.getByTestId('totp-rename-save').click()
+    await expect(item.getByTestId('totp-authenticator-name')).toHaveText(newName)
   })
 
-  test('remove triggers re-auth dialog after multi-MFA confirmation', async ({ page }) => {
-    const name = `Playwright App ${randomSuffix()}`
-
-    const user = await withCleanUser(page)
-    await insertTestPasskey(user.id, randomSuffix())
+  test('cancels renaming and removal without changing the authenticator', async ({ page }) => {
+    const authenticator = await insertTestTotpAuthenticator(userId, randomSuffix())
     await navigateTo(page, '/my/identity')
-    await mockTotpSetupRoutes(page, name)
+    const item = page.getByTestId(`totp-authenticator-item-${authenticator.id}`)
+    const originalName = await item.getByTestId('totp-authenticator-name').textContent()
 
-    // Mock DELETE to return MFA_REAUTH_REQUIRED so the re-auth dialog opens via the
-    // server fallback path. This is needed when the shared test user has passkeys,
-    // in which case the client-side totalMfa check shows an inline confirm first.
-    await page.route(`**/api/v1/auth/totp/${MOCK_AUTHENTICATOR_ID}`, async route => {
-      if (route.request().method() !== 'DELETE') return route.continue()
-      await route.fulfill({
-        status: 422,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          message: 'Re-authentication required to remove last MFA method',
-          code: 'MFA_REAUTH_REQUIRED',
-        }),
-      })
-    })
+    await item.getByTestId('totp-rename-button').click()
+    await item.getByTestId('totp-rename-input').fill(`Cancelled ${randomSuffix()}`)
+    await item.getByTestId('totp-rename-cancel').click()
+    await expect(item.getByTestId('totp-authenticator-name')).toHaveText(originalName!)
 
-    await performSetupFlow(page, name)
+    await item.getByTestId('totp-remove-button').click()
+    await item.getByTestId('totp-remove-cancel').click()
+    await expect(item.getByTestId('totp-remove-confirm-button')).toBeHidden()
+    await expect(item.getByTestId('totp-authenticator-name')).toHaveText(originalName!)
+  })
 
-    // The isolated user has a passkey, so TOTP removal requires an explicit confirmation.
-    const authenticatorItem = page.getByTestId(`totp-authenticator-item-${MOCK_AUTHENTICATOR_ID}`)
-    await authenticatorItem.getByTestId('totp-remove-button').click()
-    const confirmButton = authenticatorItem.getByTestId('totp-remove-confirm-button')
-    await expect(confirmButton).toBeVisible()
-    await expect(authenticatorItem.getByTestId('totp-remove-cancel')).toBeVisible()
-    await confirmButton.click()
-
-    await expect(page.getByTestId('mfa-reauth-dialog')).toBeVisible()
-    await expect(page.getByTestId('mfa-reauth-dialog-title')).toBeVisible()
-
-    await page.route('**/api/v1/auth/mfa/re-auth/email/tokens', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ email_address: 'tests+pw-reauth@voucha.ai' }),
-      }),
-    )
-    await page.getByTestId('verification-panes-email-send-code').click()
-    await expect(page.getByTestId('verification-panes-email-verify')).toBeVisible()
-    await expect(page.getByTestId('verification-panes-email-resend')).toBeVisible()
-
-    // Cancel — authenticator should still be in the list
+  test('keeps a factor when fresh confirmation is cancelled', async ({ page }) => {
+    const authenticator = await insertTestTotpAuthenticator(userId, randomSuffix())
+    await navigateTo(page, '/my/identity')
+    const item = page.getByTestId(`totp-authenticator-item-${authenticator.id}`)
+    await item.getByTestId('totp-remove-button').click()
+    await item.getByTestId('totp-remove-confirm-button').click()
+    const dialog = page.getByTestId('mfa-reauth-dialog')
+    await expect(dialog).toBeVisible()
     await page.getByTestId('mfa-reauth-dialog-cancel-button').click()
-    await expect(authenticatorItem).toBeVisible()
+    await expect(dialog).toBeHidden()
+    await expect(item).toBeVisible()
   })
 })

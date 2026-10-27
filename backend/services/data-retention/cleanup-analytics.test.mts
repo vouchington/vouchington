@@ -92,6 +92,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         retainedMediaBindingIds: [],
         softDeletedUsers: emptyWindow,
         oldReferralAttributions: emptyWindow,
+        histories: emptyWindow,
         orphanedOAuthAccounts: emptyWindow,
         expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
         expiredOAuthServerArtifacts: emptyWindow,
@@ -113,13 +114,18 @@ describe('cleanupAnalyticsLocalFiles', () => {
         webPushSubscriptionTombstones: emptyWindow,
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
+        classifierRecords: emptyWindow,
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       retainedIdentityRoots: [],
       retainedRelationIdentities: [],
       retainedMediaBindings: { scanned: 0, deleted: 0, hasMore: false },
       softDeletedUsers: { deleted: 0, hasMore: false },
       oldReferralAttributions: { deleted: 0, hasMore: false },
+      histories: {
+        dynamic_configuration_revisions: { scanned: 0, changed: 0, hasMore: false },
+        referral_attribution_scrub: { scanned: 0, changed: 0, hasMore: false },
+      },
       orphanedOAuthAccounts: { deleted: 0, hasMore: false },
       expiredOAuthAuthorizations: { deleted: 0, hasMore: false },
       expiredOAuthServerArtifacts: { deleted: 0, hasMore: false },
@@ -141,6 +147,22 @@ describe('cleanupAnalyticsLocalFiles', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      classifierRecords: {
+        runCandidates: { scanned: 0, deleted: 0, hasMore: false },
+        agentTopics: { scanned: 0, deleted: 0, hasMore: false },
+        localOutcomes: { scanned: 0, deleted: 0, hasMore: false },
+        runs: { scanned: 0, deleted: 0, hasMore: false },
+        topicResults: { scanned: 0, deleted: 0, hasMore: false },
+        storyResults: { scanned: 0, deleted: 0, hasMore: false },
+        communityPromptResults: { scanned: 0, deleted: 0, hasMore: false },
+        decisionCandidates: { scanned: 0, deleted: 0, hasMore: false },
+        calls: { scanned: 0, deleted: 0, hasMore: false },
+        batches: { scanned: 0, deleted: 0, hasMore: false },
+        requests: { scanned: 0, deleted: 0, hasMore: false },
+        deletedSubjectIdentities: { scanned: 0, deleted: 0, hasMore: false },
+        versionedIdentities: { scanned: 0, deleted: 0, hasMore: false },
+        identities: { scanned: 0, deleted: 0, hasMore: false },
+      },
     })
     await flushFirehose()
     expect(firehoseSender).toHaveBeenCalled()

@@ -55,7 +55,7 @@ describe('crawl-url network backoff', () => {
       count: 0,
       hasMore: false,
     })
-  }, 30_000)
+  })
 
   it('runs exactly one probe after expiry and closes the backoff on success', async () => {
     const host = await createHostname('net-backoff-probe')
@@ -87,7 +87,7 @@ describe('crawl-url network backoff', () => {
       network_backoff_ends_at: null,
       consecutive_network_failures: 0,
     })
-  }, 30_000)
+  })
 
   it('leaves the probe unclaimed when robots.txt disallows the first URL', async () => {
     const host = await createHostname('net-backoff-robots')
@@ -109,7 +109,7 @@ describe('crawl-url network backoff', () => {
     fetchCrawlerHtml.mockResolvedValueOnce(createMockCrawlerResult(200, null, null))
     await expect(crawlUrlForTest(probeUrl.id)).resolves.not.toBeNull()
     expect(fetchCrawlerHtml).toHaveBeenCalledTimes(1)
-  }, 30_000)
+  })
 
   it('closes the backoff when the probe answers with a redirect', async () => {
     const host = await createHostname('net-backoff-redirect')
@@ -127,7 +127,7 @@ describe('crawl-url network backoff', () => {
       network_backoff_step: 0,
       network_backoff_ends_at: null,
     })
-  }, 30_000)
+  })
 
   it('reopens the backoff for longer when the probe fails', async () => {
     const host = await createHostname('net-backoff-reopen')
@@ -143,7 +143,7 @@ describe('crawl-url network backoff', () => {
     const state = (await getTestHostnameNetworkBackoff(host.hostnameId))!
     expect(state.network_backoff_step).toBe(2)
     expect(state.network_backoff_ends_at!.getTime()).toBeGreaterThan(firstEndsAt.getTime())
-  }, 30_000)
+  })
 
   it('counts a refused redirect target once, not once per redirect hop', async () => {
     const host = await createHostname('net-backoff-hops')
@@ -156,7 +156,7 @@ describe('crawl-url network backoff', () => {
     expect(
       (await getTestHostnameNetworkBackoff(host.hostnameId))!.consecutive_network_failures,
     ).toBe(1)
-  }, 30_000)
+  })
 
   it('keeps DNS failures on the DNS path and 429s on the rate-limit lock', async () => {
     const host = await createHostname('net-backoff-paths')
@@ -186,5 +186,5 @@ describe('crawl-url network backoff', () => {
     expect(
       (await getTestHostnameNetworkBackoff(host.hostnameId))!.consecutive_network_failures,
     ).toBe(0)
-  }, 30_000)
+  })
 })

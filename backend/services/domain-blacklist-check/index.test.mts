@@ -19,7 +19,7 @@ describe('index', () => {
     })
     await insertTestDomainBlacklist(TEST_BLOCKED_DOMAIN, TEST_SOURCE_NAME)
     await addDomainsToBloomFilter([TEST_BLOCKED_DOMAIN])
-  }, 30_000)
+  })
 
   describe('assertNoBlockedDomains', () => {
     it('passes with plain text (no URLs)', async () => {

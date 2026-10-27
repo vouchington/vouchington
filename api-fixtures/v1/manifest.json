@@ -38909,7 +38909,7 @@
     },
     "GET:/api/v1/my/referral-clicks": {
       "bodyKind": "content",
-      "hash": "4798b6cd4a55766ff163f2519605c4f06994d7337f2f4a4c7db03cd5de58f340",
+      "hash": "545e40333919adda121fdb936e51e2f7120a754f464334bc468ad19c41c9ec7b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -39291,7 +39291,15 @@
               "landing_url": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "signed_up_at": {
@@ -98962,7 +98970,7 @@
       "migratedFrom": ["web/components/my/referral-clicks-page.tsx"],
       "path": "/api/v1/my/referral-clicks",
       "responseSchema": {
-        "hash": "ee10a1df032e1f3528355c06951ee39c93a4c5fb8d177b38c50dd410057cd16a",
+        "hash": "0547802ffbc0bab64d12549a12d06d6c11295459c3b6e5ae44cb719b1da8bfac",
         "key": "referral-clicks.mine"
       },
       "route": {
@@ -98986,7 +98994,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "ee10a1df032e1f3528355c06951ee39c93a4c5fb8d177b38c50dd410057cd16a",
+        "hash": "0547802ffbc0bab64d12549a12d06d6c11295459c3b6e5ae44cb719b1da8bfac",
         "key": "referral-clicks.mine"
       },
       "route": {
@@ -99583,7 +99591,8 @@
       "migratedFrom": [],
       "path": "/api/v1/my/email-addresses",
       "requestBody": {
-        "email_address": " Tests+Native-User@Voucha.ai "
+        "email_address": " Tests+Native-User@Voucha.ai ",
+        "re_auth_token": "fresh-auth-fixture"
       },
       "responseSchema": {
         "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d",
@@ -99607,6 +99616,7 @@
       "migratedFrom": [],
       "path": "/api/v1/my/email-addresses/tests%2Bnative-user%40voucha.ai/verifications",
       "requestBody": {
+        "re_auth_token": "fresh-auth-fixture",
         "token": "ABCD1234"
       },
       "responseSchema": {
@@ -104794,6 +104804,35 @@
       },
       "route": {
         "routeTemplate": "/api/v1/psql/partitions"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/psql/jobs",
+      "bodyFile": "responses/web.admin.psql.jobs.classifier-range.json",
+      "consumers": ["web", "dotnet-core", "swift-core", "swift-ui"],
+      "id": "web.admin.psql.jobs.classifier-range",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/psql/index.mts"],
+      "path": "/api/v1/psql/jobs",
+      "requestBody": {
+        "classifierRange": {
+          "fromDate": "2020-02-01",
+          "maxDefaultRows": 100,
+          "toDate": "2020-02-02"
+        },
+        "type": "createPartitions"
+      },
+      "responseSchema": {
+        "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46",
+        "key": "web.admin.psql.jobs.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/psql/jobs"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"

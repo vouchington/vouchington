@@ -42,5 +42,5 @@ describe('vote MCP election limit', () => {
     })
     expect(onRateLimited).toHaveBeenCalledOnce()
     expect(await getTopicElectionVote(user.id, topic.id)).toBeNull()
-  }, 30_000)
+  })
 })

@@ -1,6 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { chooseVote, voteBinaryChoice } from '../../helpers/semantic-vote.mts'
 import {
   createTestAgent,
@@ -92,7 +92,7 @@ test.beforeAll(async () => {
 })
 
 test.describe('Admin Moderation', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin sees moderation button on comment in discussion detail page', async ({ page }) => {
     await navigateTo(page, `/discussion/${DISCUSSION_ID}`)

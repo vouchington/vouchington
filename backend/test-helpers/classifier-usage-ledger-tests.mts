@@ -11,6 +11,7 @@ import {
 } from './classifier-provider-failure-scenarios.mts'
 import { listAiUsageRecordsForClassifierRun } from './entities/ai-usage.mts'
 import { withReservedAiUsageDay } from './with-reserved-ai-usage-day.mts'
+import { withCurrentClassifierUsage } from './classifier-current-usage.mts'
 
 const LATENCY_MS = 250
 
@@ -29,8 +30,9 @@ const BILLED_ROW = {
 export function describeClassifierUsageLedger(driver: ClassifierFailureDriver): void {
   describe(`${driver.slug} usage attribution`, () => {
     it('attributes a billed answer to its run with tokens, cost and latency, once across a replay', async () => {
-      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+      await withCurrentClassifierUsage(async trackRunId => {
         const run = await driver.prepare()
+        trackRunId(run.runId)
         const success = billed(`decision-${randomUUID()}`, LATENCY_MS)
 
         await expect(run.execute(success)).resolves.toBe('persisted')
@@ -39,7 +41,7 @@ export function describeClassifierUsageLedger(driver: ClassifierFailureDriver): 
         expect(success).toHaveBeenCalledOnce()
         expect(await listAiUsageRecordsForClassifierRun(run.runId)).toEqual([
           expect.objectContaining({
-            classifier_run_id: run.runId,
+            classifier_run_identity_id: run.runId,
             latency_milliseconds: LATENCY_MS,
             ...BILLED_ROW,
           }),
@@ -76,8 +78,9 @@ export function describeClassifierUsageLedger(driver: ClassifierFailureDriver): 
     })
 
     it('attributes only the billed retry after an outage, which still counts both attempts', async () => {
-      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+      await withCurrentClassifierUsage(async trackRunId => {
         const run = await driver.prepare()
+        trackRunId(run.runId)
 
         await expect(run.execute(failing(403, OUTAGE))).rejects.toMatchObject({
           retryClass: 'transient',

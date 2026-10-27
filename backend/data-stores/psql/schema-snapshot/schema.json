@@ -174,6 +174,23 @@
     "classifier_primitives": {
       "values": ["noul", "choice", "score", "agent"]
     },
+    "classifier_retention_sweeps": {
+      "values": [
+        "run_candidates",
+        "agent_topics",
+        "local_outcomes",
+        "runs",
+        "calls",
+        "batches",
+        "identities",
+        "versioned_identities",
+        "requests",
+        "topic_results",
+        "story_results",
+        "community_prompt_results",
+        "decision_candidates"
+      ]
+    },
     "classifier_run_terminal_failure_kinds": {
       "values": [
         "provider-error",
@@ -517,6 +534,9 @@
         "relation__rss_feed_item__category__topic_alias"
       ]
     },
+    "email_address_token_purposes": {
+      "values": ["login", "re_auth", "email_verification"]
+    },
     "email_security_verdicts": {
       "values": ["pass", "fail", "gray", "processing_failed", "unknown"]
     },
@@ -531,6 +551,18 @@
     },
     "follower_distribution_audiences": {
       "values": ["all_followers", "selected_followers"]
+    },
+    "history_retention_cleanup_names": {
+      "values": [
+        "dynamic_configuration_revisions",
+        "rss_feed_setting_changes",
+        "fediverse_instance_integration_changes",
+        "community_agent_prompt_revisions",
+        "followed_user_import_requests",
+        "pending_user_import_requests",
+        "referral_attribution_scrub",
+        "referral_attribution_expiry"
+      ]
     },
     "http_request_methods": {
       "values": ["GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"]
@@ -986,7 +1018,7 @@
       "values": ["facebook", "x", "github", "linkedin", "microsoft", "google"]
     },
     "oauth_authorization_purposes": {
-      "values": ["authenticate", "connect"]
+      "values": ["authenticate", "connect", "re_auth"]
     },
     "oauth_authorization_result_kinds": {
       "values": ["authenticated", "mfa_required", "connected"]
@@ -1523,7 +1555,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_configuration()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  batch classifier_decision_batches%ROWTYPE;\n  candidate classifier_candidates%ROWTYPE;\n  prompt classifier_prompt_versions%ROWTYPE;\n  threshold classifier_candidate_thresholds%ROWTYPE;\n  effective_lower NUMERIC(5,4);\n  effective_upper NUMERIC(5,4);\nBEGIN\n  SELECT * INTO batch FROM classifier_decision_batches\n  WHERE id = NEW.batch_id FOR SHARE;\n  SELECT * INTO candidate FROM classifier_candidates\n  WHERE id = NEW.candidate_id FOR SHARE;\n  IF candidate.community_id IS NOT NULL\n    AND (\n      batch.scope_category <> 'community_ai'\n      OR batch.scope_community_id IS DISTINCT FROM candidate.community_id\n    ) THEN\n    RAISE EXCEPTION 'community classifier candidate scope must match its batch' USING ERRCODE = '23514';\n  END IF;\n  SELECT * INTO prompt FROM classifier_prompt_versions\n  WHERE id = NEW.prompt_version_id FOR SHARE;\n  SELECT * INTO threshold FROM classifier_candidate_thresholds\n  WHERE id = NEW.threshold_id FOR SHARE;\n  IF threshold.id IS NULL\n    OR threshold.classifier_id IS DISTINCT FROM NEW.classifier_id\n    OR threshold.candidate_id IS DISTINCT FROM NEW.candidate_id\n    OR threshold.prompt_version_id IS DISTINCT FROM NEW.prompt_version_id\n    OR threshold.deactivated_at IS NOT NULL THEN\n    RAISE EXCEPTION 'classifier batch candidate threshold must be its active configuration revision' USING ERRCODE = '23514';\n  END IF;\n  effective_lower := COALESCE(threshold.lower_threshold_override, prompt.default_lower_threshold);\n  effective_upper := COALESCE(threshold.upper_threshold_override, prompt.default_upper_threshold);\n  IF NEW.effective_lower_threshold IS DISTINCT FROM effective_lower\n    OR NEW.effective_upper_threshold IS DISTINCT FROM effective_upper THEN\n    RAISE EXCEPTION 'classifier batch candidate thresholds must match captured configuration' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_classifier_batch_candidate_owner_delete": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots can only be deleted with their batch or candidate' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_batch_candidate_owner_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)\n    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)\n    AND NOT (\n      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'\n      AND NOT EXISTS (\n        SELECT 1 FROM classifier_runs AS run\n        WHERE run.decision_batch_id = OLD.batch_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM topic_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM story_classifier_results AS result\n        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier batch candidate snapshots require expired, unreferenced decisions before deletion' USING ERRCODE = '23503';\n  END IF;\n  RETURN OLD;\nEND $function$\n"
     },
     "fn_reject_classifier_candidate_community_override_lifecycle": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_classifier_candidate_community_override_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.id IS DISTINCT FROM OLD.id\n    OR NEW.community_id IS DISTINCT FROM OLD.community_id\n    OR NEW.candidate_id IS DISTINCT FROM OLD.candidate_id\n    OR NEW.enabled_at IS DISTINCT FROM OLD.enabled_at\n    OR (\n      NEW.enabled_by_id IS DISTINCT FROM OLD.enabled_by_id\n      AND NOT (\n        NEW.enabled_by_id IS NULL\n        AND fn_classifier_audit_actor_was_deleted(OLD.enabled_by_id)\n      )\n    )\n    OR NOT (\n      NEW.disabled_at IS NOT DISTINCT FROM OLD.disabled_at\n      OR (OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL)\n    )\n    OR (\n      NEW.disabled_by_id IS DISTINCT FROM OLD.disabled_by_id\n      AND NOT (\n        OLD.disabled_at IS NULL AND NEW.disabled_at IS NOT NULL\n        OR (\n          NEW.disabled_by_id IS NULL\n          AND fn_classifier_audit_actor_was_deleted(OLD.disabled_by_id)\n        )\n      )\n    ) THEN\n    RAISE EXCEPTION 'classifier candidate community override is immutable except for deactivation' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -1685,7 +1717,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.resolved_at IS NULL AND OLD.resolution_action IS NULL\n    AND NEW.resolved_at IS NOT NULL AND NEW.resolution_action IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.resolved_at IS DISTINCT FROM NEW.resolved_at\n    OR OLD.resolution_action IS DISTINCT FROM NEW.resolution_action THEN\n    RAISE EXCEPTION 'moderation appeal resolution is immutable once set';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;\n  -- Only the bounded history-retention transaction may delete these four audit families.\n  -- Other append-only tables and every UPDATE retain the ordinary mutation guard.\n  IF TG_OP = 'DELETE'\n    AND TG_TABLE_NAME IN (\n      'dynamic_configuration_revisions',\n      'rss_feed_setting_changes',\n      'fediverse_instance_integration_changes',\n      'community_agent_prompt_revisions'\n    )\n    AND current_setting('app.history_retention_cleanup', true) = 'on'\n  THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_non_stripe_membership_purchase_intent_checkout": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_intent_checkout()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.provider_checkout_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_contexts context\n    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'only Stripe purchase intents may have checkout ids' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -5625,9 +5657,9 @@
           "ordinalPosition": 11,
           "type": "integer"
         },
-        "classifier_run_id": {
+        "classifier_run_identity_id": {
           "collation": null,
-          "comment": "The classifier run whose provider attempt made this call; NULL for every other agent, and after the run receipt is deleted.",
+          "comment": "Retained classifier run identity whose provider attempt made this call; NULL for other agents.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5840,13 +5872,13 @@
           "referencedTable": "ai_service_tiers",
           "validated": true
         },
-        "fk_ai_usage_records__classifier_run": {
-          "columns": ["classifier_run_id"],
-          "definition": "FOREIGN KEY (classifier_run_id) REFERENCES classifier_runs(id) ON DELETE SET NULL",
+        "fk_ai_usage_records__classifier_run_identity": {
+          "columns": ["classifier_run_identity_id"],
+          "definition": "FOREIGN KEY (classifier_run_identity_id) REFERENCES classifier_run_identities(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "classifier_runs",
+          "referencedTable": "classifier_run_identities",
           "validated": true
         }
       },
@@ -5872,21 +5904,21 @@
           "unique": true,
           "valid": true
         },
-        "idx_ai_usage_records__classifier_run_id": {
+        "idx_ai_usage_records__classifier_run_identity_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_ai_usage_records__classifier_run_id ON ONLY public.ai_usage_records USING btree (classifier_run_id) WHERE (classifier_run_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_ai_usage_records__classifier_run_identity_id ON ONLY public.ai_usage_records USING btree (classifier_run_identity_id) WHERE (classifier_run_identity_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "classifier_run_id",
+              "column": "classifier_run_identity_id",
               "descending": false,
-              "expression": "classifier_run_id",
+              "expression": "classifier_run_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(classifier_run_id IS NOT NULL)",
+          "predicate": "(classifier_run_identity_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -8753,7 +8785,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "callback_claimed_at": {
@@ -8764,7 +8796,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "callback_mode": {
@@ -8775,7 +8807,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "oauth_callback_modes"
         },
         "claimed_did": {
@@ -8786,7 +8818,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "completion_proof_challenge": {
@@ -8797,7 +8829,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "created_at": {
@@ -8808,7 +8840,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "expired_at": {
@@ -8819,7 +8851,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "expires_at": {
@@ -8830,7 +8862,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "handle": {
@@ -8841,7 +8873,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "handoff_ready_at": {
@@ -8852,7 +8884,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -8866,6 +8898,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "initiating_session_id": {
+          "collation": null,
+          "comment": "Authenticated initiating session. A retained or null history reference never authorizes pending credential persistence or first attachment.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
         "rejected_at": {
           "collation": null,
           "comment": "Unattached authorization generation permanently rejected.",
@@ -8874,7 +8917,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "revoked_at": {
@@ -8885,7 +8928,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "status": {
@@ -8896,7 +8939,7 @@
           "generatedExpression": "\nCASE\n    WHEN (revoked_at IS NOT NULL) THEN 'revoked'::bluesky_link_authorization_statuses\n    WHEN (expired_at IS NOT NULL) THEN 'expired'::bluesky_link_authorization_statuses\n    WHEN (rejected_at IS NOT NULL) THEN 'rejected'::bluesky_link_authorization_statuses\n    WHEN (attached_at IS NOT NULL) THEN 'attached'::bluesky_link_authorization_statuses\n    WHEN (handoff_ready_at IS NOT NULL) THEN 'handoff_ready'::bluesky_link_authorization_statuses\n    WHEN (callback_claimed_at IS NOT NULL) THEN 'callback_claimed'::bluesky_link_authorization_statuses\n    ELSE 'pending'::bluesky_link_authorization_statuses\nEND",
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "bluesky_link_authorization_statuses"
         },
         "updated_at": {
@@ -8907,7 +8950,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -8924,6 +8967,15 @@
       },
       "comment": "Durable Bluesky OAuth link state machine. UUIDs identify generations but are never compared for lifecycle causality; status transitions and timestamp expiry are authoritative.",
       "foreignKeys": {
+        "bluesky_link_authorizations_initiating_session_id_fkey": {
+          "columns": ["initiating_session_id"],
+          "definition": "FOREIGN KEY (initiating_session_id) REFERENCES user_sessions(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_sessions",
+          "validated": true
+        },
         "bluesky_link_authorizations_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -8998,6 +9050,26 @@
             }
           ],
           "predicate": "(status = ANY (ARRAY['pending'::bluesky_link_authorization_statuses, 'callback_claimed'::bluesky_link_authorization_statuses, 'handoff_ready'::bluesky_link_authorization_statuses]))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_bluesky_link_authorizations__initiating_session_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_bluesky_link_authorizations__initiating_session_id ON public.bluesky_link_authorizations USING btree (initiating_session_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "initiating_session_id",
+              "descending": false,
+              "expression": "initiating_session_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -11200,10 +11272,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
+        "accessClass": "retention-window",
         "children": "default",
         "key": "batch_id",
-        "retentionOwner": null,
+        "retentionOwner": "operatorPartitionDrop",
         "strategy": "RANGE"
       },
       "physicalPartition": {
@@ -11413,7 +11485,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "classifier_decision_batches_pkey": {
           "accessMethod": "btree",
@@ -11457,6 +11529,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_decision_batches__pending_retirement": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_decision_batches__pending_retirement ON public.classifier_decision_batches USING btree (id) WHERE (completed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -11809,7 +11901,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "classifier_decision_calls_pkey": {
           "accessMethod": "btree",
@@ -12140,16 +12232,50 @@
           "unique": true,
           "valid": true
         },
-        "idx_classifier_prompt_versions__classifier": {
+        "idx_classifier_prompt_versions__activated_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_prompt_versions__classifier ON public.classifier_prompt_versions USING btree (classifier_id)",
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__activated_id ON public.classifier_prompt_versions USING btree (classifier_id, id) WHERE ((activated_at IS NOT NULL) AND (deleted_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
               "column": "classifier_id",
               "descending": false,
               "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((activated_at IS NOT NULL) AND (deleted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_prompt_versions__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_prompt_versions__classifier ON public.classifier_prompt_versions USING btree (classifier_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -12287,6 +12413,148 @@
         }
       }
     },
+    "classifier_retention_cursors": {
+      "checkConstraints": {
+        "chk_classifier_retention_cursors__version_scope": "CHECK ((num_nonnulls(cursor_classifier_id, cursor_prompt_version_id) = ANY (ARRAY[0, 2])))"
+      },
+      "columns": {
+        "cursor_child_id": {
+          "collation": null,
+          "comment": "Last topic or decision candidate ID examined within cursor_id for composite-key child sweeps.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "cursor_classifier_id": {
+          "collation": null,
+          "comment": "Classifier scope for the versioned identity cache sweep.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "cursor_id": {
+          "collation": null,
+          "comment": "Last raw UUIDv7 row examined; no FK so deletion preserves progress.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "cursor_ordinal": {
+          "collation": null,
+          "comment": "Last candidate ordinal examined within cursor_id when sweeping run candidates.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "integer"
+        },
+        "cursor_prompt_version_id": {
+          "collation": null,
+          "comment": "Prompt-version scope for the versioned identity cache sweep.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "sweep": {
+          "collation": null,
+          "comment": "The classifier record family whose daily sweep owns this position.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "classifier_retention_sweeps"
+        },
+        "sweep_end_key": {
+          "collation": null,
+          "comment": "Fixed exclusive UUIDv7 cutoff captured when a sweep cycle begins.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "sweep_start_key": {
+          "collation": null,
+          "comment": "Fixed inclusive UUIDv7 lower bound for a scoped identity cache sweep cycle.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed sweep progress.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One independent cyclic keyset position per bounded classifier record retention sweep.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "classifier_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX classifier_retention_cursors_pkey ON public.classifier_retention_cursors USING btree (sweep)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "sweep",
+              "descending": false,
+              "expression": "sweep",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["sweep"],
+        "definition": "PRIMARY KEY (sweep)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_classifier_retention_cursors_updated_at": "CREATE TRIGGER trigger_classifier_retention_cursors_updated_at BEFORE UPDATE ON public.classifier_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "classifier_run_candidates": {
       "checkConstraints": {
         "ck_classifier_run_candidates__one_candidate": "CHECK ((num_nonnulls(topic_id, story_id, rss_feed_item_id) = 1))",
@@ -12388,7 +12656,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_classifier_run_candidates__rss_feed_item": {
           "accessMethod": "btree",
@@ -12592,9 +12860,408 @@
       },
       "uniqueConstraints": {}
     },
+    "classifier_run_identities": {
+      "checkConstraints": {
+        "chk_classifier_run_identities__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
+        "classifier_run_identities_configuration_sha256_check": "CHECK ((octet_length(configuration_sha256) = 32))",
+        "classifier_run_identities_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))"
+      },
+      "columns": {
+        "classifier_id": {
+          "collation": null,
+          "comment": "Classifier named in the immutable run deduplication key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "configuration_sha256": {
+          "collation": null,
+          "comment": "Canonical configuration digest in the immutable run deduplication key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "bytea"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "input_sha256": {
+          "collation": null,
+          "comment": "Exact content digest in the immutable run deduplication key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "bytea"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Retained post identity in the deduplication key; never grants live-post access.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Real prompt-version relation in the deduplication key; NULL for classifier runs without a prompt version.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Retained feed-item identity in the deduplication key; never grants live-item access.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        }
+      },
+      "comment": "Bounded classifier deduplication cache; never authorizes a deleted subject.",
+      "foreignKeys": {
+        "classifier_run_identities_classifier_id_fkey": {
+          "columns": ["classifier_id"],
+          "definition": "FOREIGN KEY (classifier_id) REFERENCES classifiers(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifiers",
+          "validated": true
+        },
+        "classifier_run_identities_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        },
+        "classifier_run_identities_rss_feed_item_id_fkey": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_rss_feed_item_identities",
+          "validated": true
+        },
+        "fk_classifier_run_identities__prompt_classifier": {
+          "columns": ["prompt_version_id", "classifier_id"],
+          "definition": "FOREIGN KEY (prompt_version_id, classifier_id) REFERENCES classifier_prompt_versions(id, classifier_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_prompt_versions",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_classifier_run_identities__classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_identities__classifier ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, id) WHERE (prompt_version_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(prompt_version_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_identities__classifier_lookup": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_identities__classifier_lookup ON public.classifier_run_identities USING btree (classifier_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_identities__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_identities__post ON public.classifier_run_identities USING btree (post_id, id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_identities__prompt_classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_identities__prompt_classifier ON public.classifier_run_identities USING btree (prompt_version_id, classifier_id) WHERE (prompt_version_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(prompt_version_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_run_identities__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (rss_feed_item_id, id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "pk_classifier_run_identities": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX pk_classifier_run_identities ON public.classifier_run_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_identities__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__post ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, post_id, input_sha256, configuration_sha256) NULLS NOT DISTINCT WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            },
+            {
+              "column": "configuration_sha256",
+              "descending": false,
+              "expression": "configuration_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_classifier_run_identities__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_classifier_run_identities__rss_feed_item ON public.classifier_run_identities USING btree (classifier_id, prompt_version_id, rss_feed_item_id, input_sha256, configuration_sha256) NULLS NOT DISTINCT WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "input_sha256",
+              "descending": false,
+              "expression": "input_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            },
+            {
+              "column": "configuration_sha256",
+              "descending": false,
+              "expression": "configuration_sha256",
+              "nullsFirst": false,
+              "opclass": "bytea_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "classifier_run_requests": {
       "checkConstraints": {
-        "chk_classifier_run_requests__one_settlement": "CHECK ((num_nonnulls(run_id, no_work_at, stale_at) <= 1))",
+        "chk_classifier_run_requests__one_settlement": "CHECK (((num_nonnulls(run_settled_at, no_work_at, stale_at) <= 1) AND ((run_identity_id IS NULL) OR (run_settled_at IS NOT NULL))))",
         "chk_classifier_run_requests__one_subject": "CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))",
         "classifier_run_requests_input_sha256_check": "CHECK ((octet_length(input_sha256) = 32))"
       },
@@ -12618,7 +13285,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -12651,12 +13318,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "post_id": {
           "collation": null,
-          "comment": "Post subject of the request; deleting the post removes the request. Exactly one subject column is set.",
+          "comment": "Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -12667,7 +13334,7 @@
         },
         "rss_feed_item_id": {
           "collation": null,
-          "comment": "RSS feed item subject of the request; deleting the item removes the request. Exactly one subject column is set.",
+          "comment": "Retained feed-item identity in the request deduplication key; deleting the live item does not erase it or authorize replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -12676,9 +13343,9 @@
           "ordinalPosition": 4,
           "type": "uuid"
         },
-        "run_id": {
+        "run_identity_id": {
           "collation": null,
-          "comment": "Run receipt reserved for the request; NULL while unsettled, and cleared again if the run is deleted so the sweep recovers it.",
+          "comment": "Cache run identity that settled this request while present; cache eviction clears this FK without reopening the request.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -12686,6 +13353,17 @@
           "nullable": true,
           "ordinalPosition": 6,
           "type": "uuid"
+        },
+        "run_settled_at": {
+          "collation": null,
+          "comment": "Durable time a run settled this request, retained after its cache identity is removed.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
         },
         "stale_at": {
           "collation": null,
@@ -12695,7 +13373,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -12706,7 +13384,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         }
       },
@@ -12723,29 +13401,29 @@
         },
         "classifier_run_requests_post_id_fkey": {
           "columns": ["post_id"],
-          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "posts",
+          "referencedTable": "retained_post_identities",
           "validated": true
         },
         "classifier_run_requests_rss_feed_item_id_fkey": {
           "columns": ["rss_feed_item_id"],
-          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES retained_rss_feed_item_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "rss_feed_items",
+          "referencedTable": "retained_rss_feed_item_identities",
           "validated": true
         },
-        "classifier_run_requests_run_id_fkey": {
-          "columns": ["run_id"],
-          "definition": "FOREIGN KEY (run_id) REFERENCES classifier_runs(id) ON DELETE SET NULL",
+        "classifier_run_requests_run_identity_id_fkey": {
+          "columns": ["run_identity_id"],
+          "definition": "FOREIGN KEY (run_identity_id) REFERENCES classifier_run_identities(id) ON DELETE SET NULL",
           "onDelete": "set null",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "classifier_runs",
+          "referencedTable": "classifier_run_identities",
           "validated": true
         }
       },
@@ -12781,7 +13459,7 @@
         "idx_classifier_run_requests__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_run_requests__pending ON public.classifier_run_requests USING btree (id) WHERE ((run_id IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
+          "definition": "CREATE INDEX idx_classifier_run_requests__pending ON public.classifier_run_requests USING btree (id) WHERE ((run_settled_at IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -12792,7 +13470,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((run_id IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
+          "predicate": "((run_settled_at IS NULL) AND (no_work_at IS NULL) AND (stale_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -12852,16 +13530,16 @@
           "unique": false,
           "valid": true
         },
-        "idx_classifier_run_requests__run": {
+        "idx_classifier_run_requests__run_identity": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_classifier_run_requests__run ON public.classifier_run_requests USING btree (run_id, id) WHERE (run_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_classifier_run_requests__run_identity ON public.classifier_run_requests USING btree (run_identity_id, id) WHERE (run_identity_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "run_id",
+              "column": "run_identity_id",
               "descending": false,
-              "expression": "run_id",
+              "expression": "run_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -12873,7 +13551,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(run_id IS NOT NULL)",
+          "predicate": "(run_identity_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -13014,7 +13692,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "uuid"
         },
         "completed_at": {
@@ -13025,7 +13703,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "configuration_json": {
@@ -13036,7 +13714,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "jsonb"
         },
         "configuration_sha256": {
@@ -13047,7 +13725,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "bytea"
         },
         "created_at": {
@@ -13058,7 +13736,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "decision_batch_id": {
@@ -13069,13 +13747,13 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "uuid"
         },
         "id": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "uuidv7()",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -13091,7 +13769,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "bytea"
         },
         "lease_expires_at": {
@@ -13102,7 +13780,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -13113,7 +13791,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "uuid"
         },
         "leased_at": {
@@ -13124,7 +13802,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "outcomes_persisted_at": {
@@ -13135,12 +13813,23 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "post_id": {
           "collation": null,
           "comment": "Post subject whose approved content is classified; deleting the post removes its run receipts. Exactly one subject column is set.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "prompt_version_id": {
+          "collation": null,
+          "comment": "Concrete prompt-version relation for remote classifier work; NULL for promptless agent work.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -13157,7 +13846,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "integer"
         },
         "rss_feed_item_id": {
@@ -13168,7 +13857,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "shared_actor_user_id": {
@@ -13179,7 +13868,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "superseded_at": {
@@ -13190,7 +13879,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "sweep_enqueue_count": {
@@ -13201,7 +13890,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "integer"
         },
         "terminal_failed_at": {
@@ -13212,7 +13901,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "terminal_failure_kind": {
@@ -13223,7 +13912,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "classifier_run_terminal_failure_kinds"
         },
         "updated_at": {
@@ -13234,7 +13923,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "timestamp with time zone"
         }
       },
@@ -13256,6 +13945,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "post_publication_community_identities",
+          "validated": true
+        },
+        "classifier_runs_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES classifier_run_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "classifier_run_identities",
           "validated": true
         },
         "classifier_runs_post_id_fkey": {
@@ -13311,9 +14009,18 @@
           "referencedColumns": ["id", "rss_feed_item_id"],
           "referencedTable": "classifier_decision_batches",
           "validated": true
+        },
+        "fk_classifier_runs__prompt_classifier": {
+          "columns": ["prompt_version_id", "classifier_id"],
+          "definition": "FOREIGN KEY (prompt_version_id, classifier_id) REFERENCES classifier_prompt_versions(id, classifier_id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id", "classifier_id"],
+          "referencedTable": "classifier_prompt_versions",
+          "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_classifier_runs__classifier": {
           "accessMethod": "btree",
@@ -13369,6 +14076,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_classifier_runs__pending_batch_retirement": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__pending_batch_retirement ON public.classifier_runs USING btree (decision_batch_id) WHERE ((decision_batch_id IS NOT NULL) AND (completed_at IS NULL) AND (superseded_at IS NULL) AND (terminal_failed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "decision_batch_id",
+              "descending": false,
+              "expression": "decision_batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((decision_batch_id IS NOT NULL) AND (completed_at IS NULL) AND (superseded_at IS NULL) AND (terminal_failed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_classifier_runs__post": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -13391,6 +14118,33 @@
             }
           ],
           "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_classifier_runs__prompt_classifier": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_classifier_runs__prompt_classifier ON public.classifier_runs USING btree (prompt_version_id, classifier_id) WHERE (prompt_version_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "prompt_version_id",
+              "descending": false,
+              "expression": "prompt_version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "classifier_id",
+              "descending": false,
+              "expression": "classifier_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(prompt_version_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -13498,88 +14252,6 @@
             }
           ],
           "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_classifier_runs__identity_post": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_runs__identity_post ON public.classifier_runs USING btree (classifier_id, post_id, input_sha256, configuration_sha256) WHERE (post_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "classifier_id",
-              "descending": false,
-              "expression": "classifier_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "post_id",
-              "descending": false,
-              "expression": "post_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "input_sha256",
-              "descending": false,
-              "expression": "input_sha256",
-              "nullsFirst": false,
-              "opclass": "bytea_ops"
-            },
-            {
-              "column": "configuration_sha256",
-              "descending": false,
-              "expression": "configuration_sha256",
-              "nullsFirst": false,
-              "opclass": "bytea_ops"
-            }
-          ],
-          "predicate": "(post_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_classifier_runs__identity_rss_feed_item": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_classifier_runs__identity_rss_feed_item ON public.classifier_runs USING btree (classifier_id, rss_feed_item_id, input_sha256, configuration_sha256) WHERE (rss_feed_item_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "classifier_id",
-              "descending": false,
-              "expression": "classifier_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "rss_feed_item_id",
-              "descending": false,
-              "expression": "rss_feed_item_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "input_sha256",
-              "descending": false,
-              "expression": "input_sha256",
-              "nullsFirst": false,
-              "opclass": "bytea_ops"
-            },
-            {
-              "column": "configuration_sha256",
-              "descending": false,
-              "expression": "configuration_sha256",
-              "nullsFirst": false,
-              "opclass": "bytea_ops"
-            }
-          ],
-          "predicate": "(rss_feed_item_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -20097,10 +20769,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
+        "accessClass": "retention-window",
         "children": "default",
         "key": "batch_id",
-        "retentionOwner": null,
+        "retentionOwner": "operatorPartitionDrop",
         "strategy": "RANGE"
       },
       "physicalPartition": {
@@ -42265,6 +42937,9 @@
     },
     "email_address_login_tokens": {
       "checkConstraints": {
+        "email_address_login_tokens_check": "CHECK (((purpose = 're_auth'::email_address_token_purposes) = (reauthentication_session_id IS NOT NULL)))",
+        "email_address_login_tokens_check1": "CHECK (((consumed_at IS NULL) OR (invalidated_at IS NULL)))",
+        "email_address_login_tokens_check2": "CHECK (((purpose = 'login'::email_address_token_purposes) = (user_id IS NULL)))",
         "email_address_login_tokens_email_address_check": "CHECK ((char_length(email_address) <= 255))",
         "email_address_login_tokens_email_address_check1": "CHECK ((email_address = lower(email_address)))",
         "email_address_login_tokens_email_address_check2": "CHECK ((email_address = TRIM(BOTH FROM email_address)))",
@@ -42273,6 +42948,17 @@
         "email_address_login_tokens_token_check2": "CHECK ((token = TRIM(BOTH FROM token)))"
       },
       "columns": {
+        "consumed_at": {
+          "collation": null,
+          "comment": "When the token was successfully consumed for its declared authentication purpose.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -42281,7 +42967,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "email_address": {
@@ -42306,16 +42992,38 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "logged_in_at": {
+        "invalidated_at": {
           "collation": null,
-          "comment": "When the token was used to log in. NULL means the token is still pending.",
+          "comment": "When a replacement code invalidated this unused token.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
+        },
+        "purpose": {
+          "collation": null,
+          "comment": "The authentication flow allowed to consume this token.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "email_address_token_purposes"
+        },
+        "reauthentication_session_id": {
+          "collation": null,
+          "comment": "The authenticated actor session allowed to consume this reauthentication code; NULL for other purposes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
         },
         "token": {
           "collation": null,
@@ -42325,7 +43033,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "updated_at": {
@@ -42336,23 +43044,32 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "user_id": {
           "collation": null,
-          "comment": "Non-NULL for email verification tokens; NULL for login tokens.",
+          "comment": "Owner of authenticated reauthentication or address-verification codes; NULL only for login codes.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 10,
           "type": "uuid"
         }
       },
-      "comment": "Short-lived tokens for email-based login and email verification flows.",
+      "comment": "Short-lived tokens scoped to email login, reauthentication, or address verification.",
       "foreignKeys": {
+        "email_address_login_tokens_reauthentication_session_id_fkey": {
+          "columns": ["reauthentication_session_id"],
+          "definition": "FOREIGN KEY (reauthentication_session_id) REFERENCES user_sessions(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_sessions",
+          "validated": true
+        },
         "email_address_login_tokens_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
@@ -42435,7 +43152,7 @@
         "idx_email_address_login_tokens__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__active ON public.email_address_login_tokens USING btree (email_address, token) WHERE (logged_in_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__active ON public.email_address_login_tokens USING btree (email_address, token) WHERE ((consumed_at IS NULL) AND (invalidated_at IS NULL))",
           "includedColumns": [],
           "keys": [
             {
@@ -42453,16 +43170,76 @@
               "opclass": "text_ops"
             }
           ],
-          "predicate": "(logged_in_at IS NULL)",
+          "predicate": "((consumed_at IS NULL) AND (invalidated_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
         },
+        "idx_email_address_login_tokens__pending_login": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__pending_login ON public.email_address_login_tokens USING btree (email_address) WHERE ((purpose = 'login'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "email_address",
+              "descending": false,
+              "expression": "email_address",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": "((purpose = 'login'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_email_address_login_tokens__pending_reauthentication": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__pending_reauthentication ON public.email_address_login_tokens USING btree (reauthentication_session_id) WHERE ((purpose = 're_auth'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reauthentication_session_id",
+              "descending": false,
+              "expression": "reauthentication_session_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((purpose = 're_auth'::email_address_token_purposes) AND (consumed_at IS NULL) AND (invalidated_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_email_address_login_tokens__reauthentication_session_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_email_address_login_tokens__reauthentication_session_id ON public.email_address_login_tokens USING btree (reauthentication_session_id) WHERE (reauthentication_session_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reauthentication_session_id",
+              "descending": false,
+              "expression": "reauthentication_session_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reauthentication_session_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_email_address_login_tokens__user_email_verify": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__user_email_verify ON public.email_address_login_tokens USING btree (user_id, email_address) WHERE (user_id IS NOT NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_email_address_login_tokens__user_email_verify ON public.email_address_login_tokens USING btree (user_id, email_address) WHERE (purpose = 'email_verification'::email_address_token_purposes)",
           "includedColumns": [],
           "keys": [
             {
@@ -42480,10 +43257,30 @@
               "opclass": "text_ops"
             }
           ],
-          "predicate": "(user_id IS NOT NULL)",
+          "predicate": "(purpose = 'email_verification'::email_address_token_purposes)",
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_email_address_login_tokens__user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_email_address_login_tokens__user_id ON public.email_address_login_tokens USING btree (user_id) WHERE (user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -44864,6 +45661,102 @@
         }
       }
     },
+    "history_retention_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cleanup_name": {
+          "collation": null,
+          "comment": "History family whose pass this row checkpoints.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "history_retention_cleanup_names"
+        },
+        "cursor_id": {
+          "collation": null,
+          "comment": "Last raw candidate id scanned, even when its row was a keeper.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "is_sweep_complete": {
+          "collation": null,
+          "comment": "Completed pass marker; the next pass may advance its frozen end.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "boolean"
+        },
+        "sweep_cutoff_id": {
+          "collation": null,
+          "comment": "Exclusive frozen end of the active UUIDv7 pass, or last completed end for monotonic families.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Time the pass checkpoint last changed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable UUIDv7 progress for bounded history retention passes.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "history_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX history_retention_cursors_pkey ON public.history_retention_cursors USING btree (cleanup_name)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "cleanup_name",
+              "descending": false,
+              "expression": "cleanup_name",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["cleanup_name"],
+        "definition": "PRIMARY KEY (cleanup_name)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_history_retention_cursors_updated_at": "CREATE TRIGGER trigger_history_retention_cursors_updated_at BEFORE UPDATE ON public.history_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "hostname_crawler_configurations": {
       "checkConstraints": {},
       "columns": {
@@ -46871,6 +47764,113 @@
         }
       }
     },
+    "image_deletion_post_updates": {
+      "checkConstraints": {},
+      "columns": {
+        "image_id": {
+          "collation": null,
+          "comment": "Image whose deletion reset the post.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Post requiring content-changed admission; retained identity survives concurrent deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Bounded post-updated admission receipts committed with each image deletion page; removed after admission succeeds.",
+      "foreignKeys": {
+        "image_deletion_post_updates_image_id_fkey": {
+          "columns": ["image_id"],
+          "definition": "FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "images",
+          "validated": true
+        },
+        "image_deletion_post_updates_post_id_fkey": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_post_identities",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_image_deletion_post_updates__post_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_image_deletion_post_updates__post_id ON public.image_deletion_post_updates USING btree (post_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "image_deletion_post_updates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX image_deletion_post_updates_pkey ON public.image_deletion_post_updates USING btree (image_id, post_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "image_id",
+              "descending": false,
+              "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["image_id", "post_id"],
+        "definition": "PRIMARY KEY (image_id, post_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "image_placements": {
       "checkConstraints": {
         "image_placements_binding_family_check": "CHECK ((binding_family = 'post'::image_binding_families))"
@@ -47744,7 +48744,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "vector(1024)"
         },
         "bedrock_nova_multimodal_v1_embedding_created_at": {
@@ -47755,7 +48755,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -47788,7 +48788,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 9,
           "type": "jsonb"
         },
         "deleted_at": {
@@ -47813,6 +48813,28 @@
           "ordinalPosition": 6,
           "type": "uuid"
         },
+        "deletion_post_cursor": {
+          "collation": null,
+          "comment": "Opaque post-id keyset position committed atomically with image deletion post resets; never joined.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "deletion_posts_completed_at": {
+          "collation": null,
+          "comment": "All image deletion post pages and their post-updated admissions completed; storage may now be deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
         "id": {
           "collation": null,
           "comment": "Immutable UUIDv7 byte-asset identity. Public delivery uses a separately revision-fenced placement tuple.",
@@ -47832,7 +48854,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "boolean"
         },
         "openai_omni_moderation_created_at": {
@@ -47843,7 +48865,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         },
         "openai_omni_moderation_results": {
@@ -47854,7 +48876,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "jsonb"
         },
         "quarantine_pending_at": {
@@ -47865,7 +48887,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "quarantine_s3_key": {
@@ -47876,7 +48898,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "quarantined_at": {
@@ -47887,7 +48909,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "s3_key": {
@@ -47898,7 +48920,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "sha_256": {
@@ -47909,7 +48931,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 10,
           "type": "bytea"
         },
         "updated_at": {
@@ -47931,7 +48953,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "upload_error": {
@@ -47942,7 +48964,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "text"
         },
         "upload_failed_at": {
@@ -47953,7 +48975,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "upload_source_deleted_at": {
@@ -47964,7 +48986,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "upload_staged_at": {
@@ -47975,7 +48997,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "upload_started_at": {
@@ -47986,7 +49008,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         }
       },
@@ -48146,7 +49168,7 @@
         "idx_images__staged_source_cleanup": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NULL) OR (deletion_posts_completed_at IS NOT NULL)) AND ((quarantine_pending_at IS NULL) OR (quarantined_at IS NOT NULL)) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
           "includedColumns": [],
           "keys": [
             {
@@ -48164,7 +49186,27 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "predicate": "((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NULL) OR (deletion_posts_completed_at IS NOT NULL)) AND ((quarantine_pending_at IS NULL) OR (quarantined_at IS NOT NULL)) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_images__unfinished_deletion": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_images__unfinished_deletion ON public.images USING btree (id) WHERE ((deleted_at IS NOT NULL) AND (deletion_posts_completed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((deleted_at IS NOT NULL) AND (deletion_posts_completed_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -68185,7 +69227,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_notifi_push_intent_subscr_receipt__user_id__subscription_id": {
           "accessMethod": "btree",
@@ -68402,7 +69444,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_notification_push_intents__available": {
           "accessMethod": "btree",
@@ -71509,7 +72551,7 @@
         "oauth_authorizations_callback_error_hash_check": "CHECK (((callback_error_hash IS NULL) OR (char_length(callback_error_hash) = 64)))",
         "oauth_authorizations_callback_mode_check": "CHECK ((callback_mode = ANY (ARRAY['web'::oauth_callback_modes, 'native'::oauth_callback_modes])))",
         "oauth_authorizations_check": "CHECK ((num_nonnulls(completed_at, rejected_at, expired_at) <= 1))",
-        "oauth_authorizations_check1": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = 'connect'::oauth_authorization_purposes) AND (initiating_user_id IS NOT NULL))))",
+        "oauth_authorizations_check1": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = ANY (ARRAY['connect'::oauth_authorization_purposes, 're_auth'::oauth_authorization_purposes])) AND (initiating_user_id IS NOT NULL))))",
         "oauth_authorizations_check2": "CHECK ((((callback_mode = 'native'::oauth_callback_modes) AND (completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)) OR ((callback_mode = 'web'::oauth_callback_modes) AND (completion_proof_challenge IS NULL))))",
         "oauth_authorizations_check3": "CHECK ((num_nonnulls(facebook_account_id, x_account_id, github_account_id, linkedin_account_id, microsoft_account_id, google_account_id) <= 1))",
         "oauth_authorizations_check4": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_account_id IS NULL) AND (github_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL) AND (google_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (github_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL) AND (google_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL) AND (google_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (github_account_id IS NULL) AND (microsoft_account_id IS NULL) AND (google_account_id IS NULL)) OR ((provider = 'microsoft'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (github_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (google_account_id IS NULL)) OR ((provider = 'google'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (github_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL))))",
@@ -71517,7 +72559,7 @@
         "oauth_authorizations_check6": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_account_id, x_account_id, github_account_id, linkedin_account_id, microsoft_account_id, google_account_id) = 1))))",
         "oauth_authorizations_check7": "CHECK ((((status <> 'completed'::oauth_authorization_statuses) AND (completed_at IS NULL) AND (result_kind IS NULL) AND (result_user_id IS NULL) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL)) OR ((status = 'completed'::oauth_authorization_statuses) AND (completed_at IS NOT NULL) AND (result_user_id IS NOT NULL) AND (((result_kind = 'authenticated'::oauth_authorization_result_kinds) AND (result_device_id IS NOT NULL) AND (uuid_extract_version(result_device_id) = 7) AND (result_session_id IS NOT NULL) AND (uuid_extract_version(result_session_id) = 7) AND (login_attempt_id IS NULL)) OR ((result_kind = 'mfa_required'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NOT NULL) AND (uuid_extract_version(login_attempt_id) = 7)) OR ((result_kind = 'connected'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL))))))",
         "oauth_authorizations_provider_check": "CHECK ((provider = ANY (ARRAY['facebook'::oauth_authorization_providers, 'x'::oauth_authorization_providers, 'github'::oauth_authorization_providers, 'linkedin'::oauth_authorization_providers, 'microsoft'::oauth_authorization_providers, 'google'::oauth_authorization_providers])))",
-        "oauth_authorizations_purpose_check": "CHECK ((purpose = ANY (ARRAY['authenticate'::oauth_authorization_purposes, 'connect'::oauth_authorization_purposes])))",
+        "oauth_authorizations_purpose_check": "CHECK ((purpose = ANY (ARRAY['authenticate'::oauth_authorization_purposes, 'connect'::oauth_authorization_purposes, 're_auth'::oauth_authorization_purposes])))",
         "oauth_authorizations_redirect_uri_check": "CHECK (((char_length(redirect_uri) >= 1) AND (char_length(redirect_uri) <= 2048)))",
         "oauth_authorizations_result_kind_check": "CHECK (((result_kind IS NULL) OR (result_kind = ANY (ARRAY['authenticated'::oauth_authorization_result_kinds, 'mfa_required'::oauth_authorization_result_kinds, 'connected'::oauth_authorization_result_kinds]))))",
         "oauth_authorizations_state_hash_check": "CHECK ((char_length(state_hash) = 64))"
@@ -71767,7 +72809,7 @@
         },
         "initiating_user_id": {
           "collation": null,
-          "comment": "Required owner for connect flows and NULL for authenticate flows.",
+          "comment": "Required owner for connect and re_auth flows; NULL for authenticate flows.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -71833,7 +72875,7 @@
         },
         "purpose": {
           "collation": null,
-          "comment": "authenticate creates or resumes a Voucha session; connect links the provider account to the authenticated initiating user.",
+          "comment": "authenticate creates or resumes a Voucha session; connect links an account; re_auth verifies an already-linked provider without linking or creating a session.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -72792,7 +73834,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -72809,6 +73851,17 @@
         "last_used_at": {
           "collation": null,
           "comment": "Time at which the grant most recently issued or refreshed tokens.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
+        "mfa_verified_at": {
+          "collation": null,
+          "comment": "Consent was approved by a session that completed MFA or passkey authentication; required for staff resource access.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -72836,7 +73889,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "scopes": {
@@ -72869,7 +73922,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -74142,6 +75195,17 @@
         "phone_number_login_tokens_token_check2": "CHECK ((token = TRIM(BOTH FROM token)))"
       },
       "columns": {
+        "consumed_at": {
+          "collation": null,
+          "comment": "When the token was successfully consumed for phone-number login.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
         "created_at": {
           "collation": null,
           "comment": null,
@@ -74163,17 +75227,6 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
-        },
-        "logged_in_at": {
-          "collation": null,
-          "comment": "When the token was used to log in. NULL means the token is still pending.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
         },
         "phone_number": {
           "collation": null,
@@ -74216,7 +75269,7 @@
         "idx_phone_number_login_tokens__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (logged_in_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_phone_number_login_tokens__active ON public.phone_number_login_tokens USING btree (phone_number, token) WHERE (consumed_at IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -74234,7 +75287,7 @@
               "opclass": "text_ops"
             }
           ],
-          "predicate": "(logged_in_at IS NULL)",
+          "predicate": "(consumed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -77467,16 +78520,23 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_post_images__image_id": {
+        "idx_post_images__image_id__post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_post_images__image_id ON public.post_images USING btree (image_id)",
+          "definition": "CREATE INDEX idx_post_images__image_id__post_id ON public.post_images USING btree (image_id, post_id)",
           "includedColumns": [],
           "keys": [
             {
               "column": "image_id",
               "descending": false,
               "expression": "image_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -116739,7 +117799,7 @@
         "chk_sra_utm_medium": "CHECK (((utm_medium IS NULL) OR ((char_length(utm_medium) <= 255) AND (utm_medium = lower(TRIM(BOTH FROM utm_medium))))))",
         "chk_sra_utm_source": "CHECK (((utm_source IS NULL) OR ((char_length(utm_source) <= 255) AND (utm_source = lower(TRIM(BOTH FROM utm_source))))))",
         "session_referral_attributions_check": "CHECK ((referrer_user_id <> user_id))",
-        "session_referral_attributions_landing_url_check": "CHECK ((char_length(landing_url) <= 2048))"
+        "session_referral_attributions_landing_url_check": "CHECK (((landing_url IS NULL) OR (char_length(landing_url) <= 2048)))"
       },
       "columns": {
         "created_at": {
@@ -116766,12 +117826,12 @@
         },
         "landing_url": {
           "collation": null,
-          "comment": "The URL the referred session landed on (max 2048 chars).",
+          "comment": "The URL the referred session landed on (max 2048 chars), cleared after its short attribution window.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 5,
           "type": "text"
         },
@@ -116949,6 +118009,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_session_referral_attributions__unscrubbed_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_session_referral_attributions__unscrubbed_id ON ONLY public.session_referral_attributions USING btree (id) WHERE ((landing_url IS NOT NULL) OR (utm_source IS NOT NULL) OR (utm_medium IS NOT NULL) OR (utm_campaign IS NOT NULL) OR (utm_content IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((landing_url IS NOT NULL) OR (utm_source IS NOT NULL) OR (utm_medium IS NOT NULL) OR (utm_campaign IS NOT NULL) OR (utm_content IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -117910,6 +118990,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_story_classifier_results__batch_candidate": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_story_classifier_results__batch_candidate ON ONLY public.story_classifier_results USING btree (batch_id, candidate_id) WHERE (candidate_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(candidate_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_story_classifier_results__call_batch": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -118108,10 +119215,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
+        "accessClass": "retention-window",
         "children": "default",
         "key": "batch_id",
-        "retentionOwner": null,
+        "retentionOwner": "operatorPartitionDrop",
         "strategy": "RANGE"
       },
       "physicalPartition": {
@@ -120638,7 +121745,7 @@
       "columns": {
         "batch_id": {
           "collation": null,
-          "comment": "Logical decision batch that produced this result.",
+          "comment": "Time-ordered logical decision batch that produced this result and owns its partition.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -120803,7 +121910,7 @@
         },
         "topic_id": {
           "collation": null,
-          "comment": "Topic candidate scored by this result and the partition key.",
+          "comment": "Topic candidate scored by this result.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -120813,7 +121920,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Per-candidate classifier results for topic candidates, RANGE-partitioned by topic_id.",
+      "comment": "Per-candidate classifier results for topic candidates, RANGE-partitioned by the UUIDv7 decision batch_id.",
       "foreignKeys": {
         "fk_topic_classifier_results__batch_candidate": {
           "columns": [
@@ -120937,6 +122044,33 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_classifier_results__batch_candidate": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_classifier_results__batch_candidate ON ONLY public.topic_classifier_results USING btree (batch_id, candidate_id) WHERE (candidate_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "batch_id",
+              "descending": false,
+              "expression": "batch_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "candidate_id",
+              "descending": false,
+              "expression": "candidate_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(candidate_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -121087,13 +122221,13 @@
         "topic_classifier_results_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX topic_classifier_results_pkey ON ONLY public.topic_classifier_results USING btree (topic_id, id)",
+          "definition": "CREATE UNIQUE INDEX topic_classifier_results_pkey ON ONLY public.topic_classifier_results USING btree (batch_id, id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "topic_id",
+              "column": "batch_id",
               "descending": false,
-              "expression": "topic_id",
+              "expression": "batch_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -121113,19 +122247,19 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
+        "accessClass": "retention-window",
         "children": "default",
-        "key": "topic_id",
-        "retentionOwner": null,
+        "key": "batch_id",
+        "retentionOwner": "operatorPartitionDrop",
         "strategy": "RANGE"
       },
       "physicalPartition": {
-        "key": "RANGE (topic_id)",
+        "key": "RANGE (batch_id)",
         "strategy": "range"
       },
       "primaryKey": {
-        "columns": ["topic_id", "id"],
-        "definition": "PRIMARY KEY (topic_id, id)"
+        "columns": ["batch_id", "id"],
+        "definition": "PRIMARY KEY (batch_id, id)"
       },
       "relationKind": "partitioned table",
       "triggers": {
@@ -128313,6 +129447,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_user_import_requests__pending_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_import_requests__pending_id ON public.user_import_requests USING btree (id) WHERE (followed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(followed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_import_requests__rss_feed_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -133570,18 +134724,44 @@
     },
     "user_sessions": {
       "checkConstraints": {
+        "user_sessions_account_change_proof_hash_check": "CHECK (((account_change_proof_hash IS NULL) OR (account_change_proof_hash ~ '^[A-F0-9]{64}$'::text)))",
         "user_sessions_check": "CHECK ((num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) = ANY (ARRAY[0, 4])))",
         "user_sessions_check1": "CHECK ((num_nonnulls(previous_device_token_digest, previous_device_token_grace_expires_at) = ANY (ARRAY[0, 2])))",
         "user_sessions_check2": "CHECK (((previous_device_token_digest IS NULL) OR (device_token_digest IS NOT NULL)))",
-        "user_sessions_check3": "CHECK (((device_bound_session_binding IS NULL) OR ((device_token_digest IS NOT NULL) AND (device_token_binding @> '{\"client\": \"web\"}'::jsonb) AND (jsonb_typeof(device_bound_session_binding) = 'object'::text))))",
-        "user_sessions_check4": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
+        "user_sessions_check3": "CHECK (((mfa_verified_at IS NULL) OR (device_token_binding IS NOT NULL)))",
+        "user_sessions_check4": "CHECK ((num_nonnulls(account_change_proof_hash, account_change_proof_expires_at) = ANY (ARRAY[0, 2])))",
+        "user_sessions_check5": "CHECK (((device_bound_session_binding IS NULL) OR ((device_token_digest IS NOT NULL) AND (device_token_binding @> '{\"client\": \"web\"}'::jsonb) AND (jsonb_typeof(device_bound_session_binding) = 'object'::text))))",
+        "user_sessions_check6": "CHECK (((device_token_issued_at IS NULL) OR (device_token_issued_at < expires_at)))",
         "user_sessions_device_name_check": "CHECK ((TRIM(BOTH FROM device_name) = device_name))",
         "user_sessions_device_name_check1": "CHECK ((char_length(device_name) <= 255))",
         "user_sessions_device_token_binding_check": "CHECK (((device_token_binding IS NULL) OR (jsonb_typeof(device_token_binding) = 'object'::text)))",
+        "user_sessions_device_token_binding_check1": "CHECK (((device_token_binding IS NULL) OR (NOT (device_token_binding ? 'mfa_at'::text))))",
         "user_sessions_device_token_digest_check": "CHECK (((device_token_digest IS NULL) OR (device_token_digest ~ '^[a-f0-9]{64}$'::text)))",
         "user_sessions_previous_device_token_digest_check": "CHECK (((previous_device_token_digest IS NULL) OR (previous_device_token_digest ~ '^[a-f0-9]{64}$'::text)))"
       },
       "columns": {
+        "account_change_proof_expires_at": {
+          "collation": null,
+          "comment": "Expiry of the one outstanding SID-owned account-change proof.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 20,
+          "type": "timestamp with time zone"
+        },
+        "account_change_proof_hash": {
+          "collation": null,
+          "comment": "Hash of the one outstanding SID-owned account-change proof; cleared transactionally with the mutation.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 19,
+          "type": "text"
+        },
         "authentication_origin": {
           "collation": null,
           "comment": "Server-controlled sign-in provenance; native is set only by native OTP or verified native OAuth broker completion.",
@@ -133601,7 +134781,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 21,
           "type": "timestamp with time zone"
         },
         "device_bound_session_binding": {
@@ -133612,7 +134792,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "jsonb"
         },
         "device_id": {
@@ -133639,7 +134819,7 @@
         },
         "device_token_binding": {
           "collation": null,
-          "comment": "Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document.",
+          "comment": "Original client family and optional browser User-Agent/JA4 hashes. The completed MFA time is stored only in mfa_verified_at and reconstructed for signed credential replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -133725,6 +134905,17 @@
           "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
+        "mfa_verified_at": {
+          "collation": null,
+          "comment": "Typed original completed MFA time from the signed device binding, used for durable session assurance checks.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 17,
+          "type": "timestamp with time zone"
+        },
         "previous_device_token_digest": {
           "collation": null,
           "comment": "Immediately preceding signed device credential digest, accepted only during a bounded lost-response grace window under the session row lock.",
@@ -133766,7 +134957,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19,
+          "ordinalPosition": 22,
           "type": "timestamp with time zone"
         },
         "user_agent_string_id": {
@@ -134369,6 +135560,7 @@
     },
     "user_totp_authenticators": {
       "checkConstraints": {
+        "user_totp_authenticators_last_used_time_step_check": "CHECK ((last_used_time_step >= 0))",
         "user_totp_authenticators_name_check": "CHECK (((char_length(name) >= 1) AND (char_length(name) <= 100) AND (TRIM(BOTH FROM name) = name)))"
       },
       "columns": {
@@ -134380,7 +135572,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -134393,6 +135585,17 @@
           "nullable": false,
           "ordinalPosition": 1,
           "type": "uuid"
+        },
+        "last_used_time_step": {
+          "collation": null,
+          "comment": "The greatest successfully consumed TOTP counter, preventing reuse across authentication flows.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "bigint"
         },
         "name": {
           "collation": null,
@@ -134424,7 +135627,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "user_id": {

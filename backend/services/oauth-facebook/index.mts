@@ -1,13 +1,17 @@
 import { facebookProvider } from '@vouchington/utils/oauth-providers'
 import { FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, FACEBOOK_GRAPHQL_VERSION } from '@voucha/config'
-import { redeemProviderAccount, type OAuthAccount } from '@services/oauth-accounts'
+import {
+  prepareRedeemedProviderAccount,
+  redeemProviderAccount,
+  type OAuthAccount,
+} from '@services/oauth-accounts'
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import { getExternalFetch } from '@modules/utils/http'
 
-type FacebookOptions = {
-  authorizationId?: string
-  authorizationClaimId?: string
-  signal?: AbortSignal
-}
+type FacebookOptions = OAuthAccountUpsertOptions & { signal?: AbortSignal }
 
 function createFacebookProvider() {
   if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
@@ -20,13 +24,13 @@ function createFacebookProvider() {
   })
 }
 
-/** Redeems a native client access token: long-lived upgrade, then the profile. */
-export async function upsertFacebookAccount(
+/** Redeems a native client token without persisting before the owning account change. */
+export async function prepareFacebookAccount(
   accessToken: string,
   options: FacebookOptions = {},
-): Promise<OAuthAccount> {
+): Promise<PreparedOAuthAccount> {
   const provider = createFacebookProvider()
-  return redeemProviderAccount(
+  return prepareRedeemedProviderAccount(
     { id: provider.id, redeem: (_input, ctx) => provider.redeemAccessToken(accessToken, ctx) },
     { code: '', redirectUri: '' },
     { ...options, label: 'Facebook', fetch: getExternalFetch() },
