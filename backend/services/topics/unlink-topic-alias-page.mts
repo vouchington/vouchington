@@ -76,7 +76,10 @@ export async function applyTopicAliasUnlinkPage(
   return next
 }
 
-/** Applies the alias's current page. Returns false once the unlink is no longer pending. */
+/**
+ * Applies the alias's current page. Returns false once the unlink is no longer pending.
+ * @public Test seam: tests advance the unlink one page at a time.
+ */
 export async function continueTopicAliasUnlink(topicAliasId: string): Promise<boolean> {
   const { rows } = await readUnlinkPrimary<{ alias: string }>(
     `/* continueTopicAliasUnlink */
