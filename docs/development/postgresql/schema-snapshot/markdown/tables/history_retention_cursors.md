@@ -6,12 +6,13 @@ Durable UUIDv7 progress for bounded history retention passes.
 
 Not partitioned — growth: bounded.
 
-| Column            | Type                              | Nullable | Default             | Identity | Generated | Collation | Comment                                                        |
-| ----------------- | --------------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------- |
-| `cleanup_name`    | `history_retention_cleanup_names` | no       |                     |          |           |           | History family whose pass this row checkpoints.                |
-| `cursor_id`       | `uuid`                            | yes      |                     |          |           |           | Last raw candidate id scanned, even when its row was a keeper. |
-| `sweep_cutoff_id` | `uuid`                            | yes      |                     |          |           |           | Exclusive frozen end of the current UUIDv7 pass.               |
-| `updated_at`      | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP` |          |           |           | Time the pass checkpoint last changed.                         |
+| Column              | Type                              | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                       |
+| ------------------- | --------------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
+| `cleanup_name`      | `history_retention_cleanup_names` | no       |                     |          |           |           | History family whose pass this row checkpoints.                                               |
+| `cursor_id`         | `uuid`                            | yes      |                     |          |           |           | Last raw candidate id scanned, even when its row was a keeper.                                |
+| `sweep_cutoff_id`   | `uuid`                            | yes      |                     |          |           |           | Exclusive frozen end of the active UUIDv7 pass, or last completed end for monotonic families. |
+| `is_sweep_complete` | `boolean`                         | no       | `false`             |          |           |           | Completed pass marker; the next pass may advance its frozen end.                              |
+| `updated_at`        | `timestamp with time zone`        | no       | `CURRENT_TIMESTAMP` |          |           |           | Time the pass checkpoint last changed.                                                        |
 
 **Primary key:** `PRIMARY KEY (cleanup_name)`
 

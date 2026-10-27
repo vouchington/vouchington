@@ -47097,8 +47097,18 @@
           "nullable": true,
           "ordinalPosition": 2
         },
+        "is_sweep_complete": {
+          "comment": "Completed pass marker; the next pass may advance its frozen end.",
+          "dataType": "boolean",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
         "sweep_cutoff_id": {
-          "comment": "Exclusive frozen end of the current UUIDv7 pass.",
+          "comment": "Exclusive frozen end of the active UUIDv7 pass, or last completed end for monotonic families.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -47115,7 +47125,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         }
       },
       "comment": "Durable UUIDv7 progress for bounded history retention passes.",
@@ -122839,6 +122849,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_session_referral_attributions__unscrubbed_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_session_referral_attributions__unscrubbed_id ON ONLY public.session_referral_attributions USING btree (id) WHERE ((landing_url IS NOT NULL) OR (utm_source IS NOT NULL) OR (utm_medium IS NOT NULL) OR (utm_campaign IS NOT NULL) OR (utm_content IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((landing_url IS NOT NULL) OR (utm_source IS NOT NULL) OR (utm_medium IS NOT NULL) OR (utm_campaign IS NOT NULL) OR (utm_content IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_session_referral_attributions__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -134784,6 +134817,29 @@
         }
       },
       "indexes": {
+        "idx_user_import_requests__pending_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_import_requests__pending_id ON public.user_import_requests USING btree (id) WHERE (followed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(followed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_import_requests__rss_feed_id": {
           "accessMethod": "btree",
           "constraintBacked": false,

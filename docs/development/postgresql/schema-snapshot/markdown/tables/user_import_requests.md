@@ -42,6 +42,7 @@ _none_
 
 **Indexes:**
 
+- `idx_user_import_requests__pending_id`: `CREATE INDEX idx_user_import_requests__pending_id ON public.user_import_requests USING btree (id) WHERE (followed_at IS NULL)`
 - `idx_user_import_requests__rss_feed_id`: `CREATE INDEX idx_user_import_requests__rss_feed_id ON public.user_import_requests USING btree (rss_feed_id) WHERE (rss_feed_id IS NOT NULL)`
 - `idx_user_import_requests__rss_feed_import_row_id`: `CREATE UNIQUE INDEX idx_user_import_requests__rss_feed_import_row_id ON public.user_import_requests USING btree (rss_feed_import_row_id) WHERE (rss_feed_import_row_id IS NOT NULL)`
 - `idx_user_import_requests__topic_id`: `CREATE INDEX idx_user_import_requests__topic_id ON public.user_import_requests USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
