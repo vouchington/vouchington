@@ -1,0 +1,51 @@
+import { createHash, randomUUID } from 'node:crypto'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import type { runDataRetentionCleanup } from '@services/data-retention'
+import { psql } from '@queues/psql/queues'
+import { AI_RETENTION_FAMILIES, type PsqlRetentionJobData } from '@queues/psql/types'
+import processPsql from '../processors.mts'
+
+type CleanupResult = Awaited<ReturnType<typeof runDataRetentionCleanup>>
+
+const settled = {
+  ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
+  classifierRecords: {},
+  softDeletedUsers: { deleted: 0, hasMore: false },
+} as CleanupResult
+
+describe('final user purge continuation', () => {
+  it('carries the cursor through sensitive continuations until the purge settles', async () => {
+    const initialJobId = `retention-test-${randomUUID()}`
+    const runId = createHash('sha256').update(initialJobId).digest('hex')
+    const ids = [1, 2].map(step => `data-retention-cleanup__${runId}__${step}`)
+    onTestFinished(async () => {
+      await Promise.all(ids.map(async id => (await psql.getJob(id))?.remove()))
+    })
+    const userPurge = { userId: randomUUID(), communityId: randomUUID(), afterModeratorId: '' }
+    const pending = {
+      ...settled,
+      softDeletedUsers: { deleted: 0, hasMore: true, userPurge },
+    } as CleanupResult
+    const cleanup = vi
+      .fn<typeof runDataRetentionCleanup>()
+      .mockResolvedValueOnce(pending)
+      .mockResolvedValue(settled)
+
+    await processPsql('dataRetentionCleanup', {}, { dataRetentionCleanup: cleanup }, initialJobId)
+    const first = await psql.getJob(ids[0]!)
+    expect(first?.data).toMatchObject({ continuation: { runId, step: 1, userPurge } })
+    expect(first?.opts).toMatchObject({ sensitive: true })
+
+    await processPsql(
+      'dataRetentionCleanup',
+      first?.data as PsqlRetentionJobData,
+      { dataRetentionCleanup: cleanup },
+      first!.id,
+    )
+    expect(cleanup).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({ softDeletedUsers: { userPurge } }),
+    )
+    expect(await psql.getJob(ids[1]!)).toBeNull()
+  })
+})

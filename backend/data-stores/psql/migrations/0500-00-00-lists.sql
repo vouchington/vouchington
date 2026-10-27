@@ -117,8 +117,14 @@ CREATE INDEX IF NOT EXISTS idx_user_lists__created_via_oauth_client_id
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__foreign_key
+  -- Keep this all-row prefix narrow: generic list reads need its lower scan cost when list selectivity is unknown.
   ON user_list_posts (user_list_id)
   WHERE user_list_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_list_posts__user_list_id__id__all_rows
+  -- Final purge pages include removed rows and need ordered LIMIT access independent of the active-row index.
+  ON user_list_posts (user_list_id, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_posts__post_id__foreign_key
@@ -127,8 +133,14 @@ CREATE INDEX IF NOT EXISTS idx_user_list_posts__post_id__foreign_key
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__foreign_key
+  -- Keep the referential-integrity index narrow; active reads retain their partial ordered index above.
   ON user_list_rss_feed_items (user_list_id)
   WHERE user_list_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__user_list_id__id__all_rows
+  -- Final purge pages include removed rows and need ordered LIMIT access independent of the active-row index.
+  ON user_list_rss_feed_items (user_list_id, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__rss_feed_item_id__foreign_key
@@ -137,5 +149,11 @@ CREATE INDEX IF NOT EXISTS idx_user_list_rss_feed_items__rss_feed_item_id__forei
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_lists__owner_user_id__foreign_key
+  -- Keep the referential-integrity index narrow; active list reads retain their partial ordered index above.
   ON user_lists (owner_user_id)
   WHERE owner_user_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_user_lists__owner_user_id__id__all_rows
+  -- Final purge pages include removed rows and need ordered LIMIT access independent of the active-row index.
+  ON user_lists (owner_user_id, id);

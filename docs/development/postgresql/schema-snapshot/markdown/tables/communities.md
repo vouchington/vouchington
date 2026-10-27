@@ -65,7 +65,7 @@ _none_
 
 - `communities_archived_by_id_fkey`: `FOREIGN KEY (archived_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `communities_banner_image_id_fkey`: `FOREIGN KEY (banner_image_id) REFERENCES images(id) ON DELETE SET NULL`
-- `communities_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
+- `communities_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `communities_created_via_oauth_client_id_fkey`: `FOREIGN KEY (created_via_oauth_client_id) REFERENCES oauth_clients(id) ON DELETE RESTRICT`
 - `communities_deleted_by_id_fkey`: `FOREIGN KEY (deleted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `communities_profile_image_id_fkey`: `FOREIGN KEY (profile_image_id) REFERENCES images(id) ON DELETE SET NULL`

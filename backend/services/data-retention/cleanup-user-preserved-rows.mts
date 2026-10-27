@@ -1,3 +1,12 @@
+import type { UserPurgeAfterCommit, UserPurgeCursor } from './user-purge-types.mts'
+import { cleanupUserOwnedCommunities } from './cleanup-user-communities.mts'
+import {
+  cleanupUserListRows,
+  cleanupUserNotifications,
+  cleanupUserNotificationPushReceipts,
+  cleanupUserNotificationPushIntents,
+  cleanupUserCommunityMemberships,
+} from './cleanup-user-cascade-rows.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
@@ -16,8 +25,28 @@ export async function cleanupUserPreservedRows(
   userId: string,
   batchSize: number,
   budget: RetentionWorkBudget,
-): Promise<boolean> {
+  cursor?: UserPurgeCursor,
+): Promise<{ hasMore: boolean; userPurge?: UserPurgeCursor; afterCommit: UserPurgeAfterCommit[] }> {
+  const afterCommit: UserPurgeAfterCommit[] = []
+  if (budget.remainingRows === 0) return { hasMore: true, afterCommit }
+  const community = await cleanupUserOwnedCommunities(
+    query,
+    userId,
+    Math.min(batchSize, budget.remainingRows),
+    cursor,
+  )
+  afterCommit.push(...community.afterCommit)
+  budget.remainingRows -= community.processed
+  if (community.userPurge) return { hasMore: true, userPurge: community.userPurge, afterCommit }
+  if (community.processed > 0 || cursor) return { hasMore: true, afterCommit }
+  const lists = await cleanupUserListRows(query, userId, Math.min(batchSize, budget.remainingRows))
+  budget.remainingRows -= lists
+  if (lists > 0) return { hasMore: true, afterCommit }
   const stages = [
+    (limit: number) => cleanupUserNotificationPushReceipts(query, userId, limit),
+    (limit: number) => cleanupUserNotificationPushIntents(query, userId, limit),
+    (limit: number) => cleanupUserNotifications(query, userId, limit),
+    (limit: number) => cleanupUserCommunityMemberships(query, userId, limit),
     async (limit: number) => {
       const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch: preserve topics */
         -- no-mistakes-disable-next-line postgres-required-predicates: reassign every topic the purged user created, including deleted and merged ones, or deleting the user cascades into them
@@ -51,12 +80,12 @@ export async function cleanupUserPreservedRows(
     (limit: number) => detachProviderMembershipSources(query, userId, limit),
   ]
   for (const stage of stages) {
-    if (budget.remainingRows === 0) return true
+    if (budget.remainingRows === 0) return { hasMore: true, afterCommit }
     const limit = Math.min(batchSize, budget.remainingRows)
     // oxlint-disable-next-line no-await-in-loop -- later candidate pages share the remaining allowance and lifecycle order.
     const processed = await stage(limit)
     budget.remainingRows -= processed
-    if (processed === limit) return true
+    if (processed === limit) return { hasMore: true, afterCommit }
   }
-  return budget.remainingRows === 0
+  return { hasMore: budget.remainingRows === 0, afterCommit }
 }

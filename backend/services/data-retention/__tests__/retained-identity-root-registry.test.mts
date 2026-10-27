@@ -3,7 +3,7 @@ import {
   readTestRetainedIdentityForeignKeys,
   type RetainedIdentityForeignKey,
 } from '@voucha/test-helpers/entities/retained-identity-foreign-keys'
-import { ROOT_FAMILIES } from '../cleanup-retained-identities.mts'
+import { ROOT_FAMILIES } from '../retained-identity-families.mts'
 
 type Registry = Record<string, { table: string; references: readonly (readonly string[])[] }>
 

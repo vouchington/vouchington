@@ -15404,11 +15404,11 @@
         },
         "communities_created_by_id_fkey": {
           "columns": ["created_by_id"],
-          "definition": "FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
+          "definition": "FOREIGN KEY (created_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
-          "referencedTable": "users",
+          "referencedTable": "retained_user_identities",
           "validated": true
         },
         "communities_created_via_oauth_client_id_fkey": {
@@ -19585,6 +19585,60 @@
             }
           ],
           "predicate": "(removed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_members__moderator_community_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__moderator_community_id ON public.community_members USING btree (community_id, id) WHERE ((role = 'moderator'::community_member_roles) AND (removed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((role = 'moderator'::community_member_roles) AND (removed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_members__owner_user_community": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_members__owner_user_community ON public.community_members USING btree (user_id, community_id) WHERE ((role = 'owner'::community_member_roles) AND (removed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((role = 'owner'::community_member_roles) AND (removed_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -135608,6 +135662,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_user_list_posts__user_list_id__id__all_rows": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_list_posts__user_list_id__id__all_rows ON public.user_list_posts USING btree (user_list_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_list_id",
+              "descending": false,
+              "expression": "user_list_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_list_posts__user_list_id__post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -135841,6 +135922,33 @@
             }
           ],
           "predicate": "(removed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_list_rss_feed_items__user_list_id__id__all_rows": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_list_rss_feed_items__user_list_id__id__all_rows ON public.user_list_rss_feed_items USING btree (user_list_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_list_id",
+              "descending": false,
+              "expression": "user_list_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -136106,6 +136214,33 @@
             }
           ],
           "predicate": "(owner_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_lists__owner_user_id__id__all_rows": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_lists__owner_user_id__id__all_rows ON public.user_lists USING btree (owner_user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "owner_user_id",
+              "descending": false,
+              "expression": "owner_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,

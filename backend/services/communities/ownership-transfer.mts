@@ -1,19 +1,24 @@
-import { write, beginTransaction } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import { transferLockedCommunityOwnership } from './ownership-transfer-core.mts'
+import { createOwnershipTransferNotifications } from './ownership-transfer-notifications.mts'
+import {
+  lockActiveUserLifecycleForMutation,
+  lockUserSubjectMutationFences,
+} from '@services/users/active-user-lifecycle-lock'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import createHttpError from 'http-errors'
 import { getActiveCommunityMembersForUsers } from './members/batch.mts'
 import type { Community } from './types.mts'
-import { lockCommunityUsers } from './bans/lock.mts'
+import {
+  lockCommunityMembershipRoles,
+  lockCommunityRoleMutation,
+  lockCommunityUsers,
+} from './bans/lock.mts'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCommunityOwnershipTransferEmail } from '@queues/emails/enqueues'
 import { getSiteUrl } from '@modules/utils'
-import {
-  createCommunityLifecycleNotifications,
-  enqueueCommunityLifecycleNotificationPush,
-} from '@services/notifications'
+import { enqueueCommunityLifecycleNotificationPush } from '@services/notifications'
 
 /**
  * Allows an owner to voluntarily transfer ownership to a moderator.
@@ -31,7 +36,7 @@ export async function initiateOwnershipTransfer(
   await using query = await beginTransaction()
   const opts = { query }
 
-  await lockCommunityUsers(communityId, [currentUserId, targetUserId], opts)
+  await lockCommunityRoleMutation(query, communityId, [currentUserId, targetUserId])
 
   const members = await getActiveCommunityMembersForUsers(
     communityId,
@@ -51,27 +56,12 @@ export async function initiateOwnershipTransfer(
     targetUserId,
     opts,
   )
-  const transitionId = `${transition.demotedUpdatedAt.toISOString()}:${transition.promotedUpdatedAt.toISOString()}`
-  const pushNotifications = await createCommunityLifecycleNotifications(
-    [
-      {
-        userId: targetUserId,
-        communityId,
-        entityType: 'community_ownership_transfer',
-        eventKey: `community-ownership-transfer:${transitionId}:new-owner`,
-        title: `You now own ${community.name}`,
-        body: `Ownership of ${community.name} was transferred to you.`,
-      },
-      {
-        userId: currentUserId,
-        communityId,
-        entityType: 'community_ownership_transfer',
-        eventKey: `community-ownership-transfer:${transitionId}:previous-owner`,
-        title: `Ownership of ${community.name} was transferred`,
-        body: `You transferred ownership of ${community.name}.`,
-      },
-    ],
+  const pushNotifications = await createOwnershipTransferNotifications(
+    community,
+    targetUserId,
+    transition,
     opts,
+    currentUserId,
   )
 
   await query.commit()
@@ -88,52 +78,50 @@ export async function initiateOwnershipTransfer(
   )
 }
 
-async function transferLockedCommunityOwnership(
-  communityId: string,
+/** Trusted account purge shares the transition and successor delivery, inside its transaction. */
+export async function transferCommunityOwnershipForUserPurge(
+  query: TransactionQuery,
+  community: Pick<Community, 'id' | 'name' | 'slug'>,
   fromUserId: string,
   toUserId: string,
-  options: QueryOptions,
-): Promise<{ demotedUpdatedAt: Date; promotedUpdatedAt: Date }> {
-  // Swap roles atomically in one statement: if either precondition fails, neither update commits.
-  const { rows } = await write(
-    sql`/* transferCommunityOwnership */
-    WITH demote AS (
-      UPDATE community_members
-      SET role = 'moderator'
-      WHERE community_id = ${communityId}
-        AND user_id = ${fromUserId}
-        AND role = 'owner'
-        AND removed_at IS NULL
-      RETURNING updated_at
-    ),
-    promote AS (
-      UPDATE community_members
-      SET role = 'owner'
-      WHERE community_id = ${communityId}
-        AND user_id = ${toUserId}
-        AND role = 'moderator'
-        AND removed_at IS NULL
-        AND EXISTS (SELECT 1 FROM demote)
-      RETURNING updated_at
-    )
-    SELECT
-      (SELECT COUNT(*) FROM demote)::int AS demoted,
-      (SELECT COUNT(*) FROM promote)::int AS promoted,
-      (SELECT updated_at FROM demote) AS demoted_updated_at,
-      (SELECT updated_at FROM promote) AS promoted_updated_at
-    `,
-    options,
+): Promise<(() => Promise<void>) | null> {
+  await lockCommunityMembershipRoles(query, [community.id])
+  // The SQL active-user guard raises for an inactive subject, which would poison the caller-owned
+  // transaction. Fence deletion first, then make expected ineligibility an ordinary empty result.
+  await lockUserSubjectMutationFences(query, [toUserId])
+  const { rows: activeUsers } = await query(sql`/* transferCommunityOwnershipForUserPurge:active */
+    SELECT id FROM users WHERE id = ${toUserId} AND deleted_at IS NULL`)
+  if (!activeUsers[0]) return null
+  // ast-grep-ignore: no-three-sequential-awaits -- lifecycle, sorted member locks, then eligibility must be ordered.
+  await lockActiveUserLifecycleForMutation(query, toUserId)
+  await lockCommunityUsers(community.id, [fromUserId, toUserId], { query })
+  const { rows } = await query(sql`/* transferCommunityOwnershipForUserPurge:eligible */
+    SELECT member.id FROM community_members member JOIN users target ON target.id = member.user_id
+    WHERE member.community_id = ${community.id} AND member.user_id = ${toUserId}
+      AND member.role = 'moderator' AND member.removed_at IS NULL AND target.deleted_at IS NULL
+      AND EXISTS (
+        SELECT 1 FROM community_members owner
+        WHERE owner.community_id = ${community.id} AND owner.user_id = ${fromUserId}
+          AND owner.role = 'owner' AND owner.removed_at IS NULL
+      )
+      AND NOT EXISTS (SELECT 1 FROM user_suspensions WHERE user_id = target.id AND lifted_at IS NULL)
+      AND NOT EXISTS (SELECT 1 FROM user_deletion_requests WHERE user_id = target.id AND completed_at IS NULL)
+    LIMIT 1`)
+  if (!rows[0]) return null
+  const transition = await transferLockedCommunityOwnership(community.id, fromUserId, toUserId, {
+    query,
+  })
+  const notifications = await createOwnershipTransferNotifications(
+    community,
+    toUserId,
+    transition,
+    { query },
   )
-  const { demoted, promoted, demoted_updated_at, promoted_updated_at } = rows[0] as {
-    demoted: number
-    promoted: number
-    demoted_updated_at: Date | null
-    promoted_updated_at: Date | null
+  return async () => {
+    await enqueueCommunityLifecycleNotificationPush(notifications)
+    const emails = await sendOwnershipTransferEmails(community.name, community.slug, toUserId)
+    await Promise.all(Object.values(emails).filter(email => email !== null))
   }
-  if (demoted === 0) throw createHttpError(409, 'Community ownership changed concurrently')
-  if (promoted === 0) throw createHttpError(422, 'Target user is no longer an eligible moderator')
-  assert(demoted_updated_at && promoted_updated_at, 500, 'Ownership transition timestamps missing')
-  return { demotedUpdatedAt: demoted_updated_at, promotedUpdatedAt: promoted_updated_at }
 }
 
 type OwnershipTransferEmailEnqueues = {
@@ -145,12 +133,12 @@ async function sendOwnershipTransferEmails(
   communityName: string,
   communitySlug: string,
   newOwnerId: string,
-  previousOwnerId: string,
+  previousOwnerId?: string,
 ): Promise<OwnershipTransferEmailEnqueues> {
   const communityUrl = getSiteUrl(`/communities/${communitySlug}`)
   const [newOwner, previousOwner] = await Promise.all([
     getPrivateUserByAny(newOwnerId),
-    getPrivateUserByAny(previousOwnerId),
+    previousOwnerId ? getPrivateUserByAny(previousOwnerId) : Promise.resolve(null),
   ])
 
   return {

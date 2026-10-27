@@ -23,6 +23,7 @@
     "@data-stores/analytics": "workspace:^",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
     "@services/classifier-run-revival": "workspace:^",

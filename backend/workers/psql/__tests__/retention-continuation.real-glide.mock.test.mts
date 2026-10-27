@@ -97,7 +97,11 @@ describe('AI retention continuation delivery', () => {
         ),
       ),
     ) as Record<(typeof AI_RETENTION_FAMILIES)[number], { deleted: number; hasMore: boolean }>
-    const dailyResults = { ...familyResults, classifierRecords: {} }
+    const dailyResults = {
+      ...familyResults,
+      classifierRecords: {},
+      softDeletedUsers: { deleted: 0, hasMore: false },
+    }
     const backlogged = AI_RETENTION_FAMILIES.filter(family => family !== 'textEmbeddingCache')
     expect(AI_RETENTION_FAMILIES.filter(family => dailyResults[family].hasMore)).toEqual(backlogged)
     const process = createAIRetentionContinuationProcessor((family, limits) =>
