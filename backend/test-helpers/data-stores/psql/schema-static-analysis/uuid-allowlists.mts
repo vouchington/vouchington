@@ -107,10 +107,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Immutable scope snapshot intentionally survives post and community deletion so global release eligibility cannot change.',
   ],
   [
-    'activitypub_inbox_delivery_work_items.lease_token',
-    'Ephemeral fencing token rotated for each queue dispatch lease; it intentionally identifies no durable relation.',
-  ],
-  [
     'relation__user__follow__user.outbound_activitypub_distributed_activity_id',
     'Stable outbound ActivityPub protocol identity for the current Follow or Undo generation.',
   ],

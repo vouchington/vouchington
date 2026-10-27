@@ -11,17 +11,18 @@ import {
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import { background } from '@queues/background/queues'
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
+import { enqueueActivityPubInboxDelivery } from '@queues/activitypub/enqueues/inbox'
 import { processDelivery } from '@workers/activitypub/processors/inbox'
 import {
   activityPubInboxDeliveryExistsOnPrimaryForTest,
   expireActivityPubInboxDeliveryForTest,
-  makeActivityPubInboxDeliveryRecoverableForTest,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
+import { skipActivityPubInboxEnqueueGrace } from '@voucha/test-helpers/activitypub-inbox-enqueue-grace'
 import { scopedActivityPubInboxProcessors } from '@voucha/test-helpers/activitypub-inbox-scoped-processors'
 import { startBackgroundHarness } from '@voucha/test-helpers/real-glide-background'
 import {
-  claimTestDelivery,
+  loadTestDelivery,
   exhaustTestDelivery,
   registerActivityPubInboxAdmission,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
@@ -50,7 +51,10 @@ describe('activitypub durable inbox through the production background processor'
       createProcessor: createBackgroundProcessor,
       bodies: {
         [ACTIVITYPUB_PROCESS_DELIVERY_JOB.name]: (current: Job) =>
-          processDelivery(current.data, { isFinalAttempt: true }),
+          processDelivery(current.data, {
+            isFinalAttempt: true,
+            moveToDelayed: timestamp => current.moveToDelayed(timestamp),
+          }),
         [ACTIVITYPUB_RECOVER_DELIVERIES_JOB.name]: scoped.recoverDeliveries,
         [ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB.name]: scoped.rearmFailedDeliveries,
         [ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB.name]: scoped.cleanupExpiredDeliveries,
@@ -77,11 +81,23 @@ describe('activitypub durable inbox through the production background processor'
     const actor = await createApprovedRemoteActor()
     const deliveredActivityId = `${actor.actorUri}/activities/${randomUUID()}`
     const delivered = await createSignedDelivery(actor, { activityId: deliveredActivityId })
-    await runJob(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivered, delivered.deliveryId)
+    const loaded = await activityPubInboxDeliveryTransitions.load(delivered.deliveryId)
+    if (loaded.outcome === 'stale') throw new Error('Expected the signed envelope')
+    const acceptedAgain = await activityPubInboxDeliveryTransitions.accept(loaded.value)
+    expect(acceptedAgain).toEqual({ outcome: 'applied', value: delivered, wasInserted: false })
+    await enqueueActivityPubInboxDelivery(delivered)
+    const queued = await background.getJob(`activitypub-inbox__${delivered.requestDigest}`)
+    try {
+      expect(queued?.id).toBe(`activitypub-inbox__${delivered.requestDigest}`)
+      expect(await enqueueActivityPubInboxDelivery(delivered)).toBeNull()
+      await runJob(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivered, delivered.deliveryId)
+    } finally {
+      await queued?.remove()
+    }
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(deliveredActivityId)).toBe(false)
 
     const abandoned = await createSignedDelivery(actor)
-    await makeActivityPubInboxDeliveryRecoverableForTest(abandoned.deliveryId, 'unstarted')
+    skipActivityPubInboxEnqueueGrace()
     const result = await runJob(ACTIVITYPUB_RECOVER_DELIVERIES_JOB, {}, abandoned.deliveryId)
     expect((result as { enqueued: number }).enqueued).toBeGreaterThanOrEqual(1)
     const recovered = await findProcessDeliveryJob(abandoned.deliveryId)
@@ -90,35 +106,49 @@ describe('activitypub durable inbox through the production background processor'
     } finally {
       await recovered?.remove()
       if (recovered) {
-        await activityPubInboxDeliveryTransitions.reject(
-          abandoned.deliveryId,
-          (recovered.data as { leaseToken: string }).leaseToken,
-        )
+        await activityPubInboxDeliveryTransitions.reject(abandoned.deliveryId)
       }
+    }
+  })
+
+  it('completes a rejected delivery without retaining a failed job', async () => {
+    const actor = await createApprovedRemoteActor()
+    const delivery = await createSignedDelivery(actor, { corruptSignature: true })
+    const harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      bodies: {
+        [ACTIVITYPUB_PROCESS_DELIVERY_JOB.name]: (current: Job) =>
+          processDelivery(current.data, {
+            isFinalAttempt: true,
+            moveToDelayed: timestamp => current.moveToDelayed(timestamp),
+          }),
+      },
+    })
+    try {
+      const added = await harness.add(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivery, { attempts: 1 })
+      expect(await harness.settled(added)).toBe('completed')
+      expect(await (await harness.queue.getJob(added.id))?.getState()).toBe('completed')
+      expect(await loadTestDelivery(delivery.deliveryId)).toBeNull()
+    } finally {
+      await harness.close()
     }
   })
 
   it('rearms a failed durable delivery and deletes an expired one', async () => {
     const actor = await createApprovedRemoteActor()
     const failed = await createSignedDelivery(actor)
-    expect(await claimTestDelivery(failed.deliveryId, failed.leaseToken)).not.toBeNull()
-    expect(
-      await exhaustTestDelivery(failed.deliveryId, failed.leaseToken, new Error('offline')),
-    ).toBe(true)
+    expect(await loadTestDelivery(failed.deliveryId)).not.toBeNull()
+    expect(await exhaustTestDelivery(failed.deliveryId, new Error('offline'))).toBe(true)
     const rearmed = await runJob(ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB, {}, failed.deliveryId)
     expect(rearmed).toEqual({ enqueued: 1, hasMore: false })
     const child = await findProcessDeliveryJob(failed.deliveryId)
     try {
-      expect((child?.data as { leaseToken?: string } | undefined)?.leaseToken).not.toBe(
-        failed.leaseToken,
-      )
+      expect(child?.data).toEqual(failed)
     } finally {
       await child?.remove()
       if (child) {
-        await activityPubInboxDeliveryTransitions.reject(
-          failed.deliveryId,
-          (child.data as { leaseToken: string }).leaseToken,
-        )
+        await activityPubInboxDeliveryTransitions.reject(failed.deliveryId)
       }
     }
 

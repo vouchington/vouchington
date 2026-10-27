@@ -23,6 +23,7 @@ export async function acquireTerminalJobRemoval(
 
   return {
     state: 'terminal' as const,
+    terminalState: state,
     release,
     // The caller may preserve page checkpoints while this hash is still WATCHed.
     readData: () => client.hget(jobKey, 'data'),

@@ -1417,10 +1417,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  retained_rows_delta BIGINT;\n  retained_bytes_delta BIGINT;\n  unverified_rows_delta BIGINT;\n  unverified_bytes_delta BIGINT;\nBEGIN\n  SELECT COUNT(*),\n         COALESCE(SUM(OCTET_LENGTH(raw_body)), 0),\n         COUNT(*) FILTER (WHERE verified_at IS NULL),\n         COALESCE(SUM(OCTET_LENGTH(raw_body)) FILTER (WHERE verified_at IS NULL), 0)\n  INTO retained_rows_delta, retained_bytes_delta, unverified_rows_delta, unverified_bytes_delta\n  FROM deleted_deliveries;\n\n  UPDATE activitypub_inbox_delivery_storage_counters\n  SET retained_rows = retained_rows - retained_rows_delta,\n      retained_raw_body_bytes = retained_raw_body_bytes - retained_bytes_delta,\n      unverified_rows = unverified_rows - unverified_rows_delta,\n      unverified_raw_body_bytes = unverified_raw_body_bytes - unverified_bytes_delta\n  WHERE is_singleton;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING\n      ERRCODE = '55000',\n      MESSAGE = 'ActivityPub inbox storage counter singleton is missing';\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_project_activitypub_inbox_delivery_storage_after_insert()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  retained_rows_delta BIGINT;\n  retained_bytes_delta BIGINT;\n  unverified_rows_delta BIGINT;\n  unverified_bytes_delta BIGINT;\n  counters activitypub_inbox_delivery_storage_counters%ROWTYPE;\nBEGIN\n  SELECT COUNT(*),\n         COALESCE(SUM(OCTET_LENGTH(raw_body)), 0),\n         COUNT(*) FILTER (WHERE verified_at IS NULL),\n         COALESCE(SUM(OCTET_LENGTH(raw_body)) FILTER (WHERE verified_at IS NULL), 0)\n  INTO retained_rows_delta, retained_bytes_delta, unverified_rows_delta, unverified_bytes_delta\n  FROM inserted_deliveries;\n\n  UPDATE activitypub_inbox_delivery_storage_counters\n  SET retained_rows = retained_rows + retained_rows_delta,\n      retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,\n      unverified_rows = unverified_rows + unverified_rows_delta,\n      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta\n  WHERE is_singleton\n    AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)\n    AND (\n      unverified_bytes_delta <= 0\n      OR unverified_raw_body_bytes + unverified_bytes_delta <= 268435456\n    )\n  RETURNING * INTO counters;\n\n  IF FOUND THEN\n    RETURN NULL;\n  END IF;\n\n  SELECT * INTO counters\n  FROM activitypub_inbox_delivery_storage_counters\n  WHERE is_singleton;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING\n      ERRCODE = '55000',\n      MESSAGE = 'ActivityPub inbox storage counter singleton is missing';\n  END IF;\n  RAISE EXCEPTION USING\n    ERRCODE = '23514',\n    CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity',\n    MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',\n    DETAIL = json_build_object(\n      'unverifiedRows', counters.unverified_rows,\n      'unverifiedRawBodyBytes', counters.unverified_raw_body_bytes,\n      'attemptedRows', unverified_rows_delta,\n      'attemptedRawBodyBytes', unverified_bytes_delta\n    )::TEXT;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  retained_rows_delta BIGINT;\n  retained_bytes_delta BIGINT;\n  unverified_rows_delta BIGINT;\n  unverified_bytes_delta BIGINT;\n  counters activitypub_inbox_delivery_storage_counters%ROWTYPE;\nBEGIN\n  SELECT COUNT(*),\n         COALESCE(SUM(OCTET_LENGTH(raw_body)), 0),\n         COUNT(*) FILTER (WHERE verified_at IS NULL),\n         COALESCE(SUM(OCTET_LENGTH(raw_body)) FILTER (WHERE verified_at IS NULL), 0)\n  INTO retained_rows_delta, retained_bytes_delta, unverified_rows_delta, unverified_bytes_delta\n  FROM inserted_deliveries;\n\n  UPDATE activitypub_inbox_delivery_storage_counters\n  SET retained_rows = retained_rows + retained_rows_delta,\n      retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,\n      unverified_rows = unverified_rows + unverified_rows_delta,\n      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta\n  WHERE is_singleton\n    AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)\n    AND (\n      unverified_bytes_delta <= 0\n      OR unverified_raw_body_bytes + unverified_bytes_delta <= 268435456\n    )\n  RETURNING * INTO counters;\n\n  IF FOUND THEN\n    RETURN NULL;\n  END IF;\n\n  SELECT * INTO counters\n  FROM activitypub_inbox_delivery_storage_counters\n  WHERE is_singleton;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING\n      ERRCODE = '55000',\n      MESSAGE = 'ActivityPub inbox storage counter singleton is missing';\n  END IF;\n  RAISE EXCEPTION USING\n    ERRCODE = '23514',\n    CONSTRAINT = 'activitypub_inbox_envelopes_unverified_capacity',\n    MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',\n    DETAIL = json_build_object(\n      'unverifiedRows', counters.unverified_rows,\n      'unverifiedRawBodyBytes', counters.unverified_raw_body_bytes,\n      'attemptedRows', unverified_rows_delta,\n      'attemptedRawBodyBytes', unverified_bytes_delta\n    )::TEXT;\nEND;\n$function$\n"
     },
     "fn_project_activitypub_inbox_delivery_storage_after_update()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  retained_bytes_delta BIGINT;\n  unverified_rows_delta BIGINT;\n  unverified_bytes_delta BIGINT;\n  counters activitypub_inbox_delivery_storage_counters%ROWTYPE;\nBEGIN\n  SELECT\n    COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM updated_deliveries), 0)\n      - COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM previous_deliveries), 0),\n    COALESCE((SELECT COUNT(*) FROM updated_deliveries WHERE verified_at IS NULL), 0)\n      - COALESCE((SELECT COUNT(*) FROM previous_deliveries WHERE verified_at IS NULL), 0),\n    COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM updated_deliveries WHERE verified_at IS NULL), 0)\n      - COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM previous_deliveries WHERE verified_at IS NULL), 0)\n  INTO retained_bytes_delta, unverified_rows_delta, unverified_bytes_delta;\n\n  UPDATE activitypub_inbox_delivery_storage_counters\n  SET retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,\n      unverified_rows = unverified_rows + unverified_rows_delta,\n      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta\n  WHERE is_singleton\n    AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)\n    AND (\n      unverified_bytes_delta <= 0\n      OR unverified_raw_body_bytes + unverified_bytes_delta <= 268435456\n    )\n  RETURNING * INTO counters;\n\n  IF FOUND THEN\n    RETURN NULL;\n  END IF;\n\n  SELECT * INTO counters\n  FROM activitypub_inbox_delivery_storage_counters\n  WHERE is_singleton;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING\n      ERRCODE = '55000',\n      MESSAGE = 'ActivityPub inbox storage counter singleton is missing';\n  END IF;\n  RAISE EXCEPTION USING\n    ERRCODE = '23514',\n    CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity',\n    MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',\n    DETAIL = json_build_object(\n      'unverifiedRows', counters.unverified_rows,\n      'unverifiedRawBodyBytes', counters.unverified_raw_body_bytes,\n      'attemptedRows', unverified_rows_delta,\n      'attemptedRawBodyBytes', unverified_bytes_delta\n    )::TEXT;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_storage_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  retained_bytes_delta BIGINT;\n  unverified_rows_delta BIGINT;\n  unverified_bytes_delta BIGINT;\n  counters activitypub_inbox_delivery_storage_counters%ROWTYPE;\nBEGIN\n  SELECT\n    COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM updated_deliveries), 0)\n      - COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM previous_deliveries), 0),\n    COALESCE((SELECT COUNT(*) FROM updated_deliveries WHERE verified_at IS NULL), 0)\n      - COALESCE((SELECT COUNT(*) FROM previous_deliveries WHERE verified_at IS NULL), 0),\n    COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM updated_deliveries WHERE verified_at IS NULL), 0)\n      - COALESCE((SELECT SUM(OCTET_LENGTH(raw_body)) FROM previous_deliveries WHERE verified_at IS NULL), 0)\n  INTO retained_bytes_delta, unverified_rows_delta, unverified_bytes_delta;\n\n  UPDATE activitypub_inbox_delivery_storage_counters\n  SET retained_raw_body_bytes = retained_raw_body_bytes + retained_bytes_delta,\n      unverified_rows = unverified_rows + unverified_rows_delta,\n      unverified_raw_body_bytes = unverified_raw_body_bytes + unverified_bytes_delta\n  WHERE is_singleton\n    AND (unverified_rows_delta <= 0 OR unverified_rows + unverified_rows_delta <= 10000)\n    AND (\n      unverified_bytes_delta <= 0\n      OR unverified_raw_body_bytes + unverified_bytes_delta <= 268435456\n    )\n  RETURNING * INTO counters;\n\n  IF FOUND THEN\n    RETURN NULL;\n  END IF;\n\n  SELECT * INTO counters\n  FROM activitypub_inbox_delivery_storage_counters\n  WHERE is_singleton;\n  IF NOT FOUND THEN\n    RAISE EXCEPTION USING\n      ERRCODE = '55000',\n      MESSAGE = 'ActivityPub inbox storage counter singleton is missing';\n  END IF;\n  RAISE EXCEPTION USING\n    ERRCODE = '23514',\n    CONSTRAINT = 'activitypub_inbox_envelopes_unverified_capacity',\n    MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',\n    DETAIL = json_build_object(\n      'unverifiedRows', counters.unverified_rows,\n      'unverifiedRawBodyBytes', counters.unverified_raw_body_bytes,\n      'attemptedRows', unverified_rows_delta,\n      'attemptedRawBodyBytes', unverified_bytes_delta\n    )::TEXT;\nEND;\n$function$\n"
     },
     "fn_project_activitypub_post_likes()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_post_likes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_delta INT;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    v_delta := 1;\n  ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN\n    RETURN NEW;\n  ELSIF OLD.deleted_at IS NULL THEN\n    v_delta := -1;\n  ELSE\n    v_delta := 1;\n  END IF;\n\n  INSERT INTO post_activitypub_like_tallies (post_id, activitypub_likes_score, activitypub_likes_count)\n  VALUES (NEW.post_id, GREATEST(v_delta, 0), GREATEST(v_delta, 0))\n  ON CONFLICT (post_id) DO UPDATE SET\n    activitypub_likes_score = GREATEST(post_activitypub_like_tallies.activitypub_likes_score + v_delta, 0),\n    activitypub_likes_count = GREATEST(post_activitypub_like_tallies.activitypub_likes_count + v_delta, 0);\n  RETURN NEW;\nEND;\n$function$\n"
@@ -2217,110 +2217,78 @@
       },
       "uniqueConstraints": {}
     },
-    "activitypub_inbox_delivery_work_items": {
+    "activitypub_inbox_envelopes": {
       "checkConstraints": {
-        "activitypub_inbox_delivery_work_items_attempt_count_check": {
-          "definition": "CHECK ((attempt_count >= 0))",
-          "validated": true
-        },
-        "activitypub_inbox_delivery_work_items_check": {
-          "definition": "CHECK (((leased_at IS NULL) = (lease_expires_at IS NULL)))",
-          "validated": true
-        },
-        "activitypub_inbox_delivery_work_items_check1": {
-          "definition": "CHECK (((lease_expires_at IS NULL) OR (lease_expires_at > leased_at)))",
-          "validated": true
-        },
-        "activitypub_inbox_work_items__deferral_state_valid": {
-          "definition": "CHECK (((NOT ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL) AND (leased_at IS NULL) AND (dispatched_at IS NULL) AND (sender_allowed_at IS NULL) AND (failed_at IS NULL))) OR (last_error IS NOT NULL)))",
-          "validated": true
-        },
-        "activitypub_inbox_work_items__failed_requires_first_failed": {
+        "activitypub_inbox_envelopes__failed_requires_first_failed": {
           "definition": "CHECK (((failed_at IS NULL) OR (first_failed_at IS NOT NULL)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__failure_state_valid": {
-          "definition": "CHECK (((failed_at IS NULL) OR ((leased_at IS NOT NULL) AND (last_error IS NOT NULL))))",
-          "validated": true
-        },
-        "activitypub_inbox_work_items__first_failed_precedes_failure": {
+        "activitypub_inbox_envelopes__first_failed_precedes_failure": {
           "definition": "CHECK (((failed_at IS NULL) OR (first_failed_at <= failed_at)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__first_failed_requires_retention": {
+        "activitypub_inbox_envelopes__first_failed_requires_retention": {
           "definition": "CHECK (((first_failed_at IS NULL) OR (retention_expires_at IS NOT NULL)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__last_error_bounded": {
+        "activitypub_inbox_envelopes__last_error_bounded": {
           "definition": "CHECK (((last_error IS NULL) OR (length(last_error) <= 1000)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__raw_body_bounded": {
+        "activitypub_inbox_envelopes__raw_body_bounded": {
           "definition": "CHECK ((octet_length(raw_body) <= 1048576))",
           "validated": true
         },
-        "activitypub_inbox_work_items__request_method_length": {
+        "activitypub_inbox_envelopes__recovery_requeue_count_nonnegative": {
+          "definition": "CHECK ((recovery_requeue_count >= 0))",
+          "validated": true
+        },
+        "activitypub_inbox_envelopes__request_digest_sha256": {
+          "definition": "CHECK ((request_digest ~ '^[0-9a-f]{64}$'::text))",
+          "validated": true
+        },
+        "activitypub_inbox_envelopes__request_method_length": {
           "definition": "CHECK (((length((request_method)::text) >= 1) AND (length((request_method)::text) <= 16)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__request_method_uppercase": {
+        "activitypub_inbox_envelopes__request_method_uppercase": {
           "definition": "CHECK (((request_method)::text = upper((request_method)::text)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__sender_hostname_lowercase": {
+        "activitypub_inbox_envelopes__sender_hostname_lowercase": {
           "definition": "CHECK ((sender_hostname = lower(sender_hostname)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__sender_requires_verification": {
+        "activitypub_inbox_envelopes__sender_requires_verification": {
           "definition": "CHECK (((sender_allowed_at IS NULL) OR ((verified_at IS NOT NULL) AND (remote_actor_id IS NOT NULL))))",
           "validated": true
         },
-        "activitypub_inbox_work_items__terminal_diagnostics_present": {
+        "activitypub_inbox_envelopes__terminal_diagnostics_present": {
           "definition": "CHECK (((failed_at IS NULL) OR (last_error IS NOT NULL)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__unverified_requires_retention": {
+        "activitypub_inbox_envelopes__unverified_requires_retention": {
           "definition": "CHECK (((verified_at IS NOT NULL) OR (retention_expires_at IS NOT NULL)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__unverified_retention_bounded": {
+        "activitypub_inbox_envelopes__unverified_retention_bounded": {
           "definition": "CHECK (((verified_at IS NOT NULL) OR (retention_expires_at <= (received_at + '01:00:00'::interval))))",
           "validated": true
         },
-        "activitypub_inbox_work_items__verified_actor_paired": {
+        "activitypub_inbox_envelopes__verified_actor_paired": {
           "definition": "CHECK (((verified_at IS NULL) = (remote_actor_id IS NULL)))",
           "validated": true
         },
-        "activitypub_inbox_work_items__verified_bounded_retention": {
+        "activitypub_inbox_envelopes__verified_bounded_retention": {
           "definition": "CHECK (((verified_at IS NULL) OR (first_failed_at IS NULL) OR (retention_expires_at <= (first_failed_at + '7 days'::interval))))",
           "validated": true
         },
-        "activitypub_inbox_work_items__verified_first_failure_retention": {
+        "activitypub_inbox_envelopes__verified_first_failure_retention": {
           "definition": "CHECK (((verified_at IS NULL) OR (first_failed_at IS NOT NULL) OR (retention_expires_at IS NULL)))",
           "validated": true
         }
       },
       "columns": {
-        "attempt_count": {
-          "comment": "Number of successfully acquired processing attempts.",
-          "dataType": "integer",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 20
-        },
-        "available_at": {
-          "comment": "Earliest time this envelope may next be claimed; current-time availability is the active baseline.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 23
-        },
         "claimed_activity_id": {
           "comment": "Untrusted activity id parsed before signature verification. Intentionally not unique so an unsigned request cannot squat a legitimate id.",
           "dataType": "text",
@@ -2369,7 +2337,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 24
         },
         "date_header": {
           "comment": "Exact inbound Date header evaluated relative to received_at during queued verification.",
@@ -2391,16 +2359,6 @@
           "nullable": false,
           "ordinalPosition": 6
         },
-        "dispatched_at": {
-          "comment": "Latest dispatch lease timestamp; recovery waits five minutes before replacing a missing queue job.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 17
-        },
         "expected_host": {
           "comment": "Public Host value covered by the sender's HTTP Signature.",
           "dataType": "text",
@@ -2412,14 +2370,14 @@
           "ordinalPosition": 4
         },
         "failed_at": {
-          "comment": "Set only after the queue exhausts retryable operational attempts. Manual backfill clears it and rotates the fencing token.",
+          "comment": "Set only after the queue exhausts retryable operational attempts; manual rearm clears it.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 19
         },
         "first_failed_at": {
           "comment": "Immutable timestamp of the first retry-exhausting operational failure; survives rearm to anchor sticky retention.",
@@ -2429,7 +2387,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 20
         },
         "id": {
           "comment": null,
@@ -2449,37 +2407,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
-        },
-        "lease_expires_at": {
-          "comment": "Deadline after which worker checkpoints and terminal outcomes are rejected.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 19
-        },
-        "lease_token": {
-          "comment": "Fencing token rotated whenever recovery re-enqueues the delivery; stale queue jobs cannot process the row.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 14
-        },
-        "leased_at": {
-          "comment": "Active worker lease timestamp; non-final retryable failures release it and stale crashes recover after thirty minutes.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 23
         },
         "raw_body": {
           "comment": "Exact inbound request bytes, bounded to 1 MiB and deleted after a final protocol outcome.",
@@ -2501,6 +2429,16 @@
           "nullable": false,
           "ordinalPosition": 16
         },
+        "recovery_requeue_count": {
+          "comment": "Bounded recovery replacement reservations since intake or manual rearm; refunded when admission fails or deduplicates, but a crash between reservation and refund may consume one slot.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 21
+        },
         "remote_actor_id": {
           "comment": "Verified signing actor checkpoint. Actor deletion is restricted while the durable delivery remains.",
           "dataType": "uuid",
@@ -2510,6 +2448,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 15
+        },
+        "request_digest": {
+          "comment": "SHA-256 hex digest of the exact signed envelope; stable queue deduplication identity.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14
         },
         "request_method": {
           "comment": "Uppercase HTTP method from the exact inbound signed request; bounded to 16 characters.",
@@ -2539,7 +2487,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 22
         },
         "sender_allowed_at": {
           "comment": "Set after the sender-hostname delivery rate limit admits this envelope; retries do not charge the sender again.",
@@ -2549,7 +2497,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 18
         },
         "sender_hostname": {
           "comment": "Lowercase hostname derived from the unverified Signature keyId and revalidated by the worker.",
@@ -2579,7 +2527,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
+          "ordinalPosition": 25
         },
         "verified_at": {
           "comment": "When the worker first verified the exact request signature and actor match; always paired with remote_actor_id.",
@@ -2589,12 +2537,12 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 17
         }
       },
-      "comment": "Durable, unverified ActivityPub inbox envelopes awaiting worker verification and dispatch. Rows and raw request bytes are deleted after a final protocol outcome.",
+      "comment": "Durable ActivityPub inbox envelopes retained because a maximum-size signed envelope exceeds GlideMQ job data. Rows and raw bytes are deleted after a final protocol outcome.",
       "foreignKeys": {
-        "activitypub_inbox_delivery_work_items_remote_actor_id_fkey": {
+        "activitypub_inbox_envelopes_remote_actor_id_fkey": {
           "columns": ["remote_actor_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
@@ -2604,10 +2552,10 @@
         }
       },
       "indexes": {
-        "activitypub_inbox_delivery_work_items_pkey": {
+        "activitypub_inbox_envelopes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX activitypub_inbox_delivery_work_items_pkey ON public.activitypub_inbox_delivery_work_items USING btree (id)",
+          "definition": "CREATE UNIQUE INDEX activitypub_inbox_envelopes_pkey ON public.activitypub_inbox_envelopes USING btree (id)",
           "immediate": true,
           "keys": [
             {
@@ -2627,21 +2575,58 @@
           "unique": true,
           "valid": true
         },
-        "idx_activitypub_inbox_delivery_work_items__claim": {
+        "activitypub_inbox_envelopes_request_digest_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX activitypub_inbox_envelopes_request_digest_key ON public.activitypub_inbox_envelopes USING btree (request_digest)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "request_digest",
+              "descending": false,
+              "expression": "request_digest",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_activitypub_inbox_envelopes__failed_rearm": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__claim ON public.activitypub_inbox_delivery_work_items USING btree (available_at, id) WHERE (failed_at IS NULL)",
+          "definition": "CREATE INDEX idx_activitypub_inbox_envelopes__failed_rearm ON public.activitypub_inbox_envelopes USING btree (id) WHERE (failed_at IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "available_at",
+              "column": "id",
               "descending": false,
-              "expression": "available_at",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
-            },
+            }
+          ],
+          "live": true,
+          "predicate": "(failed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_activitypub_inbox_envelopes__recovery": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_activitypub_inbox_envelopes__recovery ON public.activitypub_inbox_envelopes USING btree (id) WHERE (failed_at IS NULL)",
+          "immediate": true,
+          "keys": [
             {
               "collation": null,
               "column": "id",
@@ -2659,78 +2644,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_activitypub_inbox_delivery_work_items__recovery": {
+        "idx_activitypub_inbox_envelopes__remote_actor_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__recovery ON public.activitypub_inbox_delivery_work_items USING btree (failed_at, available_at, leased_at, dispatched_at, received_at, id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "failed_at",
-              "descending": false,
-              "expression": "failed_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "available_at",
-              "descending": false,
-              "expression": "available_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "leased_at",
-              "descending": false,
-              "expression": "leased_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "dispatched_at",
-              "descending": false,
-              "expression": "dispatched_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "received_at",
-              "descending": false,
-              "expression": "received_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            },
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_activitypub_inbox_delivery_work_items__remote_actor_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__remote_actor_id ON public.activitypub_inbox_delivery_work_items USING btree (remote_actor_id) WHERE (remote_actor_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_activitypub_inbox_envelopes__remote_actor_id ON public.activitypub_inbox_envelopes USING btree (remote_actor_id) WHERE (remote_actor_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -2750,10 +2667,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_activitypub_inbox_delivery_work_items__unverified_retention": {
+        "idx_activitypub_inbox_envelopes__unverified_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__unverified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NULL) AND (retention_expires_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_activitypub_inbox_envelopes__unverified_retention ON public.activitypub_inbox_envelopes USING btree (retention_expires_at, id) WHERE ((verified_at IS NULL) AND (retention_expires_at IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -2782,10 +2699,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_activitypub_inbox_delivery_work_items__verified_retention": {
+        "idx_activitypub_inbox_envelopes__verified_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_activitypub_inbox_delivery_work_items__verified_retention ON public.activitypub_inbox_delivery_work_items USING btree (retention_expires_at, id) WHERE ((verified_at IS NOT NULL) AND (retention_expires_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_activitypub_inbox_envelopes__verified_retention ON public.activitypub_inbox_envelopes USING btree (retention_expires_at, id) WHERE ((verified_at IS NOT NULL) AND (retention_expires_at IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -2821,23 +2738,27 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_activitypub_inbox_work_items_retention": {
-          "definition": "CREATE TRIGGER trigger_activitypub_inbox_work_items_retention BEFORE INSERT OR UPDATE ON public.activitypub_inbox_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_retention()"
+        "trigger_activitypub_inbox_envelopes_retention": {
+          "definition": "CREATE TRIGGER trigger_activitypub_inbox_envelopes_retention BEFORE INSERT OR UPDATE ON public.activitypub_inbox_envelopes FOR EACH ROW EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_retention()"
         },
-        "trigger_activitypub_inbox_work_items_storage_after_delete": {
-          "definition": "CREATE TRIGGER trigger_activitypub_inbox_work_items_storage_after_delete AFTER DELETE ON public.activitypub_inbox_delivery_work_items REFERENCING OLD TABLE AS deleted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_delete()"
+        "trigger_activitypub_inbox_envelopes_storage_after_delete": {
+          "definition": "CREATE TRIGGER trigger_activitypub_inbox_envelopes_storage_after_delete AFTER DELETE ON public.activitypub_inbox_envelopes REFERENCING OLD TABLE AS deleted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_delete()"
         },
-        "trigger_activitypub_inbox_work_items_storage_after_insert": {
-          "definition": "CREATE TRIGGER trigger_activitypub_inbox_work_items_storage_after_insert AFTER INSERT ON public.activitypub_inbox_delivery_work_items REFERENCING NEW TABLE AS inserted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_insert()"
+        "trigger_activitypub_inbox_envelopes_storage_after_insert": {
+          "definition": "CREATE TRIGGER trigger_activitypub_inbox_envelopes_storage_after_insert AFTER INSERT ON public.activitypub_inbox_envelopes REFERENCING NEW TABLE AS inserted_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_insert()"
         },
-        "trigger_activitypub_inbox_work_items_storage_after_update": {
-          "definition": "CREATE TRIGGER trigger_activitypub_inbox_work_items_storage_after_update AFTER UPDATE ON public.activitypub_inbox_delivery_work_items REFERENCING OLD TABLE AS previous_deliveries NEW TABLE AS updated_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_update()"
+        "trigger_activitypub_inbox_envelopes_storage_after_update": {
+          "definition": "CREATE TRIGGER trigger_activitypub_inbox_envelopes_storage_after_update AFTER UPDATE ON public.activitypub_inbox_envelopes REFERENCING OLD TABLE AS previous_deliveries NEW TABLE AS updated_deliveries FOR EACH STATEMENT EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_update()"
         },
-        "trigger_activitypub_inbox_work_items_updated_at": {
-          "definition": "CREATE TRIGGER trigger_activitypub_inbox_work_items_updated_at BEFORE UPDATE ON public.activitypub_inbox_delivery_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_activitypub_inbox_envelopes_updated_at": {
+          "definition": "CREATE TRIGGER trigger_activitypub_inbox_envelopes_updated_at BEFORE UPDATE ON public.activitypub_inbox_envelopes FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "activitypub_inbox_envelopes_request_digest_key": {
+          "columns": ["request_digest"]
+        }
+      }
     },
     "activitypub_post_likes": {
       "checkConstraints": {

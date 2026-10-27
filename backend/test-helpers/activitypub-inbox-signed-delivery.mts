@@ -89,6 +89,6 @@ export async function createSignedDelivery(
     senderHostname: actor.hostname,
   }
   const delivery = await acceptTestDelivery(envelope)
-  registerActivityPubInboxJobCleanup(delivery.deliveryId, delivery.leaseToken, activityId)
+  registerActivityPubInboxJobCleanup(delivery.deliveryId, delivery.requestDigest)
   return delivery
 }

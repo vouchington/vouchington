@@ -36,8 +36,6 @@ export const backgroundWorkRegistryEntries8 = {
     label: 'ActivityPub inbox recovery',
     maxValues: apInboxActivitiesWorkMaxValues,
     descriptions: {
-      dispatch_timeout_minutes: 'Dispatch timeout minutes before background recovery.',
-      processing_timeout_minutes: 'Processing timeout minutes before background recovery.',
       delivery_transition_recovery_batch_size:
         'Delivery transition recovery batch size for ap inbox activities processing.',
       cleanup_batch_size: 'Maximum inbox deliveries deleted per cleanup batch.',

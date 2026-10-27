@@ -2775,6 +2775,9 @@ importers:
 
   backend/queues/activitypub:
     dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@modules/activitypub-inbox-storage-policy':
         specifier: workspace:^
         version: link:../../modules/activitypub-inbox-storage-policy
@@ -13177,6 +13180,9 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
+      '@queues/activitypub':
+        specifier: workspace:^
+        version: link:../../queues/activitypub
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports

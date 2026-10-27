@@ -1,0 +1,263 @@
+import { randomUUID } from 'node:crypto'
+import { describe, expect, it, vi } from 'vitest'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { ACTIVITYPUB_PROCESS_DELIVERY_JOB } from '@queues/background/enqueues/activitypub-jobs'
+import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
+import {
+  enqueueBulkActivityPubInboxDeliveries,
+  getActivityPubInboxDeliveryJobStatus,
+  removeFailedActivityPubInboxDelivery,
+} from '@queues/activitypub/enqueues/inbox'
+import { recoverDeliveries } from '@workers/activitypub/processors/inbox'
+import { background } from '@queues/background/queues'
+import { skipActivityPubInboxEnqueueGrace } from '@voucha/test-helpers/activitypub-inbox-enqueue-grace'
+import { redirectBackgroundQueueTo } from '@voucha/test-helpers/background-queue-redirect'
+import { registerActivityPubInboxAdmission } from '@voucha/test-helpers/activitypub-inbox-transitions'
+import {
+  createApprovedRemoteActor,
+  createSignedDelivery,
+} from '@voucha/test-helpers/activitypub-inbox-signed-delivery'
+import { startBackgroundHarness } from '@voucha/test-helpers/real-glide-background'
+import { createBackgroundProcessor } from '../processors.mts'
+
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
+
+const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+
+registerActivityPubInboxAdmission()
+
+describe('ActivityPub inbox recovery through real GlideMQ', () => {
+  it('replaces a terminal record from a prior envelope with the same signed-request digest', async () => {
+    const actor = await createApprovedRemoteActor()
+    const delivery = await createSignedDelivery(actor)
+    const jobId = `activitypub-inbox__${delivery.requestDigest}`
+    const oldDeliveryId = randomUUID()
+    const harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      bodies: { [ACTIVITYPUB_PROCESS_DELIVERY_JOB.name]: () => undefined },
+    })
+    redirectBackgroundQueueTo(background, harness.queue)
+    try {
+      const oldDelayed = await harness.add(
+        ACTIVITYPUB_PROCESS_DELIVERY_JOB,
+        { deliveryId: oldDeliveryId, requestDigest: delivery.requestDigest },
+        { attempts: 1, jobId, delay: 60_000 },
+      )
+      expect(await getActivityPubInboxDeliveryJobStatus(delivery)).toEqual({
+        state: 'live',
+      })
+      expect(await removeFailedActivityPubInboxDelivery(delivery)).toBe(false)
+      expect(await harness.queue.getJob(jobId)).not.toBeNull()
+      await oldDelayed.remove()
+
+      const old = await harness.add(
+        ACTIVITYPUB_PROCESS_DELIVERY_JOB,
+        { deliveryId: oldDeliveryId, requestDigest: delivery.requestDigest },
+        { attempts: 1, jobId },
+      )
+      expect(await harness.settled(old)).toBe('completed')
+      expect(await getActivityPubInboxDeliveryJobStatus(delivery)).toEqual({
+        state: 'stale-terminal',
+      })
+      expect(await removeFailedActivityPubInboxDelivery(delivery)).toBe(false)
+      expect(await harness.queue.getJob(jobId)).not.toBeNull()
+      expect(
+        await recoverDeliveries(undefined, {
+          readRecoverable: () => activityPubInboxDeliveryTransitions.recover([delivery.deliveryId]),
+          getJobStatus: getActivityPubInboxDeliveryJobStatus,
+          exhaust: activityPubInboxDeliveryTransitions.exhaust,
+          removeFailed: removeFailedActivityPubInboxDelivery,
+          reserveRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues,
+          releaseUnadmittedRequeues:
+            activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues,
+          exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues,
+          enqueueBulk: inputs =>
+            enqueueBulkReactivatingFinished({
+              queue: harness.queue,
+              inputs,
+              jobIdOf: data => `activitypub-inbox__${data.requestDigest}`,
+              enqueueBulk: data =>
+                harness.queue.addBulk(
+                  data.map(input => ({
+                    name: ACTIVITYPUB_PROCESS_DELIVERY_JOB.name,
+                    data: input,
+                    opts: { ...ACTIVITYPUB_PROCESS_DELIVERY_JOB.options, attempts: 1, jobId },
+                  })),
+                ),
+            }),
+          enqueueContinuation: async () => null,
+          pageSize: () => 2,
+        }),
+      ).toEqual({ enqueued: 1, hasMore: false })
+      expect((await harness.queue.getJob(jobId))?.data).toEqual(delivery)
+    } finally {
+      await harness.close()
+    }
+  })
+
+  it('recognizes a completed queue receipt for its matching envelope', async () => {
+    const delivery = { deliveryId: randomUUID(), requestDigest: randomUUID() }
+    const jobId = `activitypub-inbox__${delivery.requestDigest}`
+    const harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      bodies: { [ACTIVITYPUB_PROCESS_DELIVERY_JOB.name]: () => undefined },
+    })
+    redirectBackgroundQueueTo(background, harness.queue)
+    try {
+      const job = await harness.add(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivery, {
+        attempts: 1,
+        jobId,
+      })
+      expect(await harness.settled(job)).toBe('completed')
+      expect(await getActivityPubInboxDeliveryJobStatus(delivery)).toEqual({
+        state: 'completed',
+      })
+    } finally {
+      await harness.close()
+    }
+  })
+
+  it('bounds replacement jobs after another background failure trims an inbox failure', async () => {
+    const actor = await createApprovedRemoteActor()
+    const delivery = await createSignedDelivery(actor)
+    const jobId = `activitypub-inbox__${delivery.requestDigest}`
+    const harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      bodies: {
+        [ACTIVITYPUB_PROCESS_DELIVERY_JOB.name]: () => {
+          throw new Error('terminal transport failure')
+        },
+      },
+    })
+    redirectBackgroundQueueTo(background, harness.queue)
+    try {
+      const failed = await harness.add(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivery, {
+        attempts: 1,
+        jobId,
+      })
+      expect(await harness.settled(failed)).toBe('failed')
+      expect(await (await harness.queue.getJob(jobId))?.getState()).toBe('failed')
+
+      // GlideMQ's numeric retention trims the shared failed set. The later id sorts after
+      // the inbox id even on a timestamp tie.
+      const unrelated = await harness.add(
+        ACTIVITYPUB_PROCESS_DELIVERY_JOB,
+        { deliveryId: randomUUID(), requestDigest: randomUUID() },
+        { attempts: 1, jobId: `zz-${randomUUID()}`, removeOnFail: 1 },
+      )
+      expect(await harness.settled(unrelated)).toBe('failed')
+      expect(await harness.queue.getJob(jobId)).toBeNull()
+
+      const recoveryDependencies = {
+        readRecoverable: () => activityPubInboxDeliveryTransitions.recover([delivery.deliveryId]),
+        getJobStatus: getActivityPubInboxDeliveryJobStatus,
+        exhaust: activityPubInboxDeliveryTransitions.exhaust,
+        removeFailed: removeFailedActivityPubInboxDelivery,
+        reserveRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues,
+        releaseUnadmittedRequeues:
+          activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues,
+        exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues,
+        enqueueBulk: (inputs: (typeof delivery)[]) =>
+          enqueueBulkReactivatingFinished({
+            queue: harness.queue,
+            inputs,
+            jobIdOf: data => `activitypub-inbox__${data.requestDigest}`,
+            enqueueBulk: data =>
+              harness.queue.addBulk(
+                data.map(input => ({
+                  name: ACTIVITYPUB_PROCESS_DELIVERY_JOB.name,
+                  data: input,
+                  opts: {
+                    ...ACTIVITYPUB_PROCESS_DELIVERY_JOB.options,
+                    attempts: 1,
+                    jobId,
+                    delay: 60_000,
+                  },
+                })),
+              ),
+          }),
+        enqueueContinuation: async () => null,
+        pageSize: () => 2,
+      }
+      skipActivityPubInboxEnqueueGrace()
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        expect(await recoverDeliveries(undefined, recoveryDependencies)).toEqual({
+          enqueued: 1,
+          hasMore: false,
+        })
+        const replacement = await harness.queue.getJob(jobId)
+        expect(await replacement?.getState()).toBe('delayed')
+        expect(await getActivityPubInboxDeliveryJobStatus(delivery)).toEqual({
+          state: 'live',
+        })
+        // Native removal models the next queue-wide trim without waiting for another worker failure.
+        await replacement?.remove()
+      }
+      expect(await recoverDeliveries(undefined, recoveryDependencies)).toEqual({
+        enqueued: 0,
+        hasMore: false,
+      })
+      expect(await activityPubInboxDeliveryTransitions.load(delivery.deliveryId)).toEqual({
+        outcome: 'stale',
+      })
+      expect(await harness.queue.getJob(jobId)).toBeNull()
+    } finally {
+      await harness.close()
+    }
+  })
+
+  it('checkpoints a terminal transport failure before continuing the bounded recovery page', async () => {
+    const actor = await createApprovedRemoteActor()
+    const delivery = await createSignedDelivery(actor)
+    const harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      bodies: {
+        [ACTIVITYPUB_PROCESS_DELIVERY_JOB.name]: () => {
+          throw new Error('terminal transport failure')
+        },
+      },
+    })
+    redirectBackgroundQueueTo(background, harness.queue)
+    try {
+      const failed = await harness.add(ACTIVITYPUB_PROCESS_DELIVERY_JOB, delivery, {
+        attempts: 1,
+        jobId: `activitypub-inbox__${delivery.requestDigest}`,
+      })
+      expect(await harness.settled(failed)).toBe('failed')
+      expect(await activityPubInboxDeliveryTransitions.load(delivery.deliveryId)).toMatchObject({
+        outcome: 'applied',
+      })
+      const enqueueContinuation = vi.fn<() => Promise<null>>(async () => null)
+      await expect(
+        recoverDeliveries(undefined, {
+          readRecoverable: () => activityPubInboxDeliveryTransitions.recover([delivery.deliveryId]),
+          getJobStatus: getActivityPubInboxDeliveryJobStatus,
+          reserveRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues,
+          releaseUnadmittedRequeues:
+            activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues,
+          exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues,
+          removeFailed: removeFailedActivityPubInboxDelivery,
+          exhaust: activityPubInboxDeliveryTransitions.exhaust,
+          enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
+          enqueueContinuation,
+          pageSize: () => 1,
+        }),
+      ).resolves.toEqual({ enqueued: 0, hasMore: true })
+      expect(enqueueContinuation).toHaveBeenCalledExactlyOnceWith(delivery.deliveryId)
+      expect(await activityPubInboxDeliveryTransitions.load(delivery.deliveryId)).toEqual({
+        outcome: 'stale',
+      })
+      expect(await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId])).toEqual([
+        delivery,
+      ])
+      expect(await harness.queue.getJob(failed.id)).toBeNull()
+    } finally {
+      await harness.close()
+    }
+  })
+})

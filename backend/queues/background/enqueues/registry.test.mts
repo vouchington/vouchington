@@ -35,8 +35,8 @@ describe('background registry', () => {
     expect(key('recoverOutboundDistribution')).toBe('activitypub:outbound-recovery')
     expect(key('deliverActivity')).toBe('activitypub:outbound')
     expect(key('processDelivery')).toBe('activitypub:inbound')
-    expect(key('recoverDeliveries')).toBe('activitypub:inbound')
-    expect(key('rearmFailedDeliveries')).toBe('activitypub:inbound')
+    expect(key('recoverDeliveries')).toBe('activitypub:inbound-recovery')
+    expect(key('rearmFailedDeliveries')).toBe('activitypub:inbound-recovery')
     expect(key('cleanupExpiredDeliveries')).toBe('activitypub:cleanup')
   })
 

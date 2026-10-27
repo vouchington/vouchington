@@ -33,7 +33,7 @@ describe('ActivityPub inbox capacity system boundary', () => {
     expect(outcomes.find(result => result.status === 'rejected')).toMatchObject({
       reason: {
         code: '23514',
-        constraint: 'activitypub_inbox_delivery_work_items_unverified_capacity',
+        constraint: 'activitypub_inbox_envelopes_unverified_capacity',
       },
     })
     expect(await getActivityPubInboxStorageSnapshot()).toEqual({
@@ -54,7 +54,7 @@ describe('ActivityPub inbox capacity system boundary', () => {
     expect(outcomes.find(result => result.status === 'rejected')).toMatchObject({
       reason: {
         code: '23514',
-        constraint: 'activitypub_inbox_delivery_work_items_unverified_capacity',
+        constraint: 'activitypub_inbox_envelopes_unverified_capacity',
       },
     })
     expect(await getActivityPubInboxStorageSnapshot()).toEqual({
@@ -85,13 +85,13 @@ describe('ActivityPub inbox capacity system boundary', () => {
     expect(categories).toEqual(['unverified', 'verified-operational'])
     expect(result).toEqual({
       batches: 2,
-      deletedRows: 4,
-      deletedRawBodyBytes: 13,
+      deletedRows: 3,
+      deletedRawBodyBytes: 9,
       budgetExhausted: false,
     })
     expect(events.filter(event => event.event === 'activitypub_inbox_cleanup_batch')).toMatchObject(
       [
-        { category: 'unverified', deletedRows: 3, deletedRawBodyBytes: 12 },
+        { category: 'unverified', deletedRows: 2, deletedRawBodyBytes: 8 },
         { category: 'verified-operational', deletedRows: 1, deletedRawBodyBytes: 1 },
       ],
     )
@@ -102,16 +102,16 @@ describe('ActivityPub inbox capacity system boundary', () => {
       fixture.foreign,
     )
     expect(await getActivityPubInboxStorageSnapshot()).toEqual({
-      retainedRows: before.retainedRows - 4,
-      retainedRawBodyBytes: before.retainedRawBodyBytes - 13,
-      unverifiedRows: before.unverifiedRows - 3,
-      unverifiedRawBodyBytes: before.unverifiedRawBodyBytes - 12,
+      retainedRows: before.retainedRows - 3,
+      retainedRawBodyBytes: before.retainedRawBodyBytes - 9,
+      unverifiedRows: before.unverifiedRows - 2,
+      unverifiedRawBodyBytes: before.unverifiedRawBodyBytes - 8,
     })
   })
 
   it.for([
-    ['unverified', 'idx_activitypub_inbox_delivery_work_items__unverified_retention'],
-    ['verified-operational', 'idx_activitypub_inbox_delivery_work_items__verified_retention'],
+    ['unverified', 'idx_activitypub_inbox_envelopes__unverified_retention'],
+    ['verified-operational', 'idx_activitypub_inbox_envelopes__verified_retention'],
   ] as const)('uses the matching partial index for %s cleanup', async ([category, indexName]) => {
     expect(
       await explainActivityPubInboxCleanupForTest(

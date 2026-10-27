@@ -11,7 +11,7 @@ import { computeDigest } from '@vouchington/utils/http-signatures'
 import { activitypub } from '@queues/activitypub/queues'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
-  claimTestDelivery,
+  loadTestDelivery,
   registerActivityPubInboxAdmission,
   rejectTestDelivery,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
@@ -159,6 +159,23 @@ describe('POST /ap/inbox durable worker path', () => {
 
     expect(response.body).toEqual({ received: true })
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(true)
+    const deliveryId = await getActivityPubInboxDeliveryIdForTest(activityId)
+    if (!deliveryId) throw new Error('Expected the accepted durable envelope')
+    const delivery = await loadTestDelivery(deliveryId)
+    if (!delivery) throw new Error('Expected the accepted durable envelope')
+
+    await createRequest()
+      .post('/ap/inbox')
+      .set('Host', INBOX_HOST)
+      .set('Signature', headers.signature)
+      .set('Digest', headers.digest)
+      .set('Date', headers.date)
+      .set('Content-Type', 'application/activity+json')
+      .send(body)
+      .expect(202)
+
+    // Exact replay cannot create a fresh attempt; bounded recovery owns missing-job admission.
+    expect(await activitypub.getJob(`activitypub-inbox__${delivery.requestDigest}`)).toBeNull()
   })
 })
 
@@ -206,14 +223,14 @@ async function postSignedCreateAndClaimDelivery(input: {
     )
   })
   expect(job).toBeDefined()
-  const payload = job?.data as { deliveryId: string; leaseToken: string } | undefined
+  const payload = job?.data as { deliveryId: string; requestDigest: string } | undefined
   expect(payload).toEqual({
     deliveryId: expect.any(String),
-    leaseToken: expect.any(String),
+    requestDigest: expect.any(String),
   })
   if (!payload) throw new Error('Expected a durable ActivityPub inbox job payload')
 
-  const delivery = await claimTestDelivery(payload.deliveryId, payload.leaseToken)
+  const delivery = await loadTestDelivery(payload.deliveryId)
   expect(delivery).toMatchObject({
     requestMethod: 'POST',
     requestTarget: '/ap/inbox',
@@ -230,7 +247,7 @@ async function postSignedCreateAndClaimDelivery(input: {
   expect(delivery?.rawBody.equals(Buffer.from(body))).toBe(true)
 
   onTestFinished(async () => {
-    await rejectTestDelivery(payload.deliveryId, payload.leaseToken)
+    await rejectTestDelivery(payload.deliveryId)
   })
   return { delivery, remoteActor }
 }

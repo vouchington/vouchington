@@ -28,8 +28,11 @@ const sharedDbScopeTables = {
   // Each spans several retained tables; the shared cursor table is what an unscoped call advances.
   cleanupRetainedIdentityRoots: 'retained_identity_cleanup_cursors',
   cleanupRetainedRelationIdentities: 'retained_relation_identity_cleanup_cursors',
-  recoverActivityPubInboxDeliveries: 'activitypub_inbox_delivery_work_items',
-  rearmFailedActivityPubInboxDeliveries: 'activitypub_inbox_delivery_work_items',
+  recoverActivityPubInboxDeliveries: 'activitypub_inbox_envelopes',
+  reserveActivityPubInboxRecoveryRequeues: 'activitypub_inbox_envelopes',
+  exhaustActivityPubInboxRecoveryRequeues: 'activitypub_inbox_envelopes',
+  releaseUnadmittedActivityPubInboxRecoveryRequeues: 'activitypub_inbox_envelopes',
+  rearmFailedActivityPubInboxDeliveries: 'activitypub_inbox_envelopes',
   getRecoverableOAuthAuthorizationIds: 'oauth_authorizations',
   deleteExpiredOAuthAuthorizationBatch: 'oauth_authorizations',
   listAvailableNotificationPushIntents: 'notification_push_intents',

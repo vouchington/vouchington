@@ -26,9 +26,12 @@ export const activitypubHandlers = [
   backgroundHandler(ACTIVITYPUB_RECOVER_OUTBOUND_JOB, processRecoverOutboundDistributionJob),
   backgroundHandler(ACTIVITYPUB_DELIVER_ACTIVITY_JOB, processDeliverActivityJob),
   backgroundHandler(ACTIVITYPUB_PROCESS_DELIVERY_JOB, job =>
-    processDelivery(job.data, { isFinalAttempt: isFinalActivityPubInboxAttempt(job) }),
+    processDelivery(job.data, {
+      isFinalAttempt: isFinalActivityPubInboxAttempt(job),
+      moveToDelayed: timestamp => job.moveToDelayed(timestamp),
+    }),
   ),
-  backgroundSweepHandler(ACTIVITYPUB_RECOVER_DELIVERIES_JOB, recoverDeliveries),
+  backgroundHandler(ACTIVITYPUB_RECOVER_DELIVERIES_JOB, job => recoverDeliveries(job.data.afterId)),
   backgroundHandler(ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB, job =>
     rearmFailedDeliveries(job.data.afterId),
   ),

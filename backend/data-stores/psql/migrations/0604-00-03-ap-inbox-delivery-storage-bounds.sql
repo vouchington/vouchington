@@ -1,4 +1,5 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- The exact body remains here until final outcome; statement triggers enforce bounded retained storage.
 CREATE TABLE IF NOT EXISTS activitypub_inbox_delivery_storage_counters (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE,
   retained_rows BIGINT NOT NULL,
@@ -75,7 +76,7 @@ BEGIN
   END IF;
   RAISE EXCEPTION USING
     ERRCODE = '23514',
-    CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity',
+    CONSTRAINT = 'activitypub_inbox_envelopes_unverified_capacity',
     MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',
     DETAIL = json_build_object(
       'unverifiedRows', counters.unverified_rows,
@@ -132,7 +133,7 @@ BEGIN
   END IF;
   RAISE EXCEPTION USING
     ERRCODE = '23514',
-    CONSTRAINT = 'activitypub_inbox_delivery_work_items_unverified_capacity',
+    CONSTRAINT = 'activitypub_inbox_envelopes_unverified_capacity',
     MESSAGE = 'ActivityPub inbox unverified storage capacity exceeded',
     DETAIL = json_build_object(
       'unverifiedRows', counters.unverified_rows,
@@ -178,22 +179,22 @@ END;
 $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_work_items_storage_after_insert
-AFTER INSERT ON activitypub_inbox_delivery_work_items
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_envelopes_storage_after_insert
+AFTER INSERT ON activitypub_inbox_envelopes
 REFERENCING NEW TABLE AS inserted_deliveries
 FOR EACH STATEMENT
 EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_insert();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_work_items_storage_after_update
-AFTER UPDATE ON activitypub_inbox_delivery_work_items
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_envelopes_storage_after_update
+AFTER UPDATE ON activitypub_inbox_envelopes
 REFERENCING OLD TABLE AS previous_deliveries NEW TABLE AS updated_deliveries
 FOR EACH STATEMENT
 EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_update();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_work_items_storage_after_delete
-AFTER DELETE ON activitypub_inbox_delivery_work_items
+CREATE OR REPLACE TRIGGER trigger_activitypub_inbox_envelopes_storage_after_delete
+AFTER DELETE ON activitypub_inbox_envelopes
 REFERENCING OLD TABLE AS deleted_deliveries
 FOR EACH STATEMENT
 EXECUTE FUNCTION fn_project_activitypub_inbox_delivery_storage_after_delete();

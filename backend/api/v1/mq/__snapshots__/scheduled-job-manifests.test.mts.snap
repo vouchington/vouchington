@@ -1053,8 +1053,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 4,
-          "key": "activitypub:inbound",
+          "concurrency": 1,
+          "key": "activitypub:inbound-recovery",
         },
         "priority": 100,
         "removeOnComplete": 100,

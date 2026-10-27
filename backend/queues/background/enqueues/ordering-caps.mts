@@ -19,6 +19,7 @@ export const BACKGROUND_ORDERING_CAPS = {
   'activitypub:outbound-dispatch': 2,
   'activitypub:outbound-recovery': 1,
   'activitypub:inbound': 4,
+  'activitypub:inbound-recovery': 1,
   'activitypub:cleanup': 1,
   'follower-distributions': 5,
   'bluesky-follow-propagation': 1,

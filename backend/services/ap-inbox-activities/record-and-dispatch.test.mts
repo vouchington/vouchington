@@ -83,7 +83,7 @@ describe('recordAndDispatchInboundActivity', () => {
     expect(isFirstSeenAgain).toBe(true)
   })
 
-  it('rolls back duplicate Follow recovery when durable-envelope completion loses its lease', async () => {
+  it('rolls back duplicate Follow recovery when durable-envelope completion is stale', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
     const activityId = `https://remote.example/activities/${randomSuffix()}`
@@ -121,8 +121,7 @@ describe('recordAndDispatchInboundActivity', () => {
     const jobs = await readAllQueueJobs(activitypub)
     expect(acceptJobsFor(jobs, activityId)).toHaveLength(0)
 
-    await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken)
-    await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId, delivery.leaseToken)
+    await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId)
   })
 })
 

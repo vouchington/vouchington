@@ -2,7 +2,7 @@ import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import type { ActivityPubInboxDelivery } from './durable-delivery-transition-contract.mts'
 import type { RecoverableActivityPubInboxDelivery } from './durable-delivery-capacity-contract.mts'
 
-export type DeliveryIdentityRow = { id: string; lease_token: string }
+export type DeliveryIdentityRow = { id: string; request_digest: string }
 
 export type DeliveryRow = DeliveryIdentityRow & {
   request_method: FiniteValue<'http_request_methods'>
@@ -24,7 +24,7 @@ export type DeliveryRow = DeliveryIdentityRow & {
 }
 
 export function mapIdentity(row: DeliveryIdentityRow): RecoverableActivityPubInboxDelivery {
-  return { deliveryId: row.id, leaseToken: row.lease_token }
+  return { deliveryId: row.id, requestDigest: row.request_digest }
 }
 
 export function mapDelivery(row: DeliveryRow): ActivityPubInboxDelivery {
@@ -42,7 +42,7 @@ export function mapDelivery(row: DeliveryRow): ActivityPubInboxDelivery {
     claimedActivityType: row.claimed_activity_type,
     claimedActorUri: row.claimed_actor_uri,
     senderHostname: row.sender_hostname,
-    leaseToken: row.lease_token,
+    requestDigest: row.request_digest,
     remoteActorId: row.remote_actor_id,
     receivedAt: row.received_at,
     verifiedAt: row.verified_at,

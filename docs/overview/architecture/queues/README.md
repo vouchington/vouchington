@@ -44,7 +44,7 @@ flowchart LR
   follower page's dispatch receipt into its replacement job, so a completed page resumes its
   continuation without re-admitting that page's delivery jobs. Retention cleanup has its
   own lane independent of delivery backlogs to keep inbox capacity reclaimable under sustained
-  traffic. A domain that
+  traffic. Inbound recovery also has a separate lane so a flood of deliveries cannot delay repair. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
 - The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
   coordination, and content analysis. URL and referral crawls use the same hostname ordering key,
@@ -215,3 +215,22 @@ revocation; workers never resolve the recipient from the changed profile. Payloa
 and removed at their terminal outcome. Notification delivery is advisory: terminal delivery failure
 is accepted loss, since account state cannot reconstruct a prior delivery address. Post-commit
 admission failures are reported without changing the committed settings result.
+
+## ActivityPub inbox envelopes
+
+The inbox acknowledges an unknown signer before the worker fetches its key and verifies the
+signature. PostgreSQL retains the exact signed request because the accepted body and envelope can
+exceed GlideMQ's job-data limit. A digest of the signed request deduplicates intake and names the
+queue job; verification and sender-admission checkpoints avoid repeating completed checks.
+GlideMQ owns locks, retry attempts and sender delays. Final protocol outcomes delete the envelope
+atomically with the activity effect and replay marker. A terminal protocol rejection completes
+the queue job after that delete, and failed-job retention stays the shared bound, so a rejected
+request does not retain a failed record. Only a newly inserted envelope admits work
+from the HTTP route; exact duplicate requests await recovery. Recovery skips an envelope whose
+UUIDv7 id is still inside the short enqueue grace, so it does not spend a replacement while the
+HTTP handler is still admitting the job. Bounded recovery pages leave live
+jobs alone, checkpoint retained terminal failures, and cap replacement jobs on each envelope so
+queue-wide failed-record trimming cannot reset its failure budget. Failed deliveries require an
+explicit rearm, which starts a new recovery budget. A crash between a database reservation and
+its Valkey result can conservatively spend one slot; ordinary admission failure or deduplication
+refunds the reservation.
