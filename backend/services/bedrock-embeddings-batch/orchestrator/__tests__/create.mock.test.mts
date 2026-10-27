@@ -177,5 +177,5 @@ describe('createBatch input upload failure', () => {
       vi.unstubAllEnvs()
       await Promise.all([inputFile, entityIdsFile].map(path => rm(path, { force: true })))
     }
-  }, 30_000)
+  })
 })
