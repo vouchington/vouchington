@@ -38,8 +38,9 @@ export type ClassifierCleanupResult = {
 
 /**
  * Expire terminal run payloads after bounded child sweeps. Promptless identities retire with their
- * removed run in the same transaction. Versioned cache identities retire after a newer activated
- * prompt version exists or the real subject is deleted; pending run payloads keep their identity.
+ * removed run in the same transaction. Versioned cache identities retire when a newer prompt version is
+ * currently active, a newer identity exists for the same subject, the real subject is deleted, or
+ * their payload was superseded before completing; pending run payloads keep their identity.
  * Attached result ranges retire by operator action; expired DEFAULT rows retire in bounded pages
  * before their candidate snapshots, calls, and batches. Deleted-subject requests retire before
  * their retained identity roots.

@@ -1,21 +1,19 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 import { retireClassifierRunPayloadForTest } from './classifier-cache-retention.mts'
 
-/** Rolls the classifier back from its active prompt version to an earlier one. */
-export async function rollBackActivePromptVersionForTest(
-  currentPromptVersionId: string,
-  previousPromptVersionId: string,
-): Promise<void> {
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* deactivateRolledBackClassifierPromptForTest */
-    UPDATE classifier_prompt_versions SET deactivated_at = CURRENT_TIMESTAMP
-    WHERE id = ${currentPromptVersionId}`)
-  await transaction(sql`/* reactivateRolledBackClassifierPromptForTest */
-    UPDATE classifier_prompt_versions SET deactivated_at = NULL
-    WHERE id = ${previousPromptVersionId}`)
-  await transaction.commit()
+/** A newer prompt version that was activated and then rolled back while the older one stays active. */
+export async function addRolledBackPromptVersionForTest(classifierId: string): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* addRolledBackClassifierPromptForTest */
+    INSERT INTO classifier_prompt_versions (
+      classifier_id, prompt, model_name, model_provider,
+      default_lower_threshold, default_upper_threshold, activated_at, deactivated_at
+    ) VALUES (
+      ${classifierId}, 'Rolled back prompt.', 'typesafe/jev-1.14', 'typesafe',
+      0.2, 0.8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    ) RETURNING id`)
+  return rows[0]!.id
 }
 
 /** A versioned run payload that was superseded before it ever completed, then retired. */

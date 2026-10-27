@@ -127,9 +127,8 @@ export async function cleanupRetainedIdentityRoots(
   pageSize = 1_000,
   idsByFamily?: Partial<Record<RetainedIdentityFamily, readonly string[]>>,
 ): Promise<RetainedIdentityCleanupPage[]> {
-  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000) {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000)
     throw new RangeError('Retained identity cleanup page size must be between 1 and 1000')
-  }
   const results: RetainedIdentityCleanupPage[] = []
   for (const family of Object.keys(ROOT_FAMILIES) as RetainedIdentityFamily[]) {
     const ids = idsByFamily?.[family]

@@ -22,7 +22,7 @@ import {
 } from '@voucha/test-helpers/classifier-cache-retention'
 import {
   retireSupersededVersionedRunPayloadForTest,
-  rollBackActivePromptVersionForTest,
+  addRolledBackPromptVersionForTest,
 } from '@voucha/test-helpers/classifier-prompt-rollback-retention'
 import { withClassifierRetentionSweepLock } from '@voucha/test-helpers/classifier-retention-sweep-lock'
 import {
@@ -186,11 +186,7 @@ describe('classifier retention cleanup', () => {
       postId: fixture.postId,
       inputSha256: randomBytes(32),
     })
-    const nextPromptVersionId = await supersedeActivePromptVersion(
-      fixture.classifierId,
-      fixture.promptVersionId,
-    )
-    await rollBackActivePromptVersionForTest(nextPromptVersionId, fixture.promptVersionId)
+    await addRolledBackPromptVersionForTest(fixture.classifierId)
     try {
       expect(
         await probeVersionedClassifierCachePageForTest({
