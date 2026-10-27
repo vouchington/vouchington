@@ -73,6 +73,7 @@ describe('cleanup retention windows', () => {
     expect(await getTestUserRaw(afterUpperBoundUser.id)).not.toBeNull()
   })
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('only deletes anonymous referral attributions inside the bounded UUIDv7 window', async () => {
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()
@@ -101,8 +102,9 @@ describe('cleanup retention windows', () => {
     expect(await referralAttributionExistsById(secondEligibleId)).toBe(false)
     expect(await referralAttributionExistsById(atUpperBoundId)).toBe(true)
     expect(await referralAttributionExistsById(afterUpperBoundId)).toBe(true)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('only deletes orphaned OAuth accounts inside the bounded retention window', async () => {
     const window = createTestRetentionWindow()
     const beforeLowerBoundProviderUserId = `test-orphan-before-lower-${createRandomString(12)}`
@@ -152,7 +154,7 @@ describe('cleanup retention windows', () => {
     expect(await oauthAccountExistsByProviderUserId('github', afterUpperBoundProviderUserId)).toBe(
       true,
     )
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 })
 
 describe('retention publication capture', () => {

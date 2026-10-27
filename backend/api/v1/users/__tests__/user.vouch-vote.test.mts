@@ -32,6 +32,7 @@ describe('User vouch vote routes', () => {
   })
 
   // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('PUT /api/v1/users/:id/vouch-vote (like) does not mute or unfollow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -52,9 +53,10 @@ describe('User vouch vote routes', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(true)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(0)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
   // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('PUT /api/v1/users/:id/vouch-vote (dislike) does not mute or unfollow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -75,9 +77,10 @@ describe('User vouch vote routes', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(true)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(0)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
   // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('PUT /api/v1/users/:id/vouch-vote (disavow) records the vote, auto-mutes, and soft-deletes the follow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -101,9 +104,10 @@ describe('User vouch vote routes', () => {
     expect(muteRelations).toHaveLength(1)
 
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
   // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('Neutral retract does not unmute or restore the follow', async () => {
     const voter = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -136,5 +140,5 @@ describe('User vouch vote routes', () => {
     expect(await getFollowExists(voter.id, target.id)).toBe(false)
     const muteRelations = await getEntityRelation('relation__user__mute__user', voter.id, target.id)
     expect(muteRelations).toHaveLength(1)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 })

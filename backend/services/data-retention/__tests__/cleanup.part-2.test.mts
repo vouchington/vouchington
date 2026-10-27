@@ -28,6 +28,7 @@ function nextRunStartingAtFirstProvider(now: Date): Date {
 }
 
 describe('orphaned OAuth account cleanup', () => {
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('deletes old orphaned accounts and retains newer accounts', async () => {
     const window = createTestRetentionWindow()
     const oldId = `old-${createRandomString(12)}`
@@ -40,8 +41,9 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(cleanupOrphanedOAuthAccounts(window)).resolves.toMatchObject({ deleted: 1 })
     expect(await oauthAccountExistsByProviderUserId('github', oldId)).toBe(false)
     expect(await oauthAccountExistsByProviderUserId('github', recentId)).toBe(true)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('keeps deletion bounded by the configured batch count', async () => {
     const window = createTestRetentionWindow()
     const firstId = `batch-first-${createRandomString(12)}`
@@ -64,8 +66,9 @@ describe('orphaned OAuth account cleanup', () => {
         await oauthAccountExistsByProviderUserId('facebook', secondId),
       ].filter(Boolean),
     ).toHaveLength(1)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('reaches later providers on the next daily capped run despite an early backlog', async () => {
     const window = createTestRetentionWindow()
     const firstNow = nextRunStartingAtFirstProvider(window.now)
@@ -103,8 +106,9 @@ describe('orphaned OAuth account cleanup', () => {
         await Promise.all(firstIds.map(id => oauthAccountExistsByProviderUserId(firstProvider, id)))
       ).filter(Boolean),
     ).toHaveLength(1)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('preserves an old orphaned LinkedIn account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
     const activeAccountId = `retained-linkedin-${createRandomString(12)}`
@@ -154,8 +158,9 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       linkedin_account_id: activeAccount.account_id,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('preserves an old orphaned Facebook account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-facebook-${createRandomString(12)}`
@@ -205,8 +210,9 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       facebook_account_id: activeAccountId,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('preserves an old orphaned Microsoft account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-microsoft-${createRandomString(12)}`
@@ -259,7 +265,7 @@ describe('orphaned OAuth account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       microsoft_account_id: activeAccount.account_id,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
   it('rejects table and column identifiers outside the configured provider allowlist', async () => {
     await expect(

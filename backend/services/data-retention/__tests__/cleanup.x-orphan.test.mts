@@ -16,6 +16,7 @@ import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 import { getTestAuthorizationAccountId } from '@voucha/test-helpers/entities/oauth-authorization-account-id'
 
 describe('X orphan account cleanup', () => {
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('preserves an old orphaned account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-x-${createRandomString(12)}`
@@ -57,5 +58,5 @@ describe('X orphan account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       x_account_id: activeAccountId,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 })

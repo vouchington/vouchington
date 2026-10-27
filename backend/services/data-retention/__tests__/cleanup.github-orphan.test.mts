@@ -15,6 +15,7 @@ import {
 import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 
 describe('GitHub orphan account cleanup', () => {
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('preserves an old orphaned account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-github-${createRandomString(12)}`
@@ -62,5 +63,5 @@ describe('GitHub orphan account cleanup', () => {
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
       github_account_id: activeAccountId,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 })

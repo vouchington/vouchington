@@ -14,12 +14,14 @@ import type { PrivateUser } from '@services/users/types'
 describe('reconcilePostVoteDrift', () => {
   let creatorUser: PrivateUser
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   beforeAll(async () => {
     creatorUser = await createTestUserDirect({
       username: `test-vd-${randomBytes(4).toString('hex')}`,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('returns a vote-drift result for the posts table without throwing', async () => {
     const postId = await insertTestPost({
       title: 'Vote drift reconciliation',
@@ -45,8 +47,9 @@ describe('reconcilePostVoteDrift', () => {
     expect(result.drifted).toBeGreaterThanOrEqual(0)
     expect(result.drifted).toBeLessThanOrEqual(result.sampled)
     expect(['string', 'undefined']).toContain(typeof result.sampleEntityId)
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('flags drift when a stored counter is out of sync with its votes', async () => {
     const postId = await insertTestPost({
       title: 'Vote drift detected',
@@ -74,8 +77,9 @@ describe('reconcilePostVoteDrift', () => {
     const result = await reconcilePostVoteDrift(1, { samplePostIds: [postId] })
 
     expect(result).toMatchObject({ sampleEntityId: postId, drifted: 1 })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('does not count a legacy Clear zero ballot as Neutral drift', async () => {
     const postId = await insertTestPost({
       title: 'Legacy clear vote drift',
@@ -101,8 +105,9 @@ describe('reconcilePostVoteDrift', () => {
     const result = await reconcilePostVoteDrift(1, { samplePostIds: [postId] })
 
     expect(result).toMatchObject({ sampled: 1, drifted: 0 })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('detects a historic Vouch stored at Like strength', async () => {
     const postId = await insertTestPost({
       title: 'Historic Vouch vote drift',
@@ -130,8 +135,9 @@ describe('reconcilePostVoteDrift', () => {
       sampleEntityId: postId,
       drifted: 1,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('ignores insignificant floating-point score differences', async () => {
     const postId = await insertTestPost({
       title: 'Vote drift floating-point tolerance',
@@ -159,5 +165,5 @@ describe('reconcilePostVoteDrift', () => {
       sampled: 1,
       drifted: 0,
     })
-  }, 30_000) // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
+  }, 30_000)
 })
