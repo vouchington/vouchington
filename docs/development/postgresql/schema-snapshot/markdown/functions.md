@@ -92,14 +92,6 @@ CREATE OR REPLACE FUNCTION public.fn_create_membership_operation_work()
  LANGUAGE plpgsql
 ```
 
-## `fn_create_membership_verification_processing_work`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_create_membership_verification_processing_work()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_create_metrics`
 
 ```sql
@@ -556,6 +548,14 @@ CREATE OR REPLACE FUNCTION public.fn_register_retained_image_identity()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_admin_import_deleted_rss_feed`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_admin_import_deleted_rss_feed()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_admin_import_row_target`
 
 ```sql
@@ -908,6 +908,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_refund_operation_
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_media_delivery_registry_change_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_media_delivery_registry_change_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_media_placement`
 
 ```sql
@@ -1124,6 +1132,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_role_user_is_not_system()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_rss_feed_child_reference`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_rss_feed_child_reference()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_terminal_lifecycle`
 
 ```sql
@@ -1144,6 +1160,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_user_landing_page_group_member_item_
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_user_legal_preservation_hold_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_user_rss_feed_import_result`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_user_rss_feed_import_result()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1286,10 +1310,10 @@ CREATE OR REPLACE FUNCTION public.fn_update_membership_operation_work()
  LANGUAGE plpgsql
 ```
 
-## `fn_update_membership_verification_processing_work`
+## `fn_update_membership_renewal_notice_end`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_update_membership_verification_processing_work()
+CREATE OR REPLACE FUNCTION public.fn_update_membership_renewal_notice_end()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1322,14 +1346,6 @@ CREATE OR REPLACE FUNCTION public.fn_update_parent_notice_scope()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_update_report_agent_call_receipt_target`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_update_report_agent_call_receipt_target()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

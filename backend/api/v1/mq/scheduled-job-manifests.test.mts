@@ -37,6 +37,8 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background-cpu/crawl:unfurl-referral-links-dispatcher',
   'background/account-data-requests-cleanup',
   'background/accountDataRequestRecovery',
+  'background/activitypub-outbound-follows-recovery',
+  'background/activitypub-outbound-votes-recovery',
   'background/activitypub-inbox-recovery',
   'background/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
@@ -77,10 +79,10 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/reconcile-image-quarantines',
   'background/reconcile-post-moderation',
   'background/oauthAuthorizationExchangeDispatcher',
-  'background/reconcile-post-publication',
   'psql/cleanup-partitions-daily',
   'psql/create-partitions-monthly',
   'psql/data-retention-cleanup-daily',
+  'psql/moderation-retention-cleanup-daily',
   'psql/reconcile-vote-drift',
   'psql/refresh-platform-stats',
   'psql/refresh-revenue-changes',
@@ -91,6 +93,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/dispatchRssFeeds',
   'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
   'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
+  'rss-feed-maintenance/recoverRssFeedHardDeletes',
   'background/ses-inbound-reconciliation',
   'background/sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
   'background/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
@@ -107,7 +110,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 9 manifests and 84 live jobs', () => {
+  it('imports the registered manifests and exact scheduled jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(9)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -157,7 +160,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(77)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(80)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

@@ -28,7 +28,7 @@ describe('backend API response contract schemas', () => {
   // One independent cold virtual TypeScript program; retain the existing 15-second budget.
   beforeAll(() => {
     matrix = buildVirtualProgramMatrix(import.meta, sources)
-  }, 15_000)
+  })
 
   it('publishes Dynamic Config cases with developer authorization', () => {
     const authenticatedCases = dynamicConfigApiFixtureCases.filter(fixture =>

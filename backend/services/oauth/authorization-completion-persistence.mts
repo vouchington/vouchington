@@ -45,7 +45,7 @@ export function assertCompletionCaller(
     throw createHttpError(403, 'OAuth authorization belongs to another session')
   }
   if (
-    authorization.purpose === 'connect'
+    authorization.purpose !== 'authenticate'
       ? authorization.initiating_user_id !== options.currentUserId
       : options.currentUserId !== undefined && !authenticatedReplay
   ) {

@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { activitypub } from '@queues/activitypub/queues'
@@ -70,11 +70,22 @@ describe('ActivityPub worker paged dispatch', () => {
     if (!next?.cursor) throw new Error('Expected a persisted follower cursor')
     await expect(processDistributeActivityJob(rootJob)).resolves.toEqual(first)
 
-    const pageId = createHash('sha256')
-      .update(`${root.id}:${JSON.stringify(next)}`)
-      .digest('hex')
-    const continuation = await activitypub.getJob(`${root.name}__page__${pageId}`)
-    if (!continuation) throw new Error('Expected a durable continuation job')
+    const continuationId = `activitypub-distribute__${data.activityId}__${next.cursor}`
+    const originalContinuation = await activitypub.getJob(continuationId)
+    if (!originalContinuation) throw new Error('Expected a durable continuation job')
+    // Simulate a pruned child after its parent retained nextAdmitted=true. Recovery must
+    // walk that receipt, recreate the exact child id, and strip the parent's receipt from data.
+    await originalContinuation.remove()
+    await rootJob.updateData({ ...rootJob.data, recovery: true })
+    const recoveryRoot = await activitypub.getJob(root.id)
+    if (!recoveryRoot) throw new Error('Expected a retained root receipt')
+    await expect(
+      processDistributeActivityJob(recoveryRoot as Job<DistributeActivityData>),
+    ).resolves.toEqual(first)
+    const continuation = await activitypub.getJob(continuationId)
+    if (!continuation) throw new Error('Expected a recovered continuation job')
+    expect(continuation.data).toMatchObject({ recovery: true, cursor: next.cursor })
+    expect(continuation.data).not.toHaveProperty('dispatchReceipt')
     ownedJobs.push(continuation)
     await expect(
       processDistributeActivityJob(continuation as Job<DistributeActivityData>),

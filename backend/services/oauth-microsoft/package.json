@@ -26,9 +26,11 @@
     "@modules/utils": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/utils": "^0.10.2"
+    "@vouchington/utils": "^0.10.2",
+    "http-errors": "^2.0.1"
   },
   "devDependencies": {
+    "@types/http-errors": "^2.0.5",
     "undici": "^8.12.3"
   }
 }

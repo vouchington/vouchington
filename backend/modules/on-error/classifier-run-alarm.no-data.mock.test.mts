@@ -77,8 +77,8 @@ const providerRejected = {
   errorType: 'invalid_request_error',
 }
 
-// The periodic-alarm throttle is module-level state -- vi.resetModules() plus a dynamic import per
-// test gives each test a fresh, unthrottled instance.
+// The periodic-alarm throttle is module-level state, so vi.resetModules() plus a dynamic import
+// gives each test a fresh instance.
 describe('recordClassifierRunAlarm', () => {
   beforeEach(() => {
     vi.resetModules()

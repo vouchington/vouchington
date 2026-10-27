@@ -24,7 +24,7 @@ export const staticCommands: CiLocalCommand[] = [
   workflowCommand(
     'squawk',
     'pnpm exec squawk backend/data-stores/psql/migrations/*.sql backend/data-stores/psql/config-driven/*.sql backend/data-stores/psql/views/*.sql',
-    'tests-postgres-schema.yml',
+    'prepare-postgres.yml',
   ),
   workflowCommand(
     'backend dependency-cruiser',
@@ -120,7 +120,17 @@ export const staticCommands: CiLocalCommand[] = [
   ),
   workflowCommand(
     'repo Node static checks',
-    'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy',
+    'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails',
+    'static-code-analysis.yml',
+  ),
+  workflowCommand(
+    'dependency license policy',
+    'pnpm run dependency-license-policy',
+    'static-code-analysis.yml',
+  ),
+  workflowCommand(
+    'workspace registry',
+    'pnpm exec vouchington workspace-registry-check',
     'static-code-analysis.yml',
   ),
   workflowCommand(

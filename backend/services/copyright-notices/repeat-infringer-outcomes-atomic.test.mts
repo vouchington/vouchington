@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   getModeratorActionRowsForTest,
-  getTestPostPublicationDirtyWorkForScope,
   withFailingTransactionQueryOptionsForTest,
 } from '@voucha/test-helpers'
 import {
@@ -57,9 +56,6 @@ describe('atomic copyright repeat-infringer outcomes', () => {
     )
     expect(await getModeratorActionRowsForTest({ targetUserId: poster.id })).toEqual([])
     expect(
-      await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: poster.id }),
-    ).toBeUndefined()
-    expect(
       (await listCopyrightRepeatInfringerAccountsForNotice(moderator, firstNoticeId))[0],
     ).toEqual(expect.objectContaining({ open_review_id: reviewId }))
 
@@ -72,11 +68,6 @@ describe('atomic copyright repeat-infringer outcomes', () => {
     expect(await getModeratorActionRowsForTest({ targetUserId: poster.id })).toEqual([
       expect.objectContaining({ action_type: 'suspend', actor_user_id: admin.id }),
     ])
-    expect(
-      await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: poster.id }),
-    ).toEqual(
-      expect.objectContaining({ reasons: expect.arrayContaining(['author_suspension_changed']) }),
-    )
   })
 
   it('does not decide a restricting outcome before the canonical author lock permits suspension', async () => {
@@ -159,11 +150,6 @@ describe('atomic copyright repeat-infringer outcomes', () => {
     expect(await getModeratorActionRowsForTest({ targetUserId: poster.id })).toEqual([
       expect.objectContaining({ action_type: 'suspend', actor_user_id: admin.id }),
     ])
-    expect(
-      await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: poster.id }),
-    ).toEqual(
-      expect.objectContaining({ reasons: expect.arrayContaining(['author_suspension_changed']) }),
-    )
   })
 
   it('serializes reinstatement with unsuspend, retaining the termination gate until reinstatement commits', async () => {

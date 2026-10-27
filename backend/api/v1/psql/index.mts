@@ -15,9 +15,10 @@ import {
   requireAuthAndRateLimit,
   validateRequestContract,
 } from '../../response-helpers.mts'
-import type { PsqlAdminJobType } from '@queues/psql/types'
+import { parseClassifierPartitionRange } from '@data-stores/psql/migration-runner/classifier-partition-range'
+import type { ClassifierPartitionRange, PsqlAdminJobType } from '@queues/psql/types'
 
-type PsqlJobRequest = { type: PsqlAdminJobType }
+type PsqlJobRequest = { type: PsqlAdminJobType; classifierRange?: ClassifierPartitionRange }
 
 // GET /api/v1/psql/partitions - Get partition status
 app.route('/api/v1/psql/partitions').get(async (ctx: Context) => {
@@ -41,7 +42,17 @@ app.route('/api/v1/psql/jobs').post(async (ctx: Context) => {
 
   const body = (await parseJsonBody(ctx, '1mb')) as PsqlJobRequest
   validateRequestContract(ctx, 'POST:/api/v1/psql/jobs', { body })
-  const { type } = body
+  const { type, classifierRange } = body
+  if (classifierRange) {
+    if (type !== 'createPartitions' && type !== 'cleanupPartitions') {
+      ctx.throw(422, 'Classifier partition ranges require a partition action')
+    }
+    try {
+      parseClassifierPartitionRange(classifierRange)
+    } catch {
+      ctx.throw(422, 'Invalid classifier partition range')
+    }
+  }
 
   switch (type) {
     case 'runMigrations':
@@ -54,10 +65,10 @@ app.route('/api/v1/psql/jobs').post(async (ctx: Context) => {
       await enqueueRunConfigDriven()
       break
     case 'createPartitions':
-      await enqueueCreatePartitions()
+      await enqueueCreatePartitions(classifierRange)
       break
     case 'cleanupPartitions':
-      await enqueueCleanupPartitions()
+      await enqueueCleanupPartitions(classifierRange)
       break
   }
 

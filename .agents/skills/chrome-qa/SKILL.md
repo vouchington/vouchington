@@ -36,8 +36,8 @@ pnpm run login-as -- --all                # prints links for all standard person
 ```
 
 This mints an OTP deep-link (e.g. `https://localhost:$WORKER_PORT/login?emailAddress=…&otp=…`).
-Load that URL in claude-in-chrome — the verify step **auto-submits once** when the tab is
-focused and visible. No click needed; no CAPTCHA on the verify step.
+Load that URL in claude-in-chrome, then click **Log in** on the prefilled verification step.
+Focusing the tab does not submit the code; no CAPTCHA is required on the verify step.
 
 **Persona switching:** `/login` redirects users who already have an active session. Before
 loading the next persona's deep-link, sign out via the account menu in the app, then

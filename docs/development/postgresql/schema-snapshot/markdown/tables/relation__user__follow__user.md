@@ -6,15 +6,16 @@ user follow user relations. <subject> follows <object>
 
 Not partitioned — growth: unbounded.
 
-| Column                                    | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                               |
-| ----------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------- |
-| `subject_id`                              | `uuid`                     | no       |                     |          |           |           | Concrete relation subject in users.                   |
-| `object_id`                               | `uuid`                     | no       |                     |          |           |           | Concrete relation object in users.                    |
-| `created_by_id`                           | `uuid`                     | yes      |                     |          |           |           |                                                       |
-| `created_at`                              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                       |
-| `deleted_at`                              | `timestamp with time zone` | yes      |                     |          |           |           |                                                       |
-| `deleted_by_id`                           | `uuid`                     | yes      |                     |          |           |           |                                                       |
-| `outbound_activitypub_follow_activity_id` | `uuid`                     | yes      | `uuidv7()`          |          |           |           | Stable outbound ActivityPub Follow protocol identity. |
+| Column                                         | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                   |
+| ---------------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
+| `subject_id`                                   | `uuid`                     | no       |                     |          |           |           | Concrete relation subject in users.                                       |
+| `object_id`                                    | `uuid`                     | no       |                     |          |           |           | Concrete relation object in users.                                        |
+| `created_by_id`                                | `uuid`                     | yes      |                     |          |           |           |                                                                           |
+| `created_at`                                   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                           |
+| `deleted_at`                                   | `timestamp with time zone` | yes      |                     |          |           |           |                                                                           |
+| `deleted_by_id`                                | `uuid`                     | yes      |                     |          |           |           |                                                                           |
+| `outbound_activitypub_follow_activity_id`      | `uuid`                     | yes      | `uuidv7()`          |          |           |           | Stable outbound ActivityPub Follow protocol identity.                     |
+| `outbound_activitypub_distributed_activity_id` | `uuid`                     | yes      |                     |          |           |           | Current Follow or UndoFollow activity whose follower pages were admitted. |
 
 **Primary key:** `PRIMARY KEY (subject_id, object_id)`
 
@@ -33,6 +34,7 @@ _none_
 
 **Indexes:**
 
+- `idx_relation__user__follow__user__activitypub_pending`: `CREATE INDEX idx_relation__user__follow__user__activitypub_pending ON public.relation__user__follow__user USING btree (subject_id, object_id) WHERE ((outbound_activitypub_distributed_activity_id IS NULL) AND (outbound_activitypub_follow_activity_id IS NOT NULL))`
 - `idx_relation__user__follow__user__reverse_index`: `CREATE INDEX idx_relation__user__follow__user__reverse_index ON public.relation__user__follow__user USING btree (object_id, subject_id)`
 - `idx_relation__user__follow__user__subject__newest`: `CREATE INDEX idx_relation__user__follow__user__subject__newest ON public.relation__user__follow__user USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `relation__user__follow__user_pkey`: `CREATE UNIQUE INDEX relation__user__follow__user_pkey ON public.relation__user__follow__user USING btree (subject_id, object_id)`

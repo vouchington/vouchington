@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { expectSessionCookieExpiry } from '@voucha/test-helpers/api/session-cookie'
 import {
   createTestUser,
   generateTestTotpCode,
@@ -9,28 +10,31 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { createTotpMfaLoginAttempt } from '@voucha/test-helpers/services/mfa/totp-login-attempt'
+import {
+  countMfaLoginAttempt,
+  failedMfaLoginAttemptRateLimiter,
+  peekLoginAttempt,
+} from '@services/mfa/login-attempt'
+import { sentryCaptureExceptionMock } from '../../../../test-helpers/vitest.setup.sentry-mock.mts'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   EDGE_ANON_SESSION_JWT_ISSUER,
   SESSION_EXPIRATION_SECONDS,
+  WEB_SESSION_EXPIRATION_SECONDS,
+  verifyDeviceJwt,
+  verifySessionJwt,
   signDeviceJwt,
   signSessionJwt,
 } from '@ts-shared/session-jwt'
-
-function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {
-  const cookie = cookieHeader?.find(c => c.startsWith(`${name}=`))
-  const match = cookie?.match(/Max-Age=(\d+)/)
-  return match ? Number(match[1]) : undefined
-}
 
 describe('MFA API Routes', () => {
   let user: PrivateUser
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 15_000)
+  })
 
   // ─── GET /api/v1/auth/mfa/status ──────────────────────────────────────────
 
@@ -65,7 +69,7 @@ describe('MFA API Routes', () => {
       const afterRes = await req.get('/api/v1/auth/mfa/status').expect(200)
       expect(afterRes.body.passkeys_count).toBe(prevCount + 1)
       expect(afterRes.body.has_mfa).toBe(true)
-    }, 20_000)
+    })
 
     it('reflects totp count accurately', async () => {
       const freshUser = await createTestUser()
@@ -78,7 +82,7 @@ describe('MFA API Routes', () => {
       const res = await req.get('/api/v1/auth/mfa/status').expect(200)
       expect(res.body.totp_count).toBeGreaterThanOrEqual(1)
       expect(res.body.has_mfa).toBe(true)
-    }, 20_000)
+    })
   })
 
   // ─── POST /api/v1/auth/mfa/totp/verification ──────────────────────────────
@@ -130,12 +134,12 @@ describe('MFA API Routes', () => {
         .post('/api/v1/auth/mfa/totp/verification')
         .send({ login_attempt_id: attemptId, code: '000000' })
         .expect(401)
-    }, 20_000)
+    })
 
     it('rejects valid TOTP codes after the MFA failure threshold is reached', async () => {
       const { attemptId } = await createTotpMfaLoginAttempt('limited')
 
-      for (const expectedStatus of [401, 401, 401, 401, 401, 429]) {
+      for (const expectedStatus of [401, 401, 401, 401, 401, 401, 429]) {
         await createRequest()
           .post('/api/v1/auth/mfa/totp/verification')
           .send({ login_attempt_id: attemptId, code: '000000' })
@@ -147,7 +151,7 @@ describe('MFA API Routes', () => {
         .post('/api/v1/auth/mfa/totp/verification')
         .send({ login_attempt_id: attemptId, code })
         .expect(429)
-    }, 20_000)
+    })
 
     it('returns an authenticated session for a suspended user with a valid TOTP code', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('susp')
@@ -165,10 +169,13 @@ describe('MFA API Routes', () => {
       expect(res.body.user.id).toBe(mfaUser.id)
 
       await unsuspendTestUser(mfaUser.id)
-    }, 20_000)
+    })
 
-    it('returns 200 and mints tokens for a valid TOTP code', async () => {
+    it('accepts a valid sixth TOTP attempt, mints tokens, and clears its budget', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('success')
+      const attempt = await peekLoginAttempt(attemptId)
+      expect(attempt).not.toBeNull()
+      for (let i = 0; i < 5; i++) await countMfaLoginAttempt(attemptId, attempt!)
 
       const code = generateTestTotpCode()
       const req = createRequest()
@@ -178,10 +185,50 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       expect(res.body.user.id).toBe(mfaUser.id)
-      expect(typeof res.body.dt.token).toBe('string')
-      expect(typeof res.body.st.token).toBe('string')
-      expect(res.body.session).toEqual(res.body.st.payload)
-    }, 20_000)
+      expect(res.body).not.toHaveProperty('dt')
+      expect(res.body).not.toHaveProperty('st')
+      const cookies = res.headers['set-cookie'] as unknown as string[]
+      const dtCookie = cookies.find(cookie => cookie.startsWith('dt='))
+      const stCookie = cookies.find(cookie => cookie.startsWith('st='))
+      expect(dtCookie).toBeDefined()
+      expect(stCookie).toBeDefined()
+      const [device, session] = await Promise.all([
+        verifyDeviceJwt(decodeURIComponent(dtCookie!.slice(3).split(';', 1)[0]!)),
+        verifySessionJwt(decodeURIComponent(stCookie!.slice(3).split(';', 1)[0]!)),
+      ])
+      expect(device).toMatchObject({ client: 'web' })
+      expect(session).toMatchObject({ ...res.body.session, did: device!.did, uid: mfaUser.id })
+      for (let i = 0; i < 6; i++) {
+        await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(false)
+      }
+      await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(true)
+    })
+
+    it('keeps verified login successful when clearing its attempt budget fails', async () => {
+      const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('cleanup-failure')
+      const failure = new Error('Owned MFA counter cleanup failure')
+      const spy = vi.spyOn(failedMfaLoginAttemptRateLimiter, 'delete').mockRejectedValue(failure)
+      try {
+        const res = await createRequest()
+          .post('/api/v1/auth/mfa/totp/verification')
+          .send({ login_attempt_id: attemptId, code: generateTestTotpCode() })
+          .expect(200)
+        expect(res.body.user.id).toBe(mfaUser.id)
+        const cookies = res.headers['set-cookie'] as unknown as string[]
+        const stCookie = cookies.find(cookie => cookie.startsWith('st='))
+        expect(stCookie).toBeDefined()
+        const session = await verifySessionJwt(
+          decodeURIComponent(stCookie!.slice(3).split(';', 1)[0]!),
+        )
+        expect(session).toMatchObject({ uid: mfaUser.id, sid: expect.any(String) })
+        await expect(peekLoginAttempt(attemptId)).resolves.toBeNull()
+        expect(
+          sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+        ).toHaveLength(1)
+      } finally {
+        spy.mockRestore()
+      }
+    })
 
     it('mints a 30-day (not 2-day) st cookie when the login attempt itself carries deviceClass', async () => {
       // deviceClass is captured on the LoginAttempt at creation time (from the device/session
@@ -196,9 +243,15 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(SESSION_EXPIRATION_SECONDS)
-    }, 20_000)
+      const stCookie = cookieHeader!.find(cookie => cookie.startsWith('st='))!
+      expect(
+        await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
+      ).toMatchObject({ client: 'native' })
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: SESSION_EXPIRATION_SECONDS,
+        maxRemainingSeconds: ATTESTED_SESSION_EXPIRATION_SECONDS,
+      })
+    })
 
     it('does not elevate to a 30-day session from the completing request own attested cookies', async () => {
       // Regression: a login attempt created without deviceClass (e.g. an unattested device
@@ -226,8 +279,14 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(SESSION_EXPIRATION_SECONDS)
-      expect(maxAgeOf(cookieHeader, 'st')).not.toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
-    }, 20_000)
+      const stCookie = cookieHeader!.find(cookie => cookie.startsWith('st='))!
+      expect(
+        await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
+      ).toMatchObject({ client: 'web' })
+      expectSessionCookieExpiry(cookieHeader, {
+        minRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS - 10,
+        maxRemainingSeconds: WEB_SESSION_EXPIRATION_SECONDS,
+      })
+    })
   })
 })

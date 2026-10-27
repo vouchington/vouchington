@@ -78,7 +78,6 @@ export async function retirePartitionsSequentially(
   return candidates.reduce(
     async (previous, candidate) => {
       const outcomes = await previous
-      // no-mistakes-disable-next-line query-reached-per-item: each partition requires its own locked guard recheck and atomic DDL transaction.
       outcomes.push(await retireOne(candidate))
       return outcomes
     },

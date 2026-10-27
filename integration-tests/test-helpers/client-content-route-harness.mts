@@ -17,6 +17,7 @@ import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
   createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../web-api/routes.mts'
 
@@ -118,7 +119,7 @@ export function installClientContentRouteHarness(
     await setUserVerificationFields(verifiedUser.id, { verificationStatus: 'verified' })
     harness.userId = user.id
     harness.userCookieHeader = await createWebApiTestCookieHeader(user.id)
-    harness.adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    harness.adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
     harness.verifiedUserCookieHeader = await createWebApiTestCookieHeader(verifiedUser.id)
 
     const topic = await createTestTopic({ user: admin })
@@ -140,7 +141,7 @@ export function installClientContentRouteHarness(
 
     harness.penaltyId = await insertTestVoteWeightPenalty(user.id, admin.id)
     await options.afterPenalty?.(ctx)
-  }, 30_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -163,7 +164,7 @@ export function installClientContentRouteHarness(
     } else {
       options.unset(globalThis, 'window')
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId } from '../get.mts'
 import { createMembershipVerification } from '../verifications.mts'
 import {
@@ -9,6 +10,7 @@ import {
   getTestMembershipSourceState,
 } from '@voucha/test-helpers'
 import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-play-memberships'
+import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
@@ -90,7 +92,11 @@ describe('Google Play bound RTDN permanent lookup loss', () => {
       ),
     })
 
-    await reconcileGooglePlayRtdnNotification({ evidenceId, client })
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
+    const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
+    await processGooglePlayMembershipVerification(recoveryVerificationId, { client })
+    await (await memberships.getJob(recoveryVerificationId))?.remove()
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
 
     expect(fetched).toEqual([currentToken])
     await expect(getTestMembershipProviderEvidenceTerminalState(evidenceId)).resolves.toMatchObject(
@@ -168,15 +174,23 @@ describe('Google Play bound RTDN permanent lookup loss', () => {
         ),
       })
 
-      await reconcileGooglePlayRtdnNotification({
-        evidenceId,
-        client: {
-          getSubscription: async ({ purchaseToken: fetched }) => {
-            throw new GooglePlaySubscriptionLookupError(status, fetched)
-          },
-          acknowledgeSubscription: async () => undefined,
+      let fetches = 0
+      const unavailableClient = {
+        getSubscription: async ({ purchaseToken: fetched }: { purchaseToken: string }) => {
+          fetches++
+          throw new GooglePlaySubscriptionLookupError(status, fetched)
         },
+        acknowledgeSubscription: async () => undefined,
+      }
+      await reconcileGooglePlayRtdnNotification({ evidenceId })
+      const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
+      await processGooglePlayMembershipVerification(recoveryVerificationId, {
+        client: unavailableClient,
       })
+      await (await memberships.getJob(recoveryVerificationId))?.remove()
+      expect(fetches).toBe(1)
+      await reconcileGooglePlayRtdnNotification({ evidenceId })
+      expect(fetches).toBe(1)
 
       await expect(
         getTestMembershipProviderEvidenceTerminalState(evidenceId),
@@ -192,3 +206,14 @@ describe('Google Play bound RTDN permanent lookup loss', () => {
     },
   )
 })
+
+async function expectQueuedVerification(userId: string, applicationId: string): Promise<string> {
+  const verificationId = await getTestPendingGooglePlayVerification({ userId, applicationId })
+  if (!verificationId) throw new Error('Google Play RTDN verification was not admitted')
+  await expect(memberships.getJob(verificationId)).resolves.toMatchObject({
+    id: verificationId,
+    name: 'processMembershipVerification',
+    data: { verificationId },
+  })
+  return verificationId
+}

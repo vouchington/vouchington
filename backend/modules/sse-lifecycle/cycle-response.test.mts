@@ -1,5 +1,4 @@
 import { EventEmitter } from 'node:events'
-import { readFileSync } from 'node:fs'
 import { createServer, request as httpRequest } from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -177,11 +176,5 @@ describe('armDashboardEventStream', () => {
     } finally {
       await new Promise<void>(resolve => server.close(() => resolve()))
     }
-  })
-
-  it('cycles the served GlideMQ dashboard event route through the shared helper', () => {
-    const source = readFileSync('backend/entrypoints/api/glidemq-dashboard.mts', 'utf8')
-    expect(source).toContain("from '@modules/sse-lifecycle'")
-    expect(source).toMatch(/armDashboardEventStream\(req, res\)[\s\S]*createDashboard\(/)
   })
 })

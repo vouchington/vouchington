@@ -14,12 +14,14 @@ function NameStepForm({ initialName }: { initialName: string }) {
   const [name, setName] = useState(initialName)
   const [setupData, setSetupData] = useState<TotpSetupData | null>(null)
   const [setupCode, setSetupCode] = useState('')
+  const [setupVerificationProof, setSetupVerificationProof] = useState<string | null>(null)
   const [step, setStep] = useState<'setup' | 'list'>('setup')
   if (step === 'list') return <p>Returned to authenticators</p>
   return (
     <TotpSetupFlow
       loading={false}
       setupCode={setupCode}
+      setupVerificationProof={setupVerificationProof}
       setupData={setupData}
       setupName={name}
       onStartSetup={event => {
@@ -35,10 +37,17 @@ function NameStepForm({ initialName }: { initialName: string }) {
         })
       }}
       onVerifySetup={() => setStep('list')}
+      onConfirmSetup={() => {
+        setSetupCode('')
+        setSetupVerificationProof('storybook-confirmation')
+      }}
+      onCancelSetup={() => {
+        setSetupData(null)
+        setSetupVerificationProof(null)
+        setStep('list')
+      }}
       setSetupCode={setSetupCode}
-      setSetupData={setSetupData}
       setSetupName={setName}
-      setStep={() => setStep('list')}
     />
   )
 }

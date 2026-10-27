@@ -115,7 +115,7 @@ export const referralClickLogUser = {
 export const referralClickLog = {
   __entity_type: 'referral_click_log',
   id: 'referral-click-1',
-  landing_url: 'https://voucha.ai/@alice',
+  landing_url: null,
   signed_up_at: '2026-03-01T12:00:00Z',
   user_id: referralClickLogUser.id,
   created_at: '2026-03-01T11:55:00Z',

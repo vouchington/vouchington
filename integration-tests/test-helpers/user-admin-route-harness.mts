@@ -138,7 +138,7 @@ export function installUserAdminRouteHarness(
       statusCode: 200,
       markdown: 'Web API test crawl markdown',
     })
-  }, 15_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -162,7 +162,7 @@ export function installUserAdminRouteHarness(
     } else {
       unset(globalThis, 'window')
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

@@ -108,11 +108,12 @@ describe('PostgreSQL lifecycle integrity', () => {
 
   it('binds moderation feedback source-specific targets', async () => {
     const definition = await getModerationTrainingTargetConstraint()
-    expect(definition).toContain("source_type = 'moderation_report'")
-    expect(definition).toContain('moderation_report_id IS NOT NULL')
-    expect(definition).toContain("source_type = 'moderation_appeal'")
-    expect(definition).toContain('moderation_appeal_id IS NOT NULL')
-    expect(definition).toContain("source_type = 'review_dispute'")
-    expect(definition).toContain('review_dispute_id IS NOT NULL')
+    expect(definition).toContain(
+      "(moderation_report_id IS NULL) OR (source_type = 'moderation_report'",
+    )
+    expect(definition).toContain(
+      "(moderation_appeal_id IS NULL) OR (source_type = 'moderation_appeal'",
+    )
+    expect(definition).toContain("(review_dispute_id IS NULL) OR (source_type = 'review_dispute'")
   })
 })

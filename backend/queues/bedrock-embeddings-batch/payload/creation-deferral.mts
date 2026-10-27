@@ -1,7 +1,10 @@
 import type { Job } from 'glide-mq'
 import type { EmbeddingScanCursor } from '../types.mts'
 
-export type EmbeddingCreationJob = Pick<Job, 'data' | 'updateData' | 'moveToDelayed'>
+export type EmbeddingCreationJob = Pick<
+  Job,
+  'id' | 'data' | 'opts' | 'updateData' | 'moveToDelayed'
+>
 
 export async function delayEmbeddingCreationJob(
   job: EmbeddingCreationJob,

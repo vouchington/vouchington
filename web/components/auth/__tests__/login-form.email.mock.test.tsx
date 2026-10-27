@@ -72,7 +72,7 @@ describe('LoginForm', () => {
     expect(privacyLink).toHaveAttribute('href', '/article/privacy-policy')
   })
 
-  it('should render InputOTP with 8 slots after email submission', async () => {
+  it('should render InputOTP with 10 slots after email submission', async () => {
     render(<LoginForm />)
 
     const emailInput = screen.getByLabelText(/email/i)
@@ -94,10 +94,10 @@ describe('LoginForm', () => {
 
     const otpInput = document.querySelector('[data-input-otp]')
     expect(otpInput).toBeInTheDocument()
-    expect(otpInput).toHaveAttribute('maxlength', '8')
+    expect(otpInput).toHaveAttribute('maxlength', '10')
   })
 
-  it('should disable the Log in button when fewer than 8 chars are entered', async () => {
+  it('should disable the Log in button when fewer than 10 chars are entered', async () => {
     await renderAtCodeStep()
 
     const submitButton = screen.getByRole('button', { name: /log in/i })
@@ -108,27 +108,29 @@ describe('LoginForm', () => {
     expect(submitButton).toBeDisabled()
   })
 
-  it('should auto-submit when 8 hex chars are entered', async () => {
+  it('requires explicit submit after a complete base32 code is entered', async () => {
     await renderAtCodeStep()
 
     const otpInput = document.querySelector('[data-input-otp] input')!
-    fireEvent.change(otpInput, { target: { value: 'ABCD1234' } })
+    fireEvent.change(otpInput, { target: { value: 'ABCDEFG234' } })
+    expect(mockLoginWithEmailAddress).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /log in/i }))
 
     await waitFor(() => {
-      expect(mockLoginWithEmailAddress).toHaveBeenCalledWith('tests+test@voucha.ai', 'ABCD1234', {
+      expect(mockLoginWithEmailAddress).toHaveBeenCalledWith('tests+test@voucha.ai', 'ABCDEFG234', {
         hp_website: '',
         hp_phone: '',
       })
     })
   })
 
-  it('should wait for user intent before auto-submitting an email login link', async () => {
+  it('does not submit a prefilled email code on focus or visibility changes', async () => {
     vi.spyOn(document, 'hasFocus').mockReturnValue(false)
 
     render(
       <LoginForm
         initialEmailAddress='tests+prefill@voucha.ai'
-        initialOtp='abcd1234'
+        initialOtp='abcdefg234'
       />,
     )
 
@@ -137,12 +139,15 @@ describe('LoginForm', () => {
 
     vi.spyOn(document, 'hasFocus').mockReturnValue(true)
     window.dispatchEvent(new Event('focus'))
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(mockLoginWithEmailAddress).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /log in/i }))
 
     await waitFor(() => {
       expect(mockLoginWithEmailAddress).toHaveBeenCalledTimes(1)
       expect(mockLoginWithEmailAddress).toHaveBeenCalledWith(
         'tests+prefill@voucha.ai',
-        'ABCD1234',
+        'ABCDEFG234',
         {
           hp_website: '',
           hp_phone: '',
@@ -151,11 +156,11 @@ describe('LoginForm', () => {
     })
   })
 
-  it('should start on the code step for email login links and auto-submit once', async () => {
+  it('starts on the prefilled code step and submits once after Log in is clicked', async () => {
     render(
       <LoginForm
         initialEmailAddress='tests+prefill@voucha.ai'
-        initialOtp='abcd1234'
+        initialOtp='abcdefg234'
       />,
     )
 
@@ -167,12 +172,14 @@ describe('LoginForm', () => {
       hidden: true,
     })
     expect(facebookButton.closest('.hidden')).not.toBeNull()
+    expect(mockLoginWithEmailAddress).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /log in/i }))
 
     await waitFor(() => {
       expect(mockLoginWithEmailAddress).toHaveBeenCalledTimes(1)
       expect(mockLoginWithEmailAddress).toHaveBeenCalledWith(
         'tests+prefill@voucha.ai',
-        'ABCD1234',
+        'ABCDEFG234',
         {
           hp_website: '',
           hp_phone: '',

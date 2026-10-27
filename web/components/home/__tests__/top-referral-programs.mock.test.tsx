@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
 import { TopReferralPrograms } from '../top-referral-programs'
 import { makeTopicsSearchResponse, makeTopic } from '@/test-helpers/api-responses'
 import { projectTopReferralPrograms } from '@/lib/view-models/homepage-view-models'
+
+configure({ testIdAttribute: 'data-pw' })
 
 vi.mock(
   import('next/link'),
@@ -44,6 +46,8 @@ describe('TopReferralPrograms', () => {
     render(<TopReferralPrograms data={null} />)
 
     expect(screen.getByText('Unable to load referral programs.')).toBeDefined()
+    expect(screen.queryByTestId('top-referral-programs')).toBeNull()
+    expect(screen.queryByTestId('top-referral-programs-empty')).toBeNull()
   })
 
   it('renders empty fallback when results are empty', () => {
@@ -51,7 +55,8 @@ describe('TopReferralPrograms', () => {
 
     render(<TopReferralPrograms data={projectTopReferralPrograms(data)} />)
 
-    expect(screen.getByText('No referral programs yet.')).toBeDefined()
+    expect(screen.getByTestId('top-referral-programs-empty')).toBeDefined()
+    expect(screen.queryByTestId('top-referral-programs')).toBeNull()
   })
 
   it('renders referral program links with names', () => {
@@ -60,6 +65,8 @@ describe('TopReferralPrograms', () => {
 
     render(<TopReferralPrograms data={projectTopReferralPrograms(data)} />)
 
+    expect(screen.getByTestId('top-referral-programs')).toBeDefined()
+    expect(screen.queryByTestId('top-referral-programs-empty')).toBeNull()
     const link = screen.getByRole('link', { name: 'Chase Sapphire' })
     expect(link.getAttribute('href')).toBe('/referral-programs/chase-sapphire/referral-links')
     expect(screen.getByRole('link', { name: 'Browse all referral programs →' })).toBeDefined()

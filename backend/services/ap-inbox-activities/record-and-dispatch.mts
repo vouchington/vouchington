@@ -22,7 +22,6 @@ export type InboxActivityResult =
 
 export type DurableInboxCompletion = {
   deliveryId: string
-  leaseToken: string
 }
 
 class StaleDurableInboxCompletionError extends Error {}
@@ -71,7 +70,7 @@ export async function recordAndDispatchInboundActivityInTransaction(
   activity: InboundActivity & { signedAt: Date },
   completion?: DurableInboxCompletion,
 ) {
-  const rejectionFloor = await lockActivityPubReplayFloor(query, 'inbox')
+  const rejectionFloor = await lockActivityPubReplayFloor(query)
   if (rejectionFloor && activity.signedAt <= rejectionFloor) {
     throw createHttpError(401, 'Activity signature date is retired')
   }
@@ -96,10 +95,8 @@ async function completeDurableDeliveryOrThrow(
   query: QueryExecutor,
 ): Promise<void> {
   if (!completion) return
-  const completed = await activityPubInboxDeliveryTransitions.complete(
-    completion.deliveryId,
-    completion.leaseToken,
-    { query },
-  )
+  const completed = await activityPubInboxDeliveryTransitions.complete(completion.deliveryId, {
+    query,
+  })
   if (completed.outcome === 'stale') throw new StaleDurableInboxCompletionError()
 }

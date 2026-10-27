@@ -1,13 +1,16 @@
 import { createHash, generateKeyPairSync, randomUUID, sign } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId } from '@services/memberships'
-import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import {
   createTestLaunchedNativeMembershipPurchaseIntent,
   createTestNativeMembershipProviderProduct,
   createTestSku,
   createTestUser,
 } from '@voucha/test-helpers'
+import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
+import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
+import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { ingestGooglePlayRtdnPush, InvalidGooglePlayRtdnError } from './notification-ingress.mts'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
@@ -62,11 +65,14 @@ describe('Google Play RTDN lifecycle integration', () => {
         throw new Error('Already acknowledged; no Play mutation expected')
       },
     }
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, { client }),
+    ).rejects.toThrow('Google Play purchase is pending')
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
       status: 'pending',
     })
     await expect(getMembershipByUserId(user.id)).resolves.toBeNull()
+    await (await memberships.getJob(verification.id))?.remove()
 
     state = 'SUBSCRIPTION_STATE_ACTIVE'
     const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
@@ -164,8 +170,16 @@ describe('Google Play RTDN lifecycle integration', () => {
       }),
     ).rejects.toBeInstanceOf(InvalidGooglePlayRtdnError)
     await reconcileGooglePlayRtdnNotification({ evidenceId: ingress.evidenceId, client })
+    await processQueuedGooglePlayVerification(user.id, applicationId, client)
+    await reconcileGooglePlayRtdnNotification({ evidenceId: ingress.evidenceId, client })
 
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ plan: 'plus' })
+    await expect(
+      getTestMembershipProviderEvidenceTerminalState(ingress.evidenceId),
+    ).resolves.toMatchObject({
+      verified_at: expect.any(Date),
+      rejected_at: null,
+    })
 
     state = 'SUBSCRIPTION_STATE_EXPIRED'
     expiryTime = new Date(Date.now() - 60_000).toISOString()
@@ -194,6 +208,32 @@ describe('Google Play RTDN lifecycle integration', () => {
       enqueue: async () => undefined,
     })
     await reconcileGooglePlayRtdnNotification({ evidenceId: revocation.evidenceId, client })
+    await processQueuedGooglePlayVerification(user.id, applicationId, client)
+    await reconcileGooglePlayRtdnNotification({ evidenceId: revocation.evidenceId, client })
     await expect(getMembershipByUserId(user.id)).resolves.toBeNull()
+    await expect(
+      getTestMembershipProviderEvidenceTerminalState(revocation.evidenceId),
+    ).resolves.toMatchObject({
+      verified_at: expect.any(Date),
+      rejected_at: null,
+    })
   })
 })
+
+async function processQueuedGooglePlayVerification(
+  userId: string,
+  applicationId: string,
+  client: GooglePlaySubscriptionsV2Client,
+): Promise<void> {
+  const verificationId = await getTestPendingGooglePlayVerification({ userId, applicationId })
+  if (!verificationId) throw new Error('Google Play RTDN did not enqueue a pending verification')
+  const job = await memberships.getJob(verificationId)
+  if (!job) throw new Error('Google Play RTDN verification job was not enqueued')
+  expect(job.name).toBe('processMembershipVerification')
+  expect(job.data).toEqual({ verificationId })
+  try {
+    await processGooglePlayMembershipVerification(verificationId, { client })
+  } finally {
+    await job.remove()
+  }
+}

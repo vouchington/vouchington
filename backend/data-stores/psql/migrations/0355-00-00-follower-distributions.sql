@@ -145,17 +145,17 @@ COMMENT ON COLUMN follower_distribution_selected_recipients.recipient_user_id IS
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS activitypub_replay_rejection_floors (
-  is_outbound BOOLEAN PRIMARY KEY,
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
   rejection_floor_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE OR REPLACE TRIGGER trigger_activitypub_replay_rejection_floors_updated_at
 BEFORE UPDATE ON activitypub_replay_rejection_floors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-COMMENT ON TABLE activitypub_replay_rejection_floors IS 'Monotonic admission boundaries retained after expired ActivityPub replay-ledger rows are deleted.';
-COMMENT ON COLUMN activitypub_replay_rejection_floors.is_outbound IS 'False for signed inbound activity, true for outbound distribution activity.';
+COMMENT ON TABLE activitypub_replay_rejection_floors IS 'Monotonic inbound admission boundary retained after expired ActivityPub replay-ledger rows are deleted.';
+COMMENT ON COLUMN activitypub_replay_rejection_floors.is_singleton IS 'Allows one inbound admission boundary.';
 COMMENT ON COLUMN activitypub_replay_rejection_floors.rejection_floor_at IS 'Durable admission floor advanced atomically with ledger deletion, including across age-policy changes.';
-COMMENT ON COLUMN activitypub_replay_rejection_floors.updated_at IS 'Last time this admission boundary advanced.';
+COMMENT ON COLUMN activitypub_replay_rejection_floors.updated_at IS 'Last time the admission boundary advanced.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_follower_distribution_recipient_bounds()

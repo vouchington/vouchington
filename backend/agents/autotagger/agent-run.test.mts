@@ -131,8 +131,8 @@ describe.each([
     )
 
     expect(await listAiUsageRecordsForClassifierRun(lease.runId)).toMatchObject([
-      { classifier_run_id: lease.runId, agent_slug: AUTOTAGGER_AGENT_SLUG },
-      { classifier_run_id: lease.runId, agent_slug: AUTOTAGGER_AGENT_SLUG },
+      { classifier_run_identity_id: lease.runId, agent_slug: AUTOTAGGER_AGENT_SLUG },
+      { classifier_run_identity_id: lease.runId, agent_slug: AUTOTAGGER_AGENT_SLUG },
     ])
     expect(await getSubjectClassifierRunFacts(lease.subject, AUTOTAGGER_AGENT_SLUG)).toMatchObject([
       { provider_attempts_started: 1 },

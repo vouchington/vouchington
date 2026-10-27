@@ -50,7 +50,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('allows non-empty SQL/CSS/Rust/JS files', { timeout: 10_000 }, async () => {
+  it('allows non-empty SQL/CSS/Rust/JS files', async () => {
     const dir = await makeRepo()
     await track(dir, 'backend/data-stores/psql/migrations/9999-ok.sql', 'select 1;\n')
     await track(dir, 'web/app/style.css', '.root { color: red; }\n')
@@ -63,7 +63,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('allows an explicit repo root from outside the repository', { timeout: 10_000 }, async () => {
+  it('allows an explicit repo root from outside the repository', async () => {
     const dir = await makeRepo()
     await track(dir, 'backend/services/posts/ok.ts', 'export const ok = 1\n')
 
@@ -72,21 +72,17 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it(
-    'ignores tracked files that have been deleted from the worktree',
-    { timeout: 10_000 },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        'backend/data-stores/psql/migrations/0999-deleted-add-col.sql',
-        'ALTER TABLE foo ADD COLUMN bar TEXT;\n',
-      )
-      await rm(join(dir, 'backend/data-stores/psql/migrations/0999-deleted-add-col.sql'))
+  it('ignores tracked files that have been deleted from the worktree', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      'backend/data-stores/psql/migrations/0999-deleted-add-col.sql',
+      'ALTER TABLE foo ADD COLUMN bar TEXT;\n',
+    )
+    await rm(join(dir, 'backend/data-stores/psql/migrations/0999-deleted-add-col.sql'))
 
-      await expect(run(dir)).resolves.toMatchObject({
-        stdout: expect.stringContaining('pass'),
-      })
-    },
-  )
+    await expect(run(dir)).resolves.toMatchObject({
+      stdout: expect.stringContaining('pass'),
+    })
+  })
 })

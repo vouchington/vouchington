@@ -4,7 +4,6 @@ import { defineBackgroundJob } from './define-job.mts'
 import {
   NOTIFICATIONS_DOMAIN as DOMAIN,
   type ApplyMediaDeliveryRegistryRecordData,
-  type CommunityActivityDigestBatchData,
   type CommunityActivityDigestScheduleData,
   type CommunityActivityDigestDispatchData,
   type ConversationMessageNotificationData,
@@ -15,6 +14,7 @@ import {
   type DsaStatementSubmissionData,
   type EmptyNotificationsJobData as EmptyData,
   type FollowNotificationData,
+  type MarkAllNotificationsReadData,
   type ReconcileMediaDeliveryRegistryData,
   type ReconcileNotificationPushIntentsData,
   type ReconcilePostNotificationsData,
@@ -58,6 +58,16 @@ export const NOTIFICATIONS_DELETE_JOB = defineBackgroundJob<DeleteNotificationDa
   name: 'processDeleteNotification',
   ...TASK,
 })
+export const NOTIFICATIONS_MARK_ALL_READ_JOB = defineBackgroundJob<MarkAllNotificationsReadData>(
+  DOMAIN,
+  {
+    name: 'processMarkAllNotificationsRead',
+    ...DISPATCH,
+    ...RETRY,
+    ordering: { key: 'notifications:mark-all-read' },
+    sensitive: true,
+  },
+)
 export const NOTIFICATIONS_FOLLOW_JOB = defineBackgroundJob<FollowNotificationData>(DOMAIN, {
   name: 'processFollowNotification',
   ...TASK,
@@ -80,18 +90,16 @@ export const NOTIFICATIONS_DIGEST_DISPATCH_JOB =
   defineBackgroundJob<CommunityActivityDigestDispatchData>(DOMAIN, {
     name: 'processCommunityActivityDigestDispatch',
     ...DISPATCH,
-    ...RETRY,
+    ...pagedDispatchJobOptions('notifications'),
+    ordering: { key: 'notifications:digest-windows' },
   })
 export const NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB =
   defineBackgroundJob<CommunityActivityDigestScheduleData>(DOMAIN, {
     name: 'processCommunityActivityDigestScheduleTick',
     ...DISPATCH,
     ...RETRY,
+    ordering: { key: 'notifications:digest-schedule' },
   })
-export const NOTIFICATIONS_DIGEST_BATCH_JOB = defineBackgroundJob<CommunityActivityDigestBatchData>(
-  DOMAIN,
-  { name: 'processCommunityActivityDigestBatch', ...TASK, ...RETRY },
-)
 export const NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB = defineBackgroundJob<CopyrightIntentData>(
   DOMAIN,
   { name: 'processDeliverCopyrightNotice', ...TASK, ...RETRY },
@@ -156,13 +164,13 @@ export const NOTIFICATIONS_JOBS = [
   NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,
   NOTIFICATIONS_RECONCILE_PUSH_INTENTS_JOB,
   NOTIFICATIONS_DELETE_JOB,
+  NOTIFICATIONS_MARK_ALL_READ_JOB,
   NOTIFICATIONS_FOLLOW_JOB,
   NOTIFICATIONS_REFERRAL_SIGNUP_JOB,
   NOTIFICATIONS_REFERRAL_CLICK_JOB,
   NOTIFICATIONS_CONVERSATION_MESSAGE_JOB,
   NOTIFICATIONS_DIGEST_DISPATCH_JOB,
   NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
-  NOTIFICATIONS_DIGEST_BATCH_JOB,
   NOTIFICATIONS_DELIVER_COPYRIGHT_NOTICE_JOB,
   NOTIFICATIONS_RECONCILE_COPYRIGHT_DELIVERY_JOB,
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,

@@ -1,10 +1,10 @@
 'use client'
 
-import { createContext, use } from 'react'
+import { createLocaleBindings } from '@vouchington/localization/react'
 import { DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
 
-export const UiLocaleContext = createContext<string>(DEFAULT_UI_LOCALE)
-
-export function useUiLocale() {
-  return use(UiLocaleContext)
-}
+export const {
+  LocaleContext: UiLocaleContext,
+  LocaleProvider,
+  useLocale: useUiLocale,
+} = createLocaleBindings(DEFAULT_UI_LOCALE)

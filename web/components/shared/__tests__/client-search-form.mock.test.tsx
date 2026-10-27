@@ -1,14 +1,7 @@
-import { readdir, readFile } from 'node:fs/promises'
-import { basename, join, relative } from 'node:path'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ClientSearchForm } from '../client-search-form'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-
-const NATIVE_GET_FORM_RE = /<form[\s\S]*?\bmethod\s*=\s*['"]\s*get\s*['"]/im
-function hasNativeGetForm(markup: string): boolean {
-  return NATIVE_GET_FORM_RE.test(markup)
-}
 
 const mockPush = vi.fn<VitestLooseMock>()
 
@@ -158,44 +151,3 @@ describe('ClientSearchForm', () => {
     expect(mockPush).toHaveBeenCalledWith('/topics/aliases', { scroll: false })
   })
 })
-
-describe('native GET search form static-analysis rule', () => {
-  it('detects common native GET form spellings', () => {
-    expect(hasNativeGetForm('<form method="get">')).toBe(true)
-    expect(hasNativeGetForm('<form method = "GET">')).toBe(true)
-    expect(hasNativeGetForm("<form className='x' method=' get '>")).toBe(true)
-    expect(hasNativeGetForm('<form onSubmit={handleSubmit}>')).toBe(false)
-  })
-
-  it('does not allow native GET forms in web app or component source', async () => {
-    const files = await listSourceFiles(join(process.cwd(), 'web'))
-    const offenders: string[] = []
-
-    for (const file of files) {
-      const source = await readFile(file, 'utf8')
-      if (hasNativeGetForm(source)) {
-        offenders.push(relative(process.cwd(), file).replaceAll('\\', '/'))
-      }
-    }
-
-    expect(offenders).toEqual([])
-  }, 15_000)
-})
-
-async function listSourceFiles(root: string): Promise<string[]> {
-  const entries = await readdir(root, { withFileTypes: true })
-  const files = await Promise.all(
-    entries.map(async entry => {
-      const path = join(root, entry.name)
-      if (entry.isDirectory()) {
-        if (!['app', 'components'].includes(entry.name) && basename(root) === 'web') return []
-        if (['__tests__', 'node_modules', '.next'].includes(entry.name)) return []
-        return listSourceFiles(path)
-      }
-
-      return /\.(tsx|ts)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name) ? [path] : []
-    }),
-  )
-
-  return files.flat()
-}

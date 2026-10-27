@@ -1,4 +1,8 @@
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  awaitReportedEnqueueAdmission,
+  createBackgroundBulkEnqueue,
+  createBackgroundEnqueue,
+} from '@queues/background/enqueues'
 import {
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
   NOTIFICATIONS_DELETE_JOB,
@@ -38,6 +42,7 @@ export {
 export * from './enqueues/community-activity-digest.mts'
 export * from './enqueues/push-intents.mts'
 export * from './enqueues/reconcile-recipients.mts'
+export * from './enqueues/mark-all-read.mts'
 
 export const enqueueBulkFollowNotification = createBackgroundBulkEnqueue(
   NOTIFICATIONS_FOLLOW_JOB,
@@ -99,16 +104,15 @@ export function enqueueReferralSignupNotification(
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueReferralClickNotification(
-  referrerId: string,
-  landingUrl: string,
-): EnqueueReturnType {
-  return enqueueReferralClickNotificationJob({ referrerId, landingUrl }, {
-    deduplication: {
-      id: `processReferralClickNotification__${referrerId}`,
-      mode: 'debounce',
-    },
-  } satisfies Partial<JobOptions>)
+export function enqueueReferralClickNotification(referrerId: string): Promise<void> {
+  return awaitReportedEnqueueAdmission(() =>
+    enqueueReferralClickNotificationJob({ referrerId }, {
+      deduplication: {
+        id: `processReferralClickNotification__${referrerId}`,
+        mode: 'debounce',
+      },
+    } satisfies Partial<JobOptions>),
+  )
 }
 
 export function enqueueDeleteNotification(

@@ -1,5 +1,5 @@
 import { createSlugFromTitle, normalizeUrlForUrlTable } from '@modules/utils'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import { loadSqlParserModule, splitSqlStatements } from '../../migration-runner/sql-statements.mts'
@@ -12,11 +12,12 @@ import {
   applySeedSql,
   beginRolledBackSeedTransaction,
   countSeededRows,
+  createStagingRssFeedFixture,
   insertActiveFeedUnderOtherTopic,
   readSeededFeeds,
 } from '../../../../test-helpers/data-stores/psql/staging-rss-feeds.mts'
 import generateStagingRssFeedsSQL from '../0080-00-01a-staging-rss-feeds.mts'
-import { STAGING_RSS_FEEDS } from '../utils/staging-rss-feeds.mts'
+import { STAGING_RSS_FEEDS, type StagingRssFeed } from '../utils/staging-rss-feeds.mts'
 
 // The three feeds the staging decision names (vouchington/vouchington#1956).
 const GUARDIAN_URL = 'https://www.theguardian.com/science/rss'
@@ -24,13 +25,6 @@ const CLOUDFLARE_URL = 'https://blog.cloudflare.com/rss/'
 const QUANTA_URL = 'https://www.quantamagazine.org/feed/'
 const SPEC_FEED_URLS = [GUARDIAN_URL, CLOUDFLARE_URL, QUANTA_URL]
 const urls = STAGING_RSS_FEEDS.map(feed => feed.url)
-// The test database already holds the dev seed's Cloudflare Blog feed and no test may delete or
-// update a shared row, so the tests that start from nothing seed only the feeds it lacks. The
-// "existing feed" test below covers Cloudflare.
-const newFeeds = STAGING_RSS_FEEDS.filter(feed => [GUARDIAN_URL, QUANTA_URL].includes(feed.url))
-const newUrls = newFeeds.map(feed => feed.url)
-
-const sortedUrls = urls.toSorted()
 const loadSqlTooling = () => Promise.all([loadSqlParserModule(), initSqlAst()])
 
 describe('0080-00-01a-staging-rss-feeds environment gate', () => {
@@ -118,7 +112,15 @@ describe('0080-00-01a-staging-rss-feeds generated SQL guards', () => {
 })
 
 describe('0080-00-01a-staging-rss-feeds applied to the database', () => {
-  const stagingSql = generateStagingRssFeedsSQL('staging')
+  let feeds: StagingRssFeed[]
+  let feedUrls: string[]
+  let stagingSql: string
+
+  beforeEach(() => {
+    feeds = [createStagingRssFeedFixture(), createStagingRssFeedFixture()]
+    feedUrls = feeds.map(feed => feed.url)
+    stagingSql = generateStagingRssFeedsSQL('staging', feeds)
+  })
   const expectedCounts = {
     hostnames: 2,
     urls: 2,
@@ -133,10 +135,10 @@ describe('0080-00-01a-staging-rss-feeds applied to the database', () => {
     await using tx = await beginRolledBackSeedTransaction()
     await applySeedSql(tx, stagingSql)
 
-    const feeds = await readSeededFeeds(tx, newUrls)
-    expect(feeds.map(feed => feed.url)).toEqual(newUrls.toSorted())
-    for (const feed of feeds) {
-      const seeded = newFeeds.find(candidate => candidate.url === feed.url)!
+    const storedFeeds = await readSeededFeeds(tx, feedUrls)
+    expect(storedFeeds.map(feed => feed.url)).toEqual(feedUrls.toSorted())
+    for (const feed of storedFeeds) {
+      const seeded = feeds.find(candidate => candidate.url === feed.url)!
       expect(feed).toMatchObject({
         title: seeded.title,
         topic_name: `${seeded.title} (${seeded.url})`,
@@ -156,51 +158,52 @@ describe('0080-00-01a-staging-rss-feeds applied to the database', () => {
         enablement_creator: 'rss-feed-auto-updater',
       })
     }
-    expect(await countSeededRows(tx, newFeeds)).toEqual(expectedCounts)
+    expect(await countSeededRows(tx, feeds)).toEqual(expectedCounts)
   })
 
   it('changes no row when applied a second time', async () => {
     await using tx = await beginRolledBackSeedTransaction()
     await applySeedSql(tx, stagingSql)
-    const firstFeeds = await readSeededFeeds(tx, newUrls)
-    expect(await countSeededRows(tx, newFeeds)).toEqual(expectedCounts)
+    const firstFeeds = await readSeededFeeds(tx, feedUrls)
+    expect(await countSeededRows(tx, feeds)).toEqual(expectedCounts)
 
     await applySeedSql(tx, stagingSql)
 
-    expect(await countSeededRows(tx, newFeeds)).toEqual(expectedCounts)
-    expect(await readSeededFeeds(tx, newUrls)).toEqual(firstFeeds)
+    expect(await countSeededRows(tx, feeds)).toEqual(expectedCounts)
+    expect(await readSeededFeeds(tx, feedUrls)).toEqual(firstFeeds)
   })
 
   it('leaves a feed that already exists for the same natural keys untouched', async () => {
-    // The test database starts with the dev seed's Cloudflare Blog feed (same slug, extra alias).
     await using tx = await beginRolledBackSeedTransaction()
-    const before = await readSeededFeeds(tx, urls)
+    const existingFeed = { ...feeds[0]!, ids: createStagingRssFeedFixture().ids }
+    await applySeedSql(tx, generateStagingRssFeedsSQL('staging', [existingFeed]))
+    const before = await readSeededFeeds(tx, feedUrls)
 
     await applySeedSql(tx, stagingSql)
 
-    const after = await readSeededFeeds(tx, urls)
-    expect(after.map(feed => feed.url)).toEqual(sortedUrls)
+    const after = await readSeededFeeds(tx, feedUrls)
+    expect(after.map(feed => feed.url)).toEqual(feedUrls.toSorted())
     expect(after.filter(feed => before.some(existing => existing.url === feed.url))).toEqual(before)
     expect(after.every(feed => feed.is_enabled && feed.is_discoverable)).toBe(true)
-    expect(await countSeededRows(tx, STAGING_RSS_FEEDS)).toMatchObject({
-      topics: 3,
-      aliases: 3,
-      feeds: 3,
+    expect(await countSeededRows(tx, feeds)).toMatchObject({
+      topics: 2,
+      aliases: 2,
+      feeds: 2,
     })
   })
 
   it('keeps a feed disabled by a later enablement change disabled when reapplied', async () => {
     await using tx = await beginRolledBackSeedTransaction()
     await applySeedSql(tx, stagingSql)
-    await appendEnablementChange(tx, GUARDIAN_URL, false)
+    await appendEnablementChange(tx, feeds[0]!.url, false)
 
     await applySeedSql(tx, stagingSql)
 
-    const feeds = await readSeededFeeds(tx, newUrls)
-    expect(feeds.map(feed => [feed.url, feed.is_enabled])).toEqual(
-      newUrls.toSorted().map(url => [url, url !== GUARDIAN_URL]),
+    const storedFeeds = await readSeededFeeds(tx, feedUrls)
+    expect(storedFeeds.map(feed => [feed.url, feed.is_enabled])).toEqual(
+      feedUrls.toSorted().map(url => [url, url !== feeds[0]!.url]),
     )
-    expect(await countSeededRows(tx, newFeeds)).toEqual({
+    expect(await countSeededRows(tx, feeds)).toEqual({
       ...expectedCounts,
       enablementChanges: 3,
     })
@@ -208,19 +211,19 @@ describe('0080-00-01a-staging-rss-feeds applied to the database', () => {
 
   it('adds no topic or alias for a URL whose active feed belongs to another topic', async () => {
     await using tx = await beginRolledBackSeedTransaction()
-    const guardian = newFeeds.find(feed => feed.url === GUARDIAN_URL)!
-    const { topicSlug } = await insertActiveFeedUnderOtherTopic(tx, guardian)
+    const occupiedFeed = feeds[0]!
+    const { topicSlug } = await insertActiveFeedUnderOtherTopic(tx, occupiedFeed)
 
     await applySeedSql(tx, stagingSql)
 
-    const feeds = await readSeededFeeds(tx, newUrls)
-    expect(feeds.map(feed => feed.url)).toEqual(newUrls.toSorted())
-    expect(feeds.find(feed => feed.url === GUARDIAN_URL)).toMatchObject({
+    const storedFeeds = await readSeededFeeds(tx, feedUrls)
+    expect(storedFeeds.map(feed => feed.url)).toEqual(feedUrls.toSorted())
+    expect(storedFeeds.find(feed => feed.url === feeds[0]!.url)).toMatchObject({
       slug: topicSlug,
       is_enabled: false,
     })
     // Only the other feed is seeded: no orphan topic or alias, and no second feed for the URL.
-    expect(await countSeededRows(tx, [guardian])).toEqual({
+    expect(await countSeededRows(tx, [occupiedFeed])).toEqual({
       hostnames: 1,
       urls: 1,
       topics: 0,
@@ -229,7 +232,7 @@ describe('0080-00-01a-staging-rss-feeds applied to the database', () => {
       enablementChanges: 0,
       discoverabilityChanges: 0,
     })
-    expect(feeds.find(feed => feed.url === QUANTA_URL)).toMatchObject({
+    expect(storedFeeds.find(feed => feed.url === feeds[1]!.url)).toMatchObject({
       is_enabled: true,
       is_discoverable: true,
     })

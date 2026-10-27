@@ -109,7 +109,7 @@ export async function updateMemberRole(
 
   // Free any agent prompt slots when demoting a moderator to a regular member
   if (shouldDeactivatePrompts) {
-    void enqueueOnCommunityAgentPromptsDeactivated(currentUserId, targetUserId, communityId)
+    await enqueueOnCommunityAgentPromptsDeactivated(currentUserId, targetUserId, communityId)
   }
   return { roleChangeEmailEnqueue }
 }

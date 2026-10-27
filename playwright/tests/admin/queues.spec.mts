@@ -1,9 +1,9 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 test.describe('Queue Dashboard', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
     await navigateTo(page, '/admin/queues')
@@ -13,10 +13,10 @@ test.describe('Queue Dashboard', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Queues')
   })
 
-  test('glidemq dashboard link points to /admin/mq-dashboard', async ({ page }) => {
+  test('glidemq dashboard link renews before opening the dashboard', async ({ page }) => {
     const link = page.getByTestId('glidemq-dashboard-link')
     await expect(link).toBeVisible({ timeout: 10_000 })
-    await expect(link).toHaveAttribute('href', '/admin/mq-dashboard')
+    await expect(link).toHaveAttribute('href', '/session-renewal?next=%2Fadmin%2Fmq-dashboard')
     await expect(link).toHaveAttribute('target', '_blank')
   })
 
@@ -158,7 +158,7 @@ test.describe('Queue Dashboard', () => {
 })
 
 test.describe('Queue Dashboard — kill switch error states', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('shows retry button for AI Agents section when queue stats endpoint fails', async ({
     page,

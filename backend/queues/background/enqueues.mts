@@ -18,6 +18,16 @@ type BackgroundEnqueueOptions<TCallContext = unknown> = Pick<
   CreateEnqueueFunctionOptions<string, TCallContext>,
   'decorateError' | 'retry'
 >
+export type BackgroundBulkEnqueueOptions<TData, TCallContext = unknown> = Pick<
+  CreateBulkEnqueueFunctionOptions<unknown, TData, string, TCallContext>,
+  'decorateError' | 'retry' | 'queuePrefix' | 'reactivatedData'
+> &
+  Partial<
+    Pick<
+      CreateBulkEnqueueFunctionOptions<unknown, TData, string, TCallContext>,
+      'queue' | 'queueName'
+    >
+  >
 type Enqueue<TData> = (
   data: TData,
   perCallOpts?: Partial<JobOptions>,
@@ -89,7 +99,7 @@ export function createBackgroundBulkEnqueue<
 >(
   job: BackgroundJobDefinition<TData, true> & { sensitive: true },
   buildJob: TBuildJob,
-  options?: BackgroundEnqueueOptions<TCallContext>,
+  options?: BackgroundBulkEnqueueOptions<TData, TCallContext>,
   ...contract: (TBuildJob extends (
     input: Parameters<TBuildJob>[0],
     index: number,
@@ -105,7 +115,7 @@ export function createBackgroundBulkEnqueue<
 >(
   job: BackgroundJobDefinition<TData, false>,
   buildJob: TBuildJob,
-  options?: BackgroundEnqueueOptions<TCallContext>,
+  options?: BackgroundBulkEnqueueOptions<TData, TCallContext>,
   ...contract: (TBuildJob extends (
     input: Parameters<TBuildJob>[0],
     index: number,
@@ -125,14 +135,14 @@ export function createBackgroundBulkEnqueue<
 >(
   job: BackgroundJobDefinition<TData>,
   buildJob: TBuildJob,
-  options: BackgroundEnqueueOptions = {},
+  options: BackgroundBulkEnqueueOptions<unknown> = {},
   ..._contract: unknown[]
 ) {
   if (job.sensitive) {
     return createVerifiedBulkEnqueue({
       ...options,
-      queue: background,
-      queueName: BACKGROUND_QUEUE_NAME,
+      queue: options.queue ?? background,
+      queueName: options.queueName ?? BACKGROUND_QUEUE_NAME,
       jobName: job.name,
       defaults: job.options,
       buildJob: buildJob as never,
@@ -141,8 +151,8 @@ export function createBackgroundBulkEnqueue<
   }
   return createVerifiedBulkEnqueue({
     ...options,
-    queue: background,
-    queueName: BACKGROUND_QUEUE_NAME,
+    queue: options.queue ?? background,
+    queueName: options.queueName ?? BACKGROUND_QUEUE_NAME,
     jobName: job.name,
     defaults: job.options,
     buildJob: buildJob as never,

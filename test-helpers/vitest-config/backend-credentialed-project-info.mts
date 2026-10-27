@@ -1,4 +1,5 @@
 import { backendCredentialedTestProjects } from './backend-credentialed-projects.mts'
+import { vitestProjectNames } from './vitest-project-names.mts'
 
 /**
  * The names of the credentialed Vitest projects that probe a real external provider, read from the
@@ -7,12 +8,7 @@ import { backendCredentialedTestProjects } from './backend-credentialed-projects
  * the names, and it loads under plain Node type stripping because neither module touches
  * `vitest.config.mts`'s DB/Valkey aliasing.
  */
-export const backendCredentialedProjectNames: readonly string[] =
-  backendCredentialedTestProjects.map(configuration => {
-    const test =
-      typeof configuration === 'object' && 'test' in configuration ? configuration.test : undefined
-    if (typeof test?.name !== 'string') {
-      throw new TypeError('Credentialed Vitest projects need a string name')
-    }
-    return test.name
-  })
+export const backendCredentialedProjectNames: readonly string[] = vitestProjectNames(
+  backendCredentialedTestProjects,
+  'Credentialed',
+)

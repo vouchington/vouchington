@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId, getMembershipSourceIdByMembershipId } from '@services/memberships'
 import {
   createTestNativeMembershipProviderProduct,
@@ -11,7 +12,6 @@ import {
   countTestMicrosoftStoreVerifications,
   countTestPendingMicrosoftStoreVerifications,
   getTestPendingMicrosoftStoreVerification,
-  makeTestMembershipVerificationDue,
 } from '@voucha/test-helpers/microsoft-store-memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
@@ -25,7 +25,7 @@ describe('Microsoft Store source recovery', () => {
     vi.unstubAllEnvs()
   })
 
-  it('reuses a deferred source recovery verification across hourly sweeps', async () => {
+  it('reuses pending work, skips a same-hour terminal replay, and admits a later observation', async () => {
     const fixture = await createFixture()
     const initial = await createMembershipVerification({
       userId: fixture.user.id,
@@ -43,29 +43,48 @@ describe('Microsoft Store source recovery', () => {
     vi.spyOn(Date, 'now').mockImplementation(() => now)
     const unavailable = unavailableClient()
 
-    await reconcileMicrosoftStoreSource({ sourceId, client: unavailable })
+    await reconcileMicrosoftStoreSource({ sourceId })
     const recoveryContext = { userId: fixture.user.id, applicationId: fixture.applicationId }
-    const firstPendingId = await getTestPendingMicrosoftStoreVerification(recoveryContext)
-    if (!firstPendingId) throw new Error('Microsoft Store recovery verification was not deferred')
+    const firstPendingId = await expectQueuedRecoveryVerification(recoveryContext)
+    await expect(
+      processMicrosoftStoreMembershipVerification(firstPendingId, { client: unavailable }),
+    ).rejects.toThrow('Microsoft Store API request failed with 503')
     await expect(getMembershipVerification(fixture.user.id, firstPendingId)).resolves.toMatchObject(
-      { status: 'pending' },
+      {
+        status: 'pending',
+      },
     )
 
-    now += 60 * 60 * 1000
-    await reconcileMicrosoftStoreSource({ sourceId, client: unavailable })
+    await reconcileMicrosoftStoreSource({ sourceId })
+    await expect(
+      processMicrosoftStoreMembershipVerification(firstPendingId, { client: unavailable }),
+    ).rejects.toThrow('Microsoft Store API request failed with 503')
 
     await expect(getTestPendingMicrosoftStoreVerification(recoveryContext)).resolves.toBe(
       firstPendingId,
     )
+    await expect(getMembershipVerification(fixture.user.id, firstPendingId)).resolves.toMatchObject(
+      { status: 'pending', reason_code: null },
+    )
     await expect(countTestPendingMicrosoftStoreVerifications(recoveryContext)).resolves.toBe(1)
-    expect(unavailable.queryCollections).toHaveBeenCalledOnce()
+    expect(unavailable.queryCollections).toHaveBeenCalledTimes(2)
 
-    await makeTestMembershipVerificationDue(firstPendingId)
     await processMicrosoftStoreMembershipVerification(firstPendingId, {
       client: fixture.activeClient,
     })
+    await (await memberships.getJob(firstPendingId))?.remove()
+    await reconcileMicrosoftStoreSource({ sourceId })
+    await expect(memberships.getJob(firstPendingId)).resolves.toBeNull()
+    await expect(countTestMicrosoftStoreVerifications(recoveryContext)).resolves.toBe(2)
+
     now += 60 * 60 * 1000
-    await reconcileMicrosoftStoreSource({ sourceId, client: fixture.activeClient })
+    await reconcileMicrosoftStoreSource({ sourceId })
+    const laterPendingId = await expectQueuedRecoveryVerification(recoveryContext)
+    expect(laterPendingId).not.toBe(firstPendingId)
+    await processMicrosoftStoreMembershipVerification(laterPendingId, {
+      client: fixture.activeClient,
+    })
+    await (await memberships.getJob(laterPendingId))?.remove()
 
     await expect(countTestPendingMicrosoftStoreVerifications(recoveryContext)).resolves.toBe(0)
     await expect(countTestMicrosoftStoreVerifications(recoveryContext)).resolves.toBe(3)
@@ -95,7 +114,13 @@ describe('Microsoft Store source recovery', () => {
     })
     const queryCollections = vi.spyOn(renewedClient, 'queryCollections')
 
-    await reconcileMicrosoftStoreSource({ sourceId, client: renewedClient })
+    await reconcileMicrosoftStoreSource({ sourceId })
+    const recoveryId = await expectQueuedRecoveryVerification({
+      userId: fixture.user.id,
+      applicationId: fixture.applicationId,
+    })
+    await processMicrosoftStoreMembershipVerification(recoveryId, { client: renewedClient })
+    await (await memberships.getJob(recoveryId))?.remove()
 
     expect(queryCollections).toHaveBeenCalledOnce()
     await expect(getMembershipByUserId(fixture.user.id)).resolves.toMatchObject({
@@ -109,6 +134,20 @@ describe('Microsoft Store source recovery', () => {
     ).resolves.toBe(2)
   })
 })
+
+async function expectQueuedRecoveryVerification(context: {
+  userId: string
+  applicationId: string
+}): Promise<string> {
+  const verificationId = await getTestPendingMicrosoftStoreVerification(context)
+  if (!verificationId) throw new Error('Microsoft Store recovery verification was not admitted')
+  await expect(memberships.getJob(verificationId)).resolves.toMatchObject({
+    id: verificationId,
+    name: 'processMembershipVerification',
+    data: { verificationId },
+  })
+  return verificationId
+}
 
 async function createFixture(
   options: { mappingSkuId?: string | null; authoritativeSkuId?: string } = {},

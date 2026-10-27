@@ -13,8 +13,12 @@ describe('staging hourly wake alignment', () => {
   it('registers every staging scheduler as a cron at minute :00 and leaves aligned crons unchanged', async () => {
     const baseline = await captureRegisteredRepeats({ ENVIRONMENT: 'production' })
     const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
-    expect(baseline.size).toBe(84)
-    expect(staging.size).toBe(84)
+    const declaredSchedulerCount = SCHEDULED_JOB_MANIFESTS.reduce(
+      (count, manifest) => count + manifest.jobs.length,
+      0,
+    )
+    expect(baseline.size).toBe(declaredSchedulerCount)
+    expect(staging.size).toBe(declaredSchedulerCount)
     const notAtMinuteZero = [...staging]
       .filter(([, repeat]) => !isCronAtMinuteZero(repeat))
       .map(([key]) => key)

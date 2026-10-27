@@ -1,0 +1,4 @@
+export const LOGIN_CODE_LENGTH = 10
+export const LOGIN_CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+export const LOGIN_CODE_PATTERN = new RegExp(`^[A-Z2-7]{${LOGIN_CODE_LENGTH}}$`)
+export const LOGIN_CODE_INPUT_PATTERN = /^[A-Za-z2-7]*$/

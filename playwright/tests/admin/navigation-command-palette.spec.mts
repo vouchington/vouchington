@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 }
 
@@ -51,7 +51,7 @@ async function expectPageHeading(page: Parameters<typeof navigateTo>[0], name: s
 }
 
 test.describe('Admin command palette navigation', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT)

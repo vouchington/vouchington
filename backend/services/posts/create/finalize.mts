@@ -3,15 +3,12 @@ import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { invalidate } from '@services/entity-cache'
 import { applyPostCommitSideEffects } from '../create/post-commit-side-effects.mts'
 import type { CreatePostInput, Post } from '../types.mts'
-import type { PrivateUser } from '@services/users/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import onError from '@modules/on-error'
 
 type FinalizePreparedPostInput = {
   communityReviews: CommunityPostReview[]
-  creator: PrivateUser
   post: Post
-  postType: NonNullable<CreatePostInput['post_type']>
   resolvedUrlHostnameId: string | undefined
   resolvedUrlStrings: string[]
   updates: CreatePostInput
@@ -20,15 +17,7 @@ type FinalizePreparedPostInput = {
 export async function finalizePreparedPost(
   input: FinalizePreparedPostInput,
 ): Promise<{ post: Post; communityReviews: CommunityPostReview[] }> {
-  const {
-    communityReviews,
-    creator,
-    post,
-    postType,
-    resolvedUrlHostnameId,
-    resolvedUrlStrings,
-    updates,
-  } = input
+  const { communityReviews, post, resolvedUrlHostnameId, resolvedUrlStrings, updates } = input
   if (resolvedUrlStrings.length > 0) {
     await invalidate.urls(...resolvedUrlStrings)
     if (updates.url_id && resolvedUrlHostnameId) {
@@ -40,11 +29,6 @@ export async function finalizePreparedPost(
         .catch(onError)
     }
   }
-  await applyPostCommitSideEffects({
-    creator,
-    post,
-    postType,
-    updates,
-  })
+  await applyPostCommitSideEffects({ post })
   return { post, communityReviews }
 }

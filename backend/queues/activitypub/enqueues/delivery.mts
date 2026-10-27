@@ -1,4 +1,8 @@
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  createBackgroundBulkEnqueue,
+  createBackgroundEnqueue,
+  type BackgroundBulkEnqueueOptions,
+} from '@queues/background/enqueues'
 import type {
   DeliverActivityData,
   DistributeActivityData,
@@ -9,19 +13,38 @@ import {
 } from '@queues/background/enqueues/activitypub-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import { v5 as uuidv5 } from 'uuid'
+import { resumeDistributionPage } from './distribution-recovery.mts'
 
 export type { DeliverActivityData, DistributeActivityData }
 
 export type DistributeActivityInput = DistributeActivityData
 
+// GlideMQ reserves ':' in job IDs. The identity is activity plus the page's starting cursor.
+export function distributionPageJobId(data: Pick<DistributeActivityData, 'activityId' | 'cursor'>) {
+  return `activitypub-distribute__${data.activityId}__${data.cursor ?? 'start'}`
+}
+
 const enqueueDeliverActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DELIVER_ACTIVITY_JOB)
 
 // Bulk fan-out for a batch of social actions (e.g. every relation in one upsertEntityRelation
 // call): one addBulk round-trip per batch, not one enqueue per input.
-export const enqueueBulkDistributeActivity = createBackgroundBulkEnqueue(
-  ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
-  (input: DistributeActivityInput) => ({ data: input }),
-)
+type DistributionBulkQueue = Pick<
+  BackgroundBulkEnqueueOptions<DistributeActivityData>,
+  'queue' | 'queueName' | 'queuePrefix'
+>
+
+export function createBulkDistributeActivityEnqueue(options: DistributionBulkQueue = {}) {
+  return createBackgroundBulkEnqueue(
+    ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
+    (input: DistributeActivityInput) => ({
+      data: input,
+      opts: { jobId: distributionPageJobId(input) },
+    }),
+    { ...options, reactivatedData: resumeDistributionPage },
+  )
+}
+
+export const enqueueBulkDistributeActivity = createBulkDistributeActivityEnqueue()
 
 // One job per follower inbox. Callers should dedupe inboxUrl within a batch before calling this —
 // see @workers/activitypub's distributeActivity processor — since the `simple`
@@ -39,14 +62,16 @@ export const enqueueBulkDeliverActivity = createBackgroundBulkEnqueue(
   }),
 )
 
-// A distribute page runs under a durable lease, so concurrent holders of one activity are
-// already excluded; the domain-wide group of 10 caps the rest.
 // Fans a single social action (Follow / Like / Undo-Like) out to the acting user's remote
 // followers (Phase C4). The caller supplies the activity identity from durable PostgreSQL state,
 // so every fan-out job and retry shares the same AS2 activity id.
-export const enqueueDistributeActivity = createBackgroundEnqueue(
-  ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
-)
+const enqueueDistributeActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB)
+
+export function enqueueDistributeActivity(data: DistributeActivityInput): EnqueueReturnType {
+  return enqueueDistributeActivityJob(data, {
+    jobId: distributionPageJobId(data),
+  })
+}
 
 export type DeliverAcceptActivityInput = Pick<
   Extract<DeliverActivityData, { activityType: 'Accept' }>,
@@ -56,6 +81,13 @@ export type DeliverAcceptActivityInput = Pick<
 // Namespace for deriving Accept activity ids. Accept ids are already on the wire once sent, so
 // this value is part of the federation contract and must never change.
 const ACCEPT_ACTIVITY_ID_NAMESPACE = 'c3a4ee5c-0137-4c31-a396-53fe5b957c5b'
+const UNDO_FOLLOW_ACTIVITY_ID_NAMESPACE = 'ca584341-8398-4ba6-99dc-fd3dc3394c2b'
+
+// One Undo identity per Follow generation. A deleted relation retains the original Follow id,
+// so both direct admission and recovery reconstruct the same protocol activity after a crash.
+export function getUndoFollowActivityId(originalFollowActivityId: string): string {
+  return uuidv5(originalFollowActivityId, UNDO_FOLLOW_ACTIVITY_ID_NAMESPACE)
+}
 
 /**
  * The Accept's own activity id, derived from the local user it comes from and the inbound Follow it

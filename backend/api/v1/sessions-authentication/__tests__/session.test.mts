@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 
-import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
+import { nextTestRequestIp } from '@voucha/test-helpers/api/server'
+import { createNativeRequest as createRequest } from '@voucha/test-helpers/native-api-request'
 
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
@@ -58,8 +60,13 @@ describe('Session Routes', () => {
       const request = createRequest()
       const did = v7()
       const sid = v7()
-      const uid = v7()
-      const { sessionToken } = await createDeviceAndSessionTokens({ did, sid, uid })
+      const { id: uid } = await createTestUserDirect()
+      const { sessionToken } = await createDeviceAndSessionTokens({
+        did,
+        sid,
+        uid,
+        deviceClass: 'attested',
+      })
 
       const response = await request
         .patch('/api/v1/session')

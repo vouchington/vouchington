@@ -1,3 +1,4 @@
+import { lockBlueskyInitiatingSession } from './initiating-session.mts'
 import { read, beginTransaction, write, type QueryOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -44,9 +45,41 @@ async function connectBlueskyAccountInTransaction(
   linkAuthorizationId: string,
   query: TransactionQuery,
 ): Promise<void> {
+  const actorSessionId = await lockBlueskyConnectionAdmission(
+    userId,
+    did,
+    linkAuthorizationId,
+    query,
+  )
+  return connectBlueskyAccountInLockedTransaction(
+    userId,
+    did,
+    handle,
+    linkAuthorizationId,
+    query,
+    actorSessionId,
+  )
+}
+
+async function lockBlueskyConnectionAdmission(
+  userId: string,
+  did: string,
+  linkAuthorizationId: string,
+  query: TransactionQuery,
+): Promise<string | null> {
+  const actorSessionId = await lockBlueskyInitiatingSession(userId, linkAuthorizationId, query)
+  await lockBlueskyConnectionOwnerAndAuthorization(userId, did, linkAuthorizationId, query)
+  return actorSessionId
+}
+
+async function lockBlueskyConnectionOwnerAndAuthorization(
+  userId: string,
+  did: string,
+  linkAuthorizationId: string,
+  query: TransactionQuery,
+): Promise<void> {
   await lockBlueskyLinkOwner(userId, did, query)
   await lockAuthorization(linkAuthorizationId, userId, query)
-  return connectBlueskyAccountInLockedTransaction(userId, did, handle, linkAuthorizationId, query)
 }
 
 async function lockBlueskyLinkOwner(

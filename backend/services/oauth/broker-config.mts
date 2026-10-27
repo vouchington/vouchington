@@ -1,6 +1,6 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import createHttpError from 'http-errors'
-import { getConfiguredOAuthProviders } from './config.mts'
+import { getConfiguredOAuthProviders } from '@services/oauth-accounts/configuration'
 import type { OAuthProvider } from './providers.mts'
 import { readGoogleClientSecret } from '@voucha/config'
 
@@ -13,7 +13,8 @@ export const BROKER_OAUTH_PROVIDERS = [
   'google',
 ] as const
 export const BROKER_CALLBACK_MODES = ['web', 'native'] as const
-export const BROKER_PURPOSES = ['authenticate', 'connect'] as const
+const BROKER_LOGIN_PURPOSES = ['authenticate', 'connect'] as const
+export const BROKER_PURPOSES = ['authenticate', 'connect', 're_auth'] as const
 
 export type BrokerOAuthProvider = (typeof BROKER_OAUTH_PROVIDERS)[number]
 export type BrokerCallbackMode = (typeof BROKER_CALLBACK_MODES)[number]
@@ -70,6 +71,14 @@ export function isOAuthAuthorizationBrokerEnabled(
   )
 }
 
+/** Apple and Google use their nonce-bound SDK assertion path for fresh reauthentication. */
+export function isOAuthReAuthBrokerEnabled(
+  provider: BrokerOAuthProvider,
+  configuredProviders: readonly OAuthProvider[] = getConfiguredOAuthProviders(),
+): boolean {
+  return provider !== 'google' && configuredProviders.includes(provider)
+}
+
 export function assertBrokerOAuthProvider(value: string): BrokerOAuthProvider {
   if (!BROKER_OAUTH_PROVIDERS.includes(value as BrokerOAuthProvider)) {
     throw createHttpError(404, 'OAuth authorization broker provider is unavailable')
@@ -84,7 +93,7 @@ export function getOAuthAuthorizationBrokerCapabilities(
   {
     version: 1
     modes: Record<BrokerCallbackMode, boolean>
-    purposes: readonly BrokerPurpose[]
+    purposes: readonly (typeof BROKER_LOGIN_PURPOSES)[number][]
   }
 > {
   return BROKER_OAUTH_PROVIDERS.reduce<
@@ -93,7 +102,7 @@ export function getOAuthAuthorizationBrokerCapabilities(
       {
         version: 1
         modes: Record<BrokerCallbackMode, boolean>
-        purposes: readonly BrokerPurpose[]
+        purposes: readonly (typeof BROKER_LOGIN_PURPOSES)[number][]
       }
     >
   >(
@@ -104,7 +113,7 @@ export function getOAuthAuthorizationBrokerCapabilities(
           web: isOAuthAuthorizationBrokerEnabled(provider, 'web', configuredProviders),
           native: isOAuthAuthorizationBrokerEnabled(provider, 'native', configuredProviders),
         },
-        purposes: BROKER_PURPOSES,
+        purposes: BROKER_LOGIN_PURPOSES,
       }
       return capabilities
     },
@@ -113,7 +122,7 @@ export function getOAuthAuthorizationBrokerCapabilities(
       {
         version: 1
         modes: Record<BrokerCallbackMode, boolean>
-        purposes: readonly BrokerPurpose[]
+        purposes: readonly (typeof BROKER_LOGIN_PURPOSES)[number][]
       }
     >,
   )

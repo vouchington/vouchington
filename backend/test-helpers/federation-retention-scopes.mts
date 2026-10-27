@@ -10,20 +10,14 @@ import type { FederationRetentionResult } from '../services/data-retention/clean
 /** Only the fixture adapter adds owner predicates; real production SQL executes on PostgreSQL. */
 export function scopeFederationRetentionQueryForTest(
   query: TransactionQuery,
-  source: 'followers' | 'inbox' | 'outbound',
+  source: 'followers' | 'inbox',
   ids: readonly string[],
 ): TransactionQuery {
   const selector =
     source === 'followers'
       ? '/* listFollowerDistributionRetentionCandidates */'
       : '/* listActivityPubReplayRetentionCandidates */'
-  const table =
-    source === 'followers'
-      ? 'follower_distributions'
-      : source === 'inbox'
-        ? 'activitypub_inbox_activities'
-        : 'activitypub_distribution_work_items'
-  const id = source === 'outbound' ? 'activity_id' : 'id'
+  const table = source === 'followers' ? 'follower_distributions' : 'activitypub_inbox_activities'
   return new Proxy(query, {
     apply(target, thisArgument, args: Parameters<TransactionQuery>) {
       const [statement, values] = args
@@ -35,7 +29,7 @@ export function scopeFederationRetentionQueryForTest(
         ) {
           throw new Error('Federation retention selector lost its reviewed table/order/limit')
         }
-        const where = ` AND ${id} = ANY($3::uuid[]) ORDER BY`
+        const where = ` AND id = ANY($3::uuid[]) ORDER BY`
         return Reflect.apply(target, thisArgument, [
           statement.replace(' ORDER BY', where),
           [...(values ?? []), ids],
@@ -81,7 +75,6 @@ export async function cleanupFederationRetentionForTest(options: {
   return {
     followerDistributions,
     inboxReplay: empty(),
-    outboundReplay: empty(),
     terminalFollowIdentities: { deleted: 0, hasMore: false },
     terminalLikeIdentities: { deleted: 0, hasMore: false },
   }
@@ -89,7 +82,6 @@ export async function cleanupFederationRetentionForTest(options: {
 
 /** Real SQL pages, narrowed to this test's identities and kept in its rollback-only transaction. */
 export async function cleanupActivityPubReplayLedgerForTest(
-  kind: 'inbox' | 'outbound',
   options: {
     batchSize: number
     maxBatches: number
@@ -103,13 +95,13 @@ export async function cleanupActivityPubReplayLedgerForTest(
   )
   const query = scopeFederationRetentionQueryForTest(
     options.borrowedQuery,
-    kind,
+    'inbox',
     options.scope.activityIds,
   )
   let deleted = 0
   let page: ReplayCleanupPage = { deleted: 0, hasMore: false, continuationPosition: null }
   for (let batch = 0; batch < options.maxBatches; batch += 1) {
-    page = await cleanupActivityPubReplayPage(query, kind, { batchSize: options.batchSize, cutoff })
+    page = await cleanupActivityPubReplayPage(query, { batchSize: options.batchSize, cutoff })
     deleted += page.deleted
     if (!page.hasMore) break
   }

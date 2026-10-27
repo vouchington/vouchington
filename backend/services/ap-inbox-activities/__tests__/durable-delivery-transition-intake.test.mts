@@ -41,6 +41,11 @@ describe('ActivityPub inbox intake database failure', () => {
       expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(false)
       await expect(acceptActivityPubInboxDelivery(envelope)).resolves.toMatchObject({
         outcome: 'applied',
+        wasInserted: true,
+      })
+      await expect(acceptActivityPubInboxDelivery(envelope)).resolves.toMatchObject({
+        outcome: 'applied',
+        wasInserted: false,
       })
       expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(true)
     } finally {

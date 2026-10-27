@@ -16,8 +16,6 @@ import {
 } from './seq-scan-baseline.mts'
 import { loadLatestPairedResults } from './paired-results.mts'
 
-export { getExplainResultIdentity } from './seq-scan-baseline.mts'
-
 const OUTPUT_DIR = join(import.meta.dirname, 'output')
 
 export function getUserLabel(name: string): 'baseline' | 'heavy' {

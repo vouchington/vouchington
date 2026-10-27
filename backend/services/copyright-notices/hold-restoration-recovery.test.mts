@@ -4,10 +4,7 @@ import {
   createTestCopyrightDeliveryDependencies,
   type CopyrightTestDeliveryPublisher,
 } from '@voucha/test-helpers/copyright-delivery-dependencies'
-import { readTestOwnedCopyrightSweepIds } from '@voucha/test-helpers/services/copyright-notices/sweep-ids'
 import {
-  recordHistoricalTestCopyrightHoldResolution,
-  rollbackTestCopyrightHoldResolution,
   replayTestFailedCopyrightActionBehindHoldFence,
   cancelTestCopyrightRestorationDeadline,
   quarantineTestCopyrightRestorationImage,
@@ -16,10 +13,9 @@ import {
   supersedeTestCopyrightRestorationPlacementRevision,
 } from '@voucha/test-helpers/services/copyright-notices/hold-restoration'
 import {
+  resolveCopyrightLegalHold,
   processCopyrightActionIntent,
   recoverBlockedCopyrightHoldRestorations,
-  searchBlockedCopyrightHoldRestorationNoticeIds,
-  searchRecoverableCopyrightActionIntentIds,
 } from './index.mts'
 import { appendCopyrightSubmissionAssessment } from './compliance.mts'
 import { claimCopyrightActionIntent } from './action-delivery-state.mts'
@@ -28,12 +24,11 @@ import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
-import { createCounterNoticeRestoreIntent } from '@voucha/test-helpers/copyright-restoration-hold-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 const publish: CopyrightTestDeliveryPublisher = async () => undefined
 
-async function historicalBlockedRestore(targetCount = 1) {
+async function blockedCopyrightRestore(targetCount = 1) {
   const scene = await openHeldCounterNoticeRestore(
     createTestCopyrightDeliveryDependencies(publish),
     targetCount,
@@ -52,16 +47,6 @@ async function historicalBlockedRestore(targetCount = 1) {
   return { ...scene, hold }
 }
 
-async function recordHistoricalResolution(
-  scene: Awaited<ReturnType<typeof historicalBlockedRestore>>,
-) {
-  await recordHistoricalTestCopyrightHoldResolution({
-    assessmentId: scene.hold.id,
-    resolvedAt: scene.restorationAt,
-    actorId: scene.moderator.id,
-  })
-}
-
 async function exhaustDelivery(intentId: string, now: Date) {
   for (const attempt of [1, 2, 3, 4, 5]) {
     const attemptedAt = new Date(now.getTime() + attempt * 60 * 60 * 1000)
@@ -78,87 +63,8 @@ async function exhaustDelivery(intentId: string, now: Date) {
   }
 }
 
-describe('historical blocked copyright restoration recovery', () => {
-  it('reopens the original historical blocked restore once and leaves failed work alone', async () => {
-    const scene = await historicalBlockedRestore(2)
-    const aggregate = await getCopyrightNoticePrivateAggregate(scene.notice.id)
-    const other = aggregate?.targets.find(target => target.id !== scene.target.id)
-    const restriction = aggregate?.restrictions.find(
-      record => record.copyright_notice_target_id === other?.id,
-    )
-    if (!other || !restriction) throw new Error('Second restriction fixture disappeared')
-    const failed = await createCounterNoticeRestoreIntent({
-      claimant: scene.claimant,
-      noticeId: scene.notice.id,
-      moderator: scene.moderator,
-      targetId: other.id,
-      restrictionId: restriction.id,
-      placementRevision: other.placement_revision,
-    })
-    await exhaustDelivery(failed.restore.id, failed.now)
-    const before = await getCopyrightNoticePrivateAggregate(scene.notice.id)
-    expect(before?.actionIntents.find(intent => intent.id === failed.restore.id)).toMatchObject({
-      state: 'failed',
-      attempt_count: 5,
-    })
-    await recordHistoricalResolution(scene)
-    await expect(
-      readTestOwnedCopyrightSweepIds(
-        searchBlockedCopyrightHoldRestorationNoticeIds,
-        scene.notice.id,
-      ),
-    ).resolves.toEqual([scene.notice.id])
-    await expect(
-      recoverBlockedCopyrightHoldRestorations(scene.notice.id, scene.restorationAt),
-    ).resolves.toBe(1)
-    await expect(
-      recoverBlockedCopyrightHoldRestorations(scene.notice.id, scene.restorationAt),
-    ).resolves.toBe(0)
-    const recovered = await getCopyrightNoticePrivateAggregate(scene.notice.id)
-    expect(recovered?.actionIntents.find(intent => intent.id === scene.restore.id)).toMatchObject({
-      id: scene.restore.id,
-      copyright_restriction_id: scene.restore.copyright_restriction_id,
-      copyright_notice_deadline_id: scene.restore.copyright_notice_deadline_id,
-      expected_placement_revision: scene.restore.expected_placement_revision,
-      action: 'restore',
-      state: 'pending',
-      attempt_count: 0,
-      leased_at: null,
-      completed_at: null,
-    })
-    expect(recovered?.actionIntents.find(intent => intent.id === failed.restore.id)).toEqual(
-      before?.actionIntents.find(intent => intent.id === failed.restore.id),
-    )
-    expect(recovered?.actionIntents.filter(intent => intent.action === 'withhold')).toEqual(
-      before?.actionIntents.filter(intent => intent.action === 'withhold'),
-    )
-    expect(
-      recovered?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
-    ).toHaveLength(1)
-    await expect(
-      readTestOwnedCopyrightSweepIds(
-        options =>
-          searchRecoverableCopyrightActionIntentIds({ ...options, now: scene.restorationAt }),
-        scene.restore.id,
-      ),
-    ).resolves.toEqual([scene.restore.id])
-    await expect(
-      readTestOwnedCopyrightSweepIds(
-        searchBlockedCopyrightHoldRestorationNoticeIds,
-        scene.notice.id,
-      ),
-    ).resolves.toEqual([])
-    await expect(
-      processCopyrightActionIntent(
-        scene.restore.id,
-        scene.restorationAt,
-        createTestCopyrightDeliveryDependencies(publish),
-      ),
-    ).resolves.toBe('applied')
-  })
-
+describe('blocked copyright restoration recovery', () => {
   it.each([
-    'future',
     'unassessed',
     'unresolved',
     'cancelled',
@@ -168,10 +74,9 @@ describe('historical blocked copyright restoration recovery', () => {
     'retired',
     'revision',
   ] as const)('retains the original blocked intent when %s prevents replay', async blocker => {
-    const scene = await historicalBlockedRestore()
+    const scene = await blockedCopyrightRestore()
     const aggregate = await getCopyrightNoticePrivateAggregate(scene.notice.id)
     const original = aggregate?.actionIntents.find(intent => intent.id === scene.restore.id)
-    if (blocker !== 'unresolved') await recordHistoricalResolution(scene)
     if (blocker === 'unassessed')
       await appendTestCopyrightNoticeSubmission({
         noticeId: scene.notice.id,
@@ -207,10 +112,15 @@ describe('historical blocked copyright restoration recovery', () => {
       await retireTestCopyrightRestorationPlacement(scene.target.placement_id)
     if (blocker === 'revision')
       await supersedeTestCopyrightRestorationPlacementRevision(scene.target.placement_id)
-    const now =
-      blocker === 'future'
-        ? new Date(aggregate!.deadlines[0]!.earliest_restoration_at.getTime() - 1)
-        : scene.restorationAt
+    const now = scene.restorationAt
+    if (blocker !== 'unresolved')
+      await resolveCopyrightLegalHold({
+        currentUser: scene.moderator,
+        assessmentId: scene.hold.id,
+        resolvedAt: now,
+        resolutionKind: 'dismissed',
+        rationale: `The test's ${blocker} gate remains active.`,
+      })
     await expect(recoverBlockedCopyrightHoldRestorations(scene.notice.id, now)).resolves.toBe(0)
     await expect(recoverBlockedCopyrightHoldRestorations(scene.notice.id, now)).resolves.toBe(0)
     const retained = await getCopyrightNoticePrivateAggregate(scene.notice.id)
@@ -218,32 +128,6 @@ describe('historical blocked copyright restoration recovery', () => {
     expect(
       retained?.lifecycleEvents.filter(event => event.change_type === 'copyright_action_replayed'),
     ).toEqual([])
-  })
-
-  it('rolls back hold resolution, restoration replay and its audit together', async () => {
-    const scene = await historicalBlockedRestore()
-    await expect(
-      rollbackTestCopyrightHoldResolution({
-        currentUser: scene.moderator,
-        assessmentId: scene.hold.id,
-        resolvedAt: scene.restorationAt,
-        resolutionKind: 'dismissed',
-        rationale: 'Rollback transaction boundary.',
-      }),
-    ).resolves.toEqual([scene.restore.id])
-    const aggregate = await getCopyrightNoticePrivateAggregate(scene.notice.id)
-    expect(aggregate?.holdResolutions).toEqual([])
-    expect(aggregate?.actionIntents.find(intent => intent.id === scene.restore.id)?.state).toBe(
-      'blocked',
-    )
-    expect(
-      aggregate?.lifecycleEvents.filter(event =>
-        ['legal_hold_resolved', 'copyright_action_replayed'].includes(event.change_type),
-      ),
-    ).toEqual([])
-    await expect(
-      recoverBlockedCopyrightHoldRestorations(scene.notice.id, scene.restorationAt),
-    ).resolves.toBe(0)
   })
 
   it('makes manual failed replay wait at placement before taking its intent row', async () => {

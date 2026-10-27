@@ -57,7 +57,7 @@ const EmailVerificationEmail: PreviewableEmailComponent<EmailVerificationEmailPr
   })()
 
 EmailVerificationEmail.PreviewProps = {
-  token: 'verify123',
+  token: 'ABCDEFG234',
 }
 
 async function renderEmailVerificationEmail(

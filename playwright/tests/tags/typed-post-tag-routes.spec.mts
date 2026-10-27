@@ -1,10 +1,22 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
-import { createTestPost } from '../../../backend/test-helpers/entities/create-test-entities.mts'
+import {
+  createTestPost,
+  createTestTopic,
+} from '../../../backend/test-helpers/entities/create-test-entities.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
 import { createTestUser } from '../../../backend/test-helpers/entities/users.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
+import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
+import { createTestRssFeedItemWithUrl } from '../../../backend/test-helpers/entities/test-entities.mts'
+import {
+  insertTestStory,
+  setTestItemStoryId,
+} from '../../../backend/test-helpers/entities/stories.mts'
+import { insertTestPostStory } from '../../../backend/test-helpers/entities/post-stories.mts'
+import { canViewPost } from '../../../backend/services/posts/check-privacy-access.mts'
 
 test.describe('Typed post tag management', () => {
   test.use({ storageState: AUTH_STATE })
@@ -62,6 +74,15 @@ test.describe('Typed post tag management', () => {
     const suffix = randomSuffix()
     const title = `Tag post story ${suffix}`
     const user = requireTestValue(await createTestUser(), 'Story fixture owner missing')
+    const sourceTopic = await createTestTopic({
+      user,
+      name: `Tag story source ${suffix}`,
+      slug: `tag-story-source-${suffix}`,
+    })
+    const feed = await insertTestRssFeed(sourceTopic.id, suffix)
+    const story = await insertTestStory({ title })
+    const item = await createTestRssFeedItemWithUrl(feed.id)
+    await setTestItemStoryId(item.id, story.id)
     const id = await insertTestPost({
       title,
       slug: `tag-story-${suffix}`,
@@ -69,8 +90,11 @@ test.describe('Typed post tag management', () => {
       postType: 'story',
       createdById: user.id,
     })
+    await insertTestPostStory(id, story.id, user.id)
+    expect(await canViewPost(user, { id })).toBe(true)
     const targetName = `Post category ${suffix}`
     await insertTestTopic(targetName, `post-category-${suffix}`, 'topic')
+    await loginAsUser(page, user.id)
     await navigateTo(page, `/story/${id}/tags/topic`)
     await expect(page.getByTestId('manage-tags-active-heading')).toHaveText('Category Topics')
     await expect(page.getByTestId('manage-post-tags-content')).toBeVisible()

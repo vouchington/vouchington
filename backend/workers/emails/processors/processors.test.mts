@@ -10,6 +10,7 @@ import { createTestUser, expireUserDataRequestForTest, softDeleteUser } from '@v
 import { processSendEmailAddressLoginToken } from './authentication.mts'
 import { processSendCommunityInviteEmail } from './community-invite.mts'
 import { processSendDataExportReadyEmail } from './data-export-ready.mts'
+import { processSendReauthenticationToken } from './reauthentication.mts'
 import { processSendEmailVerificationToken } from './email-verification.mts'
 
 describe('processSendEmailAddressLoginToken', () => {
@@ -21,7 +22,7 @@ describe('processSendEmailAddressLoginToken', () => {
   it('renders login token email and sends via SES', async () => {
     await processSendEmailAddressLoginToken(
       { emailAddress: 'tests+user@voucha.ai' },
-      { token: 'ABC12345', expiration: '10 minutes' },
+      { token: 'ABCDEFG234', expiration: '10 minutes' },
     )
 
     expect(ses.sendEmail).toHaveBeenCalledWith(
@@ -29,23 +30,24 @@ describe('processSendEmailAddressLoginToken', () => {
         to: 'tests+user@voucha.ai',
         subject: expect.any(String),
         html: expect.any(String),
-        text: expect.stringContaining('one-time password:\n\nABC12345\n\nThis token will expire'),
+        text: expect.stringContaining('one-time password:\n\nABCDEFG234\n\nThis token will expire'),
       }),
     )
   })
 
-  it('rejects malformed login tokens before sending', async () => {
-    const malformedLoginToken = 'ABC123456789'
+  it.each(['ABC12345', 'ABC123456789', 'ABCDEFG230', 'abcdefg234'])(
+    'rejects malformed login tokens before sending (%s)',
+    async malformedLoginToken => {
+      await expect(
+        processSendEmailAddressLoginToken(
+          { emailAddress: 'tests+user@voucha.ai' },
+          { token: malformedLoginToken, expiration: '10 minutes' },
+        ),
+      ).rejects.toThrow('Login token must be 10 uppercase base32 characters')
 
-    await expect(
-      processSendEmailAddressLoginToken(
-        { emailAddress: 'tests+user@voucha.ai' },
-        { token: malformedLoginToken, expiration: '10 minutes' },
-      ),
-    ).rejects.toThrow('Login token must be 8 uppercase hex characters')
-
-    expect(ses.sendEmail).not.toHaveBeenCalled()
-  })
+      expect(ses.sendEmail).not.toHaveBeenCalled()
+    },
+  )
 })
 
 describe('processSendEmailVerificationToken', () => {
@@ -68,6 +70,39 @@ describe('processSendEmailVerificationToken', () => {
         text: expect.stringContaining('A equipe Voucha'),
       }),
     )
+  })
+})
+
+describe('processSendReauthenticationToken', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
+  })
+
+  it.each([true, false])(
+    'sends a dedicated code with recipient or template locale (%s)',
+    async useRecipientLocale => {
+      await processSendReauthenticationToken(
+        { emailAddress: 'tests+reauth@voucha.ai', ...(useRecipientLocale && { uiLocale: 'en' }) },
+        { token: 'ABCDEFG234', expiresInMinutes: 15, uiLocale: 'en' },
+      )
+      expect(ses.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'tests+reauth@voucha.ai',
+          text: expect.stringContaining('ABCDEFG234\n\nThis code expires in 15 minutes.'),
+          html: expect.stringContaining('ABCDEFG234'),
+        }),
+      )
+    },
+  )
+  it('rejects a malformed reauthentication code before sending', async () => {
+    await expect(
+      processSendReauthenticationToken(
+        { emailAddress: 'tests+reauth@voucha.ai' },
+        { token: '123456', expiresInMinutes: 15 },
+      ),
+    ).rejects.toThrow('Login token must be 10 uppercase base32 characters')
+    expect(ses.sendEmail).not.toHaveBeenCalled()
   })
 })
 

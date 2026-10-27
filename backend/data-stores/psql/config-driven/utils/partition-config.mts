@@ -26,22 +26,19 @@ export const POST_PARTITION_TABLES: string[] = [
   'post_data_point_topics',
   'post_explicit_topic_categories',
   'post_topic_recommendations',
-  'post_autotagger_results',
   'agent_moderations',
 ]
 
 /**
  * Classifier results retain one row per candidate. Topic and story-family ownership use
- * separate parents; topic results prune by topic_id, while story-family results hold either a
- * story or a standalone RSS item (so no single entity column can be the key) and prune by the
- * UUIDv7 decision batch_id instead. Community prompt results have no stable per-prompt key worth
- * pruning on, so they range over their decision batch too.
+ * separate parents. All result families range by the UUIDv7 decision batch so batch-scoped replay
+ * and retention share one time key. Topic and story lookups also have entity-leading indexes.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
-  'classifier_decision_batch_candidates',
   'topic_classifier_results',
   'story_classifier_results',
   'community_prompt_classifier_results',
+  'classifier_decision_batch_candidates',
 ]
 
 /**
@@ -50,17 +47,6 @@ export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
  */
 export const RSS_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   monthlyPartitionTable('rss_feed_crawls', { retentionDays: 30, futureMonths: 2 }),
-]
-
-/**
- * Durable publication projection receipts partition by their post UUID, aligned with `posts`.
- * Retained dirty-work keys partition by their owning work UUID. Both start with default children;
- * explicit UUIDv7 ranges are added only after measured pressure.
- */
-export const POST_PUBLICATION_PARTITION_TABLES: string[] = [
-  'post_publication_post_identities',
-  'post_publication_projection_receipts',
-  'post_publication_dirty_work_keys',
 ]
 
 /**
@@ -141,7 +127,6 @@ export const PARTITION_DROP_POLICIES: Record<string, PartitionDropPolicy> = Obje
   [
     ...POST_PARTITION_TABLES,
     ...CLASSIFIER_RESULT_PARTITION_TABLES,
-    ...POST_PUBLICATION_PARTITION_TABLES,
     ...USER_SESSION_PARTITION_TABLES,
     ...USER_KEY_PARTITION_TABLES,
     ...REVISION_PARTITION_TABLES,
@@ -159,5 +144,12 @@ for (const config of ALL_MONTHLY_PARTITION_TABLES) {
     ...(config.table === 'crawl_chunks' && {
       inFlightPredicates: ['bedrock_nova_multimodal_v1_embedding_created_at IS NULL'],
     }),
+  }
+}
+
+for (const table of CLASSIFIER_RESULT_PARTITION_TABLES) {
+  PARTITION_DROP_POLICIES[table] = {
+    minimumRetentionDays: 90,
+    legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
   }
 }

@@ -204,7 +204,7 @@ describe('search-posts tool', () => {
       page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
     })
   })
-  it('should filter by post_type when provided', { timeout: 30_000 }, async () => {
+  it('should filter by post_type when provided', async () => {
     const typeToken = `types${crypto.randomUUID().replaceAll('-', '')}`
     // Create posts of different types
     const discussion = await publishPost({

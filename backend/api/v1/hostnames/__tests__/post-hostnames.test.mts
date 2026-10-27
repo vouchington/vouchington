@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect, insertTestUrlHostname } from '@voucha/test-helpers'
-import { addUserRole } from '@services/users/roles-permissions'
 
 describe('POST /api/v1/hostnames', () => {
   let regularUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
@@ -9,8 +8,7 @@ describe('POST /api/v1/hostnames', () => {
 
   beforeAll(async () => {
     regularUser = await createTestUserDirect()
-    adminUser = await createTestUserDirect()
-    await addUserRole(adminUser!.id, 'administrator')
+    adminUser = await createTestUserDirect({ administrator: true, withEmail: true })
   })
 
   it('returns 401 when unauthenticated', async () => {

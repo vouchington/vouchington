@@ -43,6 +43,10 @@ interface SesNotification {
   delivery?: SesDelivery
 }
 
+type ParsedSesInput = Omit<CreateSesBounceEventInput, 'notification_type'> & {
+  notification_type: CreateSesBounceEventInput['notification_type'] | 'delivery'
+}
+
 // SNS raw_message_delivery = true (vouchington-infra/opentofu/ses.tf: aws_sns_topic_subscription.ses_bounce_sqs)
 // strips the SNS envelope, so the queue body is the bare SES notification JSON. The topic is fed
 // exclusively by aws_sesv2_configuration_set_event_destination (vouchington-infra/opentofu/ses.tf), and per AWS's
@@ -54,11 +58,16 @@ interface SesNotification {
 export async function processSesBounceSqsMessage(message: SqsMessage): Promise<void> {
   const notification = JSON.parse(message.body) as SesNotification
   const input = buildCreateSesBounceEventInput(notification)
-  await createSesBounceEvent(input)
-  if (isTerminalCopyrightDeliveryFailure(input) && input.amazon_ses_message_id) {
+  if (input.notification_type === 'delivery') return
+  const storedInput: CreateSesBounceEventInput = {
+    ...input,
+    notification_type: input.notification_type,
+  }
+  await createSesBounceEvent(storedInput)
+  if (isTerminalCopyrightDeliveryFailure(storedInput) && storedInput.amazon_ses_message_id) {
     await markCopyrightDeliveryIntentBouncedBySesMessageId({
-      sesMessageId: input.amazon_ses_message_id,
-      recipientEmails: input.recipients,
+      sesMessageId: storedInput.amazon_ses_message_id,
+      recipientEmails: storedInput.recipients,
     })
   }
 }
@@ -70,7 +79,7 @@ function isTerminalCopyrightDeliveryFailure(input: CreateSesBounceEventInput): b
   )
 }
 
-function buildCreateSesBounceEventInput(notification: SesNotification): CreateSesBounceEventInput {
+function buildCreateSesBounceEventInput(notification: SesNotification): ParsedSesInput {
   const rawEventType = notification.eventType ?? notification.notificationType
   const notificationType = rawEventType?.toLowerCase()
   assert(
@@ -81,7 +90,7 @@ function buildCreateSesBounceEventInput(notification: SesNotification): CreateSe
     `Unrecognized SES event type: ${rawEventType}`,
   )
 
-  const input: CreateSesBounceEventInput = {
+  const input: ParsedSesInput = {
     notification_type: notificationType,
     recipients: [],
     amazon_ses_message_id: notification.mail?.messageId ?? null,

@@ -25,11 +25,12 @@ export async function softDeleteUserFollowRelations(
   `)
   const { rows } = await run<DeletedEntityRelation>(sql`/* softDeleteUserFollowRelations */
     UPDATE relation__user__follow__user
-    SET deleted_at = NOW(), deleted_by_id = ${subjectUserId}
+    SET deleted_at = NOW(), deleted_by_id = ${subjectUserId},
+      outbound_activitypub_distributed_activity_id = NULL
     WHERE subject_id = ${subjectUserId}
       AND object_id = ANY(${objectUserIds}::uuid[])
       AND deleted_at IS NULL
-    RETURNING subject_id, object_id, outbound_activitypub_follow_activity_id, uuidv7() AS undo_activity_id
+    RETURNING subject_id, object_id, outbound_activitypub_follow_activity_id
   `)
   return getDeletedFollowPairs(rows)
 }

@@ -1,6 +1,10 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { copyrightConfig, getAutomaticWithholdingThresholds } from './config.mts'
+import {
+  copyrightConfig,
+  deriveAutomaticWithholdingSince,
+  getAutomaticWithholdingThresholds,
+} from './config.mts'
 
 const set = {
   automaticWithholdingMinTrustTier: 2,
@@ -65,5 +69,21 @@ describe('automatic withholding thresholds', () => {
     })
 
     expect(await getAutomaticWithholdingThresholds()).toBeNull()
+  })
+})
+
+describe('automatic withholding switch-on field', () => {
+  const at = new Date('2026-10-23T08:30:00.000Z')
+
+  it('fresh bootstrap starts off with no on-period', () => {
+    expect(copyrightConfig.defaultFields.automaticProvisionalWithholding).toBe(false)
+    expect(copyrightConfig.defaultFields.automaticProvisionalWithholdingSince).toBe('')
+  })
+
+  it('derives the exact on-period only on an off-to-on transition', () => {
+    expect(deriveAutomaticWithholdingSince(false, true, at)).toBe(at.toISOString())
+    expect(deriveAutomaticWithholdingSince(true, true, at)).toBeUndefined()
+    expect(deriveAutomaticWithholdingSince(true, false, at)).toBe('')
+    expect(deriveAutomaticWithholdingSince(false, false, at)).toBeUndefined()
   })
 })

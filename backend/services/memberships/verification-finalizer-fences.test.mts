@@ -1,129 +1,53 @@
 import { randomUUID } from 'node:crypto'
 import {
   createTestUser,
-  expireTestMembershipVerificationLease,
   getTestMembershipProviderEvidenceTerminalState,
-  getTestMembershipVerificationProcessingState,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
+import { createMembershipVerification, getMembershipVerification } from './verifications.mts'
+import { terminalizeConflict } from './microsoft/verification-outcomes.mts'
 import {
-  claimPendingMembershipVerification,
-  createMembershipVerification,
-  getMembershipVerification,
-} from './verifications.mts'
-import * as microsoft from './microsoft/verification-outcomes.mts'
-import {
-  getTestClaimedProviderVerificationContext,
-  finalizeTestClaimedProviderVerification,
-  deferTestPendingGoogleVerification,
-  getTestClaimedAppleVerificationContext,
-  finalizeTestClaimedAppleVerification,
+  getTestPendingProviderVerificationContext,
+  finalizeTestPendingProviderVerification,
+  getTestPendingAppleVerificationContext,
+  finalizeTestPendingAppleVerification,
 } from '@voucha/test-helpers/membership-verification-finalizers'
 
-describe('membership verification finalizer ownership', () => {
+describe('membership verification terminal outcome guards', () => {
   it.each(['google_play', 'microsoft_store'] as const)(
-    '%s rolls back stale finalizers and preserves the successor',
+    'rolls back stale %s finalizer writes after an outcome is recorded',
     async provider => {
-      const fixture = await pendingVerification(provider)
-      const context = await getTestClaimedProviderVerificationContext(
-        provider,
-        fixture.verification.id,
-        fixture.claim.leaseToken,
-      )
-      if (!context) throw new Error('Expected claimed provider context')
-      const successor = await takeOver(fixture.verification.id)
-
+      const { user, verification } = await pendingVerification(provider)
+      const context = await getTestPendingProviderVerificationContext(provider, verification.id)
+      if (!context) throw new Error('Expected pending context')
+      await terminalizeConflict(verification.id, 'wrong_account')
       for (const disposition of ['verify', 'reject'] as const) {
         await expect(
-          finalizeTestClaimedProviderVerification(
-            provider,
-            context,
-            fixture.claim.leaseToken,
-            disposition,
-          ),
-        ).rejects.toThrow('claim was superseded')
-        await expect(
-          getMembershipVerification(fixture.user.id, fixture.verification.id),
-        ).resolves.toMatchObject({
-          status: 'pending',
-          reason_code: null,
+          finalizeTestPendingProviderVerification(provider, context, disposition),
+        ).rejects.toThrow('outcome was already recorded')
+        await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
+          status: 'conflict',
+          reason_code: 'wrong_account',
         })
         await expect(
           getTestMembershipProviderEvidenceTerminalState(context.evidenceId),
-        ).resolves.toMatchObject({
-          verified_at: null,
-          rejected_at: null,
-          rejection_reason: null,
-          observation_count: 0,
-        })
-        await expect(
-          getTestMembershipVerificationProcessingState(fixture.verification.id),
-        ).resolves.toMatchObject({
-          lease_token: successor.leaseToken,
-          last_error: null,
-        })
+        ).resolves.toMatchObject({ verified_at: null, rejected_at: null, observation_count: 0 })
       }
     },
   )
 
-  it('preserves the successor when a stale Google worker defers pending work', async () => {
-    const fixture = await pendingVerification('google_play')
-    const context = await getTestClaimedProviderVerificationContext(
-      'google_play',
-      fixture.verification.id,
-      fixture.claim.leaseToken,
+  it('rejects a stale Apple finalizer and preserves the recorded outcome', async () => {
+    const { user, verification } = await pendingVerification('apple_app_store')
+    const context = await getTestPendingAppleVerificationContext(verification.id)
+    if (!context) throw new Error('Expected pending Apple context')
+    await terminalizeConflict(verification.id, 'wrong_account')
+    await expect(finalizeTestPendingAppleVerification(context)).rejects.toThrow(
+      'outcome was already recorded',
     )
-    if (!context) throw new Error('Expected claimed Google context')
-    const successor = await takeOver(fixture.verification.id)
-    await expect(
-      deferTestPendingGoogleVerification(context, fixture.claim.leaseToken),
-    ).rejects.toThrow('claim was superseded')
-    await expect(
-      getTestMembershipVerificationProcessingState(fixture.verification.id),
-    ).resolves.toMatchObject({ lease_token: successor.leaseToken, last_error: null })
-  })
-
-  it('allows only the current Microsoft owner to terminalize a conflict', async () => {
-    const fixture = await pendingVerification('microsoft_store')
-    const successor = await takeOver(fixture.verification.id)
-    await microsoft.terminalizeConflict(
-      fixture.verification.id,
-      fixture.claim.leaseToken,
-      'wrong_account',
-    )
-    await expect(
-      getMembershipVerification(fixture.user.id, fixture.verification.id),
-    ).resolves.toMatchObject({ status: 'pending' })
-    await microsoft.terminalizeConflict(
-      fixture.verification.id,
-      successor.leaseToken,
-      'wrong_account',
-    )
-    await expect(
-      getMembershipVerification(fixture.user.id, fixture.verification.id),
-    ).resolves.toMatchObject({ status: 'conflict', reason_code: 'wrong_account' })
-    await expect(
-      getTestMembershipVerificationProcessingState(fixture.verification.id),
-    ).resolves.toMatchObject({ lease_token: null })
-  })
-
-  it('rejects an Apple finalizer after successor takeover', async () => {
-    const fixture = await pendingVerification('apple_app_store')
-    const context = await getTestClaimedAppleVerificationContext(
-      fixture.verification.id,
-      fixture.claim.leaseToken,
-    )
-    if (!context) throw new Error('Expected claimed Apple context')
-    const successor = await takeOver(fixture.verification.id)
-    await expect(
-      finalizeTestClaimedAppleVerification(context, fixture.claim.leaseToken),
-    ).rejects.toThrow('claim was superseded')
-    await expect(
-      getMembershipVerification(fixture.user.id, fixture.verification.id),
-    ).resolves.toMatchObject({ status: 'pending' })
-    await expect(
-      getTestMembershipVerificationProcessingState(fixture.verification.id),
-    ).resolves.toMatchObject({ lease_token: successor.leaseToken })
+    await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
+      status: 'conflict',
+      reason_code: 'wrong_account',
+    })
   })
 })
 
@@ -138,18 +62,9 @@ async function pendingVerification(
     idempotencyKey: randomUUID(),
     trustedProviderContext: {
       environment: 'test',
-      applicationId: `ai.voucha.fence-${randomUUID()}`,
+      applicationId: `ai.voucha.guard-${randomUUID()}`,
     },
     evidence: { fixture: randomUUID() },
   })
-  const claim = await claimPendingMembershipVerification(verification.id)
-  if (!claim) throw new Error('Expected initial verification claim')
-  return { user, verification, claim }
-}
-
-async function takeOver(id: string) {
-  await expireTestMembershipVerificationLease(id)
-  const claim = await claimPendingMembershipVerification(id)
-  if (!claim) throw new Error('Expected successor verification claim')
-  return claim
+  return { user, verification }
 }

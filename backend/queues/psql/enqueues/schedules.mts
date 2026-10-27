@@ -1,4 +1,5 @@
 import type { JobOptions } from 'glide-mq'
+import { moderationRetentionSchedule } from './moderation-retention.mts'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import {
   defineScheduledJobManifest,
@@ -58,6 +59,7 @@ const SCHEDULE_OPTS = {
 const DATA_RETENTION_SCHEDULE_OPTS = () =>
   ({
     ...SCHEDULE_OPTS,
+    ordering: { key: 'data_retention:cleanup', concurrency: 1 },
     priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
   }) satisfies JobOptions
 
@@ -72,6 +74,7 @@ const MATERIALIZED_VIEW_SCHEDULE_OPTS = {
 } satisfies JobOptions
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  moderationRetentionSchedule,
   ...(
     [
       [REFRESH_PLATFORM_STATS_SCHEDULER_ID, REFRESH_PLATFORM_STATS_CRON, PLATFORM_STATS_VIEW],

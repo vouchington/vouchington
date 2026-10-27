@@ -1,15 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect } from '@voucha/test-helpers'
-import { addUserRole } from '@services/users/roles-permissions'
 
 describe('validations', () => {
   let regularUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
   let adminUser: Awaited<ReturnType<typeof createTestUserDirect>> | null = null
   beforeAll(async () => {
     regularUser = await createTestUserDirect()
-    adminUser = await createTestUserDirect()
-    await addUserRole(adminUser!.id, 'administrator')
+    adminUser = await createTestUserDirect({ administrator: true, withEmail: true })
   })
 
   describe('Referral Link Validations Routes', () => {

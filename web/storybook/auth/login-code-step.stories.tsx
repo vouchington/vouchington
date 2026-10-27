@@ -35,7 +35,7 @@ function CodeStep({ initialCode, loading }: { initialCode: string; loading: bool
 export const Ready: Story = {
   render: () => (
     <CodeStep
-      initialCode='A1B2C3D4'
+      initialCode='A2B3C4D5E6'
       loading={false}
     />
   ),
@@ -44,7 +44,7 @@ export const Ready: Story = {
 export const Verifying: Story = {
   render: () => (
     <CodeStep
-      initialCode='A1B2C3D4'
+      initialCode='A2B3C4D5E6'
       loading
     />
   ),

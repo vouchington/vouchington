@@ -30,6 +30,7 @@ import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
   createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../routes.mts'
 
@@ -102,7 +103,7 @@ describe('routes — user and admin', () => {
     const admin = await createTestUser({ administrator: true })
 
     await createWebApiTestCookieHeader(user.id)
-    adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
 
     const topic = await createTestTopic({ user: admin })
     topicId = topic.id
@@ -152,7 +153,7 @@ describe('routes — user and admin', () => {
       statusCode: 200,
       markdown: 'Web API test crawl markdown',
     })
-  }, 15_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -176,7 +177,7 @@ describe('routes — user and admin', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

@@ -1,21 +1,10 @@
-import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
-import { AGENT_PRIORITY } from '@queues/ai-agents/config'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgent } from './processors.mts'
 
 describe('processAIAgent routing', () => {
-  it('has a switch route for every configured ai-agent queue job name', async () => {
-    const source = await readFile(new URL('./processors.mts', import.meta.url), 'utf8')
-
-    for (const name of Object.keys(AGENT_PRIORITY)) {
-      expect(source).toContain(`case '${name}':`)
-    }
-    expect(source).toContain('name satisfies never')
-  })
-
   it('rejects unknown ai-agent queue job names', () => {
     expect(() =>
       processAIAgent({

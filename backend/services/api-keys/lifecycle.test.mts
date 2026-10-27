@@ -1,5 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser, withFailingTransactionQueryOptionsForTest } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  insertTestTotpAuthenticator,
+  withFailingTransactionQueryOptionsForTest,
+} from '@voucha/test-helpers'
 import {
   setTestApiKeyExpiry,
   getTestApiKeyLifecycle,
@@ -68,6 +72,7 @@ describe('API key lifetime and rotation', () => {
       const user = await createTestUser()
       const old = await createApiKey(user.id, 'mcp', 'Promoted', ['mcp.user:read'], days)
       expect((await validateApiKeyForMcpAudience(old.rawKey, 'user')).valid).toBe(true)
+      await insertTestTotpAuthenticator(user.id, `administrator-promotion-${crypto.randomUUID()}`)
       await addUserRole(user.id, 'administrator')
       expect(await validateApiKeyForMcpAudience(old.rawKey, 'user')).toEqual({ valid: false })
       const replacement = await rotateApiKey(user.id, old.apiKey.id)

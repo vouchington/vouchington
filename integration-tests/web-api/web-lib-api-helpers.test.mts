@@ -57,7 +57,7 @@ describe('web/lib/api utility helpers — integration', () => {
 
       return previousFetch(`${backendBaseUrl}${input}`, { ...init, headers })
     }
-  }, 15_000)
+  })
 
   afterAll(async () => {
     backendServer.closeAllConnections()
@@ -83,7 +83,7 @@ describe('web/lib/api utility helpers — integration', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,
@@ -91,7 +91,9 @@ describe('web/lib/api utility helpers — integration', () => {
   ): Promise<T> {
     clientRuntimeActive = true
     clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
+    ;(globalThis as { window?: unknown }).window = {
+      location: { pathname: '/', search: '', assign() {} },
+    }
 
     try {
       return await run()

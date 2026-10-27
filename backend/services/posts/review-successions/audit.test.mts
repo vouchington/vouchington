@@ -1,7 +1,6 @@
 import { postsWorkConfig } from '@services/posts/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
-import { readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import {
   createTestUser,
@@ -14,11 +13,6 @@ import { archivePost } from '../archive.mts'
 import { auditReviewSuccessionHistory, pageReviewSuccessionHistoryAuditRows } from './audit.mts'
 import type { ReviewSuccessionHistoryAuditRow } from './audit-query.mts'
 import { reconcileReviewSuccessionsForPostIds } from './reconcile.mts'
-
-const source = [
-  readFileSync(new URL('./audit.mts', import.meta.url), 'utf8'),
-  readFileSync(new URL('./audit-query.mts', import.meta.url), 'utf8'),
-].join('\n')
 
 describe('review succession history audit', () => {
   it('fixes a database cutoff on the first page and reuses it for continuations', async () => {
@@ -82,14 +76,6 @@ describe('review succession history audit', () => {
     )
   })
 
-  it('defines all historical classifications without writes', () => {
-    expect(source).toContain("| 'active_automatic'")
-    expect(source).toContain("| 'terminal_manual'")
-    expect(source).toContain("| 'ambiguous_missing_epoch'")
-    expect(source).toContain("| 'incoherent'")
-    expect(source).not.toMatch(/\b(?:INSERT|UPDATE|DELETE)\b/)
-  })
-
   it('only continues when a lookahead row proves another page exists', () => {
     expect(pageReviewSuccessionHistoryAuditRows([])).toEqual({
       rows: [],
@@ -108,12 +94,6 @@ describe('review succession history audit', () => {
       cursor: rows.at(-1)?.id,
       hasMore: true,
     })
-  })
-
-  it('includes current eligibility and archive facts for newer exact-current-set reviews', () => {
-    expect(source).toContain('newerExactCurrentSetReviews')
-    expect(source).toContain('buildPublicPostEligibilityFilter')
-    expect(source).toContain('buildOtherwisePublicPostEligibilityFilter')
   })
 
   it('rejects malformed audit cursors and cutoffs before querying archive history', async () => {

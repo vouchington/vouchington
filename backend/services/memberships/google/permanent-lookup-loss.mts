@@ -25,12 +25,11 @@ export async function getKnownGooglePlayCurrentSource(options: {
 
 export async function terminalizeKnownGooglePlaySource(options: {
   verificationId: string
-  claimToken: string
   purchaseTokenDigest: string
   providerOrder: number
 }): Promise<boolean> {
   await using query = await beginTransaction()
-  const context = await getContext(options.verificationId, options.claimToken, query)
+  const context = await getContext(options.verificationId, query)
   if (!context || context.evidenceVerifiedAt || context.evidenceRejectedAt) return false
   const initialKnown = await findKnownSource(query, {
     environment: context.environment,
@@ -84,7 +83,7 @@ export async function terminalizeKnownGooglePlaySource(options: {
     { userId: context.userId, membershipProviderObservationId: observationId },
     { query },
   )
-  await finalizeVerified(context, options.claimToken, query)
+  await finalizeVerified(context, query)
   await query.commit()
   return true
 }

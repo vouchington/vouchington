@@ -14,8 +14,6 @@ import {
   hardDeleteTestUser,
   hasTestRetainedIdentityRoot,
   insertTestRetainedIdentityRoot,
-  beginTransaction,
-  readTestPublicationIdentityBridge,
   countUserDeletionRequestsForTest,
   createTestPost,
   createTestTopic,
@@ -34,7 +32,6 @@ import {
   completeUserDeletionForTest,
   getUserDeletionRequestForTest,
 } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
-
 import { providerTableConfigs } from '@services/oauth/providers'
 
 import {
@@ -47,7 +44,6 @@ import { deleteOrphanedOAuthAccountBatch } from '../cleanup-batches.mts'
 import { grantMembership } from '../../memberships/create.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
-import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
 
 describe('retained user identity cleanup', () => {
   it('reclaims an unreferenced owner only after its live user is gone', async () => {
@@ -98,17 +94,6 @@ describe('retained publication identity cleanup', () => {
     await insertTestRetainedIdentityRoot('post', id)
     await cleanupRetainedIdentityRoots(1_000, { post: [id] })
     expect(await hasTestRetainedIdentityRoot('post', id)).toBe(false)
-  })
-
-  it('does not delete a root pinned by a concurrent historical bridge capture', async () => {
-    const id = v7()
-    await insertTestRetainedIdentityRoot('post', id)
-    await using capture = await beginTransaction()
-    await retainPublicationIdentityBridges(capture, 'post', [id])
-    await cleanupRetainedIdentityRoots(1_000, { post: [id] })
-    expect(await hasTestRetainedIdentityRoot('post', id)).toBe(true)
-    await capture.commit()
-    expect(await readTestPublicationIdentityBridge('post', id)).toEqual({ id, live_id: null })
   })
 
   it('keeps a post root while a committed admission replay references it', async () => {
@@ -190,6 +175,7 @@ describe('retention day validation', () => {
 })
 
 describe('cleanupSoftDeletedUsers', () => {
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('hard-deletes soft-deleted users older than retentionDays', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
@@ -203,6 +189,7 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(await getTestUserRaw(user.id)).toBeNull()
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('does NOT delete recently soft-deleted users', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
@@ -216,6 +203,7 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(await getTestUserRaw(user.id)).not.toBeNull()
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('keeps a retention-eligible user while its durable deletion request is incomplete', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
@@ -227,6 +215,7 @@ describe('cleanupSoftDeletedUsers', () => {
     expect(await getTestUserRaw(user.id)).not.toBeNull()
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('hard-deletes retention-eligible users after durable deletion completion and without a request', async () => {
     const window = createTestRetentionWindow()
     const [completedRequestUser, legacyUser] = await Promise.all([

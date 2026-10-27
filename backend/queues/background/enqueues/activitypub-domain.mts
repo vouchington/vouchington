@@ -42,7 +42,7 @@ export type DistributeActivityData = (
   | DistributeUndoFollowActivityData
   | DistributeLikeActivityData
   | DistributeUndoLikeActivityData
-) & { cursor?: string }
+) & { cursor?: string; recovery?: true }
 
 // Accept never goes through distributeActivity's fan-out: an inbound Follow's Accept always
 // targets exactly one already-known inbox (the sender's).
@@ -59,7 +59,12 @@ export type DeliverActivityData =
   | (DistributeActivityData & { inboxUrl: string })
   | DeliverAcceptActivityData
 
-export type ActivityPubInboxDeliveryJob = { deliveryId: string; leaseToken: string }
+export type ActivityPubInboxDeliveryJob = { deliveryId: string; requestDigest: string }
 export type EmptyActivityPubJobData = Record<string, never>
 /** One page of failed deliveries after `afterId`; the first page has no cursor. */
 export type RearmFailedDeliveriesData = { afterId?: string }
+export type RecoverOutboundDistributionData = {
+  source: 'follows' | 'votes'
+  cursor?: string
+  throughPostId?: string
+}

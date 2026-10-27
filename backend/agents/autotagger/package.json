@@ -39,7 +39,6 @@
     "@vouchington/ai": "^0.3.0"
   },
   "devDependencies": {
-    "@services/classifiers": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "undici": "^8.12.3"

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getPenalties: vi.fn<VitestLooseMock>(),
+  getDue: vi.fn<VitestLooseMock>(),
+  requireAdmin: vi.fn<VitestLooseMock>(),
   metadata: vi.fn<VitestLooseMock>((title: string) => ({ robots: 'noindex', title })),
   breadcrumbs: vi.fn<VitestLooseMock>(() => [
     { name: 'Vote penalties', path: '/vote-integrity/penalties' },
@@ -11,7 +13,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock(import('@/lib/api/server'), () => ({
   getVoteIntegrityPenalties: mocks.getPenalties,
+  getVoteIntegrityPenaltyReviewsDue: mocks.getDue,
 }))
+vi.mock(import('@/lib/auth/require-admin'), () => ({ requireAdmin: mocks.requireAdmin }))
 vi.mock(import('@/lib/i18n/get-translations'), () => ({
   getTranslations: vi.fn<VitestLooseMock>(async () => (key: string) => key),
 }))
@@ -27,8 +31,16 @@ vi.mock(import('@/components/ui/breadcrumb'), () => ({
   ),
 }))
 vi.mock(import('./vote-integrity-penalties-client'), () => ({
-  VoteIntegrityPenaltiesClient: ({ initialStatus }: { initialStatus: string }) => (
-    <div data-testid='penalties-client'>{initialStatus}</div>
+  VoteIntegrityPenaltiesClient: ({
+    initialStatus,
+    initialDuePage,
+  }: Parameters<
+    (typeof import('./vote-integrity-penalties-client'))['VoteIntegrityPenaltiesClient']
+  >[0]) => (
+    <div data-testid='penalties-client'>
+      {initialStatus}:due=
+      {initialDuePage?.results.map(row => row.user_username).join(',') ?? 'hidden'}
+    </div>
   ),
 }))
 
@@ -43,6 +55,13 @@ const emptyPage = {
 describe('VoteIntegrityPenaltiesPage', () => {
   beforeEach(() => {
     mocks.getPenalties.mockReset()
+    mocks.getDue.mockReset()
+    mocks.requireAdmin.mockReset()
+    mocks.requireAdmin.mockResolvedValue(undefined)
+    mocks.getDue.mockResolvedValue({
+      results: [{ id: 'due-1', user_username: 'server-review-recipient' }],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
     mocks.breadcrumbs.mockClear()
     mocks.getPenalties.mockResolvedValue(emptyPage)
   })
@@ -91,5 +110,29 @@ describe('VoteIntegrityPenaltiesPage', () => {
       }),
     )
     expect(screen.getByTestId('penalties-client')).toHaveTextContent('active')
+  })
+  it('server-renders the first due page and does not fetch hidden non-active queues', async () => {
+    render(await VoteIntegrityPenaltiesPage({ searchParams: Promise.resolve({}) }))
+    expect(screen.getByTestId('penalties-client')).toHaveTextContent('due=server-review-recipient')
+    expect(mocks.getDue).toHaveBeenCalledOnce()
+    mocks.getDue.mockClear()
+    await VoteIntegrityPenaltiesPage({ searchParams: Promise.resolve({ status: 'revoked' }) })
+    await VoteIntegrityPenaltiesPage({ searchParams: Promise.resolve({ status: 'all' }) })
+    expect(mocks.getDue).not.toHaveBeenCalled()
+  })
+
+  it('authorizes before starting either private read and propagates due-read failures', async () => {
+    const denied = new Error('not an administrator')
+    mocks.requireAdmin.mockRejectedValueOnce(denied)
+    await expect(VoteIntegrityPenaltiesPage({ searchParams: Promise.resolve({}) })).rejects.toBe(
+      denied,
+    )
+    expect(mocks.getPenalties).not.toHaveBeenCalled()
+    expect(mocks.getDue).not.toHaveBeenCalled()
+    const failure = new Error('due read failed')
+    mocks.getDue.mockRejectedValueOnce(failure)
+    await expect(VoteIntegrityPenaltiesPage({ searchParams: Promise.resolve({}) })).rejects.toBe(
+      failure,
+    )
   })
 })

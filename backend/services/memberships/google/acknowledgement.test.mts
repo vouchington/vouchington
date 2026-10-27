@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createMembershipVerification } from '../verifications.mts'
 import {
   createTestNativeMembershipProviderProduct,
@@ -12,6 +12,13 @@ import {
   makeTestGooglePlayAcknowledgementDue,
 } from '@voucha/test-helpers/google-play-memberships'
 import { acknowledgeGooglePlayPurchase } from './acknowledgement.mts'
+import { cleanupTerminalGooglePlayAcknowledgments } from '../../data-retention/cleanup-membership-operational.mts'
+import {
+  acquireMembershipOperationalRetentionTestLock,
+  ageTerminalGooglePlayAcknowledgment,
+  googlePlayAcknowledgmentExists,
+  resetMembershipOperationalRetentionCursor,
+} from '@voucha/test-helpers/membership-operational-retention'
 import {
   findDueGooglePlayAcknowledgementIds,
   advanceGooglePlayAcknowledgementRecoveryCursor,
@@ -50,6 +57,8 @@ describe('Google Play acknowledgement recovery', () => {
   })
 
   it('recovers an acknowledgement reply loss without a duplicate Play mutation', async () => {
+    const retentionLock = await acquireMembershipOperationalRetentionTestLock()
+    onTestFinished(() => retentionLock.release())
     const user = await createTestUser()
     const applicationId = `ai.voucha.google-${randomUUID()}`
     const productId = `plus.monthly.${randomUUID()}`
@@ -120,6 +129,18 @@ describe('Google Play acknowledgement recovery', () => {
     await makeTestGooglePlayAcknowledgementDue(acknowledgementId)
     expect(await acknowledgeGooglePlayPurchase({ acknowledgementId, client })).toBe('acknowledged')
     expect(acknowledgementCalls).toBe(1)
+    const terminalAt = new Date(Date.now() - 150 * 86_400_000)
+    await resetMembershipOperationalRetentionCursor('google_acknowledgments')
+    await ageTerminalGooglePlayAcknowledgment(acknowledgementId, terminalAt)
+    expect(
+      await cleanupTerminalGooglePlayAcknowledgments({
+        batchSize: 1,
+        maxBatches: 1,
+        lowerBoundDate: terminalAt,
+        now: new Date(terminalAt.getTime() + 90 * 86_400_000 + 1),
+      }),
+    ).toEqual({ deleted: 1, hasMore: false })
+    expect(await googlePlayAcknowledgmentExists(acknowledgementId)).toBe(false)
   })
 
   it('stops retrying acknowledgement when Play permanently rejects the purchase token', async () => {

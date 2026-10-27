@@ -1,5 +1,5 @@
 import { type Browser, type TestInfo, withMonitoredPage } from './test.mts'
-import { loginAsTestUser } from './auth.mts'
+import { loginAsAdmin } from './auth.mts'
 import { randomSuffix } from 'vouchington-tooling/playwright'
 
 export async function seedTopicRecommendations(browser: Browser, testInfo: TestInfo) {
@@ -27,7 +27,7 @@ export async function seedTopicRecommendations(browser: Browser, testInfo: TestI
   // Create recommendations as the test user (who is also admin), then approve/reject in same session.
   // page.evaluate runs fetch in the browser context so the dt/st session cookies are sent correctly.
   await withMonitoredPage(browser, testInfo, async page => {
-    await loginAsTestUser(page)
+    await loginAsAdmin(page)
 
     // Create pending recommendation
     await page.evaluate(

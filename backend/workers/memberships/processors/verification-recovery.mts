@@ -1,23 +1,44 @@
-import { enqueueBulkProcessMembershipVerifications } from '@queues/memberships/enqueues'
-import { findRecoverableMembershipVerificationIds } from '@services/memberships'
-
-export type RecoverMembershipVerificationsDependencies = {
-  findRecoverableMembershipVerificationIds: typeof findRecoverableMembershipVerificationIds
-  enqueueBulkProcessMembershipVerifications: typeof enqueueBulkProcessMembershipVerifications
-}
-
-const dependencies: RecoverMembershipVerificationsDependencies = {
-  findRecoverableMembershipVerificationIds,
+import type { Job } from 'glide-mq'
+import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
+import {
   enqueueBulkProcessMembershipVerifications,
-}
+  enqueueRecoverMembershipVerifications,
+} from '@queues/memberships/enqueues'
+import { memberships } from '@queues/memberships/queues'
+import type { RecoverMembershipVerificationsData } from '@queues/memberships/types'
+import {
+  findRecoverableMembershipVerificationIds,
+  findMembershipVerificationRecoveryUpperBound,
+} from '@services/memberships'
 
 export async function recoverMembershipVerifications(
-  overrides: RecoverMembershipVerificationsDependencies = dependencies,
+  job: Job<RecoverMembershipVerificationsData>,
 ): Promise<{ enqueued: number }> {
-  const verificationIds = await overrides.findRecoverableMembershipVerificationIds()
-  if (verificationIds.length === 0) return { enqueued: 0 }
-  await overrides.enqueueBulkProcessMembershipVerifications(
-    verificationIds.map(verificationId => ({ verificationId })),
-  )
-  return { enqueued: verificationIds.length }
+  if (!job.data.through) {
+    const through = await findMembershipVerificationRecoveryUpperBound()
+    if (!through) return { enqueued: 0 }
+    await job.updateData({ ...job.data, through })
+  }
+  const through = job.data.through!
+  return processPagedDispatcher(job, {
+    dispatcher: 'memberships',
+    cursorKey: 'id',
+    target: memberships,
+    targetName: 'memberships',
+    readAndDispatch: async pageSize => {
+      const ids = await findRecoverableMembershipVerificationIds({
+        after: job.data.after,
+        through,
+        limit: pageSize,
+      })
+      await enqueueBulkProcessMembershipVerifications(
+        ids.map(verificationId => ({ verificationId })),
+      )
+      return {
+        result: { enqueued: ids.length },
+        ...(ids.length === pageSize ? { next: { after: ids.at(-1)!, through } } : {}),
+      }
+    },
+    enqueueNext: enqueueRecoverMembershipVerifications,
+  })
 }

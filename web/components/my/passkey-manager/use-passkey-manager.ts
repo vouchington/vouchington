@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
 import { startRegistration, type StartRegistrationOpts } from '@simplewebauthn/browser'
 import {
@@ -9,7 +9,7 @@ import {
   renamePasskey,
   verifyPasskeyRegistration,
 } from '@/lib/api/client'
-import { ApiError } from '@vouchington/api-client'
+import { useFreshAuthentication } from '../use-fresh-authentication'
 import type { ListResponse } from '@/types/api-responses'
 import type { MfaStatus, Passkey } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -19,25 +19,21 @@ type Step = 'list' | 'add'
 
 export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus: MfaStatus) {
   const t = useTranslations()
-  const {
-    passkeys,
-    pagination,
-    netPasskeyCountDelta,
-    addPasskey,
-    renamePasskeyLocally,
-    removePasskeyLocally,
-  } = usePasskeyPagination(initialData)
+  const { passkeys, pagination, addPasskey, renamePasskeyLocally, removePasskeyLocally } =
+    usePasskeyPagination(initialData)
   const [step, setStep] = useState<Step>('list')
   const [newName, setNewName] = useState('')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameName, setRenameName] = useState('')
   const [loading, setLoading] = useState(false)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
-  const [reauthDialogOpen, setReauthDialogOpen] = useState(false)
-  const pendingDeleteIdRef = useRef<string | null>(null)
+  const authentication = useFreshAuthentication(mfaStatus)
+  const reauthDialogOpen = authentication.dialogProps.open
 
   async function handleAddPasskey(e: React.FormEvent) {
     e.preventDefault()
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
       interface RegOptionsResponse {
@@ -49,6 +45,7 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
 
       const { passkey } = await verifyPasskeyRegistration<{ passkey: Passkey }>({
         response: registrationResponse,
+        re_auth_token: reAuthToken,
         name: newName.trim() || t('extracted.my.passkeyManager.myPasskey_e8f5c02d'),
       })
 
@@ -92,24 +89,9 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
     }
   }
 
-  function handleRemoveClick(passkeyId: string) {
-    // Use the server-reported totals, not the accumulated-pages array length: the
-    // paginated list only reflects the pages loaded so far, which undercounts once a
-    // later page hasn't been fetched yet. mfaStatus is also a static snapshot fetched
-    // once at page load, so it doesn't reflect passkeys added or removed locally this
-    // session (e.g. right after registering a new passkey) — netPasskeyCountDelta
-    // corrects for that on top of the server-reported baseline.
-    const totalMfa = mfaStatus.passkeys_count + netPasskeyCountDelta + mfaStatus.totp_count
-    if (totalMfa <= 1) {
-      pendingDeleteIdRef.current = passkeyId
-      setConfirmingDeleteId(null)
-      setReauthDialogOpen(true)
-      return
-    }
-    setConfirmingDeleteId(passkeyId)
-  }
-
-  async function handleRemove(passkeyId: string, reAuthToken?: string) {
+  async function handleRemove(passkeyId: string) {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
       await deletePasskey(passkeyId, reAuthToken)
@@ -117,34 +99,17 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
       setConfirmingDeleteId(null)
       onSuccess(t('extracted.my.passkeyManager.passkeyRemoved_11097d9d'))
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'MFA_REAUTH_REQUIRED') {
-        // Server says this is the last MFA method (mfaStatus may have been stale)
-        pendingDeleteIdRef.current = passkeyId
-        setConfirmingDeleteId(null)
-        setReauthDialogOpen(true)
-      } else {
-        onError(err, {
-          fallback: t('extracted.my.passkeyManager.failedToRemovePasskey_5c94cb38'),
-          tags: { form: 'my-passkey' },
-        })
-      }
+      onError(err, {
+        fallback: t('extracted.my.passkeyManager.failedToRemovePasskey_5c94cb38'),
+        tags: { form: 'my-passkey' },
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleRemoveWithReauth(reAuthToken: string) {
-    const pendingDeleteId = pendingDeleteIdRef.current
-    if (!pendingDeleteId) return
-    pendingDeleteIdRef.current = null
-    setReauthDialogOpen(false)
-    await handleRemove(pendingDeleteId, reAuthToken)
-  }
-
-  function handleCloseReauthDialog() {
-    setReauthDialogOpen(false)
-    pendingDeleteIdRef.current = null
-  }
+  const handleRemoveWithReauth = authentication.dialogProps.onVerified
+  const handleCloseReauthDialog = authentication.dialogProps.onClose
 
   return {
     passkeys,
@@ -163,7 +128,7 @@ export function usePasskeyManager(initialData: ListResponse<Passkey>, mfaStatus:
     setConfirmingDeleteId,
     handleAddPasskey,
     handleRename,
-    handleRemoveClick,
+    handleRemoveClick: setConfirmingDeleteId,
     handleRemove,
     handleRemoveWithReauth,
     handleCloseReauthDialog,

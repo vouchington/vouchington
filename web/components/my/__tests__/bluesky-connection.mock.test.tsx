@@ -1,13 +1,12 @@
-/* oxlint-disable vitest/prefer-import-in-mock, jest/no-untyped-mock-factory -- web tests use string-literal vi.mock() calls so runtime dynamic imports stay mocked at lazy boundaries. */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { BlueskyConnection } from '../bluesky-connection'
 
-type SonnerModule = typeof import('sonner')
-
 const mocks = vi.hoisted(() => ({
   fediverseEnabled: true,
+  requestAuthentication: vi.fn<() => Promise<string | null>>(),
   beginBlueskyAccountLink: vi.fn<VitestLooseMock>(),
   disconnectBlueskyAccount: vi.fn<VitestLooseMock>(),
   toastSuccess: vi.fn<VitestLooseMock>(),
@@ -15,14 +14,23 @@ const mocks = vi.hoisted(() => ({
   locationAssign: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock('next/navigation', () => navMockModule)
+vi.mock(import('next/navigation'), () => navMockModule)
+vi.mock(import('@/components/my/use-fresh-authentication'), () => ({
+  useFreshAuthentication: () => ({
+    ...useFreshAuthenticationMock(),
+    requestAuthentication: mocks.requestAuthentication,
+  }),
+}))
+vi.mock(import('@/components/my/mfa-reauth-dialog'), () => ({
+  MfaReauthDialog: () => <span hidden />,
+}))
 
 const mockNav = createNavMock()
 const originalLocationHref = window.location.href
 const originalWindowLocationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
 
-vi.mock('sonner', async importOriginal => {
-  const actual = await importOriginal<SonnerModule>()
+vi.mock(import('sonner'), async importOriginal => {
+  const actual = await importOriginal()
   return {
     ...actual,
     toast: Object.assign(vi.fn<VitestLooseMock>(), actual.toast, {
@@ -32,12 +40,12 @@ vi.mock('sonner', async importOriginal => {
   }
 })
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock(import('@/lib/api/client'), () => ({
   beginBlueskyAccountLink: mocks.beginBlueskyAccountLink,
   disconnectBlueskyAccount: mocks.disconnectBlueskyAccount,
 }))
 
-vi.mock('@/lib/feature-flags/use-feature-flags', () => ({
+vi.mock(import('@/lib/feature-flags/use-feature-flags'), () => ({
   useFeatureFlags: () => ({ fediverse: mocks.fediverseEnabled }),
 }))
 
@@ -54,6 +62,7 @@ describe('BlueskyConnection', () => {
     vi.clearAllMocks()
     mockNav.reset()
     mocks.fediverseEnabled = true
+    mocks.requestAuthentication.mockResolvedValue('reauth-token')
     window.history.replaceState(null, '', '/my/identity')
     setLocationAssign(mocks.locationAssign)
   })
@@ -87,6 +96,27 @@ describe('BlueskyConnection', () => {
     expect(screen.getByRole('button', { name: 'Connect' })).toHaveProperty('disabled', false)
   })
 
+  it('does not start a link when fresh authentication is cancelled', async () => {
+    mocks.requestAuthentication.mockResolvedValue(null)
+    render(<BlueskyConnection initialAccount={null} />)
+    typeHandle('alice.bsky.social')
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Connect' }))
+    })
+    expect(mocks.requestAuthentication).toHaveBeenCalledOnce()
+    expect(mocks.beginBlueskyAccountLink).not.toHaveBeenCalled()
+  })
+
+  it('does not unlink when fresh authentication is cancelled', async () => {
+    mocks.requestAuthentication.mockResolvedValue(null)
+    render(<BlueskyConnection initialAccount={mockAccount} />)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }))
+    })
+    expect(mocks.requestAuthentication).toHaveBeenCalledOnce()
+    expect(mocks.disconnectBlueskyAccount).not.toHaveBeenCalled()
+  })
+
   it('redirects to the returned https authorization URL on submit', async () => {
     mocks.beginBlueskyAccountLink.mockResolvedValue({
       redirect_url: 'https://bsky.social/oauth/authorize?request_uri=abc',
@@ -100,7 +130,7 @@ describe('BlueskyConnection', () => {
         'https://bsky.social/oauth/authorize?request_uri=abc',
       )
     })
-    expect(mocks.beginBlueskyAccountLink).toHaveBeenCalledWith('alice.bsky.social')
+    expect(mocks.beginBlueskyAccountLink).toHaveBeenCalledWith('alice.bsky.social', 'reauth-token')
   })
 
   it('blocks redirect and shows an error toast for a non-https redirect URL', async () => {

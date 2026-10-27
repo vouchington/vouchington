@@ -42,7 +42,7 @@ describe('moderations', () => {
       results: { flagged: true, confidence_score: 0.93, confidence_threshold: 0.8 },
       flagged: true,
     })
-  }, 30_000)
+  })
 
   describe('searchCommunityAgentModerations', () => {
     it('returns moderation results for a post in the community', async () => {

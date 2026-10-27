@@ -1,3 +1,4 @@
+import { IMAGE_DELETION_DOMAIN, IMAGE_DELETION_JOBS } from './image-deletion-jobs.mts'
 import { BACKGROUND_DOMAINS, type BackgroundDomain } from '../config.mts'
 import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../types.mts'
 import { ACCOUNT_LIFECYCLE_DOMAIN, ACCOUNT_LIFECYCLE_JOBS } from './account-lifecycle-jobs.mts'
@@ -48,6 +49,7 @@ import { VOTE_AGGREGATION_DOMAIN, VOTE_AGGREGATION_JOBS } from './vote-aggregati
 
 /** The single source of truth for what the `background` queue runs: domains and their jobs. */
 export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[] = [
+  IMAGE_DELETION_DOMAIN,
   SES_INBOUND_DOMAIN,
   OPENAI_MODERATION_DOMAIN,
   POST_MENTIONS_DOMAIN,
@@ -74,6 +76,7 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
+  ...IMAGE_DELETION_JOBS,
   ...SES_INBOUND_JOBS,
   ...OPENAI_MODERATION_JOBS,
   ...POST_MENTIONS_JOBS,

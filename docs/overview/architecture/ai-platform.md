@@ -65,6 +65,8 @@ flowchart LR
 
 Lifecycle producers record requests in their own transaction and enqueue after commit. The
 dispatcher checks readiness and reserves the run; a pending embedding leaves its request pending.
+On a later moderation request, an edited active community rule changes the configuration key and
+reserves a new receipt for unchanged post content; a rule edit alone does not reprocess every post.
 The shared sweep recovers both a lost request enqueue and an unfinished run. All classifiers use
 the same lease, reclaim, bounded attempt reservation and terminal-failure machinery; adapters supply
 input construction and outcome application rather than another queue or receipt table.
@@ -146,10 +148,10 @@ C12's receipt-health instrumentation monitors
 old pending requests, unfinished runs, unrequested eligible subjects and terminal failures. Alarm
 payloads contain only bounded identifiers and diagnostic counts, never prompt or content text.
 
-The credentialed golden regression set
+The golden regression set, a dispatch-only eval that no pull request or nightly run executes,
 checks fixed synthetic inputs through production prompts, bindings and threshold snapshots. It
 asserts complete candidate coverage and expected decision bands with reviewed tolerance, and
-records provider call count and elapsed time. It is neither calibration nor a quality evaluation.
+records provider call count and elapsed time. It is a regression check, not a calibration.
 
 ## Schema and client handoff
 

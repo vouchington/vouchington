@@ -3,12 +3,14 @@ import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   SESSION_EXPIRATION_SECONDS,
+  DEVICE_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
 import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
 
 export const REVOCATION_EXPIRATION_SECONDS = Math.max(
   SESSION_EXPIRATION_SECONDS,
   ATTESTED_SESSION_EXPIRATION_SECONDS,
+  DEVICE_EXPIRATION_SECONDS,
 )
 
 const REVOCATION_EXPIRY = {

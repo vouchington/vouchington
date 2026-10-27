@@ -1,5 +1,6 @@
 import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 import type { ElectionJobInput } from '../queues/vote-aggregation/enqueues/types-elections.mts'
+import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 import onError from '../modules/on-error/index.mts'
 import {
   type ElectionJob,
@@ -14,6 +15,9 @@ import {
 // test files doesn't accumulate one listener per import.
 const electionsWorker = getSharedBackgroundWorker()
 if (electionsWorker.listenerCount('error') === 0) electionsWorker.on('error', onError)
+
+// Below the owning backend test budget, so a stalled wait reports its target first.
+const ELECTION_COMPLETION_DEADLINE_MS = 4_000
 
 // Consumed job ids persist across separate calls, not just within one: without this, a second
 // wait for the same election (e.g. voting twice against one post) could resolve or reject off a
@@ -38,71 +42,28 @@ type WorkerLike = {
 }
 
 /**
- * Wait for a specific elections vote-stats recompute job to complete.
- *
- * Every elections ordering key shares one job name (`processUpdateElectionVoteStats`), so the primary
- * discriminator is the canonical job payload: `orderingKey`, `electionId`, and (for an
- * `entity_relation` election) `relationTable`. IDs can overlap across election kinds or tables.
- *
- * Recomputes are scheduled outside request latency; tests reading the aggregate after a vote
- * must wait here. See `docs/overview/architecture/services/README.md`.
- *
- * Unlike `onceEntityListenerCompleted` (`backend/test-helpers/workers/entity-listeners/test-support.mts`), this
- * helper does not short-circuit on `worker.isDrained`: elections enqueues are fire-and-forget, so the
- * worker can already be drained *before* the job this call is waiting for has even been added — an
- * `isDrained` early return would resolve immediately and leave the race this helper exists to close.
- * Also unlike that helper, the already-completed/-failed search and the live `completed`/`failed`
- * listeners register together before either is awaited, so a job that settles in the gap between
- * them is still observed instead of being missed by both, whichever terminal state it lands in.
- *
- * Job ids consumed by a match, from the pre-scan or a live event, are tracked in a module-level set
- * keyed by the full target, not just locally within one call: a job a prior call already
- * consumed can't also satisfy or fail a later call for the same election, which matters for tests
- * that vote more than once against the same entity.
- *
- * Rejects if the job fails, so regressions surface as clear errors rather than a 15s timeout.
- *
- * @param count - number of recompute jobs to wait for (default: 1). Only use values > 1 when you
- *   know that many jobs were actually enqueued: throttle dedup (`buildElectionJobOptions`) can
- *   collapse several rapid votes into one job, in which case waiting for N > jobs times out.
- * @param target - canonical election job payload, including its ordering key and relation table
- *   when applicable.
- *
- * @example
- * ```ts
- * await request.put(`/api/v1/posts/${postId}/vote`).send({ choice: 'dislike' }).expect(204)
- * await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' })
- * // the vote-count aggregate has now been recomputed for this post
- * ```
+ * Observe owned terminal jobs, including jobs settled before registration. Consumed IDs cannot
+ * satisfy a later wait. Queue admission promotes debounced jobs without waiting for wall time.
+ * Count must reflect admitted jobs: deduplication can collapse several votes into one job.
  */
 export async function onceElectionVoteStatsCompleted(
   target: ElectionJobInput,
   count = 1,
-  timeoutMs = 15_000,
+  timeoutMs = ELECTION_COMPLETION_DEADLINE_MS,
 ): Promise<void> {
   if (count <= 0) return
   const worker = electionsWorker as unknown as WorkerLike
   let remaining = count
   const consumed = consumedJobIdsFor(target)
 
-  return new Promise<void>((resolve, reject) => {
+  let cleanup = () => {}
+  const pending = new Promise<void>((resolve, reject) => {
     let settled = false
-    const stopPromoting = startPromotingElectionJobs(target)
-
-    const timer = setTimeout(() => {
-      cleanup()
-      reject(
-        new Error(
-          `onceElectionVoteStatsCompleted timed out after ${timeoutMs}ms waiting for election ${target.electionId}`,
-        ),
-      )
-    }, timeoutMs)
-
-    function cleanup(): void {
+    let stopPromoting = () => {}
+    cleanup = () => {
       settled = true
       worker.off('completed', onCompleted)
       worker.off('failed', onFailed)
-      clearTimeout(timer)
       stopPromoting()
     }
 
@@ -142,6 +103,7 @@ export async function onceElectionVoteStatsCompleted(
 
     worker.on('completed', onCompleted)
     worker.on('failed', onFailed)
+    stopPromoting = startPromotingElectionJobs(target, reject)
 
     findSettledElectionJobs(target)
       .then(({ completed, failed }) => {
@@ -150,7 +112,10 @@ export async function onceElectionVoteStatsCompleted(
           rejectFailed(job.id, job.failedReason ?? 'unknown error')
           if (settled) return
         }
-        for (const job of completed) markCompleted(job.id)
+        for (const job of completed) {
+          markCompleted(job.id)
+          if (settled) return
+        }
       })
       .catch((err: unknown) => {
         if (settled) return
@@ -158,4 +123,13 @@ export async function onceElectionVoteStatsCompleted(
         reject(err instanceof Error ? err : new Error(String(err)))
       })
   })
+  try {
+    await waitForRealGlideEvent(
+      pending,
+      `Elections vote-stats completion for election ${target.electionId}`,
+      timeoutMs,
+    )
+  } finally {
+    cleanup()
+  }
 }

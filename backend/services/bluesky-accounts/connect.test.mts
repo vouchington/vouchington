@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { connectBlueskyAccountToUser, getBlueskyLinkedAccountForUser } from './connect.mts'
 import { v7 } from 'uuid'
+import { ensureTestBlueskyLinkAuthorization } from '@voucha/test-helpers/entities/bluesky-link-authorizations'
 
 function fakeDid(): string {
   return `did:plc:${createRandomString(24)}`
@@ -44,10 +45,12 @@ describe('connectBlueskyAccountToUser', () => {
 
   it('throws 404 when no session row exists for the DID yet', async () => {
     const user = await createTestUserDirect()
+    const authorizationId = v7()
+    await ensureTestBlueskyLinkAuthorization({ authorizationId, userId: user.id })
 
     await expect(
       connectBlueskyAccountToUser(user.id, fakeDid(), fakeHandle(), {
-        linkAuthorizationId: v7(),
+        linkAuthorizationId: authorizationId,
       }),
     ).rejects.toThrow(/complete the Bluesky sign-in step/)
   })
@@ -72,7 +75,7 @@ describe('connectBlueskyAccountToUser', () => {
     expect(await getTestBlueskyLinkAttachmentTime(authorizationId)).toBe(attachedAt)
   })
 
-  it('throws 409 when the DID is already linked to a different user', async () => {
+  it('rejects another user without admitting the original linking session', async () => {
     const owner = await createTestUserDirect()
     const other = await createTestUserDirect()
     const did = fakeDid()
@@ -85,7 +88,8 @@ describe('connectBlueskyAccountToUser', () => {
       connectBlueskyAccountToUser(other.id, did, fakeHandle(), {
         linkAuthorizationId: authorizationId,
       }),
-    ).rejects.toThrow(/already linked to another user/)
+    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED', status: 401 })
+    expect((await getBlueskyLinkedAccountForUser(owner.id))?.bluesky_did).toBe(did)
   })
 
   it('throws 409 when the user already has a different Bluesky account linked', async () => {
@@ -93,10 +97,10 @@ describe('connectBlueskyAccountToUser', () => {
     const firstDid = fakeDid()
     const secondDid = fakeDid()
     const firstAuthorizationId = await seedLinkedAccountRow(firstDid, user.id)
-    const secondAuthorizationId = await seedLinkedAccountRow(secondDid, user.id)
     await connectBlueskyAccountToUser(user.id, firstDid, fakeHandle(), {
       linkAuthorizationId: firstAuthorizationId,
     })
+    const secondAuthorizationId = await seedLinkedAccountRow(secondDid, user.id)
 
     await expect(
       connectBlueskyAccountToUser(user.id, secondDid, fakeHandle(), {

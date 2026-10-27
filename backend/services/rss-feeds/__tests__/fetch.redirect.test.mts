@@ -89,7 +89,7 @@ describe('fetch.redirect', () => {
     // Feed URL should be updated to the redirect target
     const updatedFeed = await getRssFeedById(feed.id)
     expect(updatedFeed?.rss_feed_url.url).toContain('redir-perm-target')
-  }, 30_000)
+  })
 
   it('fetchRssFeed handles temporary redirect (307): does not update feed URL permanently', async () => {
     const feed = await makeFeed('tmp')
@@ -120,7 +120,7 @@ describe('fetch.redirect', () => {
 
     // Feed should remain enabled (not disabled for temporary redirects)
     expect(updatedFeed?.is_enabled).toBe(true)
-  }, 30_000)
+  })
 
   it('fetchRssFeed self-redirect does not loop', async () => {
     const feed = await makeFeed('self')
@@ -137,7 +137,7 @@ describe('fetch.redirect', () => {
     await expect(fetchRssFeedForTest(feed.id, 0)).resolves.toEqual([])
     // CrawlerRss should only be called once (self-redirect detected and aborted)
     expect(mockCrawlerRss).toHaveBeenCalledTimes(1)
-  }, 30_000)
+  })
 
   it('fetchRssFeed records a blocked redirect target without retrying', async () => {
     const feed = await makeFeed('blocked-target')
@@ -158,7 +158,7 @@ describe('fetch.redirect', () => {
     expect(mockCrawlerRss).toHaveBeenCalledTimes(1)
     const updatedFeed = await getRssFeedById(feed.id)
     expect(updatedFeed?.rss_feed_url.url).toBe(feed.feedUrl)
-  }, 30_000)
+  })
 
   it('fetchRssFeed applies temporary redirect target hostname retry policy', async () => {
     const feed = await makeFeed('target-unreliable')
@@ -179,7 +179,7 @@ describe('fetch.redirect', () => {
 
     await expect(fetchRssFeedForTest(feed.id, 0)).rejects.toThrow(CrawlerHttpClientError)
     expect(await getRssFeedDeletedAt(feed.id)).toBeNull()
-  }, 30_000)
+  })
 
   it('fetchRssFeed permanent redirect to existing canonical feed: disables source', async () => {
     const sourceFeed = await makeFeed('perm-src')
@@ -222,5 +222,5 @@ describe('fetch.redirect', () => {
     expect(canonicalJobs.map(job => job.opts.deduplication?.id)).toContain(
       `rss-feed-request__${canonicalFeed.id}`,
     )
-  }, 30_000)
+  })
 })

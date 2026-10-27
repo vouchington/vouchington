@@ -10,6 +10,8 @@ import { revokeSessionKeys, revokeUserSessionsBefore } from './session-revocatio
 import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
 import { withRejectedPostgresQueryForTest } from '@voucha/test-helpers/injected-failures'
 import { v7 } from 'uuid'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { createDeviceAndSessionTokens } from './create.mts'
 
 describe('revocation', () => {
   it('isSessionRevoked returns false for a session that has not been revoked', async () => {
@@ -34,12 +36,12 @@ describe('revocation', () => {
     expect(await isSessionRevoked(sid)).toBe(true)
   })
 
-  it('fails closed when the registry write fails after Valkey revocation', async () => {
+  it('reports a failed durable write while still setting the revocation marker', async () => {
     const sid = v7()
 
     await expect(
       withRejectedPostgresQueryForTest(
-        statement => statement.includes('/* revokeSession */'),
+        statement => statement.includes('/* updateSessionRevocationRegistry */'),
         'database unavailable',
         query => revokeSession(sid, { query }),
       ),
@@ -98,8 +100,9 @@ describe('revocation', () => {
   })
 
   it('does not revoke replacement logins issued in the cutoff second', async () => {
-    const userId = v7()
-    const sid = v7()
+    const { id: userId } = await createTestUserDirect()
+    const tokens = await createDeviceAndSessionTokens({ uid: userId, did: v7() })
+    const sid = tokens.sessionToken.payload.sid
     const cutoffSeconds = Math.floor(Date.now() / 1000)
 
     await revokeUserSessionsBefore(userId, cutoffSeconds)

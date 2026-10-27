@@ -99,7 +99,7 @@ describe('federation retention continuation', () => {
       })
       const scope = { activityIds: ids.expiredInboxActivityIds }
 
-      const first = await cleanupActivityPubReplayLedgerForTest('inbox', {
+      const first = await cleanupActivityPubReplayLedgerForTest({
         batchSize: 1,
         maxBatches: 1,
         now,
@@ -112,7 +112,7 @@ describe('federation retention continuation', () => {
          DELETE FROM activitypub_inbox_activities WHERE id = $1::uuid`,
         [ids.expiredInboxActivityIds[1]],
       )
-      const second = await cleanupActivityPubReplayLedgerForTest('inbox', {
+      const second = await cleanupActivityPubReplayLedgerForTest({
         batchSize: 1,
         maxBatches: 1,
         now,

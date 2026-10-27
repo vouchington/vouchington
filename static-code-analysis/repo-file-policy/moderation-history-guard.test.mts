@@ -31,7 +31,7 @@ describe('moderation-history-guard', () => {
 
   const MIGRATION_PATH = 'backend/data-stores/psql/migrations/0999-00-00-test.sql'
 
-  it('flags a table with frozen_at but no lifted_at', { timeout: 10_000 }, async () => {
+  it('flags a table with frozen_at but no lifted_at', async () => {
     const dir = await makeRepo()
     await track(
       dir,
@@ -53,7 +53,7 @@ describe('moderation-history-guard', () => {
     expect(errors[0]).toContain('#5154')
   })
 
-  it('allows a proper history table that has lifted_at', { timeout: 10_000 }, async () => {
+  it('allows a proper history table that has lifted_at', async () => {
     const dir = await makeRepo()
     await track(
       dir,
@@ -71,7 +71,7 @@ describe('moderation-history-guard', () => {
     expect(errors).toHaveLength(0)
   })
 
-  it('flags a bare BOOLEAN moderation column without lifted_at', { timeout: 10_000 }, async () => {
+  it('flags a bare BOOLEAN moderation column without lifted_at', async () => {
     const dir = await makeRepo()
     await track(
       dir,
@@ -87,30 +87,24 @@ describe('moderation-history-guard', () => {
     expect(errors[0]).toContain('link_submissions.blocked')
   })
 
-  it(
-    'allows a bare BOOLEAN moderation column when lifted_at is also present',
-    {
-      timeout: 10_000,
-    },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        MIGRATION_PATH,
-        `CREATE TABLE IF NOT EXISTS link_blocks (
+  it('allows a bare BOOLEAN moderation column when lifted_at is also present', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE IF NOT EXISTS link_blocks (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   url_id UUID NOT NULL REFERENCES urls ON DELETE CASCADE,
   blocked_by_id UUID REFERENCES users ON DELETE SET NULL,
   lifted_at TIMESTAMPTZ,
   lifted_by_id UUID REFERENCES users ON DELETE SET NULL
 );\n`,
-      )
-      const errors = await runGuard(dir, [MIGRATION_PATH])
-      expect(errors).toHaveLength(0)
-    },
-  )
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(0)
+  })
 
-  it('ignores a commented-out moderation column', { timeout: 10_000 }, async () => {
+  it('ignores a commented-out moderation column', async () => {
     const dir = await makeRepo()
     await track(
       dir,
@@ -125,69 +119,57 @@ describe('moderation-history-guard', () => {
     expect(errors).toHaveLength(0)
   })
 
-  it(
-    'allows a membership table with removed_at/removed_by_id (soft-delete append-only pattern)',
-    { timeout: 10_000 },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        MIGRATION_PATH,
-        `CREATE TABLE IF NOT EXISTS community_members (
+  it('allows a membership table with removed_at/removed_by_id (soft-delete append-only pattern)', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE IF NOT EXISTS community_members (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   removed_at TIMESTAMPTZ,
   removed_by_id UUID REFERENCES users ON DELETE SET NULL
 );\n`,
-      )
-      const errors = await runGuard(dir, [MIGRATION_PATH])
-      expect(errors).toHaveLength(0)
-    },
-  )
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(0)
+  })
 
-  it(
-    'allows a blocked BOOLEAN column with the moderation-history-guard-allow directive',
-    { timeout: 10_000 },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        MIGRATION_PATH,
-        `CREATE TABLE IF NOT EXISTS url_hostnames (
+  it('allows a blocked BOOLEAN column with the moderation-history-guard-allow directive', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE IF NOT EXISTS url_hostnames (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   hostname TEXT NOT NULL,
   blocked BOOLEAN, -- moderation-history-guard-allow: trigger-maintained from url_hostname_blocks
   crawlable BOOLEAN
 );\n`,
-      )
-      const errors = await runGuard(dir, [MIGRATION_PATH])
-      expect(errors).toHaveLength(0)
-    },
-  )
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(0)
+  })
 
-  it(
-    'flags a blocked BOOLEAN column WITHOUT the moderation-history-guard-allow directive',
-    { timeout: 10_000 },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        MIGRATION_PATH,
-        `CREATE TABLE IF NOT EXISTS url_hostnames (
+  it('flags a blocked BOOLEAN column WITHOUT the moderation-history-guard-allow directive', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE IF NOT EXISTS url_hostnames (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   hostname TEXT NOT NULL,
   blocked BOOLEAN,
   crawlable BOOLEAN
 );\n`,
-      )
-      const errors = await runGuard(dir, [MIGRATION_PATH])
-      expect(errors).toHaveLength(1)
-      expect(errors[0]).toContain('url_hostnames.blocked')
-    },
-  )
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('url_hostnames.blocked')
+  })
 
-  it('does not flag a non-migration .sql file', { timeout: 10_000 }, async () => {
+  it('does not flag a non-migration .sql file', async () => {
     const dir = await makeRepo()
     const viewFile = 'backend/data-stores/psql/views/0999-view.sql'
     await track(
@@ -200,7 +182,7 @@ SELECT id, suspended_at FROM users WHERE suspended_at IS NOT NULL;\n`,
     expect(errors).toHaveLength(0)
   })
 
-  it('reports SQL parse errors', { timeout: 10_000 }, async () => {
+  it('reports SQL parse errors', async () => {
     const dir = await makeRepo()
     await track(dir, MIGRATION_PATH, 'CREATE TABLE broken (\n')
     const errors = await runGuard(dir, [MIGRATION_PATH])
@@ -208,39 +190,28 @@ SELECT id, suspended_at FROM users WHERE suspended_at IS NOT NULL;\n`,
     expect(errors[0]).toContain('failed to parse SQL')
   })
 
-  it(
-    'produces one error per table (not one per moderation column)',
-    {
-      timeout: 10_000,
-    },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        MIGRATION_PATH,
-        `CREATE TABLE IF NOT EXISTS user_mutes (
+  it('produces one error per table (not one per moderation column)', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE IF NOT EXISTS user_mutes (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   muted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   muted_by_id UUID REFERENCES users ON DELETE SET NULL,
   muted_reason TEXT
 );\n`,
-      )
-      const errors = await runGuard(dir, [MIGRATION_PATH])
-      expect(errors).toHaveLength(1)
-    },
-  )
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(1)
+  })
 
-  it(
-    'flags each violating table independently in the same file',
-    {
-      timeout: 10_000,
-    },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        MIGRATION_PATH,
-        `CREATE TABLE IF NOT EXISTS user_silences (
+  it('flags each violating table independently in the same file', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      MIGRATION_PATH,
+      `CREATE TABLE IF NOT EXISTS user_silences (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   silenced_at TIMESTAMPTZ
 );
@@ -249,9 +220,8 @@ CREATE TABLE IF NOT EXISTS user_mutes (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   muted_at TIMESTAMPTZ
 );\n`,
-      )
-      const errors = await runGuard(dir, [MIGRATION_PATH])
-      expect(errors).toHaveLength(2)
-    },
-  )
+    )
+    const errors = await runGuard(dir, [MIGRATION_PATH])
+    expect(errors).toHaveLength(2)
+  })
 })

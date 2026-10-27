@@ -23,65 +23,24 @@ export async function acceptTestDelivery(
   return delivery
 }
 
-export async function claimTestDelivery(deliveryId: string, processingAttemptId: string) {
-  const result = await activityPubInboxDeliveryTransitions.claim(deliveryId, processingAttemptId)
+export async function loadTestDelivery(deliveryId: string) {
+  const result = await activityPubInboxDeliveryTransitions.load(deliveryId)
   return result.outcome === 'applied' ? result.value : null
 }
 
-export async function verifyTestDelivery(
-  deliveryId: string,
-  processingAttemptId: string,
-  remoteActorId: string,
-) {
+export async function verifyTestDelivery(deliveryId: string, remoteActorId: string) {
   return (
-    (
-      await activityPubInboxDeliveryTransitions.verify(
-        deliveryId,
-        processingAttemptId,
-        remoteActorId,
-      )
-    ).outcome === 'applied'
-  )
-}
-
-export async function deferTestDelivery(
-  deliveryId: string,
-  processingAttemptId: string,
-  deferredUntil: Date,
-) {
-  const result = await activityPubInboxDeliveryTransitions.defer(
-    deliveryId,
-    processingAttemptId,
-    deferredUntil,
-  )
-  return result.outcome === 'applied' ? result.value : null
-}
-
-export async function rejectTestDelivery(deliveryId: string, processingAttemptId: string) {
-  return (
-    (await activityPubInboxDeliveryTransitions.reject(deliveryId, processingAttemptId)).outcome ===
+    (await activityPubInboxDeliveryTransitions.verify(deliveryId, remoteActorId)).outcome ===
     'applied'
   )
 }
 
-export async function releaseTestDelivery(
-  deliveryId: string,
-  processingAttemptId: string,
-  error: unknown,
-) {
-  return (
-    (await activityPubInboxDeliveryTransitions.release(deliveryId, processingAttemptId, error))
-      .outcome === 'applied'
-  )
+export async function rejectTestDelivery(deliveryId: string) {
+  return (await activityPubInboxDeliveryTransitions.reject(deliveryId)).outcome === 'applied'
 }
 
-export async function exhaustTestDelivery(
-  deliveryId: string,
-  processingAttemptId: string,
-  error: unknown,
-) {
+export async function exhaustTestDelivery(deliveryId: string, error: unknown) {
   return (
-    (await activityPubInboxDeliveryTransitions.exhaust(deliveryId, processingAttemptId, error))
-      .outcome === 'applied'
+    (await activityPubInboxDeliveryTransitions.exhaust(deliveryId, error)).outcome === 'applied'
   )
 }

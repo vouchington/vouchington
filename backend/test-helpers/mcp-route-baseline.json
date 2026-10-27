@@ -1506,7 +1506,10 @@
     "I194": [["household_id", "relationship", "user"]],
     "I195": [["household_id", "invitation_id"]],
     "I196": [["invitation_id"]],
-    "I197": [["invitation_id"]]
+    "I197": [["invitation_id"]],
+    "I198": [["id", "review"]],
+    "I199": [["after", "limit", "review_due", "source_flag_id", "status", "user_id"]],
+    "I200": [["after", "limit", "review_due", "source", "source_flag_id", "status", "user_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -1526,7 +1529,7 @@
       {
         "audience": "admin",
         "facts": "F02",
-        "inputFields": "I001",
+        "inputFields": "I198",
         "requestBodyFields": null,
         "operation": {
           "tool": "lift_integrity_penalty",
@@ -1591,7 +1594,7 @@
       {
         "audience": "admin",
         "facts": "F02",
-        "inputFields": "I001",
+        "inputFields": "I198",
         "requestBodyFields": null,
         "operation": {
           "tool": "lift_integrity_penalty",
@@ -6520,6 +6523,70 @@
           "decision": false,
           "inputFields": "I197",
           "requestBodyFields": []
+        }
+      ]
+    },
+    "GET:/api/v1/report-integrity/penalties/review-due": {
+      "pullRequest": 3937,
+      "contracts": [
+        {
+          "audience": "admin",
+          "facts": "F14",
+          "inputFields": "I199",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_report_integrity",
+            "option": "penalties"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/vote-integrity/penalties/review-due": {
+      "pullRequest": 3937,
+      "contracts": [
+        {
+          "audience": "admin",
+          "facts": "F14",
+          "inputFields": "I200",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_vote_integrity",
+            "option": "penalties"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/report-integrity/penalties/:id/reviews": {
+      "pullRequest": 3937,
+      "contracts": [
+        {
+          "audience": "admin",
+          "facts": "F02",
+          "inputFields": "I198",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "lift_integrity_penalty",
+            "option": "report_abuse"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/vote-integrity/penalties/:id/reviews": {
+      "pullRequest": 3937,
+      "contracts": [
+        {
+          "audience": "admin",
+          "facts": "F02",
+          "inputFields": "I198",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "lift_integrity_penalty",
+            "option": "vote_ring"
+          },
+          "decision": false
         }
       ]
     }

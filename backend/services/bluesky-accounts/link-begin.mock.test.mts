@@ -1,3 +1,7 @@
+import {
+  createTestAccountChangeActor,
+  createTestAccountChangeProof,
+} from '@voucha/test-helpers/account-change'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createRandomString,
@@ -19,7 +23,7 @@ vi.mock<typeof import('@modules/bluesky-oauth')>(
 )
 createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 
-import { beginBlueskyAccountLink } from './link-service.mts'
+import { beginBlueskyAccountLink } from './link.mts'
 import { connectBlueskyAccountToUser } from './connect.mts'
 import { getBlueskyOAuthClient } from './client.mts'
 
@@ -38,11 +42,16 @@ describe('beginBlueskyAccountLink', () => {
 
   it('kicks off authorization with appState carrying only the durable authorization id', async () => {
     const user = await createTestUserDirect()
+    const actor = await createTestAccountChangeActor(user.id)
+    const reAuthToken = await createTestAccountChangeProof(user.id, actor.session)
     const handle = fakeHandle()
     const expectedUrl = new URL('https://bsky.social/oauth/authorize?request_uri=abc')
     beginBlueskyAuthorizationMock.mockResolvedValueOnce(expectedUrl)
 
-    const result = await beginBlueskyAccountLink(user.id, handle)
+    const result = await beginBlueskyAccountLink(user.id, handle, {
+      session: actor.session,
+      reAuthToken,
+    })
 
     expect(result).toEqual({ redirectUrl: expectedUrl })
     const [, , rawState] = beginBlueskyAuthorizationMock.mock.calls[0]!
@@ -52,26 +61,30 @@ describe('beginBlueskyAccountLink', () => {
 
   it('throws 409 when the user already has a Bluesky account linked', async () => {
     const user = await createTestUserDirect()
+    const actor = await createTestAccountChangeActor(user.id)
+    const reAuthToken = await createTestAccountChangeProof(user.id, actor.session)
     const did = fakeDid()
     const linked = await insertTestBlueskyLinkedAccount({ userId: user.id, did })
     await connectBlueskyAccountToUser(user.id, did, fakeHandle(), {
       linkAuthorizationId: linked.link_authorization_id,
     })
 
-    await expect(beginBlueskyAccountLink(user.id, fakeHandle())).rejects.toThrow(
-      /already have a Bluesky account linked/,
-    )
+    await expect(
+      beginBlueskyAccountLink(user.id, fakeHandle(), { session: actor.session, reAuthToken }),
+    ).rejects.toThrow(/already have a Bluesky account linked/)
     expect(beginBlueskyAuthorizationMock).not.toHaveBeenCalled()
   })
 
   it('does not begin a new flow while the previous exact generation is disconnecting', async () => {
     const user = await createTestUserDirect()
+    const actor = await createTestAccountChangeActor(user.id)
+    const reAuthToken = await createTestAccountChangeProof(user.id, actor.session)
     const linked = await insertTestBlueskyLinkedAccount({ userId: user.id })
     await requestTestBlueskyDisconnect(linked.bluesky_did)
 
-    await expect(beginBlueskyAccountLink(user.id, fakeHandle())).rejects.toThrow(
-      /still disconnecting/,
-    )
+    await expect(
+      beginBlueskyAccountLink(user.id, fakeHandle(), { session: actor.session, reAuthToken }),
+    ).rejects.toThrow(/still disconnecting/)
     expect(beginBlueskyAuthorizationMock).not.toHaveBeenCalled()
   })
 })

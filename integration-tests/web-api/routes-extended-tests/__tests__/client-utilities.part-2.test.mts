@@ -69,7 +69,7 @@ describe('client-utilities', () => {
       // what else is already in the database.
       await createTestPost({ user })
       await createTestPost({ user })
-    }, 20_000)
+    })
 
     afterAll(async () => {
       await new Promise<void>(resolve => {
@@ -91,7 +91,7 @@ describe('client-utilities', () => {
       } else {
         delete (globalThis as { window?: unknown }).window
       }
-    }, 15_000)
+    })
 
     async function withClientRuntime<T>(
       run: () => Promise<T>,

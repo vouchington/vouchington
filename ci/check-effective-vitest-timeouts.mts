@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { relative, sep } from 'node:path'
 import { createVitest } from 'vitest/node'
 import {
   assertCanonicalRootVitestConfig,
@@ -15,6 +16,13 @@ let failed = false
 let primary: unknown
 const cleanup: unknown[] = []
 const projects: string[] = []
+const requiredTests = new Set([
+  '.husky/husky-hooks.test.mts',
+  '.husky/post-checkout.test.mts',
+  'backend/test-helpers/post-search-query-syntax.test.mts',
+  'backend/test-helpers/dynamic-config.test.mts',
+])
+const collectedTests = new Set<string>()
 try {
   const rootConfigs = execFileSync('git', ['ls-files', '-z', '--', ':(top,glob)vitest.config.*'], {
     cwd: root,
@@ -36,6 +44,17 @@ try {
     }
     assert.equal(project.browser, undefined, project.name)
     projects.push(project.name)
+  }
+  // A multi-project CI run can pass while silently collecting an important test in no project.
+  for (const project of context.projects) {
+    const { testFiles } = await project.globTestFiles()
+    for (const file of testFiles) {
+      const repositoryPath = relative(root, file).split(sep).join('/')
+      if (requiredTests.has(repositoryPath)) collectedTests.add(repositoryPath)
+    }
+  }
+  for (const file of requiredTests) {
+    assert.ok(collectedTests.has(file), `${file} must be collected by a CI project`)
   }
   assert.ok(projects.length > 0)
 } catch (err) {

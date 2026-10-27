@@ -1,5 +1,5 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { loginAsUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import {
   createTestUser,
@@ -180,7 +180,7 @@ test.describe('Modmail — mod side', () => {
   })
 
   test('send-modmail button is visible for site staff', async ({ page }) => {
-    await loginAsUser(page, staffUserId)
+    await loginAsMfaUser(page, staffUserId)
     await navigateTo(page, `/communities/${communitySlug}/settings/moderation`)
 
     await expect(page.getByTestId('send-modmail-button')).toBeVisible()

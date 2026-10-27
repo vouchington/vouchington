@@ -4,46 +4,30 @@ import {
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
   ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,
 } from '../queues/background/enqueues/activitypub-jobs.mts'
-import { getActivityPubInboxDeliveryIdentityForTest } from './entities/activitypub-inbox.mts'
 import { readAllQueueJobs } from './queue-jobs.mts'
 
-/** Remove only jobs whose real payload names this test delivery; reject an in-flight worker. */
+/** Remove only jobs whose payload names this test delivery; reject an in-flight worker. */
 export async function removeActivityPubInboxJobsForDeliveryId(
   deliveryId: string,
-  knownLeaseTokens: readonly string[] = [],
+  requestDigest?: string,
 ): Promise<number> {
   const jobs = new Map((await readAllQueueJobs(activitypub)).map(job => [job.id, job]))
-  const expectedJobs = new Map<string, string>()
-  for (const leaseToken of knownLeaseTokens)
-    expectedJobs.set(`activitypub-inbox__${deliveryId}__${leaseToken}`, leaseToken)
-  expectedJobs.set(`activitypub-inbox-failed-backfill__${deliveryId}`, '')
-  for (const id of expectedJobs.keys()) {
-    const job = await activitypub.getJob(id)
-    if (job) jobs.set(id, job)
+  if (requestDigest) {
+    const job = await activitypub.getJob(`activitypub-inbox__${requestDigest}`)
+    if (job) jobs.set(job.id, job)
   }
   let removed = 0
   for (const job of jobs.values()) {
     const data: unknown = job.data
-    if (typeof data !== 'object' || data === null) {
-      if (expectedJobs.has(job.id))
-        throw new Error(`ActivityPub job ${job.id} does not match its owned delivery`)
-      continue
-    }
+    if (typeof data !== 'object' || data === null) continue
     const owned =
       (job.name === ACTIVITYPUB_PROCESS_DELIVERY_JOB.name &&
         'deliveryId' in data &&
-        data.deliveryId === deliveryId) ||
+        data.deliveryId === deliveryId &&
+        (!requestDigest || ('requestDigest' in data && data.requestDigest === requestDigest))) ||
       (job.name === ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB.name &&
         'afterId' in data &&
         data.afterId === deliveryId)
-    const expectedLeaseToken = expectedJobs.get(job.id)
-    if (
-      expectedLeaseToken !== undefined &&
-      (!owned ||
-        (expectedLeaseToken !== '' &&
-          (!('leaseToken' in data) || data.leaseToken !== expectedLeaseToken)))
-    )
-      throw new Error(`ActivityPub job ${job.id} does not match its owned delivery`)
     if (!owned) continue
     if ((await job.getState()) === 'active')
       throw new Error(`ActivityPub job ${job.id} is active after worker completion`)
@@ -55,16 +39,9 @@ export async function removeActivityPubInboxJobsForDeliveryId(
 
 export function registerActivityPubInboxJobCleanup(
   deliveryId: string,
-  leaseToken: string,
-  activityId?: string,
+  requestDigest: string,
 ): void {
   onTestFinished(async () => {
-    const current = activityId
-      ? await getActivityPubInboxDeliveryIdentityForTest(activityId)
-      : undefined
-    await removeActivityPubInboxJobsForDeliveryId(
-      deliveryId,
-      current ? [leaseToken, current.leaseToken] : [leaseToken],
-    )
+    await removeActivityPubInboxJobsForDeliveryId(deliveryId, requestDigest)
   })
 }

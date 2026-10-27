@@ -142,10 +142,12 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
     await deleteUser(deletedNewMember!, deletedNewMember!)
 
     const windowStart = new Date(Date.now() - ONE_WEEK_MS)
+    const windowEnd = new Date()
     const communities = await getCommunityModerationSummaryCommunities(
       owner!.id,
       windowStart,
-      new Date(),
+      windowEnd,
+      windowEnd,
     )
     const found = communities.find(c => c.name === community.name)
 
@@ -234,10 +236,12 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
     })
 
     const windowStart = new Date(Date.now() - ONE_DAY_MS)
+    const windowEnd = new Date()
     const communities = await getCommunityModerationSummaryCommunities(
       owner.id,
       windowStart,
-      new Date(),
+      windowEnd,
+      windowEnd,
     )
     const found = communities.find(c => c.name === community.name)
 

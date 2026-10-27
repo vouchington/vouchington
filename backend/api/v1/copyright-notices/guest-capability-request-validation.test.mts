@@ -34,7 +34,7 @@ describe('copyright guest capability request contracts', () => {
     it('keeps a bare 401 and 403 ahead of any schema diagnostic', async () => {
       const url = `${NOTICES}/${crypto.randomUUID()}/guest-capabilities`
       const anonymous = await createRequest().post(url).send({ injected: true }).expect(401)
-      expect(anonymous.text).not.toMatch(/schema|must be|required|invalid/i)
+      expect(anonymous.body.message).not.toMatch(/schema|must be|required|invalid/i)
       const member = createRequest()
       await member.authenticateAs(await createTestUser())
       await member.post(url).send({ injected: true }).expect(403)

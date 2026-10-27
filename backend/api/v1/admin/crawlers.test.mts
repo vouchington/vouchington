@@ -11,7 +11,7 @@ describe('crawlers', () => {
 
   beforeAll(async () => {
     ;[admin, regularUser] = await Promise.all([
-      createTestUserDirect({ administrator: true }),
+      createTestUserDirect({ administrator: true, withEmail: true }),
       createTestUserDirect(),
     ])
   })

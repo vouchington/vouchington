@@ -54,7 +54,7 @@ describe('C6 run adapter reservation (real PG)', () => {
     expect(captured).toHaveLength(3)
     expect(new Set(captured)).toEqual(idsOf(fixture.topics))
     const [request] = await getSubjectClassifierRunRequestFacts(fixture.subject)
-    expect(request).toMatchObject({ run_id: runId, no_work_at: null, stale_at: null })
+    expect(request).toMatchObject({ run_identity_id: runId, no_work_at: null, stale_at: null })
   })
 
   it('never lets a changed search result mint a second receipt or change what the receipt asks', async () => {
@@ -97,7 +97,7 @@ describe('C6 run adapter reservation (real PG)', () => {
 
     expect(await getSubjectClassifierRunFacts(fixture.subject, TAGGING_CLASSIFIER_SLUG)).toEqual([])
     const [request] = await getSubjectClassifierRunRequestFacts(fixture.subject)
-    expect(request).toMatchObject({ run_id: null, no_work_at: expect.any(Date) })
+    expect(request).toMatchObject({ run_identity_id: null, no_work_at: expect.any(Date) })
   })
 
   it('leaves the request pending until the post embedding exists, then reserves it', async () => {
@@ -108,7 +108,7 @@ describe('C6 run adapter reservation (real PG)', () => {
 
     expect(await getSubjectClassifierRunFacts(fixture.subject, TAGGING_CLASSIFIER_SLUG)).toEqual([])
     expect(await getSubjectClassifierRunRequestFacts(fixture.subject)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: null },
+      { run_identity_id: null, no_work_at: null, stale_at: null },
     ])
     await embedAutotaggerPost(fixture.post.id, fixture.embedding)
     expect((await reserveClassifierRun(adapter, fixture.subject)).kind).toBe('reserved')
@@ -160,7 +160,7 @@ describe('C6 run adapter reservation (real PG)', () => {
       { no_work_at: null },
     ])
     expect(await getSubjectClassifierRunRequestFacts(hidden.subject)).toMatchObject([
-      { run_id: null, no_work_at: expect.any(Date) },
+      { run_identity_id: null, no_work_at: expect.any(Date) },
     ])
   })
 })

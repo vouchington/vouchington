@@ -124,6 +124,31 @@ CREATE TRIGGER trigger_admin_import_rows_validate_target
   WHEN (NEW.completed_at IS NOT NULL)
   EXECUTE FUNCTION fn_reject_admin_import_row_target();
 
+-- A completed import may not create a new RESTRICT reference after feed deletion is accepted.
+-- FOR SHARE waits behind the deleter's feed-row lock, so the marker check cannot race it.
+CREATE OR REPLACE FUNCTION fn_reject_admin_import_deleted_rss_feed()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  requested_at TIMESTAMPTZ;
+BEGIN
+  SELECT hard_delete_requested_at INTO requested_at
+  FROM rss_feeds WHERE id = NEW.rss_feed_id FOR SHARE;
+  IF requested_at IS NOT NULL THEN
+    RAISE EXCEPTION 'RSS feed is being deleted'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_admin_import_rows_guard_deleted_rss_feed
+  BEFORE INSERT OR UPDATE OF rss_feed_id, completed_at ON admin_import_rows
+  FOR EACH ROW
+  WHEN (NEW.rss_feed_id IS NOT NULL)
+  EXECUTE FUNCTION fn_reject_admin_import_deleted_rss_feed();
+
 CREATE INDEX IF NOT EXISTS idx_admin_import_rows__batch_id
   ON admin_import_rows (batch_id);
 

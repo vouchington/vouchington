@@ -7,8 +7,7 @@ FROM ghcr.io/vouchington/dependency-node:26-slim@sha256:36793bcbb160a6a16cede1e6
 WORKDIR /app
 
 # Install pnpm with npm so the build does not depend on what the base Node image
-# bundles. pnpm-activation.test.mts keeps this major equal to CI's pnpm/action-setup
-# `latest-<major>`.
+# bundles. CI follows the same pnpm major.
 ARG PNPM_VERSION=12
 RUN npm install -g pnpm@${PNPM_VERSION}
 

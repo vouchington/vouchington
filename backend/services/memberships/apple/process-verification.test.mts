@@ -14,8 +14,6 @@ import {
   createTestMembershipProviderLineage,
   createTestUser,
   getTestMembershipProviderLineageAccountId,
-  claimTestMembershipVerification,
-  getTestMembershipVerificationProcessingState,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { processAppleMembershipVerification } from './process-verification.mts'
@@ -230,39 +228,35 @@ describe('Apple membership verification processing', () => {
     })
   })
 
-  it('fences a fresh claim and defers a retryable verifier construction failure', async () => {
+  it('retries verifier construction failures and ignores a duplicate terminal job', async () => {
     const user = await createTestUser()
     const fixture = await createAppleVerificationFixture(user.id)
-    const fenced = await submitAppleVerification(user.id, fixture, `signed-fenced-${randomUUID()}`)
-    const retryable = await submitAppleVerification(
+    const verification = await submitAppleVerification(
       user.id,
       fixture,
       `signed-retry-${randomUUID()}`,
     )
-    const claimToken = randomUUID()
-    await claimTestMembershipVerification(fenced.id, claimToken)
-
-    await processAppleMembershipVerification(fenced.id, {
-      createVerifier: () => makeVerifier(fixture),
+    await expect(
+      processAppleMembershipVerification(verification.id, {
+        createVerifier: () => {
+          throw new Error('temporary verifier configuration failure')
+        },
+      }),
+    ).rejects.toThrow('temporary verifier configuration failure')
+    await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
+      status: 'pending',
     })
-    await processAppleMembershipVerification(retryable.id, {
+    await processAppleMembershipVerification(verification.id, {
+      createVerifier: () => makeVerifier(fixture, { appAccountToken: fixture.purchaseIntentId }),
+    })
+    await processAppleMembershipVerification(verification.id, {
       createVerifier: () => {
-        throw new Error('temporary verifier configuration failure')
+        throw new Error('Terminal duplicate must not invoke the adapter')
       },
     })
-
-    await expect(getTestMembershipVerificationProcessingState(fenced.id)).resolves.toMatchObject({
-      lease_token: claimToken,
-      attempt_count: 0,
+    await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
+      status: 'verified',
     })
-    await expect(getTestMembershipVerificationProcessingState(retryable.id)).resolves.toMatchObject(
-      {
-        lease_token: null,
-        attempt_count: 1,
-        last_error: 'apple_verification_retry',
-        available_at: expect.any(Date),
-      },
-    )
   })
 })
 

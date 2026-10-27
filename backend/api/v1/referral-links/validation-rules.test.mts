@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect } from '@voucha/test-helpers'
-import { addUserRole } from '@services/users/roles-permissions'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 
 describe('validation-rules', () => {
@@ -11,8 +10,7 @@ describe('validation-rules', () => {
 
   beforeAll(async () => {
     regularUser = await createTestUserDirect()
-    adminUser = await createTestUserDirect()
-    await addUserRole(adminUser!.id, 'administrator')
+    adminUser = await createTestUserDirect({ administrator: true, withEmail: true })
 
     const fixture = await createReferralProgramFixture({ createdById: regularUser!.id })
     validationId = fixture.validationId

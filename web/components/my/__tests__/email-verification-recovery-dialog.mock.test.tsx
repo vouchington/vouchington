@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FormEvent } from 'react'
 import { EmailVerificationRecoveryDialog } from '../email-verification-recovery-dialog'
+import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 
 type AddEmailFormMockProps = {
   newEmail: string
@@ -15,11 +16,20 @@ type VerifyEmailFormMockProps = {
   submitVerify: (token: string) => void
 }
 
-const { onErrorMock, requestMock, verifyMock } = vi.hoisted(() => ({
+const { onErrorMock, requestMock, verifyMock, authenticateMock } = vi.hoisted(() => ({
   onErrorMock: vi.fn<VitestLooseMock>(),
   requestMock: vi.fn<VitestLooseMock>(),
   verifyMock: vi.fn<VitestLooseMock>(),
+  authenticateMock: vi.fn<() => Promise<string | null>>(),
 }))
+
+vi.mock(import('../use-fresh-authentication'), () => ({
+  useFreshAuthentication: () => ({
+    ...useFreshAuthenticationMock(),
+    requestAuthentication: authenticateMock,
+  }),
+}))
+vi.mock(import('../mfa-reauth-dialog'), () => ({ MfaReauthDialog: () => <span hidden /> }))
 
 vi.mock(import('@/lib/api/client'), () => ({
   requestMyEmailAddressVerification: requestMock,
@@ -56,7 +66,7 @@ vi.mock(import('../email-manager/verify-email-form'), () => ({
     <div>
       <button
         type='button'
-        onClick={() => submitVerify('ABCD1234')}
+        onClick={() => submitVerify('ABCDEFG234')}
       >
         Verify
       </button>
@@ -71,7 +81,10 @@ vi.mock(import('../email-manager/verify-email-form'), () => ({
 }))
 
 describe('EmailVerificationRecoveryDialog', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    authenticateMock.mockResolvedValue('fresh-proof')
+  })
 
   it('requests the normalized address and completes verification', async () => {
     requestMock.mockResolvedValue({ email_address: 'tests+recovery@voucha.ai' })
@@ -89,12 +102,35 @@ describe('EmailVerificationRecoveryDialog', () => {
     await screen.findByText('Tests+Recovery@Voucha.ai')
     fireEvent.click(screen.getByRole('button', { name: 'Request' }))
     await screen.findByRole('button', { name: 'Verify' })
-    expect(requestMock).toHaveBeenCalledWith('Tests+Recovery@Voucha.ai')
+    expect(requestMock).toHaveBeenCalledWith('Tests+Recovery@Voucha.ai', 'fresh-proof')
     fireEvent.click(screen.getByRole('button', { name: 'Verify' }))
     await waitFor(() =>
-      expect(verifyMock).toHaveBeenCalledWith('tests+recovery@voucha.ai', 'ABCD1234'),
+      expect(verifyMock).toHaveBeenCalledWith(
+        'tests+recovery@voucha.ai',
+        'ABCDEFG234',
+        'fresh-proof',
+      ),
     )
     expect(onVerified).toHaveBeenCalledOnce()
+    expect(authenticateMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('leaves email recovery untouched when confirmation is cancelled', async () => {
+    authenticateMock.mockResolvedValueOnce(null)
+    render(
+      <EmailVerificationRecoveryDialog
+        open
+        onOpenChange={() => {}}
+        onVerified={() => {}}
+      />,
+    )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Request' }))
+    })
+    expect(authenticateMock).toHaveBeenCalledOnce()
+    expect(requestMock).not.toHaveBeenCalled()
+    expect(verifyMock).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Request' })).toBeInTheDocument()
   })
 
   it('reports request and verification failures and supports cancellation', async () => {

@@ -15,12 +15,9 @@ import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { joinSearchParamValues } from '@/lib/search-param-values'
-import {
-  createBreadcrumbSchema,
-  createCollectionPageSchema,
-  createItemListSchema,
-  type ItemListInput,
-} from '@/lib/seo/structured-data'
+import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
+import type { ItemListInput } from '@vouchington/utils/json-ld'
+import { createCollectionPageSchema, createItemListSchema } from '@/lib/seo/structured-data'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 
 const MEDIA_ITEM_LISTING_LIMIT = 25

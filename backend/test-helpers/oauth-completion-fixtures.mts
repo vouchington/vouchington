@@ -41,6 +41,9 @@ export function completionDependencies(
   user?: PrivateUser,
 ): CompletionDependencies {
   return {
+    notifyAccountSecurityChange: vi.fn<CompletionDependencies['notifyAccountSecurityChange']>(() =>
+      Promise.resolve(),
+    ),
     completeTransaction: vi.fn<CompletionDependencies['completeTransaction']>(() =>
       Promise.resolve(durableResult),
     ),

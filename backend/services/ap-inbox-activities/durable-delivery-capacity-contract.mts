@@ -1,6 +1,6 @@
 export type RecoverableActivityPubInboxDelivery = {
   deliveryId: string
-  leaseToken: string
+  requestDigest: string
 }
 
 export type ActivityPubInboxCapacityExceeded = {
@@ -14,5 +14,5 @@ export type ActivityPubInboxCapacityExceeded = {
 }
 
 export type ActivityPubInboxAcceptResult =
-  | { outcome: 'applied'; value: RecoverableActivityPubInboxDelivery }
+  | { outcome: 'applied'; value: RecoverableActivityPubInboxDelivery; wasInserted: boolean }
   | { outcome: 'capacity-exceeded'; value: ActivityPubInboxCapacityExceeded }

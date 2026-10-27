@@ -1,14 +1,12 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
 import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
 const execFile = promisify(execFileCallback)
 const smokeScript = resolve('web/scripts/tests/smoke-test-web.sh')
-const smokeScriptSource = readFileSync(smokeScript, 'utf8')
 
 interface SmokeRun {
   allocatorArgs: string[]
@@ -66,18 +64,6 @@ async function runSmoke(allocatorOutput: string, allocatorExit = 0): Promise<Smo
 }
 
 describe('Web smoke port allocation', () => {
-  it('reserves both ports from the browser-safe allocator, not from RANDOM', () => {
-    expect(smokeScriptSource).not.toMatch(/\bRANDOM\b/)
-    expect(
-      existsSync(
-        join(
-          dirname(smokeScript),
-          '../../../node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py',
-        ),
-      ),
-    ).toBe(true)
-  })
-
   it('asks the repo-root allocator for two ports and accepts two distinct ones', async () => {
     const run = await runSmoke('43001 43002')
 

@@ -75,14 +75,12 @@ describe('spending-categories.generated', () => {
 
   it('getHouseholdSpendingCategoriesByUserId - applies entry filters before the page limit', async () => {
     const topicId = await insertTestSpendingCategory({ createdById: user.id })
-    const entries = await Promise.all(
-      Array.from({ length: 26 }, (_, index) =>
-        createHouseholdSpendingCategory(user, user, topicId, {
-          amount: { amount: index, currency: 'usd' },
-        }),
-      ),
-    )
-    const target = entries[25]!
+    await createHouseholdSpendingCategory(user, user, topicId, {
+      amount: { amount: 0, currency: 'usd' },
+    })
+    const target = (await createHouseholdSpendingCategory(user, user, topicId, {
+      amount: { amount: 1, currency: 'usd' },
+    }))!
 
     const page = await getHouseholdSpendingCategoriesByUserId(user, user, {
       entry_id: target.id,

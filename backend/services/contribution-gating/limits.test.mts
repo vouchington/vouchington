@@ -30,7 +30,7 @@ describe('contribution action limits', () => {
   beforeAll(async () => {
     await contributionLimitConfig.waitForInitialization()
     contributionLimitConfig.unsubscribe()
-  }, 30_000)
+  })
 
   afterEach(() => {
     overrideDynamicConfigFieldsForTest(contributionLimitConfig, testContributionLimitFields())

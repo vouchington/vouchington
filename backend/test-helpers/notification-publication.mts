@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function createTestSubscriptionPostNotification(input: {
@@ -23,7 +23,16 @@ export async function createTestOrphanRssFeedItemNotification(input: {
   sentByUserId: string
   publicationRssFeedItemId: string | null
 }): Promise<string> {
-  const { rows } = await write<{ id: string }>(sql`/* createTestOrphanRssFeedItemNotification */
+  await using transaction = await beginTransaction()
+  if (input.publicationRssFeedItemId) {
+    await transaction(
+      `/* createTestOrphanRssFeedItemNotificationIdentity */
+       INSERT INTO retained_rss_feed_item_identities (id) VALUES ($1)`,
+      [input.publicationRssFeedItemId],
+    )
+  }
+  const { rows } = await write<{ id: string }>(
+    sql`/* createTestOrphanRssFeedItemNotification */
     INSERT INTO notifications (
       user_id, entity_type, delivery_type, sent_by_id, publication_rss_feed_item_id,
       title, body, target_path
@@ -34,6 +43,9 @@ export async function createTestOrphanRssFeedItemNotification(input: {
       'Test orphaned content notification', 'https://example.com/test'
     )
     RETURNING id
-  `)
+  `,
+    { query: transaction },
+  )
+  await transaction.commit()
   return rows[0]!.id
 }

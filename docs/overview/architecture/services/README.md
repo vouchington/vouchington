@@ -48,6 +48,12 @@ flowchart LR
 
 ## Decisions worth knowing
 
+Deleting an image immediately denies delivery and retires its placements. Posts sharing the image
+are reset in independent bounded transactions, so popular images cannot hold every post lock in
+one transaction. A failed page keeps the image unreadable and its source storage intact until
+recovery completes. PostgreSQL owns progress and pending listener admissions; the
+[queue continuation](../queues/README.md#why-queues-are-shaped-this-way) is a delivery hint.
+
 List import applies the same post discovery eligibility as list reads, preventing invisible rows
 from being copied into a personal list. A shared runtime bound caps post and feed-item import
 sources, including the combined feed-item result across source feeds; feed items stay readable only
@@ -60,6 +66,32 @@ events. The immutable Stripe event ledger remains the deduplication authority af
 removed; verification-linked purchase intents remain because their accounting evidence must keep
 a valid reference. Failed Stripe processing work remains recoverable until it reaches a completed
 or ignored outcome.
+
+Browser device credentials carry refresh authority separately from access authority. The session
+service may renew an access credential only after checking device binding, revocation and the
+current user; that refresh authority alone never authorizes a mutation. Ordinary authenticated
+requests still require a paired device and access credential. Browser-key binding is authoritative
+on the PostgreSQL session row; Valkey holds only single-use proof challenges. Renewal checks the
+binding under the same row lock as credential rotation, and cache eviction cannot restore an
+unbound credential. Credential mint authority also preserves native identity during secure completion
+replay; verified native attestation can renew device lifetime without converting a web session. See the [browser auth boundary](../reference-auth-overview-web-client-auth-boundary.md).
+
+The primary session registry also acts as the credential-mint receipt for durable OAuth completion.
+A completion interrupted before its first mint can initialize authority only when its SID has no
+registry row. Existing rows, including revoked or expired sessions, prevent lost authority from
+being recreated. Session rows must therefore remain until user deletion; active-SID pruning would
+break this invariant. A registry read failure cannot authorize initialization.
+
+Identity verification keeps a keyed document fingerprint after revocation and account deletion so
+the same document cannot verify another account. The domain HMAC key must remain stable while these
+hashes are retained: changing it would make older hashes uncheckable because raw document values
+are discarded. Fingerprint-key rotation is not implemented.
+
+Membership verification outcomes are durable authority. Provider reads may repeat after a queue
+loss or concurrent replay; only a pending verification can commit evidence and entitlement
+projections together. Google purchase acknowledgement remains a separate durable external effect.
+The membership overview returns no next-processing timestamp because queue scheduling is not a
+PostgreSQL lifecycle fact.
 
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates
@@ -79,19 +111,18 @@ markers provide recovery when publication or timestamp visibility loses a trigge
 Data retention bounds pending push work by the intent's creation time, because push work can be
 created after its notification. The intent's UUIDv7 `id` carries that time. A persisted cursor
 pages by that `id` and keeps a fixed cutoff for each sweep, so a large backlog resumes on the next
-scheduled run.
+scheduled run. The worker enqueues another bounded page when work remains, so a backlog progresses
+within the same cleanup cycle.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
-ActivityPub inbox and outbound replay ledgers expire through bounded oldest-eligible pages after
-their configured maximum activity age. Each page locks its admission floor, deletes its rows,
-advances the monotonic floor and commits before the next page. Inbound signed-date admission and
-outbound checkpoint admission serialize with that short transaction. A distribution job checks its
-floor while claiming the bounded recipient page; its already-admitted delivery jobs may drain after
-the floor advances, retaining their own maximum-age check without a database floor read per recipient.
-No floor lock crosses queue admission or external HTTP.
-Age or permanent-floor rejection retires an existing matching fan-out checkpoint and releases its
-lease without creating work. Its recorded cursor remains intact, and terminal retention can
-eventually remove work that can no longer resume.
+The ActivityPub inbox replay ledger expires through bounded oldest-eligible pages after the
+configured maximum activity age. Each page locks its admission floor, deletes its rows, advances the
+monotonic floor and commits before the next page. Inbound signed-date admission serializes with
+that short transaction, and no floor lock crosses queue admission or external HTTP.
+
+Outbound activities carry no ledger or floor: their UUIDv7 age is checked when a distribution or
+delivery job runs. An expired activity completes distribution, which settles its Follow or Like row
+so the recovery sweep neither rescans nor resends it.
 
 Active Follow and Like cycles remain live domain facts. Replacement and Undo transitions retire old
 cycle identities; terminal rows expire from that immutable transition time after a configurable
@@ -102,6 +133,13 @@ An embedded Undo id must belong to the verified actor's hostname before it can r
 Expiring an old Follow cycle clears only the optional cycle pointer, preserving the relation's actor
 and target facts. Terminal follower distribution intents also expire through bounded pages; their
 children cascade from the parent, while unfinished intents remain available for retries.
+
+History retention keeps a durable high-water cursor for age-only referral scrubbing, referral
+expiry, and pending imports. A completed pass advances its fixed age boundary rather than starting
+again at the oldest row. Each bounded page first checks for one still-eligible row behind the
+cursor, so a late commit cannot be lost. The referral check uses only rows that still carry URL or
+campaign details; once cleared, a retained click does not consume future scrub pages. Histories
+whose eligibility can change when a newer same-key row arrives still revisit their raw range.
 
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong

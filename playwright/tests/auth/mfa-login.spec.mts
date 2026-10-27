@@ -34,8 +34,9 @@ async function navigateToMfaStep(page: Page) {
   // Wait for code step
   await expect(page.getByTestId('login-verification-code-input')).toBeVisible()
 
-  // Code step: enter any 8-char hex code — mock validates nothing
-  await page.getByTestId('login-verification-code-input').pressSequentially('ABCD1234')
+  // Code step: enter a complete base32 code — mock validates nothing
+  await page.getByTestId('login-verification-code-input').pressSequentially('ABCDEFG234')
+  await page.getByTestId('login-code-submit-button').click()
 
   // MFA step renders after mock returns mfa_required: true
   await expect(page.getByTestId('mfa-step-container')).toBeVisible()

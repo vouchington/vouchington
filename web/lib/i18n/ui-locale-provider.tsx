@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { UiLocaleContext } from './ui-locale-context'
+import { LocaleProvider } from './ui-locale-context'
 
 export function UiLocaleProvider({
   children,
@@ -10,5 +10,5 @@ export function UiLocaleProvider({
   children: ReactNode
   uiLocale: string
 }) {
-  return <UiLocaleContext.Provider value={uiLocale}>{children}</UiLocaleContext.Provider>
+  return <LocaleProvider locale={uiLocale}>{children}</LocaleProvider>
 }

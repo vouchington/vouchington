@@ -1,4 +1,9 @@
+import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+vi.mock(import('@/components/my/use-fresh-authentication'), () => ({
+  useFreshAuthentication: useFreshAuthenticationMock,
+}))
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
 import type { ListResponse } from '@/types/api-responses'
@@ -87,7 +92,7 @@ describe('PasskeyManager keyboard submit (create form)', () => {
     fireEvent.click(screen.getByRole('button', { name: /add passkey/i }))
     const input = screen.getByLabelText(/passkey name/i) as HTMLInputElement
     fireEvent.change(input, { target: { value: 'My Laptop' } })
-    void expectInputEnterSubmits({ input, onSubmit: mockGetOptions })
+    await expectInputEnterSubmits({ input, onSubmit: mockGetOptions, awaitSubmit: true })
     await waitFor(() => {
       expect(mockGetOptions).toHaveBeenCalled()
     })

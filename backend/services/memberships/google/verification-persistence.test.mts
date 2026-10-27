@@ -92,15 +92,17 @@ describe('Google Play verification persistence', () => {
     vi.stubEnv('VOUCHA_STORED_SECRET_ENCRYPTION_KEYS', undefined)
     let providerCalls = 0
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async () => {
-          providerCalls += 1
-          throw new Error('Decryption must fail before Google is called')
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, {
+        client: {
+          getSubscription: async () => {
+            providerCalls += 1
+            throw new Error('Decryption must fail before Google is called')
+          },
+          acknowledgeSubscription: async () => undefined,
         },
-        acknowledgeSubscription: async () => undefined,
-      },
-    })
+      }),
+    ).rejects.toThrow('VOUCHA_STORED_SECRET_ENCRYPTION_KEYS')
 
     expect(providerCalls).toBe(0)
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({

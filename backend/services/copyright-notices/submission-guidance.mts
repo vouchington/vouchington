@@ -1,5 +1,5 @@
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import { beginTransaction, read } from '@data-stores/psql'
+import { beginTransaction, read, withPrimaryReads } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
   CopyrightCounterNoticeGuidance,
@@ -132,6 +132,21 @@ function isTargetIds(value: unknown): value is string[] {
 
 function isPresent(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0
+}
+
+/** Start-of-job check on the primary: stored guidance means the work is already done. */
+export async function hasCopyrightSubmissionGuidance(
+  submissionId: string,
+  promptVersion: string,
+): Promise<boolean> {
+  const { rows } = await withPrimaryReads(() =>
+    read<{ exists: boolean }>(sql`/* hasCopyrightSubmissionGuidance */
+      SELECT EXISTS (
+        SELECT 1 FROM copyright_notice_submission_guidance
+        WHERE copyright_notice_submission_id = ${submissionId} AND prompt_version = ${promptVersion}
+      ) AS exists`),
+  )
+  return rows[0]?.exists ?? false
 }
 
 /** Agent boundary for one immutable encrypted advisory guidance result. */

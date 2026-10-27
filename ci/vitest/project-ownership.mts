@@ -102,6 +102,17 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     ],
   },
   {
+    // Dispatch-only: no caller job in an area DAG, so it never gates or runs on a pull request.
+    orchestratorJob: 'evals-backend',
+    workflow: 'evals-backend.yml',
+    jobLabel: 'backend-evals',
+    invocation: 'literal',
+    projects: [
+      { project: 'backend-evals-openrouter', credential: 'OPENROUTER_API_KEY' },
+      { project: 'backend-evals-anthropic', credential: 'ANTHROPIC_AUTH_TOKEN (federated)' },
+    ],
+  },
+  {
     orchestratorJob: 'test-web',
     workflow: 'tests-web.yml',
     jobLabel: 'web-tests (sharded)',

@@ -1,19 +1,32 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { UnsafeUrlError } from 'ssrf-guard/node'
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
-import { getPodcastEpisodeChaptersById, type ChaptersSafeFetch } from './chapters.mts'
+import type { ChaptersSafeFetch } from './chapters.mts'
 import type { readResponseBodyAsBuffer } from '@modules/utils/http-body'
 import type { ViewRssFeedItem } from './types.mts'
 
 type ReadResponseBodyOptions = Parameters<typeof readResponseBodyAsBuffer>[0]
+type GetPodcastEpisodeChaptersById =
+  (typeof import('./chapters.mts'))['getPodcastEpisodeChaptersById']
+type UnsafeUrlErrorConstructor = (typeof import('ssrf-guard/node'))['UnsafeUrlError']
+
+let getPodcastEpisodeChaptersById: GetPodcastEpisodeChaptersById
+let UnsafeUrlError: UnsafeUrlErrorConstructor
 
 describe('getPodcastEpisodeChaptersById', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com/')
     vi.stubEnv('VOUCHA_SIDELOAD_SIGNING_KEYS', TEST_SIDELOAD_SIGNING_KEY)
+    vi.resetModules()
+    const chapters = await import('./chapters.mts')
+    const ssrfGuard = await import('ssrf-guard/node')
+    UnsafeUrlError = ssrfGuard.UnsafeUrlError
+    getPodcastEpisodeChaptersById = chapters.getPodcastEpisodeChaptersById
   })
 
-  afterAll(() => vi.unstubAllEnvs())
+  afterAll(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
 
   it('returns [] for missing items without fetching', async () => {
     const safeFetch = vi.fn<ChaptersSafeFetch>()

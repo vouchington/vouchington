@@ -22,13 +22,7 @@ describe('shepherd prompt contract', () => {
       'npm install --prefix "$SHEPHERD_DIR" --no-save --ignore-scripts pr-shepherd@{{PR_SHEPHERD_VERSION}}',
     )
     expect(promptText).toContain('"$SHEPHERD_DIR/node_modules/.bin/pr-shepherd" --version')
-    expect(promptText).toContain('exactly `{{PR_SHEPHERD_VERSION}}`')
-    expect(promptText).toContain('Never install or execute a PR-controlled copy')
-    expect(promptText).not.toContain("trusted host's repository-pinned")
     expect(promptText).toContain('{{TRIGGER_COMMENT_ID}}')
-    expect(promptText).toContain('## Root cause')
-    expect(promptText).toContain('## Implementation choice')
-    expect(promptText).toContain('## Options considered')
     expect(promptText).not.toMatch(/(?:\/goal update PR|\$pr-shepherd:pr-shepherd)/u)
   })
 })

@@ -111,24 +111,20 @@ describe('listen', () => {
 
   // The image-lambda smoke test reallocates a port only when the dev server exits and its log
   // contains EADDRINUSE, so a bind collision must crash the real entry point with that text.
-  it(
-    'exits non-zero with EADDRINUSE when its port is already bound',
-    { timeout: 20_000 },
-    async () => {
-      const blocker = http.createServer()
-      blocker.listen(0)
-      await once(blocker, 'listening')
-      const { port } = blocker.address() as AddressInfo
-      try {
-        await expect(
-          execFile(process.execPath, [fileURLToPath(new URL('dev-server.mts', import.meta.url))], {
-            env: { ...process.env, IMAGE_LAMBDA_PORT: String(port) },
-            timeout: 15_000,
-          }),
-        ).rejects.toMatchObject({ code: 1, stderr: expect.stringMatching(/EADDRINUSE/) })
-      } finally {
-        blocker.close()
-      }
-    },
-  )
+  it('exits non-zero with EADDRINUSE when its port is already bound', async () => {
+    const blocker = http.createServer()
+    blocker.listen(0)
+    await once(blocker, 'listening')
+    const { port } = blocker.address() as AddressInfo
+    try {
+      await expect(
+        execFile(process.execPath, [fileURLToPath(new URL('dev-server.mts', import.meta.url))], {
+          env: { ...process.env, IMAGE_LAMBDA_PORT: String(port) },
+          timeout: 15_000,
+        }),
+      ).rejects.toMatchObject({ code: 1, stderr: expect.stringMatching(/EADDRINUSE/) })
+    } finally {
+      blocker.close()
+    }
+  })
 })

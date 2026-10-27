@@ -15,6 +15,13 @@ import { JURISDICTION_ROUTE_REGISTRY } from './registry-jurisdiction.mts'
  * multiplier: scales the category threshold up/down (e.g. 0.5 = half rate)
  */
 export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
+  'POST:/api/v1/auth/re-auth/providers/:provider/authorizations': { category: 'sensitive' },
+  'POST:/api/v1/auth/re-auth/providers/:provider/proofs': { category: 'sensitive' },
+  'GET:/api/v1/auth/re-auth/methods': { category: 'read' },
+  'POST:/api/v1/auth/re-auth/passkeys/options': { category: 'sensitive' },
+  'POST:/api/v1/auth/re-auth/passkeys/verification': { category: 'sensitive' },
+  'POST:/api/v1/auth/re-auth/providers/:provider/challenges': { category: 'sensitive' },
+  'POST:/api/v1/auth/re-auth/providers/:provider/verification': { category: 'sensitive' },
   // OAuth authorization server — public protocol operations and authenticated consent.
   'GET:/authorize': { category: 'sensitive' },
   'POST:/register': { category: 'sensitive' },
@@ -23,6 +30,8 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'GET:/api/v1/oauth/authorization-requests/:id': { category: 'sensitive' },
   'POST:/api/v1/oauth/authorization-requests/:id/decisions': { category: 'sensitive' },
   // Auth & sessions — sensitive: low threshold, high-risk operations
+  'POST:/api/v1/auth/device-bound-sessions': { category: 'sensitive' },
+  'POST:/api/v1/auth/device-bound-sessions/refreshes': { category: 'sensitive' },
   'POST:/api/v1/auth/email-address/tokens': { category: 'sensitive' },
   'POST:/api/v1/auth/email-address/login': { category: 'sensitive', multiplier: 2 },
   'POST:/api/v1/auth/native/email-address/tokens': { category: 'sensitive' },
@@ -34,7 +43,6 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/auth/mfa/re-auth/email/tokens': { category: 'sensitive' },
   'POST:/api/v1/auth/mfa/re-auth/email/verification': { category: 'sensitive' },
   'POST:/api/v1/auth/mfa/re-auth/totp/verification': { category: 'sensitive' },
-  'POST:/api/v1/auth/mfa/re-auth/tokens/verification': { category: 'sensitive' },
   'GET:/api/v1/auth/sessions': { category: 'read' },
   'DELETE:/api/v1/auth/sessions/:id': { category: 'sensitive' },
   'POST:/api/v1/auth/sessions/revocations': { category: 'sensitive' },

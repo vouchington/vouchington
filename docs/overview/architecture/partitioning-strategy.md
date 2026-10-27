@@ -9,7 +9,10 @@ unbounded-table policies, with their rationale and reconsideration triggers, liv
 - Internal row, entity, and event IDs are UUIDv7. Natural/provider keys and the small static
   identity lookups are documented exceptions in the registry.
 - Use `RANGE` on the UUIDv7 row or owning-parent key. HASH partitioning is forbidden.
-- Tables without retention start with one `DEFAULT` child. Add explicit aligned ranges once
+- Tables that use operator-managed partition retirement start with one `DEFAULT` child. Add explicit
+  aligned ranges on demand, then retire only ranges wholly outside the retention window. Classifier
+  decision results use the batch UUIDv7 key so replay and reports remain time scoped.
+- Tables without retention also start with one `DEFAULT` child. Add explicit aligned ranges once
   measured planner/write pressure or growth warrants it.
 - Monthly children are retired by `cleanupPartitions`. Explicit UUIDv7 ranges may also be
   retired when their table owner declares a minimum retention window and the drop guard proves
@@ -24,7 +27,9 @@ unbounded-table policies, with their rationale and reconsideration triggers, liv
 ```mermaid
 flowchart LR
   A[Growth review] --> B{Retention?}
-  B -->|Yes| C[Monthly UUIDv7 RANGE]
+  B -->|Yes| C{Scheduled crawl lifecycle?}
+  C -->|Yes| G[Monthly UUIDv7 RANGE]
+  C -->|No| E[UUIDv7 RANGE with DEFAULT]
   B -->|No| D{Large or measured pressure?}
   D -->|Yes| E[UUIDv7 RANGE with DEFAULT]
   D -->|No| F[Unpartitioned with trigger]
@@ -46,6 +51,26 @@ A populated default overlaps every prospective range. Create a standalone matchi
 range out of the default, validate range and default-exclusion `CHECK` constraints, then attach it.
 Align bounds across tables joined by the same UUIDv7 parent key. Monitor defaults through the
 partition-status API and `pg_total_relation_size()`.
+
+Classifier results use a narrower operator path. An admin selects one UTC batch range; the worker
+checks that every row in each result DEFAULT fits it under a fixed row budget and seals the existing
+physical children as aligned explicit ranges in one transaction. A new DEFAULT receives later
+results. An oversized or mixed DEFAULT refuses the operation before DDL. Expired DEFAULT results
+and candidate snapshots are pruned in bounded pages, so a missed sealing window cannot permanently
+block later range creation. Candidate snapshots join the aligned range because their batch-scoped
+configuration is part of the retained decision payload. Calls and batches remain ordinary tables;
+their bounded cleanup follows the result and snapshot pages. Classifier
+range retirement is operator initiated and checks the configured retention window and pending work
+under the partition locks. Its batch and run checks use indexed existence probes, so a sealed range
+can grow beyond the creation row budget and still retire. If a producer holds the batch or run
+table, the retirement transaction refuses the operation without waiting on a reverse lock order.
+The scheduled monthly job still owns only crawl and RSS history.
+
+Classifier run identities are a deduplication cache, while requests and usage are durable records.
+Prompt-backed cache entries become expendable after a newer prompt version is active; promptless
+entries follow their run payload's lifetime. Deleting a real subject also makes its cache entries
+expendable. A live run retains its identity through the report window. Request settlement and billed
+cost survive cache eviction without allowing the deleted subject to be replayed or authorized.
 
 ## Related
 

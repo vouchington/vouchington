@@ -43,7 +43,7 @@ describe('getCommunityModerationSummaryCommunities activity digest engagement', 
       })
 
       const count = async (start: Date, end: Date): Promise<number> => {
-        const summaries = await getCommunityModerationSummaryCommunities(owner.id, start, end)
+        const summaries = await getCommunityModerationSummaryCommunities(owner.id, start, end, end)
         return summaries.find(summary => summary.name === community.name)?.newDiscussionPosts ?? 0
       }
       expect(await count(instant, new Date(instant.getTime() + ONE_DAY_MS))).toBe(1)
@@ -90,6 +90,7 @@ describe('getCommunityModerationSummaryCommunities activity digest engagement', 
     const communities = await getCommunityModerationSummaryCommunities(
       owner.id,
       windowStart,
+      windowEnd,
       windowEnd,
     )
     const found = communities.find(c => c.name === community.name)
@@ -140,10 +141,12 @@ describe('getCommunityModerationSummaryCommunities activity digest engagement', 
     await deleteUser(departedAccountMember!, departedAccountMember!)
 
     const windowStart = new Date(Date.now() - ONE_WEEK_MS)
+    const windowEnd = new Date()
     const communities = await getCommunityModerationSummaryCommunities(
       owner!.id,
       windowStart,
-      new Date(),
+      windowEnd,
+      windowEnd,
     )
     const found = communities.find(c => c.name === community.name)
 
@@ -194,6 +197,7 @@ describe('getCommunityModerationSummaryCommunities activity digest engagement', 
     const communities = await getCommunityModerationSummaryCommunities(
       owner!.id,
       windowStart,
+      windowEnd,
       windowEnd,
     )
     const found = communities.find(c => c.name === community.name)
@@ -257,6 +261,7 @@ describe('getCommunityModerationSummaryCommunities activity digest engagement', 
     const communities = await getCommunityModerationSummaryCommunities(
       owner!.id,
       windowStart,
+      windowEnd,
       windowEnd,
     )
     const found = communities.find(c => c.name === community.name)

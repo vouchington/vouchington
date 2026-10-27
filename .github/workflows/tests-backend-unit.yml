@@ -16,6 +16,11 @@ on:
         required: false
         type: boolean
         default: false
+      prepared_database:
+        description: 'Use the prepared backend PostgreSQL artifact from the caller'
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       diagnostics:
@@ -46,7 +51,7 @@ jobs:
         timeout-minutes: 1
         with:
           fetch-depth: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - name: Resolve backend-unit shard total
         timeout-minutes: 2
@@ -58,8 +63,16 @@ jobs:
         with:
           total: ${{ steps.shard-total.outputs.shard-total }}
 
+  prepare-postgres:
+    if: ${{ !inputs.prepared_database }}
+    uses: ./.github/workflows/prepare-postgres.yml
+    permissions:
+      actions: read
+      contents: read
+
   backend-tests:
-    needs: [prep]
+    needs: [prep, prepare-postgres]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     timeout-minutes: 29
     permissions:
@@ -96,30 +109,28 @@ jobs:
           fetch-depth: 1
       - uses: ./.github/actions/start-valkey
         timeout-minutes: 2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 2
+        with:
+          name: backend-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
       - name: Set service ports
         timeout-minutes: 1
         run: |
           echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
+      - name: Restore prepared PostgreSQL database
+        timeout-minutes: 3
+        run: |
+          docker run --rm --network host -i \
+            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
+            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
+            < "$RUNNER_TEMP/backend-postgres.dump"
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 6
-      - working-directory: backend
-        run: node data-stores/psql/migrate.mts
-        timeout-minutes: 3
-      - name: Verify retained relation bootstrap
-        working-directory: backend
-        timeout-minutes: 1
-        run: node scripts/data-retention/check-retained-relation-bootstrap.mts
-      - name: Upload retained relation bootstrap receipt
-        timeout-minutes: 2
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: retained-relation-bootstrap-${{ matrix.shard }}
-          path: artifacts/retained-relation-bootstrap.json
-          retention-days: 1
-          overwrite: true
-          if-no-files-found: error
       # Opt-in file progress and resource samples share this step's streamed log. A runner
       # shutdown keeps that log; the JUnit artifact is still skipped when the run is killed.
       # File progress is always buffered to a file and dumped 60s before the step timeout.
@@ -280,7 +291,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         with:
           suite: backend-shard-${{ matrix.shard }}
       - name: Upload full backend-shard-${{ matrix.shard }} LCOV to GitHub (attempt 2)
@@ -288,7 +299,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         with:
           suite: backend-shard-${{ matrix.shard }}
           name-suffix: -retry

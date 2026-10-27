@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
+import { signDeviceJwt } from '@ts-shared/session-jwt'
 import worker from '../index.mts'
 import { createSignedDeviceJwt, createSignedSessionJwt } from '../../test-helpers/jwt-fixtures.mts'
 import {
@@ -30,6 +31,39 @@ describe('worker fetch handler — unverified session cookies gate', () => {
     ANON_CACHE_TTL_SECONDS: '30',
     CACHE_PLACEHOLDER_NONCE: 'test-placeholder-nonce-that-is-at-least-32-characters-long',
   }
+
+  it.each([false, true])(
+    'classifies dt-only refresh authority %s without replacing the device cookie',
+    async authenticated => {
+      const fetchSpy = vi.fn<VitestLooseMock>(() =>
+        Promise.resolve(
+          new Response('<!doctype html><main>from:web</main>', {
+            headers: { 'content-type': 'text/html' },
+          }),
+        ),
+      )
+      globalThis.fetch = fetchSpy as unknown as typeof fetch
+      const deviceToken = await signDeviceJwt(
+        {
+          did: mintUUIDv7(),
+          ...(authenticated && {
+            client: 'web' as const,
+            ua_hash: 'a'.repeat(64),
+            refresh_uid: mintUUIDv7(),
+            refresh_sid: mintUUIDv7(),
+          }),
+        },
+        { expiresIn: '30 days', mode: 'test' },
+      )
+      const response = await worker.fetch(
+        new Request('https://voucha.ai/', { headers: { cookie: `dt=${deviceToken}` } }),
+        env,
+        createContext(env),
+      )
+      expect(response.headers.get('x-voucha-cache')).toBe(authenticated ? 'BYPASS' : 'DISPATCHED')
+      expect(response.headers.get('set-cookie')).toBeNull()
+    },
+  )
 
   it('caches a web HTML request for a validly-signed anon session (st uid: null)', async () => {
     const fetchSpy = vi.fn<VitestLooseMock>(() =>

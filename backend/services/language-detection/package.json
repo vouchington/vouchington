@@ -23,7 +23,7 @@
     "@ts-shared/languages": "workspace:^",
     "lingua-rs": "^0.2.3",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.12.1"
+    "valkyries": "^0.13.0"
   },
   "devDependencies": {
     "@services/urls": "workspace:^",

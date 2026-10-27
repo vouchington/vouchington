@@ -16,7 +16,6 @@ import {
   updateTopicRecommendation,
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
-import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
 import { PUBLIC_POST_FIELDS } from '@services/posts/public-post-projection'
 import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
@@ -53,8 +52,7 @@ describe('topic recommendation write tools contract — real DB', () => {
 
   it('fences administrator text that survives a submitter edit', async () => {
     const caller = await createCaller()
-    const admin = await createTestUser()
-    await addUserRole(admin.id, 'administrator')
+    const admin = await createTestUser({ administrator: true })
     const reviewer = (await getPrivateUserByAny(admin.id, { readOnly: false }))!
     const recommendation = await submit(caller)
     await updateTopicRecommendation(reviewer, recommendation, {
@@ -137,8 +135,10 @@ describe('topic recommendation write tools contract — real DB', () => {
 
   it('keeps the REST policy: an administrator may edit and withdraw another user’s pending recommendation', async () => {
     const author = await createCaller()
-    const admin = await createCaller()
-    await addUserRole(admin.id, 'administrator')
+    const admin = {
+      ...(await createTestUser({ administrator: true })),
+      membership_plan: 'plus' as const,
+    }
     const recommendation = await submit(author)
     const other = await submit(author)
 
@@ -181,8 +181,7 @@ describe('topic recommendation write tools contract — real DB', () => {
 
   it('refuses to change a recommendation a moderator already reviewed', async () => {
     const author = await createCaller()
-    const admin = await createTestUser()
-    await addUserRole(admin.id, 'administrator')
+    const admin = await createTestUser({ administrator: true })
     const reviewer = await getPrivateUserByAny(admin.id, { readOnly: false })
     const recommendation = await submit(author)
     await rejectTopicRecommendation(reviewer!, recommendation, 'Not needed')

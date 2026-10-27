@@ -8,6 +8,7 @@ import { callConversationTitleModel } from './generate-title.mts'
 // and parsing are gated by recorded responses in generate-title.replay.no-data.mock.test.mts.
 // See docs/development/tests.md#live-provider-smoke-checks.
 describe('conversation title on Anthropic Haiku 5.5', () => {
+  // no-mistakes-timeout-reason: live Anthropic network request latency
   it('returns a short title', async () => {
     const result = await callConversationTitleModel(
       'user: Can you help me plan a three day trip to Lisbon?',
@@ -19,5 +20,5 @@ describe('conversation title on Anthropic Haiku 5.5', () => {
     expect(
       calcCostMicrounits('anthropic', result.model, result.serviceTier, result.usage),
     ).not.toBeNull()
-  })
+  }, 30_000)
 })

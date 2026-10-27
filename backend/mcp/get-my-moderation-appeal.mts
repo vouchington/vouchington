@@ -1,3 +1,4 @@
+import { isModerationAppealVisibleToAppellant } from '@services/moderation-appeals/visibility'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import assert from 'http-assert'
 import { getModerationAppealByIdFromPrimary } from '@services/moderation-appeals'
@@ -35,6 +36,7 @@ const tool: MergedToolSource<Args, Result> = {
     const appeal = await getModerationAppealByIdFromPrimary(args.appeal_id)
     assert(appeal, 404, 'Appeal not found')
     assert(appeal.appellant_user_id === user.id, 403, 'Forbidden')
+    assert(isModerationAppealVisibleToAppellant(appeal), 404, 'Appeal not found')
     return { success: true, appeal: await toMcpAppeal(appeal) }
   },
 }

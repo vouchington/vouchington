@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type TestClassifierRunUsageRow = {
-  classifier_run_id: string
+  classifier_run_identity_id: string
   agent_slug: string
   input_tokens: number
   output_tokens: number
@@ -17,10 +17,10 @@ export async function listAiUsageRecordsForClassifierRun(
 ): Promise<TestClassifierRunUsageRow[]> {
   const { rows } =
     await read<TestClassifierRunUsageRow>(sql`/* listAiUsageRecordsForClassifierRun */
-    SELECT classifier_run_id, agent_slug, input_tokens, output_tokens, pricing_status,
+    SELECT classifier_run_identity_id, agent_slug, input_tokens, output_tokens, pricing_status,
       cost_microunits, latency_milliseconds
     FROM ai_usage_records
-    WHERE classifier_run_id = ${runId}
+    WHERE classifier_run_identity_id = ${runId}
     ORDER BY id
   `)
   return rows
@@ -29,12 +29,15 @@ export async function listAiUsageRecordsForClassifierRun(
 /** One ledger row by its id (a partition-pruned read), or null when it does not exist. */
 export async function findAiUsageRecordById(
   id: string,
-): Promise<Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_milliseconds'> | null> {
+): Promise<Pick<
+  TestClassifierRunUsageRow,
+  'classifier_run_identity_id' | 'latency_milliseconds'
+> | null> {
   const { rows } = await read<
-    Pick<TestClassifierRunUsageRow, 'classifier_run_id' | 'latency_milliseconds'>
+    Pick<TestClassifierRunUsageRow, 'classifier_run_identity_id' | 'latency_milliseconds'>
   >(
     sql`/* findAiUsageRecordById */
-      SELECT classifier_run_id, latency_milliseconds FROM ai_usage_records WHERE id = ${id}
+      SELECT classifier_run_identity_id, latency_milliseconds FROM ai_usage_records WHERE id = ${id}
     `,
   )
   return rows[0] ?? null

@@ -16,6 +16,9 @@ import {
   type BrokerPurpose,
 } from '@services/oauth'
 import { assertNotSuspended } from '@services/users/suspension'
+import { hasSignedWebRefreshCredential } from '../../optional-web-session-renewal.mts'
+import { AUTH_REQUIRED } from '@modules/on-error/error-codes'
+import { createCodedError } from '@vouchington/sentry'
 import type { Context } from '@jongleberry/api-server'
 import { enqueueInitialOAuthAuthorizationExchangeBestEffort } from './oauth-broker-callback-enqueue.mts'
 import { assertNativeRequest } from './native-request.mts'
@@ -24,6 +27,7 @@ type BeginOAuthAuthorizationBody = {
   purpose: 'authenticate' | 'connect'
   callback_mode: 'web' | 'native'
   completion_proof_challenge?: string
+  re_auth_token?: string
 }
 
 app.route('/api/v1/auth/oauth/providers').get(async (ctx: Context) => {
@@ -69,6 +73,8 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
     path: ctx.params,
     body,
   })
+  if (body.purpose === 'connect' && !currentUser && (await hasSignedWebRefreshCredential(ctx)))
+    throw createCodedError(401, 'Unauthorized', AUTH_REQUIRED)
   if (body.purpose === 'connect' && currentUser) assertNotSuspended(currentUser)
   const sessionData = await ctx.getSessionTokenData()
   const result = await beginOAuthAuthorization({
@@ -80,6 +86,7 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
         ? body.completion_proof_challenge
         : undefined,
     currentUserId: currentUser?.id,
+    reAuthToken: body.re_auth_token,
     deviceId: sessionData.did,
     sessionId: sessionData.sid,
     expectedOrigin: getExpectedOrigin(ctx.req),

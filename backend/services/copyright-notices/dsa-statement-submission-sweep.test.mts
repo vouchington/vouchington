@@ -3,7 +3,6 @@ import {
   readTestDsaReceiptApproval,
 } from '@voucha/test-helpers/dsa-approval-withdrawal-fixtures'
 import { readTestDsaSubmissionForRestriction } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
-import { withdrawCopyrightJurisdictionPolicyApproval } from './jurisdiction-policy.mts'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { copyrightSweepConfig } from './work-limits.mts'
@@ -11,7 +10,6 @@ import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
-import { createTestTerritorialRestrictionScene } from '@voucha/test-helpers/copyright-territorial-restriction-fixtures'
 import { createTestCopyrightDeliveryDependencies } from '@voucha/test-helpers/copyright-delivery-dependencies'
 import {
   countTestDsaSubmissionsForRestriction,
@@ -28,7 +26,6 @@ import {
   recordOrdinaryCopyrightHold,
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
 import {
-  materializeDsaStatementSubmissions,
   prepareDsaStatementSubmissionSweep,
   type DsaStatementSweepDependencies,
 } from './dsa-statement-submission-sweep.mts'
@@ -106,14 +103,14 @@ describe('DSA statement submission materialization', () => {
     )
     await liftTestCopyrightRestriction(lifted.restrictionId)
 
-    const eu = await createTestTerritorialRestrictionScene('eu_dsa')
+    const eu = await createTestDsaApprovalWithdrawalScene('eu_dsa')
     await recordEuCopyrightStatementOfReasons(eu.staff, eu.noticeId, {
       text: 'Private EU statement.',
       publicExplanation: 'Copyright was shown.',
       outcome: 'restrict',
       targets: eu.targets,
     })
-    const uk = await createTestTerritorialRestrictionScene('uk')
+    const uk = await createTestDsaApprovalWithdrawalScene('uk')
     await recordUkCopyrightReview(uk.staff, uk.noticeId, {
       text: 'Private UK review.',
       publicExplanation: 'Copyright was shown.',
@@ -166,18 +163,16 @@ describe('DSA statement submission materialization', () => {
       reimposed.id,
     ]
     const scope = [...eligibleIds, dayBefore.restrictionId]
-    await materializeDsaStatementSubmissions(from, { restrictionIds: scope })
     const missingCredentials = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
-    expect(
-      await prepareDsaStatementSubmissionSweep({
-        isEnabled: async () => true,
-        getFrom: async () => from,
-        url: () => '',
-        token: () => '',
-        recordConfigMissing: missingCredentials,
-        restrictionIds: scope,
-      }),
-    ).toBeNull()
+    const options = {
+      isEnabled: async () => true,
+      getFrom: async () => from,
+      url: () => '',
+      token: () => '',
+      recordConfigMissing: missingCredentials,
+      restrictionIds: scope,
+    }
+    expect(await prepareDsaStatementSubmissionSweep(options)).toBeNull()
     expect(missingCredentials).toHaveBeenCalledExactlyOnceWith(
       'processReconcileDsaStatementSubmissions',
       'DSA_TRANSPARENCY_DATABASE_URL and DSA_TRANSPARENCY_DATABASE_TOKEN',
@@ -187,13 +182,14 @@ describe('DSA statement submission materialization', () => {
     }
     expect(await countTestDsaSubmissionsForRestriction(dayBefore.restrictionId)).toBe(0)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
-    expect(await materializeDsaStatementSubmissions(from, { restrictionIds: scope })).toEqual({
-      inserted: 0,
-      hasMore: false,
-    })
+    expect(await prepareDsaStatementSubmissionSweep(options)).toBeNull()
+    expect(missingCredentials).toHaveBeenCalledTimes(2)
+    for (const id of eligibleIds) {
+      expect(await countTestDsaSubmissionsForRestriction(id)).toBe(1)
+    }
   })
 
-  it('materializes an existing restriction after its receipt approval is withdrawn before the first sweep', async () => {
+  it('materializes a restriction linked to a withdrawn receipt approval before the first sweep', async () => {
     const scene = await createTestDsaApprovalWithdrawalScene()
     await recordEuCopyrightStatementOfReasons(scene.staff, scene.noticeId, {
       text: 'Private EU statement.',
@@ -207,34 +203,26 @@ describe('DSA statement submission materialization', () => {
     )
     expect(await readTestDsaReceiptApproval(scene.noticeId)).toEqual({
       approval_id: scene.approvalId,
-      withdrawal_id: null,
-    })
-    expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(0)
-    const withdrawal = await withdrawCopyrightJurisdictionPolicyApproval(
-      scene.administrator,
-      scene.approvalId,
-    )
-    expect(await readTestDsaReceiptApproval(scene.noticeId)).toEqual({
-      approval_id: scene.approvalId,
-      withdrawal_id: withdrawal.id,
+      withdrawal_id: scene.withdrawalId,
     })
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(0)
     const from = new Date('2026-07-01T00:00:00.000Z')
-    const scope = { restrictionIds: [restrictionId] }
-    expect(await materializeDsaStatementSubmissions(from, scope)).toEqual({
-      inserted: 1,
-      hasMore: false,
-    })
+    const options = {
+      isEnabled: async () => true,
+      getFrom: async () => from,
+      url: () => '',
+      token: () => '',
+      recordConfigMissing: vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>(),
+      restrictionIds: [restrictionId],
+    }
+    expect(await prepareDsaStatementSubmissionSweep(options)).toBeNull()
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(1)
     const submission = await readTestDsaSubmissionForRestriction(restrictionId)
     expect(submission.payload?.puid).toBe(restrictionId)
     expect(submission.failed_at).toBeNull()
     expect(submission.failure_code).toBeNull()
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
-    expect(await materializeDsaStatementSubmissions(from, scope)).toEqual({
-      inserted: 0,
-      hasMore: false,
-    })
+    expect(await prepareDsaStatementSubmissionSweep(options)).toBeNull()
     expect(await readTestDsaSubmissionForRestriction(restrictionId)).toEqual(submission)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
   })

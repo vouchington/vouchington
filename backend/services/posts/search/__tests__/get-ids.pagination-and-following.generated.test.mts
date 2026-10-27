@@ -195,7 +195,7 @@ describe('get-ids.pagination-and-following.generated', () => {
     const returnedIds = [...result.results, ...lastPage.results].map(post => post.id)
     expect(returnedIds).toEqual(insertedIds.toSorted().toReversed())
     expect(new Set(returnedIds).size).toBe(101)
-  }, 30_000)
+  })
 
   it('getPostIds sort=following_new places followed reviewers before newer unfollowed reviewers', async () => {
     const viewer = await createTestUser()

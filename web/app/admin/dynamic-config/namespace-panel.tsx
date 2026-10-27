@@ -99,7 +99,13 @@ export function DynamicConfigNamespacePanel({
                     key={field.name}
                     field={field}
                     isFeatureFlags={details.namespace === 'feature-flags'}
-                    canUpdate={canUpdate}
+                    canUpdate={
+                      canUpdate &&
+                      !(
+                        details.namespace === 'copyright' &&
+                        field.name === 'automaticProvisionalWithholdingSince'
+                      )
+                    }
                     localOverrides={localOverrides}
                     refreshLocalOverrides={refreshLocalOverrides}
                     saving={Boolean(savingFields[field.name])}

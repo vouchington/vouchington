@@ -27,9 +27,13 @@ type EventSourceListener = (event: MessageEvent) => void
 
 class MockEventSource {
   static instances: MockEventSource[] = []
+  static readonly CONNECTING = 0
+  static readonly OPEN = 1
+  static readonly CLOSED = 2
   readonly url: string
   readonly listeners = new Map<string, Set<EventSourceListener>>()
   closed = false
+  readyState = MockEventSource.CONNECTING
 
   constructor(url: string) {
     this.url = url
@@ -47,16 +51,24 @@ class MockEventSource {
 
   close() {
     this.closed = true
+    this.readyState = MockEventSource.CLOSED
   }
 
   emit(type: string, data: unknown) {
+    if (type === 'status') this.readyState = MockEventSource.OPEN
     const event = new MessageEvent(type, { data: JSON.stringify(data) })
     this.listeners.get(type)?.forEach(fn => fn(event))
   }
 
-  emitConnectionError() {
+  emitConnectionError(state: 'connecting' | 'closed' = 'connecting') {
+    this.readyState = state === 'closed' ? MockEventSource.CLOSED : MockEventSource.CONNECTING
     const event = new MessageEvent('error', { data: undefined })
     this.listeners.get('error')?.forEach(fn => fn(event))
+  }
+
+  emitOpen() {
+    this.readyState = MockEventSource.OPEN
+    this.listeners.get('open')?.forEach(fn => fn(new MessageEvent('open')))
   }
 }
 

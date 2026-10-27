@@ -7,24 +7,6 @@ import {
   type GooglePlayResolvedLineage,
 } from '../services/memberships/google/lineage.mts'
 
-export async function getTestGooglePlayVerificationRetryState(id: string): Promise<{
-  lease_token: string | null
-  leased_at: Date | null
-  available_at: Date | null
-  last_error: string | null
-} | null> {
-  const { rows } = await write<{
-    lease_token: string | null
-    leased_at: Date | null
-    available_at: Date | null
-    last_error: string | null
-  }>(sql`/* getTestGooglePlayVerificationRetryState */
-    SELECT lease_token, leased_at, available_at, last_error
-    FROM membership_verification_processing_work_items WHERE membership_verification_id = ${id}
-  `)
-  return rows[0] ?? null
-}
-
 export async function getTestGooglePlayRtdnEvidenceTerminalState(
   evidenceId: string,
 ): Promise<{ rejectionReason: string | null; rejectedAt: Date | null } | null> {

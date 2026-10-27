@@ -27,6 +27,7 @@ describe('GET /api/v1/auth/sessions pagination', () => {
       sessionId: v7(),
       deviceId: v7(),
       deviceName: 'Older session',
+      lastSeenAt: new Date(Date.now() - 60_000),
     })
 
     const response = await createRequest()
@@ -34,6 +35,24 @@ describe('GET /api/v1/auth/sessions pagination', () => {
       .set('Cookie', authCookies)
       .expect(200)
     expect(response.body.results[0].id).toBe(login.body.session.sid)
+
+    const firstPage = await createRequest()
+      .get('/api/v1/auth/sessions?limit=1')
+      .set('Cookie', authCookies)
+      .expect(200)
+    expect(firstPage.body.results.map((session: { id: string }) => session.id)).toEqual([
+      login.body.session.sid,
+    ])
+    expect(firstPage.body.page_info.has_next_page).toBe(true)
+    const nextCursor = firstPage.body.page_info.end_cursor as string
+    const secondPage = await createRequest()
+      .get(`/api/v1/auth/sessions?limit=1&after=${encodeURIComponent(nextCursor)}`)
+      .set('Cookie', authCookies)
+      .expect(200)
+    expect(secondPage.body.results.map((session: { id: string }) => session.id)).toEqual([
+      olderSession.id,
+    ])
+    expect(secondPage.body.page_info.has_next_page).toBe(false)
 
     const wrongScope = encodeScopedPreciseTimestampCursor(
       '2026-07-18T00:00:00.000000Z',

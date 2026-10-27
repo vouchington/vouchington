@@ -85,9 +85,11 @@ describe('moderation catalogs', () => {
     const integrityAndVoteActions = [
       'report_integrity_flag_review',
       'report_integrity_penalty_apply',
+      'report_integrity_penalty_review',
       'report_integrity_penalty_revoke',
       'vote_integrity_flag_review',
       'vote_integrity_penalty_apply',
+      'vote_integrity_penalty_review',
       'vote_integrity_penalty_revoke',
       'vote_weight_set',
       'vote_weight_reset',

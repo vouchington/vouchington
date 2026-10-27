@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
-import { loginAsUser, loginAsTestUser } from '../auth.mts'
+import { loginAsAdmin, loginAsUser, loginAsTestUser } from '../auth.mts'
 
 const TEST_DID = '019f0000-0000-7000-8000-000000000010'
 const TEST_UID = '019f0000-0000-7000-8000-000000000011'
 const TEST_SID = '019f0000-0000-7000-8000-000000000012'
 
 const mockCreateDeviceAndSessionTokens = vi.fn<() => unknown>()
+const mockCreateVerifiedMfaTestSession = vi.fn<() => unknown>()
 const mockRetryOnConnectionLost = vi.fn<(...args: Array<never>) => unknown>(
   (fn: () => Promise<unknown>) => fn(),
 )
@@ -33,6 +34,7 @@ function createMockPage() {
   const context = vi.fn<() => unknown>().mockReturnValue({ addCookies: mockAddCookies })
   const url = vi.fn<() => unknown>().mockReturnValue('https://example.test/dashboard')
   return {
+    evaluate: vi.fn<() => Promise<string>>().mockResolvedValue('Synthetic browser'),
     goto,
     reload,
     waitForURL,
@@ -44,6 +46,7 @@ function createMockPage() {
 describe('loginAsUser helpers', () => {
   afterEach(() => {
     mockCreateDeviceAndSessionTokens.mockReset()
+    mockCreateVerifiedMfaTestSession.mockReset()
     mockRetryOnConnectionLost.mockClear()
     mockAddCookies.mockReset()
   })
@@ -63,6 +66,7 @@ describe('loginAsUser helpers', () => {
     expect(mockCreateDeviceAndSessionTokens).toHaveBeenCalledWith({
       did: TEST_DID,
       uid: TEST_UID,
+      deviceContext: { user_agent: 'Synthetic browser' },
     })
     expect(mockRetryOnConnectionLost).toHaveBeenCalledTimes(1)
     expect(page.goto).toHaveBeenNthCalledWith(1, '/', {
@@ -93,23 +97,33 @@ describe('loginAsUser helpers', () => {
     expect(page.waitForURL).not.toHaveBeenCalled()
   })
 
-  it('loginAsTestUser calls loginAsUser with TEST_USER_ID', async () => {
-    mockCreateDeviceAndSessionTokens.mockResolvedValue(
-      createMockTokenResult('device-token-2', 'session-token-2'),
+  it('requires verified factor cookies for the seeded administrator in both helpers', async () => {
+    mockCreateVerifiedMfaTestSession.mockResolvedValue(
+      createMockTokenResult('admin-device-token', 'admin-session-token'),
     )
 
     const page = createMockPage()
 
     const dependencies = {
       createDeviceAndSessionTokens: mockCreateDeviceAndSessionTokens as never,
+      createVerifiedMfaTestSession: mockCreateVerifiedMfaTestSession as never,
       mintUUIDv7: () => TEST_DID,
       retryOnConnectionLost: mockRetryOnConnectionLost as never,
     }
 
     await loginAsTestUser(page as never, dependencies)
-    expect(mockCreateDeviceAndSessionTokens).toHaveBeenLastCalledWith({
-      did: TEST_DID,
-      uid: TEST_USER_ID,
+    expect(mockCreateVerifiedMfaTestSession).toHaveBeenCalledWith(TEST_USER_ID, {
+      user_agent: 'Synthetic browser',
     })
+    await loginAsAdmin(page as never, dependencies)
+    expect(mockCreateDeviceAndSessionTokens).not.toHaveBeenCalled()
+    expect(mockCreateVerifiedMfaTestSession).toHaveBeenCalledTimes(2)
+    expect(mockCreateVerifiedMfaTestSession).toHaveBeenCalledWith(TEST_USER_ID, {
+      user_agent: 'Synthetic browser',
+    })
+    expect(mockAddCookies).toHaveBeenLastCalledWith([
+      expect.objectContaining({ name: 'dt', value: 'admin-device-token' }),
+      expect.objectContaining({ name: 'st', value: 'admin-session-token' }),
+    ])
   })
 })

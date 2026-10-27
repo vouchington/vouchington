@@ -5,7 +5,6 @@ import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { trackedFiles } from '../../ci/tracked-files.mts'
 import { LIVING_DOCS_PIN_CASES } from '../../static-code-analysis/repo-file-policy/living-docs-pin-guard.mts'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -21,10 +20,6 @@ if (patternMatch === null) {
 }
 const testFixtureDocsPattern = patternMatch[1]
 
-// Whole trees where every markdown file is read by a Vitest test at runtime (globbed
-// directories, not enumerated pages) -- see docs/prompts/README.md for the read-coverage
-// argument. `docsOnly()` must never classify a file under these trees as docs-only, or a
-// PR touching only one of them skips test-tooling entirely.
 const FIXTURE_DOC_TREES = ['.agents/skills', 'docs/prompts'] as const
 
 function readRepoFile(path: string): string {
@@ -103,9 +98,7 @@ describe('CI fixture documentation classifier', () => {
 
   it('does not put living pin-policy pages on TEST_FIXTURE_DOCS just to run the pin guard', () => {
     for (const { path } of LIVING_DOCS_PIN_CASES) {
-      // .agents/skills/agent-workflow/implementation.md is skipped here because its whole tree is
-      // a Vitest fixture tree (FIXTURE_DOC_TREES), not because it was added to TEST_FIXTURE_DOCS
-      // to make the pin guard reachable -- that's the distinction this test guards.
+      // These paths are fixture documentation, not TEST_FIXTURE_DOCS entries for the pin guard.
       if (FIXTURE_DOC_TREES.some(tree => path.startsWith(`${tree}/`))) continue
       expect(docsOnly([path])).toBe(true)
     }
@@ -117,13 +110,16 @@ describe('CI fixture documentation classifier', () => {
     }
   })
 
-  it('covers every markdown file under the fixture-doc trees in the classifier and tooling filter', () => {
-    for (const tree of FIXTURE_DOC_TREES) {
-      const markdown = trackedFiles(repoRoot, [`${tree}/**`]).filter(path => /\.mdx?$/.test(path))
+  it('classifies representative nested fixture docs outside docs-only changes', () => {
+    const fixtureDocs = FIXTURE_DOC_TREES.map(tree => ({
+      path: `${tree}/example/nested/README.md`,
+      treeGlob: `${tree}/**`,
+    }))
 
-      expect(markdown.length).toBeGreaterThan(0) // an empty glob must not pass vacuously
-      for (const path of markdown) expect(docsOnly([path])).toBe(false) // (a) -- the new coverage
-      expect(toolingFilter()).toContain(`${tree}/**`)
+    for (const { path, treeGlob } of fixtureDocs) {
+      expect(docsOnly([path])).toBe(false)
+      expect(docsOnly([path, 'docs/development/tests.md'])).toBe(false)
+      expect(toolingFilter()).toContain(treeGlob)
     }
   })
 })

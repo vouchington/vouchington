@@ -4,14 +4,33 @@ import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'data-retention-config',
   label: 'Data Retention',
-  description: 'Per-run batch bounds for the daily data retention cleanup.',
+  description: 'Per-run batch bounds for general and moderation-history retention cleanup.',
   config: dataRetentionConfig,
   access: { update_roles: ['developer'] },
   fields: {
     topic_import_attempt_batch_size: {
       description: 'Topic import attempt rows per retention page.',
       minValue: 1,
-      maxValue: 250,
+      maxValue: DATA_RETENTION_MAX_VALUES.topic_import_attempt_batch_size,
+      integer: true,
+    },
+    moderation_batch_size: {
+      description: 'Moderation source rows processed per retention page, plus one lookahead row.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.moderation_batch_size,
+      integer: true,
+    },
+    moderation_max_batches_per_run: {
+      description:
+        'Maximum keyset pages each moderation record family examines per job; unfinished families immediately continue in another bounded job.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.moderation_max_batches_per_run,
+      integer: true,
+    },
+    ses_bounce_retention_days: {
+      description: 'Age in days before folded raw SES bounce and complaint events are deleted.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.ses_bounce_retention_days,
       integer: true,
     },
     batch_size: {
@@ -32,6 +51,25 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
         'Maximum eligible partition children checked for holds or in-flight rows in one admin status request. Remaining children are marked check-pending and rechecked during cleanup.',
       minValue: 1,
       maxValue: DATA_RETENTION_MAX_VALUES.partition_status_probe_limit,
+      integer: true,
+    },
+    ai_retention_page_size: {
+      description: 'Maximum rows in each persisted AI retention page.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.ai_retention_page_size,
+      integer: true,
+    },
+    ai_retention_max_pages_per_run: {
+      description: 'Maximum persisted AI retention pages in one cleanup run.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.ai_retention_max_pages_per_run,
+      integer: true,
+    },
+    classifier_retention_days: {
+      description:
+        'Minimum age in days for retiring completed classifier payloads and result ranges.',
+      minValue: 90,
+      maxValue: DATA_RETENTION_MAX_VALUES.classifier_retention_days,
       integer: true,
     },
   },

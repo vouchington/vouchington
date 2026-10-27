@@ -129,7 +129,11 @@ describe('story clustering reservation lock scope (real PG)', () => {
     expect(observed).toEqual(['free', 'free', 'free'])
     expect(await getSubjectClassifierRunFacts(item.subject)).toEqual([])
     const [request] = await requestFacts(item)
-    expect([request?.run_id, request?.no_work_at, request?.stale_at]).toEqual([null, null, null])
+    expect([request?.run_identity_id, request?.no_work_at, request?.stale_at]).toEqual([
+      null,
+      null,
+      null,
+    ])
   })
 
   it('searches a replacement’s candidates with no lock held when it supersedes a stale run', async () => {

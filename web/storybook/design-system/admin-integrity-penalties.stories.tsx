@@ -50,6 +50,7 @@ const reconciliationState = {
   penalties: [penalty],
   reconcile: reconcilePenalty,
   reconciliationRequired: { [penalty.id]: true },
+  removedIds: new Set<string>(),
   resetKey: Symbol('integrity-penalties-pagination'),
   revokeWithConfirmation: revokePenalty,
   scopeAvailable: true,

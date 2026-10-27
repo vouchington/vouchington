@@ -13,7 +13,15 @@ import {
   deleteOldReferralAttributionBatch,
   deleteOrphanedOAuthAccountBatch,
 } from './cleanup-batches.mts'
-import { getTopicImportAttemptDeletionBatchSize, type DataRetentionLimits } from './config.mts'
+import {
+  getClassifierRetentionDays,
+  getTopicImportAttemptDeletionBatchSize,
+  type DataRetentionLimits,
+} from './config.mts'
+import {
+  cleanupClassifierRecords,
+  type ClassifierCleanupResult,
+} from './cleanup-classifier-records.mts'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -25,6 +33,12 @@ import {
   cleanupTerminalNotificationPushIntents,
   type PendingNotificationPushIntentCleanupResult,
 } from './cleanup-notification-push-intents.mts'
+import { cleanupTextEmbeddingCache } from './cleanup-text-embeddings.mts'
+import { cleanupTerminalEmbeddingBatches } from './cleanup-embedding-batches.mts'
+import { cleanupOldProviderResponseKeys } from './cleanup-provider-response-keys.mts'
+import { cleanupOldMediaDeliveryChanges } from './cleanup-media-delivery-changes.mts'
+import type { MembershipOperationalCleanupOptions } from './cleanup-membership-operational.mts'
+import { cleanupMembershipOperational } from './cleanup-membership-operational-families.mts'
 import {
   cleanupTerminalStripeEventWork,
   cleanupAbandonedMembershipPurchaseIntents,
@@ -43,6 +57,14 @@ import {
   cleanupOldModerationMediaReveals,
 } from './cleanup-moderation-operations.mts'
 import {
+  cleanupSesBounceEvents,
+  cleanupSystemPrunedNotifications,
+  cleanupUserDeletedNotifications,
+  cleanupModerationEmailSends,
+  type NotificationEmailCleanupOptions,
+  type NotificationEmailCleanupResult,
+} from './cleanup-notification-email.mts'
+import {
   cleanupFederationRetention,
   type FederationRetentionResult,
 } from './cleanup-federation.mts'
@@ -54,6 +76,12 @@ import {
 } from './cleanup-options.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { runBoundedBatches } from './run-bounded-batches.mts'
+import {
+  cleanupHistories,
+  type HistoryCleanupOptions,
+  type HistoryCleanupResult,
+  type HistoryKind,
+} from './cleanup-histories.mts'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
 import { pruneExpiredContributionAdmissionConsumptions } from '@services/contribution-gating/admission-quota'
 import { pruneExpiredTopicImportAttempts } from '@services/user-import-export/topic-import-attempts'
@@ -79,6 +107,15 @@ export { cleanupTerminalNotificationPushIntents }
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
+export {
+  cleanupSesBounceEvents,
+  cleanupSystemPrunedNotifications,
+  cleanupUserDeletedNotifications,
+  cleanupModerationEmailSends,
+}
+export { cleanupTextEmbeddingCache, cleanupTerminalEmbeddingBatches }
+export { cleanupOldProviderResponseKeys }
+export { cleanupOldMediaDeliveryChanges }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -107,11 +144,14 @@ type ExpiryCleanupOptions = Pick<
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
 type DataRetentionCleanupOptions = {
+  /** Continuations name the membership families that exceeded the previous run's cap. */
+  activeMembershipFamilies?: readonly string[]
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
   softDeletedUsers?: OptionalRetentionLimits<CleanupOptions>
   oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
+  histories?: OptionalRetentionLimits<HistoryCleanupOptions>
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
   expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
     authorizationIds?: readonly string[]
@@ -123,6 +163,9 @@ type DataRetentionCleanupOptions = {
   expiredContributionQuotaConsumptions?: OptionalRetentionLimits<ExpiryCleanupOptions>
   expiredTopicImportAttempts?: OptionalRetentionLimits<ExpiryCleanupOptions>
   terminalNotificationPushIntents?: OptionalRetentionLimits<CleanupOptions>
+  deliveredMembershipEntitlementEffects?: OptionalRetentionLimits<MembershipOperationalCleanupOptions>
+  endedMembershipRenewalNotices?: OptionalRetentionLimits<MembershipOperationalCleanupOptions>
+  terminalGooglePlayAcknowledgments?: OptionalRetentionLimits<MembershipOperationalCleanupOptions>
   terminalStripeEventWork?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
   abandonedMembershipPurchaseIntents?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
   emailAddressLoginTokens?: OptionalRetentionLimits<ExpiryCleanupOptions>
@@ -136,6 +179,17 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
+  terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
+  oldProviderResponseKeys?: OptionalRetentionLimits<CleanupOptions>
+  oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions>
+  classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>> & {
+    activeSweeps?: readonly string[]
+  }
+  sesBounceEvents?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
+  systemPrunedNotifications?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
+  userDeletedNotifications?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
+  moderationEmailSends?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
   federationRetention?: Omit<
     Parameters<typeof cleanupFederationRetention>[0],
     'batchSize' | 'maxBatches'
@@ -148,6 +202,7 @@ type DataRetentionCleanupResult = {
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
   softDeletedUsers: CleanupResult
   oldReferralAttributions: CleanupResult
+  histories: Record<HistoryKind, HistoryCleanupResult>
   orphanedOAuthAccounts: CleanupResult
   expiredOAuthAuthorizations: CleanupResult
   expiredOAuthServerArtifacts: CleanupResult
@@ -157,6 +212,9 @@ type DataRetentionCleanupResult = {
   expiredContributionQuotaConsumptions: CleanupResult
   expiredTopicImportAttempts: CleanupResult
   terminalNotificationPushIntents: CleanupResult
+  deliveredMembershipEntitlementEffects: CleanupResult
+  endedMembershipRenewalNotices: CleanupResult
+  terminalGooglePlayAcknowledgments: CleanupResult
   terminalStripeEventWork: PaymentOperationCleanupResult
   abandonedMembershipPurchaseIntents: PaymentOperationCleanupResult
   emailAddressLoginTokens: AuthSessionCleanupResult
@@ -166,6 +224,15 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  textEmbeddingCache: CleanupResult
+  terminalEmbeddingBatches: CleanupResult
+  oldProviderResponseKeys: CleanupResult
+  oldMediaDeliveryChanges: CleanupResult
+  classifierRecords: ClassifierCleanupResult
+  sesBounceEvents: NotificationEmailCleanupResult
+  systemPrunedNotifications: NotificationEmailCleanupResult
+  userDeletedNotifications: NotificationEmailCleanupResult
+  moderationEmailSends: NotificationEmailCleanupResult
   federationRetention: FederationRetentionResult
 }
 
@@ -196,6 +263,7 @@ export async function runDataRetentionCleanup(
   const oldReferralAttributions = await cleanupOldReferralAttributions(
     withLimits(options.oldReferralAttributions),
   )
+  const histories = await cleanupHistories(withLimits(options.histories))
   const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(
     withLimits(options.orphanedOAuthAccounts),
   )
@@ -216,6 +284,20 @@ export async function runDataRetentionCleanup(
   )
   const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
     withLimits(options.terminalNotificationPushIntents),
+  )
+  const {
+    deliveredMembershipEntitlementEffects,
+    endedMembershipRenewalNotices,
+    terminalGooglePlayAcknowledgments,
+  } = await cleanupMembershipOperational(
+    {
+      deliveredMembershipEntitlementEffects: withLimits(
+        options.deliveredMembershipEntitlementEffects,
+      ),
+      endedMembershipRenewalNotices: withLimits(options.endedMembershipRenewalNotices),
+      terminalGooglePlayAcknowledgments: withLimits(options.terminalGooglePlayAcknowledgments),
+    },
+    options.activeMembershipFamilies,
   )
   const terminalStripeEventWork = await cleanupTerminalStripeEventWork(
     withLimits(options.terminalStripeEventWork),
@@ -247,10 +329,34 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
+  const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
+    withLimits(options.terminalEmbeddingBatches),
+  )
+  const oldProviderResponseKeys = await cleanupOldProviderResponseKeys(
+    withLimits(options.oldProviderResponseKeys),
+  )
+  const oldMediaDeliveryChanges = await cleanupOldMediaDeliveryChanges(
+    withLimits(options.oldMediaDeliveryChanges),
+  )
+  const classifierRecords = await cleanupClassifierRecords({
+    ...withLimits(options.classifierRecords),
+    retentionDays: getClassifierRetentionDays(),
+  })
+  const sesBounceEvents = await cleanupSesBounceEvents(withLimits(options.sesBounceEvents))
+  // Tombstone deletion checks for surviving intents, so interrupted intent cleanup cannot
+  // discard delivery state; running it first only makes already-terminal rows eligible sooner.
+  const [systemPrunedNotifications, userDeletedNotifications, moderationEmailSends] =
+    await Promise.all([
+      cleanupSystemPrunedNotifications(withLimits(options.systemPrunedNotifications)),
+      cleanupUserDeletedNotifications(withLimits(options.userDeletedNotifications)),
+      cleanupModerationEmailSends(withLimits(options.moderationEmailSends)),
+    ])
   const federationRetention = await cleanupFederationRetention({
     ...limits,
     ...options.federationRetention,
   })
+  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -271,6 +377,7 @@ export async function runDataRetentionCleanup(
     retainedIdentityRoots,
     softDeletedUsers,
     oldReferralAttributions,
+    histories,
     orphanedOAuthAccounts,
     expiredOAuthAuthorizations,
     expiredOAuthServerArtifacts,
@@ -280,6 +387,9 @@ export async function runDataRetentionCleanup(
     expiredContributionQuotaConsumptions,
     expiredTopicImportAttempts,
     terminalNotificationPushIntents,
+    deliveredMembershipEntitlementEffects,
+    endedMembershipRenewalNotices,
+    terminalGooglePlayAcknowledgments,
     terminalStripeEventWork,
     abandonedMembershipPurchaseIntents,
     emailAddressLoginTokens,
@@ -289,6 +399,15 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    textEmbeddingCache,
+    terminalEmbeddingBatches,
+    oldProviderResponseKeys,
+    oldMediaDeliveryChanges,
+    classifierRecords,
+    sesBounceEvents,
+    systemPrunedNotifications,
+    userDeletedNotifications,
+    moderationEmailSends,
     federationRetention,
   }
 }

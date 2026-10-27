@@ -3,6 +3,11 @@ name: EXPLAIN ANALYZE
 on:
   workflow_call:
     inputs:
+      prepared_database:
+        description: 'Use the prepared backend PostgreSQL artifact from the caller'
+        required: false
+        type: boolean
+        default: false
       publish_coverage:
         description: Collect and publish native EXPLAIN and migration LCOV for backend coverage
         required: false
@@ -15,7 +20,16 @@ permissions:
   actions: read
 
 jobs:
+  prepare-postgres:
+    if: ${{ !inputs.prepared_database }}
+    uses: ./.github/workflows/prepare-postgres.yml
+    permissions:
+      actions: read
+      contents: read
+
   explain-analyze:
+    needs: [prepare-postgres]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     # Setup plus the 10-minute run step no longer fits in 10 minutes (run 39276118528).
     timeout-minutes: 20
@@ -93,14 +107,27 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
-      - working-directory: backend
-        run: node data-stores/psql/migrate.mts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 2
+        with:
+          name: backend-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Restore prepared PostgreSQL database
         timeout-minutes: 3
+        run: |
+          docker run --rm --network host -i \
+            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
+            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
+            < "$RUNNER_TEMP/backend-postgres.dump"
       - name: Check native RSS crawl tier snapshot and dispatch
         timeout-minutes: 2
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
+          VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
         run: node backend/scripts/check-rss-feed-crawl-tiers.mts
       - name: Seed development data
         # The copyright seed encrypts its review rows and hashes thread references.
@@ -162,12 +189,14 @@ jobs:
           --output backend/scripts/explain-analyze/output/retirement-coverage/lcov.info
           --include 'backend/data-stores/psql/migration-runner/before-retire-monthly-partition.mts'
           --include 'backend/data-stores/psql/migrate.mts'
+          --include 'backend/services/data-retention/cleanup-text-embeddings.mts'
           --include 'backend/data-stores/psql/explain-analyze.mts'
           --include 'backend/services/crawls/{dispatch-per-hostname,dispatch-tier-urls}.mts'
           --include 'backend/services/crawler-referral-links/dispatch.mts'
           --include 'backend/services/rss-feeds/{get-to-fetch,crawl-config,update,update-fields,update-state-helpers}.mts'
           --include 'backend/services/referral-link-unfurl/dispatch.mts'
           --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction,migration-*}.mts'
+          --include 'backend/scripts/explain-analyze/pruning/idle-embedding-retention.mts'
       - name: Preserve full native migration LCOV
         if: ${{ inputs.publish_coverage }}
         timeout-minutes: 1
@@ -179,7 +208,7 @@ jobs:
         if: ${{ inputs.publish_coverage }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         with:
           suite: backend-native-migrations
       - name: Upload full native migration LCOV (attempt 2)
@@ -187,7 +216,7 @@ jobs:
         if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
         continue-on-error: true
         timeout-minutes: 3
-        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+        uses: vouchington/vouchington-tooling/.github/actions/upload-full-lcov@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         with:
           suite: backend-native-migrations
           name-suffix: -retry

@@ -1,3 +1,4 @@
+import type { PageInfo } from './api-responses'
 import type {
   IntegrityFlagStatusFilter,
   VoteIntegrityFlagType,
@@ -44,6 +45,9 @@ export interface VoteIntegrityPenalty {
   created_by_id: string | null
   revoked_at: string | null
   revoked_by_id: string | null
+  reviewed_at: string | null
+  reviewed_by_id: string | null
+  review_due_at: string
   created_at: string
 }
 
@@ -54,4 +58,13 @@ export interface VoteIntegrityPenaltiesResponse {
     source: string
     source_flag_id: string | null
   }
+}
+
+export interface VoteIntegrityPenaltyReviewDue extends VoteIntegrityPenalty {
+  user_username: string | null
+}
+
+export interface VoteIntegrityPenaltyReviewsDueResponse {
+  results: VoteIntegrityPenaltyReviewDue[]
+  page_info: PageInfo
 }

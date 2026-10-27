@@ -9,8 +9,6 @@
       "Bash(pnpm exec oxlint *)",
       "Bash(pnpm exec oxfmt *)",
       "Bash(pnpm exec no-mistakes *)",
-      "Bash(pnpm exec agent-blackboard snapshot partition *)",
-      "Bash(pnpm exec agent-blackboard snapshot cleanup *)",
       "Bash(pnpm exec vouchington agent-blackboard distill classify *)",
       "Bash(./ci/lint-links.sh *)",
       "Bash(pnpm exec selene *)",

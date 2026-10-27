@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { validateVitestCliTimeouts } from './vitest-cli-timeout-policy.mts'
 import { backendCredentialedProjectNames } from '../test-helpers/vitest-config/backend-credentialed-project-info.mts'
+import { backendEvalProjectNames } from '../test-helpers/vitest-config/backend-evals-project-info.mts'
 import { toolingTestProjectNames } from '../test-helpers/vitest-config/tooling-project-registry.mts'
 
 const dockerFreeBackendProjects = [
@@ -46,6 +47,8 @@ export const VITEST_PROJECT_GROUPS = {
   'backend-modules': dockerFreeBackendProjects,
   'backend-docker': dockerBackedBackendProjects,
   ...credentialedProjectGroups,
+  // Dispatch-only evals are never part of the `backend` group; see backend-evals-projects.mts.
+  evals: backendEvalProjectNames,
   'backend-postgres-schema': ['backend-postgres-schema', 'backend-activitypub-capacity'],
   'email-templates': ['backend-email-templates'],
   'ts-shared': ['ts-shared'],

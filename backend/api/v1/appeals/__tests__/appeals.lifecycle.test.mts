@@ -2,10 +2,12 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
+  insertTestModerationAppeal,
   insertTestUserWarning,
   insertTestCommunityBan,
   insertTestCommunity,
   WEB_PROVENANCE,
+  resolveTestModerationAppeal,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
@@ -175,6 +177,30 @@ describe('GET /api/v1/appeals/:id — single appeal', () => {
     expect(response.body.appeal.staff_context.original_decision.internal_reason).toBe(
       internalReason,
     )
+  })
+
+  it('hides an old resolved appeal from its member but preserves staff access', async () => {
+    const warning = await insertTestUserWarning({ userId: appellant.id, issuedById: staff.id })
+    const appeal = await insertTestModerationAppeal({
+      appellantId: appellant.id,
+      userWarningId: warning.id,
+    })
+    const resolvedAt = new Date()
+    resolvedAt.setUTCFullYear(resolvedAt.getUTCFullYear() - 3)
+    await resolveTestModerationAppeal({
+      appealId: appeal.id,
+      resolvedAt,
+      resolutionAction: 'deny',
+    })
+
+    const memberRequest = createRequest()
+    await memberRequest.authenticateAs(appellant)
+    await memberRequest.get(`/api/v1/appeals/${appeal.id}`).expect(404)
+
+    const staffRequest = createRequest()
+    await staffRequest.authenticateAs(staff)
+    const response = await staffRequest.get(`/api/v1/appeals/${appeal.id}`).expect(200)
+    expect(response.body.appeal.id).toBe(appeal.id)
   })
 })
 

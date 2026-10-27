@@ -39,7 +39,7 @@ export type { ReviewDispute } from '@voucha/types/entities/review-dispute'
 export interface PostDisputeAnnotation {
   id: string
   post_id: string
-  review_dispute_id: string
+  review_dispute_id: string | null
   body_text: string
   created_by_id: string
   removed_at: Date | null

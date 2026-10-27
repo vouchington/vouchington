@@ -6,7 +6,7 @@ import {
   protectPlaywrightHookTimeouts,
 } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { linkTopicHostname } from '../../helpers/link-topic-hostname.mts'
 import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
@@ -16,7 +16,7 @@ const SEEDED_TOPIC_ID = '019c64e6-f8a0-7000-a000-000000000001'
 const SEEDED_TOPIC_TYPE = 'card'
 
 test.describe('Admin Manage Source', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
   test.describe.configure({ mode: 'serial' })
 
   let topicId: string
@@ -225,7 +225,7 @@ test.describe('Admin Manage Source', () => {
     await expect(page.getByTestId('feed-hide-discovery')).toBeVisible()
   })
 
-  test('should delete an RSS feed with confirmation', async ({ page }) => {
+  test('should start RSS feed deletion with confirmation', async ({ page }) => {
     // Insert a fresh topic + RSS feed to delete
     const suffix = randomSuffix()
     const { id: deleteTopicId, urlSlug: deleteTopicSlug } = await insertTestTopic(
@@ -245,10 +245,10 @@ test.describe('Admin Manage Source', () => {
     // Confirm delete
     await clickAfterBelowFoldHydration(page, page.getByTestId('feed-delete-confirm'))
     await expect(
-      page.locator('[data-sonner-toast]').filter({ hasText: 'Source deleted' }),
+      page.locator('[data-sonner-toast]').filter({ hasText: 'Source deletion started' }),
     ).toBeVisible()
 
-    // Should return to empty state (no feed linked)
+    // The admin view releases its source while background deletion completes.
     await expect(page.getByTestId('source-heading')).toBeVisible()
   })
 

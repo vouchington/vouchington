@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { createMembershipVerification } from '../verifications.mts'
 import { getMembershipByUserId } from '../get.mts'
 import {
@@ -8,7 +9,12 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { createTestGooglePlayRtdnEvidence } from '@voucha/test-helpers/google-play-memberships'
+import {
+  createTestGooglePlayRtdnBody,
+  getTestPendingGooglePlayVerification,
+} from '@voucha/test-helpers/google-play-recovery'
 import { getTestMembershipProviderEvidenceTerminalState } from '@voucha/test-helpers/entities/memberships/provider-evidence'
+import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 import { GooglePlaySubscriptionLookupError } from './configured-client.mts'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import { reconcileGooglePlayRtdnNotification } from './reconcile-notification.mts'
@@ -16,6 +22,30 @@ import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
 describe('Google Play RTDN recovery', () => {
   afterEach(() => vi.unstubAllEnvs())
+
+  it('leaves an unknown notification pending for retry when provider credentials are unavailable', async () => {
+    vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL', '')
+    vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', '')
+    const applicationId = `ai.voucha.google-${randomUUID()}`
+    const evidenceId = await createTestGooglePlayRtdnEvidence({
+      applicationId,
+      rawBody: createTestGooglePlayRtdnBody(applicationId, {
+        subscriptionNotification: {
+          notificationType: 2,
+          purchaseToken: `google-token-${randomUUID()}`,
+          subscriptionId: `plus.monthly.${randomUUID()}`,
+        },
+      }),
+    })
+
+    await expect(reconcileGooglePlayRtdnNotification({ evidenceId })).rejects.toBeInstanceOf(
+      MembershipProviderUnavailableError,
+    )
+
+    await expect(getTestMembershipProviderEvidenceTerminalState(evidenceId)).resolves.toMatchObject(
+      { verified_at: null, rejected_at: null, rejection_reason: null, observation_count: 0 },
+    )
+  })
 
   it('defers a persisted unbound lineage without refetching and resumes after binding', async () => {
     const applicationId = configureGooglePlay()
@@ -50,7 +80,12 @@ describe('Google Play RTDN recovery', () => {
     await processGooglePlayMembershipVerification(verification.id, { client })
     calls.length = 0
 
-    await reconcileGooglePlayRtdnNotification({ evidenceId, client })
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
+    const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
+    await processGooglePlayMembershipVerification(recoveryVerificationId, { client })
+    await (await memberships.getJob(recoveryVerificationId))?.remove()
+    expect(calls).toEqual([applicationId])
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
     expect(calls).toEqual([applicationId])
     await expect(getTestMembershipProviderEvidenceTerminalState(evidenceId)).resolves.toMatchObject(
       {
@@ -66,7 +101,8 @@ describe('Google Play RTDN recovery', () => {
     const productId = `plus.monthly.${randomUUID()}`
     const purchaseToken = `google-token-${randomUUID()}`
     await createGooglePlayProduct(applicationId, productId)
-    const client = clientFor({ applicationId, productId, userId: user.id, calls: [] })
+    const calls: string[] = []
+    const client = clientFor({ applicationId, productId, userId: user.id, calls })
     const verification = await createMembershipVerification({
       userId: user.id,
       provider: 'google_play',
@@ -75,13 +111,20 @@ describe('Google Play RTDN recovery', () => {
       evidence: { purchase_token: purchaseToken },
     })
     await processGooglePlayMembershipVerification(verification.id, { client })
+    calls.length = 0
     const evidenceId = await createTestGooglePlayRtdnEvidence({
       applicationId,
       rawBody: rtdnBody(applicationId, purchaseToken, productId),
     })
     vi.stubEnv('GOOGLE_PLAY_APPLICATION_ID', `ai.voucha.changed-${randomUUID()}`)
 
-    await reconcileGooglePlayRtdnNotification({ evidenceId, client })
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
+    const recoveryVerificationId = await expectQueuedVerification(user.id, applicationId)
+    await processGooglePlayMembershipVerification(recoveryVerificationId, { client })
+    await (await memberships.getJob(recoveryVerificationId))?.remove()
+    expect(calls).toEqual([applicationId])
+    await reconcileGooglePlayRtdnNotification({ evidenceId })
+    expect(calls).toEqual([applicationId])
     await expect(getTestMembershipProviderEvidenceTerminalState(evidenceId)).resolves.toMatchObject(
       {
         verified_at: expect.any(Date),
@@ -118,6 +161,17 @@ describe('Google Play RTDN recovery', () => {
     await expect(getMembershipByUserId(user.id)).resolves.toMatchObject({ status: 'active' })
   })
 })
+
+async function expectQueuedVerification(userId: string, applicationId: string): Promise<string> {
+  const verificationId = await getTestPendingGooglePlayVerification({ userId, applicationId })
+  if (!verificationId) throw new Error('Google Play RTDN verification was not admitted')
+  await expect(memberships.getJob(verificationId)).resolves.toMatchObject({
+    id: verificationId,
+    name: 'processMembershipVerification',
+    data: { verificationId },
+  })
+  return verificationId
+}
 
 function configureGooglePlay(): string {
   const applicationId = `ai.voucha.google-${randomUUID()}`

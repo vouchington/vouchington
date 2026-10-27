@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockPost = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const { mockPost, mockDelete } = vi.hoisted(() => ({
+  mockPost: vi.fn<VitestLooseMock>(),
+  mockDelete: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock(
   import('../instance'),
@@ -8,6 +11,7 @@ vi.mock(
     ({
       clientApi: {
         post: mockPost,
+        delete: mockDelete,
       },
     }) as unknown as typeof import('../instance'),
 )
@@ -16,12 +20,14 @@ import {
   acknowledgeOAuthAuthorization,
   beginOAuthAuthorization,
   completeOAuthAuthorization,
+  disconnectOAuthAccount,
   postLogout,
 } from '../auth'
 
 describe('OAuth broker auth client', () => {
   beforeEach(() => {
     mockPost.mockReset()
+    mockDelete.mockReset()
   })
 
   it('acknowledges a consumed web completion result', async () => {
@@ -41,9 +47,12 @@ describe('OAuth broker auth client', () => {
     }
     mockPost.mockResolvedValue(response)
 
-    await expect(beginOAuthAuthorization('github', 'connect')).resolves.toEqual(response)
+    await expect(beginOAuthAuthorization('github', 'connect', 'reauth-token')).resolves.toEqual(
+      response,
+    )
     expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/oauth/github/authorizations', {
       purpose: 'connect',
+      re_auth_token: 'reauth-token',
       callback_mode: 'web',
     })
   })
@@ -56,9 +65,12 @@ describe('OAuth broker auth client', () => {
     }
     mockPost.mockResolvedValue(response)
 
-    await expect(beginOAuthAuthorization('linkedin', 'connect')).resolves.toEqual(response)
+    await expect(beginOAuthAuthorization('linkedin', 'connect', 'reauth-token')).resolves.toEqual(
+      response,
+    )
     expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/oauth/linkedin/authorizations', {
       purpose: 'connect',
+      re_auth_token: 'reauth-token',
       callback_mode: 'web',
     })
   })
@@ -71,9 +83,12 @@ describe('OAuth broker auth client', () => {
     }
     mockPost.mockResolvedValue(response)
 
-    await expect(beginOAuthAuthorization('microsoft', 'connect')).resolves.toEqual(response)
+    await expect(beginOAuthAuthorization('microsoft', 'connect', 'reauth-token')).resolves.toEqual(
+      response,
+    )
     expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/oauth/microsoft/authorizations', {
       purpose: 'connect',
+      re_auth_token: 'reauth-token',
       callback_mode: 'web',
     })
   })
@@ -103,5 +118,14 @@ describe('OAuth broker auth client', () => {
 
     await expect(postLogout(binding)).resolves.toBeUndefined()
     expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/logout', binding)
+  })
+
+  it('disconnects an OAuth account only with its fresh account-change proof', async () => {
+    mockDelete.mockResolvedValue(undefined)
+
+    await expect(disconnectOAuthAccount('github', 'fresh-proof')).resolves.toBeUndefined()
+    expect(mockDelete).toHaveBeenCalledWith('/api/v1/auth/oauth/github/connect', {
+      body: { re_auth_token: 'fresh-proof' },
+    })
   })
 })

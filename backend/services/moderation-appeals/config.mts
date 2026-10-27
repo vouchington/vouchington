@@ -19,6 +19,9 @@ export const MODERATION_APPEAL_CHANGE_TYPES = [
 ] as const
 export type ModerationAppealChangeType = (typeof MODERATION_APPEAL_CHANGE_TYPES)[number]
 
+/** Calendar-month access and retention window for resolved appeals. */
+export const MODERATION_APPEAL_HISTORY_RETENTION_MONTHS = 24
+
 /** SLA in hours: appeals must be reviewed within this window. */
 export const APPEAL_SLA_HOURS = 72
 

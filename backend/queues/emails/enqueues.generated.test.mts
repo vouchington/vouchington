@@ -4,6 +4,7 @@ import {
   enqueueSendDataExportReadyEmail,
   enqueueSendEmailAddressLoginToken,
   enqueueSendEmailVerificationToken,
+  enqueueSendReauthenticationToken,
   enqueueSendWelcomeEmail,
 } from './enqueues.mts'
 import { describe, expect, it } from 'vitest'
@@ -35,6 +36,8 @@ describe('enqueues.generated', () => {
     const credentialEnqueues = {
       processSendEmailAddressLoginToken: () =>
         enqueueSendEmailAddressLoginToken(input, { token: 'ABC123', expiration: '15 minutes' }),
+      processSendReauthenticationToken: () =>
+        enqueueSendReauthenticationToken(input, { token: 'ABCDEFG234', expiresInMinutes: 15 }),
       processSendEmailVerificationToken: () =>
         enqueueSendEmailVerificationToken(input, { token: 'ABC123' }),
       processSendCommunityInviteEmail: () =>

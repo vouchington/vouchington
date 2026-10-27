@@ -42,7 +42,7 @@ export type AvailabilityResult = {
   conflict: AvailabilityConflict | null
 }
 
-export const MAX_VALUE_LENGTH = 300
+const MAX_VALUE_LENGTH = 300
 // Mirrors the topics table CHECK constraint char_length(name) <= 255.
 const MAX_TOPIC_NAME_LENGTH = 255
 

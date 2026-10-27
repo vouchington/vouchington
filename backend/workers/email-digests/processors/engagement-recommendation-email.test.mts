@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import {
   createTestUser,
+  claimCurrentModerationSummaryForTest,
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
@@ -12,7 +13,6 @@ import { processSendFollowNewsSourcesEmail } from './follow-news-sources.mts'
 import { processSendFollowTopicsEmail } from './follow-topics.mts'
 import { processSendPostReferralLinkEmail } from './post-referral-link.mts'
 import { claimEngagementEmailSend } from '@services/users/engagement-emails'
-import { claimModerationEmailSend } from '@services/communities/moderation-summary-emails'
 import { updateUserFields } from '@services/users/update-fields'
 
 const zeroActivityDigestFields = {
@@ -42,6 +42,10 @@ const notificationEmailFooter = {
   settingsUrl: 'https://voucha.ai/my/notification-settings',
   unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
   physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+}
+const moderationEmailFooter = {
+  ...notificationEmailFooter,
+  dispatchTimeZone: 'America/Los_Angeles',
 }
 
 describe('engagement email processors', () => {
@@ -144,18 +148,18 @@ describe('engagement email processors', () => {
       postId,
       submittedById: user!.id,
     })
-    const trackingKey = 'daily:2026-07-09'
-    await claimModerationEmailSend(user!.id, trackingKey)
+    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
     const currentEmailAddress = user!.email_address!
     await processSendCommunityModerationSummaryEmail(
       {
         emailAddress: 'tests+moderator@voucha.ai',
         userId: user!.id,
         trackingKey,
+        windowEnd,
       },
       {
         generatedForDate: '2026-07-09',
-        ...notificationEmailFooter,
+        ...moderationEmailFooter,
         communities: [
           {
             name: 'Travel Deals',
@@ -183,11 +187,10 @@ describe('engagement email processors', () => {
 
   it('skips already marked engagement and moderation sends', async () => {
     const user = await createTestUser()
-    const trackingKey = 'daily:2026-07-10'
+    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
     await claimEngagementEmailSend(user!.id, 'follow_topics')
     await claimEngagementEmailSend(user!.id, 'post_referral_link')
     await claimEngagementEmailSend(user!.id, 'follow_news_sources')
-    await claimModerationEmailSend(user!.id, trackingKey)
 
     await processSendFollowTopicsEmail(
       { emailAddress: 'tests+user@voucha.ai', userId: user!.id },
@@ -213,10 +216,10 @@ describe('engagement email processors', () => {
       },
     )
     await processSendCommunityModerationSummaryEmail(
-      { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey },
+      { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
       {
         generatedForDate: '2026-07-10',
-        ...notificationEmailFooter,
+        ...moderationEmailFooter,
         communities: [quietModerationCommunity],
       },
     )
@@ -253,10 +256,10 @@ describe('engagement email processors', () => {
     ).resolves.toBeNull()
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey },
+        { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-10',
-          ...notificationEmailFooter,
+          ...moderationEmailFooter,
           communities: [quietModerationCommunity],
         },
       ),
@@ -266,9 +269,8 @@ describe('engagement email processors', () => {
 
   it('skips queued sends after notification preferences are disabled', async () => {
     const user = await createTestUser()
-    const trackingKey = 'daily:2026-07-11'
+    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
     await claimEngagementEmailSend(user!.id, 'follow_topics')
-    await claimModerationEmailSend(user!.id, trackingKey)
     await updateUserFields(user!.id, {
       is_engagement_emails_enabled: false,
       is_moderation_emails_enabled: false,
@@ -285,10 +287,10 @@ describe('engagement email processors', () => {
     ).resolves.toBeNull()
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey },
+        { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-11',
-          ...notificationEmailFooter,
+          ...moderationEmailFooter,
           communities: [quietModerationCommunity],
         },
       ),

@@ -45,7 +45,8 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `classifier_prompt_versions_pkey`: `CREATE UNIQUE INDEX classifier_prompt_versions_pkey ON public.classifier_prompt_versions USING btree (id)`
-- `idx_classifier_prompt_versions__classifier`: `CREATE INDEX idx_classifier_prompt_versions__classifier ON public.classifier_prompt_versions USING btree (classifier_id)`
+- `idx_classifier_prompt_versions__activated_id`: `CREATE INDEX idx_classifier_prompt_versions__activated_id ON public.classifier_prompt_versions USING btree (classifier_id, id) WHERE ((activated_at IS NOT NULL) AND (deleted_at IS NULL))`
+- `idx_classifier_prompt_versions__classifier`: `CREATE INDEX idx_classifier_prompt_versions__classifier ON public.classifier_prompt_versions USING btree (classifier_id, id)`
 - `idx_classifier_prompt_versions__classifier_active`: `CREATE UNIQUE INDEX idx_classifier_prompt_versions__classifier_active ON public.classifier_prompt_versions USING btree (classifier_id) WHERE ((activated_at IS NOT NULL) AND (deactivated_at IS NULL) AND (deleted_at IS NULL))`
 - `idx_classifier_prompt_versions__created_by`: `CREATE INDEX idx_classifier_prompt_versions__created_by ON public.classifier_prompt_versions USING btree (created_by_id)`
 - `idx_classifier_prompt_versions__deleted_by`: `CREATE INDEX idx_classifier_prompt_versions__deleted_by ON public.classifier_prompt_versions USING btree (deleted_by_id)`

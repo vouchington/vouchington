@@ -101,7 +101,6 @@ describe('household pagination query plans', () => {
         'idx_household_members__household_updated_id',
       )
     },
-    30_000,
   )
 })
 

@@ -1,54 +1,151 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, it, vi } from 'vitest'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 
-const { mockPost } = vi.hoisted(() => ({
-  mockPost: vi.fn<VitestLooseMock>(),
-}))
-
+const mocks = vi.hoisted(() => ({ get: vi.fn<VitestLooseMock>(), post: vi.fn<VitestLooseMock>() }))
 vi.mock(
   import('@/lib/api/client/instance'),
   () =>
     ({
-      clientApi: {
-        post: mockPost,
-      },
+      clientApi: { get: mocks.get, post: mocks.post },
     }) as unknown as typeof import('@/lib/api/client/instance'),
 )
 
 import {
-  verifyDiscoverablePasskey,
+  beginBrokerProviderReAuth,
+  beginSdkProviderReAuth,
+  getPasskeyReAuthOptions,
+  getReAuthMethods,
+  retrieveBrokerProviderReAuthProof,
+  requestReAuthEmail,
   verifyReAuthEmail,
   verifyReAuthTotp,
-} from '@/lib/api/client/auth'
+  verifyPasskeyReAuth,
+  verifySdkProviderReAuth,
+  type ReAuthMethods,
+  type ReAuthProof,
+} from '../auth-reauth'
 
-describe('re-auth client helpers', () => {
-  it('verifyDiscoverablePasskey posts the response to the passkey verify endpoint', async () => {
-    const response = { id: 'credential-id', type: 'public-key' }
-    mockPost.mockResolvedValue({})
+const passkeyId = '01931e00-0000-7000-8000-000000000123'
+const flowId = '01931e00-0000-7000-8000-000000000456'
+const proof: ReAuthProof = { re_auth_token: 'server-scoped-proof' }
 
-    await verifyDiscoverablePasskey(response)
+describe('fresh authentication client contract', () => {
+  beforeEach(() => vi.clearAllMocks())
 
-    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/passkeys/authentication/verify', {
+  it('discovers usable methods for the authenticated account', async () => {
+    const response: ReAuthMethods = {
+      has_email: false,
+      has_totp: false,
+      has_passkey: true,
+      providers: ['google'],
+    }
+    await expectApiWrapperCall({
+      mock: mocks.get,
       response,
+      call: getReAuthMethods,
+      expectedArgs: ['/api/v1/auth/re-auth/methods'],
     })
   })
 
-  it('verifyReAuthEmail posts the code to the email verification endpoint', async () => {
-    mockPost.mockResolvedValue({})
-
-    await verifyReAuthEmail('123456')
-
-    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/mfa/re-auth/email/verification', {
-      code: '123456',
+  it('binds passkey options to the selected named credential', async () => {
+    const response: Awaited<ReturnType<typeof getPasskeyReAuthOptions>> = {
+      flow_id: flowId,
+      options: { challenge: 'server-challenge' },
+    }
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response,
+      call: () => getPasskeyReAuthOptions(passkeyId),
+      expectedArgs: ['/api/v1/auth/re-auth/passkeys/options', { passkey_id: passkeyId }],
     })
   })
 
-  it('verifyReAuthTotp posts the code to the TOTP verification endpoint', async () => {
-    mockPost.mockResolvedValue({})
+  it('carries the selected passkey, original flow and actual assertion together', async () => {
+    const assertion = { id: 'credential-id', response: { signature: 'signed-assertion' } }
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: proof,
+      call: () => verifyPasskeyReAuth(passkeyId, flowId, assertion),
+      expectedArgs: [
+        '/api/v1/auth/re-auth/passkeys/verification',
+        { passkey_id: passkeyId, flow_id: flowId, response: assertion },
+      ],
+    })
+  })
 
-    await verifyReAuthTotp('654321')
+  it.each(['apple', 'google'] as const)('requests a fresh server nonce for %s', async provider => {
+    const response = { flow_id: flowId, nonce: 'server-nonce', expires_at: '2026-10-23T12:05:00Z' }
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response,
+      call: () => beginSdkProviderReAuth(provider),
+      expectedArgs: [`/api/v1/auth/re-auth/providers/${provider}/challenges`],
+    })
+  })
 
-    expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/mfa/re-auth/totp/verification', {
-      code: '654321',
+  it.each(['apple', 'google'] as const)(
+    'sends the signed %s credential with its nonce flow',
+    async provider => {
+      await expectApiWrapperCall({
+        mock: mocks.post,
+        response: proof,
+        call: () => verifySdkProviderReAuth(provider, flowId, 'signed-provider-credential'),
+        expectedArgs: [
+          `/api/v1/auth/re-auth/providers/${provider}/verification`,
+          { flow_id: flowId, credential: 'signed-provider-credential' },
+        ],
+      })
+    },
+  )
+
+  it('begins a separate provider proof roundtrip', async () => {
+    const response = {
+      flow_id: flowId,
+      redirect_url: 'https://github.com/login/oauth/authorize',
+      expires_at: '2026-10-23T12:05:00Z',
+    }
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response,
+      call: () => beginBrokerProviderReAuth('github'),
+      expectedArgs: [
+        '/api/v1/auth/re-auth/providers/github/authorizations',
+        { callback_mode: 'web' },
+      ],
+    })
+  })
+
+  it('retrieves proof through the separately authenticated completion call', async () => {
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: proof,
+      call: () => retrieveBrokerProviderReAuthProof('github', flowId),
+      expectedArgs: ['/api/v1/auth/re-auth/providers/github/proofs', { flow_id: flowId }],
+    })
+  })
+
+  it('requests and redeems email proof through distinct one-use endpoints', async () => {
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: { email_address: 'member@example.test' },
+      call: requestReAuthEmail,
+      expectedArgs: ['/api/v1/auth/mfa/re-auth/email/tokens', {}],
+    })
+    mocks.post.mockClear()
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: proof,
+      call: () => verifyReAuthEmail<ReAuthProof>('527104'),
+      expectedArgs: ['/api/v1/auth/mfa/re-auth/email/verification', { code: '527104' }],
+    })
+  })
+
+  it('redeems a TOTP code for a scoped account-change proof', async () => {
+    await expectApiWrapperCall({
+      mock: mocks.post,
+      response: proof,
+      call: () => verifyReAuthTotp<ReAuthProof>('713029'),
+      expectedArgs: ['/api/v1/auth/mfa/re-auth/totp/verification', { code: '713029' }],
     })
   })
 })

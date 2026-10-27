@@ -32,7 +32,7 @@ describe('C7 sweep eligibility (real PG)', () => {
     expect(await sweepableSubjectIds()).not.toContain(fixture.post.id)
     expect(
       await getSubjectClassifierRunRequestFacts(fixture.subject, AUTOTAGGER_AGENT_SLUG),
-    ).toMatchObject([{ stale_at: null, no_work_at: null, run_id: null }])
+    ).toMatchObject([{ stale_at: null, no_work_at: null, run_identity_id: null }])
 
     await completeTaggingRunForTest(fixture)
 

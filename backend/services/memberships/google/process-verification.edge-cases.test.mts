@@ -60,13 +60,15 @@ describe('Google Play membership verification edge cases', () => {
     const fixture = await createGooglePlayFixture()
     const verification = await fixture.submit(`google-token-${randomUUID()}`)
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: makeGooglePlayClient({
-        userId: fixture.user.id,
-        productId: fixture.productId,
-        subscriptionState: 'SUBSCRIPTION_STATE_PENDING',
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, {
+        client: makeGooglePlayClient({
+          userId: fixture.user.id,
+          productId: fixture.productId,
+          subscriptionState: 'SUBSCRIPTION_STATE_PENDING',
+        }),
       }),
-    })
+    ).rejects.toThrow('Google Play purchase is pending')
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -92,20 +94,22 @@ describe('Google Play membership verification edge cases', () => {
     await expect(getMembershipByUserId(fixture.user.id)).resolves.toBeNull()
   })
 
-  it('releases a verification lease for a provider-fetch retry', async () => {
+  it('rejects a provider outage so GlideMQ retries the pending verification', async () => {
     const fixture = await createGooglePlayFixture()
     const verification = await fixture.submit(`google-token-${randomUUID()}`)
     let calls = 0
 
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async () => {
-          calls += 1
-          throw new Error('Google subscriptionsv2 is temporarily unavailable')
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, {
+        client: {
+          getSubscription: async () => {
+            calls += 1
+            throw new Error('Google subscriptionsv2 is temporarily unavailable')
+          },
+          acknowledgeSubscription: async () => undefined,
         },
-        acknowledgeSubscription: async () => undefined,
-      },
-    })
+      }),
+    ).rejects.toThrow('Google subscriptionsv2 is temporarily unavailable')
 
     expect(calls).toBe(1)
     await expect(
@@ -136,27 +140,31 @@ describe('Google Play membership verification edge cases', () => {
     }
     const purchaseToken = `google-retry-${randomUUID()}`
     const verification = await fixture.submit(purchaseToken)
-    await processGooglePlayMembershipVerification(verification.id, {
-      client: {
-        getSubscription: async () => {
-          throw new GooglePlaySubscriptionLookupError(503, purchaseToken)
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, {
+        client: {
+          getSubscription: async () => {
+            throw new GooglePlaySubscriptionLookupError(503, purchaseToken)
+          },
+          acknowledgeSubscription: async () => undefined,
         },
-        acknowledgeSubscription: async () => undefined,
-      },
-    })
+      }),
+    ).rejects.toThrow('Google Play subscriptionsv2 fetch failed with 503')
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
     ).resolves.toMatchObject({ status: 'pending' })
     const ambiguousToken = `google-ambiguous-${randomUUID()}`
     const ambiguous = await fixture.submit(ambiguousToken)
-    await processGooglePlayMembershipVerification(ambiguous.id, {
-      client: {
-        getSubscription: async () => {
-          throw new GooglePlaySubscriptionLookupError(400, ambiguousToken, 'required')
+    await expect(
+      processGooglePlayMembershipVerification(ambiguous.id, {
+        client: {
+          getSubscription: async () => {
+            throw new GooglePlaySubscriptionLookupError(400, ambiguousToken, 'required')
+          },
+          acknowledgeSubscription: async () => undefined,
         },
-        acknowledgeSubscription: async () => undefined,
-      },
-    })
+      }),
+    ).rejects.toThrow('Google Play subscriptionsv2 fetch failed with 400')
     await expect(getMembershipVerification(fixture.user.id, ambiguous.id)).resolves.toMatchObject({
       status: 'pending',
     })

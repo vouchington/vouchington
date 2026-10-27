@@ -1,3 +1,4 @@
+import { isStrictSessionTokenPair } from './token-pair.mts'
 import {
   EDGE_ANON_SESSION_JWT_ISSUER,
   verifyDeviceJwt,
@@ -23,13 +24,7 @@ export async function verifyDeviceAndSessionTokens({
   }
   if (sessionIssuer === null) return false
 
-  const verified = await verifyDeviceAndSessionTokensWithOptions({
-    deviceToken,
-    sessionToken,
-  })
-  if (verified) return verified
-
-  return false
+  return verifyDeviceAndSessionTokensWithOptions({ deviceToken, sessionToken })
 }
 
 async function verifyDeviceAndSessionTokensWithOptions({
@@ -56,10 +51,7 @@ async function verifyDeviceAndSessionTokensWithOptions({
       return false
     }
 
-    // Device IDs from both tokens must match
-    if (devicePayload.did !== sessionPayload.did) {
-      return false
-    }
+    if (!isStrictSessionTokenPair(devicePayload, sessionPayload)) return false
 
     const membershipEntitlementExpired =
       sessionPayload.mpe !== undefined && Math.floor(Date.now() / 1000) >= sessionPayload.mpe
@@ -68,7 +60,13 @@ async function verifyDeviceAndSessionTokensWithOptions({
       did: sessionPayload.did,
       sid: sessionPayload.sid,
       uid: sessionPayload.uid,
+      client: sessionPayload.client,
+      mfa_at: devicePayload.mfa_at,
+      ua_hash: sessionPayload.ua_hash,
+      ja4_hash: sessionPayload.ja4_hash,
       exp: sessionPayload.exp,
+      device_exp: devicePayload.exp,
+      device_iat: devicePayload.iat,
       iat: sessionPayload.iat,
       rol: sessionPayload.rol,
       mpl: membershipEntitlementExpired ? null : sessionPayload.mpl,

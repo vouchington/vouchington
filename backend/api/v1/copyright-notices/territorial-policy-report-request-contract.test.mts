@@ -18,7 +18,7 @@ describe('EU transparency report request contract', () => {
     const { anonymousRequest, strangerRequest } = await createTerritorialActors()
 
     const anonymous = await anonymousRequest.post(url).send({ injected: true }).expect(401)
-    expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+    expect(anonymous.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
     await strangerRequest.post(url).send({ injected: true }).expect(403)
   })
 
@@ -63,7 +63,7 @@ describe('jurisdiction policy request contracts', () => {
 
     for (const url of [policies, withdrawal]) {
       const anonymous = await anonymousRequest.post(url).send({ injected: true }).expect(401)
-      expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+      expect(anonymous.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
       await strangerRequest.post(url).send({ injected: true }).expect(403)
       // Moderators review notices but cannot approve policy.
       await staffRequest.post(url).send({ injected: true }).expect(403)

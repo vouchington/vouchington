@@ -88,7 +88,7 @@ describe('story clustering request retirement (real PG)', () => {
       item.subject,
       STORY_CLUSTERING_CLASSIFIER_SLUG,
     )
-    expect(requests.map(request => request.run_id)).toEqual([run.runId])
+    expect(requests.map(request => request.run_identity_id)).toEqual([run.runId])
     expect(await sweepableFeedItemIds(adapter)).not.toContain(item.itemId)
   })
 })

@@ -20,14 +20,15 @@ function makeSetupFlowProps(
   return {
     loading: false,
     setupCode: '',
+    setupVerificationProof: null,
     setupData: null,
     setupName: '',
     onStartSetup: vi.fn<(e: React.FormEvent) => void>(),
+    onConfirmSetup: vi.fn<() => void>(),
     onVerifySetup: vi.fn<(code: string) => void>(),
+    onCancelSetup: vi.fn<() => void>(),
     setSetupCode: vi.fn<(code: string) => void>(),
-    setSetupData: vi.fn<(data: TotpSetupData | null) => void>(),
     setSetupName: vi.fn<(name: string) => void>(),
-    setStep: vi.fn<(step: 'list' | 'setup') => void>(),
     ...overrides,
   }
 }
@@ -50,7 +51,7 @@ describe('TOTP setup flow', () => {
   })
 
   it('labels the setup code input with the visible instruction', () => {
-    renderSetupFlow({ setupData: makeSetupData() })
+    renderSetupFlow({ setupData: makeSetupData(), setupVerificationProof: 'fresh-proof' })
 
     expect(
       screen.getByRole('textbox', {
@@ -64,8 +65,18 @@ describe('TOTP setup flow', () => {
       <>
         <TotpSetupFlow {...makeSetupFlowProps()} />
         <TotpSetupFlow {...makeSetupFlowProps()} />
-        <TotpSetupFlow {...makeSetupFlowProps({ setupData: makeSetupData() })} />
-        <TotpSetupFlow {...makeSetupFlowProps({ setupData: makeSetupData() })} />
+        <TotpSetupFlow
+          {...makeSetupFlowProps({
+            setupData: makeSetupData(),
+            setupVerificationProof: 'fresh-proof',
+          })}
+        />
+        <TotpSetupFlow
+          {...makeSetupFlowProps({
+            setupData: makeSetupData(),
+            setupVerificationProof: 'fresh-proof',
+          })}
+        />
       </>,
     )
 
@@ -80,5 +91,14 @@ describe('TOTP setup flow', () => {
 
     expect(ids.every(Boolean)).toBe(true)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('requests fresh confirmation before displaying the enrollment code field', () => {
+    const onConfirmSetup = vi.fn<() => void>()
+    renderSetupFlow({ setupData: makeSetupData(), onConfirmSetup })
+
+    expect(screen.queryByRole('textbox', { name: /Enter the 6-digit code/ })).toBeNull()
+    screen.getByRole('button', { name: 'Confirm' }).click()
+    expect(onConfirmSetup).toHaveBeenCalledOnce()
   })
 })

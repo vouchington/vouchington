@@ -9,9 +9,48 @@ import { enqueueBulkReactivatingFinished } from './enqueue-or-reactivate.mts'
 // retained-record behavior is a property of the real GlideMQ transport, not the in-memory shim.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
-type Payload = { id: string; delayMs?: number; grouped?: boolean }
+type Payload = {
+  id: string
+  delayMs?: number
+  grouped?: boolean
+  recovery?: true
+  dispatchReceipt?: { page: string }
+}
 
 describe('reactivating finished job records through real GlideMQ', () => {
+  it('maps the watched data of a completed job onto its replacement payload', async () => {
+    const id = randomUUID()
+    const observed: Payload[] = []
+    const harness = openHarness(async job => {
+      observed.push(job.data)
+      if (!job.data.recovery)
+        await job.updateData({ ...job.data, dispatchReceipt: { page: 'already-dispatched' } })
+    })
+    try {
+      const first = harness.settled(id)
+      await harness.add({ id })
+      await first
+      const second = harness.settled(id)
+      await enqueueBulkReactivatingFinished({
+        queue: harness.queue,
+        inputs: [{ id, recovery: true }],
+        jobIdOf: input => input.id,
+        enqueueBulk: harness.addBulk,
+        reactivatedInput: (input, retainedData) => ({
+          ...input,
+          dispatchReceipt: (retainedData as Payload).dispatchReceipt,
+        }),
+      })
+      await second
+      expect(observed).toEqual([
+        { id },
+        { id, recovery: true, dispatchReceipt: { page: 'already-dispatched' } },
+      ])
+    } finally {
+      await harness.close()
+    }
+  })
+
   it('re-adds ids held by a completed or failed record and leaves a live job alone', async () => {
     const failing = new Set<string>()
     const runs = new Map<string, number>()

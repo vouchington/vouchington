@@ -1,10 +1,10 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUserDirect,
-  countFederationReplayDecoysForTest,
+  countFederationReplayDecoyForTest,
   deleteFederationInboxFixturesForTest,
   insertFederationRetentionFixturesForTest,
-  insertFederationReplayDecoysForTest,
+  insertFederationReplayDecoyForTest,
   insertTestPost,
   readFederationRetentionFixtureStateForTest,
   recordFederationInboxActivityReplayForTest,
@@ -88,20 +88,13 @@ describe('federation retention', () => {
         inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(
           fixtureIds.currentInboxActivityId,
         ),
-        distributionActivityIds: [
-          ...fixtureIds.expiredDistributionActivityIds,
-          fixtureIds.unfinishedDistributionActivityId,
-        ],
         followerDistributionIds: [
           fixtureIds.expiredFollowerDistributionIds[1],
           fixtureIds.activeFollowerDistributionId,
           fixtureIds.currentFollowerDistributionId,
         ],
-        completedDistributionActivityIds: fixtureIds.expiredDistributionActivityIds.toSorted(),
         childRowCount: 2,
       })
-
-      // Check retained checkpoint facts, not admission of epoch IDs below a shared permanent floor.
 
       const second = await cleanupFederationRetentionForTest({
         batchSize: 1,
@@ -119,15 +112,10 @@ describe('federation retention', () => {
         inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(
           fixtureIds.currentInboxActivityId,
         ),
-        distributionActivityIds: [
-          ...fixtureIds.expiredDistributionActivityIds,
-          fixtureIds.unfinishedDistributionActivityId,
-        ],
         followerDistributionIds: [
           fixtureIds.activeFollowerDistributionId,
           fixtureIds.currentFollowerDistributionId,
         ].toSorted(),
-        completedDistributionActivityIds: fixtureIds.expiredDistributionActivityIds.toSorted(),
         childRowCount: 0,
       })
       expect(
@@ -139,7 +127,7 @@ describe('federation retention', () => {
     })
   })
 
-  it('deletes only aged inbox and completed outbound identities in capped pages', async () => {
+  it('deletes only aged inbox identities in capped pages', async () => {
     const sender = await createTestUserDirect()
     const recipient = await createTestUserDirect()
     const postId = await insertTestPost({
@@ -162,48 +150,29 @@ describe('federation retention', () => {
         now,
         query,
       })
-      const decoys = await insertFederationReplayDecoysForTest(query, sender.id, now)
+      const decoy = await insertFederationReplayDecoyForTest(query, now)
       const inboxScope = {
         activityIds: [...ids.expiredInboxActivityIds, ids.currentInboxActivityId],
       }
-      const outboundScope = {
-        activityIds: [...ids.expiredDistributionActivityIds, ids.unfinishedDistributionActivityId],
-      }
 
-      const firstInbox = await cleanupActivityPubReplayLedgerForTest('inbox', {
+      const firstInbox = await cleanupActivityPubReplayLedgerForTest({
         batchSize: 1,
         maxBatches: 1,
         now,
         borrowedQuery: query,
         scope: inboxScope,
-      })
-      const firstOutbound = await cleanupActivityPubReplayLedgerForTest('outbound', {
-        batchSize: 1,
-        maxBatches: 1,
-        now,
-        borrowedQuery: query,
-        scope: outboundScope,
       })
       expect(firstInbox).toMatchObject({ deleted: 1, hasMore: true })
-      expect(firstOutbound).toMatchObject({ deleted: 1, hasMore: true })
-      const secondInbox = await cleanupActivityPubReplayLedgerForTest('inbox', {
+      const secondInbox = await cleanupActivityPubReplayLedgerForTest({
         batchSize: 1,
         maxBatches: 1,
         now,
         borrowedQuery: query,
         scope: inboxScope,
       })
-      const secondOutbound = await cleanupActivityPubReplayLedgerForTest('outbound', {
-        batchSize: 1,
-        maxBatches: 1,
-        now,
-        borrowedQuery: query,
-        scope: outboundScope,
-      })
       expect(secondInbox).toMatchObject({ deleted: 1, hasMore: false })
-      expect(secondOutbound).toMatchObject({ deleted: 1, hasMore: false })
       expect(
-        await cleanupActivityPubReplayLedgerForTest('inbox', {
+        await cleanupActivityPubReplayLedgerForTest({
           batchSize: 1,
           maxBatches: 1,
           now,
@@ -213,12 +182,8 @@ describe('federation retention', () => {
       ).toEqual({ deleted: 0, hasMore: false, continuationPosition: null })
       expect(await readFederationRetentionFixtureStateForTest(query, ids)).toMatchObject({
         inboxActivityIds: [ids.currentInboxActivityId],
-        distributionActivityIds: [ids.unfinishedDistributionActivityId],
       })
-      expect(await countFederationReplayDecoysForTest(query, decoys)).toEqual({
-        inbox: 1,
-        outbound: 1,
-      })
+      expect(await countFederationReplayDecoyForTest(query, decoy)).toBe(1)
     })
   })
 })

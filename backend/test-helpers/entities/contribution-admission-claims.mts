@@ -1,18 +1,22 @@
 import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-/** Forces a claimed lease to expire after this transaction opens, exercising DB-clock fences. */
+/** Expires a claimed lease during this transaction, exercising DB-clock fences without waiting. */
 export async function expireContributionAdmissionClaimDuringTransactionForTest(
   query: TransactionQuery,
   reservationId: string,
 ): Promise<void> {
-  await query(sql`/* expireContributionAdmissionClaimDuringTransactionForTest.expire */
+  const result = await query<{
+    expired_after_transaction_start: boolean
+  }>(sql`/* expireContributionAdmissionClaimDuringTransactionForTest */
     UPDATE post_admission_claims
-    SET lease_expires_at = clock_timestamp() + INTERVAL '100 milliseconds'
-    WHERE reservation_id = ${reservationId}`)
-  await query(
-    sql`/* expireContributionAdmissionClaimDuringTransactionForTest.wait */ SELECT pg_sleep(${0.25})`,
-  )
+    SET leased_at = statement_timestamp() - INTERVAL '1 millisecond',
+      lease_expires_at = statement_timestamp()
+    WHERE reservation_id = ${reservationId}
+    RETURNING lease_expires_at > transaction_timestamp() AS expired_after_transaction_start`)
+  if (!result.rows[0]?.expired_after_transaction_start) {
+    throw new Error('Test lease expiry must follow the transaction start')
+  }
 }
 
 /** Removes the transaction's reservation so admission finalization must roll back its mutation. */

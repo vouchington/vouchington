@@ -44,7 +44,7 @@
     "pg-copy-streams": "^7.0.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.12.1"
+    "valkyries": "^0.13.0"
   },
   "devDependencies": {
     "@types/pg-copy-streams": "^1.2.5",

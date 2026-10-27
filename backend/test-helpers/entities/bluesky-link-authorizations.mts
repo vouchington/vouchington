@@ -1,4 +1,7 @@
-import { read } from '@data-stores/psql'
+import { createHash } from 'node:crypto'
+import { v7 } from 'uuid'
+import { createTestAccountChangeActor } from '../account-change.mts'
+import { read, write } from '@data-stores/psql'
 import {
   observeTestPostgresQueryPools,
   type ObservedPostgresQueryPool,
@@ -40,4 +43,39 @@ export async function observeTestBlueskyCallbackAuthorizationReadPool<Result>(
   operation: () => Promise<Result>,
 ): Promise<{ result: Result; pools: ObservedPostgresQueryPool[] }> {
   return observeTestPostgresQueryPools('/* readBlueskyLinkAuthorization */', operation)
+}
+
+export function getTestBlueskyCompletionProofVerifier(flowId: string): string {
+  return createHash('sha256').update(`test-bluesky-proof:${flowId}`).digest('base64url')
+}
+
+export async function ensureTestBlueskyLinkAuthorization(options: {
+  authorizationId: string
+  userId: string
+  callbackMode?: 'web' | 'native'
+  handle?: string
+  initiatingSessionId?: string
+}): Promise<void> {
+  const existing = await read(
+    '/* ensureTestBlueskyLinkAuthorization:existing */ SELECT 1 FROM bluesky_link_authorizations WHERE id = $1',
+    [options.authorizationId],
+  )
+  if (existing.rows.length) return
+  const initiatingSessionId =
+    options.initiatingSessionId ?? (await createTestAccountChangeActor(options.userId)).session.sid
+  const callbackMode = options.callbackMode ?? 'web'
+  const completionProofChallenge =
+    callbackMode === 'native'
+      ? createHash('sha256')
+          .update(getTestBlueskyCompletionProofVerifier(options.authorizationId))
+          .digest('base64url')
+      : null
+  await write(sql`/* ensureTestBlueskyLinkAuthorization */
+    INSERT INTO bluesky_link_authorizations (
+      id, user_id, initiating_session_id, handle, callback_mode, completion_proof_challenge, expires_at
+    ) VALUES (
+      ${options.authorizationId}, ${options.userId}, ${initiatingSessionId}, ${options.handle ?? `${v7()}.bsky.social`},
+      ${callbackMode}, ${completionProofChallenge}, ${new Date(Date.now() + 10 * 60 * 1000)}
+    )
+    ON CONFLICT (id) DO NOTHING`)
 }

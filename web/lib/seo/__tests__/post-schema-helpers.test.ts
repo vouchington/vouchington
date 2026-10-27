@@ -121,7 +121,7 @@ describe('post-schema-helpers', () => {
     })
 
     it('limits to 20 comments', () => {
-      const results = Array.from({ length: 25 }, (_, i) => ({
+      const results = Array.from({ length: 21 }, (_, i) => ({
         __entity_type: 'post' as const,
         id: `comment${i}`,
         ranking: 1,

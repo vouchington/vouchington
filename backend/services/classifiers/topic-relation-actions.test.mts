@@ -102,17 +102,18 @@ describe('applyTopicClassifierDecisionRelations', () => {
     const { fixture, actor, first, postSubject } = await createCase()
     const otherPost = await createTestPost()
     const otherSubject = { postId: otherPost.id, rssFeedItemId: null } as const
+    const batchTime = Date.now() - 10_000
     const older = await persistSubjectTopicDecision(
       fixture,
       postSubject,
       [{ topicId: first, probability: 0.9 }],
-      uuidv7({ msecs: 1_000 }),
+      uuidv7({ msecs: batchTime }),
     )
     const newer = await persistSubjectTopicDecision(
       fixture,
       otherSubject,
       [{ topicId: first, probability: 0.9 }],
-      uuidv7({ msecs: 2_000 }),
+      uuidv7({ msecs: batchTime + 1 }),
     )
 
     await expect(applyDecisionRelationsForTest(newer, actor.id, [first])).resolves.toEqual({

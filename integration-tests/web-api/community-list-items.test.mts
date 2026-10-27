@@ -5,7 +5,7 @@ import serverApp from '../../backend/entrypoints/api/index.mts'
 import {
   createWebApiTestServer,
   buildWebApiTestProxyHeaders,
-  createWebApiTestCookieHeader,
+  createWebApiMfaTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from './routes.mts'
 import * as clientRoutes from '@/lib/api/client'
@@ -84,7 +84,7 @@ describe('community-list-items', () => {
     const admin = await createTestUser({ administrator: true })
     adminUser = admin
 
-    adminCookieHeader = await createWebApiTestCookieHeader(admin.id)
+    adminCookieHeader = await createWebApiMfaTestCookieHeader(admin.id)
 
     const topic = await createTestTopic({ user: admin })
     topicId = topic.id
@@ -142,7 +142,7 @@ describe('community-list-items', () => {
         addedById: admin.id,
       }),
     ])
-  }, 20_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -166,7 +166,7 @@ describe('community-list-items', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   describe('community list items server routes', () => {
     it('getCommunityListTopics returns paginated items', async () => {

@@ -15,3 +15,9 @@ export const getReportIntegrityPenalties = cache(
     return serverApi.get<T>('/api/v1/report-integrity/penalties', options)
   },
 )
+
+export const getReportIntegrityPenaltyReviewsDue = cache(
+  async <T>(options: GetOptions = {}): Promise<T> => {
+    return serverApi.get<T>('/api/v1/report-integrity/penalties/review-due', options)
+  },
+)

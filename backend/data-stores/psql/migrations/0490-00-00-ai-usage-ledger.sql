@@ -19,10 +19,10 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   community_id UUID REFERENCES communities (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   post_id UUID REFERENCES posts (id) ON DELETE SET NULL,
-  -- Set only for a classifier provider attempt; its foreign key to classifier_runs is added in
+  -- Set only for a classifier provider attempt; its foreign key to classifier_run_identities is added in
   -- 0736-00-00-classifier-runs.sql because that table is created later.
   -- guardrails-disable-next-line uuid-must-be-key
-  classifier_run_id UUID,
+  classifier_run_identity_id UUID,
   agent_slug TEXT NOT NULL,
   model_provider ai_model_providers NOT NULL,
   provider_transport ai_provider_transports NOT NULL,
@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
   CHECK (response_id = TRIM(response_id) AND char_length(response_id) BETWEEN 1 AND 100)
 );
 
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__community_id_id
   ON ai_usage_records (community_id, id DESC)
@@ -81,11 +82,11 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_records__post_id
   ON ai_usage_records (post_id)
   WHERE post_id IS NOT NULL;
 
--- RI-usable index for the classifier_run_id FK, and the per-run usage join
+-- RI-usable index for the classifier_run_identity_id FK, and the per-run usage join
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_ai_usage_records__classifier_run_id
-  ON ai_usage_records (classifier_run_id)
-  WHERE classifier_run_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_ai_usage_records__classifier_run_identity_id
+  ON ai_usage_records (classifier_run_identity_id)
+  WHERE classifier_run_identity_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
@@ -93,11 +94,11 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
   WHERE currency_code IS NOT NULL;
 
 COMMENT ON TABLE ai_usage_records IS 'Append-only per-call LLM usage and cost ledger for every agent that calls a model provider (Anthropic or OpenAI), not only community moderation.';
-COMMENT ON TABLE ai_usage_provider_response_keys IS 'Global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row.';
+COMMENT ON TABLE ai_usage_provider_response_keys IS 'Time-bounded global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row; old keys expire after provider replay is no longer expected.';
 
 COMMENT ON COLUMN ai_usage_records.community_id IS 'The community the call is scoped to, if any; NULL for agents that run outside a community.';
 COMMENT ON COLUMN ai_usage_records.post_id IS 'The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.';
-COMMENT ON COLUMN ai_usage_records.classifier_run_id IS 'The classifier run whose provider attempt made this call; NULL for every other agent, and after the run receipt is deleted.';
+COMMENT ON COLUMN ai_usage_records.classifier_run_identity_id IS 'Retained classifier run identity whose provider attempt made this call; NULL for other agents.';
 COMMENT ON COLUMN ai_usage_records.agent_slug IS 'The slug of the agent that made the LLM call (a moderator, or another agent workload identifier).';
 COMMENT ON COLUMN ai_usage_records.model_provider IS 'The model provider that served the call.';
 COMMENT ON COLUMN ai_usage_records.provider_transport IS 'How the call reached the provider: direct API, OpenRouter, or the typesafe jev transport.';

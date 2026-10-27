@@ -7,6 +7,12 @@
 - That visible badge is part of the button's accessible name, including the `9+` cap, so screen readers hear the same count the badge shows
 - The inbox dropdown previews the newest unread notifications
 - The dropdown includes `Mark all as read`
+- Mark all as read reports how many notifications the request changed and whether older unread
+  notifications remain; REST and MCP use the same count and `has_more` meaning. Background jobs
+  continue large backlogs, while notifications arriving afterward stay unread. If queued work is
+  lost, unread rows remain visible and another mark-all request resumes progress. The web inbox
+  offers a read-state refresh after a partial result and revalidates on return to the tab without
+  polling.
 - The dropdown links to `/my/notifications`
 
 ## Notification Behavior
@@ -31,9 +37,9 @@
   rows; ownership transfer notifies both the previous and new owner.
 - A weekly job creates at most one combined previous-week community activity digest per
   eligible owner/moderator. Communities without qualifying activity do not contribute. Incomplete
-  dispatch windows become eligible for durable requeue after an hour without batch activity and
-  restart on the next scheduler tick. Replay starts at the first recipient page, cursor jobs are
-  deduplicated by window and page, and the per-recipient event key prevents duplicate digest rows.
+  windows are recovered by the next scheduler tick. Native retries resume recipient-page progress;
+  terminal recovery can restart the window without creating duplicate digest rows or repeating
+  already-receipted deliveries. The sent-through boundary cannot skip an incomplete earlier window.
 - Active vacation suppression is per community and independent from the vacation dates; when
   enabled it suppresses both the weekly in-app digest contribution and moderation-summary email.
 

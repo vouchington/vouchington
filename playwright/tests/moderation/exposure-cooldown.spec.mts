@@ -1,5 +1,5 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { loginAsUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { allowTestPostImageDelivery } from '../../../backend/test-helpers/entities/post-images.mts'
 import {
@@ -45,7 +45,7 @@ test.describe('Sensitive-media blur gate on post page', () => {
   })
 
   test('moderator sees blur overlay on a flagged post', async ({ page }) => {
-    await loginAsUser(page, moderatorId)
+    await loginAsMfaUser(page, moderatorId)
     await navigateTo(page, `/discussion/${sensitivePostSlug}`)
 
     await expect(page.getByTestId('sensitive-media')).toBeVisible()
@@ -53,7 +53,7 @@ test.describe('Sensitive-media blur gate on post page', () => {
   })
 
   test('clicking reveal removes the blur gate', async ({ page }) => {
-    await loginAsUser(page, moderatorId)
+    await loginAsMfaUser(page, moderatorId)
     await navigateTo(page, `/discussion/${sensitivePostSlug}`)
 
     await expect(page.getByTestId('sensitive-media')).toBeVisible()
@@ -86,7 +86,7 @@ test.describe('Exposure cooldown gate in review queue', () => {
   })
 
   test('moderator in cooldown sees the exposure cooldown gate and modal', async ({ page }) => {
-    await loginAsUser(page, cooldownModeratorId)
+    await loginAsMfaUser(page, cooldownModeratorId)
     await navigateTo(page, '/posts/review-queue')
 
     await expect(page.getByTestId('exposure-cooldown-gate')).toBeVisible()
@@ -95,7 +95,7 @@ test.describe('Exposure cooldown gate in review queue', () => {
   })
 
   test('cooldown dismiss button is disabled while timer is running', async ({ page }) => {
-    await loginAsUser(page, cooldownModeratorId)
+    await loginAsMfaUser(page, cooldownModeratorId)
     await navigateTo(page, '/posts/review-queue')
 
     await expect(page.getByTestId('cooldown-dismiss')).toBeDisabled()

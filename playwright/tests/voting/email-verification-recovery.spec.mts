@@ -1,9 +1,14 @@
 import { expect, test } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
+import { confirmAccountChange } from '../../helpers/account-confirmation.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { chooseVote, voteTrigger } from '../../helpers/semantic-vote.mts'
 import { createEmailVerificationToken } from '../../../backend/services/my/email-address-verification.mts'
+import {
+  generateTestTotpSecret,
+  insertTestTotpAuthenticator,
+} from '../../../backend/test-helpers/entities/totp.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   connectTestOAuthAccount,
@@ -23,6 +28,13 @@ test.describe('Email verification recovery', () => {
     const providerUserId = `oauth-no-email-${unique}`
     await insertTestOAuthAccount('x', providerUserId)
     await connectTestOAuthAccount('x', oauthUser.id, providerUserId)
+    // Fresh confirmation discovers enrolled methods before the mutation starts.
+    await insertTestTotpAuthenticator(
+      oauthUser.id,
+      `email-recovery-${unique}`,
+      undefined,
+      generateTestTotpSecret(),
+    )
 
     const topic = await insertTestTopic(
       `Email Recovery Vote ${unique}`,
@@ -48,6 +60,7 @@ test.describe('Email verification recovery', () => {
         response.request().method() === 'POST',
     )
     await recoveryDialog.getByRole('button', { name: 'Send verification code' }).click()
+    await confirmAccountChange(page, oauthUser.id)
     expect((await requestCompleted).ok()).toBe(true)
 
     // The sent code is deliberately unavailable from token storage. Replace the
@@ -64,7 +77,8 @@ test.describe('Email verification recovery', () => {
         response.request().method() === 'POST',
     )
     await recoveryDialog.getByLabel('Verification code').pressSequentially(verificationToken)
-    await verificationCompleted
+    await confirmAccountChange(page, oauthUser.id)
+    expect((await verificationCompleted).ok()).toBe(true)
 
     await expect(recoveryDialog).toHaveCount(0)
     await expect(page.locator('[data-sonner-toast]')).toContainText(

@@ -19,3 +19,8 @@ localized `Deleted` fallback for those creators.
 ## Prompt Injection Protection
 
 Sanitize external content before passing it to an agent. Use `sanitizePromptInjection()` and `wrapExternalContent()` from `@jongleberry/vurst-prompt` as described in the [backend rules](../../../backend/AGENTS.md).
+
+## Retention
+
+Provider response keys are the temporary global uniqueness gate for partitioned usage records.
+They expire after the provider replay window while the usage ledger itself remains.

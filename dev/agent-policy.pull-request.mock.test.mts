@@ -245,6 +245,18 @@ describe('pullRequestDefaults', () => {
     })
   })
 
+  it('ignores related issues from another repository', async () => {
+    install({ milestone: 'M' })
+    const relatedIssues = [
+      { number: 3, relation: 'refs' as const, reason: 'r', repository: 'vouchington/other' },
+    ]
+    expect(await pullRequestDefaults({ title: 't', base: 'main', relatedIssues })).toEqual({
+      repositories: [REPO],
+    })
+    const urls = gh.runGh.mock.calls.map(([args]) => args[1]).filter(a => a?.startsWith('repos/'))
+    expect(urls).toEqual([])
+  })
+
   it('omits metadata when GitHub lookups fail', async () => {
     install({ failIssue: true })
     expect(

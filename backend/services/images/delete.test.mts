@@ -1,297 +1,244 @@
-import { randomBytes, randomUUID } from 'node:crypto'
-import { interceptNextEntityListenerAddBulk } from '../../test-helpers/entity-listener-add-failure.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
-import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
-import { createPostModerationContent } from '@services/posts/content'
-import { getPostModerationInput } from '@services/posts/moderation-input'
 import {
   approveTestPost,
   countPostImageRevisions,
-  createTestUserDirect,
   getImageModerationState,
-  getTestPostPublicationDirtyWorkForScope,
-  getPostLLMModerationContentSha256,
-  getPostModerationResetState,
-  insertTestImage,
-  insertTestCommunity,
-  insertTestPost,
-  insertTestPostImage,
-  listTestPostPublicationImpactCommunityIds,
+  markImageDeleted,
+  markImageQuarantinePending,
   markTestImageUploadStaged,
+  getPostModerationResetState,
+  overrideDynamicConfigFieldsForTest,
   readAllQueueJobs,
-  setImageOpenAIModerationResults,
-  setPostLLMModerationContentSha256,
-  setPostOpenAIModerationResults,
-  setPostSpamDetectionResults,
 } from '@voucha/test-helpers'
-import { deleteImageById } from './delete.mts'
+import {
+  captureImageDeletionTransactions,
+  createImageDeletionFixture,
+  failingImageDeletionAcknowledgement,
+  failingImageDeletionTransaction,
+  readImageDeletionPostOutcome,
+  quarantineBeforeImageDeletionTransaction,
+} from '@voucha/test-helpers/image-deletion'
+import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
+import { getImageDeletionPageJobId } from '@queues/background/enqueues/image-deletion'
+import { background } from '@queues/background/queues'
+import { deleteImageById, processImageDeletionPage } from './delete.mts'
+import { getImageByAny, getImageByIdFromPrimary } from './get.mts'
+import { imagesWorkConfig } from './work-limits.mts'
 import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
-import * as imageStorage from './s3-upload-lifecycle.mts'
+import { getPostByAnyCached } from '@services/posts/get-cached'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 
-describe('deleteImageById rollback', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
+describe('paged image deletion', () => {
+  afterEach(() => vi.restoreAllMocks())
 
-  it('enqueues content-changed post updates for posts using the deleted image', async () => {
-    const creator = await createTestUserDirect()
-    expect(creator).toBeTruthy()
-    const suffix = randomUUID()
-    const postId = await insertTestPost({
-      title: `Delete image enqueue ${suffix}`,
-      slug: `delete-image-enqueue-${suffix}`,
-      createdById: creator!.id,
-      markdown: 'Post using image where deletion should enqueue post update',
-      clearanceStatus: 'pending',
+  it('invalidates a warmed post cache after the deletion reset is committed', async () => {
+    const fixture = await createImageDeletionFixture(1)
+    const postId = fixture.postIds[0]!
+    await expect(getPostByAnyCached(postId)).resolves.toMatchObject({
+      clearance_status: 'approved',
     })
-    const imageId = await insertTestImage(creator!.id)
-    await insertTestPostImage({ postId, imageId })
-
-    await deleteImageById(imageId)
-
-    const jobs = (await readAllQueueJobs(entitiesListeners)).filter(
-      job =>
-        job.name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
-        (job.data as { id?: string }).id === postId,
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    installOwnedUploadCleanupStorage([image!.id, image!.s3_key, image!.sha_256!.toString('hex')])
+    await withEntityListenerCompletion([{ jobName: 'processPostUpdated', entityId: postId }], () =>
+      deleteImageById(fixture.imageId),
     )
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0]).toMatchObject({
-      name: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
-      data: { id: postId, contentChanged: true },
-      opts: {
-        priority: ENQUEUE_BASE_DEFAULTS.priority,
-        attempts: ENQUEUE_BASE_DEFAULTS.attempts,
-        backoff: ENQUEUE_BASE_DEFAULTS.backoff,
-        removeOnComplete: ENQUEUE_BASE_DEFAULTS.removeOnComplete,
-        removeOnFail: ENQUEUE_BASE_DEFAULTS.removeOnFail,
-      },
+    await expect(getPostByAnyCached(postId)).resolves.toMatchObject({
+      clearance_status: 'pending',
+      images: [],
     })
     await expect(countPostImageRevisions(postId)).resolves.toBe(1)
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
-    ).resolves.toMatchObject({ reasons: expect.arrayContaining(['post_content_reset']) })
   })
 
-  it('restores shared image and post moderation state when bulk post update enqueue fails', async () => {
-    const creator = await createTestUserDirect()
-    expect(creator).toBeTruthy()
-    const suffix = randomUUID()
-    const community = await insertTestCommunity({
-      name: `Delete shared image rollback ${suffix}`,
-      slug: `delete-shared-image-rollback-${suffix}`,
-      createdById: creator!.id,
-    })
-    const postIds = await Promise.all([
-      insertTestPost({
-        title: `Delete shared image rollback A ${suffix}`,
-        slug: `delete-shared-image-rollback-a-${suffix}`,
-        createdById: creator!.id,
-        communityId: community.id,
-        markdown: 'First post using the shared image',
-        clearanceStatus: 'pending',
-      }),
-      insertTestPost({
-        title: `Delete shared image rollback B ${suffix}`,
-        slug: `delete-shared-image-rollback-b-${suffix}`,
-        createdById: creator!.id,
-        communityId: community.id,
-        markdown: 'Second post using the shared image',
-        clearanceStatus: 'pending',
-      }),
+  it('preserves quarantine reconciliation when a stale lookup races quarantine admission', async () => {
+    const fixture = await createImageDeletionFixture(1)
+    const before = await getPostModerationResetState(fixture.postIds[0]!)
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    const storage = installOwnedUploadCleanupStorage([
+      image!.id,
+      image!.s3_key,
+      image!.sha_256!.toString('hex'),
     ])
-    const imageId = await insertTestImage(creator!.id)
-    const retainedImageId = await insertTestImage(creator!.id)
-    for (const postId of postIds) {
-      await insertTestPostImage({ postId, imageId: retainedImageId, orderIndex: 0 })
-      await insertTestPostImage({ postId, imageId, orderIndex: 1, caption: 'Shared image' })
-    }
-    await setImageOpenAIModerationResults(imageId, [{ category: 'old-image-state' }], true)
+    await deleteImageById(fixture.imageId, {
+      beginTransaction: quarantineBeforeImageDeletionTransaction(fixture.imageId),
+    })
+    await expect(getImageModerationState(fixture.imageId)).resolves.toMatchObject({
+      deleted_at: null,
+      quarantine_pending_at: expect.any(Date),
+    })
+    await expect(getImageByAny(fixture.imageId)).resolves.toBeNull()
+    await expect(getPostModerationResetState(fixture.postIds[0]!)).resolves.toEqual(before)
+    await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(0)
+    expect(storage.calls).toEqual([])
+  })
 
-    for (const postId of postIds) {
-      const post = await getPostModerationInput(postId)
-      if (!post) throw new Error('post was not found')
-      await setPostLLMModerationContentSha256(
-        postId,
-        createPostModerationContent(post).content_sha256,
-      )
-      await approveTestPost(postId)
-      await setPostSpamDetectionResults(postId, [
-        { signal: 'fixture', score: 0.7, flagged: true, details: { postId } },
-      ])
-      await setPostOpenAIModerationResults(postId, {
-        flagged: true,
-        categories: { fixture: true },
-      })
-    }
-
-    const beforeImage = await getImageModerationState(imageId)
-    const beforePosts = await Promise.all(postIds.map(getPostModerationResetState))
-    const enqueueError = new Error('bulk post update enqueue failed')
-    const rejectedBulk = Promise.reject(enqueueError) as ReturnType<
-      typeof entitiesListeners.addBulk
-    >
-    void rejectedBulk.catch(() => {})
-    interceptNextEntityListenerAddBulk(() => rejectedBulk)
-
-    await expect(deleteImageById(imageId)).rejects.toThrow(enqueueError)
-
-    await expect(getImageModerationState(imageId)).resolves.toEqual(beforeImage)
-    const afterPosts = await Promise.all(postIds.map(getPostModerationResetState))
-    for (const [index, afterPost] of afterPosts.entries()) {
-      const beforePost = beforePosts[index]!
-      expect(afterPost).toEqual({
-        ...beforePost,
-        approved_at: expect.any(Date),
-        latest_clearance_change_id: expect.any(String),
-      })
-      expect(afterPost!.approved_at).not.toEqual(beforePost!.approved_at)
-      expect(afterPost!.latest_clearance_change_id).not.toBe(beforePost!.latest_clearance_change_id)
-    }
-    await expect(Promise.all(postIds.map(countPostImageRevisions))).resolves.toEqual([2, 2])
-    const afterDirtyWork = await Promise.all(
-      postIds.map(postId => getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId })),
+  it('retains source storage and post state for a soft-deleted unconfirmed quarantine', async () => {
+    const fixture = await createImageDeletionFixture(1)
+    const before = await getPostModerationResetState(fixture.postIds[0]!)
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    const storage = installOwnedUploadCleanupStorage([
+      image!.id,
+      image!.s3_key,
+      image!.sha_256!.toString('hex'),
+    ])
+    await markImageQuarantinePending(fixture.imageId)
+    await markImageDeleted(fixture.imageId)
+    await expect(processImageDeletionPage(fixture.imageId)).rejects.toThrow(
+      'Image quarantine copy is not confirmed',
     )
-    for (const [index, postId] of postIds.entries()) {
-      const afterWork = afterDirtyWork[index]!
-      expect(Number(afterWork!.generation)).toBe(2)
-      expect(afterWork!.reasons).toEqual(['post_clearance_changed'])
-      await expect(listTestPostPublicationImpactCommunityIds(afterWork!.id)).resolves.toContain(
-        community.id,
+    await expect(getImageByAny(fixture.imageId)).resolves.toBeNull()
+    await expect(getPostModerationResetState(fixture.postIds[0]!)).resolves.toEqual(before)
+    await expect(countPostImageRevisions(fixture.postIds[0]!)).resolves.toBe(0)
+    expect(storage.calls).toEqual([])
+  })
+
+  it('replays committed listener receipts under a smaller limit without a second post reset', async () => {
+    const fixture = await createImageDeletionFixture()
+    const image = await getImageByIdFromPrimary(fixture.imageId)
+    const storage = installOwnedUploadCleanupStorage([
+      image!.id,
+      image!.s3_key,
+      image!.sha_256!.toString('hex'),
+    ])
+    const restore = overrideDynamicConfigFieldsForTest(imagesWorkConfig, { deletion_page_size: 2 })
+    try {
+      await expect(
+        deleteImageById(fixture.imageId, {
+          beginTransaction: failingImageDeletionAcknowledgement(),
+        }),
+      ).rejects.toThrow('injected deletion admission acknowledgement failure')
+      await expect(Promise.all(fixture.postIds.map(countPostImageRevisions))).resolves.toEqual([
+        1, 1, 0,
+      ])
+      // A verdict reached after the committed deletion must survive a late listener replay.
+      await approveTestPost(fixture.postIds[0]!)
+      const committed = await Promise.all(
+        fixture.postIds.slice(0, 2).map(getPostModerationResetState),
       )
-      expect(afterWork!.post_identity_id).toBe(postId)
+      restore()
+      const restoreSmaller = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
+        deletion_page_size: 1,
+      })
+      try {
+        await processImageDeletionPage(fixture.imageId)
+        const partialAdmission = await background.getJob(
+          getImageDeletionPageJobId(fixture.imageId, fixture.postIds[1]!, fixture.postIds[0]!),
+        )
+        expect(partialAdmission).toMatchObject({
+          data: { cursor: fixture.postIds[1], admittedThrough: fixture.postIds[0] },
+        })
+        await processImageDeletionPage(fixture.imageId)
+        await expect(Promise.all(fixture.postIds.map(countPostImageRevisions))).resolves.toEqual([
+          1, 1, 0,
+        ])
+        await expect(
+          Promise.all(fixture.postIds.slice(0, 2).map(getPostModerationResetState)),
+        ).resolves.toEqual(committed)
+        expect(storage.calls).toEqual([])
+        await processImageDeletionPage(fixture.imageId)
+        await expect(Promise.all(fixture.postIds.map(countPostImageRevisions))).resolves.toEqual([
+          1, 1, 1,
+        ])
+        expect(storage.calls.some(call => call.Key === fixture.imageId)).toBe(true)
+      } finally {
+        restoreSmaller()
+      }
+    } finally {
+      restore()
+      storage.restore()
     }
-    const waiting = await readAllQueueJobs(entitiesListeners)
-    expect(
-      waiting.filter(
+  })
+
+  it('keeps a failed middle page fenced, resumes without resetting completed posts, and matches one-page deletion', async () => {
+    const paged = await createImageDeletionFixture()
+    const baseline = await createImageDeletionFixture()
+    await markTestImageUploadStaged(paged.imageId)
+    const images = await Promise.all(
+      [paged, baseline].map(fixture => getImageByIdFromPrimary(fixture.imageId)),
+    )
+    const storage = installOwnedUploadCleanupStorage(
+      images.flatMap(image => [image!.id, image!.s3_key, image!.sha_256!.toString('hex')]),
+    )
+    const transactions = captureImageDeletionTransactions()
+    const restore = overrideDynamicConfigFieldsForTest(imagesWorkConfig, { deletion_page_size: 1 })
+    try {
+      await deleteImageById(paged.imageId, { beginTransaction: transactions.beginTransaction })
+      expect(transactions.statements[0]!.join('\n')).not.toMatch(
+        /lockPostPublicationPostScopes|FROM posts\b|UPDATE posts\b/i,
+      )
+      expect(transactions.postScopeKeys[0]).toEqual([])
+      await expect(getImageByAny(paged.imageId)).resolves.toBeNull()
+      await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
+        1, 0, 0,
+      ])
+      const firstPageState = await getPostModerationResetState(paged.postIds[0]!)
+      expect(storage.calls).toEqual([])
+      const continuation = await background.getJob(
+        getImageDeletionPageJobId(paged.imageId, paged.postIds[0]!, paged.postIds[0]!),
+      )
+      expect(continuation).toMatchObject({
+        data: { imageId: paged.imageId, cursor: paged.postIds[0] },
+      })
+
+      await expect(
+        processImageDeletionPage(paged.imageId, {
+          beginTransaction: failingImageDeletionTransaction(),
+        }),
+      ).rejects.toThrow('injected middle deletion page failure')
+      await expect(cleanupStagedUploadSource(paged.imageId)).resolves.toBe(false)
+      await expect(getImageByAny(paged.imageId)).resolves.toBeNull()
+      await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
+        1, 0, 0,
+      ])
+      expect(storage.calls).toEqual([])
+
+      await processImageDeletionPage(paged.imageId)
+      await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
+        1, 1, 0,
+      ])
+      await expect(getPostModerationResetState(paged.postIds[0]!)).resolves.toEqual(firstPageState)
+      expect(storage.calls).toEqual([])
+      const pageJobs = (await readAllQueueJobs(entitiesListeners)).filter(
         job =>
           job.name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
-          postIds.includes((job.data as { id?: string }).id ?? ''),
-      ),
-    ).toEqual([])
-  })
+          paged.postIds.includes((job.data as { id: string }).id),
+      )
+      expect(pageJobs.map(job => (job.data as { id: string }).id).toSorted()).toEqual(
+        paged.postIds.slice(0, 2),
+      )
 
-  it('serializes irreversible staged cleanup with a rollback-capable deletion', async () => {
-    const creator = await createTestUserDirect()
-    expect(creator).toBeTruthy()
-    const suffix = randomUUID()
-    const postId = await insertTestPost({
-      title: `Delete storage rollback ${suffix}`,
-      slug: `delete-storage-rollback-${suffix}`,
-      createdById: creator!.id,
-      markdown: 'Post whose image deletion rolls back while cleanup waits',
-      clearanceStatus: 'pending',
-    })
-    const imageId = await insertTestImage(creator!.id)
-    await insertTestPostImage({ postId, imageId })
-    await markTestImageUploadStaged(imageId)
+      await processImageDeletionPage(paged.imageId)
+      await processImageDeletionPage(paged.imageId)
+      await expect(Promise.all(paged.postIds.map(countPostImageRevisions))).resolves.toEqual([
+        1, 1, 1,
+      ])
+      const completed = await Promise.all(paged.postIds.map(getPostModerationResetState))
+      await processImageDeletionPage(paged.imageId)
+      await expect(Promise.all(paged.postIds.map(getPostModerationResetState))).resolves.toEqual(
+        completed,
+      )
+      expect(storage.calls.some(call => call.Key === paged.imageId)).toBe(true)
 
-    let rejectEnqueue!: (error: Error) => void
-    let enqueueStarted!: () => void
-    const started = new Promise<void>(resolve => (enqueueStarted = resolve))
-    const blockedEnqueue = new Promise<never>((_, reject) => (rejectEnqueue = reject))
-    interceptNextEntityListenerAddBulk(async () => {
-      enqueueStarted()
-      return blockedEnqueue
-    })
-    const deleteKnown = vi
-      .spyOn(imageStorage, 'deleteKnownImageStorageFromS3')
-      .mockResolvedValue(undefined)
-    const deleteSource = vi
-      .spyOn(imageStorage, 'deleteImageUploadSourceFromS3')
-      .mockResolvedValue(undefined)
-
-    const deletion = deleteImageById(imageId)
-    void deletion.catch(() => {})
-    await started
-    const cleanup = cleanupStagedUploadSource(imageId)
-    rejectEnqueue(new Error('enqueue rollback'))
-
-    await expect(deletion).rejects.toThrow('enqueue rollback')
-    await expect(cleanup).resolves.toBe(true)
-    expect(deleteKnown).not.toHaveBeenCalled()
-    expect(deleteSource).toHaveBeenCalledWith(expect.objectContaining({ id: imageId }))
-    expect((await getImageModerationState(imageId))?.deleted_at).toBeNull()
-  })
-
-  it('keeps soft-delete committed and does not throw when omitRollback=true and enqueue fails', async () => {
-    const creator = await createTestUserDirect()
-    expect(creator).toBeTruthy()
-    const suffix = randomUUID()
-    const postId = await insertTestPost({
-      title: `Delete omit-rollback ${suffix}`,
-      slug: `delete-omit-rollback-${suffix}`,
-      createdById: creator!.id,
-      markdown: 'Post using image where enqueue will fail',
-      clearanceStatus: 'pending',
-    })
-    const imageId = await insertTestImage(creator!.id)
-    await insertTestPostImage({ postId, imageId })
-
-    const enqueueError = new Error('enqueue failed — omitRollback path')
-    const rejected = Promise.reject(enqueueError) as ReturnType<typeof entitiesListeners.addBulk>
-    void rejected.catch(() => {})
-    interceptNextEntityListenerAddBulk(() => rejected)
-
-    // With omitRollback=true, the function should not throw even when enqueue fails
-    await expect(deleteImageById(imageId, true)).resolves.toBeUndefined()
-
-    // Soft-delete must stay committed (deleted_at set, not rolled back)
-    const state = await getImageModerationState(imageId)
-    expect(state?.deleted_at).not.toBeNull()
-    await expect(countPostImageRevisions(postId)).resolves.toBe(1)
-  })
-
-  it('rehashes restored content instead of preserving a concurrent digest-only change', async () => {
-    const creator = await createTestUserDirect()
-    expect(creator).toBeTruthy()
-    const suffix = randomUUID()
-    const postId = await insertTestPost({
-      title: `Delete shared image concurrent edit ${suffix}`,
-      slug: `delete-shared-image-concurrent-edit-${suffix}`,
-      createdById: creator!.id,
-      markdown: 'Post using an image that will be concurrently edited',
-      clearanceStatus: 'pending',
-    })
-    const imageId = await insertTestImage(creator!.id)
-    await insertTestPostImage({ postId, imageId })
-    await setImageOpenAIModerationResults(imageId, [{ category: 'old-image-state' }], true)
-    const originalPost = await getPostModerationInput(postId)
-    if (!originalPost) throw new Error('post was not found')
-    await setPostLLMModerationContentSha256(
-      postId,
-      createPostModerationContent(originalPost).content_sha256,
-    )
-    await approveTestPost(postId)
-    await setPostSpamDetectionResults(postId, [
-      { signal: 'fixture', score: 0.7, flagged: true, details: { postId } },
-    ])
-    await setPostOpenAIModerationResults(postId, {
-      flagged: true,
-      categories: { fixture: true },
-    })
-
-    const beforePost = await getPostModerationResetState(postId)
-    const editedHash = randomBytes(32)
-    const enqueueError = new Error('bulk post update enqueue failed')
-    interceptNextEntityListenerAddBulk(async () => {
-      await setPostLLMModerationContentSha256(postId, editedHash)
-      throw enqueueError
-    })
-
-    await expect(deleteImageById(imageId)).rejects.toThrow(enqueueError)
-
-    const afterPost = await getPostModerationResetState(postId)
-    expect(afterPost).not.toEqual(beforePost)
-    const restoredPost = await getPostModerationInput(postId)
-    if (!restoredPost) throw new Error('restored post was not found')
-    const restoredHash = createPostModerationContent(restoredPost).content_sha256
-    await expect(getPostLLMModerationContentSha256(postId)).resolves.toEqual(restoredHash)
-    expect(restoredHash).not.toEqual(editedHash)
-    expect(afterPost?.spam_detection_results).toEqual(
-      expect.objectContaining({ composite_score: 0.7 }),
-    )
-    expect(afterPost?.is_flagged_by_openai_omni_moderation).toBe(true)
+      restore()
+      const restoreBaseline = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
+        deletion_page_size: 3,
+      })
+      try {
+        await deleteImageById(baseline.imageId)
+        await processImageDeletionPage(baseline.imageId)
+        await expect(Promise.all(baseline.postIds.map(countPostImageRevisions))).resolves.toEqual([
+          1, 1, 1,
+        ])
+        await expect(Promise.all(paged.postIds.map(readImageDeletionPostOutcome))).resolves.toEqual(
+          await Promise.all(baseline.postIds.map(readImageDeletionPostOutcome)),
+        )
+      } finally {
+        restoreBaseline()
+      }
+    } finally {
+      restore()
+      storage.restore()
+    }
   })
 })

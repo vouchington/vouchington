@@ -1,4 +1,5 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
+import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { StoredPasskey } from '@vouchington/auth'
 import type { PublicPasskey } from './types.mts'
@@ -31,26 +32,38 @@ export async function getPasskeysByUserId(
   return { results, hasNextPage }
 }
 
-export async function getPasskeyCredentialIdsByUserId(userId: string): Promise<string[]> {
-  const { rows } = await read(
-    sql`/* getPasskeyCredentialIdsByUserId */ SELECT credential_id FROM user_passkeys WHERE user_id = ${userId}`,
-  )
+export async function getPasskeyCredentialIdsByUserId(
+  userId: string,
+  options?: QueryOptions & { passkeyId?: string },
+): Promise<string[]> {
+  const statement = sql`/* getPasskeyCredentialIdsByUserId */ SELECT credential_id FROM user_passkeys WHERE user_id = ${userId}`
+  if (options?.passkeyId !== undefined)
+    statement.append(sql` AND id = ${options.passkeyId} LIMIT 1`)
+  const { rows } = await read(statement, options)
+  if (options?.passkeyId !== undefined && rows.length !== 1)
+    throw createHttpError(404, 'Passkey not found')
   return rows.map(row => row.credential_id as string)
 }
 
 export async function getPasskeyByCredentialId(
   credentialId: string,
+  options?:
+    | { query: TransactionQuery; owner: { currentUserId: string; passkeyId: string } }
+    | { query?: TransactionQuery; owner?: never },
 ): Promise<PasskeyCredential | null> {
-  const { rows } = await read(
-    sql`/* getPasskeyByCredentialId */ SELECT id,
+  const statement = sql`/* getPasskeyByCredentialId */ SELECT id,
           user_id AS "userId",
           credential_id AS "credentialId",
           public_key AS "publicKey",
           counter,
           transports
         FROM user_passkeys
-        WHERE credential_id = ${credentialId}`,
-  )
+        WHERE credential_id = ${credentialId}`
+  if (options?.owner)
+    statement.append(
+      sql` AND user_id = ${options.owner.currentUserId} AND id = ${options.owner.passkeyId} FOR UPDATE`,
+    )
+  const { rows } = await read(statement, { query: options?.query })
   const row = rows[0] as PasskeyCredentialRow | undefined
   return row
     ? { ...row, counter: Number(row.counter), transports: row.transports ?? undefined }

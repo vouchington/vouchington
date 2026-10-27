@@ -122,3 +122,15 @@ describe('all-audience MCP write inventory', () => {
     }
   })
 })
+
+describe('administrator penalty review MCP routes', () => {
+  it.each(['report', 'vote'])('maps the live %s review queue and review write', domain => {
+    const readKey = `GET:/api/v1/${domain}-integrity/penalties/review-due`
+    const writeKey = `POST:/api/v1/${domain}-integrity/penalties/:id/reviews`
+    expect(requestContracts.operations).toHaveProperty(readKey)
+    expect(requestContracts.operations).toHaveProperty(writeKey)
+    expect(mappedOperations.has(readKey)).toBe(true)
+    expect(mappedOperations.has(writeKey)).toBe(true)
+    expect(excludedKeys.has(writeKey)).toBe(false)
+  })
+})

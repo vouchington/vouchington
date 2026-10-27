@@ -1,11 +1,10 @@
 import app from '../../app.mts'
 import {
-  isSessionRevoked,
-  revokeSession,
   runLogoutPushCleanupAndRevoke,
-  verifyDeviceAndSessionTokens,
+  getSessionForLogout,
+  revokeSessionForLogout,
 } from '@services/jwt-session'
-import { COOKIE_OPTIONS } from '@modules/api-utils'
+import { clearAuthenticationCookies } from '@modules/api-utils'
 import onError from '@modules/on-error'
 import { deleteExactWebPushSubscription } from '@services/notifications'
 import type { Context } from '@jongleberry/api-server'
@@ -26,27 +25,21 @@ app.route('/api/v1/auth/logout').post(async ctx => {
   apiRequestContract<'POST:/api/v1/auth/logout', LogoutRequest>('POST:/api/v1/auth/logout')
   const dt = ctx.cookies.get('dt')
   const st = ctx.cookies.get('st')
-  const binding = await parseLogoutPushBinding(ctx)
-  // Without a push binding this branch consumes no contract body carrier.
-  // Keep the optional-pair preconditions and their existing errors in the parser.
-  if (!binding) validateRequestContract(ctx, 'POST:/api/v1/auth/logout', {})
+  clearAuthenticationCookies(ctx)
+  let fallbackRevoked = false
+  try {
+    const binding = await parseLogoutPushBinding(ctx)
+    // Without a push binding this branch consumes no contract body carrier.
+    // Keep the optional-pair preconditions and their existing errors in the parser.
+    if (!binding) validateRequestContract(ctx, 'POST:/api/v1/auth/logout', {})
 
-  if (dt && st) {
-    const verified = await verifyDeviceAndSessionTokens({
-      deviceToken: dt,
-      sessionToken: st,
-    })
-    if (verified !== false && verified.uid) {
-      const { iat: issuedAt, sid, uid: userId } = verified
-      const revoked = await isSessionRevoked(sid, {
-        userId,
-        issuedAt,
+    if (dt) {
+      const verified = await getSessionForLogout({
+        deviceToken: dt,
+        sessionToken: st,
       })
-      // Bindings must reach the service so its atomic admission fence can distinguish concurrent
-      // pre-revocation cleanup from a later revoked replay.
-      if (revoked && !binding) {
-        await revokeSession(sid)
-      } else {
+      if (verified) {
+        const { iat: issuedAt, sid, uid: userId } = verified
         await runLogoutPushCleanupAndRevoke(
           sid,
           { userId, issuedAt },
@@ -57,13 +50,21 @@ app.route('/api/v1/auth/logout').post(async ctx => {
                 )
             : async () => {},
           binding,
+          undefined,
+          () => {
+            fallbackRevoked = true
+          },
         )
       }
     }
+  } catch (err) {
+    clearAuthenticationCookies(ctx)
+    if (!fallbackRevoked)
+      await revokeSessionForLogout({ deviceToken: dt, sessionToken: st }).catch(err =>
+        onError(err instanceof Error ? err : new Error(String(err))),
+      )
+    throw err
   }
-
-  ctx.cookies.set('dt', '', { ...COOKIE_OPTIONS, maxAge: 0 })
-  ctx.cookies.set('st', '', { ...COOKIE_OPTIONS, maxAge: 0 })
 
   ctx.setStatus(204)
 })

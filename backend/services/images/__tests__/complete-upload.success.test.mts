@@ -155,7 +155,7 @@ describe('completeImageUpload - success path', () => {
     const completion = completeImageUpload(user, image_id)
     void completion.catch(() => {})
     await started
-    await deleteImageById(image_id, true)
+    await deleteImageById(image_id)
     releasePromotion()
 
     await expect(completion).rejects.toMatchObject({ status: 409 })

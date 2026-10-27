@@ -22,9 +22,10 @@ function followData(activityId = randomUUID()): DistributeActivityData {
 }
 
 describe('ActivityPub delivery enqueues', () => {
-  it('leaves a single distribution in the outbound lane without deduplication', async () => {
+  it('deduplicates a single distribution by its activity and first-page cursor', async () => {
     const data = followData()
 
+    await enqueueDistributeActivity(data)
     await enqueueDistributeActivity(data)
 
     const jobs = (await readAllQueueJobs(activitypub)).filter(
@@ -36,11 +37,11 @@ describe('ActivityPub delivery enqueues', () => {
       data,
       opts: {
         priority: PRIORITY_DISPATCH,
-        ordering: { key: 'activitypub:outbound', concurrency: 5 },
+        ordering: { key: 'activitypub:outbound-dispatch', concurrency: 2 },
       },
     })
     expect(jobs[0]!.opts.deduplication).toBeUndefined()
-    expect(jobs[0]!.opts.jobId).toBeUndefined()
+    expect(jobs[0]!.opts.jobId).toBe(`activitypub-distribute__${data.activityId}__start`)
   })
 
   it('leaves every bulk distribution in the outbound lane', async () => {
@@ -56,10 +57,12 @@ describe('ActivityPub delivery enqueues', () => {
     for (const job of jobs) {
       expect(job.opts).toMatchObject({
         priority: PRIORITY_DISPATCH,
-        ordering: { key: 'activitypub:outbound', concurrency: 5 },
+        ordering: { key: 'activitypub:outbound-dispatch', concurrency: 2 },
       })
       expect(job.opts.deduplication).toBeUndefined()
-      expect(job.opts.jobId).toBeUndefined()
+      expect(job.opts.jobId).toBe(
+        `activitypub-distribute__${(job.data as DistributeActivityData).activityId}__start`,
+      )
     }
   })
 

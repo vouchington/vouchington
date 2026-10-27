@@ -154,6 +154,7 @@ function makeState(
     isPending: false,
     reconcile: vi.fn<VitestLooseMock>(),
     reconciliationRequired: {},
+    removedIds: new Set<string>(),
     revokeWithConfirmation: vi.fn<VitestLooseMock>(),
     scopeAvailable: true,
     selectedStatus: 'active',

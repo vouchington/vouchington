@@ -59,6 +59,8 @@ Raw PostgreSQL SQL in backend tests belongs in focused first-layer helpers under
 
 `dependency-license-policy/` checks `pnpm licenses list --json` SPDX expressions for the full dependency graph, not `--prod`, which misclassifies at least one dev-only package as production. GPL, AGPL, LGPL, EPL, CDDL, SSPL, BUSL, MPL, and unlicensed or unknown packages are denied; unknown identifiers and unparseable expressions fail closed. Two copyleft entries are allowlisted narrowly in `policy.mts` because nothing from either family is vendored or shipped in a build artifact: `MPL-2.0` repo-wide and `LGPL-3.0-or-later` only for the audited `@img/sharp-*` packages. Widening an allowlist needs the same narrow scope plus reasoning.
 
+The audit fetches the whole dependency store into a temporary directory, so pull requests and merge groups run it only when the lockfile, workspace settings, or policy change. Locked versions keep their published license, so an unchanged lockfile cannot introduce a violation; scheduled and manual runs still audit everything.
+
 ## Knip Production Exports
 
 `pnpm run knip:production-exports` checks backend exports kept alive only by tests. The full Knip scan also checks exports used only within their defining file in the root and web workspaces. Backend's existing in-file setting remains until its production exports are qualified. Workspace entries continue to model the existing external runner and framework boundaries. Backend packages with a wildcard `"./*"` manifest export also declare `"./*.test.mts": null` and `"./*/__tests__/*": null`, because Node honors the single-star key and ignores the multi-star one while nothing imports a test file by specifier. An AST-grep rule requires both keys as direct siblings of the wildcard.
@@ -66,6 +68,9 @@ Raw PostgreSQL SQL in backend tests belongs in focused first-layer helpers under
 Knip entries represent code invoked by a runner, framework, or browser outside ordinary imports. Private implementation files remain traversed project sources so their unused exports are visible; fixture-only imports must not make a production export appear live. The configuration keeps these boundaries explicit rather than treating every source file as an entry.
 
 Production imports of test infrastructure make fixture implementation part of the runtime and can make test-only exports appear production-used. Dependency boundaries preserve that separation while allowing the canonical configuration needed by test runners.
+
+Comment-based export suppression hides whether a production caller exists. Keep runtime loading in
+the analysis entrypoint model so test-only helpers and unused exports remain visible during review.
 
 ## Runtime work tunables
 

@@ -12,12 +12,11 @@ export type { FederationRetentionPage } from './cleanup-federation.types.mts'
 export type FederationRetentionResult = {
   followerDistributions: FederationRetentionPage
   inboxReplay: ReplayCleanupPage
-  outboundReplay: ReplayCleanupPage
   terminalFollowIdentities: { deleted: number; hasMore: boolean }
   terminalLikeIdentities: { deleted: number; hasMore: boolean }
 }
 
-/** Sweep terminal follower deliveries and both replay ledgers under their respective age gates. */
+/** Sweep terminal follower deliveries and the inbound replay ledger under its age gate. */
 export async function cleanupFederationRetention(options: {
   batchSize: number
   maxBatches: number
@@ -30,18 +29,16 @@ export async function cleanupFederationRetention(options: {
     maxBatches: options.maxBatches,
     ...(options.now ? { now: options.now } : {}),
   }
-  const [page, inboxReplay, outboundReplay, terminalFollowIdentities, terminalLikeIdentities] =
+  const [page, inboxReplay, terminalFollowIdentities, terminalLikeIdentities] =
     await Promise.all([
       cleanupSweep(options),
-      cleanupActivityPubReplayLedger('inbox', replayOptions),
-      cleanupActivityPubReplayLedger('outbound', replayOptions),
+      cleanupActivityPubReplayLedger(replayOptions),
       cleanupActivityPubTerminalIdentities('follow', replayOptions),
       cleanupActivityPubTerminalIdentities('like', replayOptions),
     ])
   return {
     followerDistributions: page,
     inboxReplay,
-    outboundReplay,
     terminalFollowIdentities,
     terminalLikeIdentities,
   }

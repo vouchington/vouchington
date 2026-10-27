@@ -154,7 +154,7 @@ describe('crawl-url.errors', () => {
       const stats = await getTestHostnameDnsStats(url!.hostname.id)
       expect(stats!.consecutive_dns_failures).toBe(0)
       expect(stats!.last_dns_failure_at).toBeNull()
-    }, 30_000)
+    })
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof countCrawlsForUrl)

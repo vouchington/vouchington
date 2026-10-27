@@ -1,7 +1,10 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { read, onGracefulShutdown } from '../index.mts'
 import { formatTypeViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/name-helpers.mts'
-import { getTypeViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/queries.mts'
+import {
+  getModerationRssTargetForeignKeys,
+  getTypeViolations,
+} from '../../../test-helpers/data-stores/psql/schema-static-analysis/queries.mts'
 import { getUuidConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/uuid-query.mts'
 import { getTimestampConventionViolations } from '../../../test-helpers/data-stores/psql/schema-static-analysis/timestamp-query.mts'
 import {
@@ -112,35 +115,7 @@ describe('PostgreSQL schema static analysis', () => {
   })
 
   it('uses real RSS feed item foreign keys for moderation target columns', async () => {
-    const { rows } = await read<{ table_name: string; delete_rule: string }>(
-      `/* getModerationRssTargetForeignKeys */
-        SELECT
-          tc.table_name,
-          rc.delete_rule
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage kcu
-          ON kcu.constraint_schema = tc.constraint_schema
-         AND kcu.constraint_name = tc.constraint_name
-        JOIN information_schema.constraint_column_usage ccu
-          ON ccu.constraint_schema = tc.constraint_schema
-         AND ccu.constraint_name = tc.constraint_name
-        JOIN information_schema.referential_constraints rc
-          ON rc.constraint_schema = tc.constraint_schema
-         AND rc.constraint_name = tc.constraint_name
-        WHERE tc.constraint_type = 'FOREIGN KEY'
-          AND kcu.column_name = 'rss_feed_item_id'
-          AND ccu.table_name = 'rss_feed_items'
-          AND tc.table_name = ANY($1)
-        ORDER BY tc.table_name`,
-      [
-        [
-          'moderation_cases',
-          'moderation_reports',
-          'moderation_report_judgements',
-          'report_integrity_flags',
-        ],
-      ],
-    )
+    const rows = await getModerationRssTargetForeignKeys()
 
     expect(rows.map(row => `${row.table_name}:${row.delete_rule}`)).toEqual([
       'moderation_cases:CASCADE',

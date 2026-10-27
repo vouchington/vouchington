@@ -6,7 +6,6 @@ import {
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import type onError from '@modules/on-error'
 import { caches } from '@services/entity-cache/caches'
 import { applyPostCommitSideEffects } from '../create/post-commit-side-effects.mts'
 import { finalizePostUpdateAndDeliver } from '../update/post-commit-delivery.mts'
@@ -17,9 +16,8 @@ import { invalidate } from '@services/entity-cache/invalidate'
 
 describe('post-commit failure reporting ownership', () => {
   it('retains a real entity admission rejection without reporting it again', async () => {
-    const { creator, post } = await createPostCompletionFixture()
+    const { post } = await createPostCompletionFixture()
     const failure = new Error('Owned entity admission failure')
-    const outerReport = vi.fn<typeof onError>()
     const original = entitiesListeners.add
     const spy = vi.spyOn(entitiesListeners, 'add')
     spy.mockImplementation((name, data, options) => {
@@ -34,13 +32,7 @@ describe('post-commit failure reporting ownership', () => {
       return original.call(entitiesListeners, name, data, options)
     })
     try {
-      await expect(
-        applyPostCommitSideEffects(
-          { creator, post, postType: 'discussion', updates: {} },
-          { onError: outerReport },
-        ),
-      ).resolves.toBeUndefined()
-      expect(outerReport).not.toHaveBeenCalled()
+      await expect(applyPostCommitSideEffects({ post })).resolves.toBeUndefined()
       expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
         1,
       )
@@ -52,7 +44,6 @@ describe('post-commit failure reporting ownership', () => {
   it('exposes the default cache deletion failure while preserving the durable update', async () => {
     const { post } = await createPostCompletionFixture()
     const failure = new Error('Owned cache deletion failure')
-    const report = vi.fn<typeof onError>()
     const original = ValkeyCache.deleteFromCaches
     const spy = vi.spyOn(ValkeyCache, 'deleteFromCaches')
     spy.mockImplementation(groups => {
@@ -66,22 +57,20 @@ describe('post-commit failure reporting ownership', () => {
     })
     try {
       await expect(
-        finalizePostUpdateAndDeliver(
-          {
-            changes: {},
-            contentChanged: false,
-            previousPost: post,
-            updatedPost: post,
-            shouldEnqueuePostUpdated: false,
-          },
-          { onError: report },
-        ),
+        finalizePostUpdateAndDeliver({
+          changes: {},
+          contentChanged: false,
+          previousPost: post,
+          updatedPost: post,
+          shouldEnqueuePostUpdated: false,
+        }),
       ).resolves.toBe(post)
-      expect(report).toHaveBeenCalledExactlyOnceWith(failure)
-      await expect(invalidate.posts(post)).resolves.toBeUndefined()
-      expect(report).toHaveBeenCalledExactlyOnceWith(failure)
       expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
         1,
+      )
+      await expect(invalidate.posts(post)).resolves.toBeUndefined()
+      expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
+        2,
       )
     } finally {
       spy.mockRestore()
@@ -91,7 +80,6 @@ describe('post-commit failure reporting ownership', () => {
   it('retains a real update admission rejection and its payload without a second report', async () => {
     const { post } = await createPostCompletionFixture()
     const failure = new Error('Owned update admission failure')
-    const outerReport = vi.fn<typeof onError>()
     const original = entitiesListeners.add
     const admittedCalls: { name: string; data: unknown }[] = []
     const spy = vi.spyOn(entitiesListeners, 'add')
@@ -110,16 +98,13 @@ describe('post-commit failure reporting ownership', () => {
     })
     try {
       await expect(
-        finalizePostUpdateAndDeliver(
-          {
-            changes: {},
-            contentChanged: false,
-            previousPost: post,
-            updatedPost: post,
-            shouldEnqueuePostUpdated: true,
-          },
-          { onError: outerReport },
-        ),
+        finalizePostUpdateAndDeliver({
+          changes: {},
+          contentChanged: false,
+          previousPost: post,
+          updatedPost: post,
+          shouldEnqueuePostUpdated: true,
+        }),
       ).resolves.toBe(post)
       expect(admittedCalls).toEqual([
         {
@@ -127,7 +112,6 @@ describe('post-commit failure reporting ownership', () => {
           data: { id: post.id, contentChanged: false },
         },
       ])
-      expect(outerReport).not.toHaveBeenCalled()
       expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
         1,
       )
@@ -139,7 +123,6 @@ describe('post-commit failure reporting ownership', () => {
   it('retains a default purge admission failure without duplicating its factory report', async () => {
     const { post } = await createPostCompletionFixture()
     const failure = new Error('Owned purge admission failure')
-    const outerReport = vi.fn<typeof onError>()
     const original = cachePurge.addBulk
     const spy = vi.spyOn(cachePurge, 'addBulk')
     spy.mockImplementation(jobs => {
@@ -158,18 +141,14 @@ describe('post-commit failure reporting ownership', () => {
     })
     try {
       await expect(
-        finalizePostUpdateAndDeliver(
-          {
-            changes: {},
-            contentChanged: false,
-            previousPost: post,
-            updatedPost: post,
-            shouldEnqueuePostUpdated: false,
-          },
-          { onError: outerReport },
-        ),
+        finalizePostUpdateAndDeliver({
+          changes: {},
+          contentChanged: false,
+          previousPost: post,
+          updatedPost: post,
+          shouldEnqueuePostUpdated: false,
+        }),
       ).resolves.toBe(post)
-      expect(outerReport).not.toHaveBeenCalled()
       expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === failure)).toHaveLength(
         1,
       )

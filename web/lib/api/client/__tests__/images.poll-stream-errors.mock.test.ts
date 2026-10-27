@@ -66,6 +66,23 @@ describe('images', () => {
       })
     })
 
+    it('reopens only a closed stream after a nonterminal authenticated probe', async () => {
+      mockGet.mockResolvedValue({ upload_state: makeState() })
+      const promise = pollImageUntilTerminal('img-1', { timeoutMs: 5000 })
+      const first = MockEventSource.instances[0]!
+      first.emitConnectionError(true)
+      await flushMicrotasks()
+      expect(first.closed).toBe(true)
+      expect(MockEventSource.instances).toHaveLength(2)
+
+      const second = MockEventSource.instances[1]!
+      second.emitConnectionError(true)
+      await flushMicrotasks()
+      expect(MockEventSource.instances).toHaveLength(2)
+      second.emit('state', makeState({ ready: true, upload_status: 'complete' }))
+      await expect(promise).resolves.toMatchObject({ ready: true })
+    })
+
     it('resets stream-open REST probe errors after a valid state event', async () => {
       mockGet
         .mockRejectedValueOnce(new ApiError('temporary outage', 503))

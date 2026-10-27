@@ -25,11 +25,12 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
+    "@services/classifier-run-revival": "workspace:^",
     "@services/classifiers": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.12.1"
+    "valkyries": "^0.13.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

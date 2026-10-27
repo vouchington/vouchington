@@ -43,7 +43,7 @@ describe('user moderation route request contracts', () => {
       const response = await request[method](url).send(body as object)
 
       expect(response.status).toBe(401)
-      expect(response.text).not.toMatch(/schema|must be|required|invalid/i)
+      expect(response.body.message).not.toMatch(/schema|must be|required|invalid/i)
     },
   )
 
@@ -139,7 +139,7 @@ describe('user moderation route request contracts', () => {
   it('answers 401 and 403 for the mod-note list and context without a schema diagnostic', async () => {
     const anonymous = await createRequest().get(`/api/v1/users/${ID}/mod-notes?after=nope`)
     expect(anonymous.status).toBe(401)
-    expect(anonymous.text).not.toMatch(/schema|must be|required|invalid/i)
+    expect(anonymous.body.message).not.toMatch(/schema|must be|required|invalid/i)
 
     const request = createRequest()
     await request.authenticateAs(regularUser)

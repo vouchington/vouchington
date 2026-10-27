@@ -11,9 +11,10 @@ import {
   rethrowProviderTransportError,
 } from '@modules/api-egress-proxy'
 import { providerTableConfigs, type OAuthAccount, type OAuthProvider } from './providers.mts'
-import { upsertOAuthAccount } from './upsert.mts'
+import { prepareOAuthAccountPersistence } from './prepared-account.mts'
+import type { OAuthAccountUpsertOptions, PreparedOAuthAccount } from './reauthentication.mts'
 
-export type RedeemProviderAccountOptions = {
+export type RedeemProviderAccountOptions = OAuthAccountUpsertOptions & {
   fetch: OAuthFetch
   label: string
   authorizationId?: string
@@ -31,6 +32,15 @@ export async function redeemProviderAccount(
   input: AuthorizationCodeInput,
   options: RedeemProviderAccountOptions,
 ): Promise<OAuthAccount> {
+  return (await prepareRedeemedProviderAccount(client, input, options)).persist(options)
+}
+
+/** Verify provider identity before the owning account mutation commits. */
+export async function prepareRedeemedProviderAccount(
+  client: ProviderClient,
+  input: AuthorizationCodeInput,
+  options: RedeemProviderAccountOptions,
+): Promise<PreparedOAuthAccount> {
   const provider = client.id as OAuthProvider
   const redeemed = await client
     .redeem(input, {
@@ -48,15 +58,12 @@ export async function redeemProviderAccount(
     })
   options.signal?.throwIfAborted()
   const { tokens, profile } = redeemed
-  return upsertOAuthAccount(
+  return prepareOAuthAccountPersistence(
     provider,
     profile.providerUserId,
     profile.verifiedEmail,
     profile.data,
     providerTableConfigs[provider].hasTokenColumns ? tokens : undefined,
-    {
-      authorizationId: options.authorizationId,
-      authorizationClaimId: options.authorizationClaimId,
-    },
+    options,
   )
 }

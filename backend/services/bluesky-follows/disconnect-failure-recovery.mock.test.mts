@@ -21,8 +21,11 @@ createBlueskyOAuthClientMock.mockReturnValue({} as NodeOAuthClient)
 
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
 import { BlueskySessionStore } from '../bluesky-accounts/session-store.mts'
-import { disconnectBlueskyAccountAndCleanupFollows as disconnectBlueskyAccountAndEnqueue } from './disconnect.mts'
 import { hasTestPendingBlueskyDisconnect } from '@voucha/test-helpers/bluesky-disconnect-readers'
+import {
+  disconnectAcceptedBlueskyAccountAndCleanupFollows,
+  disconnectBlueskyAccountAndCleanupFollows as disconnectBlueskyAccountAndEnqueue,
+} from './disconnect.mts'
 import { getBlueskyFollowReceipt, saveBlueskyFollowReceipt } from './receipts.mts'
 
 async function disconnectBlueskyAccountAndCleanupFollows(userId: string): Promise<void> {
@@ -42,7 +45,7 @@ describe('synchronous Bluesky disconnect failure recovery', () => {
     )
   })
 
-  it('keeps failed intent durable, clears another follower receipt, and succeeds on retry', async () => {
+  it('keeps failed intent durable, clears another follower receipt, and succeeds on worker retry', async () => {
     const user = await createTestUserDirect()
     const follower = await createTestUserDirect()
     const linked = await insertTestBlueskyLinkedAccount({ userId: user.id })
@@ -61,9 +64,8 @@ describe('synchronous Bluesky disconnect failure recovery', () => {
       linkAuthorizationId: linked.link_authorization_id,
     }
 
-    await expect(disconnectBlueskyAccountAndCleanupFollows(user.id)).rejects.toThrow(
-      /provider revoke failed/,
-    )
+    await expect(disconnectBlueskyAccountAndCleanupFollows(user.id)).resolves.toBeUndefined()
+    expect(revokeBlueskySessionMock).toHaveBeenCalledTimes(1)
 
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
     expect(await getTestBlueskyLinkedAccountRow(linked.bluesky_did)).not.toBeNull()
@@ -77,7 +79,7 @@ describe('synchronous Bluesky disconnect failure recovery', () => {
       ),
     ).toBeNull()
 
-    await disconnectBlueskyAccountAndCleanupFollows(user.id)
+    await disconnectAcceptedBlueskyAccountAndCleanupFollows(user.id, generation)
 
     expect(await getTestBlueskyLinkedAccountRow(linked.bluesky_did)).toBeNull()
     expect(await hasTestPendingBlueskyDisconnect(generation)).toBe(false)

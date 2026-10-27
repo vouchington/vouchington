@@ -94,6 +94,29 @@ describe('SyncArticlesButton', () => {
     expect(screen.getByRole('button', { name: 'Sync Articles' })).toBeEnabled()
   })
 
+  it('reopens a closed stream after a successful active-status probe, once until an event arrives', async () => {
+    mockedTrigger.mockResolvedValueOnce({ jobId: 'job-renew' })
+    mockedGetStatus.mockResolvedValue({ status: 'active' })
+    render(<SyncArticlesButton />)
+    await clickAndSettle()
+
+    const first = MockEventSource.instances[0]!
+    await act(async () => first.simulateError(true))
+    expect(first.closed).toBe(true)
+    expect(MockEventSource.instances).toHaveLength(2)
+
+    const second = MockEventSource.instances[1]!
+    await act(async () => second.simulateError(true))
+    expect(MockEventSource.instances).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Syncing...' })).toBeDisabled()
+
+    await act(async () => {
+      second.emit('open', undefined)
+      second.simulateError(true)
+    })
+    expect(MockEventSource.instances).toHaveLength(3)
+  })
+
   it('keeps tracking long-running syncs past the previous timeout duration', async () => {
     mockedTrigger.mockResolvedValueOnce({ jobId: 'job-3' })
 

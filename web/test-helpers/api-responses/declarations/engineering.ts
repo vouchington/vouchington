@@ -12,6 +12,7 @@ import adminMqQueuesResumeDefault from '../../../../api-fixtures/v1/responses/we
 import adminMqScheduledJobsDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.scheduled-jobs.default.json'
 import adminMqScheduledJobsTriggerDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.scheduled-jobs.trigger.default.json'
 import adminMqStatsDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.stats.default.json'
+import adminPsqlJobsClassifierRange from '../../../../api-fixtures/v1/responses/web.admin.psql.jobs.classifier-range.json'
 import adminPsqlJobsDefault from '../../../../api-fixtures/v1/responses/web.admin.psql.jobs.default.json'
 import adminPsqlMigrationsDefault from '../../../../api-fixtures/v1/responses/web.admin.psql.migrations.default.json'
 import adminPsqlPartitionsDefault from '../../../../api-fixtures/v1/responses/web.admin.psql.partitions.default.json'
@@ -125,6 +126,16 @@ export const ENGINEERING_DECLARATIONS = [
     adminPsqlPartitionsDefault,
     context => context.client.psql.fetchPartitions(),
     [context => context.server.psql.getPartitionStatus()],
+  ),
+  defineWebApiFixture<PsqlJobEnqueueResponse>()(
+    'web.admin.psql.jobs.classifier-range',
+    adminPsqlJobsClassifierRange,
+    context =>
+      context.client.psql.enqueuePsqlJob('createPartitions', {
+        fromDate: '2020-02-01',
+        toDate: '2020-02-02',
+        maxDefaultRows: 100,
+      }),
   ),
   defineWebApiFixture<PsqlJobEnqueueResponse>()(
     'web.admin.psql.jobs.default',

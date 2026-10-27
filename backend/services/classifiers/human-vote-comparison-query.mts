@@ -1,4 +1,5 @@
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { classifierRetentionCutoff } from './retention-window.mts'
 import {
   CLASSIFIER_COMPARISON_BUCKET_COUNT,
   type ClassifierHumanVoteComparisonOptions,
@@ -101,7 +102,9 @@ export function buildHumanVoteComparisonQuery(
 } {
   const values: unknown[] = [
     options.classifierId,
-    getMinUUIDv7ForDate(options.from),
+    getMinUUIDv7ForDate(
+      new Date(Math.max(options.from.getTime(), classifierRetentionCutoff().getTime())),
+    ),
     getMinUUIDv7ForDate(options.to),
     maxBatches + 1,
     maxBatches,
@@ -142,6 +145,7 @@ export function buildHumanVoteComparisonQuery(
         result.effective_upper_threshold::float8 AS upper
       FROM capped_batches batch
       JOIN topic_classifier_results result ON result.batch_id = batch.id
+        AND result.batch_id >= $2::uuid AND result.batch_id < $3::uuid
     ), outcomes AS (
       ${SUBJECT_RELATIONS.map(humanOutcomeSelect).join('\n      UNION ALL\n')}
     ), cells AS (

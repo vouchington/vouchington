@@ -138,8 +138,6 @@ export function recordClassifierRunAlarm(context: ClassifierRunAlarmContext): vo
 }
 
 function shouldCapturePeriodic(key: string): boolean {
-  if (process.env.NODE_ENV === 'test') return true
-
   const now = Date.now()
   const last = lastPeriodicReportedAt.get(key)
   if (last !== undefined && now - last < periodicThrottleMs) return false

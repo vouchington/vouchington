@@ -1,5 +1,6 @@
 'use client'
 
+import { LOGIN_CODE_PATTERN } from '@ts-shared/utils/login-code'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -14,8 +15,12 @@ import {
 import { requestReAuthEmail, verifyReAuthEmail, verifyReAuthTotp } from '@/lib/api/client'
 import { ApiError } from '@vouchington/api-client'
 import type { MfaStatus } from '@/types/user'
-import { MethodSelector, type ReauthMethod } from './mfa-reauth-dialog/method-selector'
+import { MethodSelector } from './mfa-reauth-dialog/method-selector'
+import { availableReAuthMethods, type ReauthMethod } from './mfa-reauth-dialog/methods'
 import { EmailVerificationPane, TotpVerificationPane } from './mfa-reauth-dialog/verification-panes'
+import { useReAuthMethods } from './mfa-reauth-dialog/use-reauth-methods'
+import { ReAuthDiscoveryStatus } from './mfa-reauth-dialog/discovery-status'
+import { AlternativeReAuthPane } from './mfa-reauth-dialog/alternative-pane'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface Props {
@@ -34,6 +39,9 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
   const [emailSent, setEmailSent] = useState(false)
   const [sentToEmail, setSentToEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const discovery = useReAuthMethods(open)
+  const methods = discovery.methods ? availableReAuthMethods(discovery.methods) : []
+  const activeMethod = methods.includes(method) ? method : methods[0]
 
   function handleClose() {
     setMethod(defaultMethod)
@@ -43,6 +51,11 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
     setSentToEmail('')
     setLoading(false)
     onClose()
+  }
+
+  function handleVerified(token: string) {
+    onVerified(token)
+    handleClose()
   }
 
   async function handleTotpVerify(code: string) {
@@ -86,7 +99,7 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
   }
 
   async function handleEmailVerify(code: string) {
-    if (code.length < 6) return
+    if (!LOGIN_CODE_PATTERN.test(code)) return
     setLoading(true)
     try {
       const result = await verifyReAuthEmail<{ re_auth_token: string }>(code)
@@ -118,10 +131,21 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
         </DialogHeader>
 
         <div className='space-y-4'>
-          {mfaStatus.totp_count > 0 && (
+          <ReAuthDiscoveryStatus
+            discovery={discovery}
+            hasMethods={methods.length > 0}
+          />
+          <AlternativeReAuthPane
+            method={activeMethod}
+            loading={loading}
+            setLoading={setLoading}
+            onVerified={handleVerified}
+          />
+          {methods.length > 0 && (
             <MethodSelector
               loading={loading}
-              method={method}
+              method={activeMethod}
+              methods={methods}
               setEmailCode={setEmailCode}
               setEmailSent={setEmailSent}
               setMethod={setMethod}
@@ -129,7 +153,7 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
             />
           )}
 
-          {method === 'totp' && (
+          {activeMethod === 'totp' && (
             <TotpVerificationPane
               loading={loading}
               totpCode={totpCode}
@@ -138,7 +162,7 @@ export function MfaReauthDialog({ open, mfaStatus, onVerified, onClose }: Props)
             />
           )}
 
-          {method === 'email' && (
+          {activeMethod === 'email' && (
             <EmailVerificationPane
               emailCode={emailCode}
               emailSent={emailSent}

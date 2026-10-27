@@ -37,7 +37,7 @@ export function UserUrlRelationList({
         >
           <Link
             href={urlHref(url)}
-            className='break-words font-medium hover:underline'
+            className='block min-h-6 break-words font-medium hover:underline'
             prefetch={false}
           >
             {url.url}
@@ -45,7 +45,7 @@ export function UserUrlRelationList({
           {url.hostname ? (
             <Link
               href={domainHref(url.hostname)}
-              className='block text-sm text-muted-foreground hover:underline'
+              className='block min-h-6 text-sm text-muted-foreground hover:underline'
               prefetch={false}
             >
               {url.hostname.hostname}

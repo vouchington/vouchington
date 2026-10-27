@@ -33,7 +33,7 @@ vi.mock(import('@/lib/links/entity-href'), () => ({
   createUserPathname: vi.fn<VitestLooseMock>(() => '/user/alice'),
 }))
 
-vi.mock(import('@/lib/seo/structured-data'), () => ({
+vi.mock(import('@/lib/seo/structured-data-breadcrumbs'), () => ({
   createBreadcrumbSchema: vi.fn<VitestLooseMock>(() => ({})),
 }))
 

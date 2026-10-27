@@ -1,6 +1,8 @@
+import { beginTransaction } from '@data-stores/psql'
+import { lockLoginCredentialAdmission } from '@services/oauth-accounts/login-admission'
+import { getPrivateUserByAny } from './get.mts'
 import createHttpError from 'http-errors'
 import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
-import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import {
   EmailDomainInvalidError,
   EmailFormatInvalidError,
@@ -9,6 +11,7 @@ import {
 import {
   createDeviceAndSessionTokens,
   getEnrichedSessionClaims,
+  getSessionResponseUser,
   type DeviceClass,
   type DeviceContext,
 } from '@services/jwt-session'
@@ -21,21 +24,10 @@ import {
   verifyEmailAddressLoginToken,
 } from './authentication.mts'
 
-const emailTokenRateLimiter = new RateLimiter({
-  prefix: 'email-address-login-token',
-  ttlSeconds: 60,
-})
-
-// Exported so tests can seed this exact ZSET key (same prefix + same client) instead of racing
-// the real 60s sliding window with slow sequential HTTP round-trips.
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX = 'email-address-login-verify'
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD = 10
-export const EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS = 60
-
-const emailLoginVerifyRateLimiter = new RateLimiter({
-  prefix: EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
-  ttlSeconds: EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,
-})
+import {
+  assertEmailTokenRequestAllowed,
+  assertEmailTokenVerificationAllowed,
+} from './email-auth-rate-limits.mts'
 
 export async function requestEmailAddressLoginToken(options: {
   emailAddress: string
@@ -45,12 +37,7 @@ export async function requestEmailAddressLoginToken(options: {
   uiLocale?: string | null
 }): Promise<{ emailAddress: string }> {
   const sanitizedEmail = sanitizeEmailAddress(options.emailAddress)
-  const rateLimitIds = [sanitizedEmail, options.ip, options.deviceId, options.sessionId].filter(
-    (id): id is string => typeof id === 'string',
-  )
-
-  const { limited } = await emailTokenRateLimiter.addAndCheck(rateLimitIds, 5)
-  if (limited) throw createHttpError(429, 'Too many requests. Please try again later.')
+  await assertEmailTokenRequestAllowed({ ...options, emailAddress: sanitizedEmail })
 
   try {
     const { token, emailAddress } = await createEmailAddressLoginToken(options.emailAddress)
@@ -75,15 +62,7 @@ export async function loginWithEmailAddressToken(options: {
 }) {
   try {
     const sanitizedEmail = sanitizeEmailAddress(options.emailAddress)
-    const rateLimitIds = [sanitizedEmail, options.ip, options.deviceId, options.sessionId].filter(
-      (id): id is string => typeof id === 'string',
-    )
-
-    const { limited } = await emailLoginVerifyRateLimiter.addAndCheck(
-      rateLimitIds,
-      EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD,
-    )
-    if (limited) throw createHttpError(429, 'Too many requests. Please try again later.')
+    await assertEmailTokenVerificationAllowed({ ...options, emailAddress: sanitizedEmail })
 
     const { success, emailAddress } = await verifyEmailAddressLoginToken(
       options.emailAddress,
@@ -91,7 +70,7 @@ export async function loginWithEmailAddressToken(options: {
     )
     if (!success) throw createHttpError(401, 'Invalid email address or one-time password')
 
-    const user = await upsertUser({
+    const existing = await upsertUser({
       deviceId: options.deviceId,
       sessionId: options.sessionId,
       emailAddress,
@@ -99,16 +78,24 @@ export async function loginWithEmailAddressToken(options: {
       userAgent: options.deviceContext?.user_agent,
     })
 
+    await using query = await beginTransaction()
+    const firstFactor = { type: 'email' as const, emailAddress }
+    await lockLoginCredentialAdmission(existing.id, firstFactor, query)
+    const loaded = await getPrivateUserByAny(existing.id, { query })
+    if (!loaded) throw createHttpError(401, 'Sign-in account no longer exists')
+    const user = loaded
     const claims = await getEnrichedSessionClaims(user)
 
-    if (await userHasMfa(user.id)) {
+    if (await userHasMfa(user.id, { query })) {
       const loginAttemptId = await createLoginAttempt({
+        firstFactor,
         userId: user.id,
         deviceId: options.deviceId,
         sessionId: options.sessionId,
         deviceClass: options.deviceClass,
         authOrigin: options.authOrigin,
       })
+      await query.commit()
       return { mfaRequired: true as const, loginAttemptId }
     }
 
@@ -123,11 +110,13 @@ export async function loginWithEmailAddressToken(options: {
       deviceClass: options.deviceClass,
       deviceContext: options.deviceContext,
       authOrigin: options.authOrigin,
+      query,
     })
+    await query.commit()
 
     return {
       mfaRequired: false as const,
-      user,
+      user: getSessionResponseUser(user, tokens.sessionToken.payload),
       deviceToken: tokens.deviceToken,
       sessionToken: tokens.sessionToken,
     }

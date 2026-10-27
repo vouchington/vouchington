@@ -14,8 +14,6 @@ export async function recordFederationInboxActivityReplayForTest(
 export type FederationRetentionFixtureIds = {
   expiredInboxActivityIds: string[]
   currentInboxActivityId: string
-  expiredDistributionActivityIds: string[]
-  unfinishedDistributionActivityId: string
   expiredFollowerDistributionIds: string[]
   activeFollowerDistributionId: string
   currentFollowerDistributionId: string
@@ -31,8 +29,6 @@ export async function insertFederationRetentionFixturesForTest(input: {
   const epochId = (sequence: number) => v7({ msecs: 0, seq: sequence })
   const expiredInboxActivityIds = [epochId(1), epochId(2)]
   const currentInboxActivityId = v7({ msecs: input.now.getTime() })
-  const expiredDistributionActivityIds = [epochId(3), epochId(4)]
-  const unfinishedDistributionActivityId = v7({ msecs: input.now.getTime(), seq: 1 })
   const expiredFollowerDistributionIds = [epochId(5), epochId(6)]
   const activeFollowerDistributionId = v7({ msecs: 0, seq: 7 })
   const currentFollowerDistributionId = v7({ msecs: input.now.getTime(), seq: 2 })
@@ -66,20 +62,6 @@ export async function insertFederationRetentionFixturesForTest(input: {
       `https://retention-test.invalid/activity/current/${currentInboxActivityId}`,
       'https://retention-test.invalid/actor',
     ],
-  )
-  for (const activityId of expiredDistributionActivityIds) {
-    await input.query(
-      `/* insertExpiredFederationDistributionForTest */
-       INSERT INTO activitypub_distribution_work_items (activity_id, source_user_id, completed_at)
-       VALUES ($1::uuid, $2::uuid, $3::timestamptz)`,
-      [activityId, input.senderUserId, oldCompletion],
-    )
-  }
-  await input.query(
-    `/* insertUnfinishedFederationDistributionForTest */
-     INSERT INTO activitypub_distribution_work_items (activity_id, source_user_id)
-     VALUES ($1::uuid, $2::uuid)`,
-    [unfinishedDistributionActivityId, input.senderUserId],
   )
   for (const [index, id] of expiredFollowerDistributionIds.entries()) {
     await input.query(
@@ -121,8 +103,6 @@ export async function insertFederationRetentionFixturesForTest(input: {
   return {
     expiredInboxActivityIds,
     currentInboxActivityId,
-    expiredDistributionActivityIds,
-    unfinishedDistributionActivityId,
     expiredFollowerDistributionIds,
     activeFollowerDistributionId,
     currentFollowerDistributionId,
@@ -133,16 +113,10 @@ export async function readFederationRetentionFixtureStateForTest(
   ids: FederationRetentionFixtureIds,
 ): Promise<{
   inboxActivityIds: string[]
-  distributionActivityIds: string[]
-  completedDistributionActivityIds: string[]
   followerDistributionIds: string[]
   childRowCount: number
 }> {
   const inboxIds = [...ids.expiredInboxActivityIds, ids.currentInboxActivityId]
-  const distributionIds = [
-    ...ids.expiredDistributionActivityIds,
-    ids.unfinishedDistributionActivityId,
-  ]
   const followerIds = [
     ...ids.expiredFollowerDistributionIds,
     ids.activeFollowerDistributionId,
@@ -152,12 +126,6 @@ export async function readFederationRetentionFixtureStateForTest(
     `/* readFederationRetentionInboxFixturesForTest */
      SELECT id FROM activitypub_inbox_activities WHERE id = ANY($1::uuid[]) ORDER BY id`,
     [inboxIds],
-  )
-  const { rows: distributions } = await query<{ activity_id: string; completed_at: Date | null }>(
-    `/* readFederationRetentionDistributionFixturesForTest */
-     SELECT activity_id, completed_at FROM activitypub_distribution_work_items
-     WHERE activity_id = ANY($1::uuid[]) ORDER BY activity_id`,
-    [distributionIds],
   )
   const { rows: followers } = await query<{ id: string }>(
     `/* readFederationRetentionFollowerFixturesForTest */
@@ -176,10 +144,6 @@ export async function readFederationRetentionFixtureStateForTest(
   )
   return {
     inboxActivityIds: inbox.map(row => row.id),
-    distributionActivityIds: distributions.map(row => row.activity_id),
-    completedDistributionActivityIds: distributions
-      .filter(row => row.completed_at !== null)
-      .map(row => row.activity_id),
     followerDistributionIds: followers.map(row => row.id),
     childRowCount: Number(children[0]?.count ?? 0),
   }

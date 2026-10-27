@@ -97,7 +97,7 @@ const LoginTokenEmail: PreviewableEmailComponent<LoginTokenEmailComponentProps> 
 
 LoginTokenEmail.PreviewProps = {
   emailAddress: 'tests+preview@voucha.ai',
-  token: 'ABC12345',
+  token: 'ABCDEFG234',
   expiration: '15 minutes',
 }
 

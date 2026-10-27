@@ -1,5 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { ClientFamily, RequestClientInfo } from '@ts-shared/request-client-info'
+import {
+  parseClientHeaders,
+  type ClientFamily,
+  type RequestClientInfo,
+} from '@ts-shared/request-client-info'
 import type { IncomingMessage } from 'node:http'
 import type { DeviceTokenPayload } from '@ts-shared/session-jwt'
 
@@ -95,4 +99,15 @@ export function cacheBootstrapDeviceId(request: IncomingMessage, deviceId: strin
 
 export function getCachedBootstrapDeviceId(request: IncomingMessage): string | undefined {
   return bootstrapDeviceIds.get(request)
+}
+
+/** Declared transport only; this does not authenticate a client or token. */
+export function isNativeClientTransportRequest(request: Pick<IncomingMessage, 'headers'>): boolean {
+  try {
+    const client =
+      getOptionalRequestClientInfo()?.client ?? parseClientHeaders(request.headers).client
+    return client === 'swift' || client === 'dotnet'
+  } catch {
+    return false
+  }
 }

@@ -1,9 +1,9 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 test.describe('PostgreSQL Dashboard', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
     await navigateTo(page, '/admin/postgresql', { waitUntil: 'load' })

@@ -6,13 +6,15 @@ Subscription rules and client behavior are in the
 
 ## Architecture
 
-The fan-out pipeline flows from durable publication reconciliation to per-channel delivery:
+The fan-out pipeline applies captured publication changes to current subscriptions before
+per-channel delivery:
 
 ```mermaid
 flowchart TD
-  E["Post, author, community, or RSS change"] --> O["post publication outbox"]
-  O --> Q["post-publication queue"]
-  Q --> J["background queue, notifications domain (reconcile-post / reconcile-rss-feed-item jobs)"]
+  E["Post, author, community, or RSS change"] --> C["Transaction captures previous identities"]
+  C -->|after commit| Q["post-publication queue"]
+  Q --> L["Bounded live scope and descendant discovery"]
+  L --> J["background queue, notifications domain (reconcile-post / reconcile-rss-feed-item jobs)"]
   J --> S["notifications service (reconcileNotificationsForPost / ForRssFeedItem)"]
   S --> I["Insert or prune subscription notifications"]
   I --> IA["In-app: row visible in /my/notifications"]
@@ -39,11 +41,23 @@ flowchart TD
   never alter a replacement owner. Payloads without the exact binding are rejected.
 - **Reports leak nothing.** Report-review notifications are generic and route to the inbox; copy
   never exposes the reported target, reporter note, or moderator identity.
-- **Digest catch-up preserves complete weeks.** Scheduled recovery creates and dispatches a bounded
-  page of persisted weekly windows. Continuations keep the original closed-window target; recipient
-  leases remain independent so one unfinished window does not restart completed delivery.
+- **Digest catch-up preserves complete weeks.** A sent-through cursor records completed windows,
+  while GlideMQ owns attempts and recipient-page progress. Scheduled recovery re-admits unfinished
+  windows with stable identities. The cursor advances only across a contiguous completed window,
+  so a failed predecessor cannot be skipped. Replayed recipient pages reuse notification event keys
+  and delivery receipts instead of sending another digest.
 - **No raw external URLs.** RSS item notifications carry only an internal redirect id; the server
   resolves the destination.
+- **Tombstone retention follows reconciliation.** Daily bounded sweeps remove old dismissed
+  notifications with no event key or push intent when no post or RSS source survives, including
+  rows whose content source IDs are all null. Copyright and other event-key notifications retain
+  durable replay suppression; a surviving content source can still be restored or must continue
+  to suppress re-notification, so its tombstone remains regardless of age. Moderator-summary send keys expire after their deduplication
+  window; the worker rejects queued windows older than that same horizon so a delayed retry cannot
+  send again after its claim expires. Dispatcher clock skew preserves the queued period identity
+  and vacation eligibility while activity reads stop at the worker clock. SES delivery callbacks are acknowledged without storing their
+  payloads. Permanent bounces and complaints fold into one durable suppression row per address;
+  old raw SES events are deleted after that suppression state is recorded.
 
 Post-publication owns subscription reconciliation and notification dispatch; the notifications
 domain owns push delivery and recovery.

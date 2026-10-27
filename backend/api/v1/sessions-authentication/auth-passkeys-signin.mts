@@ -1,3 +1,5 @@
+import { advertiseDbscRegistration } from './dbsc-registration-helpers.mts'
+import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getExpectedOrigin, setAuthenticationCookies } from '@modules/api-utils'
@@ -59,8 +61,9 @@ app.route('/api/v1/auth/passkeys/authentication/verify').post(async (ctx: Contex
     response: body.response,
     deviceClass,
     deviceContext: getDeviceContext(ctx),
-    fetchUser: getPrivateUserByAny,
+    fetchUser: (userId, query) => getPrivateUserByAny(userId, { query }),
   })
+  await advertiseDbscRegistration(ctx, login.deviceToken)
 
   /* v8 ignore start — success path requires a real WebAuthn ceremony (covered by Playwright) */
   setAuthenticationCookies(ctx, {
@@ -71,8 +74,10 @@ app.route('/api/v1/auth/passkeys/authentication/verify').post(async (ctx: Contex
 
   ctx.json({
     user: { id: login.userId },
-    dt: login.deviceToken,
-    st: login.sessionToken,
+    ...(isNativeClientTransportRequest(ctx.req) && {
+      dt: login.deviceToken,
+      st: login.sessionToken,
+    }),
     session: login.sessionToken.payload,
   })
   /* v8 ignore stop */

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { ApiError } from '@vouchington/api-client'
 import {
   RUNTIME_PUBLIC_CONFIG_READY_EVENT,
   type RuntimePublicConfig,
@@ -67,6 +68,37 @@ describe('createSentryClientInitOptions', () => {
 
     expect(options).not.toHaveProperty('replaysSessionSampleRate')
     expect(options).not.toHaveProperty('replaysOnErrorSampleRate')
+  })
+
+  it('tags a 5xx ApiError with the gateway request id and ignores other request id text', async () => {
+    const options = createSentryClientInitOptions({
+      getRuntimePublicConfig: () => ({ environment: 'production' }),
+    })
+    const requestId = '11111111-1111-4111-8111-111111111111'
+    const event = {
+      tags: { surface: 'post' },
+      request: { url: 'https://example.com/x?token=secret' },
+    } as never
+
+    expect(
+      await options.beforeSend?.(event, {
+        originalException: new ApiError('Boom', 500, {
+          request_id: requestId,
+          code: 'INTERNAL_ERROR',
+        }),
+      }),
+    ).toEqual({
+      tags: { surface: 'post', request_id: requestId },
+      request: { url: 'https://example.com/x' },
+    })
+    expect(
+      await options.beforeSend?.(event, {
+        originalException: new ApiError('Boom', 500, { request_id: 'person@example.test' }),
+      }),
+    ).toEqual({
+      tags: { surface: 'post' },
+      request: { url: 'https://example.com/x' },
+    })
   })
 })
 

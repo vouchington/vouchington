@@ -29,7 +29,7 @@ describe('renderMarkdownBatch partitioning', () => {
     expect(result).toHaveProperty('b')
     expect(result).toHaveProperty('c')
     expect(result).toHaveProperty('d')
-  }, 30_000)
+  })
 
   it('admin gets dofollow links, non-admin gets nofollow', async () => {
     const adminId = 'partition-test-admin-2'
@@ -43,14 +43,14 @@ describe('renderMarkdownBatch partitioning', () => {
 
     expect(result['admin']).not.toContain('nofollow')
     expect(result['user']).toContain('nofollow')
-  }, 30_000)
+  })
 
   it('renders all as non-admin when adminUserIds is empty set', async () => {
     const entities = [{ id: '1', markdown: '<em>one</em>', created_by_id: 'some-user' }]
     const result = await renderMarkdownBatch(entities, new Set())
 
     expect(result['1']).toContain('&lt;em&gt;one&lt;/em&gt;')
-  }, 30_000)
+  })
 
   it('handles all-admin entities', async () => {
     const adminId = 'partition-test-admin-3'
@@ -64,5 +64,5 @@ describe('renderMarkdownBatch partitioning', () => {
 
     expect(result['1']).toContain('<em>one</em>')
     expect(result['2']).toContain('<em>two</em>')
-  }, 30_000)
+  })
 })

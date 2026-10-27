@@ -42,6 +42,7 @@ _none_
 **Indexes:**
 
 - `idx_membership_verifications__evidence_id`: `CREATE INDEX idx_membership_verifications__evidence_id ON public.membership_verifications USING btree (membership_provider_evidence_record_id)`
+- `idx_membership_verifications__pending`: `CREATE INDEX idx_membership_verifications__pending ON public.membership_verifications USING btree (id) WHERE ((verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_membership_verifications__pending_microsoft_source_recovery`: `CREATE INDEX idx_membership_verifications__pending_microsoft_source_recovery ON public.membership_verifications USING btree (user_id, membership_provider_context_id, request_fingerprint) WHERE ((verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_membership_verifications__purchase_intent_id`: `CREATE INDEX idx_membership_verifications__purchase_intent_id ON public.membership_verifications USING btree (membership_purchase_intent_id, id DESC) WHERE (membership_purchase_intent_id IS NOT NULL)`
 - `idx_membership_verifications__user_id`: `CREATE INDEX idx_membership_verifications__user_id ON public.membership_verifications USING btree (user_id, id DESC)`
@@ -50,6 +51,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_membership_verifications_complete_processing_work`: `CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_membership_verification_processing_work()`
-- `trigger_membership_verifications_processing_work`: `CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work()`
 - `trigger_membership_verifications_updated_at`: `CREATE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

@@ -23,18 +23,12 @@ describe('platform-stats cache project', () => {
       testTimeout: 5_000,
       hookTimeout: 5_000,
       env: { PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
-      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
+      runner: './test-helpers/vitest.runner.platform-stats-cache.mts',
       include: [routeTest],
       exclude: ['**/node_modules/**', '**/.git/**'],
     })
-    expect(project?.globalSetup).toEqual([
-      './test-helpers/vitest.setup.data-stores.mts',
-      './test-helpers/vitest.global-setup.platform-stats-cache.mts',
-    ])
-    expect(project?.setupFiles).toEqual([
-      './test-helpers/vitest.setup.platform-stats-cache.mts',
-      ...(ordinary!.setupFiles as string[]),
-    ])
+    expect(project?.globalSetup).toBe('./test-helpers/vitest.setup.data-stores.mts')
+    expect(project?.setupFiles).toEqual(ordinary!.setupFiles)
     expect(project).not.toHaveProperty('maxWorkers')
     expect(project).not.toHaveProperty('fileParallelism')
   })

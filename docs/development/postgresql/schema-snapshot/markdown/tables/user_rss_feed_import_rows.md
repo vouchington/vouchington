@@ -28,7 +28,7 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `chk_user_rss_feed_import_rows__lifecycle`: `CHECK ((((outcome IS NULL) AND (completed_at IS NULL) AND (failed_at IS NULL)) OR ((outcome = 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NULL) AND (failed_at IS NOT NULL) AND (error_message IS NOT NULL)) OR ((outcome <> 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NOT NULL) AND (failed_at IS NULL) AND (rss_feed_id IS NOT NULL))))`
+- `chk_user_rss_feed_import_rows__lifecycle`: `CHECK ((((outcome IS NULL) AND (completed_at IS NULL) AND (failed_at IS NULL)) OR ((outcome = 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NULL) AND (failed_at IS NOT NULL) AND (error_message IS NOT NULL)) OR ((outcome <> 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NOT NULL) AND (failed_at IS NULL))))`
 - `user_rss_feed_import_rows_error_message_check`: `CHECK (((error_message IS NULL) OR (error_message = TRIM(BOTH FROM error_message))))`
 - `user_rss_feed_import_rows_input_url_check`: `CHECK ((input_url = TRIM(BOTH FROM input_url)))`
 - `user_rss_feed_import_rows_input_url_check1`: `CHECK ((char_length(input_url) > 0))`
@@ -42,11 +42,13 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_user_rss_feed_import_rows__batch_id__row_index`: `CREATE INDEX idx_user_rss_feed_import_rows__batch_id__row_index ON public.user_rss_feed_import_rows USING btree (batch_id, row_index)`
-- `idx_user_rss_feed_import_rows__rss_feed_id`: `CREATE INDEX idx_user_rss_feed_import_rows__rss_feed_id ON public.user_rss_feed_import_rows USING btree (rss_feed_id) WHERE (rss_feed_id IS NOT NULL)`
+- `idx_user_rss_feed_import_rows__rss_feed_id`: `CREATE INDEX idx_user_rss_feed_import_rows__rss_feed_id ON public.user_rss_feed_import_rows USING btree (rss_feed_id, id) WHERE (rss_feed_id IS NOT NULL)`
 - `user_rss_feed_import_rows__batch_row_index`: `CREATE UNIQUE INDEX user_rss_feed_import_rows__batch_row_index ON public.user_rss_feed_import_rows USING btree (batch_id, row_index)`
 - `user_rss_feed_import_rows_pkey`: `CREATE UNIQUE INDEX user_rss_feed_import_rows_pkey ON public.user_rss_feed_import_rows USING btree (id)`
 
 **Triggers:**
 
+- `trigger_user_rss_feed_import_rows_guard_hard_delete`: `CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`
+- `trigger_user_rss_feed_import_rows_guard_result`: `CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_result BEFORE INSERT OR UPDATE OF outcome, completed_at, rss_feed_id ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_user_rss_feed_import_result()`
 - `trigger_user_rss_feed_import_rows_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_rss_feed_import_rows_guard_terminal_lifecycle BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')`
 - `trigger_user_rss_feed_import_rows_updated_at`: `CREATE TRIGGER trigger_user_rss_feed_import_rows_updated_at BEFORE UPDATE ON public.user_rss_feed_import_rows FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

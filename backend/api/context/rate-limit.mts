@@ -18,6 +18,21 @@ export default function applyRateLimitContext(app: Application): void {
       if (extras?.identityMode === 'ip-only') {
         return { identities: { ip: ctx.ip ?? 'unknown' }, subject: null }
       }
+      if (extras?.identityMode === 'verified-dbsc') {
+        const identity = extras.verifiedDbscIdentity as
+          | { deviceId?: unknown; sessionId?: unknown; userId?: unknown }
+          | undefined
+        if (
+          typeof identity?.deviceId !== 'string' ||
+          typeof identity.sessionId !== 'string' ||
+          typeof identity.userId !== 'string'
+        )
+          throw new Error('Verified DBSC rate-limit identity is missing')
+        return {
+          identities: { deviceId: identity.deviceId, sessionId: identity.sessionId },
+          subject: identity.userId,
+        }
+      }
 
       const { sessionData, deviceData } = await resolveRouteRateLimitTokenData(ctx, extras)
       const deviceClass =

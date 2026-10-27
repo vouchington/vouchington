@@ -7,6 +7,7 @@ import {
 } from './image-upload-errors'
 import { getImageUploadRetryAfterMs } from './image-upload-retry-after'
 import { ApiError } from '@vouchington/api-client'
+import { createRecoverableEventSource } from '@/lib/auth/recoverable-event-source'
 
 export const POLL_INTERVAL_MS = 2000
 export const POLL_TIMEOUT_MS = 60_000
@@ -28,12 +29,18 @@ async function streamImageStateUntilTerminal(
   options: StreamOptions = {},
 ): Promise<UploadStateResponse> {
   return new Promise<UploadStateResponse>((resolve, reject) => {
-    const es = new EventSource(`/api/v1/images/${imageId}/state/stream`)
     let settled = false
     let probeErrors = 0
     const timer: { id: ReturnType<typeof setTimeout> | undefined } = { id: undefined }
     const probeTimer: { id: ReturnType<typeof setTimeout> | undefined } = { id: undefined }
     let probeInFlight = false
+    const stream = createRecoverableEventSource({
+      url: `/api/v1/images/${imageId}/state/stream`,
+      eventName: 'state',
+      isCurrent: () => !settled,
+      onEvent: onState,
+      onError,
+    })
 
     function settle(fn: () => void) {
       if (settled) return
@@ -41,7 +48,7 @@ async function streamImageStateUntilTerminal(
       clearTimeout(timer.id)
       clearTimeout(probeTimer.id)
       options.signal?.removeEventListener('abort', onAbort)
-      es.close()
+      stream.close()
       fn()
     }
 
@@ -60,13 +67,14 @@ async function streamImageStateUntilTerminal(
       }
     }
 
-    function probeUploadState() {
+    function probeUploadState(source?: EventSource) {
       if (probeInFlight) return
       probeInFlight = true
       getImageUploadState(imageId, options.signal)
         .then(state => {
           if (settled) return
           applyState(state)
+          if (!settled && source && stream.isCurrentSource(source)) stream.recoverClosed(source)
         })
         .catch(err => {
           if (settled) return
@@ -76,7 +84,7 @@ async function streamImageStateUntilTerminal(
           }
           const retryAfterMs = getImageUploadRetryAfterMs(err)
           if (retryAfterMs !== null) {
-            scheduleProbe(retryAfterMs)
+            scheduleProbe(retryAfterMs, source)
             return
           }
           probeErrors += 1
@@ -91,10 +99,10 @@ async function streamImageStateUntilTerminal(
         })
     }
 
-    function scheduleProbe(delayMs: number) {
+    function scheduleProbe(delayMs: number, source?: EventSource) {
       clearTimeout(probeTimer.id)
       probeTimer.id = setTimeout(() => {
-        if (!settled) probeUploadState()
+        if (!settled) probeUploadState(source)
       }, delayMs)
     }
 
@@ -103,7 +111,7 @@ async function streamImageStateUntilTerminal(
     }
 
     if (options.signal?.aborted) {
-      es.close()
+      stream.close()
       reject(new DOMException('Aborted', 'AbortError'))
       return
     }
@@ -116,7 +124,7 @@ async function streamImageStateUntilTerminal(
       }, options.timeoutMs)
     }
 
-    es.addEventListener('state', (event: MessageEvent) => {
+    function onState(event: MessageEvent) {
       let state: UploadStateResponse
       try {
         state = JSON.parse(event.data) as UploadStateResponse
@@ -126,14 +134,17 @@ async function streamImageStateUntilTerminal(
       }
 
       applyState(state)
-    })
+    }
 
-    es.addEventListener('error', (event: MessageEvent) => {
+    function onError(source: EventSource, event: Event) {
       // Named 'error' events dispatched by the server carry a `data` field.
       // Native EventSource connection errors also fire on this listener but have
       // no data — ignore them so the browser's built-in reconnect can take over.
-      const raw = event.data
-      if (!raw) return
+      const raw = 'data' in event ? event.data : undefined
+      if (!raw) {
+        if (!settled && stream.isCurrentSource(source)) probeUploadState(source)
+        return
+      }
 
       let errorMsg = 'Image processing failed'
       try {
@@ -143,12 +154,6 @@ async function streamImageStateUntilTerminal(
         // ignore parse errors for error events
       }
       settle(() => reject(new ApiError(errorMsg, 422)))
-    })
-
-    es.onerror = () => {
-      if (settled) return
-      probeUploadState()
-      // Server-sent error events are handled by the 'error' listener above.
     }
   })
 }

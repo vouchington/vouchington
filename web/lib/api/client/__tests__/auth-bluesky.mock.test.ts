@@ -22,19 +22,22 @@ describe('bluesky account link client helpers', () => {
   it('beginBlueskyAccountLink posts the handle and returns the redirect URL', async () => {
     mockPost.mockResolvedValue({ redirect_url: 'https://bsky.social/oauth/authorize' })
 
-    await expect(beginBlueskyAccountLink('alice.bsky.social')).resolves.toEqual({
+    await expect(beginBlueskyAccountLink('alice.bsky.social', 'fresh-proof')).resolves.toEqual({
       redirect_url: 'https://bsky.social/oauth/authorize',
     })
     expect(mockPost).toHaveBeenCalledWith('/api/v1/auth/bluesky/link', {
       handle: 'alice.bsky.social',
+      re_auth_token: 'fresh-proof',
     })
   })
 
   it('disconnectBlueskyAccount deletes the link endpoint', async () => {
     mockDelete.mockResolvedValue(undefined)
 
-    await disconnectBlueskyAccount()
+    await disconnectBlueskyAccount('fresh-proof')
 
-    expect(mockDelete).toHaveBeenCalledWith('/api/v1/auth/bluesky/link')
+    expect(mockDelete).toHaveBeenCalledWith('/api/v1/auth/bluesky/link', {
+      body: { re_auth_token: 'fresh-proof' },
+    })
   })
 })

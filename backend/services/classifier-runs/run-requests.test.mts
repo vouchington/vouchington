@@ -21,7 +21,7 @@ describe('feed item classifier run requests (real PG)', () => {
     const requests = await requestsOf(fixture)
     expect(requests).toHaveLength(1)
     expect(requests[0]!.input_sha256.equals(fixture.inputSha256)).toBe(true)
-    expect(requests[0]).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+    expect(requests[0]).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
   })
 
   it('writes nothing for an empty batch', async () => {
@@ -38,7 +38,7 @@ describe('feed item classifier run requests (real PG)', () => {
 
     await requestAutotaggerFeedItems([fixture.itemId])
 
-    expect(await requestsOf(fixture)).toMatchObject([{ run_id: run.runId }])
+    expect(await requestsOf(fixture)).toMatchObject([{ run_identity_id: run.runId }])
   })
 
   it('marks an unsettled request for older content stale and requests the new content', async () => {
@@ -53,6 +53,6 @@ describe('feed item classifier run requests (real PG)', () => {
     const newer = requests.find(request => request.input_sha256.equals(revised))
     expect(requests).toHaveLength(2)
     expect(older!.stale_at).not.toBeNull()
-    expect(newer).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+    expect(newer).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
   })
 })

@@ -1,4 +1,9 @@
+import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+vi.mock(import('@/components/my/use-fresh-authentication'), () => ({
+  useFreshAuthentication: useFreshAuthenticationMock,
+}))
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
 import { EmailManager } from '../email-manager'
@@ -37,9 +42,9 @@ describe('EmailManager keyboard submit (add-email create form)', () => {
     fireEvent.click(screen.getByRole('button', { name: /add email address/i }))
     const input = screen.getByLabelText('New email address') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'tests+new@voucha.ai' } })
-    void expectInputEnterSubmits({ input, onSubmit: mockRequestVerification })
+    await expectInputEnterSubmits({ input, onSubmit: mockRequestVerification, awaitSubmit: true })
     await waitFor(() => {
-      expect(mockRequestVerification).toHaveBeenCalledWith('tests+new@voucha.ai')
+      expect(mockRequestVerification).toHaveBeenCalledWith('tests+new@voucha.ai', 'reauth-token')
     })
   })
 })

@@ -29,13 +29,6 @@
 - `storyteller`
 - `classifier`
 
-## `ai_agent_call_receipt_agent_slugs`
-
-- `story-post`
-- `report-judgement`
-- `copyright-submission-guidance`
-- `copyright-appeal-recommendation`
-
 ## `ai_model_providers`
 
 - `anthropic`
@@ -63,7 +56,6 @@
 
 - `bounce`
 - `complaint`
-- `delivery`
 
 ## `api_key_types`
 
@@ -209,6 +201,22 @@
 - `choice`
 - `score`
 - `agent`
+
+## `classifier_retention_sweeps`
+
+- `run_candidates`
+- `agent_topics`
+- `local_outcomes`
+- `runs`
+- `calls`
+- `batches`
+- `identities`
+- `versioned_identities`
+- `requests`
+- `topic_results`
+- `story_results`
+- `community_prompt_results`
+- `decision_candidates`
 
 ## `classifier_run_terminal_failure_kinds`
 
@@ -726,6 +734,12 @@
 - `relation__rss_feed_item__category__topic`
 - `relation__rss_feed_item__category__topic_alias`
 
+## `email_address_token_purposes`
+
+- `login`
+- `re_auth`
+- `email_verification`
+
 ## `email_security_verdicts`
 
 - `pass`
@@ -757,6 +771,17 @@
 
 - `all_followers`
 - `selected_followers`
+
+## `history_retention_cleanup_names`
+
+- `dynamic_configuration_revisions`
+- `rss_feed_setting_changes`
+- `fediverse_instance_integration_changes`
+- `community_agent_prompt_revisions`
+- `followed_user_import_requests`
+- `pending_user_import_requests`
+- `referral_attribution_scrub`
+- `referral_attribution_expiry`
 
 ## `http_request_methods`
 
@@ -891,6 +916,12 @@
 - `collision_resolution`
 - `administrator_refund`
 
+## `membership_operational_cleanup_kinds`
+
+- `entitlement_effects`
+- `renewal_notices`
+- `google_acknowledgments`
+
 ## `membership_plan_slugs`
 
 - `plus`
@@ -939,6 +970,7 @@
 - `revoked`
 - `expired`
 - `purchase_pending`
+- `provider_unavailable`
 - `missing_account_token`
 - `stale_evidence`
 
@@ -984,6 +1016,24 @@
 - `review_queue`
 - `reports`
 - `post_page`
+
+## `moderation_record_cleanup_kinds`
+
+- `reports`
+- `cases`
+- `appeals`
+- `disputes`
+- `actions`
+- `training_feedbacks`
+- `judgements`
+- `integrity_flags`
+- `report_penalties`
+- `vote_penalties`
+- `warnings`
+- `suspensions`
+- `bans`
+- `notes`
+- `applications`
 
 ## `moderation_report_entity_types`
 
@@ -1117,6 +1167,7 @@
 - `report_escalate`
 - `report_integrity_flag_review`
 - `report_integrity_penalty_apply`
+- `report_integrity_penalty_review`
 - `report_integrity_penalty_revoke`
 - `report_judgement_rerun`
 - `report_unclaim`
@@ -1141,6 +1192,7 @@
 - `unsuspend`
 - `vote_integrity_flag_review`
 - `vote_integrity_penalty_apply`
+- `vote_integrity_penalty_review`
 - `vote_integrity_penalty_revoke`
 - `vote_manipulation`
 - `vote_weight_reset`
@@ -1185,9 +1237,11 @@
 - `report_deescalate`
 - `report_integrity_flag_review`
 - `report_integrity_penalty_apply`
+- `report_integrity_penalty_review`
 - `report_integrity_penalty_revoke`
 - `vote_integrity_flag_review`
 - `vote_integrity_penalty_apply`
+- `vote_integrity_penalty_review`
 - `vote_integrity_penalty_revoke`
 - `vote_weight_set`
 - `vote_weight_reset`
@@ -1228,6 +1282,11 @@
 
 - `subscription`
 - `manual_send`
+
+## `notification_email_retention_cleanup_names`
+
+- `system_pruned_notifications`
+- `user_deleted_notifications`
 
 ## `notification_entity_types`
 
@@ -1280,6 +1339,7 @@
 
 - `authenticate`
 - `connect`
+- `re_auth`
 
 ## `oauth_authorization_result_kinds`
 
@@ -1419,54 +1479,6 @@
 - `spam_detection`
 - `staff`
 
-## `post_publication_identity_bridge_families`
-
-- `post`
-- `community`
-- `rss_feed_item`
-- `author`
-- `rss_feed`
-- `topic_alias`
-- `story`
-
-## `post_publication_reasons`
-
-- `post_created`
-- `post_updated`
-- `post_content_reset`
-- `post_audience_changed`
-- `post_archived`
-- `post_deleted`
-- `post_topics_changed`
-- `post_related_urls_changed`
-- `post_ratings_changed`
-- `post_clearance_changed`
-- `post_moderation_flag_changed`
-- `community_publication_changed`
-- `moderation_appeal_resolved`
-- `author_suspension_changed`
-- `author_deleted`
-- `author_username_changed`
-- `community_visibility_changed`
-- `rss_feed_discoverability_changed`
-- `rss_feed_enablement_changed`
-- `rss_feed_source_changed`
-
-## `post_publication_receipt_cursor_kinds`
-
-- `typed`
-
-## `post_publication_source_cursor_kinds`
-
-- `review`
-- `data`
-- `relation`
-- `alias_source`
-- `alias_relation`
-- `static`
-- `slug`
-- `feed`
-
 ## `post_topic_alias_source_types`
 
 - `title`
@@ -1521,6 +1533,7 @@
 - `rss_feed_item`
 - `image`
 - `membership`
+- `community_bridge`
 
 ## `retained_identity_families`
 

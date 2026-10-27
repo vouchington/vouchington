@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 
@@ -18,12 +18,16 @@ export async function renamePasskey(
 export async function updatePasskeyCounter(
   passkeyId: string,
   newCounter: number,
+  options?: QueryOptions,
 ): Promise<boolean> {
-  const { rowCount } = await write(sql`/* updatePasskeyCounter */
+  const { rowCount } = await write(
+    sql`/* updatePasskeyCounter */
     UPDATE user_passkeys
     SET counter = ${newCounter}, last_used_at = NOW()
     WHERE id = ${passkeyId}
       AND (counter < ${newCounter} OR (counter = 0 AND ${newCounter} = 0))
-  `)
+  `,
+    options,
+  )
   return rowCount === 1
 }

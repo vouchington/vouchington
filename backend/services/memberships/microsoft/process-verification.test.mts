@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId, getMembershipSourceIdByMembershipId } from '@services/memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import {
@@ -8,6 +9,7 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { createTestMicrosoftStoreIdKey } from '@voucha/test-helpers/microsoft-store-id-key'
+import { getTestPendingMicrosoftStoreVerification } from '@voucha/test-helpers/microsoft-store-memberships'
 import { processMicrosoftStoreMembershipVerification } from './process-verification.mts'
 import { reconcileMicrosoftStoreSource } from './source-recovery.mts'
 import type { MicrosoftStoreClient } from './types.mts'
@@ -162,7 +164,18 @@ describe('Microsoft Store membership verification', () => {
     const collections = vi.spyOn(recoveryClient, 'queryCollections')
     const recurrences = vi.spyOn(recoveryClient, 'queryRecurrences')
 
-    await reconcileMicrosoftStoreSource({ sourceId, client: recoveryClient })
+    await reconcileMicrosoftStoreSource({ sourceId })
+    const recoveryId = await getTestPendingMicrosoftStoreVerification({
+      userId: fixture.user.id,
+      applicationId: fixture.applicationId,
+    })
+    if (!recoveryId) throw new Error('Microsoft Store recovery verification was not admitted')
+    await expect(memberships.getJob(recoveryId)).resolves.toMatchObject({
+      name: 'processMembershipVerification',
+      data: { verificationId: recoveryId },
+    })
+    await processMicrosoftStoreMembershipVerification(recoveryId, { client: recoveryClient })
+    await (await memberships.getJob(recoveryId))?.remove()
 
     expect(collections).toHaveBeenLastCalledWith(
       expect.objectContaining({ key: freshCollectionsKey }),

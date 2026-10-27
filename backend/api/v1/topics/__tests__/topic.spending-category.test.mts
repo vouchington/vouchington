@@ -29,7 +29,7 @@ describe('topic.spending-category', () => {
       slug: `test-topic-spending-unauthorized-${random}`,
       createdById: user!.id,
     })
-  }, 30_000)
+  })
 
   describe('Topic Spending Category Routes', () => {
     describe('GET /api/v1/topics/:idOrSlug/spending-category', () => {

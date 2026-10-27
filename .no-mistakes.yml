@@ -1,3 +1,5 @@
+reportUnusedDisableDirectives: report
+
 # Export spellings verified against @data-stores/psql and the named Glide clients.
 # Reviewed existing per-item calls are tracked by #2523; remediation removes allow entries.
 effects:
@@ -353,6 +355,14 @@ checks:
       command: [pnpm, exec, tsc, --noEmit, --incremental, --project, tsconfig.json]
       fileArgs: none
       always: true
+    # Scheduler sources feed the operator API fixture projection.
+    - name: api-fixtures-scheduled-jobs
+      command: [pnpm, run, api-fixtures:check]
+      fileArgs: none
+      include:
+        - 'backend/queues/**/enqueues/schedules.mts'
+        - 'backend/services/queue-monitoring/scheduled-jobs-registry.mts'
+        - 'backend/services/queue-monitoring/scheduled-job-manifests.mts'
     - name: typecheck-ts-shared
       command: [pnpm, exec, tsc, --noEmit, --incremental, --project, ts-shared/tsconfig.json]
       fileArgs: none
@@ -414,9 +424,16 @@ checks:
         - node
         - static-code-analysis/run-node-checks.mts
         - --checks
-        - config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
+        - config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails
       fileArgs: none
       always: true
+    - name: dependency-license-policy
+      command: [pnpm, run, dependency-license-policy]
+      fileArgs: none
+      include:
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - 'static-code-analysis/dependency-license-policy/**'
     - name: live-repository-policies
       command: [node, ci/check-repository-policy-scans.mts]
       fileArgs: none
@@ -1689,6 +1706,20 @@ rules:
             module: uuid
             export: v4
 
+  - name: Tests use the shared database
+    rule: forbidden-calls
+    scope: repository
+    message: >-
+      Tests must use the shared dirty database and scope fixtures to their own rows; isolated database cases are forbidden.
+    options:
+      roots:
+        - vitest: true
+        - playwright: true
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - terminal: runIsolatedDatabaseCase
+
   - name: Vitest tests do not invoke real timers
     rule: forbidden-calls
     scope: repository
@@ -1727,244 +1758,11 @@ rules:
   - name: Vitest tests do not poll or wait on timers
     rule: forbidden-calls
     scope: repository
-    # Frozen baseline. Cleanup PRs do not edit it. #2136 owns it. #2145 deletes it.
+    # Remaining polling violations are tracked by #2145.
     exclude:
-      - '.github/workflows/image-lambda-smoke-retry.test.mts'
-      - 'backend/agents/_shared/__tests__/record-response-usage.part-2.test.mts'
-      - 'backend/agents/_shared/__tests__/record-response-usage.part-3.test.mts'
-      - 'backend/agents/_shared/__tests__/record-response-usage.spend-cap.test.mts'
-      - 'backend/agents/_shared/__tests__/record-response-usage.test.mts'
-      - 'backend/agents/appeal-resolution/run.part-2.test.mts'
-      - 'backend/agents/autotagger/classifier-run-client.test.mts'
-      - 'backend/agents/community-moderation/dry-run.test.mts'
-      - 'backend/agents/community-moderation/simulate.test.mts'
-      - 'backend/agents/conversation-title/generate-title.mock.test.mts'
-      - 'backend/agents/dispute-resolution/run.test.mts'
-      - 'backend/agents/post-classifier/classifier-billing.test.mts'
-      - 'backend/agents/report-judgement/run.part-2.test.mts'
-      - 'backend/agents/story-post/agent.test.mts'
-      - 'backend/api/__tests__/rest-usage-meter.routes.test.mts'
-      - 'backend/api/__tests__/sse-listener-budget.test.mts'
-      - 'backend/api/post-publication-lifecycle.test.mts'
-      - 'backend/api/v1/__tests__/trending-communities.test.mts'
-      - 'backend/api/v1/admin/article-syncs-stream.test.mts'
-      - 'backend/api/v1/admin/index-routes/__tests__/postgresql-stream-recovery.mock.test.mts'
-      - 'backend/api/v1/admin/index-routes/__tests__/streams.test.mts'
-      - 'backend/api/v1/communities/agent-prompts-routes/communities-by-idorslug-agent-prompts-by-promptid-test-runs-post.mock.test.mts'
-      - 'backend/api/v1/mcp/mcp.usage.test.mts'
-      - 'backend/api/v1/my/imports/stream-helpers.test.mts'
-      - 'backend/api/v1/posts/__tests__/post.vote.activity-identities.test.mts'
-      - 'backend/api/v1/posts/__tests__/post.vote.part-2.test.mts'
-      - 'backend/api/v1/report-integrity/penalties.test.mts'
-      - 'backend/api/v1/users/__tests__/index.data-request-routes.part-2.test.mts'
-      - 'backend/api/v1/users/__tests__/user-vouch-follow-side-effects.test.mts'
-      - 'backend/api/v1/valkey/queues-flush.test.mts'
-      - 'backend/data-stores/analytics/__tests__/backend-firehose.part-2.test.mts'
-      - 'backend/data-stores/analytics/__tests__/backend-firehose.test.mts'
-      - 'backend/data-stores/analytics/__tests__/backend-local-flush.test.mts'
-      - 'backend/data-stores/psql/__tests__/schema-classifiers.test.mts'
-      - 'backend/data-stores/psql/migrate.test.mts'
-      - 'backend/data-stores/psql/pool-stats-sampler.test.mts'
-      - 'backend/data-stores/psql/query-capture.test.mts'
-      - 'backend/data-stores/psql/query-timing.test.mts'
-      - 'backend/data-stores/valkey-core/app-integration.test.mts'
-      - 'backend/data-stores/valkey-pubsub/__tests__/channel-pubsub.test.mts'
-      - 'backend/data-stores/valkey-pubsub/__tests__/import-progress-pubsub.test.mts'
-      - 'backend/data-stores/valkey/inflight-saturation.no-data.mock.test.mts'
-      - 'backend/entrypoints/api/startup.test.mts'
-      - 'backend/entrypoints/api/valkey-admin-shutdown.test.mts'
-      - 'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts'
-      - 'backend/modules/openai-utils/create-response-background-lease.no-data.mock.test.mts'
-      - 'backend/modules/scheduled-job-manifest/runtime.test.mts'
-      - 'backend/modules/stripe/invoices.concurrency.test.mts'
-      - 'backend/queues/ai-agents/enqueues/spend-cap-recheck.real-glide.mock.test.mts'
-      - 'backend/queues/bedrock-embeddings-batch/enqueues.real-glide.mock.test.mts'
-      - 'backend/queues/entity-metrics-cache-refresh/enqueues.generated.test.mts'
-      - 'backend/queues/memberships/enqueues/refund-reconciliation.test.mts'
-      - 'backend/queues/oauth-authorization-exchange/enqueues.real-glide.mock.test.mts'
-      - 'backend/queues/ses-inbound/enqueues.real-glide.mock.test.mts'
-      - 'backend/queues/story-post-related-url-projections/enqueues.test.mts'
-      - 'backend/services/articles/sync.test.mts'
-      - 'backend/services/attribution/create.test.mts'
-      - 'backend/services/bedrock-embeddings/search/get-cached.test.mts'
-      - 'backend/services/bluesky-follows/disconnect-lock.test.mts'
-      - 'backend/services/communities/applications/review.test.mts'
-      - 'backend/services/communities/archive.test.mts'
-      - 'backend/services/communities/invites/index.test.mts'
-      - 'backend/services/communities/members/__tests__/index.part-2.test.mts'
-      - 'backend/services/communities/ownership-transfer.test.mts'
-      - 'backend/services/communities/publications/moderation-run.test.mts'
-      - 'backend/services/community-agent-prompts/deactivate-on-membership-change.test.mts'
-      - 'backend/services/copyright-notices/action-delivery-authority.test.mts'
-      - 'backend/services/copyright-notices/surface-target-lifecycle.test.mts'
-      - 'backend/services/crawls/__tests__/crawl-url.errors.part-2.test.mts'
-      - 'backend/services/crawls/__tests__/crawl-url.errors.test.mts'
-      - 'backend/services/crawls/__tests__/update.language-detection.test.mts'
-      - 'backend/services/crawls/domain-rate-limit.test.mts'
-      - 'backend/services/data-retention/__tests__/cleanup.transaction-boundary.test.mts'
       - 'backend/services/elections-votes/entity-relation/publication-capture.test.mts'
-      - 'backend/services/elections-votes/entity-relation/vote-stats-batch-locks.test.mts'
       - 'backend/services/elections-votes/entity-relation/vote-stats-publication-lock.test.mts'
-      - 'backend/services/elections-votes/shared/request-lock.test.mts'
-      - 'backend/services/elections-votes/shared/vote-drift.test.mts'
-      - 'backend/services/elections-votes/topic/vote-stats.test.mts'
-      - 'backend/services/entity-fetch/community-membership-metrics-invalidation.test.mts'
-      - 'backend/services/entity-fetch/metrics-refresh.test.mts'
-      - 'backend/services/entity-fetch/refresh.test.mts'
-      - 'backend/services/entity-fetch/rss-feed-follow-metrics-invalidation.test.mts'
-      - 'backend/services/entity-fetch/user-metrics-visibility-invalidation.test.mts'
-      - 'backend/services/entity-relations/delete-follow-retry.test.mts'
-      - 'backend/services/entity-relations/delete-for-subjects-follow.test.mts'
-      - 'backend/services/entity-relations/delete-origin-gating.test.mts'
-      - 'backend/services/entity-relations/enqueue-undo-follow-side-effects.test.mts'
-      - 'backend/services/entity-relations/publication-mutation-locks.test.mts'
-      - 'backend/services/entity-relations/referral-link-eligibility-lock.test.mts'
-      - 'backend/services/entity-relations/upsert-crawl.test.mts'
-      - 'backend/services/entity-relations/upsert-follow-retry.test.mts'
-      - 'backend/services/entity-relations/upsert-notification-transaction.test.mts'
-      - 'backend/services/entity-relations/upsert-origin-gating.test.mts'
-      - 'backend/services/fediverse-instances/create-instance.platform-accounts.test.mts'
-      - 'backend/services/fediverse-search/adapters/factory.test.mts'
-      - 'backend/services/images/__tests__/complete-upload.races.test.mts'
-      - 'backend/services/jwt-session/logout-cleanup-lease.test.mts'
-      - 'backend/services/mcp-tools/admin-story-concurrency.test.mts'
-      - 'backend/services/mcp-tools/user-route-usage-failure.test.mts'
-      - 'backend/services/media-delivery-safety/asset-admission.test.mts'
-      - 'backend/services/media-delivery-safety/delivery-authority.test.mts'
-      - 'backend/services/media-delivery-safety/surface-lock.test.mts'
-      - 'backend/services/memberships/create-lock-order.test.mts'
-      - 'backend/services/memberships/get-cache.test.mts'
-      - 'backend/services/memberships/grants/__tests__/delayed-terminal-family-retention.test.mts'
-      - 'backend/services/memberships/paid-tier-downgrade.test.mts'
-      - 'backend/services/memberships/reverse-ineligible-stripe-purchase-concurrency.test.mts'
-      - 'backend/services/memberships/update-lock-order.test.mts'
-      - 'backend/services/moderation-analytics/moderation-transparency-rollup-lifecycle.test.mts'
-      - 'backend/services/moderation-appeals/resolve.publication-lock.test.mts'
-      - 'backend/services/moderation-appeals/resolve.suspension.test.mts'
-      - 'backend/services/moderation-reports/__tests__/create-judgement-refresh.test.mts'
-      - 'backend/services/moderation-training/automod-feedback-publication-lock.test.mts'
-      - 'backend/services/my/landing-pages/create.invalidate.test.mts'
-      - 'backend/services/my/profile-image-owner-deletion.test.mts'
-      - 'backend/services/notifications-push/push-generation-fence.test.mts'
-      - 'backend/services/notifications-push/push-intent-incremental-receipts.mock.test.mts'
-      - 'backend/services/notifications/push-subscriptions.test.mts'
-      - 'backend/services/oauth-accounts/connect.test.mts'
-      - 'backend/services/oauth-github/__tests__/friends-batching.mock.test.mts'
-      - 'backend/services/oauth/__tests__/authorization-completion.test.mts'
-      - 'backend/services/openai-background-responses/reconcile.mock.test.mts'
-      - 'backend/services/openai-moderation/__tests__/images.test.mts'
-      - 'backend/services/post-classifier/run-effects.test.mts'
-      - 'backend/services/post-publication/capture-deletions.test.mts'
-      - 'backend/services/posts/__tests__/create.admin-bypass.test.mts'
-      - 'backend/services/posts/__tests__/create.generated.test.mts'
-      - 'backend/services/posts/__tests__/create.link-post-crawl.test.mts'
-      - 'backend/services/posts/__tests__/create.transaction-captured-categories.test.mts'
-      - 'backend/services/posts/delete.test.mts'
-      - 'backend/services/posts/images.test.mts'
-      - 'backend/services/recaptcha/rate-limit-lockout.test.mts'
-      - 'backend/services/report-integrity/apply-penalty.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/capture-alias-lock-order.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/categories.clear-votes.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/categories.limits.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/categories.relations.retries.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/categories.relations.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/categories.view-hashtags.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/category-snapshot-reconciliations.test.mts'
-      - 'backend/services/rss-feed-items/categories.publication-lock.test.mts'
-      - 'backend/services/rss-feed-items/collaborative-topic-relations.test.mts'
-      - 'backend/services/rss-feed-items/upsert-enqueues.test.mts'
-      - 'backend/services/rss-feeds/__tests__/create-rss-feed-source.test.mts'
-      - 'backend/services/rss-feeds/__tests__/create-source.platform-accounts.test.mts'
-      - 'backend/services/rss-feeds/__tests__/create.generated.test.mts'
-      - 'backend/services/rss-feeds/__tests__/fetch-redirect.publication-lock.test.mts'
-      - 'backend/services/rss-feeds/__tests__/update.state.generated.test.mts'
-      - 'backend/services/rss-feeds/create-source.test.mts'
-      - 'backend/services/rss-feeds/delete.test.mts'
-      - 'backend/services/rss-feeds/discoverability.refresh.test.mts'
-      - 'backend/services/rss-feeds/reconcile-item-language.test.mts'
-      - 'backend/services/sitemaps/generation.test.mts'
-      - 'backend/services/stories/__tests__/refresh-story-post.test.mts'
-      - 'backend/services/stories/__tests__/rss-category-publication.test.mts'
-      - 'backend/services/stories/__tests__/story-post-related-url-projection-relations.test.mts'
-      - 'backend/services/stories/__tests__/story-posts.enqueues.test.mts'
-      - 'backend/services/stories/__tests__/story-posts.projection.test.mts'
-      - 'backend/services/stories/__tests__/story-posts.test.mts'
-      - 'backend/services/stories/assign.test.mts'
-      - 'backend/services/stripe/event-charge-refund-reconciliation.mock.test.mts'
-      - 'backend/services/topics/__tests__/aliases.create.test.mts'
-      - 'backend/services/topics/__tests__/aliases.post-cache-invalidation.test.mts'
-      - 'backend/services/topics/aliases.publication-lock.test.mts'
-      - 'backend/services/topics/create.hashtag.test.mts'
-      - 'backend/services/topics/enqueues.generated.test.mts'
-      - 'backend/services/topics/merge-aliases.test.mts'
-      - 'backend/services/topics/ratings.hardening.test.mts'
-      - 'backend/services/topics/topic-alias-publication-locks.test.mts'
-      - 'backend/services/topics/update.test.mts'
-      - 'backend/services/user-import-export/import-rss-feeds.platform-accounts.test.mts'
-      - 'backend/services/users/__tests__/create.test.mts'
-      - 'backend/services/users/__tests__/update.generated.test.mts'
-      - 'backend/services/users/delete-entity-relation-votes.test.mts'
-      - 'backend/services/users/enqueue-reconcile-post-topic-notifications.test.mts'
-      - 'backend/services/vote-weight/enqueue-election-updates.test.mts'
-      - 'backend/test-helpers/ap-inbox-activity-fixtures.mts'
-      - 'backend/test-helpers/election-vote-stats-jobs.mts'
-      - 'backend/test-helpers/election-vote-stats.test.mts'
-      - 'backend/test-helpers/entities/community-post-review-publication-lock.mts'
-      - 'backend/test-helpers/notification-push-fixtures.mts'
-      - 'backend/test-helpers/polling.mts'
       - 'backend/test-helpers/polling.test.mts'
-      - 'backend/test-helpers/rest-usage-meter.mts'
-      - 'backend/test-helpers/services/oauth/friends-batch-sync.mts'
-      - 'backend/mcp/__tests__/create-community.ledger.test.mts'
-      - 'backend/workers/activitypub-delivery/__tests__/e2e-round-trip.test.mts'
-      - 'backend/workers/ai-agents/processors/classifier-run-autotagger-agent.mock.test.mts'
-      - 'backend/workers/ai-agents/processors/process-classifier-run.real-glide.mock.test.mts'
-      - 'backend/workers/ai-agents/processors/process-copyright-form-screening.real-glide.mock.test.mts'
-      - 'backend/workers/ai-agents/workers/core.spend-cap.real-glide.mock.test.mts'
-      - 'backend/workers/article-sync/processors.test.mts'
-      - 'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts'
-      - 'backend/workers/bloom-filters/__tests__/delete-user-bloom-filter.generated.test.mts'
-      - 'backend/workers/entity-listeners/processors/__tests__/posts.community-moderation.test.mts'
-      - 'backend/workers/heartbeat/workers.test.mts'
-      - 'backend/workers/memberships/processors/process-job.test.mts'
-      - 'backend/workers/post-publication/workers.test.mts'
-      - 'ci/__tests__/web-integration-processes.test.mts'
-      - 'ci/tooling-test-hang-watchdog.test.mts'
-      - 'ci/tooling-test-runner.test.mts'
-      - 'cloudflare-worker/scripts/wrangler/start.mock.test.mts'
-      - 'dev/__tests__/cloc-child-process.test.mts'
-      - 'dev/__tests__/stop-services.process.part-2.test.mts'
-      - 'dev/__tests__/stop-services.process.part-3.test.mts'
-      - 'dev/__tests__/stop-services.process.part-4.test.mts'
-      - 'dev/__tests__/stop-services.process.part-5.test.mts'
-      - 'dev/__tests__/stop-services.process.test.mts'
-      - 'playwright/tests/feed/feed.spec.mts'
-      - 'playwright/tests/layout/sidebar-slide.spec.mts'
-      - 'playwright/tests/news/news.spec.mts'
-      - 'playwright/tests/posts/links-list-route.spec.mts'
-      - 'playwright/tests/posts/post-archive.spec.mts'
-      - 'playwright/tests/posts/reviews.spec.mts'
-      - 'playwright/tests/posts/search-pagination.spec.mts'
-      - 'playwright/tests/tags/tag-pages.spec.mts'
-      - 'playwright/tests/topics/sources.spec.mts'
-      - 'test-helpers/vitest.setup.fork-leak-detection.mts'
-      - 'test-helpers/web-integration-asset-metadata-cache.test.mts'
-      - 'web/app/\(lists\)/list/\[id\]/list-page-actions.mock.test.tsx'
-      - 'web/app/admin/dynamic-config/__tests__/dynamic-config-state.mock.test.tsx'
-      - 'web/app/auth/callback/broker/page.mock.test.tsx'
-      - 'web/components/__tests__/service-worker-registrar-auth-boundary.mock.test.tsx'
-      - 'web/components/__tests__/service-worker-registrar.mock.test.tsx'
-      - 'web/components/admin/__tests__/report-cluster-detail-judgement.mock.test.tsx'
-      - 'web/components/admin/admin-report-row.mock.test.tsx'
-      - 'web/components/moderation/moderation-transparency-panel.mock.test.tsx'
-      - 'web/components/my/__tests__/preferences-form.mock.test.tsx'
-      - 'web/components/notifications/__tests__/use-notification-push-actions.part-2.mock.test.ts'
-      - 'web/components/notifications/push-registration.mock.test.ts'
-      - 'web/components/notifications/use-notification-push-actions.mock.test.ts'
-      - 'web/lib/api/client/__tests__/import-stream.test.ts'
-      - 'web/lib/auth/logout.mock.test.ts'
-      - 'web/lib/auth/oauth-broker.mock.test.ts'
-      - 'web/lib/push-bootstrap.mock.test.ts'
     options:
       roots:
         - vitest: true
@@ -2004,39 +1802,16 @@ rules:
   - name: Test helpers and vitest setup do not invoke real timers or polls
     rule: forbidden-calls
     scope: repository
-    # Frozen baseline. Cleanup PRs do not edit it. #2136 owns it. #2145 deletes it.
+    # Remaining polling violations are tracked by #2145.
     exclude:
-      - 'backend/test-helpers/ap-inbox-activity-fixtures.mts'
       - 'backend/test-helpers/community-restriction-writer-race.mts'
-      - 'backend/test-helpers/copyright-repeat-infringer.mts'
-      - 'backend/test-helpers/election-vote-stats-jobs.mts'
-      - 'backend/test-helpers/election-vote-stats.mts'
-      - 'backend/test-helpers/election-vote-stats.test.mts'
-      - 'backend/test-helpers/entities/community-post-review-publication-lock.mts'
-      - 'backend/test-helpers/entities/memberships-lifecycle.mts'
       - 'backend/test-helpers/entities/memberships/locks.mts'
       - 'backend/test-helpers/entities/memberships/locks/action-while-user-locked.mts'
       - 'backend/test-helpers/entities/memberships/locks/stripe-catalog-fk-hold.mts'
-      - 'backend/test-helpers/entities/oauth-authorization-recovery.mts'
-      - 'backend/test-helpers/entities/user-deletion-actor-locks.mts'
-      - 'backend/test-helpers/feeds.mts'
-      - 'backend/test-helpers/notification-push-fixtures.mts'
       - 'backend/test-helpers/polling.mts'
       - 'backend/test-helpers/polling.test.mts'
       - 'backend/test-helpers/post-delegated-fk-concurrency.mts'
       - 'backend/test-helpers/postgres-lock-wait.mts'
-      - 'backend/test-helpers/refresh-materialized-view.mts'
-      - 'backend/test-helpers/rest-usage-meter.mts'
-      - 'backend/test-helpers/services/jwt-session/concurrent-user-agent.mts'
-      - 'backend/test-helpers/services/oauth/friends-batch-sync.mts'
-      - 'backend/test-helpers/services/posts/search/test-support.mts'
-      - 'backend/test-helpers/services/topic-recommendations/vote-stats.mts'
-      - 'backend/test-helpers/workers/entity-listeners/test-support.mts'
-      - 'dev/test-helpers/run-process.mts'
-      - 'dev/test-helpers/tmux-fake-bin.mts'
-      - 'test-helpers/vitest.setup.fork-leak-detection.mts'
-      - 'test-helpers/web-integration-asset-metadata-cache.test.mts'
-      - 'web/test-helpers/vitest.setup.web.mts'
     options:
       roots:
         - glob:
@@ -2113,18 +1888,6 @@ rules:
   - name: Vitest tests do not assert benchmarks
     rule: forbidden-calls
     scope: repository
-    # Frozen baseline. Cleanup PRs do not edit it. #2137 owns it. #2145 deletes it.
-    exclude:
-      - 'backend/api/v1/platform-stats/platform-stats.test.mts'
-      - 'backend/services/rss-feed-items/__tests__/categories.limits.test.mts'
-      - 'backend/test-helpers/api-fixtures/check.mts'
-      - 'backend/test-helpers/classifier-golden-set.mts'
-      - 'dev/test-helpers/run-process.mts'
-      - 'test-helpers/vitest.setup.data-stores.mts'
-      - 'ts-shared/utils/urls.test.mts'
-      - 'web/components/shared/__tests__/infinite-scroll.part-2.test.tsx'
-      - 'web/components/shared/__tests__/infinite-scroll.part-3.test.tsx'
-      - 'web/components/shared/__tests__/infinite-scroll.test.tsx'
     options:
       roots:
         - vitest: true
@@ -2883,6 +2646,33 @@ rules:
         - files: [web/package.json]
           requiredKeys: [devDependencies.jsdom]
 
+  - name: Playwright diagnostics survive failed or retried runs
+    rule: structured-config-policy
+    scope: repository
+    options:
+      policies:
+        - files: [.github/workflows/tests-playwright.yml]
+          requiredKeys: [jobs.playwright-tests.steps]
+          valueAssertions:
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload JUnit test results
+                if: '${{ !cancelled() }}'
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload Playwright test-results (traces, screenshots, videos)
+                if: "${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
+            - key: jobs.playwright-tests.steps.[]
+              kind: object-shape
+              match: any
+              requiredValues:
+                name: Upload wrangler logs
+                if: "${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
+
   - name: workspace package dependency graph has no cycles
     rule: workspace-package-cycles
     scope: repository
@@ -3028,9 +2818,6 @@ rules:
   - name: git identity is not mutated by repo scripts
     rule: no-git-identity-mutation
     scope: repository
-    options:
-      excludePaths:
-        - .github/workflows/runner-policy.test.mts
 
   - name: shell scripts pass shellcheck
     rule: shellcheck-runner
@@ -3319,6 +3106,8 @@ rules:
         backend-openai: [backend-credentialed]
         backend-openrouter: [backend-credentialed]
         backend-lightpanda: [backend-credentialed]
+        backend-evals-openrouter: [backend-credentialed]
+        backend-evals-anthropic: [backend-credentialed]
         web: [web]
         web-storybook: [storybook]
         web-storybook-browser: [storybook]
@@ -3680,9 +3469,6 @@ rules:
         - moderation_cases.resolved_by_id
         - moderation_report_judgements.rerun_by_id
         - moderation_reports.escalated_by_id
-        - post_autotagger_results.created_by_id
-        - post_autotagger_results.deleted_by_id
-        - post_autotagger_results.updated_by_id
         - post_dispute_annotations.removed_by_id
         - post_locks.lifted_by_id
         - post_locks.locked_by_id
@@ -3694,9 +3480,6 @@ rules:
         - review_disputes.approved_by_id
         - review_disputes.edited_by_id
         - review_disputes.resolved_by_id
-        - rss_feed_item_autotagger_results.created_by_id
-        - rss_feed_item_autotagger_results.deleted_by_id
-        - rss_feed_item_autotagger_results.updated_by_id
         - rss_feed_item_category_rejections.created_by_id
         - rss_feeds.created_by_id
         - topic_revisions.revised_by_id
@@ -4053,10 +3836,6 @@ rules:
       doubleUnderscore:
         allowPattern: '^(retained_relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*|relation__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*__[a-z0-9]+(_[a-z0-9]+)*(__votes)?)$'
       allow:
-        - {
-            object: table:post_publication_dirty_work,
-            reason: 'Collective dirty work for publication projections; the row is the work, per decision 16.',
-          }
         - { object: table:agents, reason: 'Core one-word entity.' }
         - { object: table:classifiers, reason: 'Core one-word entity.' }
         - { object: table:communities, reason: 'Core one-word entity.' }
@@ -4424,6 +4203,9 @@ rules:
         # Existing backend-credentialed budget; no #2260 change.
         - job: '.github/workflows/tests-backend-credentialed.yml#backend-credentialed-tests'
           maxMinutes: 20
+        # Preparation owns SQL safety and fresh staging bootstrap; retain the 15m job cap.
+        - job: '.github/workflows/prepare-postgres.yml#prepare-postgres'
+          maxMinutes: 15
         # Steps sum to 26m; cap 25m is below it; healthy maximum was 134 seconds across 65
         # GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-backend-modules.yml#backend-modules'
@@ -4438,9 +4220,6 @@ rules:
         # Steps sum to 12m; cap 11m is below it; healthy runtime ~1.6m (max, n=5).
         - job: '.github/workflows/tests-lambdas.yml#lambdas-tests'
           maxMinutes: 11
-        # Fail-safe for backend/browser setup plus the bounded 9m web build before the sharded browser runtime begins.
-        - job: '.github/workflows/tests-playwright.yml#playwright-tests'
-          maxMinutes: 23
         # Fail-safe for backend/browser setup plus the bounded 9m web build before credentialed browser setup and execution begin.
         - job: '.github/workflows/tests-playwright-credentialed.yml#playwright-credentialed-tests'
           maxMinutes: 13
@@ -4469,6 +4248,10 @@ rules:
         # Steps sum to 49m; cap 20m is below it. A healthy run finished in about 8m; run
         # 39276118528 was cancelled at the 10m job ceiling while the plan step is allowed 10m.
         - job: '.github/workflows/explain-analyze.yml#explain-analyze'
+          maxMinutes: 20
+        # Dispatch-only evals; steps sum to 27m, cap 20m is below it. The two eval steps are
+        # allowed 4m each after the shared backend setup.
+        - job: '.github/workflows/evals-backend.yml#backend-evals'
           maxMinutes: 20
 
   - name: tracked TypeScript files belong to a tsconfig program
@@ -4510,10 +4293,7 @@ rules:
     rule: github-actions-test-timeout-literals
     scope: repository
     options:
-      allow:
-        - file: .github/workflows/docs-publish.test.mts
-          text: "'timeout-minutes': 9,"
-          reason: The exact job timeout is part of the immutable documentation-artifact contract.
+      allow: []
 
   - name: setup-aws steps pair caller and nested timeouts
     rule: github-actions-action-timeout-pair
@@ -4540,6 +4320,7 @@ rules:
             changes,
             codecov,
             coverage,
+            prepare-postgres,
             publish-backend-images,
             static-backend,
             test-backend-credentialed,
@@ -4552,7 +4333,7 @@ rules:
         .github/workflows/cancel-dequeued-merge-group-runs.yml: [cancel]
         .github/workflows/cancel-replaced-merge-group-runs.yml: [cancel]
         .github/workflows/dependency-mirror.yml: [mirror]
-        .github/workflows/checks-backend-smoke.yml: [smoke]
+        .github/workflows/checks-backend-smoke.yml: [prepare-postgres, smoke]
         .github/workflows/checks-static.yml:
           [static-backend, static-cloudflare, static-lambdas, static-web]
         .github/workflows/ci-area-coverage.yml: [coverage]
@@ -4570,7 +4351,8 @@ rules:
           ]
         .github/workflows/dispatch-completed-deploy.yml: [dispatch]
         .github/workflows/docs-publish.yml: [publish]
-        .github/workflows/explain-analyze.yml: [explain-analyze]
+        .github/workflows/evals-backend.yml: [backend-evals, prepare-postgres]
+        .github/workflows/explain-analyze.yml: [explain-analyze, prepare-postgres]
         .github/workflows/fix-dependabot.yml:
           [
             check-duplicates,
@@ -4613,6 +4395,7 @@ rules:
         .github/workflows/plan.yml: [comment-session, dispatch, escalate, gate, render-prompt]
         .github/workflows/pnpm-dedupe.yml: [dedupe]
         .github/workflows/postgresql-snapshot-update.yml: [generate, prepare, publish]
+        .github/workflows/prepare-postgres.yml: [prepare-postgres]
         .github/workflows/publish-backend-images.yml: [build, resolve-main-images]
         .github/workflows/publish-web-images.yml: [build, resolve-main-images]
         .github/workflows/scheduled-prompts.yml: [dispatch, select-prompt]
@@ -4622,15 +4405,16 @@ rules:
         .github/workflows/static.yml: [static, static-code-analysis]
         .github/workflows/storybook.yml: [storybook]
         .github/workflows/sync-articles.yml: [publish]
-        .github/workflows/tests-backend-credentialed.yml: [backend-credentialed-tests]
+        .github/workflows/tests-backend-credentialed.yml:
+          [backend-credentialed-tests, prepare-postgres]
         .github/workflows/tests-backend-modules.yml: [backend-modules]
-        .github/workflows/tests-backend-unit.yml: [backend-tests, prep]
+        .github/workflows/tests-backend-unit.yml: [backend-tests, prep, prepare-postgres]
         .github/workflows/tests-cloudflare-worker.yml: [cloudflare-worker-tests]
         .github/workflows/tests-lambdas.yml: [lambdas-tests]
         .github/workflows/tests-playwright-credentialed.yml: [playwright-credentialed-tests]
         .github/workflows/tests-playwright.yml: [playwright-tests, shards]
         .github/workflows/tests-portability.yml: [portability-linux]
-        .github/workflows/tests-postgres-schema.yml: [postgres-schema-tests]
+        .github/workflows/tests-postgres-schema.yml: [postgres-schema-tests, prepare-postgres]
         .github/workflows/tests-tooling.yml: [i18n-route-bounds, tooling]
         .github/workflows/tests-ts-shared.yml: [ts-shared]
         .github/workflows/tests-web-api.yml: [prep, web-api-tests]
@@ -4673,6 +4457,32 @@ rules:
         - '.github/workflows/tooling.yml#tooling'
         - '.github/workflows/gitleaks.yml#gitleaks'
       requiredDirectEdges:
+        - - '.github/workflows/explain-analyze.yml#prepare-postgres'
+          - '.github/workflows/explain-analyze.yml#explain-analyze'
+        - - '.github/workflows/evals-backend.yml#prepare-postgres'
+          - '.github/workflows/evals-backend.yml#backend-evals'
+        - - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
+          - '.github/workflows/checks-backend-smoke.yml#smoke'
+        - - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
+          - '.github/workflows/tests-postgres-schema.yml#postgres-schema-tests'
+        - - '.github/workflows/backend.yml#static-backend'
+          - '.github/workflows/backend.yml#prepare-postgres'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-backend-unit'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-explain-analyze'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#backend-smoke'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-postgres-schema'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#test-backend-credentialed'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#coverage'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#codecov'
+        - - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/backend.yml#backend'
         - - '.github/workflows/main-backend.yml#detect-image-publication'
           - '.github/workflows/main-backend.yml#backend-deploy-intent'
         - - '.github/workflows/main-backend.yml#detect-image-publication'
@@ -4684,6 +4494,14 @@ rules:
       exactCallerJobs:
         .github/workflows/backend.yml:
           - '.github/workflows/nightly.yml#backend'
+        .github/workflows/prepare-postgres.yml:
+          - '.github/workflows/backend.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-credentialed.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-unit.yml#prepare-postgres'
+          - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
+          - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
+          - '.github/workflows/explain-analyze.yml#prepare-postgres'
+          - '.github/workflows/evals-backend.yml#prepare-postgres'
         .github/workflows/checks-backend-smoke.yml:
           - '.github/workflows/backend.yml#backend-smoke'
         .github/workflows/checks-static.yml:
@@ -4764,6 +4582,7 @@ rules:
         .github/workflows/web.yml:
           - '.github/workflows/nightly.yml#web'
       unlockedWorkflowReasons:
+        .github/workflows/prepare-postgres.yml: 'the backend area caller owns concurrency'
         .github/workflows/checks-backend-smoke.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/checks-static.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/ci-area-coverage.yml: 'short-lived read-only area coverage check'
@@ -4773,6 +4592,7 @@ rules:
         .github/workflows/cancel-replaced-merge-group-runs.yml: 'the reusable callee owns the concurrency group'
         .github/workflows/cleanup-artifacts.yml: 'the reusable callee owns the concurrency group'
         .github/workflows/pnpm-dedupe.yml: 'the reusable callee owns the concurrency group'
+        .github/workflows/evals-backend.yml: 'parallel-safe idempotent manual evals'
         .github/workflows/explain-analyze.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/initialize-smoke-test.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/label-pr.yml: 'idempotent PR labeling'
@@ -4976,6 +4796,8 @@ rules:
                 reason: 'Device and session ids are issued in signed tokens, not stored in a table',
               }
       allow:
+        - object: column:history_retention_cursors.sweep_cutoff_id
+          reason: 'Frozen UUIDv7 sweep end may outlive a deleted history row; it is an operational checkpoint, not a relationship.'
         - object: column:domain_blocklist_sources.url
           reason: 'Decision 13 external blocklist source address; exact URL is input to the downloader.'
         - object: column:urls.url
@@ -4990,7 +4812,7 @@ rules:
           reason: 'GlideMQ report-judgement run identity; queue jobs live outside PostgreSQL, while this unique correlation key supports exact result polling and retry replay.'
         - object: 'column:activitypub_inbox_activities.actor_uri'
           reason: "Decision 13 allowed URL group: The activity's `actor` field (the sending remote actor's ActivityPub id), recorded for operational visibility."
-        - object: 'column:activitypub_inbox_delivery_work_items.claimed_actor_uri'
+        - object: 'column:activitypub_inbox_envelopes.claimed_actor_uri'
           reason: 'Decision 13 allowed URL group: Untrusted activity actor URI parsed during the network-free request preflight.'
         - object: 'column:bluesky_follow_records.record_uri'
           reason: "Decision 13 allowed URL group: The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api's Agent.deleteFollow(uri) parses it directly."
@@ -5072,10 +4894,10 @@ rules:
           reason: 'Decision 14 external authentication id.'
         - object: 'column:mcp_call_audit_events.correlation_id'
           reason: 'Decision 14 external request correlation id.'
-        - object: 'column:activitypub_distribution_work_items.activity_id'
-          reason: 'Decision 14 pre-allocated external ActivityPub id.'
         - object: 'column:post_votes.outbound_activitypub_like_activity_id'
           reason: 'Decision 14 pre-allocated external ActivityPub id.'
+        - object: 'column:post_votes.outbound_activitypub_original_like_activity_id'
+          reason: 'Original external ActivityPub Like protocol id retained for UndoLike replay.'
         - object: 'column:follower_distribution_deliveries.delivery_id'
           reason: 'Decision 14 pre-allocated id.'
         - object: 'column:retained_image_placement_bindings.placement_id'
@@ -5115,7 +4937,7 @@ rules:
       allow:
         - object: 'column:activitypub_inbox_activities.activity_type'
           reason: 'ActivityPub sender-defined activity type; see decision 8.'
-        - object: 'column:activitypub_inbox_delivery_work_items.claimed_activity_type'
+        - object: 'column:activitypub_inbox_envelopes.claimed_activity_type'
           reason: 'ActivityPub sender-defined activity type; see decision 8.'
         - object: 'column:oauth_authorization_requests.client_state'
           reason: 'OAuth client opaque state is replayed exactly; see decision 8.'
@@ -5123,8 +4945,6 @@ rules:
           reason: 'UTM source is user-controlled analytics input; see decision 8.'
         - object: 'column:media_types.mime_type'
           reason: 'MIME values are provider-defined lookup keys; see decision 8.'
-        - object: 'column:identity_document_types.identity_document_type'
-          reason: 'Identity provider document types are externally defined open lookup values; #2513 stores their relational identity as UUID.'
         - object: 'column:stripe_event_types.stripe_event_type'
           reason: 'Stripe event types are provider-defined open lookup values; #2513 stores their relational identity as UUID.'
         - object: 'column:copyright_trusted_flaggers.awarding_member_state'
@@ -5295,6 +5115,36 @@ rules:
       allow:
         - object: table:agent_moderation_votes
           reason: Binary moderation ballots intentionally do not model neutral or semantic score provenance;
+        - object: table:media_delivery_registry_changes
+          reason: This change ledger permits only a guarded, aged, superseded transition delete;
+            its exact shape and trigger are checked by the dedicated rule below.
+  - name: media delivery change ledger uses its scoped retention guard
+    rule: postgres-table-shape
+    scope: repository
+    options:
+      schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
+      shapes:
+        - name: media-delivery-change-ledger
+          tablePattern: ^media_delivery_registry_changes$
+          requiredColumns:
+            - name: id
+              type: uuid
+              nullable: false
+            - name: change_type
+              nullable: false
+            - name: changed_by_id
+              type: uuid
+              references:
+                - retained_user_identities
+              onDelete: restrict
+          forbiddenColumns:
+            - updated_at
+          requiredTriggers:
+            - function: fn_reject_media_delivery_registry_change_retention
+              timing: before
+              events:
+                - update
+                - delete
   - name: NM-11 status beside lifecycle timestamps
     rule: postgres-status-with-lifecycle-timestamps
     scope: repository
@@ -5427,3 +5277,56 @@ rules:
       roots: [.agents/skills]
       requiredFile: SKILL.md
       codeExtensions: [md]
+
+  # Source: docs/development/tests.md test-suite rules (#3163). Tests and helpers share one
+  # database, so they never execute DDL, TRUNCATE, ALTER SYSTEM, pg_sleep, or
+  # session_replication_role; failure tests inject a throwing executor instead.
+  - name: tests do not mutate shared database state
+    rule: postgres-no-test-state-mutation
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames: [beginTransaction, beginBoundedTransaction]
+      executorTypeNames:
+        [TransactionQuery, QueryExecutor, PoolClient, QueryOptions, OwnedTransaction]
+      testGlobs:
+        - '**/*.test.{ts,tsx,mts}'
+        - '**/*.spec.{ts,tsx,mts}'
+        - '**/vitest.setup*.{ts,mts}'
+      helperRoots:
+        - '**/test-helpers/**/*.{ts,mts}'
+      unanalyzable: advise
+
+  # Source: #3160. Fix React compiler and hook findings in web source instead of suppressing them.
+  - name: React compiler and hook rules are never suppressed in web source
+    rule: forbidden-lint-suppressions
+    scope: repository
+    options:
+      files:
+        - 'web/app/**/*.{js,jsx,mjs,mts,ts,tsx}'
+        - 'web/components/**/*.{js,jsx,mjs,mts,ts,tsx}'
+        - 'web/hooks/**/*.{js,jsx,mjs,mts,ts,tsx}'
+        - 'web/lib/**/*.{js,jsx,mjs,mts,ts,tsx}'
+      ruleIds:
+        - react/react-compiler
+        - react/error-boundaries
+        - react/globals
+        - react/immutability
+        - react/incompatible-library
+        - react/preserve-manual-memoization
+        - react/purity
+        - react/refs
+        - react/set-state-in-effect
+        - react/set-state-in-render
+        - react/static-components
+        - react/unsupported-syntax
+        - react/use-memo
+        - react/void-use-memo
+        - react/capitalized-calls
+        - react/exhaustive-effect-dependencies
+        - react/hooks
+        - react/memo-dependencies
+        - react/no-deriving-state-in-effects
+      rulePrefixes: [react-hooks-js/]
+      # A blanket disable would also hide the React compiler and hook rules.
+      banBlanketDisable: true

@@ -10,6 +10,14 @@ export type ClassifierRunSubject =
   | { postId: string; rssFeedItemId: null }
   | { postId: null; rssFeedItemId: string }
 
+export type ReservedClassifierRun = {
+  runId: string
+  subject: ClassifierRunSubject
+  inputSha256: Buffer
+  configurationSha256: Buffer
+  decisionBatchId: string | null
+}
+
 /** One exact remote candidate and pinned threshold snapshot of a run's reserved decision batch. */
 type RemoteCandidate = {
   topicId: string

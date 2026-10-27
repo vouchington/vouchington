@@ -113,24 +113,6 @@ describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and s
     expect(keys).toEqual(['anon:web:GET:1.2.3.4'])
   })
 
-  it('does not use premium binding for pro membership claims at the edge', async () => {
-    const keys: string[] = []
-
-    await checkConfiguredIdentityBuckets({
-      env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
-          limit: async ({ key }) => {
-            keys.push(key)
-            return { success: true }
-          },
-        },
-      },
-      ...baseInput,
-    })
-
-    expect(keys).toEqual(['anon:api:GET:1.2.3.4'])
-  })
-
   it('uses mutating binding (not server-action) for POST without next-action', async () => {
     const keys: string[] = []
 

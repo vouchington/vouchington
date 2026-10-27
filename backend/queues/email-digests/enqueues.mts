@@ -13,6 +13,7 @@ import type {
   ProcessSendFollowNewsSourcesEmailVariables,
   ProcessSendFollowTopicsEmailVariables,
   ProcessSendPostReferralLinkEmailVariables,
+  SendCommunityModerationSummaryEmailData,
 } from '@queues/background/enqueues/email-digests-domain'
 import type { EnqueueReturnType } from '@voucha/types'
 import {
@@ -51,7 +52,7 @@ export function enqueueSendFollowNewsSourcesEmail(
 }
 
 export function enqueueSendCommunityModerationSummaryEmail(
-  input: EmailDigestInput,
+  input: SendCommunityModerationSummaryEmailData['input'],
   variables: ProcessSendCommunityModerationSummaryEmailVariables,
 ): EnqueueReturnType {
   return enqueueModerationSummary({ input, variables })

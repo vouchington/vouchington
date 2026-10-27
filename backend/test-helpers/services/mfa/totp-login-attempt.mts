@@ -18,6 +18,7 @@ export async function createTotpMfaLoginAttempt(
   await insertTestTotpAuthenticator(mfaUser.id, suffix)
   const attemptId = await createLoginAttempt({
     userId: mfaUser.id,
+    firstFactor: { type: 'email', emailAddress: mfaUser.email_address! },
     deviceId: v7(),
     sessionId: v7(),
     ...loginAttemptOverrides,

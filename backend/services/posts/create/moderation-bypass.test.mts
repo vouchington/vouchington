@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, insertTestPost } from '@voucha/test-helpers'
+import { createTestUser, insertTestPost, insertTestTotpAuthenticator } from '@voucha/test-helpers'
 import { createPostRevision } from '@services/post-revisions'
 import { setPostClearanceStatus } from '@services/post-clearance/update-status'
 import { addUserRole } from '@services/users/roles-permissions'
@@ -55,6 +55,7 @@ describe('hasPostCreationModerationBypass', () => {
     })
     await createPostRevision(postId, 'create', {}, user.id)
     await setPostClearanceStatus(postId, 'approved', user.id)
+    await insertTestTotpAuthenticator(user.id, `administrator-promotion-${crypto.randomUUID()}`)
     await addUserRole(user.id, 'administrator')
 
     await expect(hasPostCreationModerationBypass(postId)).resolves.toBe(false)

@@ -40,8 +40,6 @@ export function recordValkeySaturation(context: ValkeySaturationContext): void {
 }
 
 function shouldCaptureSentryMessage(context: ValkeySaturationContext): boolean {
-  if (process.env.NODE_ENV === 'test') return true
-
   const throttleKey = `${context.client}:${context.command}`
   const now = Date.now()
   const lastReportedAt = lastSentryReportByClientCommand.get(throttleKey)

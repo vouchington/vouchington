@@ -4,6 +4,8 @@ import { ApiError } from '@vouchington/api-client'
 
 const mocks = vi.hoisted(() => ({
   getPenalties: vi.fn<VitestLooseMock>(),
+  getDue: vi.fn<VitestLooseMock>(),
+  requireAdmin: vi.fn<VitestLooseMock>(),
   metadata: vi.fn<VitestLooseMock>((title: string) => ({ robots: 'noindex', title })),
   breadcrumbs: vi.fn<VitestLooseMock>(() => [
     { name: 'Report penalties', path: '/report-integrity/penalties' },
@@ -12,7 +14,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock(import('@/lib/api/server'), () => ({
   getReportIntegrityPenalties: mocks.getPenalties,
+  getReportIntegrityPenaltyReviewsDue: mocks.getDue,
 }))
+vi.mock(import('@/lib/auth/require-admin'), () => ({ requireAdmin: mocks.requireAdmin }))
 vi.mock(import('@/lib/i18n/get-translations'), () => ({
   getTranslations: vi.fn<VitestLooseMock>(async () => (key: string) => `translated:${key}`),
 }))
@@ -29,12 +33,13 @@ vi.mock(import('@/components/ui/breadcrumb'), () => ({
 }))
 vi.mock(import('./report-integrity-penalties-client'), () => {
   const ReportIntegrityPenaltiesClient: ReportIntegrityPenaltiesClientComponent = ({
-    available,
     initialData,
     initialStatus,
+    initialDuePage,
   }) => (
     <div data-testid='penalties-client'>
-      {String(available)}:{initialStatus}:{initialData.results.map(item => item.id).join(',')}
+      {initialStatus}:{initialData.results.map(item => item.id).join(',')}:due=
+      {initialDuePage?.results.map(item => item.user_username).join(',') ?? 'hidden'}
     </div>
   )
   return { ReportIntegrityPenaltiesClient }
@@ -53,6 +58,13 @@ type ReportIntegrityPenaltiesClientComponent =
 describe('ReportIntegrityPenaltiesPage', () => {
   beforeEach(() => {
     mocks.getPenalties.mockReset()
+    mocks.getDue.mockReset()
+    mocks.requireAdmin.mockReset()
+    mocks.requireAdmin.mockResolvedValue(undefined)
+    mocks.getDue.mockResolvedValue({
+      results: [{ id: 'due-1', user_username: 'server-review-recipient' }],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
     mocks.breadcrumbs.mockClear()
     mocks.getPenalties.mockResolvedValue(penaltyPage)
   })
@@ -66,7 +78,7 @@ describe('ReportIntegrityPenaltiesPage', () => {
       title: 'Report Integrity Penalties | Admin',
     })
     expect(mocks.getPenalties).toHaveBeenCalledWith({ searchParams: { status: 'active' } })
-    expect(screen.getByTestId('penalties-client')).toHaveTextContent('true:active:penalty-1')
+    expect(screen.getByTestId('penalties-client')).toHaveTextContent('active:penalty-1')
     expect(screen.getByTestId('breadcrumbs')).toHaveTextContent('1')
     expect(mocks.breadcrumbs).toHaveBeenCalledWith('/report-integrity/penalties', {
       isAuthenticated: true,
@@ -89,7 +101,7 @@ describe('ReportIntegrityPenaltiesPage', () => {
     expect(mocks.getPenalties).toHaveBeenLastCalledWith({
       searchParams: { status: 'revoked' },
     })
-    expect(screen.getByTestId('penalties-client')).toHaveTextContent('true:revoked:penalty-1')
+    expect(screen.getByTestId('penalties-client')).toHaveTextContent('revoked:penalty-1')
 
     await ReportIntegrityPenaltiesPage({ searchParams: Promise.resolve({ status: 'all' }) })
     expect(mocks.getPenalties).toHaveBeenLastCalledWith({
@@ -105,18 +117,10 @@ describe('ReportIntegrityPenaltiesPage', () => {
     )
 
     expect(mocks.getPenalties).toHaveBeenCalledWith({ searchParams: { status: 'active' } })
-    expect(screen.getByTestId('penalties-client')).toHaveTextContent('true:active:penalty-1')
+    expect(screen.getByTestId('penalties-client')).toHaveTextContent('active:penalty-1')
   })
 
-  it('renders an unavailable empty ledger when an older backend returns 404', async () => {
-    mocks.getPenalties.mockRejectedValueOnce(new ApiError('missing', 404))
-
-    render(await ReportIntegrityPenaltiesPage({ searchParams: Promise.resolve({}) }))
-
-    expect(screen.getByTestId('penalties-client')).toHaveTextContent('false:active:')
-  })
-
-  it.each([new ApiError('server', 500), new Error('network')])(
+  it.each([new ApiError('missing', 404), new ApiError('server', 500), new Error('network')])(
     'does not hide unexpected collection failure %#',
     async error => {
       mocks.getPenalties.mockRejectedValueOnce(error)
@@ -132,4 +136,28 @@ describe('ReportIntegrityPenaltiesPage', () => {
       ).rejects.toBe(error)
     },
   )
+  it('server-renders the first due page and does not fetch hidden non-active queues', async () => {
+    render(await ReportIntegrityPenaltiesPage({ searchParams: Promise.resolve({}) }))
+    expect(screen.getByTestId('penalties-client')).toHaveTextContent('due=server-review-recipient')
+    expect(mocks.getDue).toHaveBeenCalledOnce()
+    mocks.getDue.mockClear()
+    await ReportIntegrityPenaltiesPage({ searchParams: Promise.resolve({ status: 'revoked' }) })
+    await ReportIntegrityPenaltiesPage({ searchParams: Promise.resolve({ status: 'all' }) })
+    expect(mocks.getDue).not.toHaveBeenCalled()
+  })
+
+  it('authorizes before starting either private read and propagates due-read failures', async () => {
+    const denied = new Error('not an administrator')
+    mocks.requireAdmin.mockRejectedValueOnce(denied)
+    await expect(ReportIntegrityPenaltiesPage({ searchParams: Promise.resolve({}) })).rejects.toBe(
+      denied,
+    )
+    expect(mocks.getPenalties).not.toHaveBeenCalled()
+    expect(mocks.getDue).not.toHaveBeenCalled()
+    const failure = new Error('due read failed')
+    mocks.getDue.mockRejectedValueOnce(failure)
+    await expect(ReportIntegrityPenaltiesPage({ searchParams: Promise.resolve({}) })).rejects.toBe(
+      failure,
+    )
+  })
 })

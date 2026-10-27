@@ -6,7 +6,7 @@ import {
   randomSuffix,
   requireTestValue,
 } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { createTestUser } from '../../../backend/test-helpers/index.mts'
 
 async function selectSeededSkuOption(page: Page): Promise<string> {
@@ -23,7 +23,7 @@ async function selectSeededSkuOption(page: Page): Promise<string> {
 }
 
 test.describe('Admin Memberships', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('displays page heading when feature is enabled', async ({ page }) => {
     await setFeatureFlags(page, { memberships: true })
@@ -35,7 +35,7 @@ test.describe('Admin Memberships', () => {
 })
 
 test.describe('Admin Memberships — grant flow', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('force-remount clears user input after a successful grant', async ({ page }) => {
     const suffix = randomSuffix()

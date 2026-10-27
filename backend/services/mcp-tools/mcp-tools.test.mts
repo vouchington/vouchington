@@ -198,5 +198,5 @@ describe('callMcpTool', () => {
     )
     expect(result.isError).not.toBe(true)
     expect(Array.isArray(result.content)).toBe(true)
-  }, 15_000)
+  })
 })

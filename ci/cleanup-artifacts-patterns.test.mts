@@ -40,6 +40,7 @@ const DELETE_NAMES = [
   'web-integration-artifacts',
   'web-integration-shard-2-artifacts',
   'web-test-report-debug',
+  'backend-postgres-123456789',
   'explain-analyze-results',
   'gitleaks-report',
   'trivy-backend-abc123',

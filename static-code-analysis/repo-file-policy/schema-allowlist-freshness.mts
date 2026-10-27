@@ -7,6 +7,7 @@ import { extractStaticStringPairs } from 'vouchington-tooling/pg-schema-snapshot
 // Allowlists of table.column pairs, checked once each against the current schema snapshot.
 const SCHEMA_ALLOWLIST_FILES = [
   'backend/test-helpers/data-stores/psql/schema-static-analysis/uuid-allowlists.mts',
+  'backend/test-helpers/data-stores/psql/schema-static-analysis/retention-cursor-uuid-allowlists.mts',
   'backend/test-helpers/data-stores/psql/schema-static-analysis/timestamp-allowlists.mts',
 ]
 
@@ -28,7 +29,7 @@ export function findStaleSchemaAllowlistEntries(
   })
 }
 
-/** Checks the two schema allowlist files for entries the current schema snapshot no longer has. */
+/** Checks tracked schema allowlist files for entries the current schema snapshot no longer has. */
 export function checkStaleSchemaAllowlistEntries(
   repoRoot: string,
   trackedFiles: string[],

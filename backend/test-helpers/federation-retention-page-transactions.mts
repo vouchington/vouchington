@@ -29,7 +29,7 @@ export async function cleanupCommittedReplayPagesForTest(ids: readonly string[])
     const previous = owners.at(-1)
     previousPageTransactionActive.push(previous ? await ownsTransactionLock(previous) : false)
     const transaction = await beginTransaction(options)
-    const scoped = scopeFederationRetentionQueryForTest(transaction, 'outbound', ids)
+    const scoped = scopeFederationRetentionQueryForTest(transaction, 'inbox', ids)
     return new Proxy(transaction, {
       async apply(_target, thisArgument, args: Parameters<typeof transaction>) {
         const result = await Reflect.apply(scoped, thisArgument, args)
@@ -47,14 +47,13 @@ export async function cleanupCommittedReplayPagesForTest(ids: readonly string[])
           pageCount += 1
           pageTransactionActive.push(await ownsTransactionLock(owner))
           // Smoke check only: the lifetime proof above is scoped to this exact page owner.
-          lockDuringPage.push(await isReplayFloorLockedForTest('outbound'))
+          lockDuringPage.push(await isReplayFloorLockedForTest())
         }
         return result
       },
     })
   }
   const result = await cleanupActivityPubReplayPages(
-    'outbound',
     { batchSize: 1, maxBatches: 2, now: new Date() },
     openTransaction,
   )

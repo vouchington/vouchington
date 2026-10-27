@@ -71,10 +71,13 @@ describe('copyright staff queue urgency', () => {
       return intake.copyright_notice_id
     }
     // The plain intake has waited longest, so only urgency can put the deadline cases ahead of it.
-    const olderIntake = await createGuestNotice(new Date(decisionNow.getTime() - 30 * day))
-    const due = await createGuestNotice(decisionNow)
-    const missed = await createGuestNotice(decisionNow)
-    const filingCase = await createGuestNotice(decisionNow)
+    // Requester locks and notice IDs are independent; urgency timestamps own the expected order.
+    const [olderIntake, due, missed, filingCase] = await Promise.all([
+      createGuestNotice(new Date(decisionNow.getTime() - 30 * day)),
+      createGuestNotice(decisionNow),
+      createGuestNotice(decisionNow),
+      createGuestNotice(decisionNow),
+    ])
     const capability = await issueCopyrightGuestCapability({
       issuedAt: decisionNow,
       currentUser: moderator,
@@ -113,8 +116,8 @@ describe('copyright staff queue urgency', () => {
       now: new Date(decisionNow.getTime() + 1),
     })
     const ownedIds = [missed, due, filingCase, olderIntake]
-    // Newer plain intake. It sorts after the owned window, so a walk that
-    // scans the shared queue tail reaches the global end instead of stopping.
+    // A later unrelated intake sorts beyond the owned span, exposing any walk
+    // that scans the shared queue tail instead of stopping after owned cases.
     await createGuestNotice(decisionNow)
     await withCopyrightStaffQueueHttp(
       moderator,

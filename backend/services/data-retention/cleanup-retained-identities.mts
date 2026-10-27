@@ -2,16 +2,16 @@ import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
-
+import { COMMUNITY_BRIDGE_FAMILY } from './retained-community-bridge-family.mts'
 function retainedRelationReferences(subjectType: string): [string, string][] {
   return electedRelationMetadata.flatMap(metadata =>
     metadata.subject_type === subjectType
-      ? [[`retained_${metadata.table_name}`, 'subject_id']]
+      ? [[`retained_${metadata.table_name}`, 'subject_id'] as [string, string]]
       : [],
   )
 }
-
 export const ROOT_FAMILIES = {
+  community_bridge: COMMUNITY_BRIDGE_FAMILY,
   user: {
     table: 'retained_user_identities',
     references: [
@@ -22,7 +22,6 @@ export const ROOT_FAMILIES = {
       ['image_surface_placement_activations', 'uploaded_by_id'],
       ['user_deletion_requests', 'user_id'],
       ['user_deletion_requests', 'requested_by_id'],
-      ['post_publication_author_identities', 'id'],
       ['membership_changes', 'user_id'],
       ['membership_changes', 'changed_by_id'],
       ['membership_grants', 'granted_by_id'],
@@ -44,6 +43,8 @@ export const ROOT_FAMILIES = {
       ['review_dispute_lifecycle_changes', 'changed_by_id'],
       ['rss_feed_setting_changes', 'changed_by_id'],
       ['mcp_call_audit_events', 'actor_user_id'],
+      ['moderator_actions', 'actor_user_id'],
+      ['moderator_actions', 'target_user_id'],
       ['user_legal_preservation_holds', 'account_user_id'],
       ['user_legal_preservation_holds', 'placed_by_id'],
       ['user_legal_preservation_holds', 'released_by_id'],
@@ -86,9 +87,11 @@ export const ROOT_FAMILIES = {
     table: 'retained_post_identities',
     references: [
       ['posts', 'id'],
-      ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
+      ['image_deletion_post_updates', 'post_id'],
+      ['classifier_run_identities', 'post_id'],
+      ['classifier_run_requests', 'post_id'],
       ...retainedRelationReferences('post'),
     ],
   },
@@ -96,8 +99,9 @@ export const ROOT_FAMILIES = {
     table: 'retained_rss_feed_item_identities',
     references: [
       ['rss_feed_items', 'id'],
-      ['post_publication_rss_feed_item_identities', 'id'],
       ['notifications', 'publication_rss_feed_item_id'],
+      ['classifier_run_identities', 'rss_feed_item_id'],
+      ['classifier_run_requests', 'rss_feed_item_id'],
       ...retainedRelationReferences('rss_feed_item'),
     ],
   },
@@ -112,7 +116,6 @@ export const ROOT_FAMILIES = {
     ],
   },
 } as const
-
 export type RetainedIdentityFamily = keyof typeof ROOT_FAMILIES
 export type RetainedIdentityCleanupPage = {
   family: RetainedIdentityFamily
@@ -125,9 +128,8 @@ export async function cleanupRetainedIdentityRoots(
   pageSize = 1_000,
   idsByFamily?: Partial<Record<RetainedIdentityFamily, readonly string[]>>,
 ): Promise<RetainedIdentityCleanupPage[]> {
-  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000) {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000)
     throw new RangeError('Retained identity cleanup page size must be between 1 and 1000')
-  }
   const results: RetainedIdentityCleanupPage[] = []
   for (const family of Object.keys(ROOT_FAMILIES) as RetainedIdentityFamily[]) {
     const ids = idsByFamily?.[family]
@@ -140,7 +142,6 @@ export async function cleanupRetainedIdentityRoots(
   }
   return results
 }
-
 async function cleanupRetainedIdentityFamily(
   family: RetainedIdentityFamily,
   pageSize: number,
@@ -151,8 +152,7 @@ async function cleanupRetainedIdentityFamily(
   if (!identityIds)
     await query(
       `/* ensureRetainedIdentityCleanupCursor */
-        INSERT INTO retained_identity_cleanup_cursors (family) VALUES ($1)
-        ON CONFLICT DO NOTHING`,
+        INSERT INTO retained_identity_cleanup_cursors (family) VALUES ($1) ON CONFLICT DO NOTHING`,
       [family],
     )
   const progress = identityIds
@@ -191,8 +191,7 @@ async function cleanupRetainedIdentityFamily(
   if (!identityIds)
     await query(
       `/* checkpointRetainedIdentityCleanup */
-      UPDATE retained_identity_cleanup_cursors
-      SET cursor_identity_id = $2 WHERE family = $1`,
+      UPDATE retained_identity_cleanup_cursors SET cursor_identity_id = $2 WHERE family = $1`,
       [family, hasMore ? page.at(-1)!.id : null],
     )
   await query.commit()

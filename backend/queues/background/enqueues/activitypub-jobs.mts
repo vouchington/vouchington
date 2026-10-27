@@ -8,6 +8,7 @@ import {
   type DistributeActivityData,
   type EmptyActivityPubJobData as EmptyData,
   type RearmFailedDeliveriesData,
+  type RecoverOutboundDistributionData,
 } from './activitypub-domain.mts'
 
 const DELIVERY = {
@@ -23,7 +24,10 @@ const INBOX = {
   removeOnFail: 100,
 } as const
 const OUTBOUND_ORDERING = { key: 'activitypub:outbound' } as const
+const OUTBOUND_DISPATCH_ORDERING = { key: 'activitypub:outbound-dispatch' } as const
+const OUTBOUND_RECOVERY_ORDERING = { key: 'activitypub:outbound-recovery' } as const
 const INBOUND_ORDERING = { key: 'activitypub:inbound' } as const
+const RECOVERY_ORDERING = { key: 'activitypub:inbound-recovery' } as const
 const CLEANUP_ORDERING = { key: 'activitypub:cleanup' } as const
 
 export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<DistributeActivityData>(
@@ -31,7 +35,7 @@ export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<Distribut
   {
     name: 'distributeActivity',
     priority: PRIORITY_DISPATCH,
-    ordering: OUTBOUND_ORDERING,
+    ordering: OUTBOUND_DISPATCH_ORDERING,
     ...DELIVERY,
     ...pagedDispatchJobOptions('activitypub'),
   },
@@ -42,21 +46,38 @@ export const ACTIVITYPUB_DELIVER_ACTIVITY_JOB = defineBackgroundJob<DeliverActiv
   ordering: OUTBOUND_ORDERING,
   ...DELIVERY,
 })
+export const ACTIVITYPUB_RECOVER_OUTBOUND_JOB =
+  defineBackgroundJob<RecoverOutboundDistributionData>(DOMAIN, {
+    name: 'recoverOutboundDistribution',
+    priority: PRIORITY_DISPATCH,
+    ordering: OUTBOUND_RECOVERY_ORDERING,
+    ...pagedDispatchJobOptions('activitypub'),
+  })
 export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubInboxDeliveryJob>(
   DOMAIN,
-  { name: 'processDelivery', priority: PRIORITY_TASK, ordering: INBOUND_ORDERING, ...INBOX },
+  {
+    name: 'processDelivery',
+    priority: PRIORITY_TASK,
+    ordering: INBOUND_ORDERING,
+    // Keep the shared failed-record bound. Terminal protocol rejections complete the
+    // job, so a sender cannot grow this set by forcing a rejection.
+    ...INBOX,
+  },
 )
-export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
-  name: 'recoverDeliveries',
-  priority: PRIORITY_DISPATCH,
-  ordering: INBOUND_ORDERING,
-  ...INBOX,
-})
+export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<RearmFailedDeliveriesData>(
+  DOMAIN,
+  {
+    name: 'recoverDeliveries',
+    priority: PRIORITY_DISPATCH,
+    ordering: RECOVERY_ORDERING,
+    ...INBOX,
+  },
+)
 export const ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB =
   defineBackgroundJob<RearmFailedDeliveriesData>(DOMAIN, {
     name: 'rearmFailedDeliveries',
     priority: PRIORITY_DISPATCH,
-    ordering: INBOUND_ORDERING,
+    ordering: RECOVERY_ORDERING,
     ...INBOX,
   })
 export const ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
@@ -69,6 +90,7 @@ export const ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB = defineBackgroundJob<Em
 export const ACTIVITYPUB_JOBS = [
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
+  ACTIVITYPUB_RECOVER_OUTBOUND_JOB,
   ACTIVITYPUB_PROCESS_DELIVERY_JOB,
   ACTIVITYPUB_RECOVER_DELIVERIES_JOB,
   ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,

@@ -31,7 +31,7 @@ describe('penalties', () => {
       createTestUser({ extraRoles: ['customer_support'], username: randomUsername() }),
     ])
     for (const user of [admin, member, moderator, support]) ownedUserIds.add(user.id)
-  }, 30_000)
+  })
   beforeEach(async () => {
     ownedWork = await observeOwnedPenaltyAdmissions(ownedUserIds)
     onTestFinished(ownedWork)
@@ -118,7 +118,7 @@ describe('penalties', () => {
         .get(`/api/v1/vote-integrity/penalties?user_id=${user.id}&source=flag`)
         .expect(200)
       expect(response.body.results).toEqual([expect.objectContaining({ id: expectedId })])
-    }, 30_000)
+    })
 
     it('filters by source flag without leaking other flag penalties', async () => {
       const user = await createTestUser({ username: randomUsername() })
@@ -151,7 +151,7 @@ describe('penalties', () => {
         )
         .expect(200)
       expect(response.body.results).toEqual([expect.objectContaining({ id: expectedId })])
-    }, 30_000)
+    })
 
     it('returns exact flag filter_scope and omits it from all-source responses', async () => {
       const user = await createTestUser({ username: randomUsername() })
@@ -174,7 +174,7 @@ describe('penalties', () => {
         .get(`/api/v1/vote-integrity/penalties?user_id=${user.id}`)
         .expect(200)
       expect(allSources.body).not.toHaveProperty('filter_scope')
-    }, 30_000)
+    })
 
     it('paginates without gaps or duplicates and rejects a cursor under changed filters', async () => {
       const user = await createTestUser({ username: randomUsername() })
@@ -205,7 +205,7 @@ describe('penalties', () => {
           `/api/v1/vote-integrity/penalties?user_id=${user.id}&limit=2&after=${first.body.page_info.end_cursor}`,
         )
         .expect(400)
-    }, 30_000)
+    })
   })
 
   describe('DELETE /api/v1/vote-integrity/penalties/:id', () => {
@@ -255,7 +255,7 @@ describe('penalties', () => {
       ])
       expect(responses.map(response => response.status).toSorted()).toEqual([200, 404])
       await request1.delete(`/api/v1/vote-integrity/penalties/${penaltyId}`).expect(404)
-    }, 30_000)
+    })
   })
 
   describe('GET /api/v1/vote-integrity/penalties/:id', () => {
@@ -268,14 +268,14 @@ describe('penalties', () => {
           await request.get(`/api/v1/vote-integrity/penalties/${uuidv7()}`).expect(403)
         }),
       )
-    }, 30_000)
+    })
 
     it('returns 422 for an invalid ID and 404 for an unknown penalty', async () => {
       const request = createRequest()
       await request.authenticateAs(admin)
       await request.get('/api/v1/vote-integrity/penalties/invalid').expect(422)
       await request.get(`/api/v1/vote-integrity/penalties/${uuidv7()}`).expect(404)
-    }, 30_000)
+    })
 
     it('returns the exact authoritative penalty', async () => {
       const user = await createTestUser({ username: randomUsername() })
@@ -292,6 +292,6 @@ describe('penalties', () => {
         created_by_id: admin.id,
         revoked_at: null,
       })
-    }, 30_000)
+    })
   })
 })

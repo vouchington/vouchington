@@ -1,4 +1,8 @@
-import { enqueueBulkActivityPubInboxDeliveries } from '../queues/activitypub/enqueues/inbox.mts'
+import {
+  getActivityPubInboxDeliveryJobStatus,
+  removeFailedActivityPubInboxDelivery,
+  enqueueBulkActivityPubInboxDeliveries,
+} from '../queues/activitypub/enqueues/inbox.mts'
 import {
   activityPubInboxDeliveryTransitions,
   getActivityPubInboxStorageSnapshot,
@@ -14,9 +18,18 @@ export function scopedActivityPubInboxProcessors(deliveryId: string) {
   const ids = [deliveryId]
   return {
     recoverDeliveries: () =>
-      recoverDeliveries({
-        claimRecoverable: () => activityPubInboxDeliveryTransitions.recover(ids),
+      recoverDeliveries(undefined, {
+        getJobStatus: getActivityPubInboxDeliveryJobStatus,
+        reserveRequeues: activityPubInboxDeliveryTransitions.reserveRecoveryRequeues,
+        releaseUnadmittedRequeues:
+          activityPubInboxDeliveryTransitions.releaseUnadmittedRecoveryRequeues,
+        exhaustRecoveryRequeues: activityPubInboxDeliveryTransitions.exhaustRecoveryRequeues,
+        removeFailed: removeFailedActivityPubInboxDelivery,
+        exhaust: activityPubInboxDeliveryTransitions.exhaust,
+        readRecoverable: () => activityPubInboxDeliveryTransitions.recover(ids),
         enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
+        enqueueContinuation: () => Promise.resolve(null),
+        pageSize: () => 2,
       }),
     rearmFailedDeliveries: () =>
       rearmFailedDeliveries(undefined, {

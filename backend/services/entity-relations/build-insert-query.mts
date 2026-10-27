@@ -95,6 +95,14 @@ export function buildInsertQuery(
 	          deleted_by_id = NULL`)
   if (isUserFollowRelation(relation)) {
     query.append(sql`,
+            outbound_activitypub_distributed_activity_id = CASE
+              WHEN `)
+    query.append(table)
+    query.append(sql`.deleted_at IS NULL THEN `)
+    query.append(table)
+    query.append(sql`.outbound_activitypub_distributed_activity_id
+              ELSE NULL
+            END,
             outbound_activitypub_follow_activity_id = CASE
               WHEN `)
     query.append(table)

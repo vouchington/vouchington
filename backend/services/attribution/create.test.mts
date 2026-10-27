@@ -52,8 +52,8 @@ describe('createSessionReferralAttribution', () => {
     const pending: Promise<unknown>[] = []
     const spy = vi
       .spyOn(notificationEnqueues, 'enqueueReferralClickNotification')
-      .mockImplementation((referrerId, landingUrl) => {
-        const result = enqueue(referrerId, landingUrl)
+      .mockImplementation(referrerId => {
+        const result = enqueue(referrerId)
         pending.push(result)
         return result
       })
@@ -65,14 +65,14 @@ describe('createSessionReferralAttribution', () => {
     }
   }
 
-  async function referralClickJobWasEnqueued(landingUrl: string): Promise<boolean> {
+  async function referralClickJobCount(): Promise<number> {
     // `searchJobs` scans every state: a `priority > 0` notification is `prioritized`, which
     // `getJobs('waiting')` omits.
     const jobs = await notifications.searchJobs({
       name: 'notifications.processReferralClickNotification',
-      data: { landingUrl },
+      data: { referrerId: referrer.id },
     })
-    return jobs.length > 0
+    return jobs.length
   }
 
   it('creates a new attribution row for a new (session, referrer) pair and notifies the referrer', async () => {
@@ -87,7 +87,7 @@ describe('createSessionReferralAttribution', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]!.referrer_user_id).toBe(referrer.id)
     expect(rows[0]!.landing_url).toBe(landingUrl)
-    expect(await referralClickJobWasEnqueued(landingUrl)).toBe(true)
+    expect(await referralClickJobCount()).toBe(1)
   })
 
   it('a repeat click for the same pair replaces the row with a fresh, later id and does not duplicate the notification', async () => {
@@ -102,7 +102,7 @@ describe('createSessionReferralAttribution', () => {
         landingUrl: firstUrl,
       }),
     )
-    expect(await referralClickJobWasEnqueued(firstUrl)).toBe(true)
+    expect(await referralClickJobCount()).toBe(1)
     const [firstClick] = await getSessionReferralAttributions(sessionId)
 
     await createSessionReferralAttribution({
@@ -121,7 +121,7 @@ describe('createSessionReferralAttribution', () => {
 
     // The repeat click is not a new (session, referrer) pair, so no second notification job
     // is enqueued for it.
-    expect(await referralClickJobWasEnqueued(secondUrl)).toBe(false)
+    expect(await referralClickJobCount()).toBe(1)
   })
 
   it('freezes a converted row: id, user_id, and signed_up_at are unchanged by a repeat click', async () => {

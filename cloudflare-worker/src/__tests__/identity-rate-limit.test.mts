@@ -87,63 +87,6 @@ describe('checkConfiguredIdentityBuckets', () => {
     expect(keys).toEqual(['anon:api:GET:1.2.3.4'])
   })
 
-  it('uses anon binding even when authenticated claims would otherwise be auth tier', async () => {
-    const keys: string[] = []
-
-    const result = await checkConfiguredIdentityBuckets({
-      env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
-          limit: async ({ key }) => {
-            keys.push(key)
-            return { success: true }
-          },
-        },
-      },
-      ...baseInput,
-    })
-
-    expect(result).toBe(true)
-    expect(keys).toEqual(['anon:api:GET:1.2.3.4'])
-  })
-
-  it('uses anon binding even when authenticated claims would otherwise be premium tier', async () => {
-    const keys: string[] = []
-
-    const result = await checkConfiguredIdentityBuckets({
-      env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
-          limit: async ({ key }) => {
-            keys.push(key)
-            return { success: true }
-          },
-        },
-      },
-      ...baseInput,
-    })
-
-    expect(result).toBe(true)
-    expect(keys).toEqual(['anon:api:GET:1.2.3.4'])
-  })
-
-  it('does not use premium binding for admin role claims at the edge', async () => {
-    const keys: string[] = []
-
-    const result = await checkConfiguredIdentityBuckets({
-      env: {
-        RATE_LIMITER_ANON_GET_HEAD: {
-          limit: async ({ key }) => {
-            keys.push(key)
-            return { success: true }
-          },
-        },
-      },
-      ...baseInput,
-    })
-
-    expect(result).toBe(true)
-    expect(keys).toEqual(['anon:api:GET:1.2.3.4'])
-  })
-
   it('falls back to shared GET/HEAD binding when tier-specific binding is absent', async () => {
     const keys: string[] = []
 

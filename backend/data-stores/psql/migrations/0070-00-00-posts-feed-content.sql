@@ -187,7 +187,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__topic_alias_id
-ON post_topic_alias_sources (topic_alias_id, post_id DESC);
+ON post_topic_alias_sources (topic_alias_id, post_id DESC, id DESC);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_topic_alias_sources__contributor_id
@@ -219,8 +219,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_explicit_topic_categories__topic_id
-ON post_explicit_topic_categories (topic_id)
-INCLUDE (post_id);
+ON post_explicit_topic_categories (topic_id, post_id);
 
 COMMENT ON TABLE post_explicit_topic_categories IS 'Explicit topic categories authored for a post, independent of relation votes and structured data-point topics.';
 COMMENT ON COLUMN post_explicit_topic_categories.post_id IS 'The post with the explicit topic category.';
@@ -299,7 +298,7 @@ WHERE deleted_at IS NULL;
 -- searching posts by creator; bare so it also serves as the RI-usable index for created_by_id's FK
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__created_by_id
-ON posts (created_by_id);
+ON posts (created_by_id, id);
 
 -- first-post and ban-evasion candidate lookups within a community
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -490,8 +489,8 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_review_topic_ratings__topic_id
-ON post_review_topic_ratings (topic_id)
-INCLUDE (post_id, rating);
+ON post_review_topic_ratings (topic_id, post_id)
+INCLUDE (rating);
 
 COMMENT ON TABLE post_review_topic_ratings IS 'Individual topic ratings within review posts. A review can rate multiple topics.';
 COMMENT ON COLUMN post_review_topic_ratings.post_id IS 'The review post this rating belongs to.';
@@ -883,8 +882,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_post_data_point_topics__topic_id
-ON post_data_point_topics (topic_id)
-INCLUDE (post_id);
+ON post_data_point_topics (topic_id, post_id);
 
 COMMENT ON TABLE post_data_point_topics IS 'Subject topics for data point posts. A data point can be about multiple topics (e.g., approved for a specific credit card).';
 COMMENT ON COLUMN post_data_point_topics.post_id IS 'The data point post this topic belongs to.';
@@ -912,8 +910,17 @@ CREATE INDEX IF NOT EXISTS idx_post_images__post_id__order_index
   ON post_images (post_id, order_index);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_post_images__image_id
-  ON post_images (image_id);
+CREATE INDEX IF NOT EXISTS idx_post_images__image_id__post_id
+  ON post_images (image_id, post_id);
+
+CREATE TABLE IF NOT EXISTS image_deletion_post_updates (
+  image_id UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES retained_post_identities(id) ON DELETE RESTRICT,
+  PRIMARY KEY (image_id, post_id)
+);
+COMMENT ON TABLE image_deletion_post_updates IS 'Bounded post-updated admission receipts committed with each image deletion page; removed after admission succeeds.';
+COMMENT ON COLUMN image_deletion_post_updates.image_id IS 'Image whose deletion reset the post.';
+COMMENT ON COLUMN image_deletion_post_updates.post_id IS 'Post requiring content-changed admission; retained identity survives concurrent deletion.';
 
 COMMENT ON TABLE post_images IS 'Associates images with posts in a specified display order with optional captions.';
 COMMENT ON COLUMN post_images.post_id IS 'The post this image is attached to.';
@@ -925,3 +932,6 @@ COMMENT ON COLUMN post_images.caption IS 'Optional caption text for the image.';
 CREATE INDEX IF NOT EXISTS idx_posts__created_via_oauth_client_id
   ON posts (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_image_deletion_post_updates__post_id
+ON image_deletion_post_updates (post_id);

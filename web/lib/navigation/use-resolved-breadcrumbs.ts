@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth/context'
 import { useResolvedIntent } from '@/lib/navigation/intents/nav-intent-context'
 import { getIntentById } from '@/lib/navigation/intents'
 import { buildBreadcrumbs } from '@/lib/navigation/breadcrumbs'
-import type { BreadcrumbNavItem } from '@/lib/seo/structured-data'
+import type { BreadcrumbNavItem } from '@/lib/seo/structured-data-breadcrumbs'
 
 interface UseResolvedBreadcrumbsArgs {
   tail: BreadcrumbNavItem[]

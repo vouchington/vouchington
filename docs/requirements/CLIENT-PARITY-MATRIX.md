@@ -24,6 +24,27 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Membership verification outcomes
+
+The billing feature's verification-outcomes row in `client-feature-parity.json` tracks native adoption.
+Web drops `next_processing_at` from its response type and shared fixtures; Swift and .NET must drop
+it from response models and fixture expectations and accept the `provider_unavailable` reason for
+rejected verifications.
+
+REST membership overview and verification reads expose domain outcomes. Queue retry timing is internal;
+clients must not infer a retry deadline from a pending verification. The producer contract lands before
+the dependent native model and fixture changes. This adds no native UI parity claim.
+
+## Notification mark-all continuation
+
+REST and MCP mark one bounded page, return the immediate `marked_read` count and `has_more`, and
+continue the older backlog in background jobs. The web notification page avoids presenting every
+loaded row as read while work remains; it refreshes one page and the unread summary on request or
+when the tab regains focus or becomes visible. Swift and .NET invoke the endpoint as a mutation without consuming its
+result and optimistically present read state. Background continuation usually completes their
+mark-all intent, but a lost or terminally failed job leaves unread rows; another mark-all request
+resumes them. Their current clients do not automatically retry that case.
+
 ## Hostname identity in presentation
 
 On crawler and integrity screens, hostname links and labels use the hostname string. Their reads
@@ -31,6 +52,16 @@ include that natural key alongside factual hostname IDs, so clients can show a u
 without exposing a UUID in presentation. The ID remains the API and MCP reference for mutations,
 joins, and exact reads. Native clients can adopt the hostname fact when rendering these records;
 the added response field does not change their existing request contract.
+
+## Moderation history retention
+
+The producer applies the approved moderation history access window to member appeal reads and
+keeps public dispute annotations after their source dispute expires. An annotation's
+`review_dispute_id` can therefore be null; the web contract accepts that retained provenance.
+[Producer #3639](https://github.com/vouchington/vouchington/issues/3639) owns this retention
+contract. Swift and .NET handling of expired appeal history and nullable annotation provenance
+still need verification; native executable and rendered evidence has not been assessed, so this
+change makes no native parity completion claim.
 
 ## Copyright filing and staff matches
 
@@ -42,6 +73,33 @@ header. Staff copyright queues expose a bounded first page of possible staydown 
 refresh. Native copyright filing and staff review remain tracked by the existing parity rows in
 `client-feature-parity.json`; this change does not claim new native UI evidence.
 
+## Classifier partition operations
+
+The staff engineering `POST /api/v1/psql/jobs` contract accepts an optional
+`classifierRange` with UTC `fromDate`, exclusive `toDate`, and `maxDefaultRows`
+for operator-created and operator-retired classifier result ranges. An omitted
+range keeps the crawl-only monthly action. Web exposes the range inputs and
+confirmation in the PostgreSQL operations page. The engineering operations
+surface is marked full for Swift and .NET in the feature matrix, so both native
+clients need dependent adoption of this request and confirmation flow before
+their engineering parity can include classifier ranges. No member-facing route
+or MCP tool changes. Native adoption is tracked in
+[vouchington-clients#497](https://github.com/vouchington/vouchington-clients/issues/497).
+
+## Annual integrity penalty review
+
+Staff can inspect bounded queues of active report-abuse and vote-weight penalties due for
+annual review and confirm continued enforcement. The producer exposes
+`GET /api/v1/{report|vote}-integrity/penalties/review-due` and
+`POST /api/v1/{report|vote}-integrity/penalties/:id/reviews` to the same staff roles that
+can apply each penalty. Admin MCP reaches the due queue with `review_due` on the existing
+penalty list tools and records a review with `review` on the existing lift tools. Recording a
+review, or lifting a report-abuse penalty, rejects a suspended administrator. Due queues use opaque `after` cursors, bounded `limit`, and `page_info`
+so staff can inspect later records without first deciding every older case. Swift and .NET have existing integrity penalty surfaces, but neither
+renders this review queue yet. [Clients #492](https://github.com/vouchington/vouchington-clients/issues/492)
+owns native presentation, route consumption, and behavioral evidence; native parity stays
+dependent until that work is proven.
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending
@@ -52,6 +110,20 @@ use the completed row's `entity_id` to open the feed, or map its stable `error_c
 copy. Native client adoption is tracked in
 [clients #368](https://github.com/vouchington/vouchington-clients/issues/368); the producer lands
 first.
+
+## Staff RSS feed deletion
+
+The staff REST `DELETE /api/v1/rss-feeds/:id` accepts an asynchronous hard delete with HTTP 202
+and `{ "rss_feed_id": id, "status": "deleting" }`. The feed is hidden from discovery when accepted. Its source
+associations are then removed in bounded committed pages, followed by the feed row; HTTP 202 does
+not mean physical deletion has finished. A feed referenced by retained admin import history
+returns HTTP 409 before deletion is accepted. Detail reads may remain available during cleanup;
+`GET /api/v1/rss-feeds/:id` is not a deletion-progress endpoint or a completion signal.
+The web source manager reports that deletion has started. The staff RSS deletion row in
+`client-feature-parity.json` records the web behavior and the native gaps. Native adoption is
+tracked by [clients #521](https://github.com/vouchington/vouchington-clients/issues/521); this change
+does not claim native UI coverage. There is no MCP feed-delete tool. Completed user feed-import results keep their successful status
+after the feed is removed, with no linked feed ID in the result.
 
 ## Community moderation MCP handoff
 
@@ -216,3 +288,48 @@ route proof after generating the generic proof so its monotonic device counter r
 browser-challenge follow-up remains
 [vouchington-clients#486](https://github.com/vouchington/vouchington-clients/issues/486), with the
 producer landing first.
+
+## Browser session refresh
+
+Browser credentials use cookies, stable browser-family/platform binding, and optional trusted
+Cloudflare fingerprint binding. Renewal rotates the device credential while retaining its original
+expiry; replay requires signing in again. Only verified App Attest devices receive native session
+lifetimes. Swift and .NET retain JSON transport and must coordinate refresh across callers and
+recover through login when renewal fails. Native adoption is tracked in
+[vouchington-clients#487](https://github.com/vouchington/vouchington-clients/issues/487).
+The producer lands first. Device-bound session proof is a separate browser capability.
+
+## Device-bound browser sessions
+
+Web credential completion can advertise browser-managed DBSC registration on the configured HTTPS
+site. Capable browsers prove possession of their registered key when renewing the access cookie;
+bound sessions cannot use ordinary device-cookie renewal. Unsupported browsers retain unbound web
+sessions. Swift and .NET do not implement this browser protocol and keep their native token and
+attestation flows. Registration and renewal responses follow the external DBSC wire format.
+
+## Email verification codes
+
+Email sign-in and account email verification use the shared base32 code contract. Reauthentication
+codes are restricted to their requested flow, and requesting a replacement invalidates the older
+unused code for that same flow. Email reauthentication stays in the browser or device session that
+requested it; replacing one session’s challenge does not interrupt another session’s challenge.
+Web login links prefill the code and require deliberate submission.
+Swift and .NET OTP input, validation and deep-link presentation must adopt the producer contract;
+client implementation is dependent work and the producer lands first.
+
+## Fresh authentication for account settings
+
+Web prompts for fresh authentication before email-address changes, passkey or TOTP enrollment and
+removal, and provider connection changes, including Bluesky. The server consumes a separate proof for each mutation,
+revokes other sessions, and notifies the primary address captured before the change. Broker
+connections carry the proof at authorization initiation. An administrator must complete MFA in the
+current session before using staff authority; enrollment alone does not elevate that session.
+Fresh proof belongs to the requesting device and session. Users can prove control with their current
+primary email, authenticator, a selected owned passkey, or a fresh roundtrip through an already
+linked provider. Provider and passkey settings proofs do not add MFA assurance to that session.
+
+Swift and .NET must carry the fresh proof through the same settings actions and handle
+`MFA_REAUTH_REQUIRED` by prompting again. Native adoption requires the same provider and passkey proof options and recovery behavior.
+The producer lands first; existing native settings calls
+without a proof are rejected. Shared email request fixtures include the carrier, and native
+behavioral coverage must exercise successful changes, missing proofs, and revoked sessions.

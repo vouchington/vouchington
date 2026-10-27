@@ -14,7 +14,7 @@
 
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import {
   createTestUser,
@@ -162,7 +162,7 @@ test.describe('site moderator — /user/:id/admin access denied', () => {
 })
 
 test.describe('admin positive controls', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin sees the staff reports page heading', async ({ page }) => {
     await navigateTo(page, clusterReportsUrl)

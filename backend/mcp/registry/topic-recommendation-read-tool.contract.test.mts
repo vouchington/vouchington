@@ -17,7 +17,6 @@ import {
   rejectTopicRecommendation,
   type TopicRecommendationPost,
 } from '@services/topic-recommendations'
-import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
 import { projectPublicTopicRecommendation } from '@services/topic-recommendations/public-projection'
 
@@ -70,12 +69,11 @@ describe('list_my_topic_recommendations contract — real DB', () => {
     const [user, otherUser, admin] = await Promise.all([
       createTestUser(),
       createTestUser(),
-      createTestUser(),
+      createTestUser({ administrator: true }),
     ])
     ownerUser = user
     owner = asCaller(user, 'plus')
     stranger = asCaller(otherUser, 'plus')
-    await addUserRole(admin.id, 'administrator')
     reviewer = (await getPrivateUserByAny(admin.id, { readOnly: false }))!
     // One at a time: the ids break the tie between recommendations that have no votes.
     pending = await submit(owner)

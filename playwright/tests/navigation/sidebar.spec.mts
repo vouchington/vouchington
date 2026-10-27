@@ -1,7 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { loginAsTestUser } from '../../helpers/auth.mts'
+import { loginAsAdmin, loginAsTestUser } from '../../helpers/auth.mts'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 }
 
@@ -221,6 +221,7 @@ test.describe('Sidebar section order', () => {
 
   test('admin: intent switcher includes Growth, Moderation, and Engineering', async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT)
+    await loginAsAdmin(page)
     await navigateTo(page, '/')
 
     // Open the intent switcher in the navbar (there are two triggers; scope to nav)

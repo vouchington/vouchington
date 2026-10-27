@@ -12,7 +12,6 @@ export async function runPostFeedShareScenarios(): Promise<void> {
       expectations: [{ kind: 'custom', name: 'postShareTargets' }],
       crossPartition: { posts: 'The feed ranks direct posts across id ranges.' },
     })
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed disabled-feed EXPLAIN scenarios pair captures around bounded ANALYZE
     await runAndCapture(`post-feed-shares-disabled-${feedType}`, async () => {
       const page = await getPostFeedIds(heavyFollowUser as PrivateUser, {
         feed_type: feedType,

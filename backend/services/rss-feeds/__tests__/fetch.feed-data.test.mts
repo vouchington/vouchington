@@ -77,7 +77,7 @@ describe('fetch.feed-data', () => {
     expect(secondResult).toEqual([])
     const itemsAfter = await searchRssFeedItems({ rss_feed_ids: [feed.id], limit: 10 })
     expect(itemsAfter.results.length).toBe(firstCount)
-  }, 30_000)
+  })
 
   it('fetchRssFeed backfills chapter metadata when a conditional fetch returns 304', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -151,7 +151,7 @@ describe('fetch.feed-data', () => {
     expect(updatedItem).not.toBeNull()
     expect(updatedItem!.data.chapters_url).toBe(chaptersUrl)
     expect(updatedItem!.data.chapters_type).toBe('application/json+chapters')
-  }, 30_000)
+  })
 
   it('getLatestRssFeedCrawlForFeedWithOptions returns feed_data_sha256 after fetch', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -176,7 +176,7 @@ describe('fetch.feed-data', () => {
     const after = await getLatestRssFeedCrawlForFeedWithOptions(feed.id, { includeFeedData: true })
     expect(after).not.toBeNull()
     expect(Buffer.isBuffer(after!.feed_data_sha256)).toBe(true)
-  }, 30_000)
+  })
 
   it('fetchRssFeed dedupe still skips upsert after a 304 crawl', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -225,7 +225,7 @@ describe('fetch.feed-data', () => {
 
     const itemsAfter = await searchRssFeedItems({ rss_feed_ids: [feed.id], limit: 10 })
     expect(itemsAfter.results.length).toBe(firstCount)
-  }, 30_000)
+  })
 
   it('fetchRssFeed does not clear etag and last_modified_at when response headers are missing', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -260,7 +260,7 @@ describe('fetch.feed-data', () => {
     const updatedFeed = await getRssFeedById(feed.id)
     expect(updatedFeed!.etag).toBe('"seed-etag"')
     expect(updatedFeed!.last_modified_at).toEqual(new Date('2024-01-01T00:00:00.000Z'))
-  }, 30_000)
+  })
 
   it('fetchRssFeed ignores invalid and pre-1970 Last-Modified headers', async () => {
     const random = Math.random().toString(36).slice(2, 15)
@@ -296,5 +296,5 @@ describe('fetch.feed-data', () => {
     const updatedFeed = await getRssFeedById(feed.id)
     expect(updatedFeed!.etag).toBe('"new-etag"')
     expect(updatedFeed!.last_modified_at).toEqual(seedLastModifiedAt)
-  }, 30_000)
+  })
 })

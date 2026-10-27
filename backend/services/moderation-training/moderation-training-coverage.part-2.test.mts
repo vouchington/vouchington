@@ -4,7 +4,6 @@ import {
   createRandomString,
   createTestAgent,
   getTestPostClearanceState,
-  getTestPostPublicationDirtyWorkForScope,
   createTestUser,
   getPostLLMModerations,
   insertTestAgentModeration,
@@ -176,9 +175,6 @@ describe('moderation-training feedback coverage', () => {
       is_flagged_by_openai_omni_moderation: true,
       spam_detection_flagged: true,
     })
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: multiFalsePostId }),
-    ).resolves.toMatchObject({ post_identity_id: multiFalsePostId })
     const afterReinstatedFalsePositive = await searchRecentAutomodActions(community.id, {
       sourceType: 'openai_omni',
     })
@@ -257,9 +253,6 @@ describe('moderation-training feedback coverage', () => {
       action: 'keep_removed',
       note: 'Correct removal.',
     })
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: inReviewPostId }),
-    ).resolves.toMatchObject({ post_identity_id: inReviewPostId })
     const moderatorActions = await searchModeratorActions({
       communityId: community.id,
       actorId: owner.id,

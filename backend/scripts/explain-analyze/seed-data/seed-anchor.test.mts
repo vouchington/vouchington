@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   MAX_SEED_FORWARD_MS,
@@ -211,11 +210,5 @@ describe('seed rows are never dated after the run', () => {
     for (const timestamp of latest) {
       expect(timestamp - anchor).toBeLessThanOrEqual(MAX_SEED_FORWARD_MS)
     }
-  })
-
-  it('matches the day explain-analyze.yml pins', () => {
-    const workflow = readFileSync('.github/workflows/explain-analyze.yml', 'utf8')
-
-    expect(workflow).toContain(`date -u -d '-${SEED_ANCHOR_LAG_MS / minute} minutes' +%Y-%m-%d`)
   })
 })

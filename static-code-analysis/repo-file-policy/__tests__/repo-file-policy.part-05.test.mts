@@ -5,7 +5,7 @@ import { setupRepoFilePolicyTest } from '../../test-helpers/repo-file-policy-fix
 describe('repo-file-policy', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()
 
-  it('rejects writes to derived lifecycle status columns', { timeout: 10_000 }, async () => {
+  it('rejects writes to derived lifecycle status columns', async () => {
     const dir = await makeRepo()
     const statusColumn = 'status'
     await track(
@@ -25,7 +25,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('rejects inserts into derived lifecycle status columns', { timeout: 10_000 }, async () => {
+  it('rejects inserts into derived lifecycle status columns', async () => {
     const dir = await makeRepo()
     const statusColumn = 'status'
     await track(
@@ -45,22 +45,18 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it(
-    'allows explicit topic type routes without [topicType] segment',
-    { timeout: 10_000 },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        'web/app/(topics)/card/[id]/page.tsx',
-        'export default function Page() { return null }\n',
-      )
+  it('allows explicit topic type routes without [topicType] segment', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      'web/app/(topics)/card/[id]/page.tsx',
+      'export default function Page() { return null }\n',
+    )
 
-      await expect(run(dir)).resolves.toMatchObject({
-        stdout: expect.stringContaining('pass'),
-      })
-    },
-  )
+    await expect(run(dir)).resolves.toMatchObject({
+      stdout: expect.stringContaining('pass'),
+    })
+  })
 
   it('allows still-canonical admin operations URLs', async () => {
     const dir = await makeRepo()

@@ -95,6 +95,14 @@
       "entry": ["**/*.mts"],
     },
     "backend/scripts": {
+      "entry": [
+        "generate-mcp-catalog.mts",
+        "explain-analyze/seed.mts",
+        "explain-analyze/run.mts",
+        "explain-analyze/analyze.mts",
+        "explain-analyze/dump.mts",
+        "prepare-husky.mts",
+      ],
       "project": ["**/*.mts"],
       "includeEntryExports": true,
     },
@@ -186,7 +194,15 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
     },
+    "backend/modules/on-error": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
     "backend/modules/pagination": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
+    "backend/modules/rss-feed-cover-art": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": false,
     },

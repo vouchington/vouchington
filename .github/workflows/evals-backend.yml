@@ -1,0 +1,164 @@
+name: Backend Evals
+
+# Model-quality regression sets that call live providers once per fixture. They run only when
+# dispatched by hand: the credentialed smoke tests in `tests-backend-credentialed.yml` prove the
+# provider calls work on every run, and an eval would spend a call per fixture on each of them.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  NODE_ENV: test
+
+jobs:
+  prepare-postgres:
+    uses: ./.github/workflows/prepare-postgres.yml
+    permissions:
+      actions: read
+      contents: read
+
+  backend-evals:
+    needs: [prepare-postgres]
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITEST_MAX_WORKERS: '3'
+      VITEST_DIAGNOSTICS: ${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}
+
+    services:
+      postgres:
+        image: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_INITDB_ARGS: '-c max_connections=300 -c log_min_messages=log'
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 30s
+          --health-start-interval 1s
+          --tmpfs /var/lib/postgresql:rw,size=1g
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 1
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
+      - uses: ./.github/actions/setup-backend
+        id: setup-backend
+        timeout-minutes: 6
+      - name: Set service ports
+        timeout-minutes: 1
+        run: |
+          echo "DATABASE_URL=postgres://postgres@localhost:${{ job.services.postgres.ports['5432'] }}/postgres" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 2
+        with:
+          name: backend-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Restore prepared PostgreSQL database
+        id: restore-database
+        timeout-minutes: 3
+        run: |
+          docker run --rm --network host -i \
+            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
+            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
+            < "$RUNNER_TEMP/backend-postgres.dump"
+      - name: Run OpenRouter evals
+        id: openrouter-evals
+        env:
+          GIT_COMMIT: ${{ github.sha }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CI_PROJECT: backend-evals
+          VITEST_CI_REPORTERS: run
+          VITEST_JUNIT_OUTPUT_FILE: backend-evals-openrouter-report.junit.xml
+          VITEST_COVERAGE_ENABLED: 'false'
+        run: |
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-evals-openrouter
+        timeout-minutes: 4
+      - name: Upload OpenRouter evals JUnit report
+        if: ${{ !cancelled() && steps.openrouter-evals.outcome != 'skipped' }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: backend-evals-openrouter-junit
+          path: backend-evals-openrouter-report.junit.xml
+          retention-days: 1
+          if-no-files-found: warn
+      - name: Mint Anthropic federation token
+        id: anthropic-token
+        # One exchange per job, never per Vitest worker: GitHub's OIDC token is single-use and the
+        # minted token outlasts the Anthropic eval step. It runs whatever the OpenRouter evals did,
+        # so a failing provider cannot hide the other one's results.
+        if: ${{ !cancelled() && steps.restore-database.outcome == 'success' }}
+        timeout-minutes: 1
+        env:
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
+        run: |
+          set -euo pipefail
+          oidc_response=$(curl -sS --fail-with-body \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://api.anthropic.com")
+          oidc_token=$(jq -er .value <<<"$oidc_response")
+          echo "::add-mask::${oidc_token}"
+          exchange_body=$(jq -n \
+            --arg assertion "$oidc_token" \
+            --arg federation_rule_id "$ANTHROPIC_FEDERATION_RULE_ID" \
+            --arg organization_id "$ANTHROPIC_ORGANIZATION_ID" \
+            --arg service_account_id "$ANTHROPIC_SERVICE_ACCOUNT_ID" \
+            --arg workspace_id "$ANTHROPIC_WORKSPACE_ID" \
+            '{grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", $assertion, $federation_rule_id, $organization_id, $service_account_id, $workspace_id}')
+          # integrity-check: skip reason=authenticated-token-exchange-not-an-artifact-download
+          exchange_response=$(curl -sS --fail-with-body https://api.anthropic.com/v1/oauth/token \
+            -H 'content-type: application/json' -d "$exchange_body")
+          access_token=$(jq -er .access_token <<<"$exchange_response")
+          echo "::add-mask::${access_token}"
+          echo "ANTHROPIC_AUTH_TOKEN=${access_token}" >> "$GITHUB_ENV"
+      - name: Run Anthropic evals
+        id: anthropic-evals
+        if: ${{ !cancelled() && steps.anthropic-token.outcome == 'success' }}
+        env:
+          GIT_COMMIT: ${{ github.sha }}
+          CI_PROJECT: backend-evals
+          VITEST_CI_REPORTERS: run
+          VITEST_JUNIT_OUTPUT_FILE: backend-evals-anthropic-report.junit.xml
+          VITEST_COVERAGE_ENABLED: 'false'
+        run: |
+          pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-evals-anthropic
+        timeout-minutes: 4
+      - name: Upload Anthropic evals JUnit report
+        if: ${{ !cancelled() && steps.anthropic-evals.outcome != 'skipped' }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: backend-evals-anthropic-junit
+          path: backend-evals-anthropic-report.junit.xml
+          retention-days: 1
+          if-no-files-found: warn
+      - if: failure()
+        uses: ./.github/actions/valkey-logs
+        timeout-minutes: 1

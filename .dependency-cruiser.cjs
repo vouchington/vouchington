@@ -16,7 +16,7 @@ module.exports = {
       from: { pathNot: '^(vitest\\.config|test-helpers/vitest-config/|cloudflare-worker/)' },
       to: {
         couldNotResolve: true,
-        pathNot: '^(@typescript-eslint/parser|coverage-check)$',
+        pathNot: '^coverage-check$',
       },
     },
     {

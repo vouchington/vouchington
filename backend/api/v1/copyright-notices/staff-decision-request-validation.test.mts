@@ -69,7 +69,7 @@ describe('copyright staff decision request contracts', () => {
       await member.authenticateAs(await createTestUser())
       for (const url of urls()) {
         const anonymous = await createRequest().post(url).send({ injected: true }).expect(401)
-        expect(anonymous.text).not.toMatch(/schema|must be|required|invalid/i)
+        expect(anonymous.body.message).not.toMatch(/schema|must be|required|invalid/i)
         await member.post(url).send({ injected: true }).expect(403)
       }
     })

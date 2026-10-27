@@ -30,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_community_bans__user
 CREATE INDEX IF NOT EXISTS idx_community_bans__case_id
   ON community_bans (case_id);
 
-COMMENT ON TABLE community_bans IS 'Tracks community-scoped bans. A ban prevents the user from joining, posting, or commenting in the community. NULL lifted_at means the ban is active; NULL expires_at means permanent.';
+COMMENT ON TABLE community_bans IS 'Community-scoped bans. Active bans remain; lifted or expired bans are deleted after 12 months once linked appeals have expired.';
 COMMENT ON COLUMN community_bans.community_id IS 'The community this ban applies to.';
 COMMENT ON COLUMN community_bans.user_id IS 'The banned user.';
 COMMENT ON COLUMN community_bans.banned_by_id IS 'Moderator or owner who issued the ban.';

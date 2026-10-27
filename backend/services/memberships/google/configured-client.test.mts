@@ -1,4 +1,4 @@
-import { createHash, generateKeyPairSync, verify } from 'node:crypto'
+import { createHash, generateKeyPairSync, randomUUID, verify } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as httpDispatchers from '../../../modules/utils/http.mts'
 import {
@@ -39,6 +39,24 @@ describe('configured Google Play client', () => {
     )
     vi.stubEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY', privateKeyPem.replaceAll('\n', '\\n'))
     expect(() => createConfiguredGooglePlaySubscriptionsV2Client()).not.toThrow()
+  })
+
+  it('preserves a provider throttle wait for the verification lane', async () => {
+    const email = `tests+${randomUUID()}@voucha.ai`
+    configure(
+      async input =>
+        stringFromUnknown(input).endsWith('/token')
+          ? Response.json({ access_token: 'synthetic-token', expires_in: 3600 })
+          : new Response(null, { status: 429, headers: { 'retry-after': '120' } }),
+      email,
+    )
+    const client = createConfiguredGooglePlaySubscriptionsV2Client()
+    await expect(
+      client.getSubscription({ packageName: 'ai.voucha.test', purchaseToken: 'synthetic' }),
+    ).rejects.toMatchObject({
+      name: 'RateLimitError',
+      cause: { status: 429, retryAfterMs: 120000 },
+    })
   })
 
   it('signs a scoped OAuth assertion, fetches and acknowledges encoded purchases, and caches the token', async () => {
@@ -130,7 +148,7 @@ describe('configured Google Play client', () => {
     const failedApi = createConfiguredGooglePlaySubscriptionsV2Client()
     await expect(
       failedApi.getSubscription({ packageName: 'ai.voucha', purchaseToken: 'purchase' }),
-    ).rejects.toThrow('Google Play subscriptionsv2 fetch failed with 429')
+    ).rejects.toMatchObject({ name: 'RateLimitError', cause: { status: 429 } })
     vi.restoreAllMocks()
     const invalidApiFetch = vi.fn<ExternalFetch>(async input =>
       stringFromUnknown(input).endsWith('/token')

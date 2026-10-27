@@ -13,6 +13,7 @@ export async function updateTopicName(topicId: string, name: string): Promise<vo
 }
 
 export async function insertTestTopic(data: {
+  id?: string
   name: string
   slug: string
   createdById: string
@@ -31,8 +32,8 @@ export async function insertTestTopic(data: {
   const hostnameId = data.hostnameId === undefined ? null : data.hostnameId
   const aliases = data.aliases ?? []
   const { rows } = await write(sql`/* insertTestTopic */
-    INSERT INTO topics (name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews, hostname_id, bedrock_nova_multimodal_v1_content_sha256, aliases, created_via, created_via_oauth_client_id)
-    VALUES (${data.name}, ${data.slug}, ${data.createdById}, ${topicType}, ${noindex}, ${allowReviews}, ${hostnameId}, ${embeddingSha256}, ${aliases}, ${data.provenance?.createdVia ?? 'system'}, ${data.provenance?.oauthClientId ?? null})
+    INSERT INTO topics (id, name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews, hostname_id, bedrock_nova_multimodal_v1_content_sha256, aliases, created_via, created_via_oauth_client_id)
+    VALUES (COALESCE(${data.id ?? null}::uuid, uuidv7()), ${data.name}, ${data.slug}, ${data.createdById}, ${topicType}, ${noindex}, ${allowReviews}, ${hostnameId}, ${embeddingSha256}, ${aliases}, ${data.provenance?.createdVia ?? 'system'}, ${data.provenance?.oauthClientId ?? null})
     RETURNING id
   `)
   const topicId = rows[0].id

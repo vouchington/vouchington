@@ -3,13 +3,10 @@ import app from '../../app.mts'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import {
   listActiveUserSessions,
-  registerAuthenticatedSession,
   revokeAllAuthenticatedSessions,
   revokeAuthenticatedSession,
 } from '@services/jwt-session'
-import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import { assertNotSuspended } from '@services/users/suspension'
-import { getDeviceContext } from './device-context.mts'
 import type { Context } from '@jongleberry/api-server'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
@@ -30,8 +27,7 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
   const sessionData = await ctx.getSessionTokenData()
   ctx.assert(sessionData, 401, 'Session data not found')
 
-  // The parser keeps its 400 and limit clamping; the contract then validates the values it settled
-  // on. All of it runs before `registerAuthenticatedSession` so a rejected query repairs nothing.
+  // The parser keeps its 400 and limit clamping; the contract validates the settled values.
   const options = parseRuntimePagination(sessionsParser, ctx.query)
   const query = prepareQueryForValidation(ctx.query, sessionsParser.queryContract)
   if (ctx.query.limit !== undefined) query.limit = options.limit
@@ -40,22 +36,6 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
   const after = options.after
     ? decodeScopedPreciseTimestampCursor(options.after, scope, 'Invalid cursor format')
     : undefined
-
-  const deviceClass = 'dc' in sessionData ? sessionData.dc : undefined
-  const expiresAt =
-    'exp' in sessionData && sessionData.exp ? new Date(sessionData.exp * 1000) : undefined
-
-  if (isUUIDv7(sessionData.did) && isUUIDv7(sessionData.sid)) {
-    await registerAuthenticatedSession({
-      did: sessionData.did,
-      sid: sessionData.sid,
-      uid: currentUser.id,
-      deviceClass,
-      deviceContext: getDeviceContext(ctx),
-      expiresAt,
-      refreshMetadata: false,
-    })
-  }
 
   const { results, hasNextPage } = await listActiveUserSessions(currentUser.id, sessionData.sid, {
     limit: options.limit,

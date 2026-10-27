@@ -1,10 +1,10 @@
+import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
 import { voteAggregation as electionsQueue } from '../queues/vote-aggregation/queues.mts'
 import type { ElectionJobInput } from '../queues/vote-aggregation/enqueues/types-elections.mts'
 import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { promoteDelayedJobs } from './queue-jobs.mts'
 
 export const JOB_NAME = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
-const PROMOTE_INTERVAL_MS = 25
 
 export type ElectionJob = {
   id?: string
@@ -50,18 +50,29 @@ export async function findSettledElectionJobs(
   return { completed: completed.filter(matches), failed: failed.filter(matches) }
 }
 
-/**
- * Releases this election's recompute as soon as it exists, and returns the function that stops
- * that. The recompute is debounced by `ELECTIONS_DEFAULTS.recomputeDelayMs`, which `glide-mq`
- * 0.16's test queue honors with a real timer, and the enqueue is fire-and-forget so the job may
- * not exist yet when a test starts waiting: the interval re-checks until the caller stops it.
- */
-export function startPromotingElectionJobs(target: ElectionJobInput): () => void {
-  const timer = setInterval(() => {
-    promoteDelayedJobs(electionsQueue, {
+/** Promote existing and newly admitted owned jobs in response to queue admission. */
+export function startPromotingElectionJobs(
+  target: ElectionJobInput,
+  onError: (error: unknown) => void,
+): () => void {
+  const queue = getOrCreateQueue(electionsQueue.name)
+  const promote = () => {
+    void promoteDelayedJobs(electionsQueue, {
       name: JOB_NAME,
-      data: { electionId: target.electionId },
-    }).catch(() => undefined)
-  }, PROMOTE_INTERVAL_MS)
-  return () => clearInterval(timer)
+      data: {
+        electionId: target.electionId,
+        orderingKey: target.orderingKey,
+        ...(target.relationTable ? { relationTable: target.relationTable } : {}),
+      },
+    }).catch(onError)
+  }
+  const onAdded = (job: ElectionJob) => {
+    if (matchesElectionJob(job, target)) promote()
+  }
+  // Subscribe before the scan, so admission during that scan cannot be missed.
+  queue.on('added', onAdded)
+  promote()
+  return () => {
+    queue.off('added', onAdded)
+  }
 }

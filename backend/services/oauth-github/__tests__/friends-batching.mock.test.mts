@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   acquireTestFriendRowLock,
   connectTestOAuthAccount,
@@ -13,6 +13,8 @@ import {
   setTestOAuthAccountAccessToken,
   softDeleteUser,
 } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { oauthGithubWorkConfig } from '../work-limits.mts'
 import { syncGithubFriends } from '../friends.mts'
 import { finalizeGithubFriendSync } from '../friends-persistence.mts'
 
@@ -62,6 +64,9 @@ describe('syncGithubFriends batching', () => {
 
   it('commits each bounded stale-row cleanup page separately', async () => {
     const { accountId, providerUserId, userId } = await createGithubSyncAccount()
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(oauthGithubWorkConfig, { friend_mutation_batch_size: 3 }),
+    )
     const friendIds = makeFriendIds('github-stale')
     await insertTestFriends('github', providerUserId, friendIds)
     const rowLock = await acquireTestFriendRowLock('github', providerUserId, friendIds.at(-1)!)
@@ -118,7 +123,7 @@ function randomGithubId(offset: number): number {
 function makeFriendIds(prefix: string): string[] {
   const suffix = createRandomString(10)
   return Array.from(
-    { length: 1001 },
+    { length: 4 },
     (_, index) => `${prefix}-${suffix}-${String(index).padStart(4, '0')}`,
   )
 }

@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   categoryInheritedOffNativeReactCompilerRules,
-  forbiddenReactHookSuppressions,
   recommendedNativeReactCompilerRules,
 } from './react-hooks-suppression-policy.mts'
 
@@ -78,24 +77,5 @@ describe('React hook lint configuration', () => {
       expect(root.rules[rule]).toBe('error')
       expect(reactRules).not.toHaveProperty(rule)
     }
-  })
-
-  it('detects native and legacy hook suppressions without flagging unrelated comments', () => {
-    expect(
-      forbiddenReactHookSuppressions(
-        [
-          '// oxlint-disable react/purity',
-          '// eslint-disable react/react-compiler',
-          '// oxlint-disable react-hooks-js/rules-of-hooks',
-        ].join('\n'),
-      ),
-    ).toEqual([
-      'oxlint-disable react/purity',
-      'eslint-disable react/react-compiler',
-      'oxlint-disable react-hooks-js/',
-    ])
-    expect(forbiddenReactHookSuppressions('// oxlint-disable typescript/no-explicit-any')).toEqual(
-      [],
-    )
   })
 })

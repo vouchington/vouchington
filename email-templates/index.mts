@@ -1,3 +1,4 @@
+import TemplateReauthentication from './reauthentication.tsx'
 import TemplateCommunityApplicationDecision from './community-application-decision.tsx'
 import TemplateCommunityInvite from './community-invite.tsx'
 import TemplateCommunityModerationSummary from './community-moderation-summary.tsx'
@@ -36,6 +37,7 @@ export type {
   CommunityRoleChangeEmailProps,
   DataExportReadyEmailProps,
   EmailVerificationEmailProps,
+  ReauthenticationEmailProps,
   FollowNewsSourcesEmailProps,
   FollowTopicsEmailProps,
   LoginTokenEmailProps,
@@ -43,3 +45,5 @@ export type {
   RenewalPriceIncreaseEmailProps,
   WelcomeEmailProps,
 } from './types.mts'
+
+export const renderReauthenticationEmail = TemplateReauthentication.render

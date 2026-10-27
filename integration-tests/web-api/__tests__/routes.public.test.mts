@@ -57,7 +57,7 @@ describe('routes — public and direct', () => {
       url: `https://${hostname}/path`,
       hostnameId,
     })
-  }, 15_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -74,7 +74,7 @@ describe('routes — public and direct', () => {
     } else {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
     }
-  }, 15_000)
+  })
 
   describe('web server API public routes', () => {
     it('getTopic resolves the created topic', async () => {

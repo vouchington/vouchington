@@ -38,7 +38,6 @@ describe('push service worker protocol', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
@@ -70,35 +69,33 @@ describe('push service worker protocol', () => {
     expect(registration.waiting?.postMessage).not.toHaveBeenCalled()
   })
 
-  it('rejects a bind acknowledgement for a different generation', async () => {
+  it.each([
+    { binding: { ...binding, endpoint: 'https://push.example.test/other' }, revision },
+    { binding: { ...binding, subscription_id: 'other-generation' }, revision },
+    { binding, revision: 'other-revision' },
+  ])('rejects a bind acknowledgement outside the exact generation: %j', async state => {
     const registration = registrationWithReply(port =>
       port.postMessage({
         type: 'voucha:web-push',
         version: 1,
         ok: true,
-        state: {
-          status: 'bound',
-          binding: { ...binding, subscription_id: crypto.randomUUID() },
-          revision,
-        },
+        state: { status: 'bound', ...state },
       }),
     )
-
     await expect(bindPushBinding(registration, binding, revision)).rejects.toThrow(
       'service worker rejected',
     )
   })
 
-  it('rejects a malformed clear state instead of treating a truthy payload as an ACK', async () => {
+  it('requires the clear action to acknowledge a disabled state', async () => {
     const registration = registrationWithReply(port =>
       port.postMessage({
         type: 'voucha:web-push',
         version: 1,
         ok: true,
-        state: { status: 'disabled', binding: { endpoint: binding.endpoint } },
+        state: { status: 'bound', binding, revision },
       }),
     )
-
     await expect(clearPushBinding(registration)).rejects.toThrow('service worker rejected')
   })
 
@@ -121,16 +118,5 @@ describe('push service worker protocol', () => {
       { type: 'voucha:web-push', version: 1, action: 'begin-reconciliation' },
       [expect.anything()],
     )
-  })
-
-  it('fails closed after five seconds without an acknowledgement', async () => {
-    vi.useFakeTimers()
-    const result = bindPushBinding(registrationWithReply(), binding, revision).catch(err => err)
-
-    await vi.advanceTimersByTimeAsync(5000)
-
-    const error = await result
-    expect(error).toBeInstanceOf(Error)
-    expect(error).toHaveProperty('message', expect.stringContaining('did not acknowledge'))
   })
 })

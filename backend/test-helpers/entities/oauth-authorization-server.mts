@@ -180,3 +180,16 @@ export async function clientSecretMatchesStoredHash(
   const stored = await getTestOAuthClientStorage(clientId)
   return stored?.client_secret_hash === hashToken(OAUTH_SECRET_PURPOSES.clientSecret, rawSecret)
 }
+
+export async function getTestOAuthGrantMfaVerifiedAt(
+  userId: string,
+  clientId: string,
+): Promise<Date | null> {
+  const { rows } = await read<{ mfa_verified_at: Date | null }>(
+    `/* getTestOAuthGrantMfaVerifiedAt */
+    SELECT g.mfa_verified_at FROM oauth_grants g JOIN oauth_clients c ON c.id = g.client_id
+    WHERE g.user_id = $1 AND c.client_id = $2 AND g.revoked_at IS NULL LIMIT 1`,
+    [userId, clientId],
+  )
+  return rows[0]?.mfa_verified_at ?? null
+}

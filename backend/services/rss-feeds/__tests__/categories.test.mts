@@ -6,6 +6,7 @@ import {
 } from '@voucha/test-helpers/postgres-lock-wait'
 import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { hardDeleteRssFeedById } from '../delete.mts'
 import {
   upsertRssFeedCategories,
   getRssFeedCategories,
@@ -22,6 +23,19 @@ describe('rss-feed categories', () => {
   }, 5_000)
 
   describe('upsertRssFeedCategories', () => {
+    it('rejects category writes after a bounded feed delete starts', async () => {
+      const feed = await createTestRssFeed({})
+      await upsertRssFeedCategories(feed.id, ['Before delete'])
+      await hardDeleteRssFeedById(feed.id)
+
+      await expect(upsertRssFeedCategories(feed.id, ['After delete'])).rejects.toMatchObject({
+        status: 409,
+      })
+      expect((await getRssFeedCategories(feed.id)).map(row => row.category_text)).toEqual([
+        'before delete',
+      ])
+    })
+
     it('inserts normalized category rows for a feed', async () => {
       await upsertRssFeedCategories(rssFeedId, ['Business', 'News'])
 

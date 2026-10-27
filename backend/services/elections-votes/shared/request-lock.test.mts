@@ -11,8 +11,10 @@ import { withElectionVoteRequestLock } from './request-lock.mts'
 
 describe('withElectionVoteRequestLock', () => {
   it('lets many distinct session locks complete inner write-pool queries', async () => {
-    const { writeMax } = getPsqlPoolConfiguration()
+    const { writeMax, advisoryLockMax } = getPsqlPoolConfiguration()
     const requestPrefix = randomUUID()
+    const advisoryPoolOccupied = Promise.withResolvers<void>()
+    let acquiredLocks = 0
 
     const values = await within(
       Promise.all(
@@ -22,9 +24,9 @@ describe('withElectionVoteRequestLock', () => {
             `${requestPrefix}-user-${index}`,
             `${requestPrefix}-post-${index}`,
             async () => {
-              // Give concurrent lock acquisitions a chance to fill their session pool before
-              // exercising the handler's separate write-pool query.
-              await new Promise<void>(resolve => setImmediate(resolve))
+              acquiredLocks++
+              if (acquiredLocks === advisoryLockMax) advisoryPoolOccupied.resolve()
+              await advisoryPoolOccupied.promise
               return probeWritePool(index)
             },
           )

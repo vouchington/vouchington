@@ -53,7 +53,7 @@ describe('checkPostClearance requests a classifier run on approval', () => {
 
       const [request, ...rest] = await getClassifierRunRequestFacts(postId, classifier)
       expect(rest).toEqual([])
-      expect(request).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+      expect(request).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
       expect(request?.input_sha256.equals(await getPostClassifierPostHashForTest(postId))).toBe(
         true,
       )

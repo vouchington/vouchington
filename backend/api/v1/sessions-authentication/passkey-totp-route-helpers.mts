@@ -1,4 +1,5 @@
 import { isHttpError } from 'http-errors'
+import type { AccountChangeSession } from '@services/mfa/active-account-session'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
 import type { QueryContract } from '@vouchington/pagination'
@@ -61,17 +62,28 @@ export async function renameMfaFactor(
 export async function deleteMfaFactor(
   ctx: Context,
   operation: string,
-  deleteFactor: (userId: string, itemId: string, reAuthToken: string | undefined) => Promise<void>,
+  deleteFactor: (
+    userId: string,
+    itemId: string,
+    reAuthToken: string | undefined,
+    session: AccountChangeSession,
+  ) => Promise<void>,
 ): Promise<void> {
   const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
+  const body = await readOptionalReAuthBody(ctx)
+  validateRequestContract(ctx, operation, { body })
+  await deleteFactor(currentUser.id, id, body.re_auth_token, await ctx.getSessionTokenData())
+}
+
+/** Missing or unparseable optional bodies still reach the fresh-proof decision. */
+export async function readOptionalReAuthBody(ctx: Context): Promise<{ re_auth_token?: string }> {
   const body = ctx.request.is('json')
     ? ((await parseJsonBody(ctx, '100kb').catch(err => {
         if (isHttpError(err) && err.status === 422) throw err
         return {}
       })) as { re_auth_token?: string })
     : {}
-  validateRequestContract(ctx, operation, { body })
-  await deleteFactor(currentUser.id, id, body.re_auth_token)
+  return body
 }
 
 // Shared by the passkey and TOTP-authenticator list routes, which page through a user's own items

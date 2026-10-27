@@ -6,8 +6,13 @@ import {
   type DynamicConfigNamespace,
   type DynamicConfigNamespaceSummary,
 } from '@vouchington/dynamic-config'
-import { getChangedFields, validateDynamicConfigUpdate } from 'valkyries/dynamic-config'
+import {
+  DynamicConfigValidationError,
+  getChangedFields,
+  validateDynamicConfigUpdate,
+} from 'valkyries/dynamic-config'
 import { recordDynamicConfigChange } from '@services/dynamic-config-audit'
+import { deriveAutomaticWithholdingSince } from '@services/copyright-notices/config'
 import sql from 'sql-template-strings'
 import { currentUserCanAccessDynamicConfigNamespace } from './authorization.mts'
 import { dynamicConfigRegistry } from './registry.mts'
@@ -56,11 +61,32 @@ export async function updateDynamicConfigNamespace(
   }
 
   await entry.config.waitForInitialization()
+  if (namespace === 'copyright' && 'automaticProvisionalWithholdingSince' in changes) {
+    throw new DynamicConfigValidationError(
+      'automaticProvisionalWithholdingSince is managed by the switch',
+    )
+  }
   const previous = normalizeFields(entry, entry.config.getFields())
   const validated = validateDynamicConfigUpdate(entry, previous, changes)
   if (validated.changed) {
-    await recordDynamicConfigChange(currentUser.id, entry.namespace, previous, validated.next)
-    await entry.config.setFields(validated.changes)
+    const switchOnSince =
+      namespace === 'copyright'
+        ? deriveAutomaticWithholdingSince(
+            previous.automaticProvisionalWithholding,
+            validated.next.automaticProvisionalWithholding,
+            new Date(),
+          )
+        : undefined
+    const switchChanged = switchOnSince !== undefined
+    const next = switchChanged
+      ? { ...validated.next, automaticProvisionalWithholdingSince: switchOnSince }
+      : validated.next
+    await recordDynamicConfigChange(currentUser.id, entry.namespace, previous, next)
+    await entry.config.setFields(
+      switchChanged
+        ? { ...validated.changes, automaticProvisionalWithholdingSince: switchOnSince }
+        : validated.changes,
+    )
   }
 
   return {

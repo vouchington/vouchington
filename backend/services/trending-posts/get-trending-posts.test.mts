@@ -95,7 +95,7 @@ describe('getTrendingPosts - post type filter', () => {
 
     expect(foundReview).toBeDefined()
     expect(foundDiscussion).toBeUndefined()
-  }, 30_000)
+  })
 })
 
 describe('getTrendingPosts - min score threshold', () => {
@@ -115,7 +115,7 @@ describe('getTrendingPosts - min score threshold', () => {
 
     expect(foundHigh).toBeDefined()
     expect(foundLow).toBeUndefined()
-  }, 30_000)
+  })
 })
 
 describe('getTrendingPosts - limit clamping', () => {

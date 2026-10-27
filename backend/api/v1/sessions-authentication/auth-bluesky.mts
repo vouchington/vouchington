@@ -1,3 +1,4 @@
+import { withReauthenticatedAccountChange } from '@services/mfa/account-change'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
@@ -19,11 +20,12 @@ import {
   reportBlueskyCallbackError,
 } from './auth-bluesky-callback-helpers.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
-
+import { readOptionalReAuthBody } from './passkey-totp-route-helpers.mts'
 type BeginBlueskyLinkRequest = {
   handle: string
   callback_mode?: 'web' | 'native'
   completion_proof_challenge?: string
+  re_auth_token?: string
 }
 
 type CompleteNativeBlueskyLinkRequest = {
@@ -71,6 +73,7 @@ app.route('/api/v1/auth/bluesky/link').post(async (ctx: Context) => {
   validateRequestContract(ctx, 'POST:/api/v1/auth/bluesky/link', { body: rawBody })
   const requestBody: BeginBlueskyLinkRequest = {
     handle,
+    ...(typeof rawBody.re_auth_token === 'string' && { re_auth_token: rawBody.re_auth_token }),
     ...(rawBody.callback_mode !== undefined && { callback_mode: callbackMode }),
     ...(callbackMode === 'native' && {
       completion_proof_challenge: rawBody.completion_proof_challenge as string,
@@ -78,12 +81,12 @@ app.route('/api/v1/auth/bluesky/link').post(async (ctx: Context) => {
   }
   const body = apiRequest('POST:/api/v1/auth/bluesky/link', requestBody)
 
-  const result = await beginBlueskyAccountLink(
-    currentUser.id,
-    body.handle,
-    body.callback_mode ?? 'web',
-    body.completion_proof_challenge,
-  )
+  const result = await beginBlueskyAccountLink(currentUser.id, body.handle, {
+    session: await ctx.getSessionTokenData(),
+    reAuthToken: body.re_auth_token,
+    callbackMode: body.callback_mode ?? 'web',
+    completionProofChallenge: body.completion_proof_challenge,
+  })
   ctx.json({
     redirect_url: result.redirectUrl.toString(),
     ...(result.flowId && { flow_id: result.flowId }),
@@ -169,6 +172,7 @@ app.route('/api/v1/auth/bluesky/link-completions').post(async (ctx: Context) => 
   const body = apiRequest('POST:/api/v1/auth/bluesky/link-completions', requestBody)
   await finalizeNativeBlueskyAccountLink(
     currentUser.id,
+    await ctx.getSessionTokenData(),
     body.flow_id,
     body.completion_token,
     body.completion_proof_verifier,
@@ -184,6 +188,13 @@ app.route('/api/v1/auth/bluesky/link').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/bluesky/link')
   assertNotSuspended(currentUser)
 
-  await disconnectBlueskyAccountAndCleanupFollows(currentUser.id)
+  const body = await readOptionalReAuthBody(ctx)
+  validateRequestContract(ctx, 'DELETE:/api/v1/auth/bluesky/link', { body })
+  await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => disconnectBlueskyAccountAndCleanupFollows(currentUser.id, { query }),
+  )
   ctx.setStatus(204)
 })

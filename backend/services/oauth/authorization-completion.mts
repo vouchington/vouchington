@@ -1,5 +1,6 @@
 import { runOAuthAccountConnectionPostCommitEffects } from '@services/oauth-accounts'
 import onError from '@modules/on-error'
+import { notifyAccountSecurityChange } from '@services/mfa/account-change'
 import { createOAuthFlowResultForUser, enqueueOAuthFriendSyncBestEffort } from './flows.mts'
 import {
   getOAuthAccountName,
@@ -12,6 +13,7 @@ import type {
 } from './authorization-completion-types.mts'
 
 type OAuthAuthorizationCompletionDependencies = {
+  notifyAccountSecurityChange: typeof notifyAccountSecurityChange
   completeTransaction: typeof completeOAuthAuthorizationTransaction
   createFlowResult: typeof createOAuthFlowResultForUser
   enqueueFriendSync: typeof enqueueOAuthFriendSyncBestEffort
@@ -20,6 +22,7 @@ type OAuthAuthorizationCompletionDependencies = {
 }
 
 const defaultDependencies: OAuthAuthorizationCompletionDependencies = {
+  notifyAccountSecurityChange,
   completeTransaction: completeOAuthAuthorizationTransaction,
   createFlowResult: createOAuthFlowResultForUser,
   enqueueFriendSync: enqueueOAuthFriendSyncBestEffort,
@@ -33,8 +36,20 @@ export async function completeOAuthAuthorization(
 ): Promise<CompletedOAuthAuthorization> {
   const durableResult = await dependencies.completeTransaction(options)
   if (durableResult.kind === 'pending') return { status: 'pending' }
+  if (durableResult.kind === 'reauthenticated') {
+    return {
+      status: 'connected',
+      account: durableResult.account,
+      name: getOAuthAccountName(durableResult.account),
+    }
+  }
   if (durableResult.kind === 'connected') {
     if (durableResult.newlyCompleted) {
+      try {
+        await dependencies.notifyAccountSecurityChange(durableResult.notificationEmailAddress)
+      } catch (err) {
+        reportPostCommitError(err)
+      }
       try {
         await dependencies.runConnectionEffects(durableResult.userId)
       } catch (err) {
@@ -58,6 +73,7 @@ export async function completeOAuthAuthorization(
   const user = await dependencies.requireUser(durableResult.userId)
   const result = await dependencies.createFlowResult({
     user,
+    firstFactor: durableResult.firstFactor,
     deviceId: durableResult.deviceId,
     sessionId: options.sessionId,
     authenticatedSessionId: durableResult.sessionId,

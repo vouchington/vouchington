@@ -6,6 +6,7 @@ import {
   getCachedVerifiedDeviceToken,
   getOptionalRequestClientInfo,
   getOptionalRequestOrigin,
+  isNativeClientTransportRequest,
   runWithCredentialRequestContext,
   runWithSessionRequestContext,
 } from './index.mts'
@@ -91,5 +92,10 @@ describe('request client information context', () => {
     expect(getCachedVerifiedDeviceToken(request, 'other')).toBeUndefined()
     expect(getCachedBootstrapDeviceId(request)).toBe('bootstrap')
     expect(getCachedBootstrapDeviceId({} as IncomingMessage)).toBeUndefined()
+  })
+
+  it('does not treat malformed client headers as a native transport', () => {
+    const request = { headers: { 'x-voucha-client': 'unrecognized-client' } }
+    expect(isNativeClientTransportRequest(request)).toBe(false)
   })
 })

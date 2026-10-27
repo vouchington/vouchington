@@ -77,15 +77,29 @@ export function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqSc
     : undefined
 }
 
+/** Cost of the chosen plan's own scan nodes on `relation`, whatever scan type the planner picked. */
+function chosenRelationCost(plan: unknown, relation: string): number | undefined {
+  const scans = collectNodes(plan).filter(
+    node => node.relationName && parentRelationName(node.relationName) === relation,
+  )
+  return scans.length > 0 ? scans.reduce((sum, node) => sum + node.cost, 0) : undefined
+}
+
 /**
  * A baselined scan the planner no longer chose is a near-tie, not a fix, when forcing it back
- * costs at most SEQ_SCAN_TIE_RATIO of that scan more than the chosen plan.
+ * costs at most SEQ_SCAN_TIE_RATIO of that scan more than the chosen plan. The forced plan
+ * disables every index path, so its total also moves unrelated joins (CI run 40427732470: a
+ * 4e12 total for a statement chosen at 6e7). The scan nodes' own costs are compared as well,
+ * which keeps a 321 versus 318 `topics` choice a tie however the rest of the statement replans.
  */
 export function isStaleSeqScanNearTie(result: ProbedExplainResult, relation: string): boolean {
   const forced = result.forced_seq_scans?.[relation]
   const chosen = planTotalCost(result.plan)
   if (forced === undefined || chosen === undefined) return false
-  return forced.total_cost - chosen <= forced.scan_cost * SEQ_SCAN_TIE_RATIO
+  const limit = forced.scan_cost * SEQ_SCAN_TIE_RATIO
+  if (forced.total_cost - chosen <= limit) return true
+  const chosenScan = chosenRelationCost(result.plan, relation)
+  return chosenScan !== undefined && forced.scan_cost - chosenScan <= limit
 }
 
 export function isSeqScanNearTie(result: ProbedExplainResult): boolean {

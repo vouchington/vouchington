@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 2 # the baseline check diffs a pull request against HEAD^1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - name: Check query-profile baseline issues are open
         # Pull requests and merge groups run it only when the baseline file changes. Scheduled and
@@ -98,7 +98,31 @@ jobs:
       - run: pnpm exec syncpack lint && pnpm exec syncpack format --check
         timeout-minutes: 2
       - name: Repo Node static checks
-        run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
+        run: node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails
+        timeout-minutes: 5
+      - name: Dependency license policy
+        # The audit fetches the whole dependency store into a temporary directory (#4172). Pull
+        # requests and merge groups run it only when a dependency input changes; scheduled and
+        # manual runs always run it.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        shell: bash
+        run: |
+          if [[ "$EVENT_NAME" == pull_request || "$EVENT_NAME" == merge_group ]]; then
+            # A pull request compares its own layer (HEAD^1, the synthetic-merge parent); a merge
+            # group compares the combined base and head.
+            range=HEAD^1
+            if [[ "$EVENT_NAME" == merge_group ]]; then
+              git fetch --no-tags --depth=1 origin "$BASE_SHA"
+              range="$BASE_SHA"
+            fi
+            if git diff --quiet "$range" HEAD -- pnpm-lock.yaml pnpm-workspace.yaml static-code-analysis/dependency-license-policy; then
+              echo 'skipped: no dependency input changed'
+              exit 0
+            fi
+          fi
+          pnpm run dependency-license-policy
         timeout-minutes: 5
       - name: Check Trivy policy
         run: pnpm exec vouchington trivy-policy --cleanup-url-prefix https://github.com/vouchington/vouchington/issues/
@@ -107,7 +131,9 @@ jobs:
         run: pnpm exec vouchington docker-image-mirror --allow-registry ghcr.io/vouchington/dependency- --require-digest --allow-ref-expression '$''{{ needs.prepare.outputs.postgres_image }}'
         timeout-minutes: 2
       - name: Check live repository policies
-        run: node ci/check-repository-policy-scans.mts
+        run: |
+          pnpm exec vouchington workspace-registry-check
+          node ci/check-repository-policy-scans.mts
         timeout-minutes: 2
       - name: Check native localization resources
         run: node ci/check-live-native-resources.mts
@@ -151,7 +177,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@9296610eabc6d4cdeaea6dd5b318df7abda64acb # v0.72.3
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
       - name: Install CI tools via mise
         uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3

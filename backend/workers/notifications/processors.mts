@@ -1,6 +1,6 @@
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 import { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
-import { deleteNotification } from '@services/notifications/mutations'
+import { deleteNotification, markAllNotificationsRead } from '@services/notifications/mutations'
 import { createFollowNotification } from '@services/notifications/create-follow-notification'
 import { getFollowerInfoForNotification } from '@services/notifications/get-follower-info'
 import { createReferralSignupNotification } from '@services/notifications/create-referral-signup-notification'
@@ -26,10 +26,7 @@ type NotificationProcessorDependencies = {
   reconcileNotificationsForRssFeedItem: typeof reconcileNotificationsForRssFeedItem
 }
 
-export {
-  processCommunityActivityDigestBatch,
-  processCommunityActivityDigestDispatch,
-} from './processors/community-activity-digest.mts'
+export { processCommunityActivityDigestDispatch } from './processors/community-activity-digest.mts'
 export { processDeliverNotificationPushIntent } from './processors/push-delivery.mts'
 export { processConversationMessageNotification } from './processors/conversation.mts'
 export {
@@ -126,6 +123,10 @@ export function processDeleteNotification(data: { userId: string; notificationId
   return deleteNotification(data.userId, data.notificationId)
 }
 
+export function processMarkAllNotificationsRead(data: { userId: string; throughId: string }) {
+  return markAllNotificationsRead(data.userId, data.throughId)
+}
+
 export async function processFollowNotification(data: { followeeId: string; followerId: string }) {
   const follower = await getFollowerInfoForNotification(data.followerId)
   if (!follower) return
@@ -156,13 +157,7 @@ export async function processReferralSignupNotification(data: {
   await dispatchCreatedNotificationPushes(createdNotifications)
 }
 
-export async function processReferralClickNotification(data: {
-  referrerId: string
-  landingUrl: string
-}) {
-  const createdNotifications = await createReferralClickNotification(
-    data.referrerId,
-    data.landingUrl,
-  )
+export async function processReferralClickNotification(data: { referrerId: string }) {
+  const createdNotifications = await createReferralClickNotification(data.referrerId)
   await dispatchCreatedNotificationPushes(createdNotifications)
 }

@@ -1,5 +1,6 @@
 export const REGISTRY_ORDER = [
   'paged-dispatch-work-config',
+  'membership-verification-queue-config',
   'feature-flags',
   'membership-billing',
   'request-client-info',
@@ -22,6 +23,7 @@ export const REGISTRY_ORDER = [
   'user-import-export-config',
   'data-retention-config',
   'psql-queue-config',
+  'psql-moderation-retention-config',
   'list-import-config',
   'articles-work-config',
   'pagination-config',
@@ -71,6 +73,7 @@ export const REGISTRY_ORDER = [
   'oauth-x-work-config',
   'ses-inbound-work-config',
   'background-queue-config',
+  'psql-queue-config',
   'background-cpu-queue-config',
   'crawl-dispatch-work-config',
   'crawler-refresh-work-config',

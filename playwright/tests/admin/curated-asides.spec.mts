@@ -5,7 +5,7 @@ import {
 } from '../../../backend/test-helpers/index.mts'
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 
@@ -70,7 +70,7 @@ async function seedCuratedAsideFixtures() {
 }
 
 test.describe('Curated Asides admin page', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('unauthenticated user is redirected away from /curated-asides/topics', async ({ page }) => {
     await page.context().clearCookies()

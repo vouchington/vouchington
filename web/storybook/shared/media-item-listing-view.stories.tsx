@@ -5,11 +5,8 @@ import { MediaItemListingView } from '@/components/feed/media-item-listing-view'
 import { AddSourceButton } from '@/components/sources/add-source-button'
 import { ListSearchError } from '@/components/shared/list-search-error'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import {
-  createBreadcrumbSchema,
-  createCollectionPageSchema,
-  createItemListSchema,
-} from '@/lib/seo/structured-data'
+import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
+import { createCollectionPageSchema, createItemListSchema } from '@/lib/seo/structured-data'
 import { StoryFrame } from '@/storybook/story-frame'
 
 const t = createTranslator('en', await loadJsonMessages('en'))

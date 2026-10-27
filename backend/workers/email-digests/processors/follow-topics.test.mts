@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
-import { createTestUser, createTestUserDirect } from '@voucha/test-helpers'
-import { claimModerationEmailSend } from '@services/communities/moderation-summary-emails'
+import {
+  claimCurrentModerationSummaryForTest,
+  createTestUser,
+  createTestUserDirect,
+} from '@voucha/test-helpers'
 import { claimEngagementEmailSend } from '@services/users/engagement-emails'
 import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
 import { processSendFollowNewsSourcesEmail } from './follow-news-sources.mts'
@@ -16,11 +19,12 @@ describe('engagement email recipient recovery', () => {
 
   it('releases every claim when the user has no email address', async () => {
     const user = await createTestUserDirect({ withEmail: false })
-    const trackingKey = 'daily:2026-07-12'
+    const { trackingKey, windowEnd, dispatchTimeZone } = await claimCurrentModerationSummaryForTest(
+      user!.id,
+    )
     await claimEngagementEmailSend(user!.id, 'follow_topics')
     await claimEngagementEmailSend(user!.id, 'post_referral_link')
     await claimEngagementEmailSend(user!.id, 'follow_news_sources')
-    await claimModerationEmailSend(user!.id, trackingKey)
 
     const input = { emailAddress: 'tests+stale@voucha.ai', userId: user!.id }
     const commonVariables = {
@@ -48,9 +52,10 @@ describe('engagement email recipient recovery', () => {
     ).resolves.toMatchObject({ status: 'skipped' })
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { ...input, trackingKey },
+        { ...input, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-12',
+          dispatchTimeZone,
           settingsUrl: commonVariables.settingsUrl,
           unsubscribeUrl: commonVariables.unsubscribeUrl,
           physicalAddress: commonVariables.physicalAddress,

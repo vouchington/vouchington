@@ -7,7 +7,7 @@
 CREATE TABLE oauth_authorizations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   provider oauth_authorization_providers NOT NULL CHECK (provider IN ('facebook', 'x', 'github', 'linkedin', 'microsoft', 'google')),
-  purpose oauth_authorization_purposes NOT NULL CHECK (purpose IN ('authenticate', 'connect')),
+  purpose oauth_authorization_purposes NOT NULL CHECK (purpose IN ('authenticate', 'connect', 're_auth')),
   callback_mode oauth_callback_modes NOT NULL CHECK (callback_mode IN ('web', 'native')),
   status oauth_authorization_statuses GENERATED ALWAYS AS (
     CASE
@@ -56,7 +56,7 @@ CREATE TABLE oauth_authorizations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (
     (purpose = 'authenticate' AND initiating_user_id IS NULL)
-    OR (purpose = 'connect' AND initiating_user_id IS NOT NULL)
+    OR (purpose IN ('connect', 're_auth') AND initiating_user_id IS NOT NULL)
   ),
   CHECK (
     (callback_mode = 'native' AND completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$')
@@ -201,10 +201,10 @@ WHERE result_user_id IS NOT NULL;
 
 COMMENT ON TABLE oauth_authorizations IS 'Durable server-begun OAuth state machine shared by web and native Facebook, X, GitHub, LinkedIn, Microsoft, and Google authentication and account connection.';
 COMMENT ON COLUMN oauth_authorizations.provider IS 'Provider selected at begin time; callback and completion derive it only from this durable record.';
-COMMENT ON COLUMN oauth_authorizations.purpose IS 'authenticate creates or resumes a Voucha session; connect links the provider account to the authenticated initiating user.';
+COMMENT ON COLUMN oauth_authorizations.purpose IS 'authenticate creates or resumes a Voucha session; connect links an account; re_auth verifies an already-linked provider without linking or creating a session.';
 COMMENT ON COLUMN oauth_authorizations.callback_mode IS 'web uses an HttpOnly completion cookie; native uses a bearer token plus the app-held proof verifier.';
 COMMENT ON COLUMN oauth_authorizations.status IS 'Lifecycle derived from callback, handoff, consumption, rejection and expiry timestamps; current exchange activity is projected from immutable attempts.';
-COMMENT ON COLUMN oauth_authorizations.initiating_user_id IS 'Required owner for connect flows and NULL for authenticate flows.';
+COMMENT ON COLUMN oauth_authorizations.initiating_user_id IS 'Required owner for connect and re_auth flows; NULL for authenticate flows.';
 COMMENT ON COLUMN oauth_authorizations.initiating_device_id IS 'Device JWT identifier that must still match when completion is consumed.';
 COMMENT ON COLUMN oauth_authorizations.initiating_session_id IS 'Session JWT identifier that must still match when completion is consumed.';
 COMMENT ON COLUMN oauth_authorizations.redirect_uri IS 'Server-selected public provider callback URI; callers cannot supply or override it.';

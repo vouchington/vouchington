@@ -1,4 +1,6 @@
+import type { ModerationRecordCleanupKind } from '@voucha/types/entities/moderation-retention'
 import type { TerminalActivityRetentionFamily } from './config.mts'
+
 export type PsqlJobs =
   | 'runMigrations'
   | 'runViews'
@@ -7,6 +9,8 @@ export type PsqlJobs =
   | 'cleanupPartitions'
   | 'dataRetentionCleanup'
   | 'cleanupTerminalActivityIdentities'
+  | 'moderationRetentionCleanup'
+  | 'aiRetentionContinuation'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -34,4 +38,45 @@ export type RefreshMaterializedViewData = {
 
 export type TerminalActivityRetentionData = {
   family: TerminalActivityRetentionFamily
+}
+
+export type ModerationRetentionJobData = {
+  rootJobId?: string
+  hop?: number
+  remainingKinds?: ModerationRecordCleanupKind[]
+  receipt?: {
+    deleted: number
+    hasMore: boolean
+    remainingKinds: ModerationRecordCleanupKind[]
+  }
+}
+
+export const AI_RETENTION_FAMILIES = [
+  'textEmbeddingCache',
+  'terminalEmbeddingBatches',
+  'oldMediaDeliveryChanges',
+  'oldProviderResponseKeys',
+] as const
+
+export type AIRetentionFamily = (typeof AI_RETENTION_FAMILIES)[number]
+export type AIRetentionContinuationData = { family: AIRetentionFamily }
+
+/** UTC calendar boundaries for one operator-managed, half-open UUIDv7 batch range. */
+export type ClassifierPartitionRange = {
+  fromDate: string
+  toDate: string
+  maxDefaultRows?: number
+}
+
+export type PsqlPartitionJobData = {
+  classifierRange?: ClassifierPartitionRange
+}
+
+export type PsqlRetentionJobData = {
+  continuation?: {
+    runId: string
+    step: number
+    activeClassifierSweeps: string[]
+    activeMembershipFamilies: string[]
+  }
 }

@@ -38,6 +38,30 @@ describe('import/export client helpers', () => {
     expect(cancel).toHaveBeenCalledOnce()
   })
 
+  it('renews a browser session before replaying an export preflight', async () => {
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
+          callback(),
+      },
+    })
+    const mockFetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ code: 'AUTH_REQUIRED' }, { status: 401 }))
+      .mockResolvedValueOnce(Response.json({ session: { uid: 'owner' } }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await preflightExport('/api/v1/my/export/rss-feeds?format=csv')
+
+    expect(mockFetch.mock.calls.map(([url]) => url)).toEqual([
+      '/api/v1/my/export/rss-feeds?format=csv&preflight=1',
+      '/api/v1/session',
+      '/api/v1/my/export/rss-feeds?format=csv&preflight=1',
+    ])
+    expect(mockFetch.mock.calls[2]?.[1]).toBe(mockFetch.mock.calls[0]?.[1])
+  })
+
   it('preserves bounded error details from a failed export preflight', async () => {
     vi.stubGlobal(
       'fetch',

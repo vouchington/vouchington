@@ -25,7 +25,7 @@
     "@services/crawls": "workspace:^",
     "@services/urls": "workspace:^",
     "@vouchington/sentry": "^0.4.0",
-    "glide-mq": "^0.19.0"
+    "glide-mq": "^0.20.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

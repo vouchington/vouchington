@@ -1,4 +1,8 @@
 import {
+  membershipVerificationQueueConfig,
+  membershipVerificationQueueMaxValues,
+} from '@queues/memberships/config'
+import {
   pagedDispatchConfig,
   pagedDispatchMaxValues,
 } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
@@ -18,4 +22,16 @@ export const pagedDispatchRegistryEntry = defineBoundedWorkNamespace({
           : 'Whole target queue waiting, active and delayed depth limit.',
     ]),
   ),
+})
+
+export const membershipVerificationQueueRegistryEntry = defineBoundedWorkNamespace({
+  namespace: 'membership-verification-queue-config',
+  config: membershipVerificationQueueConfig,
+  label: 'Membership verification queue',
+  maxValues: membershipVerificationQueueMaxValues,
+  descriptions: {
+    verification_concurrency: 'Global provider-execution concurrency for membership verifications.',
+    dispatch_concurrency: 'Global concurrency for pending verification recovery pages.',
+    verification_retry_minutes: 'Delay before checking a pending provider purchase again.',
+  },
 })

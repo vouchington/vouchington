@@ -26,6 +26,8 @@ const DEFAULTS = {
   backlog_threshold: 1000,
   stale_ttl_hours: 24,
   creation_retry_delay_ms: 60000,
+  creation_lease_retry_delay_ms: 500,
+  creation_lease_renewal_interval_ms: 10_000,
   reconciliation_page_size: 100,
   bloom_population_batch_size: 1000,
 }
@@ -44,6 +46,8 @@ export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
   backlog_threshold: 10_000_000,
   stale_ttl_hours: 168,
   creation_retry_delay_ms: 3600000,
+  creation_lease_retry_delay_ms: 2000,
+  creation_lease_renewal_interval_ms: 60_000,
   reconciliation_page_size: 1000,
   bloom_population_batch_size: 10000,
 }
@@ -64,6 +68,8 @@ export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
     backlog_threshold: 'number',
     stale_ttl_hours: 'number',
     creation_retry_delay_ms: 'number',
+    creation_lease_retry_delay_ms: 'number',
+    creation_lease_renewal_interval_ms: 'number',
     reconciliation_page_size: 'number',
     bloom_population_batch_size: 'number',
   },
@@ -120,6 +126,14 @@ export function getPendingEmbeddingScanLimits(images = false) {
 
 export function getEmbeddingCreationRetryDelayMs(): number {
   return positiveInteger('creation_retry_delay_ms')
+}
+
+export function getEmbeddingCreationLeaseRetryDelayMs(): number {
+  return positiveInteger('creation_lease_retry_delay_ms')
+}
+
+export function getEmbeddingCreationLeaseRenewalIntervalMs(): number {
+  return Math.max(100, positiveInteger('creation_lease_renewal_interval_ms'))
 }
 
 export function getEmbeddingReconciliationPageSize(): number {

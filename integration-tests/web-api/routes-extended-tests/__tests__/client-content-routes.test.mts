@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import * as clientRoutes from '@/lib/api/client'
-import * as serverRoutes from '@/lib/api/server'
 import {
   insertTestRssFeedCrawl,
   insertTestRssFeedDirect,
@@ -84,16 +83,13 @@ describe('client-content-routes', () => {
       )
     })
 
-    it('deleteRssFeed removes the feed', async () => {
+    it('deleteRssFeed starts asynchronous feed deletion', async () => {
       const feed = await insertTestRssFeedDirect({})
-      await harness.withClientRuntime(
+      const accepted = await harness.withClientRuntime(
         () => clientRoutes.deleteRssFeed(feed.id),
         harness.adminCookieHeader,
       )
-
-      await expect(
-        serverRoutes.serverApi.get(`/api/v1/rss-feeds/${feed.id}`),
-      ).rejects.toMatchObject({ status: 404 })
+      expect(accepted).toEqual({ rss_feed_id: feed.id, status: 'deleting' })
     })
   })
 })

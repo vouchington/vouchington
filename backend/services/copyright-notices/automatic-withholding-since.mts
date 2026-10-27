@@ -1,6 +1,5 @@
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import {
+  copyrightConfig,
   getAutomaticWithholdingThresholds,
   isAutomaticProvisionalWithholdingEnabled,
 } from './config.mts'
@@ -12,23 +11,15 @@ import {
 export type AutomaticWithholdingWindow = { enabled: boolean; since: Date | null }
 
 /**
- * When the switch last went from off to on, read from the audited config change log, or null when
- * no such change is on record. The audit row commits just before the new value is published, so the
- * time is a hair early and a notice received after the flip is never mistaken for a stale one.
+ * The current on-period starts at the timestamp projected with the switch update. This field
+ * survives retention of old audit revisions; malformed or absent values fail closed.
  */
-export async function findSwitchOnTime(configKey: string = 'copyright'): Promise<Date | null> {
-  const { rows } = await write<{
-    switched_on_at: Date | null
-  }>(sql`/* findAutomaticWithholdingSwitchOnTime */
-    SELECT uuid_extract_timestamp(id) AS switched_on_at
-    FROM dynamic_configuration_revisions
-    WHERE configuration_key = ${configKey}
-      AND changes #> '{automaticProvisionalWithholding,after}' = 'true'::jsonb
-      AND changes #> '{automaticProvisionalWithholding,before}' IS DISTINCT FROM 'true'::jsonb
-    ORDER BY id DESC
-    LIMIT 1
-  `)
-  return rows[0]?.switched_on_at ?? null
+async function findSwitchOnTime(): Promise<Date | null> {
+  await copyrightConfig.waitForInitialization()
+  const value = copyrightConfig.getFields().automaticProvisionalWithholdingSince
+  if (typeof value !== 'string' || value === '') return null
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) || parsed.toISOString() !== value ? null : parsed
 }
 
 /**

@@ -1,32 +1,20 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
 
 /** Advance the permanent floor while holding its row lock through the bounded ledger delete. */
 export async function advanceReplayRejectionFloor(
   query: TransactionQuery,
-  kind: 'inbox' | 'outbound',
-  page: readonly { at: string; id: string }[],
+  page: readonly { at: string }[],
 ): Promise<void> {
-  // A verified signed date is at most one hour after inbox receipt. An outbound UUIDv7 event
-  // can precede its delivery completion by arbitrarily long, so use the identity timestamp.
-  const outboundFloor =
-    kind === 'outbound'
-      ? page.reduce<Date | null>((latest, item) => {
-          const createdAt = getDateFromUUIDv7(item.id)
-          return createdAt && (!latest || createdAt > latest) ? createdAt : latest
-        }, null)
-      : null
-  const floorInputs =
-    kind === 'inbox' ? page.map(item => item.at) : outboundFloor ? [outboundFloor] : []
-  if (floorInputs.length === 0) return // Unsupported outbound IDs are rejected on admission.
+  if (page.length === 0) return
+  // A verified signed date is at most one hour after inbox receipt.
   await query(
     `/* advanceActivityPubReplayRejectionFloor */
      UPDATE activitypub_replay_rejection_floors
      SET rejection_floor_at = GREATEST(
        COALESCE(rejection_floor_at, '-infinity'::timestamptz),
-       (SELECT MAX(receipt_at) FROM unnest($2::timestamptz[]) AS receipts(receipt_at))
-         + $3::interval
-     ) WHERE is_outbound = $1`,
-    [kind === 'outbound', floorInputs, kind === 'outbound' ? '0 seconds' : '1 hour'],
+       (SELECT MAX(receipt_at) FROM unnest($1::timestamptz[]) AS receipts(receipt_at))
+         + interval '1 hour'
+     )`,
+    [page.map(item => item.at)],
   )
 }

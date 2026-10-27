@@ -14,12 +14,11 @@ describe('MFA re-auth routes - request contract validation', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  }, 15_000)
+  })
 
   describe.each([
     { route: '/api/v1/auth/mfa/re-auth/email/verification', field: 'code' as const },
     { route: '/api/v1/auth/mfa/re-auth/totp/verification', field: 'code' as const },
-    { route: '/api/v1/auth/mfa/re-auth/tokens/verification', field: 're_auth_token' as const },
   ])('POST $route', ({ route, field }) => {
     it('returns 401, not 422, for a malformed body without auth', async () => {
       await createRequest()

@@ -31,10 +31,11 @@ _none_
 **Indexes:**
 
 - `idx_rss_feed_categories__category_identity_id`: `CREATE INDEX idx_rss_feed_categories__category_identity_id ON public.rss_feed_categories USING btree (category_identity_id, rss_feed_id)`
-- `idx_rss_feed_categories__topic_id`: `CREATE INDEX idx_rss_feed_categories__topic_id ON public.rss_feed_categories USING btree (topic_id, rss_feed_id DESC) WHERE (topic_id IS NOT NULL)`
+- `idx_rss_feed_categories__topic_id`: `CREATE INDEX idx_rss_feed_categories__topic_id ON public.rss_feed_categories USING btree (topic_id, rss_feed_id DESC, category_identity_id DESC) WHERE (topic_id IS NOT NULL)`
 - `rss_feed_categories_pkey`: `CREATE UNIQUE INDEX rss_feed_categories_pkey ON public.rss_feed_categories USING btree (rss_feed_id, category_identity_id)`
 
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF topic_id ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+- `trigger_rss_feed_categories_guard_hard_delete`: `CREATE TRIGGER trigger_rss_feed_categories_guard_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`
 - `trigger_rss_feed_categories_updated_at`: `CREATE TRIGGER trigger_rss_feed_categories_updated_at BEFORE UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

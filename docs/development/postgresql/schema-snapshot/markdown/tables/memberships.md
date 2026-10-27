@@ -58,3 +58,4 @@ _none_
 
 - `trigger_memberships_register_retained_identity`: `CREATE TRIGGER trigger_memberships_register_retained_identity BEFORE INSERT ON public.memberships FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('membership')`
 - `trigger_memberships_updated_at`: `CREATE TRIGGER trigger_memberships_updated_at BEFORE UPDATE ON public.memberships FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_sync_membership_renewal_notice_end`: `CREATE TRIGGER trigger_sync_membership_renewal_notice_end AFTER UPDATE OF projection_ended_at ON public.memberships FOR EACH ROW WHEN ((old.projection_ended_at IS DISTINCT FROM new.projection_ended_at)) EXECUTE FUNCTION fn_update_membership_renewal_notice_end()`

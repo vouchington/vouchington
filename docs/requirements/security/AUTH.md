@@ -99,7 +99,7 @@ first caller's completion credential.
 3. Verify the email includes the full `/login?emailAddress=...&otp=...` URL in addition to the CTA button
 4. Click the CTA or pasted URL
 5. `/login` opens directly on the verification code step with the email address and OTP prefilled
-6. The form auto-submits once without another click
+6. The code stays prefilled until you click **Log in**; focus or tab visibility changes do not submit it
 7. You are redirected to `/`
 
 #### Error cases
@@ -148,6 +148,30 @@ first caller's completion credential.
 4. The page routes to `/login`
 5. Sign back in, then click **Sign out all devices**
 6. The page routes to `/login`
+
+### Account settings and administrator assurance
+
+- [ ] Changing an email address or primary, enrolling or removing a passkey or authenticator, and
+      connecting or disconnecting a provider prompts for fresh authentication.
+- [ ] Email re-authentication uses the current primary address before the change. A successful
+      change notifies that prior address and signs other devices out while retaining this device.
+- [ ] A previously used proof cannot authorize a second or concurrent settings change.
+- [ ] An email-free provider account can confirm a change through a new roundtrip to its linked
+      provider. A cached assertion, another provider account, or another session cannot supply that
+      proof; the operation does not sign in or raise the session's MFA assurance.
+- [ ] A passkey-only account can select a named owned credential for fresh confirmation, including
+      a nonresident key. Confirmation does not silently grant staff authority.
+- [ ] Removing an email or provider preserves a usable canonical email or configured login
+      provider. An arbitrary enrolled authenticator is not replacement sign-in evidence.
+- [ ] If one concurrent change signs another device out, that device cannot finish a pending
+      provider attachment or mutate settings using an earlier proof.
+- [ ] A failed mutation preserves its unused proof and leaves the prior primary and other devices
+      unchanged; a committed change reports to the primary captured inside that same operation.
+- [ ] An administrator can enroll through account settings, then signs in with MFA before gaining
+      administrator access. Enrollment alone leaves existing sessions without staff authority.
+- [ ] Staff OAuth consent fails without current-session MFA proof. A user-resource credential does
+      not gain administrator authority when its owner is later granted that role.
+- [ ] An administrator cannot remove the final verified factor.
 
 ## Related
 

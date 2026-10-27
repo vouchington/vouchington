@@ -1,4 +1,4 @@
-export type SesNotificationType = 'bounce' | 'complaint' | 'delivery'
+export type SesNotificationType = 'bounce' | 'complaint'
 export type SesBounceType = 'permanent' | 'transient' | 'undetermined'
 
 export interface CreateSesBounceEventInput {

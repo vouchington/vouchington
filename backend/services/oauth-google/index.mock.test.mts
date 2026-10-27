@@ -19,7 +19,7 @@ vi.doMock<typeof import('undici')>(import('undici'), async () => {
   return { ...actual, fetch: fetchSpy }
 })
 
-const { upsertGoogleAccount, upsertGoogleAuthorizationCodeAccount } = await import('./index.mts')
+const { prepareGoogleAccount, upsertGoogleAuthorizationCodeAccount } = await import('./index.mts')
 
 const { privateKey: googlePrivateKey, publicKey: googlePublicKey } = generateKeyPairSync('rsa', {
   modulusLength: 2048,
@@ -69,7 +69,7 @@ describe('google oauth', () => {
       },
     )
 
-    const account = await upsertGoogleAccount(credential)
+    const account = await (await prepareGoogleAccount(credential)).persist()
 
     expect(account.provider_user_id).toBe(googleUserId)
     expect(account.provider_user_email_address).toBe(email)

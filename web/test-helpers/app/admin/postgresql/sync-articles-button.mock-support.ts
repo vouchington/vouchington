@@ -55,11 +55,13 @@ const mockedTrigger = vi.mocked(triggerArticleSync)
 type ESListener = (event: MessageEvent) => void
 
 class MockEventSource {
+  static readonly CLOSED = 2
   static instances: MockEventSource[] = []
   readonly url: string
   readonly listeners = new Map<string, Set<ESListener>>()
   onerror: (() => void) | null = null
   closed = false
+  readyState = 0
 
   constructor(url: string) {
     this.url = url
@@ -77,6 +79,7 @@ class MockEventSource {
 
   close() {
     this.closed = true
+    this.readyState = MockEventSource.CLOSED
   }
 
   emit(type: string, data: unknown) {
@@ -84,8 +87,10 @@ class MockEventSource {
     this.listeners.get(type)?.forEach(fn => fn(event))
   }
 
-  simulateError() {
-    if (this.onerror) this.onerror()
+  simulateError(closed = false) {
+    if (closed) this.readyState = MockEventSource.CLOSED
+    const event = new MessageEvent('error', { data: undefined })
+    this.listeners.get('error')?.forEach(fn => fn(event))
   }
 }
 

@@ -46,7 +46,7 @@ describe('buildSchemaSnapshot', () => {
       },
     })
     expect(snapshot.tables.ai_usage_provider_response_keys).toMatchObject({
-      growth: 'unbounded',
+      growth: 'bounded',
       partition: null,
     })
   })

@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors'
 import { AuthError } from '@vouchington/auth'
-import { passkeyProtocol } from './protocol.mts'
+import { passkeyProtocol, createPasskeyProtocol } from './protocol.mts'
+import type { TransactionQuery } from '@data-stores/psql'
 import { toPasskeyRegistrationOptions } from './options.mts'
 import type { PublicPasskey } from './types.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -27,10 +28,11 @@ export async function verifyPasskeyRegistration(
   expectedOrigin: string,
   response: unknown,
   name?: string,
+  options: { query?: TransactionQuery } = {},
 ): Promise<PublicPasskey> {
   const passkeyName = getPasskeyName(name)
   try {
-    return await passkeyProtocol.registration.verify({
+    return await createPasskeyProtocol(options).registration.verify({
       userId: currentUserId,
       deviceId,
       expectedOrigin,

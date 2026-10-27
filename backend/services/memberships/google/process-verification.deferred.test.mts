@@ -6,7 +6,6 @@ import {
   createTestSku,
   createTestUser,
 } from '@voucha/test-helpers'
-import { makeTestGooglePlayVerificationDue } from '@voucha/test-helpers/google-play-verification-state'
 import { describe, expect, it } from 'vitest'
 import { getMembershipVerification } from '../verifications.mts'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
@@ -76,14 +75,15 @@ describe('Google Play deferred replacement transition', () => {
       }),
       acknowledgeSubscription: async () => undefined,
     }
-    await processGooglePlayMembershipVerification(verification.id, { client })
+    await expect(
+      processGooglePlayMembershipVerification(verification.id, { client }),
+    ).rejects.toThrow('Google Play purchase is pending')
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
       status: 'pending',
     })
     await expect(getMembershipByUserId(user.id)).resolves.toBeNull()
 
     effective = true
-    await makeTestGooglePlayVerificationDue(verification.id)
     await processGooglePlayMembershipVerification(verification.id, { client })
     await expect(getMembershipVerification(user.id, verification.id)).resolves.toMatchObject({
       status: 'verified',

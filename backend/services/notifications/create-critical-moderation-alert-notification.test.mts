@@ -6,6 +6,7 @@ import {
   hardDeleteTestUserAndWaitBeforeCommit,
   insertTestModerationReport,
   insertTestPost,
+  insertTestTotpAuthenticator,
   safeUsername,
 } from '@voucha/test-helpers'
 import { createCriticalModerationAlertNotification } from './create-critical-moderation-alert-notification.mts'
@@ -20,6 +21,7 @@ describe('createCriticalModerationAlertNotification', () => {
       createTestUserDirect({ username: safeUsername('cman-owner') }),
       createTestUserDirect({ username: safeUsername('cman-reporter') }),
     ])
+    await insertTestTotpAuthenticator(admin!.id, 'critical-alert-admin')
     await Promise.all([addUserRole(admin!.id, 'administrator'), addUserRole(mod!.id, 'moderator')])
 
     const postId = await insertTestPost({
@@ -66,6 +68,7 @@ describe('createCriticalModerationAlertNotification', () => {
     const admin = await createTestUserDirect({
       username: safeUsername('cman-dedup'),
     })
+    await insertTestTotpAuthenticator(admin!.id, 'critical-alert-dedup')
     await addUserRole(admin!.id, 'administrator')
 
     const postOwner = await createTestUserDirect({
@@ -101,6 +104,7 @@ describe('createCriticalModerationAlertNotification', () => {
     const admin = await createTestUserDirect({
       username: safeUsername('cman-delete-race'),
     })
+    await insertTestTotpAuthenticator(admin!.id, 'critical-alert-delete-race')
     await addUserRole(admin!.id, 'administrator')
 
     const postOwner = await createTestUserDirect({

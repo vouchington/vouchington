@@ -82,7 +82,8 @@ function resetEventVerifiedDoubles() {
           ]),
         ) // guard check → identity_pending
         .mockResolvedValueOnce(makeQueryResult([])) // collision check → no collision
-        .mockResolvedValueOnce(makeQueryResult([{ user_id: 'user-1' }])) // INSERT RETURNING row
+        .mockResolvedValueOnce(makeQueryResult([{ identity_fingerprint: 'fingerprint' }])) // permanent hash
+        .mockResolvedValueOnce(makeQueryResult()) // live link
         .mockResolvedValue(makeQueryResult([{}])) // UPDATE users → 1 row updated
       return createTransactionResource(query as never)
     })

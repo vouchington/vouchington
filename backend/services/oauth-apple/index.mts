@@ -2,11 +2,14 @@ import createHttpError from 'http-errors'
 import { appleProfileFromClaims, createOidcIdTokenVerifier } from '@vouchington/utils/oidc-id-token'
 import { APPLE_CLIENT_ID, APPLE_NATIVE_CLIENT_IDS } from '@voucha/config'
 import {
-  upsertOAuthAccount,
+  prepareOAuthAccountPersistence,
   getOAuthAccountByProviderUserId,
   verifyOidcIdToken,
-  type OAuthAccount,
 } from '@services/oauth-accounts'
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import { createProviderOperationSignal, getProviderFetch } from '@modules/api-egress-proxy'
 
 const appleIdTokenVerifier = createOidcIdTokenVerifier({
@@ -20,12 +23,19 @@ const appleIdTokenVerifier = createOidcIdTokenVerifier({
     }),
 })
 
-export async function upsertAppleAccount(
+export function verifyAppleIdentityToken(identityToken: string, signal?: AbortSignal) {
+  return verifyOidcIdToken(appleIdTokenVerifier, identityToken, 'Apple', { signal })
+}
+
+export async function prepareAppleAccount(
   identityToken: string,
   userData?: { name?: string },
   nonce?: string,
-  options: { requireVerifiedEmail?: boolean; signal?: AbortSignal } = {},
-): Promise<OAuthAccount> {
+  options: OAuthAccountUpsertOptions & {
+    requireVerifiedEmail?: boolean
+    signal?: AbortSignal
+  } = {},
+): Promise<PreparedOAuthAccount> {
   const claims = await verifyOidcIdToken(appleIdTokenVerifier, identityToken, 'Apple', {
     signal: options.signal,
     ...(nonce ? { nonce, nonceHash: 'sha256-hex' } : {}),
@@ -36,9 +46,29 @@ export async function upsertAppleAccount(
     if (!existingAccount && options.requireVerifiedEmail !== false) {
       throw createHttpError(422, 'Apple identity token must include a verified email')
     }
-    return (
-      existingAccount ?? upsertOAuthAccount('apple', profile.providerUserId, null, profile.data)
+    const prepared = prepareOAuthAccountPersistence(
+      'apple',
+      profile.providerUserId,
+      null,
+      profile.data,
+      undefined,
+      options,
     )
+    return existingAccount
+      ? {
+          persist: persistence =>
+            persistence?.reAuth || options.reAuth
+              ? prepared.persist(persistence)
+              : Promise.resolve(existingAccount),
+        }
+      : prepared
   }
-  return upsertOAuthAccount('apple', profile.providerUserId, profile.verifiedEmail, profile.data)
+  return prepareOAuthAccountPersistence(
+    'apple',
+    profile.providerUserId,
+    profile.verifiedEmail,
+    profile.data,
+    undefined,
+    options,
+  )
 }

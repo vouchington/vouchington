@@ -4,7 +4,6 @@ import { createUniqueTestEmail, insertEmailAddressLoginToken } from '@voucha/tes
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import {
-  deleteTestUserSession,
   getActiveTestUserSessions,
   getTestUserSessionById,
   insertTestUserSession,
@@ -15,7 +14,7 @@ import '../index.mts'
 // protected: requireAuth() runs before the schema check, so an anonymous malformed call keeps a
 // bare 401 with no schema diagnostic. For the list query the pagination parser still runs first and
 // keeps its 400 and its limit clamping; the generated contract then validates the values it
-// settled on, all before the current session row is repaired.
+// settled on. The authenticated credential keeps its durable session row throughout these checks.
 describe('Auth sessions routes - request contract validation', () => {
   installEmailDomainDnsMock()
 
@@ -35,7 +34,7 @@ describe('Auth sessions routes - request contract validation', () => {
     authCookies = cookies.filter(cookie => cookie.startsWith('dt=') || cookie.startsWith('st='))
     currentSessionId = login.body.session.sid as string
     userId = login.body.user.id as string
-  }, 15_000)
+  })
 
   describe('GET /api/v1/auth/sessions', () => {
     it('returns a bare 401 without a schema diagnostic for an anonymous malformed query', async () => {
@@ -47,39 +46,41 @@ describe('Auth sessions routes - request contract validation', () => {
     })
 
     it.each(['limit=abc', 'limit=0', 'limit=-1', 'limit=1.5', 'after=', 'after=a&after=b'])(
-      'rejects %s with 400 before repairing the current session row',
+      'rejects %s with 400 for a registered session',
       async query => {
-        await deleteTestUserSession(currentSessionId)
-
         await createRequest()
           .get(`/api/v1/auth/sessions?${query}`)
           .set('Cookie', authCookies)
           .expect(400)
 
-        await expect(getTestUserSessionById(currentSessionId)).resolves.toBeNull()
+        await expect(getTestUserSessionById(currentSessionId)).resolves.toMatchObject({
+          id: currentSessionId,
+          revoked_at: null,
+        })
       },
     )
 
-    it('rejects a malformed cursor with 400 before repairing the current session row', async () => {
-      await deleteTestUserSession(currentSessionId)
-
+    it('rejects a malformed cursor with 400 for a registered session', async () => {
       await createRequest()
         .get('/api/v1/auth/sessions?after=not-a-real-cursor')
         .set('Cookie', authCookies)
         .expect(400)
 
-      await expect(getTestUserSessionById(currentSessionId)).resolves.toBeNull()
+      await expect(getTestUserSessionById(currentSessionId)).resolves.toMatchObject({
+        id: currentSessionId,
+        revoked_at: null,
+      })
     })
 
-    it('clamps an oversized limit and still repairs the current session row for a valid query', async () => {
-      await deleteTestUserSession(currentSessionId)
-
+    it('clamps an oversized limit for a registered session', async () => {
       const response = await createRequest()
         .get('/api/v1/auth/sessions?limit=500')
         .set('Cookie', authCookies)
         .expect(200)
 
-      expect(response.body.results[0].id).toBe(currentSessionId)
+      expect(response.body.results).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: currentSessionId })]),
+      )
       await expect(getTestUserSessionById(currentSessionId)).resolves.toMatchObject({
         id: currentSessionId,
         revoked_at: null,

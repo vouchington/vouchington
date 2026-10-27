@@ -1,3 +1,4 @@
+import type { PageInfo } from './api-responses'
 import type {
   IntegrityFlagStatusFilter,
   ReportIntegrityFlagType,
@@ -44,6 +45,9 @@ export interface ReportIntegrityPenalty {
   created_by_id: string | null
   revoked_at: string | null
   revoked_by_id: string | null
+  reviewed_at: string | null
+  reviewed_by_id: string | null
+  review_due_at: string
   created_at: string
   updated_at: string
 }
@@ -51,4 +55,13 @@ export interface ReportIntegrityPenalty {
 export interface ReportIntegrityPenaltiesResponse {
   results: ReportIntegrityPenalty[]
   page_info: ReportIntegrityFlagsResponse['page_info']
+}
+
+export interface ReportIntegrityPenaltyReviewDue extends ReportIntegrityPenalty {
+  user_username: string | null
+}
+
+export interface ReportIntegrityPenaltyReviewsDueResponse {
+  results: ReportIntegrityPenaltyReviewDue[]
+  page_info: PageInfo
 }

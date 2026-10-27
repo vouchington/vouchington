@@ -21,6 +21,7 @@ import {
 const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('runDataRetentionCleanup', () => {
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('returns per-cleanup deletion summaries', async () => {
     const moderationLock = await acquireModerationOperationRetentionTestLock()
     onTestFinished(() => moderationLock.release())
@@ -39,6 +40,7 @@ describe('runDataRetentionCleanup', () => {
       retainedMediaBindingIds: [],
       softDeletedUsers: emptyWindow,
       oldReferralAttributions: emptyWindow,
+      histories: emptyWindow,
       orphanedOAuthAccounts: emptyWindow,
       expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
       expiredOAuthServerArtifacts: emptyWindow,
@@ -48,6 +50,9 @@ describe('runDataRetentionCleanup', () => {
       expiredContributionQuotaConsumptions: emptyWindow,
       expiredTopicImportAttempts: emptyWindow,
       terminalNotificationPushIntents: emptyWindow,
+      deliveredMembershipEntitlementEffects: emptyWindow,
+      endedMembershipRenewalNotices: emptyWindow,
+      terminalGooglePlayAcknowledgments: emptyWindow,
       terminalStripeEventWork: emptyWindow,
       abandonedMembershipPurchaseIntents: emptyWindow,
       emailAddressLoginTokens: emptyWindow,
@@ -57,6 +62,15 @@ describe('runDataRetentionCleanup', () => {
       oldModerationQueueClaims: emptyWindow,
       oldModerationMediaReveals: emptyWindow,
       federationRetention: { now: new Date(0) },
+      textEmbeddingCache: emptyWindow,
+      terminalEmbeddingBatches: emptyWindow,
+      oldProviderResponseKeys: emptyWindow,
+      oldMediaDeliveryChanges: emptyWindow,
+      classifierRecords: emptyWindow,
+      sesBounceEvents: emptyWindow,
+      systemPrunedNotifications: emptyWindow,
+      userDeletedNotifications: emptyWindow,
+      moderationEmailSends: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -65,6 +79,10 @@ describe('runDataRetentionCleanup', () => {
     expect(result).toMatchObject({
       softDeletedUsers: { deleted: 0, hasMore: false },
       oldReferralAttributions: { deleted: 0, hasMore: false },
+      histories: {
+        dynamic_configuration_revisions: { scanned: 0, changed: 0, hasMore: false },
+        referral_attribution_scrub: { scanned: 0, changed: 0, hasMore: false },
+      },
       orphanedOAuthAccounts: { deleted: 0, hasMore: false },
       expiredOAuthAuthorizations: { deleted: 0, hasMore: false },
       expiredOAuthServerArtifacts: { deleted: 0, hasMore: false },
@@ -74,6 +92,9 @@ describe('runDataRetentionCleanup', () => {
       expiredContributionQuotaConsumptions: { deleted: 0, hasMore: false },
       expiredTopicImportAttempts: { deleted: 0, hasMore: false },
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
+      deliveredMembershipEntitlementEffects: { deleted: 0, hasMore: false },
+      endedMembershipRenewalNotices: { deleted: 0, hasMore: false },
+      terminalGooglePlayAcknowledgments: { deleted: 0, hasMore: false },
       terminalStripeEventWork: { deleted: 0, hasMore: false },
       abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false },
       emailAddressLoginTokens: { deleted: 0, hasMore: false, continuation: null },
@@ -82,6 +103,19 @@ describe('runDataRetentionCleanup', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      classifierRecords: {
+        runCandidates: { scanned: 0, deleted: 0, hasMore: false },
+        agentTopics: { scanned: 0, deleted: 0, hasMore: false },
+        localOutcomes: { scanned: 0, deleted: 0, hasMore: false },
+        runs: { scanned: 0, deleted: 0, hasMore: false },
+        calls: { scanned: 0, deleted: 0, hasMore: false },
+        batches: { scanned: 0, deleted: 0, hasMore: false },
+        identities: { scanned: 0, deleted: 0, hasMore: false },
+      },
+      sesBounceEvents: { deleted: 0, hasMore: false },
+      systemPrunedNotifications: { deleted: 0, hasMore: false },
+      userDeletedNotifications: { deleted: 0, hasMore: false },
+      moderationEmailSends: { deleted: 0, hasMore: false },
     })
   }, 30_000)
 })

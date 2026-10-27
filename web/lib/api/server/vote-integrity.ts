@@ -13,3 +13,9 @@ export const getVoteIntegrityFlags = cache(async <T>(options: GetOptions = {}): 
 export const getVoteIntegrityPenalties = cache(async <T>(options: GetOptions = {}): Promise<T> => {
   return serverApi.get<T>('/api/v1/vote-integrity/penalties', options)
 })
+
+export const getVoteIntegrityPenaltyReviewsDue = cache(
+  async <T>(options: GetOptions = {}): Promise<T> => {
+    return serverApi.get<T>('/api/v1/vote-integrity/penalties/review-due', options)
+  },
+)

@@ -6,7 +6,9 @@ import {
 import {
   classifierGoldenBatchId,
   missingOrDuplicateClassifierGoldenResults,
+  runClassifierGoldenSet,
   unexpectedClassifierGoldenBand,
+  type ClassifierGoldenCase,
   type ClassifierGoldenFixture,
 } from './classifier-golden-set.mts'
 
@@ -129,5 +131,53 @@ describe('classifier golden band regression', () => {
       'synthetic-completeness-check: expected exactly one result for candidate candidate-a, received 2',
       'synthetic-completeness-check: expected exactly one result for candidate candidate-b, received 0',
     ])
+  })
+
+  it('fails a stalled provider call with the fixture it belongs to, without retrying it', async () => {
+    const goldenFixture = (id: string): ClassifierGoldenFixture => ({
+      id,
+      subjectKind: 'post',
+      state: 'Synthetic text.',
+      candidateSlate: ['synthetic-candidate'],
+      rationale: 'A focused deadline contract check.',
+      expected: {
+        candidate: { acceptableBands: ['below-lower'], rationale: 'Any band is reviewed.' },
+      },
+    })
+    const candidates = {
+      'candidate-id': {
+        key: 'candidate',
+        thresholdRevision: 'revision',
+        thresholds: { lower: 0.25, upper: 0.75 },
+      },
+    }
+    const stalledCase: ClassifierGoldenCase = {
+      fixture: goldenFixture('synthetic-stalled-fixture'),
+      candidates,
+      decide: client => client.decide({} as never) as never,
+    }
+    const answeredCase: ClassifierGoldenCase = {
+      fixture: goldenFixture('synthetic-answered-fixture'),
+      candidates,
+      decide: () => Promise.resolve([{ candidateId: 'candidate-id', probability: 0.1 }]),
+    }
+    let providerCalls = 0
+    const stallingClient = {
+      decide: (_request: unknown, signal?: AbortSignal) => {
+        providerCalls += 1
+        return new Promise<never>((_resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(signal.reason as Error), { once: true })
+        })
+      },
+    }
+
+    await expect(
+      runClassifierGoldenSet(
+        [stalledCase, answeredCase],
+        { minimumFixturesPerCandidate: 1, toleratedUnexpectedFixturesPerCandidate: 0 },
+        { callDeadlineMs: 1, client: stallingClient as never },
+      ),
+    ).rejects.toThrow('synthetic-stalled-fixture: no provider response within 1ms')
+    expect(providerCalls).toBe(1)
   })
 })

@@ -6,16 +6,16 @@ Public, human-approved rebuttal annotations attached to reviewed posts as the ou
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                 |
-| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
-| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                         |
-| `post_id`           | `uuid`                     | no       |                              |          |           |           | The review post this annotation is attached to.         |
-| `review_dispute_id` | `uuid`                     | no       |                              |          |           |           | The resolved dispute that produced this annotation.     |
-| `body_text`         | `text`                     | no       |                              |          |           |           | The human-authored, moderator-approved annotation text. |
-| `created_by_id`     | `uuid`                     | no       |                              |          |           |           | The moderator who created the annotation.               |
-| `removed_at`        | `timestamp with time zone` | yes      |                              |          |           |           | When the annotation was retracted.                      |
-| `removed_by_id`     | `uuid`                     | yes      |                              |          |           |           | Moderator who retracted the annotation.                 |
-| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                         |
+| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                       |
+| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                               |
+| `post_id`           | `uuid`                     | no       |                              |          |           |           | The review post this annotation is attached to.                                                                                               |
+| `review_dispute_id` | `uuid`                     | yes      |                              |          |           |           | The resolved dispute that produced this annotation, when its retention window has not elapsed. A public annotation survives dispute deletion. |
+| `body_text`         | `text`                     | no       |                              |          |           |           | The human-authored, moderator-approved annotation text.                                                                                       |
+| `created_by_id`     | `uuid`                     | no       |                              |          |           |           | The moderator who created the annotation.                                                                                                     |
+| `removed_at`        | `timestamp with time zone` | yes      |                              |          |           |           | When the annotation was retracted.                                                                                                            |
+| `removed_by_id`     | `uuid`                     | yes      |                              |          |           |           | Moderator who retracted the annotation.                                                                                                       |
+| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -31,7 +31,7 @@ _none_
 - `post_dispute_annotations_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
 - `post_dispute_annotations_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `post_dispute_annotations_removed_by_id_fkey`: `FOREIGN KEY (removed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `post_dispute_annotations_review_dispute_id_fkey`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE CASCADE`
+- `post_dispute_annotations_review_dispute_id_fkey`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE SET NULL`
 
 **Indexes:**
 

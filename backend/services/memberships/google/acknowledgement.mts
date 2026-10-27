@@ -131,7 +131,7 @@ export async function acknowledgeGooglePlayPurchase(options: {
 }
 
 async function claimGoogleAcknowledgement(id: string): Promise<GoogleAcknowledgementClaim | null> {
-  const duration = getMembershipWorkLimit('verification_claim_minutes')
+  const duration = getMembershipWorkLimit('google_acknowledgement_claim_minutes')
   const { rows } = await write<GoogleAcknowledgementClaim>(sql`/* claimGoogleAcknowledgement */
     WITH claimed AS (
       UPDATE membership_google_play_acknowledgment_work_items work
@@ -185,7 +185,7 @@ async function deferGoogleAcknowledgement(
   claim: GoogleAcknowledgementClaim,
   error: unknown,
 ): Promise<void> {
-  const delay = getMembershipWorkLimit('verification_retry_minutes')
+  const delay = getMembershipWorkLimit('google_acknowledgement_retry_minutes')
   const message =
     error instanceof Error ? error.message.slice(0, 1000) : 'Google acknowledgement failed'
   await write(sql`/* deferGoogleAcknowledgement */

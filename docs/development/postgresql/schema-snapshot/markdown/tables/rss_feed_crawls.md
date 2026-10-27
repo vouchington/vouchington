@@ -38,4 +38,5 @@ _none_
 - `rss_feed_crawls_pkey`: `CREATE UNIQUE INDEX rss_feed_crawls_pkey ON ONLY public.rss_feed_crawls USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_rss_feed_crawls_guard_hard_delete`: `CREATE TRIGGER trigger_rss_feed_crawls_guard_hard_delete BEFORE INSERT OR UPDATE OF rss_feed_id ON public.rss_feed_crawls FOR EACH ROW EXECUTE FUNCTION fn_reject_rss_feed_child_reference('rss_feed_id')`

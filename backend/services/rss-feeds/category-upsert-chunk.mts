@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { registerRssCategoryIdentities } from '@services/rss-feed-items/category-identities'
 import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
+import { lockPostPublicationRssFeedScopes } from '@services/post-publication/capture-rss-feeds'
 import { resolveRssFeedCategoryTopics } from './category-topic-resolution.mts'
 
 export async function upsertRssFeedCategoriesChunk(
@@ -18,6 +19,14 @@ export async function upsertRssFeedCategoriesChunk(
     ),
     {},
     async query => {
+      await lockPostPublicationRssFeedScopes(query, [rssFeedId])
+      const { rows: feeds } = await query<{ id: string }>(
+        `/* upsertRssFeedCategories:lockFeed */
+        SELECT id FROM rss_feeds WHERE id = $1::uuid
+          AND hard_delete_requested_at IS NULL FOR SHARE`,
+        [rssFeedId],
+      )
+      if (feeds.length === 0) throw createHttpError(409, 'RSS feed is being deleted')
       await query(
         sql`/* upsertRssFeedCategories:lockExisting */
           SELECT category_identity_id FROM rss_feed_categories

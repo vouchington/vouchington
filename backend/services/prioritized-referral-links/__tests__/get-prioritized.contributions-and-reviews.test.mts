@@ -55,7 +55,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
       pathname: '/ref/%',
     })
     referralProgramId = fixture.referralProgramId
-  }, 30_000)
+  })
 
   it('counts contributions from topics linked to the referral program', async () => {
     const suffix = createRandomString(8)
@@ -118,7 +118,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     expect(bothLink!.contribution_rank).toBe(1)
     expect(oneLink!.contribution_rank).toBe(2)
     expect(noneLink!.contribution_rank).toBe(3)
-  }, 30_000)
+  })
 
   it('excludes elapsed finite entitlement tiers while retaining direct provider tiers', async () => {
     const [viewer, { user: elapsedAdmin }, { user: elapsedFamily }, { user: elapsedDirect }] =
@@ -198,7 +198,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     expect(noReviewerLink!.review_post_id).toBeNull()
     expect(noReviewerLink!.review_post_slug).toBeNull()
     expect(noReviewerLink!.review_avg_rating).toBeNull()
-  }, 30_000)
+  })
 
   it('picks the review with highest votes_score_net when user has multiple reviews', async () => {
     const [viewer, { user: multiReviewer }] = await Promise.all([
@@ -238,7 +238,7 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     expect(link!.review_post_id).toBe(highPostId)
     expect(link!.review_post_slug).toBe(`high-review-${suffix}`)
     expect(link!.review_avg_rating).toBe(5)
-  }, 30_000)
+  })
 
   it('includes best_score from linked topic contributions', async () => {
     const suffix = createRandomString(8)
@@ -285,5 +285,5 @@ describe('get-prioritized prioritized referral contributions and reviews', () =>
     expect(highLink).toBeDefined()
     expect(lowLink).toBeDefined()
     expect(highLink!.best_score).toBeGreaterThan(lowLink!.best_score)
-  }, 30_000)
+  })
 })

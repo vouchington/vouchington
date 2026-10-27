@@ -4,6 +4,8 @@ import { createHmac } from 'node:crypto'
  * Compute a 64-char hex HMAC-SHA256 fingerprint of a government ID document.
  * The raw documentNumber MUST be discarded by the caller after this function returns —
  * it must never be logged or persisted.
+ * This domain key must remain stable while hashes are retained; the current contract cannot
+ * rehash old documents after changing the key because document numbers are discarded.
  *
  * Reads IDENTITY_FINGERPRINT_SECRET from process.env at call time so that test
  * environments can set the variable in beforeEach without module-cache issues.

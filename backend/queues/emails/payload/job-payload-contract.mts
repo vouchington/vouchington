@@ -2,6 +2,7 @@ import type {
   ProcessSendCommunityInviteEmailVariables,
   ProcessSendEmailAddressLoginTokenVariables,
   ProcessSendEmailVerificationTokenVariables,
+  ProcessSendReauthenticationTokenVariables,
   ProcessSendWelcomeEmailVariables,
   ProcessSendDataExportReadyEmailVariables,
   ProcessSendCommunityApplicationDecisionEmailVariables,
@@ -58,3 +59,9 @@ export const ownershipVariableKeys = {
   recipientRole: true,
   uiLocale: true,
 } as const satisfies Record<keyof ProcessSendCommunityOwnershipTransferEmailVariables, true>
+
+export const reauthenticationVariableKeys = {
+  token: true,
+  expiresInMinutes: true,
+  uiLocale: true,
+} as const satisfies Record<keyof ProcessSendReauthenticationTokenVariables, true>

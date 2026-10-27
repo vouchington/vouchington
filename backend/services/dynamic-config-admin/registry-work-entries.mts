@@ -1,3 +1,4 @@
+import { moderationRetentionQueueConfig } from '@queues/psql/config'
 import {
   copyrightNoticesAdditionalMaxValues,
   copyrightSweepConfig,
@@ -15,6 +16,21 @@ import {
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const workDynamicConfigRegistryEntries = [
+  defineDynamicConfigNamespace({
+    namespace: 'psql-moderation-retention-config',
+    label: 'Moderation retention queue',
+    description: 'Serial admission for moderation-history cleanup across worker processes.',
+    config: moderationRetentionQueueConfig,
+    access: { update_roles: ['developer'] },
+    fields: {
+      concurrency: {
+        description: 'Maximum concurrent moderation-history cleanup jobs across workers.',
+        minValue: 1,
+        maxValue: 1,
+        integer: true,
+      },
+    },
+  }),
   defineDynamicConfigNamespace({
     namespace: 'kagi-smallweb-config',
     label: 'Kagi Smallweb',

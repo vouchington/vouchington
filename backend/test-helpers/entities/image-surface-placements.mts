@@ -1,6 +1,4 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
-import { restoreImagePlacementsAfterImageDeletion } from '../../services/images/placements.mts'
-import { retireImageSurfacePlacementsForDeletedImage } from '../../services/images/surface-placements.mts'
+import { read, write } from '@data-stores/psql'
 import { stageImagePlacementDeliveryRecord } from '../../services/media-delivery-safety/delivery-registry-staging.mts'
 import sql from 'sql-template-strings'
 
@@ -142,23 +140,6 @@ export async function isTestImagePlacementPubliclyProjected(input: {
     ) AS projected
   `)
   return rows[0]?.projected ?? false
-}
-
-export async function retireTestImageSurfacePlacementsForDeletedImage(
-  imageId: string,
-): Promise<Array<{ placementId: string; revision: number }>> {
-  await using transaction = await beginTransaction()
-  const retired = await retireImageSurfacePlacementsForDeletedImage(imageId, transaction)
-  await transaction.commit()
-  return retired
-}
-
-export async function restoreTestImageSurfacePlacementsAfterImageDeletion(
-  retiredPlacements: Array<{ placementId: string; revision: number }>,
-): Promise<void> {
-  await using transaction = await beginTransaction()
-  await restoreImagePlacementsAfterImageDeletion(retiredPlacements, transaction)
-  await transaction.commit()
 }
 
 export async function getTestMediaDeliveryRegistryRecordId(input: {

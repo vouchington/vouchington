@@ -1,6 +1,7 @@
 import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertClassifierRunCandidates } from '../../../../services/classifier-runs/run-candidates.mts'
+import { insertClassifierRunCommunityPrompts } from '../../../../services/classifier-runs/run-community-prompts.mts'
 
 export type ClassifierRunFacts = {
   id: string
@@ -24,7 +25,8 @@ export type ClassifierRunRequestFacts = {
   id: string
   classifier_slug: string
   input_sha256: Buffer
-  run_id: string | null
+  run_identity_id: string | null
+  run_settled_at: Date | null
   no_work_at: Date | null
   stale_at: Date | null
 }
@@ -71,8 +73,8 @@ export async function getSubjectClassifierRunRequestFacts(
 ): Promise<ClassifierRunRequestFacts[]> {
   const { rows } =
     await write<ClassifierRunRequestFacts>(sql`/* getSubjectClassifierRunRequestFacts */
-    SELECT request.id, classifier.slug AS classifier_slug, request.input_sha256, request.run_id,
-      request.no_work_at, request.stale_at
+    SELECT request.id, classifier.slug AS classifier_slug, request.input_sha256, request.run_identity_id,
+      request.run_settled_at, request.no_work_at, request.stale_at
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
     WHERE request.post_id IS NOT DISTINCT FROM ${subject.postId}::uuid
@@ -103,6 +105,41 @@ export async function getClassifierRunCandidateTopicIdsForTest(runId: string): P
 /** Exercises production candidate capture with the shared test database query resource. */
 export function captureClassifierRunCandidatesForTest(runId: string, topicIds: readonly string[]) {
   return insertClassifierRunCandidates(write, runId, topicIds)
+}
+
+/** Exercises production community-prompt persistence with the shared test database query resource. */
+export function insertClassifierRunCommunityPromptsForTest(
+  runId: string,
+  promptIds: readonly string[],
+) {
+  return insertClassifierRunCommunityPrompts(write, runId, promptIds)
+}
+
+/** Community prompt ids stored for one owned run, in configuration order. */
+export async function getClassifierRunCommunityPromptIdsForTest(runId: string): Promise<string[]> {
+  const { rows } = await write<{
+    community_agent_prompt_id: string
+  }>(sql`/* getClassifierRunCommunityPromptIdsForTest */
+    SELECT community_agent_prompt_id FROM classifier_run_community_prompts
+    WHERE run_id = ${runId} ORDER BY ordinal
+  `)
+  return rows.map(row => row.community_agent_prompt_id)
+}
+
+/** Prompt ids inside one owned run's replay envelope, in the envelope's array order. */
+export async function getClassifierRunConfigurationCommunityPromptIdsForTest(
+  runId: string,
+): Promise<string[]> {
+  const { rows } = await write<{ id: string }>(sql`
+    /* getClassifierRunConfigurationCommunityPromptIdsForTest */
+    SELECT item.prompt ->> 'id' AS id
+    FROM classifier_runs run
+    CROSS JOIN LATERAL jsonb_array_elements(run.configuration_json -> 'prompts')
+      WITH ORDINALITY AS item (prompt, ordinal)
+    WHERE run.id = ${runId}
+    ORDER BY item.ordinal
+  `)
+  return rows.map(row => row.id)
 }
 
 export async function expireClassifierRunLeaseForTest(runId: string): Promise<void> {

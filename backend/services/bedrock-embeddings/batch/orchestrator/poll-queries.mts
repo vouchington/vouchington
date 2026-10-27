@@ -28,6 +28,7 @@ export const getPendingBatches = async (
 export const getBatchRecordsCreatedInLastHour = async (
   referenceTime: Date,
   options: QueryOptions = {},
+  excludeBatchId?: string,
 ): Promise<number> => {
   const referenceTimeUtc = referenceTime.toISOString()
   const { rows } = await read(
@@ -37,8 +38,9 @@ export const getBatchRecordsCreatedInLastHour = async (
     -- UUIDv7 timestamps have millisecond precision, so the next millisecond
     -- is the first one strictly after the one-hour cutoff.
     WHERE id >= fn_min_uuidv7($1::timestamptz - INTERVAL '1 hour' + INTERVAL '1 millisecond')
+      AND ($2::uuid IS NULL OR id <> $2::uuid OR submitted_at IS NOT NULL)
   `,
-    [referenceTimeUtc],
+    [referenceTimeUtc, excludeBatchId ?? null],
     options,
   )
 

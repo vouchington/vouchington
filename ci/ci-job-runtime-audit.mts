@@ -8,8 +8,6 @@ import {
   type RuntimeAuditResult,
 } from 'vouchington-tooling/gha-runtime-audit'
 
-export type { GhApiExecutor } from 'vouchington-tooling/gha-runtime-audit'
-
 export const vouchingtonRuntimeAuditOptions: Omit<RuntimeAuditOptions, 'repository'> = {
   branch: 'main',
   workflows: [
@@ -26,7 +24,7 @@ export const vouchingtonRuntimeAuditOptions: Omit<RuntimeAuditOptions, 'reposito
   medianThresholdSeconds: 480,
 }
 
-export async function auditCiJobRuntime(
+async function auditCiJobRuntime(
   execute: GhApiExecutor,
   repository: string,
 ): Promise<RuntimeAuditResult> {

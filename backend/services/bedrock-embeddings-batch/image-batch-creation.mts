@@ -6,7 +6,8 @@ import { minimumImageBatchSizeMB } from '@services/bedrock-embeddings/batch/inpu
 import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { BatchFileBuilder } from './orchestrator/file-builder.mts'
 import { getBatchCreationLimits } from './rate-limits.mts'
-import { createBatch } from './orchestrator/create.mts'
+import { createBatch, BatchCreationDeferredError } from './orchestrator/create.mts'
+import { creationSubmissionAdmission } from './submission-admission.mts'
 import type { BatchCreationDependencies, CreateBatchResult } from './types.mts'
 import type { PendingScanOptions } from './entities/scan-options.mts'
 import onError from '@modules/on-error'
@@ -21,6 +22,7 @@ export async function processImageBatchCreation<T extends { id: string }>(
     ) => Promise<boolean>
     cursor?: EmbeddingScanCursor
     reEnqueue: (cursor?: EmbeddingScanCursor, delayMs?: number) => unknown
+    isLeaseHeld: () => boolean
   },
   dependencies: BatchCreationDependencies = { getBatchCreationLimits, createBatch },
 ): Promise<CreateBatchResult> {
@@ -87,6 +89,7 @@ export async function processImageBatchCreation<T extends { id: string }>(
         break
     }
 
+    if (!params.isLeaseHeld()) throw new BatchCreationDeferredError('lease_lost', 0)
     shouldContinue = true
     if (fileBuilder.getEntityCount() === 0) {
       if (attempted === 0) return { empty: true, hasMore: progress.hasMore }
@@ -106,9 +109,22 @@ export async function processImageBatchCreation<T extends { id: string }>(
 
     shouldContinue = false
     const { filePath, entityIdsFilePath, entityCount, inputSizeMB } = await fileBuilder.close()
-    await dependencies.createBatch(filePath, 'images', entityCount, entityIdsFilePath, {
-      inputSizeMB,
-    })
+    await dependencies.createBatch(
+      filePath,
+      'images',
+      entityCount,
+      entityIdsFilePath,
+      { inputSizeMB },
+      {},
+      creationSubmissionAdmission({
+        dependencies,
+        isLeaseHeld: params.isLeaseHeld,
+        jobType: 'images',
+        entityCount,
+        inputSizeMB,
+      }),
+      params.isLeaseHeld,
+    )
     submitted = true
     shouldContinue = true
     return { success: true, hasMore: progress.hasMore }

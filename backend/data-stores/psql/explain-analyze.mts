@@ -1,4 +1,3 @@
-// no-mistakes-disable-file postgres-required-predicates: caller-supplied PREPARE, EXPLAIN, and DEALLOCATE plumbing does not define application relation reads
 import { randomUUID } from 'node:crypto'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'

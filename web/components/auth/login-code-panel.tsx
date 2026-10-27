@@ -54,9 +54,6 @@ export function LoginCodePanel({
   function handleCodeChange(value: string) {
     const upper = value.toUpperCase()
     setCode(upper)
-    if (upper.length === 8 && !submitting.current) {
-      void submitCode(upper)
-    }
   }
 
   async function handleCodeSubmit(e: SyntheticEvent) {

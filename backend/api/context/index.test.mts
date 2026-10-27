@@ -1,7 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import applyContext from './index.mts'
-import type { Application, Context, CookieOptions } from '@jongleberry/api-server'
-import { createDeviceAndSessionTokens, verifyDeviceAndSessionTokens } from '@services/jwt-session'
+import {
+  createRequestContext,
+  getOnlyCookieWrite,
+  verifyOnlyCookiePair,
+} from '@voucha/test-helpers/request-session-context'
+import { describe, expect, it } from 'vitest'
+import type { Context } from '@jongleberry/api-server'
+import {
+  createDeviceAndSessionTokens,
+  verifyDeviceAndSessionTokens,
+  markJwtStale,
+} from '@services/jwt-session'
 import { revokeSession } from '@services/jwt-session/revocation'
 import {
   expectUuidV7,
@@ -11,7 +19,9 @@ import {
 } from '@voucha/test-helpers/services/jwt-session/index'
 import { cacheBootstrapDeviceId } from '@modules/request-client-info'
 import { hasVerifiedSessionCredential } from '@modules/request-client-info/session-credential'
-import { ATTESTED_SESSION_EXPIRATION_SECONDS } from '@ts-shared/session-jwt'
+import { ATTESTED_SESSION_EXPIRATION_SECONDS, signSessionJwt } from '@ts-shared/session-jwt'
+import { sessionValkeyClient } from '@data-stores/valkey/clients'
+import { getJwtStaleKey } from '@data-stores/valkey/jwt-stale'
 import {
   createTestMembership,
   createTestUser,
@@ -20,23 +30,7 @@ import {
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
 
-type CookieWrite = {
-  name: string
-  value: string
-  options?: CookieOptions
-}
-
-const contextExtensions: Record<string, unknown> = {}
-const contextApplicationAdapter = {
-  extend(methods: Record<string, unknown>) {
-    Object.assign(contextExtensions, methods)
-  },
-}
-applyContext(contextApplicationAdapter as unknown as Application)
-
 describe('server request context', () => {
-  afterEach(() => vi.useRealTimers())
-
   it('resolves and memoizes an existing user without writing cookies', async () => {
     const user = await createRequiredTestUser()
     const tokens = await createDeviceAndSessionTokens({ did: v7(), uid: user.id })
@@ -50,6 +44,30 @@ describe('server request context', () => {
     expect(first).toBe(second)
     expect(first?.id).toBe(user.id)
     expect(cookieWrites).toEqual([])
+  })
+
+  it('clears mismatched browser credentials and memoizes an anonymous result', async () => {
+    const user = await createRequiredTestUser()
+    const tokens = await createDeviceAndSessionTokens({
+      did: v7(),
+      uid: user.id,
+      deviceContext: { user_agent: 'Original browser' },
+    })
+    const { context, cookieWrites } = createRequestContext(
+      { dt: tokens.deviceToken.token, st: tokens.sessionToken.token },
+      { headers: { 'user-agent': 'Changed browser' } } as Context['req'],
+    )
+    const [first, second] = await Promise.all([
+      context.getSessionTokenData(),
+      context.getSessionTokenData(),
+    ])
+    expect(first).toBe(second)
+    expect(first.uid).toBeNull()
+    await expect(context.getCurrentUser()).resolves.toBeNull()
+    expect(cookieWrites).toHaveLength(2)
+    expect(cookieWrites.every(cookie => cookie.value === '' && cookie.options?.maxAge === 0)).toBe(
+      true,
+    )
   })
 
   it('re-mints anonymous tokens when a session user has been soft-deleted', async () => {
@@ -101,8 +119,13 @@ describe('server request context', () => {
 
     const replacement = await verifyOnlyCookiePair(cookieWrites)
     expect(replacement.dc).toBe('attested')
-    expect(getOnlyCookieWrite(cookieWrites, 'st').options?.maxAge).toBe(
-      ATTESTED_SESSION_EXPIRATION_SECONDS,
+    if (replacement.exp === undefined) throw new Error('Replacement session expiry missing')
+    const sessionCookie = getOnlyCookieWrite(cookieWrites, 'st')
+    expect(sessionCookie.options?.expires).toBeUndefined()
+    expect(sessionCookie.options?.maxAge).toBeGreaterThan(ATTESTED_SESSION_EXPIRATION_SECONDS - 10)
+    expect(sessionCookie.options?.maxAge).toBeLessThanOrEqual(ATTESTED_SESSION_EXPIRATION_SECONDS)
+    expect(replacement.exp * 1000).toBeGreaterThan(
+      Date.now() + (ATTESTED_SESSION_EXPIRATION_SECONDS - 10) * 1000,
     )
   })
 
@@ -148,9 +171,9 @@ describe('server request context', () => {
     expect(cookieWrites).toHaveLength(2)
   })
 
-  it('cold-refreshes expired membership claims before exposing them to route limiting', async () => {
+  it('removes expired membership claims without rotating credentials during SSR', async () => {
     const user = await createRequiredTestUser()
-    const expiresAt = new Date(Date.now() + 60_000)
+    const expiresAt = new Date(Date.now() - 60_000)
     const membership = await createTestMembership({ user_id: user.id, plan: 'plus' })
     await updateTestMembershipExpiresAt(membership.id, expiresAt)
     const tokens = await createDeviceAndSessionTokens({
@@ -161,8 +184,6 @@ describe('server request context', () => {
       trustTier: 4,
     })
     await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 60_000))
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(expiresAt.getTime() + 1_000))
     const { context, cookieWrites } = createRequestContext()
 
     const session = await context.getSessionTokenData(
@@ -174,11 +195,71 @@ describe('server request context', () => {
     expect(session).toMatchObject({ uid: user.id, mpl: null })
     expect(session.tt).toEqual(expect.any(Number))
     expect(session.tt).not.toBe(4)
-    await expect(verifyOnlyCookiePair(cookieWrites)).resolves.toMatchObject({
-      uid: user.id,
-      mpl: null,
-      tt: session.tt,
+    expect(cookieWrites).toEqual([])
+  })
+
+  it.each(['stale', 'deadline'] as const)(
+    'enriches %s claims once without rotating credentials or resetting original identity',
+    async reason => {
+      const user = await createRequiredTestUser()
+      const tokens = await createDeviceAndSessionTokens({
+        did: v7(),
+        uid: user.id,
+        deviceClass: 'attested',
+      })
+      const st = await signSessionJwt(
+        {
+          ...tokens.sessionToken.payload,
+          rol: ['administrator'],
+          tt: 9,
+          sca: 0,
+          ...(reason === 'deadline' && { rca: 0 }),
+        },
+        { expiresIn: '30 days' },
+      )
+      if (reason === 'stale') await markJwtStale(user.id)
+      const original = await verifyDeviceAndSessionTokens({
+        deviceToken: tokens.deviceToken.token,
+        sessionToken: st,
+      })
+      if (!original) throw new Error('Expected signed authority')
+      const { context, cookieWrites } = createRequestContext({ dt: tokens.deviceToken.token, st })
+      const [first, second] = await Promise.all([
+        context.getSessionTokenData(),
+        context.getSessionTokenData(),
+      ])
+      expect(first).toBe(second)
+      expect(first).toMatchObject({
+        uid: original.uid,
+        did: original.did,
+        sid: original.sid,
+        client: original.client,
+        dc: original.dc,
+        iat: original.iat,
+        exp: original.exp,
+        device_iat: original.device_iat,
+        device_exp: original.device_exp,
+        rol: user.roles,
+      })
+      const loadedUser = context.currentUser
+      expect(loadedUser?.id).toBe(user.id)
+      await expect(context.getCurrentUser()).resolves.toBe(loadedUser)
+      expect(cookieWrites).toEqual([])
+      const marker = await sessionValkeyClient.get(getJwtStaleKey(user.id))
+      expect(marker !== null).toBe(reason === 'stale')
+    },
+  )
+
+  it('does not renew an expired access credential during server-side authentication', async () => {
+    const user = await createRequiredTestUser()
+    const tokens = await createDeviceAndSessionTokens({ did: v7(), uid: user.id })
+    const st = await signSessionJwt(tokens.sessionToken.payload, {
+      expiresIn: new Date(Date.now() - 60_000),
     })
+    const { context, cookieWrites } = createRequestContext({ dt: tokens.deviceToken.token, st })
+    await expect(context.getCurrentUser()).resolves.toBeNull()
+    expect(cookieWrites).toEqual([])
+    expect(context.sessionTokenData?.uid).toBeNull()
   })
 
   it('reuses one synthetic device id when request cookies are missing', async () => {
@@ -207,46 +288,8 @@ describe('server request context', () => {
   })
 })
 
-function createRequestContext(
-  cookies: Readonly<Partial<Record<string, string>>> = {},
-  request: Context['req'] = {} as Context['req'],
-): { context: Context; cookieWrites: CookieWrite[] } {
-  const incomingCookies = Object.freeze({ ...cookies })
-  const cookieWrites: CookieWrite[] = []
-  const context = {
-    req: request,
-    cookies: {
-      get(name: string): string | undefined {
-        return incomingCookies[name]
-      },
-      set(name: string, value: string, options?: CookieOptions): void {
-        cookieWrites.push({ name, value, options })
-      },
-    },
-  } as unknown as Context
-  Object.assign(context, contextExtensions)
-  return { context, cookieWrites }
-}
-
 async function createRequiredTestUser() {
   const user = await createTestUser()
   if (!user) throw new Error('Expected test user fixture to resolve')
   return user
-}
-
-function getOnlyCookieWrite(cookieWrites: CookieWrite[], name: string): CookieWrite {
-  const matchingWrites = cookieWrites.filter(write => write.name === name)
-  expect(matchingWrites).toHaveLength(1)
-  return matchingWrites[0]!
-}
-
-async function verifyOnlyCookiePair(cookieWrites: CookieWrite[]) {
-  expect(cookieWrites).toHaveLength(2)
-  const result = await verifyDeviceAndSessionTokens({
-    deviceToken: getOnlyCookieWrite(cookieWrites, 'dt').value,
-    sessionToken: getOnlyCookieWrite(cookieWrites, 'st').value,
-  })
-  expect(result).not.toBe(false)
-  if (!result) throw new Error('Expected replacement authentication cookies to verify')
-  return result
 }

@@ -1,3 +1,4 @@
+import { getTestPrivateUserById } from './private-users.mts'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -12,7 +13,6 @@ import {
   createTestUserWithId,
   createTestUserWithAge,
   addTestUserRole,
-  getTestPrivateUserById,
   attachTestPhoneNumber,
   type CreateTestUserOptions,
 } from './users-direct.mts'

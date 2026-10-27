@@ -67,8 +67,10 @@ vi.mock(import('@/components/web-search/web-search-list-client'), () => ({
 }))
 
 vi.mock(import('@/lib/seo/structured-data'), () => ({
-  createBreadcrumbSchema: vi.fn<VitestLooseMock>().mockReturnValue({}),
   createCollectionPageSchema: vi.fn<VitestLooseMock>().mockReturnValue({}),
+}))
+vi.mock(import('@/lib/seo/structured-data-breadcrumbs'), () => ({
+  createBreadcrumbSchema: vi.fn<VitestLooseMock>().mockReturnValue({}),
 }))
 
 const makePageInfo = () => ({

@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function getTestPendingMicrosoftStoreVerification(options: {
@@ -42,13 +42,6 @@ export async function countTestMicrosoftStoreVerifications(options: {
     WHERE verification.user_id = ${options.userId} AND context.provider = 'microsoft_store'
       AND context.environment = 'test' AND context.application_id = ${options.applicationId}`)
   return Number(rows[0]?.count)
-}
-
-export async function makeTestMembershipVerificationDue(verificationId: string): Promise<void> {
-  await write(sql`
-    /* makeTestMembershipVerificationDue */ UPDATE membership_verification_processing_work_items
-    SET available_at = CURRENT_TIMESTAMP
-    WHERE membership_verification_id = ${verificationId}`)
 }
 
 export async function listTestMicrosoftStoreSourceIds(options: {

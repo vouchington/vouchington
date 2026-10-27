@@ -29,14 +29,24 @@ describe('background registry', () => {
     }
   })
 
-  it('reserves independent ActivityPub delivery and cleanup lanes', () => {
+  it('reserves independent ActivityPub dispatch, recovery, delivery, and cleanup lanes', () => {
     const key = (name: string) => getBackgroundJob(`activitypub.${name}`)?.options.ordering?.key
-    expect(key('distributeActivity')).toBe('activitypub:outbound')
+    expect(key('distributeActivity')).toBe('activitypub:outbound-dispatch')
+    expect(key('recoverOutboundDistribution')).toBe('activitypub:outbound-recovery')
     expect(key('deliverActivity')).toBe('activitypub:outbound')
     expect(key('processDelivery')).toBe('activitypub:inbound')
-    expect(key('recoverDeliveries')).toBe('activitypub:inbound')
-    expect(key('rearmFailedDeliveries')).toBe('activitypub:inbound')
+    expect(key('recoverDeliveries')).toBe('activitypub:inbound-recovery')
+    expect(key('rearmFailedDeliveries')).toBe('activitypub:inbound-recovery')
     expect(key('cleanupExpiredDeliveries')).toBe('activitypub:cleanup')
+  })
+
+  it('keeps mark-all continuation off the notification delivery lane', () => {
+    expect(
+      getBackgroundJob('notifications.processMarkAllNotificationsRead')?.options.ordering,
+    ).toEqual({ key: 'notifications:mark-all-read', concurrency: 1 })
+    expect(
+      getBackgroundJob('notifications.processDeliverNotificationPushIntent')?.options.ordering?.key,
+    ).toBe('notifications')
   })
 
   it('ranks tasks at the default tier and dispatchers at 100', () => {

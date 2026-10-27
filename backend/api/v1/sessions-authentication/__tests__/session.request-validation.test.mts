@@ -1,3 +1,4 @@
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 
@@ -66,6 +67,30 @@ describe('/api/v1/session - request contract validation', () => {
   })
 
   describe('DELETE /api/v1/session', () => {
+    it('revokes both cookie and body credentials when a selected body is rejected', async () => {
+      const { id: userId } = await createTestUserDirect()
+      const cookiePair = await createDeviceAndSessionTokens({ uid: userId, did: v7(), sid: v7() })
+      const bodyPair = await createDeviceAndSessionTokens({ uid: userId, did: v7(), sid: v7() })
+      const response = await createRequest()
+        .delete('/api/v1/session')
+        .set('Cookie', [
+          `dt=${cookiePair.deviceToken.token}`,
+          `st=${cookiePair.sessionToken.token}`,
+        ])
+        .send({ dt: bodyPair.deviceToken.token, st: bodyPair.sessionToken.token, foo: 'bar' })
+        .expect(422)
+
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('dt=;'), expect.stringContaining('st=;')]),
+      )
+      await expect(isSessionRevoked(cookiePair.sessionToken.payload.sid, { userId })).resolves.toBe(
+        true,
+      )
+      await expect(isSessionRevoked(bodyPair.sessionToken.payload.sid, { userId })).resolves.toBe(
+        true,
+      )
+    })
+
     it.each([
       { field: 'device token' as const, body: { dt: 123 } },
       { field: 'session token' as const, body: { st: 123 } },
@@ -79,16 +104,14 @@ describe('/api/v1/session - request contract validation', () => {
       expect(response.body.session).toBeUndefined()
     })
 
-    it('rejects an unknown body field and never calls the reset service', async () => {
-      // A uid-bearing dt/st pair makes resetSessionState revoke the old sid as a side effect
-      // (see reset-session.mts) -- proving the sid stays unrevoked shows the 422 from the
-      // unknown `foo` field short-circuited before the service ran, not just that the HTTP
-      // response was a 422.
+    it('rejects an unknown body field while ending the proved session', async () => {
+      // Even a rejected logout ends the session proved by its signed credentials.
+      const { id: userId } = await createTestUserDirect()
       const authenticatedSid = v7()
       const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
         did: v7(),
         sid: authenticatedSid,
-        uid: v7(),
+        uid: userId,
       })
 
       const response = await createRequest()
@@ -97,7 +120,7 @@ describe('/api/v1/session - request contract validation', () => {
         .expect(422)
 
       expect(response.body.session).toBeUndefined()
-      expect(await isSessionRevoked(authenticatedSid)).toBe(false)
+      expect(await isSessionRevoked(authenticatedSid, { userId })).toBe(true)
     })
   })
 })

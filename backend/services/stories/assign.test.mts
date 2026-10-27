@@ -14,8 +14,6 @@ import {
   getPostCategoryTopicIds,
   getPostRelatedUrlIds,
   addCategoryToRssFeedItem,
-  getTestPostPublicationDirtyWorkForScope,
-  listTestPostPublicationImpactTopicIds,
   withTestStoryLifecycleLock,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
@@ -23,10 +21,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { upsertSystemUser } from '@services/users/system-users'
 import { prepareStoryPost } from './story-posts.mts'
 import { refreshStoryPostForStory } from './refresh-story-post.mts'
-import {
-  acknowledgePostPublicationDirtyWork,
-  claimPostPublicationDirtyWork,
-} from '@services/post-publication/dirty-work'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { invalidateStories } from './cache-invalidation.mts'
 import { settleStoryPostTopicVoteCapture } from '../../test-helpers/services/stories/post-topic-vote-capture.mts'
 import { drainStoryPostRelatedUrlProjection } from '../../test-helpers/services/stories/story-post-related-url-projection.mts'
@@ -117,36 +112,31 @@ describe('assign', () => {
     const itemId = await makeTestItem()
     const topic = await createTestTopic({ name: `Story capture order ${randomUUID()}` })
     await addCategoryToRssFeedItem(itemId, topic.id)
-    const workBeforeAssignment = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
-    })
     const enqueuedPostIds: string[] = []
-    await adminAssignItemToStory(storyPostUser.id, story.id, itemId, {
-      refreshStoryPostForStory: async (refreshedStoryId, refreshOptions, refreshBehavior) => {
-        expect(refreshBehavior?.enqueueAgent).toBe(false)
-        expect(refreshedStoryId).toBe(story.id)
-        if (!refreshOptions?.query) throw new Error('Expected transactional story refresh')
-        await expect(
-          getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }, refreshOptions),
-        ).resolves.toEqual(workBeforeAssignment)
-        return refreshStoryPostForStory(refreshedStoryId, refreshOptions, refreshBehavior)
-      },
-      enqueueStoryPostAgent: async postId => {
-        enqueuedPostIds.push(postId)
-      },
-    })
+    const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
+      adminAssignItemToStory(storyPostUser.id, story.id, itemId, {
+        refreshStoryPostForStory: async (refreshedStoryId, refreshOptions, refreshBehavior) => {
+          expect(refreshBehavior?.enqueueAgent).toBe(false)
+          expect(refreshedStoryId).toBe(story.id)
+          if (!refreshOptions?.query) throw new Error('Expected transactional story refresh')
+          return refreshStoryPostForStory(refreshedStoryId, refreshOptions, refreshBehavior)
+        },
+        enqueueStoryPostAgent: async postId => {
+          enqueuedPostIds.push(postId)
+        },
+      }),
+    )
     await settleStoryPostTopicVoteCapture(post.id, topic.id)
     await drainStoryPostRelatedUrlProjection(post.id)
     expect(enqueuedPostIds).toEqual([post.id])
     await expect(getPostCategoryTopicIds(post.id)).resolves.toContain(topic.id)
-    const workAfterAssignment = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
-    })
-    expect(workAfterAssignment!.reasons).toEqual(
-      expect.arrayContaining(['post_related_urls_changed', 'post_topics_changed', 'post_updated']),
+    expect(jobs.map(job => job.reason)).toEqual(
+      expect.arrayContaining(['post_updated', 'post_topics_changed']),
     )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: topic.id,
+    })
   })
   it('adminAssignItemToStory refreshes prior story when item moves between stories', async () => {
     const story1 = await insertTestStory()
@@ -261,40 +251,28 @@ describe('assign', () => {
     await addCategoryToRssFeedItem(itemIds[0]!, removedTopic.id)
     await refreshStoryPostForStory(story.id)
     await settleStoryPostTopicVoteCapture(post.id, removedTopic.id)
-    const settledWork = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
-    if (!settledWork) throw new Error('Expected settled publication work')
-    const claim = await claimPostPublicationDirtyWork(settledWork, 60)
-    if (!claim) throw new Error('Expected publication work claim')
-    await expect(
-      acknowledgePostPublicationDirtyWork({ ...claim, leaseToken: claim.lease_token }),
-    ).resolves.toBe(true)
     const completedRefreshes = new Set<string>()
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }),
-    ).resolves.toBeUndefined()
-    await adminRemoveItemFromStory(storyPostUser.id, itemIds[0]!, {
-      refreshStoryPostForStory: async (storyId, refreshOptions, refreshBehavior) => {
-        expect(refreshBehavior?.enqueueAgent).toBe(false)
-        if (!refreshOptions?.query) throw new Error('Expected transactional story refresh')
-        await expect(
-          getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }, refreshOptions),
-        ).resolves.toBeUndefined()
-        const result = await refreshStoryPostForStory(storyId, refreshOptions, refreshBehavior)
-        completedRefreshes.add(storyId)
-        return result
-      },
-      invalidateStories: async (...storyIds) => {
-        expect(completedRefreshes).toEqual(new Set([story.id]))
-        await invalidateStories(...storyIds)
-      },
-    })
+    const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
+      adminRemoveItemFromStory(storyPostUser.id, itemIds[0]!, {
+        refreshStoryPostForStory: async (storyId, refreshOptions, refreshBehavior) => {
+          expect(refreshBehavior?.enqueueAgent).toBe(false)
+          if (!refreshOptions?.query) throw new Error('Expected transactional story refresh')
+          const result = await refreshStoryPostForStory(storyId, refreshOptions, refreshBehavior)
+          completedRefreshes.add(storyId)
+          return result
+        },
+        invalidateStories: async (...storyIds) => {
+          expect(completedRefreshes).toEqual(new Set([story.id]))
+          await invalidateStories(...storyIds)
+        },
+      }),
+    )
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.not.toContain(removedUrlId)
     await expect(getPostRelatedUrlIds(post.id)).resolves.toContain(retainedUrlId)
-    const dirtyWork = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
-    expect(dirtyWork).toBeDefined()
-    await expect(listTestPostPublicationImpactTopicIds(dirtyWork!.id)).resolves.toContain(
-      removedTopic.id,
-    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: removedTopic.id,
+    })
   })
 })

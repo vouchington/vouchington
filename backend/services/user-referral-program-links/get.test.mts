@@ -9,6 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
 import { addUserRole } from '@services/users/roles-permissions'
+import { insertTestTotpAuthenticator } from '@voucha/test-helpers/entities/totp'
 import { getPrivateUserByAny } from '@services/users/get'
 import { encodeCursor } from '@modules/pagination'
 import { createUserReferralLink } from './create.mts'
@@ -26,7 +27,8 @@ describe('get', () => {
   beforeAll(async () => {
     regularUser = await createTestUserDirect()
     otherUser = await createTestUserDirect()
-    const admin = await createTestUserDirect()
+    const admin = await createTestUserDirect({ withEmail: true })
+    await insertTestTotpAuthenticator(admin!.id, 'referral-links-admin')
     await addUserRole(admin!.id, 'administrator')
     adminUser = await getPrivateUserByAny(admin!.id)
 

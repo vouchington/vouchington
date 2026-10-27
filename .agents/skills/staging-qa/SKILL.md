@@ -70,7 +70,8 @@ Follow [AUTH.md](../../../docs/requirements/security/AUTH.md) email OTP and
 deep-link steps. Inbox for this operator:
 `https://mail.google.com/mail/u/1/#inbox` (default `jong@voucha.ai`).
 
-Local chrome-qa “no CAPTCHA / login-as auto-submit” does **not** apply.
+Local chrome-qa’s test CAPTCHA exemption does **not** apply. Email login links still require
+a deliberate **Log in** click after the code is prefilled.
 
 **Turnstile in Chrome DevTools MCP:** a real staging site key (`0x4…`, not a
 test key) plus a loaded widget is enough to treat Worker/site-key wiring as

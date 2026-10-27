@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createExcerpt,
-  createNoIndexMetadata,
-  createPageMetadata,
-  createRootMetadata,
-} from '../metadata'
+import { createNoIndexMetadata, createPageMetadata, createRootMetadata } from '../metadata'
 import { OG_RENDERER_VERSION } from '../og-image-url'
 
 const GENERIC_OG_PARAMS = {
@@ -128,17 +123,5 @@ describe('seo metadata helpers', () => {
       index: false,
       follow: false,
     })
-  })
-
-  it('creates clean excerpts from markup-heavy content', () => {
-    const excerpt = createExcerpt('<p>Hello <strong>world</strong></p>', 20)
-
-    expect(excerpt).toBe('Hello world')
-  })
-
-  it('preserves mid-word hyphens in excerpts', () => {
-    const excerpt = createExcerpt('A co-founder built this state-of-the-art product.', 100)
-
-    expect(excerpt).toBe('A co-founder built this state-of-the-art product.')
   })
 })

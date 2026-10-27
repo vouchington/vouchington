@@ -18,7 +18,16 @@ export const PAGED_DISPATCH_OPTIONS = {
 
 export function pagedDispatchBackoffStrategies() {
   return Object.fromEntries(
-    ['hostnames', 'rss', 'kagi', 'elections', 'notifications', 'activitypub'].map(dispatcher => [
+    [
+      'hostnames',
+      'rss',
+      'kagi',
+      'elections',
+      'notifications',
+      'activitypub',
+      'images',
+      'memberships',
+    ].map(dispatcher => [
       `paged-dispatch-${dispatcher}`,
       (attempt: number) =>
         Math.min(
@@ -51,11 +60,12 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     targetPrefix?: string
     /** Defaults to the destination when dispatchers and row jobs share one queue. */
     continuationQueue?: Pick<Queue, 'name'>
-    targetName: 'background' | 'background-cpu'
+    targetName: 'background' | 'background-cpu' | 'memberships'
     readAndDispatch: (
       pageSize: number,
     ) => Promise<{ result: TResult; next?: TData; afterDispatch?: () => Promise<void> }>
     enqueueNext: (data: TData, options: Partial<JobOptions>) => Promise<unknown>
+    continuationJobId?: (next: TData) => string
   },
 ): Promise<TResult> {
   if (!CURSOR_KEYS.includes(options.cursorKey))
@@ -97,7 +107,7 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     if (!page.nextAdmitted) {
       await options.enqueueNext(page.next, {
         ...pagedDispatchJobOptions(options.dispatcher),
-        jobId: `${job.name}__page__${pageId}`,
+        jobId: options.continuationJobId?.(page.next) ?? `${job.name}__page__${pageId}`,
         // Covers terminal pruning in the enqueue/checkpoint gap; released after the checkpoint.
         deduplication: { id: continuationDedupId, mode: 'throttle', ttl: Number.MAX_SAFE_INTEGER },
       })

@@ -1,6 +1,6 @@
-import type { JobOptions } from 'glide-mq'
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+import type { JobOptions } from 'glide-mq'
 
 export const QUEUE_NAME = 'psql'
 export const PRIORITY_DEFAULT = 10
@@ -76,3 +76,29 @@ export const PSQL_RETRY_OPTIONS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
 } satisfies JobOptions
+
+export const MODERATION_RETENTION_JOB_NAME = 'moderationRetentionCleanup'
+export const MODERATION_RETENTION_SCHEDULER_ID = 'moderation-retention-cleanup-daily'
+
+export const moderationRetentionQueueConfig = new DynamicConfig({
+  key: 'psql-moderation-retention-config',
+  fieldTypes: { concurrency: 'number' },
+  defaultFields: { concurrency: 1 },
+})
+
+export function getModerationRetentionJobOptions(): JobOptions {
+  return {
+    priority: PRIORITY_DEFAULT,
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+    ordering: {
+      key: 'psql:moderation-retention',
+      concurrency: getBoundedPositiveIntegerField(moderationRetentionQueueConfig, 'concurrency', {
+        defaultValue: 1,
+        maxValue: 1,
+      }),
+    },
+  }
+}

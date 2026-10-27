@@ -4,7 +4,7 @@
 
 - <a id="web-client-auth-boundary"></a>[Web Client Auth Boundary](reference-auth-overview-web-client-auth-boundary.md)
 - <a id="tokens"></a>[Tokens](reference-auth-overview-web-client-auth-boundary.md#tokens)
-- <a id="stateless-session-architecture"></a>[Stateless Session Architecture](reference-auth-overview-stateless-session-architecture.md)
+- <a id="stateless-session-architecture"></a>[Signed credentials and durable session authority](reference-auth-overview-stateless-session-architecture.md)
 - <a id="valkey-state"></a>[Valkey State](reference-auth-overview-valkey-state.md)
 - <a id="request-flow"></a>[Request Flow](reference-auth-overview-valkey-state.md#request-flow)
 - <a id="login-flows"></a>[Login Flows](reference-auth-overview-login-flows.md)

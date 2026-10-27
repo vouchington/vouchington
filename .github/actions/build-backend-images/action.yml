@@ -152,17 +152,15 @@ runs:
       with:
         node-version-file: '.nvmrc'
         package-manager-cache: false
-    # pnpm's self-switch to latest-12 verifies the registry signature with no retry, so a
-    # transient fetch error fails the step; retry once, and a second failure fails the job.
-    - id: pnpm-setup
-      continue-on-error: true
-      uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+    - name: Resolve pnpm version
+      id: pnpm-version
+      uses: vouchington/vouchington-tooling/.github/actions/resolve-pnpm-version@6569fcf1d4e98120ba0b06654767ea91ed8fb159 # v0.76.0
+    - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
       with:
-        version: latest-12
-    - if: steps.pnpm-setup.outcome == 'failure'
-      uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      with:
-        version: latest-12
+        node-version-file: 'false'
+        install: false
+        cache: false
+        version: ${{ steps.pnpm-version.outputs.version }}
     - name: Install published tooling scripts
       shell: bash
       run: ci/install-vouchington-tooling.sh "$RUNNER_TEMP/vouchington-tooling" package.json

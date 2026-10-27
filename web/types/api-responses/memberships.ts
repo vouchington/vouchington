@@ -18,6 +18,7 @@ export type MembershipVerificationReasonCode =
   | 'stale_evidence'
   | 'expired'
   | 'purchase_pending'
+  | 'provider_unavailable'
   | 'missing_account_token'
 
 export interface MembershipPlanSku {
@@ -154,7 +155,6 @@ export interface MembershipResponseBody {
       provider: MembershipPurchaseProvider
       status: 'pending' | 'verified' | 'conflict' | 'rejected'
       reason_code: MembershipVerificationReasonCode | null
-      next_processing_at: string | null
     }>
     financial_operations: Array<{
       id: string

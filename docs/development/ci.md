@@ -112,6 +112,16 @@ job sends it under a carryforward flag without gating. Each concurrency group st
 literal area prefix and cancels only superseded pull-request runs, and
 [`nightly.yml`](../../.github/workflows/nightly.yml) calls every area daily.
 
+The Backend area prepares one migrated PostgreSQL baseline per workflow run for every backend database
+consumer: unit shards, trusted provider tests, schema contracts, smoke tests, and EXPLAIN scenarios.
+The producer checks SQL safety, staging RSS and retained-relation bootstrap, and the canonical schema
+snapshot, then uploads a
+short-lived custom-format dump. Each consumer restores that artifact into its isolated PostgreSQL
+service before running its checks. Standalone suite dispatches prepare the same baseline themselves.
+Dedicated native migration-control scenarios still execute migrations as the behavior under test.
+Snapshot validation runs on fresh migration output because PostgreSQL can re-parenthesize equivalent
+conditions during dump/restore.
+
 <a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job and the Web
 area's `test-playwright-credentialed` job call live providers as informational smoke checks: their
 gates do not wait on them, they publish no LCOV, and `.pr-shepherdrc.yml` lists them under
@@ -121,7 +131,9 @@ reruns them because a rerun of a non-gating job gains nothing. The failed job st
 check, the Nightly run, and the Nightly alert still report it. Recorded provider responses replayed
 through `createProviderReplay` gate the
 same request handling deterministically; see [live-provider smoke checks](tests.md#live-provider-smoke-checks)
-for the conversion rules. To add such a job, see
+for the conversion rules. The credentialed jobs run live-provider tests, which only prove each call
+works; the model-quality evals spend a call per fixture, so `evals-backend.yml` runs them only on
+`workflow_dispatch` and no area DAG calls it. To add such a job, see
 [Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md).
 
 ## Automation

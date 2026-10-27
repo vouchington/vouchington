@@ -3,10 +3,8 @@
 -- edited-in-place: pre-launch, never deployed to production
 -- Merged from: 0003-00-00-images.sql, 0140-00-00-post-images.sql
 
--- ==========================================================================
--- 0003-00-00-images.sql
--- ============================================================================
-
+-- ===================================================================-- 0003-00-00-images.sql
+-- =====================================================================
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS images (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -16,6 +14,8 @@ CREATE TABLE IF NOT EXISTS images (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
+  deletion_post_cursor UUID,
+  deletion_posts_completed_at TIMESTAMPTZ,
 
   -- image data
   data JSONB NOT NULL, -- raw sharp metadata,
@@ -144,6 +144,8 @@ CREATE INDEX IF NOT EXISTS idx_images__staged_source_cleanup
   ON images (upload_staged_at, id)
   WHERE upload_staged_at IS NOT NULL
     AND upload_source_deleted_at IS NULL
+    AND (deleted_at IS NULL OR deletion_posts_completed_at IS NOT NULL)
+    AND (quarantine_pending_at IS NULL OR quarantined_at IS NOT NULL)
     AND (deleted_at IS NOT NULL OR upload_failed_at IS NOT NULL
       OR upload_completed_at IS NOT NULL
       OR (upload_started_at IS NOT NULL AND sha_256 IS NOT NULL
@@ -162,3 +164,7 @@ CREATE INDEX IF NOT EXISTS idx_images__abandoned_uploads
     AND upload_completed_at IS NULL AND upload_failed_at IS NULL
     AND NOT (upload_started_at IS NOT NULL AND sha_256 IS NOT NULL
       AND s3_key = encode(sha_256, 'hex'));
+COMMENT ON COLUMN images.deletion_post_cursor IS 'Opaque post-id keyset position committed atomically with image deletion post resets; never joined.';
+COMMENT ON COLUMN images.deletion_posts_completed_at IS 'All image deletion post pages and their post-updated admissions completed; storage may now be deleted.';
+CREATE INDEX IF NOT EXISTS idx_images__unfinished_deletion ON images (id)
+WHERE deleted_at IS NOT NULL AND deletion_posts_completed_at IS NULL;

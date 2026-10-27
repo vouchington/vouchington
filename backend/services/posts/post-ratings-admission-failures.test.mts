@@ -8,7 +8,6 @@ import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import {
   createTestUser,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestRssFeedDirect,
   insertTestTopic,
   WEB_PROVENANCE,
@@ -16,6 +15,7 @@ import {
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { readEnqueuedJob, removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 
 const REVIEW_MARKDOWN =
   'This review gives detailed context from repeated personal use, including the strongest benefits, the weakest tradeoffs, and how the product performed over time. It explains why the rating is justified with concrete observations that another consumer could compare against their own needs. I would use these details to make the same decision again.'
@@ -61,10 +61,12 @@ describe('post-rating admission failures', () => {
       })
       onTestFinished(() => spy.mockRestore())
 
-      if (method === 'add')
-        await addPostRating(user, post, { topic_id: targetId!, rating: 3, order_index: 1 })
-      else if (method === 'update') await updatePostRating(user, post, targetId!, { rating: 3 })
-      else await deletePostRating(user, post, targetId!)
+      const jobs = await captureAddedPublicationEffectsForScope(post.id, async () => {
+        if (method === 'add')
+          await addPostRating(user, post, { topic_id: targetId!, rating: 3, order_index: 1 })
+        else if (method === 'update') await updatePostRating(user, post, targetId!, { rating: 3 })
+        else await deletePostRating(user, post, targetId!)
+      })
 
       const committed = await getPostByAny(post.id)
       expect(
@@ -81,9 +83,7 @@ describe('post-rating admission failures', () => {
       expect(
         sentryCaptureExceptionMock.mock.calls.filter(([reported]) => reported === admissionError),
       ).toHaveLength(1)
-      expect(
-        (await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }))?.reasons,
-      ).toContain('post_ratings_changed')
+      expect(jobs.map(job => job.reason)).toContain('post_ratings_changed')
     },
   )
 
@@ -153,16 +153,18 @@ describe('post-rating admission failures', () => {
       onTestFinished(() => spy.mockRestore())
 
       let lookupError: Error | undefined
-      if (source === 'lookup') {
-        const { error } = await withPostgresPoolQueryFailureForTest(
-          '/* searchRssFeedIdsByTopicIds */',
-          () => updatePostRating(user, post, topicId, { rating: 3 }),
-          { command: 'SELECT' },
-        )
-        lookupError = error
-      } else {
-        await updatePostRating(user, post, topicId, { rating: 3 })
-      }
+      const jobs = await captureAddedPublicationEffectsForScope(post.id, async () => {
+        if (source === 'lookup') {
+          const { error } = await withPostgresPoolQueryFailureForTest(
+            '/* searchRssFeedIdsByTopicIds */',
+            () => updatePostRating(user, post, topicId, { rating: 3 }),
+            { command: 'SELECT' },
+          )
+          lookupError = error
+        } else {
+          await updatePostRating(user, post, topicId, { rating: 3 })
+        }
+      })
       expect(lookupError && 'code' in lookupError ? lookupError.code : undefined).toBe(
         source === 'lookup' ? '25P02' : undefined,
       )
@@ -182,9 +184,7 @@ describe('post-rating admission failures', () => {
         name: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
         data: { id: post.id },
       })
-      expect(
-        (await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id }))?.reasons,
-      ).toContain('post_ratings_changed')
+      expect(jobs.map(job => job.reason)).toContain('post_ratings_changed')
     },
   )
 })

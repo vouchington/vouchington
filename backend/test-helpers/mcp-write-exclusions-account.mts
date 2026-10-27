@@ -6,6 +6,11 @@ const profile = (reason: string, routes: string[]) =>
 export const accountExclusions = [
   ...exclusions(
     'auth-session',
+    'Browser-managed device-key registration and refresh proof; the browser owns the key ceremony',
+    ['POST /auth/device-bound-sessions', 'POST /auth/device-bound-sessions/refreshes'],
+  ),
+  ...exclusions(
+    'auth-session',
     'Login, OAuth, MFA or session protocol; the caller has no token yet or is minting one',
     [
       'POST /auth/email-address/login',
@@ -15,8 +20,13 @@ export const accountExclusions = [
       'POST /auth/mfa/passkeys/authentication/verification',
       'POST /auth/mfa/re-auth/email/tokens',
       'POST /auth/mfa/re-auth/email/verification',
-      'POST /auth/mfa/re-auth/tokens/verification',
       'POST /auth/mfa/re-auth/totp/verification',
+      'POST /auth/re-auth/passkeys/options',
+      'POST /auth/re-auth/passkeys/verification',
+      'POST /auth/re-auth/providers/:provider/authorizations',
+      'POST /auth/re-auth/providers/:provider/proofs',
+      'POST /auth/re-auth/providers/:provider/challenges',
+      'POST /auth/re-auth/providers/:provider/verification',
       'POST /auth/mfa/totp/verification',
       'POST /auth/oauth/:provider/authorizations',
       'POST /auth/oauth/:provider/continue',

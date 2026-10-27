@@ -8,7 +8,7 @@ import { setupRepoFilePolicyTest } from '../../test-helpers/repo-file-policy-fix
 describe('repo-file-policy', () => {
   const { makeRepo, run, track, trackTopicEnumSurfaces } = setupRepoFilePolicyTest()
 
-  it('rejects backend/web topicTypes slugPlural mismatches', { timeout: 10_000 }, async () => {
+  it('rejects backend/web topicTypes slugPlural mismatches', async () => {
     const dir = await makeRepo()
     await trackTopicEnumSurfaces(dir, {
       backend: { topic: 'topic', card: 'card' },
@@ -26,7 +26,7 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it('ignores commented topicTypes entries', { timeout: 10_000 }, async () => {
+  it('ignores commented topicTypes entries', async () => {
     const dir = await makeRepo()
     await trackTopicEnumSurfaces(dir, {
       backend: { topic: 'topic' },

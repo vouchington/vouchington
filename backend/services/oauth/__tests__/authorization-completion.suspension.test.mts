@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { createTestAccountChangeActor } from '@voucha/test-helpers/account-change'
 import {
   createTestUser,
   getTestOAuthAccountRaw,
@@ -22,8 +23,9 @@ describe('suspended OAuth authorization completion', () => {
     const user = await createTestUser()
     cleanup.userIds.push(user.id)
     const account = await createOAuthAccount('github', cleanup)
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
+    const actor = await createTestAccountChangeActor(user.id)
+    const deviceId = actor.session.did
+    const sessionId = actor.session.sid
     const completionToken = randomBytes(32).toString('base64url')
     const flowId = await insertCompletionReadyAuthorization(
       {
@@ -108,16 +110,19 @@ describe('suspended OAuth authorization completion', () => {
         user: { id: user.id, suspended_at: expect.any(Date) },
       })
       if (first.status !== 'authenticated') throw new Error('Expected authenticated result')
-      await expect(
-        completeOAuthAuthorization({
-          flowId,
-          completionToken,
-          completionTokenSource: 'cookie',
-          deviceId: first.deviceToken.payload.did,
-          sessionId: first.sessionToken.payload.sid,
-          currentUserId: user.id,
-        }),
-      ).resolves.toMatchObject({ status: 'authenticated', user: { id: user.id } })
+      const replay = await completeOAuthAuthorization({
+        flowId,
+        completionToken,
+        completionTokenSource: 'cookie',
+        deviceId: first.deviceToken.payload.did,
+        sessionId: first.sessionToken.payload.sid,
+        currentUserId: user.id,
+      })
+      expect(replay).toMatchObject({ status: 'authenticated', user: { id: user.id } })
+      if (replay.status !== 'authenticated') throw new Error('Expected authenticated replay')
+      expect(replay.deviceToken.token).toBe(first.deviceToken.token)
+      expect(replay.sessionToken.payload.sid).toBe(first.sessionToken.payload.sid)
+      expect(replay.sessionToken.payload.mfa_at).toBe(first.sessionToken.payload.mfa_at)
     } finally {
       await unsuspendTestUser(user.id)
     }

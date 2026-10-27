@@ -16,7 +16,7 @@ describe('admin landing pages', () => {
   let landingPageId: string
 
   beforeAll(async () => {
-    admin = await createTestUserDirect({ administrator: true })
+    admin = await createTestUserDirect({ administrator: true, withEmail: true })
     regularUser = await createTestUserDirect()
 
     const page = await createTestLandingPage(regularUser.id, 'Admin landing page')

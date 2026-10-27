@@ -32,7 +32,7 @@ describe('copyright staff path and query request contracts', () => {
 
       for (const url of posts) {
         const anonymous = await createRequest().post(url).send({ injected: true }).expect(401)
-        expect(anonymous.text).not.toMatch(/schema|must be|required|invalid/i)
+        expect(anonymous.body.message).not.toMatch(/schema|must be|required|invalid/i)
         await member.post(url).send({ injected: true }).expect(403)
       }
       const similarity = `${similarityUrl(noticeId, otherId)}?limit=abc`

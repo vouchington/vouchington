@@ -8,7 +8,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@services/users/types'
-import { runWithRequestContext } from '@modules/utils/request-context'
+import { getRequestCurrentUser, runWithRequestContext } from '@modules/utils/request-context'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
 
 describe('requirePrivateToolUser', () => {
@@ -33,6 +33,22 @@ describe('requirePrivateToolUser', () => {
       const first = await requirePrivateToolUser(currentUser)
       const second = await requirePrivateToolUser(currentUser)
       expect(second).toBe(first)
+    })
+  })
+
+  it('never restores an administrator role filtered by MCP bearer admission', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const principal: BasicUser = {
+      __entity_type: 'user',
+      account_type: admin.account_type,
+      id: admin.id,
+      roles: admin.roles.filter(role => role !== 'administrator'),
+    }
+    await runWithRequestContext(async () => {
+      const user = await requirePrivateToolUser(principal)
+      expect(user.roles).not.toContain('administrator')
+      expect(getRequestCurrentUser<{ roles: string[] }>()?.roles).not.toContain('administrator')
+      expect((await requireActiveToolUser(principal)).roles).not.toContain('administrator')
     })
   })
 

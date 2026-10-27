@@ -5,12 +5,8 @@ export const FEDERATION_BOUNDED_TABLES: [string, string][] = [
     'Signed request age bounds replay admission; a capped keyset sweep removes older inbox dedup rows.',
   ],
   [
-    'activitypub_distribution_work_items',
-    'UUIDv7 activity age bounds distribution replay; a capped keyset sweep removes old completed checkpoints.',
-  ],
-  [
     'activitypub_replay_rejection_floors',
-    'One durable replay rejection boundary per inbound or outbound kind survives ledger expiry.',
+    'One durable inbound replay rejection boundary survives ledger expiry.',
   ],
   [
     'follower_distributions',

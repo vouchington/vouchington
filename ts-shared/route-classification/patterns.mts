@@ -28,6 +28,7 @@ export const PRIVATE_DISCOVERY_EXACT_PATHS: ReadonlySet<string> = new Set([
   '/growth',
   '/infra',
   '/login',
+  '/session-renewal',
   '/memberships/grants',
   '/messages',
   '/monitoring',

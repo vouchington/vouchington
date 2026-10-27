@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { withTestEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-transition'
 import { withPrivateIdentityCacheFill } from '@voucha/test-helpers/private-identity-cache'
-import { version as uuidVersion } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { createTestAccountChangeProof } from '@voucha/test-helpers/account-change'
 import {
   createRandomString,
   createTestUser,
-  getTestBlueskyLinkAuthorizationRow,
   getTestBlueskyLinkedAccountRow,
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
@@ -43,126 +42,6 @@ function fakeHandle(): string {
   return `user-${createRandomString(6)}.bsky.social`
 }
 
-describe('POST /api/v1/auth/bluesky/link', () => {
-  beforeEach(() => {
-    beginBlueskyAuthorizationMock.mockReset()
-  })
-
-  it('returns 401 when unauthenticated', async () => {
-    const request = createRequest()
-    const response = await request
-      .post('/api/v1/auth/bluesky/link')
-      .send({ handle: fakeHandle() })
-      .expect(401)
-
-    expect(response.body.message).toContain('Unauthorized')
-  })
-
-  it('returns 400 when handle is missing', async () => {
-    const request = createRequest()
-    const user = await createTestUser()
-    await request.authenticateAs(user)
-
-    await request.post('/api/v1/auth/bluesky/link').send({}).expect(400)
-    expect(beginBlueskyAuthorizationMock).not.toHaveBeenCalled()
-  })
-
-  it('returns 400 when handle is blank', async () => {
-    const request = createRequest()
-    const user = await createTestUser()
-    await request.authenticateAs(user)
-
-    await request.post('/api/v1/auth/bluesky/link').send({ handle: '   ' }).expect(400)
-    expect(beginBlueskyAuthorizationMock).not.toHaveBeenCalled()
-  })
-
-  it('returns the authorization redirect URL on success', async () => {
-    const request = createRequest()
-    const user = await createTestUser()
-    await request.authenticateAs(user)
-    const handle = fakeHandle()
-    const authorizeUrl = new URL('https://bsky.social/oauth/authorize?request_uri=abc')
-    beginBlueskyAuthorizationMock.mockResolvedValueOnce(authorizeUrl)
-
-    const response = await request.post('/api/v1/auth/bluesky/link').send({ handle }).expect(200)
-
-    expect(response.body).toEqual({ redirect_url: authorizeUrl.toString() })
-    const [, calledHandle, rawState] = beginBlueskyAuthorizationMock.mock.calls[0]!
-    expect(calledHandle).toBe(handle)
-    const { authorizationId } = JSON.parse(rawState as string) as { authorizationId: string }
-    expect(uuidVersion(authorizationId)).toBe(7)
-    expect(await getTestBlueskyLinkAuthorizationRow(authorizationId)).toMatchObject({
-      id: authorizationId,
-      user_id: user.id,
-      handle,
-      callback_mode: 'web',
-      completion_proof_challenge: null,
-      status: 'pending',
-    })
-  })
-
-  it('returns a flow id for native callback mode', async () => {
-    const request = createRequest()
-    const user = await createTestUser()
-    await request.authenticateAs(user)
-    const handle = fakeHandle()
-    const completionProofChallenge = 'b'.repeat(43)
-    beginBlueskyAuthorizationMock.mockResolvedValueOnce(new URL('https://bsky.social/oauth'))
-    const response = await request
-      .post('/api/v1/auth/bluesky/link')
-      .send({
-        handle,
-        callback_mode: 'native',
-        completion_proof_challenge: completionProofChallenge,
-      })
-      .expect(200)
-    expect(uuidVersion(response.body.flow_id)).toBe(7)
-    expect(beginBlueskyAuthorizationMock).toHaveBeenCalledWith(
-      expect.anything(),
-      handle,
-      JSON.stringify({ authorizationId: response.body.flow_id }),
-    )
-    expect(await getTestBlueskyLinkAuthorizationRow(response.body.flow_id as string)).toMatchObject(
-      {
-        id: response.body.flow_id,
-        user_id: user.id,
-        handle,
-        callback_mode: 'native',
-        completion_proof_challenge: completionProofChallenge,
-        status: 'pending',
-      },
-    )
-  })
-
-  it('rejects an unsupported callback mode', async () => {
-    const request = createRequest()
-    await request.authenticateAs(await createTestUser())
-    await request
-      .post('/api/v1/auth/bluesky/link')
-      .send({ handle: fakeHandle(), callback_mode: 'desktop' })
-      .expect(400)
-    expect(beginBlueskyAuthorizationMock).not.toHaveBeenCalled()
-  })
-
-  it('returns 409 when the user already has a Bluesky account linked', async () => {
-    const request = createRequest()
-    const user = await createTestUser()
-    await request.authenticateAs(user)
-    const did = fakeDid()
-    const linked = await insertTestBlueskyLinkedAccount({
-      userId: null,
-      did,
-      linkingUserId: user.id,
-    })
-    await connectBlueskyAccountToUser(user.id, did, fakeHandle(), {
-      linkAuthorizationId: linked.link_authorization_id,
-    })
-
-    await request.post('/api/v1/auth/bluesky/link').send({ handle: fakeHandle() }).expect(409)
-    expect(beginBlueskyAuthorizationMock).not.toHaveBeenCalled()
-  })
-})
-
 // Callback route cases live in auth-bluesky-callback.mock.test.mts.
 
 describe('DELETE /api/v1/auth/bluesky/link', () => {
@@ -177,12 +56,24 @@ describe('DELETE /api/v1/auth/bluesky/link', () => {
     expect(response.body.message).toContain('Unauthorized')
   })
 
+  it('requires fresh account confirmation when DELETE has no body', async () => {
+    const request = createRequest()
+    const user = await createTestUser()
+    await request.authenticateAs(user)
+
+    const response = await request.delete('/api/v1/auth/bluesky/link').expect(403)
+    expect(response.body.code).toBe('MFA_REAUTH_REQUIRED')
+  })
+
   it('returns 404 when no account is linked', async () => {
     const request = createRequest()
     const user = await createTestUser()
     await request.authenticateAs(user)
 
-    await request.delete('/api/v1/auth/bluesky/link').expect(404)
+    await request
+      .delete('/api/v1/auth/bluesky/link')
+      .send({ re_auth_token: await createTestAccountChangeProof(user.id, request) })
+      .expect(404)
     expect(revokeBlueskySessionMock).not.toHaveBeenCalled()
   })
 
@@ -195,12 +86,16 @@ describe('DELETE /api/v1/auth/bluesky/link', () => {
       userId: null,
       did,
       linkingUserId: user.id,
+      initiatingSessionId: request.sid,
     })
     await connectBlueskyAccountToUser(user.id, did, fakeHandle(), {
       linkAuthorizationId: linked.link_authorization_id,
     })
 
-    await request.delete('/api/v1/auth/bluesky/link').expect(204)
+    await request
+      .delete('/api/v1/auth/bluesky/link')
+      .send({ re_auth_token: await createTestAccountChangeProof(user.id, request) })
+      .expect(204)
     expect(revokeBlueskySessionMock).not.toHaveBeenCalled()
     expect(await getTestBlueskyLinkedAccountRow(did)).not.toBeNull()
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
@@ -235,6 +130,7 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
       userId: null,
       did,
       linkingUserId: user.id,
+      initiatingSessionId: request.sid,
     })
     const admissionStarted = Promise.withResolvers<void>()
     const releaseAdmission = Promise.withResolvers<void>()
@@ -280,6 +176,7 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
       userId: null,
       did,
       linkingUserId: user.id,
+      initiatingSessionId: request.sid,
     })
     await withTestEntityListenerCompletion('processUserUpdated', user.id, () =>
       connectBlueskyAccountToUser(user.id, did, fakeHandle(), {
@@ -289,8 +186,11 @@ describe('bluesky_account on GET /api/v1/my/identity', () => {
     const linked = await request.get('/api/v1/my/identity').expect(200)
     expect(linked.body.identity.bluesky_account).not.toBeNull()
 
-    await withTestEntityListenerCompletion('processUserUpdated', user.id, () =>
-      request.delete('/api/v1/auth/bluesky/link').expect(204),
+    await withTestEntityListenerCompletion('processUserUpdated', user.id, async () =>
+      request
+        .delete('/api/v1/auth/bluesky/link')
+        .send({ re_auth_token: await createTestAccountChangeProof(user.id, request) })
+        .expect(204),
     )
 
     const after = await request.get('/api/v1/my/identity').expect(200)

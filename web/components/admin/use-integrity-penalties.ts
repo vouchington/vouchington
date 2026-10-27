@@ -106,6 +106,9 @@ export function useIntegrityPenalties<P extends IntegrityPenaltyRecord>(
   }
 
   async function reconcile(id: string): Promise<boolean> {
+    actionLocks.current.add(id)
+    setReconciliationRequired(previous => ({ ...previous, [id]: true }))
+    setActionLoading(previous => ({ ...previous, [id]: true }))
     try {
       const { penalty } = await options.getById(id)
       applyConfirmedPenalty(penalty)
@@ -184,6 +187,7 @@ export function useIntegrityPenalties<P extends IntegrityPenaltyRecord>(
     penalties,
     reconcile,
     reconciliationRequired,
+    removedIds,
     revokeWithConfirmation,
     scopeAvailable,
     selectedStatus,

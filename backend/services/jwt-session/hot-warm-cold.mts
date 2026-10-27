@@ -3,9 +3,9 @@ import { clearJwtStaleIfCurrent } from './invalidation.mts'
 import { getEnrichedSessionClaims } from './enrich.mts'
 import { createRefreshedAuthenticatedSession, issueAnonSession } from './refresh-token-rotation.mts'
 import type {
+  DbscAuthorization,
   FetchUserForSession,
   RefreshedSessionState,
-  SessionTokenPayload,
   VerifyDeviceAndSessionTokenResult,
 } from './types.mts'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
@@ -20,40 +20,17 @@ export async function applyHotWarmCold(
   verified: VerifyDeviceAndSessionTokenResult,
   did: string,
   dt: string,
-  sessionToken: string,
   fetchUser: FetchUserForSession,
-  options?: { verifyRevocationOnHotPath?: boolean },
+  clock: () => number = Date.now,
+  dbscProof?: DbscAuthorization,
 ): Promise<RefreshedSessionState> {
   const uid = verified.uid!
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(clock() / 1000)
   const membershipEntitlementExpired = verified.mpe !== undefined && now >= verified.mpe
-  const canUseHotPath =
-    !options?.verifyRevocationOnHotPath &&
-    !membershipEntitlementExpired &&
-    verified.rca !== undefined &&
-    now < verified.rca &&
-    verified.sca !== undefined &&
-    now < verified.sca
-
-  // Hot path: sca not reached → return session as-is (0 Valkey calls). Callers that pass
-  // verifyRevocationOnHotPath (e.g. direct backend callers of PATCH /api/v1/session and the
-  // App Attest attest endpoint) always fall through to the warm check below instead.
-  if (canUseHotPath) {
-    return {
-      did,
-      dt,
-      st: sessionToken,
-      sid: verified.sid,
-      uid,
-      session: verified as SessionTokenPayload,
-      deviceClass: verified.dc,
-    }
-  }
-
   // Warm path: check Valkey for revocation and staleness (single Lua roundtrip)
   const warmResult = await sessionValkeyClient.invokeScript(checkRevokedAndStaleScript, {
     keys: [getJwtRevokedKey(verified.sid), getJwtStaleKey(uid), getJwtUserRevokedBeforeKey(uid)],
-    args: [verified.iat === undefined ? '0' : String(verified.iat)],
+    args: [String(verified.device_iat ?? 0)],
   })
   const [revokedRaw, staleRaw] = Array.isArray(warmResult) ? warmResult : [0, null]
   const revoked = Number(revokedRaw) !== 0
@@ -74,6 +51,8 @@ export async function applyHotWarmCold(
     const refreshed = await createRefreshedAuthenticatedSession({
       did,
       dt,
+      dbscProof,
+      clock,
       sid: verified.sid,
       uid,
       roles: verified.rol,
@@ -82,6 +61,16 @@ export async function applyHotWarmCold(
       trustTier: verified.tt,
       uiLocale: verified.uil,
       deviceClass: verified.dc,
+      deviceExpiresAt: verified.device_exp,
+      clientBinding:
+        verified.client === 'web'
+          ? {
+              client: 'web',
+              ua_hash: verified.ua_hash!,
+              ja4_hash: verified.ja4_hash,
+              ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }),
+            }
+          : { client: 'native', ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }) },
       freshness: { type: 'preserve', recheckAfter: verified.rca },
     })
     return {
@@ -97,7 +86,9 @@ export async function applyHotWarmCold(
 
   // Cold path: reload enriched claims from DB
   const user = await fetchUser(uid)
-  const claims = user ? await getEnrichedSessionClaims(user) : null
+  const claims = user
+    ? await getEnrichedSessionClaims(user, { mfaVerifiedAt: verified.mfa_at })
+    : null
 
   if (!claims) {
     await revokeSession(verified.sid)
@@ -107,6 +98,8 @@ export async function applyHotWarmCold(
   const refreshed = await createRefreshedAuthenticatedSession({
     did,
     dt,
+    dbscProof,
+    clock,
     sid: verified.sid,
     uid,
     roles: claims.roles,
@@ -115,6 +108,16 @@ export async function applyHotWarmCold(
     trustTier: claims.trustTier,
     uiLocale: claims.uiLocale,
     deviceClass: verified.dc,
+    deviceExpiresAt: verified.device_exp,
+    clientBinding:
+      verified.client === 'web'
+        ? {
+            client: 'web',
+            ua_hash: verified.ua_hash!,
+            ja4_hash: verified.ja4_hash,
+            ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }),
+          }
+        : { client: 'native', ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }) },
     freshness: { type: 'reset' },
   })
   if (staleMarker) await clearJwtStaleIfCurrent(uid, staleMarker)

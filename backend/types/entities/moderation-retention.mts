@@ -1,0 +1,20 @@
+/** Fixed family vocabulary in cleanup dependency order. */
+export const MODERATION_CLEANUP_KINDS = [
+  'judgements',
+  'training_feedbacks',
+  'appeals',
+  'disputes',
+  'warnings',
+  'suspensions',
+  'bans',
+  'reports',
+  'cases',
+  'actions',
+  'integrity_flags',
+  'report_penalties',
+  'vote_penalties',
+  'notes',
+  'applications',
+] as const
+
+export type ModerationRecordCleanupKind = (typeof MODERATION_CLEANUP_KINDS)[number]

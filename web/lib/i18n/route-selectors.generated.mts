@@ -1,7 +1,7 @@
 // GENERATED FILE - do not edit by hand.
 // Regenerate: node static-code-analysis/i18n-extract/route-selector-map.mts
 // Verify:     node static-code-analysis/i18n-extract/route-selector-map.mts --check
-export const WEB_CHROME_SELECTOR = 'web.chrome.4d4b81f552accaa1'
+export const WEB_CHROME_SELECTOR = 'web.chrome.4a8b061239afae1b'
 // oxfmt-ignore
 export const ROUTE_SELECTORS = [
   { pattern: "/", selectorId: "web.route.af63a24c860189fe.50730295d8eb2790", hasMembership: true },
@@ -85,7 +85,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/communities/[slug]/settings/applications", selectorId: "web.route.1796d9f690929a1f.72412ac753e42792", hasMembership: true },
   { pattern: "/communities/[slug]/settings/invites", selectorId: "web.route.71955e0e28ba3356.dc17584c918224f7", hasMembership: true },
   { pattern: "/communities/[slug]/settings/moderation", selectorId: "web.route.c9ccccbb2f80f7a0.6da79db46ea871e9", hasMembership: true },
-  { pattern: "/communities/[slug]/settings/moderation/analytics", selectorId: "web.route.0f270001abf34f53.48b2e94e1c997989", hasMembership: true },
+  { pattern: "/communities/[slug]/settings/moderation/analytics", selectorId: "web.route.0f270001abf34f53.c1346946dc0a04e3", hasMembership: true },
   { pattern: "/communities/[slug]/settings/moderation/modmail/[threadId]", selectorId: "web.route.a12c72704d119fae.733a00a77c3a963e", hasMembership: true },
   { pattern: "/communities/[slug]/settings/modlog", selectorId: "web.route.e2346a5c09eae9de.cec1ddd66ee5c5a9", hasMembership: true },
   { pattern: "/communities/[slug]/settings/pinned-posts", selectorId: "web.route.37e9377f22972f9c.04d36e2dd9be29b5", hasMembership: true },
@@ -175,13 +175,13 @@ export const ROUTE_SELECTORS = [
   { pattern: "/links", selectorId: "web.route.6ae53c18c06e579f.5138620e5b9d43df", hasMembership: true },
   { pattern: "/links/create", selectorId: "web.route.656c605003c503b4.06afbe3372d3180a", hasMembership: true },
   { pattern: "/list/[id]", selectorId: "web.route.00443fb21ab666b4.b9d0b9d965f2bd21", hasMembership: true },
-  { pattern: "/login", selectorId: "web.route.60f46fe966c31a6b.23060acb20ea0533", hasMembership: true },
+  { pattern: "/login", selectorId: "web.route.60f46fe966c31a6b.2e98783ef724941f", hasMembership: true },
   { pattern: "/memberships/grants", selectorId: "web.route.d6e41cc32db0397b.3654f350444f501e", hasMembership: true },
   { pattern: "/messages", selectorId: "web.route.6224befb41ec714a.5234cfeb2916c8da", hasMembership: true },
   { pattern: "/messages/[conversationId]", selectorId: "web.route.c1241f29dcbae441.a33bf0dda466d04e", hasMembership: true },
   { pattern: "/messages/modmail/[communitySlug]/[threadId]", selectorId: "web.route.1737a25c64b59389.8cec5912394c1499", hasMembership: true },
   { pattern: "/messages/new", selectorId: "web.route.b009d6eef588855f.0da36502fcfec2e3", hasMembership: true },
-  { pattern: "/moderation-transparency", selectorId: "web.route.0ecba66d5516c7fb.26ad73fbf9c20b91", hasMembership: true },
+  { pattern: "/moderation-transparency", selectorId: "web.route.0ecba66d5516c7fb.8dd1cd78738f757b", hasMembership: true },
   { pattern: "/my/account-status", selectorId: "web.route.42fdde238b93a48d.b638c8e09aecf52a", hasMembership: true },
   { pattern: "/my/api-keys", selectorId: "web.route.7cd261273758042a.e1bbe1f6644acc5f", hasMembership: true },
   { pattern: "/my/appeals", selectorId: "web.route.53a9b6a86f39e607.6f4c473aa9865aa2", hasMembership: true },
@@ -202,7 +202,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/friend-recommendations", selectorId: "web.route.152c17db7413ea00.6c579e73b3a39d3b", hasMembership: true },
   { pattern: "/my/friend-recommendations/dismissed", selectorId: "web.route.60f207314e53a26a.61b9a7012e2fdecb", hasMembership: true },
   { pattern: "/my/household", selectorId: "web.route.e2f822599ce44122.2814365314357c57", hasMembership: true },
-  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.895a3ac63d2aa86f", hasMembership: true },
+  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.49cee65d7c114170", hasMembership: true },
   { pattern: "/my/identity-verification", selectorId: "web.route.3fb2cb5869f8593d.70be8089e933beb4", hasMembership: true },
   { pattern: "/my/landing-page/[slug]", selectorId: "web.route.10215e7b127df690.8da980c352943cc2", hasMembership: true },
   { pattern: "/my/landing-page/[slug]/analytics", selectorId: "web.route.a65ef95358e6ac23.7f7f577e1884df86", hasMembership: true },
@@ -219,7 +219,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/news-sources/muted", selectorId: "web.route.ef025c4add2d2501.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/news-sources/viewed", selectorId: "web.route.4a8853f12155049e.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/notification-settings", selectorId: "web.route.261f5e76931b4ad4.6fec067cad9d1d91", hasMembership: true },
-  { pattern: "/my/notifications", selectorId: "web.route.3397123a11f4af97.cdedceb3796b574b", hasMembership: true },
+  { pattern: "/my/notifications", selectorId: "web.route.3397123a11f4af97.cd0327b0f4916eb4", hasMembership: true },
   { pattern: "/my/podcast-episodes/hidden", selectorId: "web.route.81a68437405a4ea5.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/podcast-episodes/saved", selectorId: "web.route.321e8a1c9e5af2e0.b042399f4bbaa68d", hasMembership: true },
   { pattern: "/my/podcast-episodes/viewed", selectorId: "web.route.10658e11d3b2287d.b042399f4bbaa68d", hasMembership: true },
@@ -291,7 +291,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/referral-program/[id]/validations/new", selectorId: "web.route.2c539dad893f5122.d73aba491a793967", hasMembership: true },
   { pattern: "/referral-programs", selectorId: "web.route.065ac5051f65d0bf.1cfc7e93dc02c7f1", hasMembership: true },
   { pattern: "/report-integrity/flags", selectorId: "web.route.4d3e15fd814efa0e.36a6773857be9783", hasMembership: true },
-  { pattern: "/report-integrity/penalties", selectorId: "web.route.8bfc1269fe731164.d5cca061a138f4a7", hasMembership: true },
+  { pattern: "/report-integrity/penalties", selectorId: "web.route.8bfc1269fe731164.ff348abe08011f9d", hasMembership: true },
   { pattern: "/reports", selectorId: "web.route.884c69774049d7ad.2b4556b831d84191", hasMembership: true },
   { pattern: "/review/[id]", selectorId: "web.route.c1a11e6f39341f20.f7757ac1a8ffcb44", hasMembership: true },
   { pattern: "/review/[id]/comment/[commentId]", selectorId: "web.route.b35497eed569b737.f483248818ac6f90", hasMembership: true },
@@ -334,6 +334,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/rewards-program/[id]/tags/[objectType]", selectorId: "web.route.3528c42c3c85f6b3.42146feab422aa5b", hasMembership: true },
   { pattern: "/rewards-programs", selectorId: "web.route.9928bf1a2f684b9c.1cfc7e93dc02c7f1", hasMembership: true },
   { pattern: "/rss-feed-categories", selectorId: "web.route.1eed8570a2cfed6c.795fc46e03eb2ff1", hasMembership: true },
+  { pattern: "/session-renewal", selectorId: "web.route.5fd4de2e7db5531b.cbf29ce484222325", hasMembership: false },
   { pattern: "/source/[id]", selectorId: "web.route.986fa32d1f90e68f.13abd20a50e708b8", hasMembership: true },
   { pattern: "/source/[id]/crawls", selectorId: "web.route.a3b32d2fd5aa0848.7af03e0f09b086ac", hasMembership: true },
   { pattern: "/source/[id]/crawls/[crawlId]", selectorId: "web.route.839998f08c285227.7af03e0f09b086ac", hasMembership: true },
@@ -420,6 +421,6 @@ export const ROUTE_SELECTORS = [
   { pattern: "/users", selectorId: "web.route.7bb4b8130dc5d606.eee88a9beb992e21", hasMembership: true },
   { pattern: "/videos", selectorId: "web.route.f61c940d6457cc8a.3708c6b4c7a909f1", hasMembership: true },
   { pattern: "/vote-integrity/flags", selectorId: "web.route.241b8a9634d8e2c8.ab2425b9be4a492b", hasMembership: true },
-  { pattern: "/vote-integrity/penalties", selectorId: "web.route.d0dbddb5736968ea.d5cca061a138f4a7", hasMembership: true },
+  { pattern: "/vote-integrity/penalties", selectorId: "web.route.d0dbddb5736968ea.ff348abe08011f9d", hasMembership: true },
   { pattern: "/web-search", selectorId: "web.route.fde432d5db9fdf3f.f2b02526beb2bcc7", hasMembership: true },
 ]

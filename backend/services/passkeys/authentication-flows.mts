@@ -2,7 +2,8 @@ import createHttpError from 'http-errors'
 import { AuthError } from '@vouchington/auth'
 import { getPasskeyByCredentialId } from './get.mts'
 import { toPasskeyAuthenticationOptions } from './options.mts'
-import { passkeyProtocol } from './protocol.mts'
+import type { TransactionQuery } from '@data-stores/psql'
+import { createPasskeyProtocol, passkeyProtocol } from './protocol.mts'
 
 export async function getPasskeyAuthenticationOptions(userId: string, deviceId: string) {
   try {
@@ -47,4 +48,53 @@ export async function verifyPasskeyAuthentication(
     throw createHttpError(400, 'Passkey not found')
   }
   return { verified: false, passkeyId: passkey.id }
+}
+
+type ReAuthScope = { sessionId: string; flowId: string; passkeyId: string; query: TransactionQuery }
+
+export async function getPasskeyReAuthOptions(
+  currentUserId: string,
+  deviceId: string,
+  scope: ReAuthScope,
+) {
+  const protocol = createReAuthProtocol(currentUserId, scope)
+  return toPasskeyAuthenticationOptions(
+    await protocol.authentication.createOptions(currentUserId, deviceId),
+  )
+}
+
+export async function verifyPasskeyReAuth(
+  currentUserId: string,
+  deviceId: string,
+  expectedOrigin: string,
+  response: unknown,
+  scope: ReAuthScope,
+): Promise<void> {
+  const protocol = createReAuthProtocol(currentUserId, scope)
+  try {
+    await protocol.authentication.verify({
+      userId: currentUserId,
+      deviceId,
+      expectedOrigin,
+      response,
+    })
+  } catch (err) {
+    if (err instanceof AuthError)
+      throw createHttpError(401, 'Passkey reauthentication failed', { cause: err })
+    throw err
+  }
+  // Nonresident credentials may omit userHandle. A supplied handle must match registration.
+  const userHandle = (response as { response?: { userHandle?: unknown } })?.response?.userHandle
+  if (
+    userHandle !== undefined &&
+    userHandle !== null &&
+    userHandle !== Buffer.from(currentUserId).toString('base64url')
+  ) {
+    throw createHttpError(401, 'Passkey belongs to another user')
+  }
+}
+
+function createReAuthProtocol(currentUserId: string, scope: ReAuthScope) {
+  const { query, ...identity } = scope
+  return createPasskeyProtocol({ query, reAuth: { ...identity, currentUserId } })
 }

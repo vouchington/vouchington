@@ -14,6 +14,10 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
       description:
         'Withhold the targets of a clear-screened signed-in DMCA notice before a moderator reviews it. Off keeps every notice for a moderator; read the copyright runbook before enabling.',
     },
+    automaticProvisionalWithholdingSince: {
+      description:
+        'Start of the current automatic withholding on-period, managed with the switch. Empty while off.',
+    },
     reviewTargetMinutes: {
       description:
         'Minutes a copyright case may wait for a moderator before the review-target sweep sends a Sentry warning. 0 means unset: no review-target page. Missed statutory deadlines page regardless.',

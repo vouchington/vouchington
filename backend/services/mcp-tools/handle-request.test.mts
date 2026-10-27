@@ -119,5 +119,5 @@ describe('handleMcpHttpRequest', () => {
     expect(response.status).toBe(200)
     const json = (await response.json()) as { result?: { isError?: boolean } }
     expect(json.result?.isError).not.toBe(true)
-  }, 15_000)
+  })
 })

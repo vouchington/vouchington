@@ -159,6 +159,12 @@ export interface NotificationsUnreadSummaryResponseBody {
   communities: Record<string, NotificationCommunity>
 }
 
+export interface MarkAllNotificationsReadResponseBody {
+  success: true
+  marked_read: number
+  has_more: boolean
+}
+
 export interface NotificationRedirectTargetResponseBody {
   target_url: string
 }

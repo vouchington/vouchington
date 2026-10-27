@@ -37,6 +37,7 @@ const NODEINFO_DOCUMENT = {
 
 describe('createInstanceFromHostname — queued NodeInfo classification', () => {
   // The real worker retains its 5s blocking read and graceful shutdown budgets.
+  // no-mistakes-timeout-reason: real GlideMQ worker blocking read and shutdown
   it('retries a transient NodeInfo failure, then persists metadata after the real job completes', async () => {
     fetchSpy.mockReset()
     const releaseNodeInfo = Promise.withResolvers<void>()

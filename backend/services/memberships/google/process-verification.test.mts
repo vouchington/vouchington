@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { memberships } from '@queues/memberships/queues'
 import { getMembershipByUserId, getMembershipSourceIdByMembershipId } from '@services/memberships'
 import { createMembershipVerification, getMembershipVerification } from '../verifications.mts'
 import {
@@ -11,6 +12,7 @@ import {
   countTestGooglePlayProviderObservations,
   getTestGooglePlayTokenLineageSummary,
 } from '@voucha/test-helpers/google-play-memberships'
+import { getTestPendingGooglePlayVerification } from '@voucha/test-helpers/google-play-recovery'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
 import { reconcileGooglePlayActiveSource } from './active-source-recovery.mts'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
@@ -140,7 +142,22 @@ describe('Google Play membership verification and RTDN recovery', () => {
     if (!membership) throw new Error('Google Play membership was not projected')
     const sourceId = await getMembershipSourceIdByMembershipId(membership.id)
     if (!sourceId) throw new Error('Google Play source was not projected')
-    await reconcileGooglePlayActiveSource({ sourceId, client: newestClient })
+    await reconcileGooglePlayActiveSource({ sourceId })
+    const recoveryVerificationId = await getTestPendingGooglePlayVerification({
+      userId: owner.id,
+      applicationId,
+    })
+    if (!recoveryVerificationId)
+      throw new Error('Google Play recovery verification was not admitted')
+    await expect(memberships.getJob(recoveryVerificationId)).resolves.toMatchObject({
+      id: recoveryVerificationId,
+      name: 'processMembershipVerification',
+      data: { verificationId: recoveryVerificationId },
+    })
+    await processGooglePlayMembershipVerification(recoveryVerificationId, {
+      client: newestClient,
+    })
+    await (await memberships.getJob(recoveryVerificationId))?.remove()
     expect(await countObservations()).toBe(3)
 
     const wrongOwner = await submit(other.id)

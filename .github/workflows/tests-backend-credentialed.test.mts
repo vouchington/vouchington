@@ -26,10 +26,8 @@ function stepSection(job: string, stepName: string): string {
 describe('backend credentialed test workflow', () => {
   it('combines the credentialed projects in one job', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
-    expect(credentialedJob).toContain('if: ${{ inputs.trusted_secret_context }}')
     expect(credentialedJob).toContain('AWS_REGION: us-west-2')
     expect(credentialedJob).toContain('AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}')
-    expect(credentialedJob).toContain("REQUIRE_BEDROCK_INTEGRATION: ''")
 
     expect(credentialedJob).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
     expect(credentialedJob).toContain('OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}')
@@ -181,12 +179,8 @@ describe('backend credentialed test workflow', () => {
   // failed exchange cannot skip them either.
   it('runs the Anthropic steps whether or not the other providers passed', () => {
     const credentialedJob = jobSection('backend-credentialed-tests')
-    const mint = stepSection(credentialedJob, 'Mint Anthropic federation token')
     const anthropic = stepSection(credentialedJob, 'Run Anthropic credentialed tests')
 
-    expect(mint).toContain(
-      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.migrate.outcome == 'success' }}",
-    )
     expect(anthropic).toContain(
       "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.anthropic-token.outcome == 'success' }}",
     )

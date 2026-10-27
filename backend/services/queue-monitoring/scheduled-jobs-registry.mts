@@ -4,6 +4,8 @@ import { SCHEDULED_JOB_MANIFESTS } from './scheduled-job-manifests.mts'
 
 export const SCHEDULED_JOB_API_ORDER = [
   'email-digests-api-key-expiry',
+  'activitypub-outbound-follows-recovery',
+  'activitypub-outbound-votes-recovery',
   'activitypub-inbox-recovery',
   'activitypub-inbox-cleanup',
   'ses-inbound-reconciliation',
@@ -33,6 +35,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'voteWeightFamilySourceChanges',
   'voteWeightDirtyMarkers',
   'data-retention-cleanup-daily',
+  'moderation-retention-cleanup-daily',
   'reconcile-vote-drift',
   'kagi-smallweb-sync',
   'imports-recover-stalled',
@@ -54,7 +57,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'hostnameCacheInvalidationSweep',
   'reconcileTopicAliasCategoryMappings',
   'reconcileRssFeedItemCategorySnapshots',
-  'reconcile-post-publication',
+  'recoverRssFeedHardDeletes',
   'reconcileStoryPostRelatedUrlProjections',
   'reconcileAutoDispatchJudgements',
   'reconcileCopyrightAgentDispatches',

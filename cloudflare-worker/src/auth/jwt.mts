@@ -1,5 +1,6 @@
 import {
   decodeSessionJwt,
+  decodeDeviceJwt,
   verifyDeviceJwt,
   verifySessionJwt,
   type DeviceTokenPayload,
@@ -125,4 +126,18 @@ export const isAuthShapedSessionToken = (sessionToken: string | null): boolean =
   if (!sessionToken) return false
   const decoded = decodeSessionJwt(sessionToken)
   return decoded !== null && decoded.uid !== null
+}
+
+/** Refresh-shaped cookies only force cache bypass; the backend verifies all authority. */
+function isAuthShapedDeviceToken(deviceToken: string | null): boolean {
+  const decoded = deviceToken ? decodeDeviceJwt(deviceToken) : null
+  return (
+    decoded?.client === 'web' &&
+    typeof decoded.refresh_uid === 'string' &&
+    typeof decoded.refresh_sid === 'string'
+  )
+}
+
+export function hasAuthCookies(sessionToken: string | null, deviceToken: string | null): boolean {
+  return isAuthShapedSessionToken(sessionToken) || isAuthShapedDeviceToken(deviceToken)
 }

@@ -54,7 +54,7 @@ describe('get-prioritized prioritized referral priority groups', () => {
       pathname: '/ref/%',
     })
     referralProgramId = fixture.referralProgramId
-  }, 30_000)
+  })
 
   it('returns empty array when no links exist', async () => {
     const viewer = await createTestUser()
@@ -109,7 +109,7 @@ describe('get-prioritized prioritized referral priority groups', () => {
     expect(byUser[referrer.id]).toBe(3)
     expect(byUser[upvotedAuthor.id]).toBe(4)
     expect(byUser[stranger.id]).toBe(5)
-  }, 30_000)
+  })
 
   it('deduplicates: user qualifying for multiple groups appears in highest only', async () => {
     const [viewer, { user: multiUser }] = await Promise.all([
@@ -209,7 +209,7 @@ describe('get-prioritized prioritized referral priority groups', () => {
     const noneIdx = group5.findIndex(l => l.user_id === noneUser.id)
     expect(bothIdx).toBeLessThan(oneIdx)
     expect(oneIdx).toBeLessThan(noneIdx)
-  }, 30_000)
+  })
 
   it('sorts by membership tier rank within same contribution rank', async () => {
     const [viewer, { user: proUser }, { user: plusUser }, { user: freeUser }] = await Promise.all([
@@ -247,7 +247,7 @@ describe('get-prioritized prioritized referral priority groups', () => {
     const freeIdx = group5.findIndex(l => l.user_id === freeUser.id)
     expect(proIdx).toBeLessThan(plusIdx)
     expect(plusIdx).toBeLessThan(freeIdx)
-  }, 30_000)
+  })
 
   it('sorts by best score within same contribution and tier rank', async () => {
     const [viewer, { user: highUser }, { user: lowUser }] = await Promise.all([
@@ -292,5 +292,5 @@ describe('get-prioritized prioritized referral priority groups', () => {
     const highIdx = group5.findIndex(l => l.user_id === highUser.id)
     const lowIdx = group5.findIndex(l => l.user_id === lowUser.id)
     expect(highIdx).toBeLessThan(lowIdx)
-  }, 30_000)
+  })
 })

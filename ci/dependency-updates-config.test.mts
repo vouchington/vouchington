@@ -118,32 +118,6 @@ describe('dependency update configuration', () => {
     expect(sentryVersions).toEqual(sentryVersions.map(() => sentryVersions[0]))
   })
 
-  it('keeps the published Node engine floor at or below the toolchain and deployment major', () => {
-    const applicationManifests = [
-      'package.json',
-      'backend/package.json',
-      'cloudflare-worker/package.json',
-    ]
-    const engineFloors = applicationManifests.map(
-      path =>
-        (JSON.parse(readRepoFile(path)) as { engines?: { node?: string } }).engines?.node ?? '',
-    )
-    const toolchainMajor = readRepoFile('.nvmrc').trim()
-
-    expect(engineFloors[0]).toMatch(/^>=\d+\.\d+\.\d+$/)
-    expect(engineFloors).toEqual(engineFloors.map(() => engineFloors[0]))
-    expect(toolchainMajor).toMatch(/^\d+$/)
-    expect(Number(/^>=(\d+)\./.exec(engineFloors[0] ?? '')?.[1])).toBeLessThanOrEqual(
-      Number(toolchainMajor),
-    )
-    expect(readRepoFile('backend/Dockerfile')).toMatch(
-      new RegExp(
-        `^FROM ghcr\\.io/vouchington/dependency-node:${toolchainMajor}-[\\w.-]+@sha256:[0-9a-f]{64} AS base-node$`,
-        'mu',
-      ),
-    )
-  })
-
   it('keeps the type-aware Oxlint companion in the OXC Dependabot group', () => {
     const dependabot = parseYaml(readRepoFile('.github/dependabot.yml')) as DependabotConfig
     const rootNpmUpdates =

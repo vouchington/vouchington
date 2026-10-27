@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
   const storesOutboundFollowActivityId = metadata.table_name === 'relation__user__follow__user'
   if (storesOutboundFollowActivityId) {
     query += `,
-    outbound_activitypub_follow_activity_id UUID DEFAULT uuidv7()`
+    outbound_activitypub_follow_activity_id UUID DEFAULT uuidv7(),
+    outbound_activitypub_distributed_activity_id UUID`
   }
 
   const storesInboundFollowActivityRowId =
@@ -109,7 +110,13 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
 
   query += `;\n\n`
 
-  return `${query.trim()}\n\n${createEntityRelationComments(metadata)}`
+  const outboundIndex = storesOutboundFollowActivityId
+    ? `\n\nCREATE INDEX IF NOT EXISTS idx_relation__user__follow__user__activitypub_pending
+ON relation__user__follow__user (subject_id, object_id)
+WHERE outbound_activitypub_distributed_activity_id IS NULL
+  AND outbound_activitypub_follow_activity_id IS NOT NULL;`
+    : ''
+  return `${query.trim()}\n\n${createEntityRelationComments(metadata)}${outboundIndex}`
 }
 
 function createEntityRelationVoteTable(metadata: EntityRelationMetadata): string {

@@ -1,11 +1,11 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 // Each click loads that namespace's details and history. Walking the full
 // registry in one test exceeds the 30s cap, so slices keep every panel
 // covered and the per-slice count fails closed when the registry outgrows it.
-const namespacePanelSliceCount = 8
+const namespacePanelSliceCount = 9
 const maxNamespacesPerSlice = 12
 
 function namespacePanelSlice(
@@ -22,7 +22,7 @@ function namespacePanelSlice(
 }
 
 test.describe('Dynamic Config', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('non-authenticated user is redirected away from /admin/dynamic-config', async ({ page }) => {
     await page.context().clearCookies()

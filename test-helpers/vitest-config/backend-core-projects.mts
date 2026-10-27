@@ -4,6 +4,7 @@ import type { TestProjectConfiguration } from 'vitest/config'
 // Dependency-injected unit tests need neither database bootstrap nor module mocking.
 export const backendNoDataUnitTestFiles = [
   'backend/queues/content-analysis/payload/upload-cleanup.test.mts',
+  'backend/services/jwt-session/client-binding.test.mts',
   'backend/services/urls-domains-robots/__tests__/fetch-body-signal.test.mts',
   'backend/services/urls-domains-robots/__tests__/fetch-unread-body.test.mts',
   'backend/services/urls-domains-robots/__tests__/fetch-pinned.test.mts',
@@ -20,7 +21,6 @@ export const backendNoDataUnitTestFiles = [
   'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
   'backend/data-stores/graceful-shutdown/index.test.mts',
   'backend/data-stores/valkey-glide-mq/shared-queue-ordering.test.mts',
-  'backend/api/v1/mq/scheduled-job-manifests.test.mts',
   'backend/queues/background-cpu/enqueues/job-lanes.test.mts',
   'backend/services/dynamic-config-admin/registry-shared-ordering.test.mts',
   'backend/services/oauth/__tests__/authorization-account-microsoft.test.mts',
@@ -72,6 +72,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/psql-pool-metrics.test.mts',
         'backend/test-helpers/post-search-query-syntax.test.mts',
         'backend/test-helpers/dynamic-config.test.mts',
         'backend/test-helpers/services/posts/test-support.test.mts',
@@ -104,7 +105,11 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: true,
       name: 'backend-no-data-mocks',
-      include: ['backend/**/*.no-data.mock.test.mts', ...backendNoDataUnitTestFiles],
+      include: [
+        'backend/config/**/*.test.mts',
+        'backend/**/*.no-data.mock.test.mts',
+        ...backendNoDataUnitTestFiles,
+      ],
       exclude: ['**/node_modules/**', '**/.git/**'],
       setupFiles: [
         './backend/test-helpers/vitest.setup.sentry-mock.mts',
@@ -179,6 +184,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       setupFiles: [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+        './test-helpers/vitest.setup.psql-pool-metrics.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',

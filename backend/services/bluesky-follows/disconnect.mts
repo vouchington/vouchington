@@ -1,3 +1,8 @@
+import {
+  runWithTransaction,
+  registerPostCommitAction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import { enqueueDisconnectRequested } from '@queues/bluesky-follow-propagation/enqueues'
 import {
   disconnectAcceptedBlueskyGeneration,
@@ -113,22 +118,30 @@ async function cleanupFollowerRoleBeforeDisconnect(
 export async function disconnectBlueskyAccountAndCleanupFollows(
   userId: string,
   dependencies?: {
+    query?: TransactionQuery
     enqueueDisconnectRequested?: typeof enqueueDisconnectRequested
     reportError?: typeof onError
     disconnectWithoutLock?: DisconnectExactGeneration
   },
 ): Promise<void> {
-  await withBlueskyDisconnectLock(userId, async () => {
-    const request = await requestBlueskyDisconnect(userId)
-    try {
-      await (dependencies?.enqueueDisconnectRequested ?? enqueueDisconnectRequested)(request)
-    } catch (err) {
-      const reportError = dependencies?.reportError ?? onError
-      reportError(err instanceof Error ? err : new Error(String(err)))
-      await (dependencies?.disconnectWithoutLock ?? disconnectAcceptedBlueskyAccountWithoutLock)(
-        userId,
-        request,
-      )
-    }
+  await runWithTransaction(dependencies?.query, async query => {
+    await query(
+      '/* requestBlueskyDisconnect:lockUser */ SELECT fn_lock_active_user_for_mutation($1)',
+      [userId],
+    )
+    const request = await requestBlueskyDisconnect(userId, { query })
+    registerPostCommitAction(query, () =>
+      withBlueskyDisconnectLock(userId, async () => {
+        try {
+          await (dependencies?.enqueueDisconnectRequested ?? enqueueDisconnectRequested)(request)
+        } catch (err) {
+          const reportError = dependencies?.reportError ?? onError
+          reportError(err instanceof Error ? err : new Error(String(err)))
+          await (
+            dependencies?.disconnectWithoutLock ?? disconnectAcceptedBlueskyAccountWithoutLock
+          )(userId, request)
+        }
+      }),
+    )
   })
 }

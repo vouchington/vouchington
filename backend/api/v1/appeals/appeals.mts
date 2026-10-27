@@ -1,3 +1,4 @@
+import { isModerationAppealVisibleToAppellant } from '@services/moderation-appeals/visibility'
 import { listModerationAppealPage } from '@services/moderation-appeals/list-page'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -124,6 +125,8 @@ app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
   const isOwner = appeal.appellant_user_id === currentUser.id
 
   ctx.assert(isStaff || isOwner, 403, 'Forbidden')
+
+  if (!isStaff) ctx.assert(isModerationAppealVisibleToAppellant(appeal), 404, 'Appeal not found')
 
   if (isStaff) {
     ctx.json(apiResponse('GET:/api/v1/appeals/:id#staff', { appeal }))

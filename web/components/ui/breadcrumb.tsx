@@ -5,9 +5,11 @@ import * as React from 'react'
 import Link from 'next/link'
 import { Slot } from '@radix-ui/react-slot'
 import { ChevronRight, MoreHorizontal } from 'lucide-react'
-
 import { cn } from '@/lib/utils'
-import { resolveBreadcrumbName, type BreadcrumbNavItem } from '@/lib/seo/structured-data'
+import {
+  resolveBreadcrumbName,
+  type BreadcrumbNavItem,
+} from '@/lib/seo/structured-data-breadcrumbs'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 function Breadcrumb({

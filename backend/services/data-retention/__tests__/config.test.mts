@@ -4,8 +4,11 @@ import {
   DATA_RETENTION_MAX_VALUES,
   DEFAULT_DATA_RETENTION_CONFIG,
   dataRetentionConfig,
+  getAIRetentionPageLimits,
+  getClassifierRetentionDays,
   getDataRetentionLimits,
   getPartitionStatusProbeLimit,
+  getSesBounceRetentionDays,
 } from '../config.mts'
 
 describe('getDataRetentionLimits', () => {
@@ -22,6 +25,11 @@ describe('getDataRetentionLimits', () => {
       DEFAULT_DATA_RETENTION_CONFIG.partition_status_probe_limit,
     )
   })
+  it('never shortens classifier retention below the owner window', () => {
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, { classifier_retention_days: 1 })
+    expect(getClassifierRetentionDays()).toBe(90)
+  })
+
   it('returns the production defaults when no override is stored', () => {
     expect(getDataRetentionLimits()).toEqual({
       batchSize: DEFAULT_DATA_RETENTION_CONFIG.batch_size,
@@ -61,12 +69,35 @@ describe('getDataRetentionLimits', () => {
   })
 
   it('keeps every default finite, positive and within its hard maximum', () => {
-    for (const field of ['batch_size', 'max_batches_per_run'] as const) {
+    for (const field of [
+      'batch_size',
+      'classifier_retention_days',
+      'max_batches_per_run',
+      'ses_bounce_retention_days',
+      'ai_retention_page_size',
+      'ai_retention_max_pages_per_run',
+    ] as const) {
       expect(Number.isInteger(DEFAULT_DATA_RETENTION_CONFIG[field])).toBe(true)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeGreaterThan(0)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeLessThanOrEqual(
         DATA_RETENTION_MAX_VALUES[field],
       )
     }
+  })
+
+  it('reads the bounded raw SES event window from DynamicConfig', () => {
+    expect(getSesBounceRetentionDays()).toBe(
+      DEFAULT_DATA_RETENTION_CONFIG.ses_bounce_retention_days,
+    )
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, { ses_bounce_retention_days: 30 })
+    expect(getSesBounceRetentionDays()).toBe(30)
+  })
+
+  it('bounds persisted AI pages with the owning runtime config', () => {
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+      ai_retention_page_size: 7,
+      ai_retention_max_pages_per_run: 3,
+    })
+    expect(getAIRetentionPageLimits()).toEqual({ batchSize: 7, maxBatches: 3 })
   })
 })

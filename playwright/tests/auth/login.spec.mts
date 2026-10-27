@@ -8,7 +8,7 @@ import {
   navigateTo,
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
-import type { getConfiguredOAuthProviders } from '../../../backend/services/oauth/config.mts'
+import type { getConfiguredOAuthProviders } from '../../../backend/services/oauth-accounts/configuration.mts'
 import type { getOAuthAuthorizationBrokerCapabilities } from '../../../backend/services/oauth/broker-config.mts'
 
 type OAuthProvidersResponse = {
@@ -89,9 +89,9 @@ test.describe('Login Page', () => {
 
   test('should log in through the UI with a backend-generated email token', async ({ page }) => {
     const emailAddress = `tests+otp-ui-${Date.now()}-${randomUUID()}@voucha.ai`
-    const staleToken = randomUUID().replaceAll('-', '').slice(0, 8).toUpperCase()
+    const staleToken = createLoginToken()
     const token = createLoginToken()
-    expect(token).toMatch(/^[0-9A-F]{8}$/)
+    expect(token).toMatch(/^[A-Z2-7]{10}$/)
     await insertEmailAddressLoginToken(emailAddress, staleToken, true)
     await insertEmailAddressLoginToken(emailAddress, token)
 
@@ -117,7 +117,8 @@ test.describe('Login Page', () => {
     await expect(otpInput).toBeVisible()
     await otpInput.scrollIntoViewIfNeeded()
     await waitForBelowFoldHydration(page)
-    await otpInput.fill(token)
+    await otpInput.pressSequentially(token)
+    await page.getByTestId('login-code-submit-button').click()
 
     await expect(page).toHaveURL(/\/feed\/news/)
 
@@ -169,16 +170,20 @@ test.describe('Login Page', () => {
     await expect(page.getByTestId('login-email-input')).toBeFocused()
   })
 
-  test('should auto-submit an email login link from query params', async ({ page }) => {
+  test('requires deliberate submit for an email login link from query params', async ({ page }) => {
+    let loginRequestCount = 0
+    let deliberateSubmitStarted = false
     let resolveLoginRequest!: () => void
     const loginRequestStarted = new Promise<void>(resolve => {
       resolveLoginRequest = resolve
     })
 
     await page.route('**/api/v1/auth/email-address/login', async route => {
+      expect(deliberateSubmitStarted).toBe(true)
+      loginRequestCount += 1
       expect(route.request().postDataJSON()).toMatchObject({
         email_address: 'tests+user@voucha.ai',
-        token: 'ABCD1234',
+        token: 'ABCDEFG234',
       })
 
       resolveLoginRequest()
@@ -191,15 +196,18 @@ test.describe('Login Page', () => {
     })
 
     await installTurnstileStub(page)
-    // ast-grep-ignore: playwright-no-raw-goto -- auth login test must avoid navigateTo()'s additional post-navigation waiting so the OTP auto-submit flow can be observed at domcontentloaded
-    await page.goto('/login?emailAddress=tests%2Buser%40voucha.ai&otp=abcd1234', {
-      waitUntil: 'domcontentloaded',
-    })
+    await navigateTo(page, '/login?emailAddress=tests%2Buser%40voucha.ai&otp=abcdefg234')
 
     await expect(page.getByTestId('login-verification-code-input')).toBeVisible()
     await expect(page.getByTestId('oauth-provider-button-facebook')).toBeHidden()
+    await expect(page.getByTestId('login-verification-code-input')).toHaveValue('ABCDEFG234')
+    await expect(page).toHaveURL('/login')
+    expect(loginRequestCount).toBe(0)
+    deliberateSubmitStarted = true
+    await page.getByTestId('login-code-submit-button').click()
 
     await loginRequestStarted
+    expect(loginRequestCount).toBe(1)
 
     await expect(page).toHaveURL('/')
   })

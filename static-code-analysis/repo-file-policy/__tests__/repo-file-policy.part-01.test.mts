@@ -16,7 +16,7 @@ describe('repo-file-policy', () => {
     })
   }
 
-  it('rejects legacy reporting schema examples in docs', { timeout: 10_000 }, async () => {
+  it('rejects legacy reporting schema examples in docs', async () => {
     const dir = await makeRepo()
     await track(
       dir,
@@ -40,35 +40,31 @@ describe('repo-file-policy', () => {
     })
   })
 
-  it(
-    'rejects multiline legacy reporting schema examples in docs',
-    { timeout: 10_000 },
-    async () => {
-      const dir = await makeRepo()
-      await track(
-        dir,
-        'docs/requirements/moderation/REPORTING.md',
-        [
-          '```sql',
-          'CREATE TABLE moderation_reports (',
-          '  created_at',
-          '    timestamptz NOT NULL',
-          '    DEFAULT now(),',
-          '  status',
-          '    moderation_report_status NOT NULL',
-          ');',
-          '```',
-        ].join('\n'),
-      )
+  it('rejects multiline legacy reporting schema examples in docs', async () => {
+    const dir = await makeRepo()
+    await track(
+      dir,
+      'docs/requirements/moderation/REPORTING.md',
+      [
+        '```sql',
+        'CREATE TABLE moderation_reports (',
+        '  created_at',
+        '    timestamptz NOT NULL',
+        '    DEFAULT now(),',
+        '  status',
+        '    moderation_report_status NOT NULL',
+        ');',
+        '```',
+      ].join('\n'),
+    )
 
-      await expect(run(dir)).rejects.toMatchObject({
-        code: 1,
-        stdout: expect.stringContaining('legacy mutable created_at DEFAULT now()'),
-      })
-    },
-  )
+    await expect(run(dir)).rejects.toMatchObject({
+      code: 1,
+      stdout: expect.stringContaining('legacy mutable created_at DEFAULT now()'),
+    })
+  })
 
-  it('allows canonical reporting schema examples in docs', { timeout: 30_000 }, async () => {
+  it('allows canonical reporting schema examples in docs', async () => {
     const dir = await makeRepo()
     await track(
       dir,

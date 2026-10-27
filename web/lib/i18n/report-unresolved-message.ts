@@ -1,9 +1,8 @@
 import * as Sentry from '@sentry/nextjs'
-
-type UnresolvedMessageCapture = (
-  error: Error,
-  context: { tags: Record<string, string>; fingerprint: string[] },
-) => void
+import {
+  createUnresolvedMessageReporter as createReporter,
+  type UnresolvedMessageCapture,
+} from '@vouchington/localization'
 
 export function createUnresolvedMessageReporter(
   locale: string,
@@ -11,15 +10,5 @@ export function createUnresolvedMessageReporter(
     Sentry.captureException(error, context)
   },
 ): (key: string) => string {
-  const reported = new Set<string>()
-  return key => {
-    if (!reported.has(key)) {
-      reported.add(key)
-      captureException(new Error(`Unresolvable message key "${key}"`), {
-        tags: { i18n: 'unresolved-message', locale, key },
-        fingerprint: ['i18n-unresolved-message', locale, key],
-      })
-    }
-    return ''
-  }
+  return createReporter(locale, captureException)
 }

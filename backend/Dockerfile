@@ -43,8 +43,7 @@ FROM base-node AS builder
 WORKDIR /app
 
 # Install pnpm with npm so the build does not depend on what the base Node image
-# bundles. pnpm-activation.test.mts keeps this major equal to CI's pnpm/action-setup
-# `latest-<major>`.
+# bundles. CI follows the same pnpm major.
 ARG PNPM_VERSION=12
 RUN npm install -g pnpm@${PNPM_VERSION}
 

@@ -7,6 +7,7 @@ import {
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
 import { assertCandidateKindMatchesSubject } from './classifier-decision-persistence-validation.mts'
+import { insertClassifierDecisionBatch } from './classifier-decision-batch-insert.mts'
 import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 import type {
   ClassifierDecisionReservationInput,
@@ -28,31 +29,6 @@ export type ClassifierDecisionConfiguration = {
 type SnapshotRow = ClassifierDecisionSnapshot
 
 type CallRow = { id: string; shard_ordinal: number }
-
-export async function insertClassifierDecisionBatch(
-  query: OwnedTransaction,
-  input: Pick<
-    PersistClassifierDecisionInput,
-    'batchId' | 'classifierId' | 'promptVersionId' | 'scope' | 'subject'
-  >,
-): Promise<boolean> {
-  // ON CONFLICT (id) misses a concurrent duplicate on a composite unique index. Hash
-  // canonical uuid text so mixed-case spellings of one batch take that same lock.
-  await query(sql`/* insertClassifierDecisionBatch:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended('classifier-decision-batch:' || ${input.batchId}::uuid::text, 0))
-  `)
-  const { rowCount } = await query(sql`
-    /* insertClassifierDecisionBatch */
-    INSERT INTO classifier_decision_batches (
-      id, classifier_id, prompt_version_id, post_id, rss_feed_item_id, scope_category,
-      scope_community_id
-    ) VALUES (
-      ${input.batchId}, ${input.classifierId}, ${input.promptVersionId}, ${input.subject.postId},
-      ${input.subject.rssFeedItemId}, ${input.scope.scopeCategory}, ${input.scope.scopeCommunityId}
-    ) ON CONFLICT (id) DO NOTHING
-  `)
-  return rowCount === 1
-}
 
 export async function reserveClassifierDecisionBatch(
   query: OwnedTransaction,
@@ -177,7 +153,6 @@ export async function captureClassifierDecisionStoredCandidateSnapshots(
   }
   return new Map(rows.map(row => [row.candidate_id, row]))
 }
-
 export async function insertClassifierDecisionCalls(
   query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,

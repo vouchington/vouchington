@@ -42,10 +42,10 @@ export async function softDeleteAndScrubUserProfile(
 }
 
 /**
- * Revoke all active verified-identity rows for a deleted user.
+ * Revoke the document and remove its live account/session link for a deleted user.
  *
  * Must be called AFTER `softDeleteAndScrubUserProfile` (and only when that call confirms
- * the user was just soft-deleted) so the document is freed only once deletion is confirmed.
+ * the user was just soft-deleted) so the live link is removed only once deletion is confirmed.
  *
  * Intentionally placed in `@services/users` (not `@services/identity-verification`) to
  * avoid a circular workspace dependency: identity-verification → users → identity-verification.
@@ -55,10 +55,11 @@ export async function revokeVerifiedIdentitiesForDeletedUser(
   query: TransactionQuery,
 ): Promise<void> {
   await query(sql`/* deleteUser: revoke verified identities */
-    UPDATE verified_identities
-    SET revoked_at = CURRENT_TIMESTAMP
-    WHERE user_id = ${userId}
-      AND revoked_at IS NULL
-      AND transferred_to_user_id IS NULL
+    WITH removed AS (
+      DELETE FROM verified_identity_account_links WHERE user_id = ${userId}
+      RETURNING identity_fingerprint
+    )
+    UPDATE verified_identities SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP)
+    WHERE identity_fingerprint IN (SELECT identity_fingerprint FROM removed)
   `)
 }

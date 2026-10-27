@@ -42,6 +42,14 @@ vi.mock(
 )
 
 vi.mock(
+  import('../client/auth-recovery-fetch'),
+  () =>
+    ({
+      authRecoveryFetch: mockClientFetch,
+    }) as unknown as typeof import('../client/auth-recovery-fetch'),
+)
+
+vi.mock(
   import('../server/instance'),
   () =>
     ({

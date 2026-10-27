@@ -74,7 +74,7 @@ describe('topic-recommendations request contracts', () => {
   it('keeps the create auth gate ahead of the body contract', async () => {
     const anonymous = await createRequest().post(BASE).send({ title: 5 })
     expect(anonymous.status).toBe(401)
-    expect(anonymous.text).not.toMatch(DIAGNOSTIC)
+    expect(anonymous.body.message).not.toMatch(DIAGNOSTIC)
   })
 
   it('lets a malformed Idempotency-Key keep its coded 400', async () => {
@@ -125,7 +125,7 @@ describe('topic-recommendations request contracts', () => {
       reason: 5,
     })
     expect(anonymous.status).toBe(401)
-    expect(anonymous.text).not.toMatch(DIAGNOSTIC)
+    expect(anonymous.body.message).not.toMatch(DIAGNOSTIC)
 
     const asAuthor = createRequest()
     await asAuthor.authenticateAs(author)

@@ -6,11 +6,11 @@ import { prepublishImagePlacementDenial } from './delivery-registry-publish.mts'
 
 export async function prepublishImagePlacementDenials(
   input: { postId?: string; imageId?: string; retainImageIds?: string[] },
-  options: { query?: TransactionQuery } = {},
+  options: { query?: TransactionQuery; imageOnly?: true } = {},
 ): Promise<void> {
   if (!options.query) {
     await using transaction = await beginTransaction()
-    await prepublishImagePlacementDenials(input, { query: transaction })
+    await prepublishImagePlacementDenials(input, { ...options, query: transaction })
     await transaction.commit()
     return
   }
@@ -18,6 +18,7 @@ export async function prepublishImagePlacementDenials(
   await lockImageDeliveryMutation(query, {
     postIds: input.postId ? [input.postId] : [],
     imageIds: input.imageId ? [input.imageId] : [],
+    placementOnly: options.imageOnly,
   })
   const { rows } = await query<{ placement_id: string; revision: number; image_id: string }>(sql`
     /* prepublishImagePlacementDenials */
@@ -49,11 +50,11 @@ export async function prepublishImagePlacementDenials(
 /** Denies every externally routable form before the owner's safety mutation. */
 export async function prepublishImageDeliveryDenials(
   imageId: string,
-  options: { query?: TransactionQuery } = {},
+  options: { query?: TransactionQuery; imageOnly?: true } = {},
 ): Promise<void> {
   if (!options.query) {
     await using transaction = await beginTransaction()
-    await prepublishImageDeliveryDenials(imageId, { query: transaction })
+    await prepublishImageDeliveryDenials(imageId, { ...options, query: transaction })
     await transaction.commit()
     return
   }

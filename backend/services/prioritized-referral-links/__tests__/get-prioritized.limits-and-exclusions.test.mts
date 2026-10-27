@@ -55,7 +55,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
       pathname: '/ref/%',
     })
     referralProgramId = fixture.referralProgramId
-  }, 30_000)
+  })
 
   it('always returns all group 1+2 (friends) regardless of limit', async () => {
     const viewer = await createTestUser()
@@ -92,7 +92,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
     // Groups 3-5 should not be included (friends >= limit of 5)
     const nonFriends = result.links.filter(l => l.priority_group > 2)
     expect(nonFriends).toHaveLength(0)
-  }, 30_000)
+  })
 
   it('fills remaining slots from groups 3-5 up to limit when friends < limit', async () => {
     const [viewer, { user: friend }] = await Promise.all([
@@ -114,7 +114,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
     expect(result.links.length).toBeLessThanOrEqual(5)
     const friendLinks = result.links.filter(l => l.priority_group <= 2)
     expect(friendLinks.some(l => l.user_id === friend.id)).toBe(true)
-  }, 30_000)
+  })
 
   it('anonymous user gets all group 5, limited to 5', async () => {
     // Ensure at least one link exists for this program
@@ -126,7 +126,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
     expect(result.links.length).toBeLessThanOrEqual(5)
     const allGroup5 = result.links.every(l => l.priority_group === 5)
     expect(allGroup5).toBe(true)
-  }, 30_000)
+  })
 
   it('excludes muted and blocked users', async () => {
     const [viewer, { user: mutedUser }, { user: blockedUser }] = await Promise.all([
@@ -146,7 +146,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
 
     expect(result.links.some(l => l.user_id === mutedUser.id)).toBe(false)
     expect(result.links.some(l => l.user_id === blockedUser.id)).toBe(false)
-  }, 30_000)
+  })
 
   it('excludes the current user from results', async () => {
     const viewer = await createTestUser()
@@ -185,7 +185,7 @@ describe('get-prioritized prioritized referral limits and exclusions', () => {
     // Should include other user's link
     expect(result.links.some(l => l.user_id === other.id)).toBe(true)
     expect(result.links.length).toBeGreaterThan(0)
-  }, 30_000)
+  })
 
   it('populates users map with user details', async () => {
     const [viewer, { user: linkUser }] = await Promise.all([

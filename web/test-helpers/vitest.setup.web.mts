@@ -38,13 +38,32 @@ function stubDefaultImageOrigin() {
 stubDefaultImageOrigin()
 beforeEach(stubDefaultImageOrigin)
 
-// input-otp schedules a setTimeout (password-manager keystroke detection) that fires
-// after jsdom teardown when window no longer exists, crashing the process with
-// "ReferenceError: window is not defined" even when all tests pass. Mock globally so
-// every web test that mounts an InputOTP-using component is protected automatically.
+// input-otp password-manager detection can fire after jsdom teardown and crash on a missing
+// window. Mock its browser boundary globally; derive slots from each input’s actual length.
 vi.mock(import('input-otp'), async () => {
+  const React = await import('react')
   const { inputOtpMockFactory } = await import('vouchington-tooling/input-otp-mock')
-  return (await inputOtpMockFactory()) as unknown as typeof import('input-otp')
+  const mock = (await inputOtpMockFactory()) as unknown as typeof import('input-otp')
+  const SharedOtpInput = mock.OTPInput
+  const OTPInput = React.forwardRef<
+    React.ElementRef<typeof SharedOtpInput>,
+    React.ComponentPropsWithoutRef<typeof SharedOtpInput>
+  >(function ProductOtpInputMock(props, ref) {
+    const emptySlot = { char: '', placeholderChar: null, hasFakeCaret: false, isActive: false }
+    return React.createElement(
+      mock.OTPInputContext.Provider,
+      {
+        value: {
+          slots: Array.from({ length: props.maxLength }, () => ({ ...emptySlot })),
+          isFocused: false,
+          isHovering: false,
+        },
+      },
+      React.createElement(SharedOtpInput, { ...props, ref }),
+    )
+  })
+  OTPInput.displayName = 'ProductOtpInputMock'
+  return { ...mock, OTPInput }
 })
 
 // Cloudflare Turnstile needs a real widget + live siteverify, which jsdom cannot provide. Mock the

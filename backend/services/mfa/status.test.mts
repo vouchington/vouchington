@@ -14,7 +14,7 @@ describe('getUserMfaStatus', () => {
     expect(status.hasMfa).toBe(false)
     expect(status.passkeysCount).toBe(0)
     expect(status.totpCount).toBe(0)
-  }, 15_000)
+  })
 
   it('returns true for user with passkey', async () => {
     const user = await createTestUserDirect()
@@ -26,7 +26,7 @@ describe('getUserMfaStatus', () => {
     expect(status.hasMfa).toBe(true)
     expect(status.passkeysCount).toBeGreaterThanOrEqual(1)
     expect(status.totpCount).toBe(0)
-  }, 15_000)
+  })
 
   it('returns true for user with verified TOTP', async () => {
     const user = await createTestUserDirect()
@@ -38,7 +38,7 @@ describe('getUserMfaStatus', () => {
     expect(status.hasMfa).toBe(true)
     expect(status.totpCount).toBeGreaterThanOrEqual(1)
     expect(status.passkeysCount).toBe(0)
-  }, 15_000)
+  })
 
   it('counts both passkeys and TOTP independently', async () => {
     const user = await createTestUserDirect()
@@ -51,7 +51,7 @@ describe('getUserMfaStatus', () => {
     expect(status.hasMfa).toBe(true)
     expect(status.passkeysCount).toBeGreaterThanOrEqual(1)
     expect(status.totpCount).toBeGreaterThanOrEqual(1)
-  }, 15_000)
+  })
 })
 
 describe('userHasMfa', () => {
@@ -59,7 +59,7 @@ describe('userHasMfa', () => {
     const user = await createTestUserDirect()
     const result = await userHasMfa(user.id)
     expect(result).toBe(false)
-  }, 15_000)
+  })
 
   it('returns true for user with passkey', async () => {
     const user = await createTestUserDirect()
@@ -68,7 +68,7 @@ describe('userHasMfa', () => {
 
     const result = await userHasMfa(user.id)
     expect(result).toBe(true)
-  }, 15_000)
+  })
 
   it('returns true for user with verified TOTP', async () => {
     const user = await createTestUserDirect()
@@ -77,5 +77,5 @@ describe('userHasMfa', () => {
 
     const result = await userHasMfa(user.id)
     expect(result).toBe(true)
-  }, 15_000)
+  })
 })

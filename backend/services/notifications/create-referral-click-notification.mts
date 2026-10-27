@@ -1,20 +1,16 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { truncateText } from './shared.mts'
 
+/** The body stays empty: landing URLs carry UTM fields that retention scrubs from attributions. */
 export async function createReferralClickNotification(
   referrerId: string,
-  landingUrl: string,
 ): Promise<Array<{ user_id: string; id: string }>> {
-  const body = truncateText(landingUrl, 180)
-
   const { rows } = await write(sql`/* createReferralClickNotification */
     INSERT INTO notifications (
       user_id,
       entity_type,
       delivery_type,
       title,
-      body,
       target_path
     )
     SELECT
@@ -22,7 +18,6 @@ export async function createReferralClickNotification(
       'referral_click',
       'subscription',
       'Someone clicked your referral link',
-      ${body},
       '/my/referrals'
     WHERE NOT EXISTS (
       SELECT 1

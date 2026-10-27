@@ -1,3 +1,7 @@
+import {
+  createTestAccountChangeActor,
+  createTestAccountChangeProof,
+} from '@voucha/test-helpers/account-change'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createRandomString,
@@ -6,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { getBlueskyOAuthClient } from './client.mts'
 import { deleteTestBlueskyLinkFixtures } from '@voucha/test-helpers/entities/bluesky-link-cleanup'
-import { beginBlueskyAccountLink } from './link-service.mts'
+import { beginBlueskyAccountLink } from './link.mts'
 
 function fakeHandle(): string {
   return `user-${createRandomString(6)}.bsky.social`
@@ -34,9 +38,13 @@ describe('beginBlueskyAccountLink provider failure', () => {
         throw providerError
       })
     const user = await createTestUserDirect()
+    const actor = await createTestAccountChangeActor(user.id)
+    const reAuthToken = await createTestAccountChangeProof(user.id, actor.session)
     const handle = fakeHandle()
 
-    await expect(beginBlueskyAccountLink(user.id, handle)).rejects.toBe(providerError)
+    await expect(
+      beginBlueskyAccountLink(user.id, handle, { session: actor.session, reAuthToken }),
+    ).rejects.toBe(providerError)
 
     expect(authorize).toHaveBeenCalledOnce()
     expect(authorize).toHaveBeenCalledWith(

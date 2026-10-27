@@ -1,12 +1,12 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { listExistingTestPostIds } from '../../test-helpers/publication-test-queries.mts'
 import {
   createRandomString,
   createTestRetentionWindow,
   createTestUserDirect,
+  countTestPostsCreatedBy,
   hardDeleteTestPosts,
   insertTestPostBatch,
-  getTestPostPublicationDirtyWorkForScope,
-  listTestPostPublicationImpactPostIds,
   getTestUserRaw,
   insertReferralAttributionAt,
   insertTestOAuthAccount,
@@ -73,6 +73,7 @@ describe('cleanup retention windows', () => {
     expect(await getTestUserRaw(afterUpperBoundUser.id)).not.toBeNull()
   })
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('only deletes anonymous referral attributions inside the bounded UUIDv7 window', async () => {
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()
@@ -103,6 +104,7 @@ describe('cleanup retention windows', () => {
     expect(await referralAttributionExistsById(afterUpperBoundId)).toBe(true)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('only deletes orphaned OAuth accounts inside the bounded retention window', async () => {
     const window = createTestRetentionWindow()
     const beforeLowerBoundProviderUserId = `test-orphan-before-lower-${createRandomString(12)}`
@@ -170,26 +172,14 @@ describe('retention publication capture', () => {
 
     await expect(nextPage()).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
-    const authorWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'author',
-      id: user.id,
-    })
-    expect(authorWork).toMatchObject({ author_identity_id: user.id })
-    const firstPageIds = await listTestPostPublicationImpactPostIds(authorWork!.id)
-    expect(firstPageIds).toHaveLength(1)
-    expect(postIds).toContain(firstPageIds[0])
+    expect(await countTestPostsCreatedBy(user.id)).toBe(1)
 
     await expect(nextPage()).resolves.toEqual({ deleted: 0, hasMore: true })
     expect(await getTestUserRaw(user.id)).not.toBeNull()
-    const allImpactIds = postIds.toSorted()
-    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toEqual(
-      allImpactIds,
-    )
+    expect(await countTestPostsCreatedBy(user.id)).toBe(0)
 
     await expect(nextPage()).resolves.toEqual({ deleted: 1, hasMore: false })
     expect(await getTestUserRaw(user.id)).toBeNull()
-    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toEqual(
-      allImpactIds,
-    )
+    expect(await listExistingTestPostIds(postIds)).toEqual(postIds.toSorted())
   })
 })

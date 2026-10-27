@@ -7,15 +7,14 @@ import {
   createTestUser,
   createTestUserWithAge,
   createTopHashtagAliasForTest,
-  getTestPostPublicationDirtyWorkForScope,
   getTestPostCategoryRelationIds,
   hardDeleteTestPosts,
   hardDeleteTestTopics,
   insertTestTopicsAndExplicitPostCategories,
-  listTestPostPublicationImpactTopicIds,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   withCapturedTestQueries,
@@ -32,27 +31,14 @@ describe('post update publication capture', () => {
     })
     if (!post) throw new Error('Expected post')
     onTestFinished(() => hardDeleteTestPosts([post.id]))
-    const before = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
-    })
-    if (!before) throw new Error('Expected post creation publication work')
-
-    await updatePost(author, post, {
-      archive: true,
-      title: `${post.title} updated`,
-    })
-
-    const after = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
-    })
-    expect(BigInt(after!.generation)).toBeGreaterThan(BigInt(before.generation))
-    expect(after?.reasons).toContain('post_content_reset')
-    expect(after?.reasons).not.toContain('post_archived')
+    const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
+      updatePost(author, post, { archive: true, title: `${post.title} updated` }),
+    )
+    expect(jobs.map(job => job.reason)).toContain('post_content_reset')
+    expect(jobs.map(job => job.reason)).not.toContain('post_archived')
   })
 
-  it('retains every prior topic in the coalesced repair work during an admin edit', async () => {
+  it('retains every prior topic in bounded captured pages during an admin edit', async () => {
     const administrator = await createTestUser({ administrator: true })
     const author = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     if (!administrator || !author) throw new Error('Expected administrator and author')
@@ -78,9 +64,12 @@ describe('post update publication capture', () => {
     })
     const title = `Publication topic footprint updated ${suffix}`
 
-    const { queries } = await withCapturedTestQueries(() =>
-      expect(updatePost(administrator, post, { title })).resolves.toMatchObject({ title }),
-    )
+    let jobs: Awaited<ReturnType<typeof captureAddedPublicationEffectsForScope>> = []
+    const { queries } = await withCapturedTestQueries(async () => {
+      jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
+        expect(updatePost(administrator, post, { title })).resolves.toMatchObject({ title }),
+      )
+    })
     const relationIds = new Set(await getTestPostCategoryRelationIds(post.id))
     expect(relationIds.size).toBe(1_001)
     // Other tests share this worker. Contextual capture drops their async contexts, and these
@@ -101,15 +90,16 @@ describe('post update publication capture', () => {
       ),
     ).toBe(2)
 
-    const work = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
-    })
-    expect(work).toBeDefined()
-    expect(work!.reasons).toContain('post_updated')
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual(
-      [...topicIds].toSorted(),
-    )
+    expect(jobs.map(job => job.reason)).toContain('post_topics_changed')
+    expect(
+      [
+        ...new Set(
+          jobs.flatMap(job =>
+            job.keys.flatMap(key => (key.kind === 'impact_topic' ? [key.uuidValue] : [])),
+          ),
+        ),
+      ].toSorted(),
+    ).toEqual([...topicIds].toSorted())
   })
 
   it('includes relation-only alias membership topics in previous publication topics', async () => {
@@ -137,13 +127,12 @@ describe('post update publication capture', () => {
     // enough to make updatePost load previousTopicIds from getPreviousPostPublicationTopicIds and
     // record them as impact_topic keys — the relation-only membership has no source row to trigger
     // through any other path.
-    await updatePost(author, post, { title: `${post.title} updated` })
-
-    const work = await getTestPostPublicationDirtyWorkForScope({
-      type: 'post',
-      id: post.id,
+    const jobs = await captureAddedPublicationEffectsForScope(post.id, () =>
+      updatePost(author, post, { title: `${post.title} updated` }),
+    )
+    expect(jobs.flatMap(job => job.keys)).toContainEqual({
+      kind: 'impact_topic',
+      uuidValue: topic.id,
     })
-    expect(work).toBeDefined()
-    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual([topic.id])
   })
 })

@@ -18,27 +18,29 @@ export interface TotpSetupData {
 interface SetupFlowProps {
   loading: boolean
   setupCode: string
+  setupVerificationProof: string | null
   setupData: TotpSetupData | null
   setupName: string
   onStartSetup: (e: React.FormEvent) => void
+  onConfirmSetup: () => void
   onVerifySetup: (code: string) => void
+  onCancelSetup: () => void
   setSetupCode: (code: string) => void
-  setSetupData: (data: TotpSetupData | null) => void
   setSetupName: (name: string) => void
-  setStep: (step: 'list' | 'setup') => void
 }
 
 export function TotpSetupFlow({
   loading,
   setupCode,
+  setupVerificationProof,
   setupData,
   setupName,
   onStartSetup,
+  onConfirmSetup,
   onVerifySetup,
+  onCancelSetup,
   setSetupCode,
-  setSetupData,
   setSetupName,
-  setStep,
 }: SetupFlowProps) {
   const t = useTranslations()
   const setupNameId = useId()
@@ -81,10 +83,7 @@ export function TotpSetupFlow({
             data-pw='setup-flow-name-cancel'
             type='button'
             variant='outline'
-            onClick={() => {
-              setStep('list')
-              setSetupName('')
-            }}
+            onClick={onCancelSetup}
           >
             {t('extracted.totpManager.setupFlow.cancel_19766ed6')}
           </Button>
@@ -115,56 +114,63 @@ export function TotpSetupFlow({
           {setupData.secret}
         </code>
       </div>
-      <div className='space-y-2'>
-        <Label htmlFor={setupCodeId}>
-          {t('extracted.totpManager.setupFlow.enterThe6DigitCodeFrom_0fb3dfb0')}
-        </Label>
-        <InputOTP
-          id={setupCodeId}
-          maxLength={6}
-          value={setupCode}
-          onChange={(value: string) => {
-            setSetupCode(value)
-            if (value.length === 6) onVerifySetup(value)
-          }}
-          disabled={loading}
-          pattern={/^\d*$/}
-          inputMode='numeric'
-        >
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-          </InputOTPGroup>
-          <InputOTPSeparator />
-          <InputOTPGroup>
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-          </InputOTPGroup>
-        </InputOTP>
-      </div>
+      {setupVerificationProof && (
+        <div className='space-y-2'>
+          <Label htmlFor={setupCodeId}>
+            {t('extracted.totpManager.setupFlow.enterThe6DigitCodeFrom_0fb3dfb0')}
+          </Label>
+          <InputOTP
+            id={setupCodeId}
+            maxLength={6}
+            value={setupCode}
+            onChange={(value: string) => {
+              setSetupCode(value)
+              if (value.length === 6) onVerifySetup(value)
+            }}
+            disabled={loading}
+            pattern={/^\d*$/}
+            inputMode='numeric'
+          >
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+            </InputOTPGroup>
+            <InputOTPSeparator />
+            <InputOTPGroup>
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
+      )}
       <div className='flex gap-2'>
-        <Button
-          data-pw='setup-flow-verify-and-save'
-          onClick={() => onVerifySetup(setupCode)}
-          loading={loading}
-          disabled={loading || setupCode.length < 6}
-        >
-          {loading
-            ? t('extracted.totpManager.setupFlow.verifying_2ec1ac7d')
-            : t('extracted.totpManager.setupFlow.verifyAndSave_42090fcb')}
-        </Button>
+        {setupVerificationProof ? (
+          <Button
+            data-pw='setup-flow-verify-and-save'
+            onClick={() => onVerifySetup(setupCode)}
+            loading={loading}
+            disabled={loading || setupCode.length < 6}
+          >
+            {loading
+              ? t('extracted.totpManager.setupFlow.verifying_2ec1ac7d')
+              : t('extracted.totpManager.setupFlow.verifyAndSave_42090fcb')}
+          </Button>
+        ) : (
+          <Button
+            data-pw='setup-flow-confirm-identity'
+            onClick={onConfirmSetup}
+            disabled={loading}
+          >
+            {t('extracted.totpManager.authenticatorList.confirm_eebdd24a')}
+          </Button>
+        )}
         <Button
           data-pw='setup-flow-verify-cancel'
           type='button'
           variant='outline'
-          onClick={() => {
-            setStep('list')
-            setSetupData(null)
-            setSetupCode('')
-            setSetupName('')
-          }}
+          onClick={onCancelSetup}
         >
           {t('extracted.totpManager.setupFlow.cancel_19766ed6')}
         </Button>

@@ -84,7 +84,10 @@ export function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date 
       return d
     }
     case 'all': {
-      return new Date(0)
+      // The raw moderation sources have finite windows. "All" means the full
+      // available analytics window, not an unbounded scan back to the epoch.
+      d.setUTCDate(d.getUTCDate() - 90)
+      return d
     }
   }
 }

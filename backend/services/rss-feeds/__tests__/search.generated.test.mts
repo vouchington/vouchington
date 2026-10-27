@@ -293,7 +293,7 @@ describe('search.generated', () => {
       is_enabled: null,
     })
     expect(unmatched.find(r => r.id === feed.id)).toBeUndefined()
-  }, 30_000)
+  })
 
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof insertTestTopicParentRelation)

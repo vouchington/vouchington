@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { countTestUserAgentStrings } from '../../test-helpers/entities/user-sessions.mts'
-import { runTestActionsAcrossUserAgentConflict } from '../../test-helpers/services/jwt-session/concurrent-user-agent.mts'
+import { runTestActionsAcrossUserAgentConflict } from '@voucha/test-helpers/user-agent-conflict'
 import { upsertUserAgentString } from './upsert-user-agent-string.mts'
 
 describe('user-agent string lookup', () => {
@@ -8,7 +8,7 @@ describe('user-agent string lookup', () => {
     const userAgent = `user-agent-race-${crypto.randomUUID()}`
     const [firstId, secondId] = await runTestActionsAcrossUserAgentConflict(
       options => upsertUserAgentString(userAgent, options),
-      () => upsertUserAgentString(userAgent),
+      options => upsertUserAgentString(userAgent, options),
     )
     expect(firstId).toBeTruthy()
     expect(secondId).toBe(firstId)

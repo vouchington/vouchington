@@ -18,7 +18,7 @@ describe('getTopicIds semantic_search_query', () => {
     testUser = await createTestUser()
   })
 
-  it('paginates with ranking cursors', { timeout: 30_000 }, async () => {
+  it('paginates with ranking cursors', async () => {
     const query = `semantic topic search test ${crypto.randomUUID()}`
     const queryEmbedding = makeRandomEmbedding()
     await seedSearchEmbeddingCache(query, queryEmbedding)

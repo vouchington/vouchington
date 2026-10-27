@@ -30,6 +30,7 @@ export const enqueueBulkOnPostUpdated = (
   posts: Array<{
     id: string
     contentChanged?: boolean
+    clearanceAlreadyReset?: boolean
   }>,
   priority?: number,
 ) => {
@@ -61,8 +62,7 @@ export const enqueueOnCommunityAgentPromptsDeactivated = (
   communityId: string,
   priority?: number,
 ) => {
-  return enqueueProcessCommunityAgentPromptsDeactivated(
-    { actorUserId, userId, communityId },
-    priority,
+  return awaitReportedEnqueueAdmission(() =>
+    enqueueProcessCommunityAgentPromptsDeactivated({ actorUserId, userId, communityId }, priority),
   )
 }

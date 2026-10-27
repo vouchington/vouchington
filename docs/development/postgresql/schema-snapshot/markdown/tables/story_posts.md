@@ -30,7 +30,7 @@ _none_
 
 **Indexes:**
 
-- `idx_story_posts__initiated_by_id`: `CREATE INDEX idx_story_posts__initiated_by_id ON public.story_posts USING btree (initiated_by_id) WHERE (initiated_by_id IS NOT NULL)`
+- `idx_story_posts__initiated_by_id`: `CREATE INDEX idx_story_posts__initiated_by_id ON public.story_posts USING btree (initiated_by_id, post_id) WHERE (initiated_by_id IS NOT NULL)`
 - `idx_story_posts__story_id`: `CREATE UNIQUE INDEX idx_story_posts__story_id ON public.story_posts USING btree (story_id)`
 - `story_posts_pkey`: `CREATE UNIQUE INDEX story_posts_pkey ON public.story_posts USING btree (post_id)`
 

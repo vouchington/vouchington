@@ -2,12 +2,10 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 type ActivityPubInboxVerificationConstraintName =
-  | 'activitypub_inbox_work_items__deferral_state_valid'
-  | 'activitypub_inbox_work_items__failure_state_valid'
-  | 'activitypub_inbox_work_items__sender_requires_verification'
-  | 'activitypub_inbox_work_items__terminal_diagnostics_present'
-  | 'activitypub_inbox_work_items__verified_actor_paired'
-  | 'activitypub_inbox_delivery_work_items_remote_actor_id_fkey'
+  | 'activitypub_inbox_envelopes__sender_requires_verification'
+  | 'activitypub_inbox_envelopes__terminal_diagnostics_present'
+  | 'activitypub_inbox_envelopes__verified_actor_paired'
+  | 'activitypub_inbox_envelopes_remote_actor_id_fkey'
 
 type ActivityPubInboxVerificationConstraintForTest = {
   constraintName: ActivityPubInboxVerificationConstraintName
@@ -27,14 +25,12 @@ export async function getActivityPubInboxVerificationConstraintsForTest(): Promi
            pg_get_constraintdef(c.oid) AS definition,
            CASE c.confdeltype WHEN 'r' THEN 'RESTRICT' WHEN 'a' THEN 'NO ACTION' ELSE NULL END AS delete_action
     FROM pg_constraint c
-    WHERE c.conrelid = 'activitypub_inbox_delivery_work_items'::regclass
+    WHERE c.conrelid = 'activitypub_inbox_envelopes'::regclass
       AND c.conname IN (
-        'activitypub_inbox_work_items__deferral_state_valid',
-        'activitypub_inbox_work_items__failure_state_valid',
-        'activitypub_inbox_work_items__sender_requires_verification',
-        'activitypub_inbox_work_items__terminal_diagnostics_present',
-        'activitypub_inbox_work_items__verified_actor_paired',
-        'activitypub_inbox_delivery_work_items_remote_actor_id_fkey'
+        'activitypub_inbox_envelopes__sender_requires_verification',
+        'activitypub_inbox_envelopes__terminal_diagnostics_present',
+        'activitypub_inbox_envelopes__verified_actor_paired',
+        'activitypub_inbox_envelopes_remote_actor_id_fkey'
       )
   `)
 
@@ -45,30 +41,25 @@ export async function getActivityPubInboxVerificationConstraintsForTest(): Promi
   }))
 }
 
-export async function makeActivityPubInboxDeliveryRecoverableForTest(
-  deliveryId: string,
-  mode: 'unstarted' | 'stale',
-): Promise<void> {
-  await write(sql`/* makeActivityPubInboxDeliveryRecoverableForTest */
-    UPDATE activitypub_inbox_delivery_work_items
-    SET dispatched_at = NOW() - INTERVAL '31 minutes',
-        received_at = NOW() - INTERVAL '31 minutes',
-        leased_at = CASE
-          WHEN ${mode} = 'stale' THEN NOW() - INTERVAL '31 minutes'
-          ELSE NULL
-        END,
-        lease_expires_at = CASE WHEN ${mode} = 'stale' THEN NOW() - INTERVAL '1 minute' ELSE NULL END
-    WHERE id = ${deliveryId}
-  `)
-}
-
 export async function ageActivityPubInboxDeliveryReceivedAtForTest(
   deliveryId: string,
 ): Promise<void> {
   await write(sql`/* ageActivityPubInboxDeliveryReceivedAtForTest */
-    UPDATE activitypub_inbox_delivery_work_items
+    UPDATE activitypub_inbox_envelopes
     SET received_at = NOW() - INTERVAL '31 minutes'
     WHERE id = ${deliveryId}
+  `)
+}
+
+/** Move one owned envelope onto another id. Callers use this to age a UUIDv7 timestamp. */
+export async function reassignActivityPubInboxDeliveryIdForTest(
+  deliveryId: string,
+  nextId: string,
+): Promise<void> {
+  await write(sql`/* reassignActivityPubInboxDeliveryIdForTest */
+    UPDATE activitypub_inbox_envelopes
+    SET id = ${nextId}::uuid
+    WHERE id = ${deliveryId}::uuid
   `)
 }
 
@@ -80,7 +71,7 @@ export async function activityPubInboxDeliveryExistsOnPrimaryForTest(
   }>(sql`/* activityPubInboxDeliveryExistsOnPrimaryForTest */
     SELECT EXISTS (
       SELECT 1
-      FROM activitypub_inbox_delivery_work_items
+      FROM activitypub_inbox_envelopes
       WHERE claimed_activity_id = ${claimedActivityId}
     ) AS exists
   `)
@@ -95,17 +86,17 @@ export async function getActivityPubInboxDeliveryIdForTest(
 
 export async function getActivityPubInboxDeliveryIdentityForTest(
   claimedActivityId: string,
-): Promise<{ deliveryId: string; leaseToken: string } | undefined> {
+): Promise<{ deliveryId: string; requestDigest: string } | undefined> {
   const { rows } = await write<{
     id: string
-    lease_token: string
+    request_digest: string
   }>(sql`/* getActivityPubInboxDeliveryIdentityForTest */
-    SELECT id, lease_token
-    FROM activitypub_inbox_delivery_work_items
+    SELECT id, request_digest
+    FROM activitypub_inbox_envelopes
     WHERE claimed_activity_id = ${claimedActivityId}
   `)
   const row = rows[0]
-  return row ? { deliveryId: row.id, leaseToken: row.lease_token } : undefined
+  return row ? { deliveryId: row.id, requestDigest: row.request_digest } : undefined
 }
 
 export async function softDeleteRemoteActorForInboxTest(remoteActorId: string): Promise<void> {

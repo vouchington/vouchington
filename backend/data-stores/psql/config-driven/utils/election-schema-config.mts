@@ -22,9 +22,18 @@ export const VOTE_SCHEMA_CONFIGS: VoteSchemaConfig[] = [
     entityIdColumn: 'post_id',
     entityKeyColumns: ['id'],
     entitySortColumns: ['id DESC'],
-    voteAdditionalColumns: ['post_id UUID NOT NULL', 'outbound_activitypub_like_activity_id UUID'],
+    voteAdditionalColumns: [
+      'post_id UUID NOT NULL',
+      'outbound_activitypub_like_activity_id UUID',
+      'outbound_activitypub_original_like_activity_id UUID',
+      'outbound_activitypub_distributed_at TIMESTAMPTZ',
+    ],
     voteAdditionalColumnComments: {
       outbound_activitypub_like_activity_id: 'Stable outbound ActivityPub Like protocol identity.',
+      outbound_activitypub_original_like_activity_id:
+        'The positive Like identity undone by this negative ballot transition.',
+      outbound_activitypub_distributed_at:
+        'Set when all follower-page delivery jobs for this ballot event have been admitted.',
     },
     voteTableConstraints: ['FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE'],
     deletedAtFilter: true,

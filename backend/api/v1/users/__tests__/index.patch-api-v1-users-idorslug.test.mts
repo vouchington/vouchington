@@ -116,7 +116,9 @@ describe('Users API Routes', () => {
 
       const res = await request.delete(`/api/v1/users/${user!.id}`).expect(202)
       expect(res.body.logout).toBe(true)
-      await request.get(`/api/v1/users/${user!.id}`).expect(404)
+      const staleIdentity = await request.get(`/api/v1/users/${user!.id}`).expect(401)
+      expect(staleIdentity.body.code).toBe('AUTH_REQUIRED')
+      await createRequest().get(`/api/v1/users/${user!.id}`).expect(404)
     })
   })
 

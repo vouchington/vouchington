@@ -1,8 +1,9 @@
 'use client'
 import { clientApi } from './instance'
-import { clientFetch } from './raw-fetch'
+import { authRecoveryFetch } from './auth-recovery-fetch'
 import type {
   NotificationsUnreadSummaryResponseBody,
+  MarkAllNotificationsReadResponseBody,
   WebPushSubscriptionResponseBody,
   WebPushSubscriptionsResponseBody,
 } from '@/types/api-responses'
@@ -14,7 +15,7 @@ export function markMyNotificationRead(notificationId: string): Promise<void> {
   return clientApi.patch(`/api/v1/my/notifications/${notificationId}`, { is_read: true })
 }
 export async function markMyNotificationReadKeepalive(notificationId: string): Promise<void> {
-  const response = await clientFetch(`/api/v1/my/notifications/${notificationId}`, {
+  const response = await authRecoveryFetch(`/api/v1/my/notifications/${notificationId}`, {
     method: 'PATCH',
     body: JSON.stringify({ is_read: true }),
     headers: { 'Content-Type': 'application/json' },
@@ -25,8 +26,11 @@ export async function markMyNotificationReadKeepalive(notificationId: string): P
     throw new Error(`Notification read receipt failed (${response.status})`)
   }
 }
-export function markAllMyNotificationsRead(): Promise<void> {
-  return clientApi.post('/api/v1/my/notifications/read-all', {})
+export function markAllMyNotificationsRead(): Promise<MarkAllNotificationsReadResponseBody> {
+  return clientApi.post<MarkAllNotificationsReadResponseBody>(
+    '/api/v1/my/notifications/read-all',
+    {},
+  )
 }
 export function deleteMyNotification(notificationId: string): Promise<void> {
   return clientApi.delete(`/api/v1/my/notifications/${notificationId}`)

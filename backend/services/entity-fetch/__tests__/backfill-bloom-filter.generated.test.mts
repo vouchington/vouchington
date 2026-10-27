@@ -53,7 +53,7 @@ describe('backfill-bloom-filter.generated', () => {
       itemData: { title: 'Test Item' },
       contentSha256: createHash('sha256').update(`bloom-test-${suffix}`).digest(),
     })
-  }, 30_000)
+  })
 
   it('entityCacheBloomFilters exports expected filter instances', () => {
     expect(entityCacheBloomFilters.posts).toBeDefined()

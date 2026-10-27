@@ -15,7 +15,7 @@ export type ActivityPubInboxEnvelope = {
 
 export type ActivityPubInboxDelivery = ActivityPubInboxEnvelope & {
   id: string
-  leaseToken: string
+  requestDigest: string
   remoteActorId: string | null
   receivedAt: Date
   verifiedAt: Date | null

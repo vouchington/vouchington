@@ -129,7 +129,7 @@ vi.mock(import('@/lib/seo/metadata'), () => ({
   createPageMetadata: vi.fn<VitestLooseMock>().mockReturnValue({ title: 'test' }),
 }))
 
-vi.mock(import('@/lib/seo/structured-data'), () => ({
+vi.mock(import('@/lib/seo/structured-data-breadcrumbs'), () => ({
   createBreadcrumbSchema: vi.fn<VitestLooseMock>().mockReturnValue({}),
 }))
 

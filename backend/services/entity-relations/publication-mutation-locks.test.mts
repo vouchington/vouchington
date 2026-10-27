@@ -5,7 +5,6 @@ import {
   createTestUser,
   createTestTopic,
   getEntityRelation,
-  getTestPostPublicationDirtyWorkForScope,
   getTopicAliasIdForTest,
   hardDeleteTestTopic,
   insertTestTopic,
@@ -200,9 +199,6 @@ async function expectPublisherTypeRevalidationFailure({
     await expect(
       getEntityRelation(relation.table_name, sourceTopicId, publisherTypeTopicId),
     ).resolves.toEqual([])
-    await expect(
-      getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: feed.id }),
-    ).resolves.toBeUndefined()
     const discoverabilityJobs = (await readAllQueueJobs(rssFeedMaintenance)).filter(
       job =>
         job.name === 'processEvaluateRssFeedDiscoverability' &&

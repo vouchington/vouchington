@@ -7,12 +7,14 @@ export async function flushMicrotasks() {
 type ESListener = (event: MessageEvent) => void
 
 export class MockEventSource {
+  static readonly CLOSED = 2
   static instances: MockEventSource[] = []
 
   readonly url: string
   readonly listeners = new Map<string, Set<ESListener>>()
   onerror: (() => void) | null = null
   closed = false
+  readyState = 0
 
   constructor(url: string) {
     this.url = url
@@ -30,6 +32,7 @@ export class MockEventSource {
 
   close() {
     this.closed = true
+    this.readyState = MockEventSource.CLOSED
   }
 
   emit(type: string, data: unknown) {
@@ -37,7 +40,8 @@ export class MockEventSource {
     this.listeners.get(type)?.forEach(fn => fn(event))
   }
 
-  emitConnectionError() {
+  emitConnectionError(closed = false) {
+    if (closed) this.readyState = MockEventSource.CLOSED
     if (this.onerror) this.onerror()
     const event = new MessageEvent('error', { data: undefined })
     this.listeners.get('error')?.forEach(fn => fn(event))

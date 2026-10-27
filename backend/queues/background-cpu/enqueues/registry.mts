@@ -97,7 +97,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
     bedrockJob(
       task(`create_${name}`, {
         lockDuration: 300_000,
-        ordering: { key: 'bedrock-embeddings:creation' },
+        ordering: { key: `bedrock-embeddings:creation:${name}` },
       }),
     ),
   ),

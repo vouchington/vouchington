@@ -82,6 +82,7 @@ describe('copyright dynamic-config namespace', () => {
     const current = await request.get(path).expect(200)
     expect(current.body.namespace.config).toEqual({
       automaticProvisionalWithholding: false,
+      automaticProvisionalWithholdingSince: '',
       mcpDecisionTools: false,
       emailThreadGraphMaxRows: 1000,
       reviewTargetMinutes: 0,

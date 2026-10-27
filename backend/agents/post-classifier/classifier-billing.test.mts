@@ -3,6 +3,7 @@ import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { countAiUsageRecordsForResponseId, findAiUsageRecordForPost } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { withCurrentClassifierUsage } from '@voucha/test-helpers/classifier-current-usage'
 import { getAccountingUncertaintySource, SpendCapBreachError } from '@services/ai-usage'
 import { claimClassifierRun } from '@services/classifier-runs'
 import type { StructuredDecisionFetch } from '@modules/structured-decisions'
@@ -89,8 +90,9 @@ describe('post classifier billing', () => {
   })
 
   it('records attributed billed usage once when the run replays', async () => {
-    await withReservedAiUsageDay(1_000_000, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const input = await createPostClassifierExecutionFixture(true, false)
+      trackRunId(input.run.runId)
       const responseId = `decision-${randomUUID()}`
       const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
         const body = JSON.parse(stringFromUnknown(init?.body)) as {
@@ -116,8 +118,9 @@ describe('post classifier billing', () => {
   })
 
   it('never bills again when a reclaimed lease finds the outcomes already durable', async () => {
-    await withReservedAiUsageDay(1_000_000, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const input = await createPostClassifierExecutionFixture(true, false)
+      trackRunId(input.run.runId)
       const responseId = `decision-${randomUUID()}`
       const fetch = vi.fn<StructuredDecisionFetch>(async (_url, init) => {
         const body = JSON.parse(stringFromUnknown(init?.body)) as {
@@ -181,8 +184,9 @@ describe('post classifier billing', () => {
     }
 
     it('persists the billed decision with one attempt and one billing call', async () => {
-      await withReservedAiUsageDay(1_000_000, async () => {
+      await withCurrentClassifierUsage(async trackRunId => {
         const { input, responseId, fetch, run } = await runAbortingAfterProvider(true, 3)
+        trackRunId(input.run.runId)
 
         expect(await run).toBe('persisted')
         expect(fetch).toHaveBeenCalledOnce()

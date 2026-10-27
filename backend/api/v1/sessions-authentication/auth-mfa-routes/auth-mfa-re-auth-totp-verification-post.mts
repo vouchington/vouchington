@@ -1,6 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
-import { createReAuthToken } from '@services/mfa'
-import { verifyTotpCode } from '@services/totp'
+import { verifyTotpReAuth } from '@services/mfa/totp-reauth'
+import { countTotpReAuthAttempt } from '@services/mfa/re-auth-failures'
 import { assertNotSuspended } from '@services/users/suspension'
 import app from '../../../app.mts'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
@@ -10,12 +10,11 @@ app.route('/api/v1/auth/mfa/re-auth/totp/verification').post(async (ctx: Context
   assertNotSuspended(currentUser)
 
   const body = (await parseJsonBody(ctx, '100kb')) as { code?: string }
-  validateRequestContract(ctx, 'POST:/api/v1/auth/mfa/re-auth/totp/verification', { body })
   ctx.assert(body.code, 422, 'code is required')
+  validateRequestContract(ctx, 'POST:/api/v1/auth/mfa/re-auth/totp/verification', { body })
 
-  const valid = await verifyTotpCode(currentUser.id, body.code)
-  ctx.assert(valid, 401, 'Invalid verification code')
+  await countTotpReAuthAttempt(currentUser.id)
 
-  const token = await createReAuthToken(currentUser.id)
+  const token = await verifyTotpReAuth(currentUser.id, await ctx.getSessionTokenData(), body.code)
   ctx.json({ re_auth_token: token })
 })

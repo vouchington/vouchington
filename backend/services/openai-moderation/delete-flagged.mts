@@ -42,13 +42,10 @@ export async function deleteFlaggedImage(imageId: string): Promise<boolean> {
 
     // The durable pending marker blocks all application reads before S3 is touched. Never remove
     // source objects or metadata unless the permanent quarantine copy is confirmed above.
-    await deleteImageById(image.id, true, { includeQuarantinePending: true })
-
-    try {
-      await deleteKnownImageRenders(image)
-    } catch (err) {
-      onError(err as Error)
-    }
+    await deleteImageById(image.id, {
+      includeQuarantinePending: true,
+      reportAdmissionFailure: true,
+    })
 
     try {
       await recordImageAutoRemoval(imageId, { reason: 'openai_image_quarantine_csam' })
@@ -97,8 +94,8 @@ export async function reconcilePendingImageQuarantines(
 async function markImageQuarantinePending(imageId: string): Promise<boolean> {
   await using transaction = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- retain the image fence before edge denial, then admit quarantine only after denial succeeds
-  await lockImageAssetMutation(transaction, { imageIds: [imageId] })
-  await prepublishImageDeliveryDenials(imageId, { query: transaction })
+  await lockImageAssetMutation(transaction, { imageIds: [imageId], imageOnly: true })
+  await prepublishImageDeliveryDenials(imageId, { query: transaction, imageOnly: true })
   const { rows } = await transaction(sql`/* markImageQuarantinePending */
     UPDATE images
     SET quarantine_pending_at = COALESCE(quarantine_pending_at, NOW())
@@ -108,13 +105,4 @@ async function markImageQuarantinePending(imageId: string): Promise<boolean> {
   `)
   await transaction.commit()
   return rows.length > 0
-}
-
-async function deleteKnownImageRenders(image: { id: string; s3_key: string }): Promise<void> {
-  const keys = new Set([image.s3_key, image.id])
-  const results = await Promise.allSettled([...keys].map(key => imageS3.deleteImageRenders(key)))
-  const errors = results.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
-  if (errors.length > 0) {
-    throw new AggregateError(errors, `Failed to delete renders for image ${image.id}`)
-  }
 }

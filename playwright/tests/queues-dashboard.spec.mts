@@ -13,9 +13,9 @@ test.describe('Queue Dashboard', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Queues')
   })
 
-  test('shows Open GlideMQ Dashboard link pointing to /admin/mq-dashboard', async ({ page }) => {
+  test('opens the GlideMQ Dashboard after browser renewal', async ({ page }) => {
     const link = page.getByTestId('glidemq-dashboard-link')
     await expect(link).toBeVisible()
-    await expect(link).toHaveAttribute('href', '/admin/mq-dashboard')
+    await expect(link).toHaveAttribute('href', '/session-renewal?next=%2Fadmin%2Fmq-dashboard')
   })
 })

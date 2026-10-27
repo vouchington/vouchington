@@ -4,7 +4,7 @@ import {
   insertTestPost,
   suspendTestUser,
 } from '../../../backend/test-helpers/index.mts'
-import { loginAsUser } from '../../helpers/auth.mts'
+import { loginAsMfaUser, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 
 // ---------------------------------------------------------------------------
@@ -103,7 +103,7 @@ test.describe('Content-removed notice in post card', () => {
 
 test.describe('Staff reviewer sees Under review badge', () => {
   test('admin user sees review-status-badge on rejected post card', async ({ page }) => {
-    await loginAsUser(page, adminUserId)
+    await loginAsMfaUser(page, adminUserId)
     await navigateTo(page, '/discussions?sort=new')
 
     await expect(page.getByTestId('post-card-review-badge').first()).toBeVisible()
@@ -111,7 +111,7 @@ test.describe('Staff reviewer sees Under review badge', () => {
   })
 
   test('admin user sees review-status-badge on rejected post detail page', async ({ page }) => {
-    await loginAsUser(page, adminUserId)
+    await loginAsMfaUser(page, adminUserId)
     await navigateTo(page, `/discussion/${rejectedPostSlug}`)
 
     await expect(page.getByTestId('post-detail-review-badge')).toBeVisible()

@@ -37,7 +37,7 @@ describe('createSingleEmbedding', () => {
     })
   })
 
-  it('SQL-copies a centralized cache-hit vector onto the topic without toSql', async () => {
+  it('applies a captured centralized cache-hit vector onto the topic', async () => {
     const user = await createTestUserDirect()
     const suffix = randomUUID().slice(0, 8)
     const name = `Cache Hit ${suffix}`

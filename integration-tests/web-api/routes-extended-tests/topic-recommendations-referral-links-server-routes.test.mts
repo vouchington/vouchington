@@ -111,7 +111,7 @@ describe('routes-extended', () => {
       userCookieHeader,
     )) as { post: { id: string } }
     topicRecPostId = topicRec.post.id
-  }, 20_000)
+  })
 
   afterAll(async () => {
     await new Promise<void>(resolve => {
@@ -135,7 +135,7 @@ describe('routes-extended', () => {
     } else {
       delete (globalThis as { window?: unknown }).window
     }
-  }, 15_000)
+  })
 
   async function withClientRuntime<T>(
     run: () => Promise<T>,

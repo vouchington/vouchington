@@ -8,7 +8,11 @@ import {
 import type { PendingScanOptions } from './entities/scan-options.mts'
 import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { BatchFileBuilder } from '@services/bedrock-embeddings-batch/orchestrator/file-builder'
-import { createBatch } from '@services/bedrock-embeddings-batch/orchestrator/create'
+import {
+  createBatch,
+  BatchCreationDeferredError,
+} from '@services/bedrock-embeddings-batch/orchestrator/create'
+import { creationSubmissionAdmission } from './submission-admission.mts'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import { getBatchCreationLimits } from '@services/bedrock-embeddings-batch/rate-limits'
 
@@ -48,6 +52,7 @@ export async function processBatchCreation<T extends BatchEntity>(
     streamPending: (options?: PendingScanOptions) => AsyncGenerator<T, void, unknown>
     cursor?: EmbeddingScanCursor
     reEnqueue: (cursor?: EmbeddingScanCursor, delayMs?: number) => unknown
+    isLeaseHeld: () => boolean
   },
   dependencies: BatchCreationDependencies = defaultBatchCreationDependencies,
 ): Promise<CreateBatchResult> {
@@ -87,6 +92,7 @@ export async function processBatchCreation<T extends BatchEntity>(
       fileBuilder,
       limits,
     )
+    if (!params.isLeaseHeld()) throw new BatchCreationDeferredError('lease_lost', 0)
     shouldContinue = true
     if (boundary && progress.cursor) {
       const row = boundary as T & { crawl_id?: string; order_index?: number }
@@ -102,9 +108,22 @@ export async function processBatchCreation<T extends BatchEntity>(
 
     shouldContinue = false
     const { filePath, entityIdsFilePath, entityCount, inputSizeMB } = await fileBuilder.close()
-    await dependencies.createBatch(filePath, params.jobType, entityCount, entityIdsFilePath, {
-      inputSizeMB,
-    })
+    await dependencies.createBatch(
+      filePath,
+      params.jobType,
+      entityCount,
+      entityIdsFilePath,
+      { inputSizeMB },
+      {},
+      creationSubmissionAdmission({
+        dependencies,
+        isLeaseHeld: params.isLeaseHeld,
+        jobType: params.jobType,
+        entityCount,
+        inputSizeMB,
+      }),
+      params.isLeaseHeld,
+    )
     shouldContinue = true
     return { success: true, hasMore: progress.hasMore }
   } finally {

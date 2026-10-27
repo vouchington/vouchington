@@ -22,14 +22,10 @@ export const backgroundWorkRegistryEntries5 = {
     maxValues: postPublicationWorkMaxValues,
     descriptions: {
       capture_batch_size: 'Capture batch size for post publication processing.',
-      dirty_work_key_batch_size: 'Dirty work key batch size for post publication processing.',
-      identity_snapshot_page_size: 'Identity snapshot page size for post publication processing.',
-      reconciliation_page_size: 'Reconciliation page size for post publication processing.',
-      shadow_audit_page_size: 'Shadow audit page size for post publication processing.',
+      effect_payload_key_batch_size: 'Maximum captured keys in one direct publication job.',
       story_lifecycle_lock_batch_size:
         'Story lifecycle lock batch size for post publication processing.',
-      rss_feed_hard_delete_capture_batch_size:
-        'Rss feed hard delete capture batch size for post publication processing.',
+      rss_feed_hard_delete_capture_batch_size: 'RSS feed hard delete page size.',
     },
   }),
   'rss-feed-items-work-config': defineBoundedWorkNamespace({
@@ -77,14 +73,16 @@ export const backgroundWorkRegistryEntries5 = {
     label: 'Notifications',
     maxValues: notificationsWorkMaxValues,
     descriptions: {
-      community_digest_window_batch_size:
-        'Maximum weekly catch-up windows created or dispatched per scheduler run.',
+      community_digest_windows_per_run:
+        'Maximum weekly catch-up windows enqueued per scheduler run.',
       community_digest_recipient_batch_size:
         'Community digest recipient batch size for notifications processing.',
       reconcile_batch_size: 'Reconcile batch size for notifications processing.',
       reconcile_recipient_page_size:
         'Recipients one post or RSS feed item notification reconcile job handles before it continues.',
       push_intent_recovery_page_size: 'Page size for durable notification push intent recovery.',
+      mark_all_read_page_size:
+        'Maximum unread notifications marked by one request or continuation job.',
     },
   }),
   'bookmarks-work-config': defineBoundedWorkNamespace({

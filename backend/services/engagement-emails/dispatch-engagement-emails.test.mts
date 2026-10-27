@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestUser,
   createTestUserWithAge,
@@ -10,19 +10,16 @@ import {
   insertTestUrlDirect,
   linkPostToTopic,
   markPostsAsViewed,
+  updateTopicMarkdown,
 } from '@voucha/test-helpers'
 import { insertTestUserReferralProgramLink } from '@voucha/test-helpers/entities/referral-links'
 import {
   ownedEngagementDispatch,
   scopedEngagementClaimResult,
 } from '@voucha/test-helpers/engagement-dispatch-jobs'
-import {
-  buildFollowNewsSourceItems,
-  buildFollowTopicsItems,
-  buildReferralProgramItems,
-} from './dispatch-engagement-emails.mts'
 
 describe('dispatchEngagementEmails', () => {
+  beforeEach(() => vi.stubEnv('SITE_ORIGIN', 'https://app.example.test'))
   afterEach(() => {
     vi.unstubAllEnvs()
   })
@@ -54,7 +51,11 @@ describe('dispatchEngagementEmails', () => {
           input: { userId: user.id },
           variables: {
             topics: expect.arrayContaining([
-              expect.objectContaining({ name: `Email Young Topic ${random}` }),
+              expect.objectContaining({
+                name: `Email Young Topic ${random}`,
+                url: `https://app.example.test/topic/email-young-topic-${random}`,
+                reason: 'from_viewed_posts',
+              }),
             ]),
           },
         },
@@ -76,9 +77,20 @@ describe('dispatchEngagementEmails', () => {
       topicId,
       title: `Email Source Feed ${random}`,
     })
+    const describedTopicId = await insertTestTopic({
+      name: `Email Described Source ${random}`,
+      slug: `email-described-source-${random}`,
+      createdById: admin.id,
+    })
+    await updateTopicMarkdown(describedTopicId, 'Owned source description.')
+    await insertTestRssFeed({
+      topicId: describedTopicId,
+      title: `Email Described Feed ${random}`,
+    })
     const referralProgramId = await insertTestReferralProgram({ createdById: admin.id })
     for (const recipient of [user, foreign]) {
       await insertEntityRelation('relation__user__follow__topic', recipient.id, topicId)
+      await insertEntityRelation('relation__user__follow__topic', recipient.id, describedTopicId)
       const url = await insertTestUrlDirect(
         recipient.id,
         `https://ref-${recipient.id}.example.com/offer`,
@@ -98,12 +110,27 @@ describe('dispatchEngagementEmails', () => {
           input: { userId: user.id },
           variables: {
             sources: expect.arrayContaining([
-              expect.objectContaining({ name: `Email Source Feed ${random}` }),
+              expect.objectContaining({
+                name: `Email Source Feed ${random}`,
+                url: `https://app.example.test/source/email-source-topic-${random}`,
+              }),
+              expect.objectContaining({
+                name: `Email Described Feed ${random}`,
+                url: `https://app.example.test/source/email-described-source-${random}`,
+                description: 'Owned source description.',
+              }),
             ]),
           },
         },
       },
     ])
+    const variables = observed.targetJobs[0]!.data as {
+      variables: { sources: Array<{ name: string; description?: string }> }
+    }
+    const emptyDescriptionSource = variables.variables.sources.find(
+      source => source.name === `Email Source Feed ${random}`,
+    )
+    expect(emptyDescriptionSource).not.toHaveProperty('description')
   })
 
   it('dispatches follow-topic recommendations to eligible users', async () => {
@@ -134,7 +161,11 @@ describe('dispatchEngagementEmails', () => {
           input: { userId: user.id },
           variables: {
             topics: expect.arrayContaining([
-              expect.objectContaining({ name: `Email Topic ${random}` }),
+              expect.objectContaining({
+                name: `Email Topic ${random}`,
+                url: `https://app.example.test/topic/email-topic-${random}`,
+                reason: 'from_viewed_posts',
+              }),
             ]),
           },
         },
@@ -179,7 +210,7 @@ describe('dispatchEngagementEmails', () => {
             referralPrograms: expect.arrayContaining([
               expect.objectContaining({
                 name: expect.any(String),
-                url: expect.stringContaining('/referral-program/'),
+                url: expect.stringMatching(/^https:\/\/app\.example\.test\/referral-program\//),
                 linkCount: expect.any(Number),
               }),
             ]),
@@ -187,6 +218,12 @@ describe('dispatchEngagementEmails', () => {
         },
       },
     ])
+    const payload = observed.targetJobs[0]!.data as {
+      variables: { referralPrograms: Array<{ linkCount: number }> }
+    }
+    for (const program of payload.variables.referralPrograms) {
+      expect(program.linkCount).toBeGreaterThanOrEqual(0)
+    }
   })
 
   it('claims follow-topic recipients with no recommendations so later users can be considered', async () => {
@@ -221,80 +258,5 @@ describe('dispatchEngagementEmails', () => {
     }
     const observed = await ownedEngagementDispatch(user.id, foreign.id, 'follow_news_sources')
     expect(observed.claims).toEqual(scopedEngagementClaimResult)
-  })
-
-  it('builds follow-topic items from recommendation order', () => {
-    vi.stubEnv('SITE_ORIGIN', 'https://app.example.test')
-
-    expect(
-      buildFollowTopicsItems(
-        [
-          { id: 'topic-1', reason: 'Popular in your network' },
-          { id: 'topic-2', reason: null },
-        ],
-        [{ name: 'Travel', slug: 'travel' }, undefined],
-      ),
-    ).toEqual([
-      {
-        name: 'Travel',
-        url: 'https://app.example.test/topic/travel',
-        reason: 'Popular in your network',
-      },
-    ])
-  })
-
-  it('builds referral program items from trending program order', () => {
-    vi.stubEnv('SITE_ORIGIN', 'https://app.example.test')
-
-    expect(
-      buildReferralProgramItems(
-        [
-          { id: 'program-1', link_count: 7 },
-          { id: 'program-2', link_count: 3 },
-        ],
-        [{ name: 'Travel Card', slug: 'travel-card' }, undefined],
-      ),
-    ).toEqual([
-      {
-        name: 'Travel Card',
-        url: 'https://app.example.test/referral-program/travel-card',
-        linkCount: 7,
-      },
-    ])
-  })
-
-  it('builds news source items with home-page and rss fallbacks', () => {
-    vi.stubEnv('SITE_ORIGIN', 'https://app.example.test')
-
-    expect(
-      buildFollowNewsSourceItems([
-        {
-          id: 'feed-1',
-          title: 'Travel Daily',
-          home_page_url: { url: 'https://news.example.test' },
-          rss_feed_url: { url: 'https://news.example.test/rss.xml' },
-          topic: { slug: 'travel-daily', markdown: 'Travel deals and loyalty news.' },
-        },
-        {
-          id: 'feed-2',
-          title: 'Points Wire',
-          home_page_url: null,
-          rss_feed_url: { url: 'https://points.example.test/rss.xml' },
-          topic: { markdown: '' },
-        },
-        undefined,
-      ]),
-    ).toEqual([
-      {
-        name: 'Travel Daily',
-        url: 'https://app.example.test/source/travel-daily',
-        description: 'Travel deals and loyalty news.',
-      },
-      {
-        name: 'Points Wire',
-        url: 'https://app.example.test/source/feed-2',
-        description: undefined,
-      },
-    ])
   })
 })

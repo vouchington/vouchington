@@ -19,32 +19,23 @@ describe('createRouteMessagesCache', () => {
     expect(loadMessages).toHaveBeenNthCalledWith(2, 'en', '/my/notifications')
   })
 
-  it('retains a rejected route promise until an explicit retry and accepts a later seed', async () => {
+  it('seeds only the selected locale and pathname', async () => {
     const loadMessages = vi.fn<(locale: string, pathname: string) => Promise<EnCatalog>>()
-    loadMessages.mockRejectedValueOnce(new Error('localization unavailable'))
-    loadMessages.mockResolvedValueOnce({ nav: { home: 'Home' } })
+    loadMessages.mockResolvedValue({ nav: { home: 'Other route' } })
     const cache = createRouteMessagesCache(loadMessages)
-
-    const failed = cache.getMessagesPromise('en', '/my/notifications')
-    await expect(failed).rejects.toThrow('localization unavailable')
-    expect(cache.getMessagesPromise('en', '/my/notifications')).toBe(failed)
-    expect(loadMessages).toHaveBeenCalledTimes(1)
-
-    cache.invalidateMessages('en', '/my/notifications')
-    await expect(cache.getMessagesPromise('en', '/my/notifications')).resolves.toEqual({
-      nav: { home: 'Home' },
+    cache.seedMessages('en', '/seeded', { nav: { home: 'Seeded' } })
+    await expect(cache.getMessagesPromise('en', '/seeded')).resolves.toEqual({
+      nav: { home: 'Seeded' },
     })
-    expect(loadMessages).toHaveBeenCalledTimes(2)
-
-    const failedSeed = createRouteMessagesCache(() =>
-      Promise.reject(new Error('localization unavailable')),
-    )
-    await expect(failedSeed.getMessagesPromise('en', '/my/notifications')).rejects.toThrow(
-      'localization unavailable',
-    )
-    failedSeed.seedMessages('en', '/my/notifications', { nav: { home: 'Home' } })
-    await expect(failedSeed.getMessagesPromise('en', '/my/notifications')).resolves.toEqual({
-      nav: { home: 'Home' },
+    await expect(cache.getMessagesPromise('en', '/other')).resolves.toEqual({
+      nav: { home: 'Other route' },
     })
+    await expect(cache.getMessagesPromise('es', '/seeded')).resolves.toEqual({
+      nav: { home: 'Other route' },
+    })
+    expect(loadMessages.mock.calls).toEqual([
+      ['en', '/other'],
+      ['es', '/seeded'],
+    ])
   })
 })

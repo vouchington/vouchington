@@ -49,6 +49,7 @@ function emptyScopedOptions(now: Date) {
     retainedRelationIdentityKeys: {},
     retainedMediaBindingIds: [],
     softDeletedUsers: emptyWindow,
+    histories: emptyWindow,
     orphanedOAuthAccounts: emptyWindow,
     expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
     expiredOAuthServerArtifacts: emptyWindow,
@@ -58,6 +59,9 @@ function emptyScopedOptions(now: Date) {
     expiredContributionQuotaConsumptions: emptyWindow,
     expiredTopicImportAttempts: emptyWindow,
     terminalNotificationPushIntents: emptyWindow,
+    deliveredMembershipEntitlementEffects: emptyWindow,
+    endedMembershipRenewalNotices: emptyWindow,
+    terminalGooglePlayAcknowledgments: emptyWindow,
     terminalStripeEventWork: emptyWindow,
     abandonedMembershipPurchaseIntents: emptyWindow,
     emailAddressLoginTokens: emptyWindow,
@@ -67,6 +71,15 @@ function emptyScopedOptions(now: Date) {
     oldModerationQueueClaims: emptyWindow,
     oldModerationMediaReveals: emptyWindow,
     federationRetention: { now: new Date(0) },
+    textEmbeddingCache: emptyWindow,
+    terminalEmbeddingBatches: emptyWindow,
+    oldProviderResponseKeys: emptyWindow,
+    oldMediaDeliveryChanges: emptyWindow,
+    classifierRecords: emptyWindow,
+    sesBounceEvents: emptyWindow,
+    systemPrunedNotifications: emptyWindow,
+    userDeletedNotifications: emptyWindow,
+    moderationEmailSends: emptyWindow,
   }
 }
 

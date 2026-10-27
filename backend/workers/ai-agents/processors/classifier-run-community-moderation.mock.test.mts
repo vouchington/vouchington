@@ -126,33 +126,48 @@ describe('C8 community moderation through the shared lifecycle (real PG, mocked 
     expect(new Set(digests).size).toBe(2)
   })
 
-  it('re-keys the run when a rule is edited, so the new wording is asked once', async () => {
+  it('reserves a new run for an edited rule at the same content and replays that exact configuration', async () => {
     const fixture = await createCommunityModerationFixture()
     const first = await reserveCommunityModerationFixtureRun(fixture)
     await processRun(first)
     await editTestCommunityRule(fixture.prompts[0]!.id, 'No spam of any kind, ever')
 
-    const second = await reserveCommunityModerationFixtureRun(fixture)
-    await processRun(second)
-    await processRun(second)
+    await requestCommunityModerationRunForPost(fixture.postId)
+    const changed = await handler.reserve(fixture.subject)
+    expect(changed.kind).toBe('reserved')
+    if (changed.kind !== 'reserved') throw new Error('Edited rule was not reserved')
+    expect(changed.run.runId).not.toBe(first.runId)
+    expect(changed.run.configurationSha256.equals(first.configurationSha256)).toBe(false)
+    await expect(processRun(changed.run)).resolves.toEqual({ kind: 'completed' })
+    const replay = await handler.reserve(fixture.subject)
+    expect(replay.kind === 'reserved' && replay.run.runId).toBe(changed.run.runId)
 
-    expect(second.runId).not.toBe(first.runId)
-    expect(second.configurationSha256.equals(first.configurationSha256)).toBe(false)
     expect(provider).toHaveBeenCalledTimes(2)
+    expect(await runFacts(fixture.postId)).toHaveLength(2)
+    expect(await getClassifierRunRequestFacts(fixture.postId)).toMatchObject([
+      { run_identity_id: changed.run.runId, run_settled_at: expect.any(Date) },
+    ])
   })
 
-  it('sends no candidate for a deactivated prompt and re-keys the run', async () => {
+  it('reserves a new run after a prompt is deactivated at the same content identity', async () => {
     const fixture = await createCommunityModerationFixture({ ruleTexts: ['One', 'Two', 'Three'] })
-    await processRun(await reserveCommunityModerationFixtureRun(fixture))
-    const deactivated = fixture.prompts[1]!
-    await deactivateTestCommunityPrompt(deactivated.id)
+    const first = await reserveCommunityModerationFixtureRun(fixture)
+    await processRun(first)
+    await deactivateTestCommunityPrompt(fixture.prompts[1]!.id)
 
-    await processRun(await reserveCommunityModerationFixtureRun(fixture))
+    await requestCommunityModerationRunForPost(fixture.postId)
+    const changed = await handler.reserve(fixture.subject)
+    expect(changed.kind).toBe('reserved')
+    if (changed.kind !== 'reserved') throw new Error('Deactivated prompt was not reserved')
+    expect(changed.run.runId).not.toBe(first.runId)
+    await expect(processRun(changed.run)).resolves.toEqual({ kind: 'completed' })
 
     expect(asked).toHaveLength(2)
+    expect(asked[0]!.toSorted()).toEqual(idsOf(fixture.prompts))
     expect(asked[1]!.toSorted()).toEqual(
-      idsOf(fixture.prompts.filter(prompt => prompt.id !== deactivated.id)),
+      idsOf(fixture.prompts.filter(prompt => prompt.id !== fixture.prompts[1]!.id)),
     )
+    expect(await runFacts(fixture.postId)).toHaveLength(2)
   })
 
   it('reserves no work and never reaches the provider when every prompt is inactive', async () => {

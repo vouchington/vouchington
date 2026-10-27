@@ -50,7 +50,7 @@ describe('POST /api/v1/moderation/reveals', () => {
   it('checks the role before the body contract and records nothing for a malformed body', async () => {
     const anonymous = await createRequest().post('/api/v1/moderation/reveals').send({ surface: 5 })
     expect(anonymous.status).toBe(401)
-    expect(anonymous.text).not.toMatch(/schema|must be|required|invalid/i)
+    expect(anonymous.body.message).not.toMatch(/schema|must be|required|invalid/i)
     const outsider = createRequest()
     await outsider.authenticateAs(regularUser)
     await outsider.post('/api/v1/moderation/reveals').send({ surface: 5 }).expect(403)

@@ -82,7 +82,9 @@ export async function insertElectionVoteRows(
   if (config.tracksNeutralScore) query.append(sql`, score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, score_is_semantic`)
   if (config.tracksOutboundActivityPubLike) {
-    query.append(sql`, outbound_activitypub_like_activity_id`)
+    query.append(
+      sql`, outbound_activitypub_like_activity_id, outbound_activitypub_original_like_activity_id`,
+    )
   }
   query.append(sql`)
       SELECT input_data.user_id, input_data.entity_id, input_data.id, input_data.score,
@@ -97,6 +99,12 @@ export async function insertElectionVoteRows(
                WHEN previous_votes.previous_score > 0
                  THEN previous_votes.previous_outbound_ap_like_activity_id
                ELSE input_data.id
+             END,
+             CASE
+               WHEN input_data.score <= 0 OR input_data.score IS NULL
+                 THEN CASE WHEN previous_votes.previous_score > 0
+                   THEN previous_votes.previous_outbound_ap_like_activity_id ELSE NULL END
+               ELSE NULL
              END`)
   }
   query.append(sql`

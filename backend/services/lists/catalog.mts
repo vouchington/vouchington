@@ -5,7 +5,7 @@ type ListItemStorageConfig = {
   entityColumn: string
 }
 
-export const listItemStorageCatalog = {
+const listItemStorageCatalog = {
   rss_feed_item: {
     table: 'user_list_rss_feed_items',
     entityColumn: 'rss_feed_item_id',

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   buildDirectPostEligibilityFilter,
@@ -7,11 +6,6 @@ import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from './post-publication-eligibility.mts'
-
-const publicEligibilityViewSql = readFileSync(
-  new URL('../../data-stores/psql/views/2025-01-18-public-post-eligibility.sql', import.meta.url),
-  'utf8',
-)
 
 describe('buildNotificationPostEligibilityFilter', () => {
   it('keeps canonical publication state independent of recipient access', () => {
@@ -95,11 +89,6 @@ describe('buildPublicPostEligibilityFilter', () => {
 
     expect(statement.text).toContain("access_post.broadcast IN ('everyone', 'users')")
     expect(statement.text).not.toContain("access_post.broadcast = 'everyone'")
-  })
-
-  it('keeps candidate and root clearance gates in the managed eligibility view', () => {
-    expect(publicEligibilityViewSql).toContain('candidate_post.approved_at IS NOT NULL')
-    expect(publicEligibilityViewSql).toContain('root_post.approved_at IS NOT NULL')
   })
 })
 

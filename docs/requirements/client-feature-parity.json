@@ -2,6 +2,41 @@
   "version": 1,
   "features": [
     {
+      "id": "staff-rss-feed-deletion",
+      "title": "Staff asynchronous RSS feed deletion",
+      "domain": "Admin",
+      "intents": [],
+      "requirements": ["docs/requirements/CLIENT-PARITY-MATRIX.md"],
+      "matrixRows": [],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/topics/manage-source/manage-source-client.tsx",
+            "web/components/topics/manage-source/feed-actions-section.tsx"
+          ],
+          "apiEvidence": ["web/lib/api/client/rss-feeds.ts"],
+          "behaviorTests": [
+            "web/components/topics/manage-source/__tests__/use-manage-source-actions.error.mock.test.ts"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Native staff source management must distinguish accepted asynchronous deletion from physical removal. Retained admin import history rejects acceptance with HTTP 409. The producer returns HTTP 202 with rss_feed_id and status deleting; discovery hides the feed, but detail reads may remain available during cleanup and must not be polled as a deletion progress or completion API.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/521"
+      }
+    },
+    {
       "id": "authentication",
       "title": "Authentication flows",
       "domain": "Account",
@@ -740,7 +775,7 @@
           "behaviorTests": []
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeReferralLinksManagementView.swift"
           ],
@@ -749,12 +784,16 @@
           ]
         },
         "dotnet": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/ReferralLinksPage.xaml"],
           "behaviorTests": [
             "dotnet-clients/tests/Voucha.Client.Core.Tests/ReferralLinks/ReferralLinksViewModelManagementTests.cs"
           ]
         }
+      },
+      "gap": {
+        "summary": "Retained referral clicks may have a cleared landing URL. Swift and .NET must decode null and show the click without a URL action.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/495"
       }
     },
     {
@@ -1101,6 +1140,49 @@
       }
     },
     {
+      "id": "annual-integrity-penalty-review",
+      "title": "Staff annual review of active integrity penalties",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": ["docs/requirements/moderation/MODERATION-FLOWS.md"],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "moderation ops (staff)"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/admin/annual-penalty-reviews.tsx",
+            "web/app/(report-integrity)/report-integrity/penalties/report-integrity-penalties-client.tsx",
+            "web/app/(vote-integrity)/vote-integrity/penalties/vote-integrity-penalties-client.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/admin/annual-penalty-reviews.mock.test.tsx",
+            "web/components/admin/use-annual-penalty-reviews.mock.test.tsx",
+            "web/app/(report-integrity)/report-integrity/penalties/report-integrity-penalties-client.mock.test.tsx",
+            "web/app/(vote-integrity)/vote-integrity/penalties/vote-integrity-penalties-client.mock.test.tsx"
+          ]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET have existing integrity penalty screens but do not render annual due-review queues, opaque cursor continuation, or confirmation actions. The producer lands first; native rendered and executable proof is dependent work.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/492"
+      }
+    },
+    {
       "id": "member-moderation-appeals",
       "title": "Member moderation cases and appeal submission",
       "domain": "Account",
@@ -1164,19 +1246,23 @@
           "behaviorTests": []
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeEngineeringQueuesSurface.swift"
           ],
           "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/EngineeringOpsSurfaceTests.swift"]
         },
         "dotnet": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/EngineeringPage.xaml"],
           "behaviorTests": [
             "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/EngineeringViewModelTests.cs"
           ]
         }
+      },
+      "gap": {
+        "summary": "Swift and .NET render engineering operations but do not yet send or confirm operator-managed classifier partition ranges; existing monthly crawl actions remain available.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/497"
       }
     },
     {
@@ -2080,6 +2166,10 @@
         {
           "table": "B",
           "surface": "plans / memberships / billing"
+        },
+        {
+          "table": "B",
+          "surface": "membership verification outcomes without queue scheduling timestamps"
         }
       ],
       "clients": {
@@ -2102,7 +2192,7 @@
         }
       },
       "gap": {
-        "summary": "Native clients present plan status but lack store billing and management."
+        "summary": "Native clients present plan status but lack store billing and management. Swift and .NET must drop next_processing_at from membership overview models and fixture expectations and accept the provider_unavailable verification reason."
       }
     },
     {

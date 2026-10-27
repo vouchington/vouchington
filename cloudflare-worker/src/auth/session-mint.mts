@@ -42,6 +42,9 @@ function isLocalOrigin(origin: string | undefined): boolean {
   }
 }
 
+// A backend web refresh credential also passes through here when its access cookie expires.
+// Cache bypass is classified separately; this function never grants user authority.
+//
 // A dt/st pair minted by the backend under its default issuer — e.g. an attested
 // device's dc-bearing 30-day session — must pass through unchanged. The edge-anon
 // mint path below only recognizes tokens signed with EDGE_ANON_SESSION_JWT_ISSUER,

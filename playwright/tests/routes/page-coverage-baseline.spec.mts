@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { TEST_USER_USERNAME, withCleanUser } from '../../helpers/auth.mts'
+import { TEST_USER_USERNAME, loginAsAdmin, withCleanUser } from '../../helpers/auth.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
@@ -13,12 +13,14 @@ test.describe('Route coverage baseline', () => {
   test.use({ storageState: AUTH_STATE })
 
   test('covers /admin', async ({ page }) => {
+    await loginAsAdmin(page)
     await navigateTo(page, '/admin')
 
     await expect(page).toHaveURL('/urls')
   })
 
   test('covers /admin/dashboard', async ({ page }) => {
+    await loginAsAdmin(page)
     await navigateTo(page, '/admin/dashboard')
 
     await expect(page).toHaveURL('/urls')

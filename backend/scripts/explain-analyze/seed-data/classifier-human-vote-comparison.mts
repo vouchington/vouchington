@@ -1,9 +1,14 @@
 import { write } from '@data-stores/psql'
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
+import { resolveSeedAnchor } from './seed-anchor.mts'
 
 /** Inside CLASSIFIER_COMPARISON_MAX_WINDOW_DAYS and stable across the seed and run processes. */
-export const CLASSIFIER_COMPARISON_WINDOW_FROM = new Date('2026-03-10T00:00:00.000Z')
-export const CLASSIFIER_COMPARISON_WINDOW_TO = new Date('2026-03-11T00:00:00.000Z')
+const comparisonWindowStartMs =
+  resolveSeedAnchor(process.env.EXPLAIN_SEED_ANCHOR_DATE).dayAnchorMs - 7 * 24 * 60 * 60 * 1000
+export const CLASSIFIER_COMPARISON_WINDOW_FROM = new Date(comparisonWindowStartMs)
+export const CLASSIFIER_COMPARISON_WINDOW_TO = new Date(
+  comparisonWindowStartMs + 24 * 60 * 60 * 1000,
+)
 
 const COMPARISON_CAP = 1000
 const TARGET_IN_WINDOW = COMPARISON_CAP + 100

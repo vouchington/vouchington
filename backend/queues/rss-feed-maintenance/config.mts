@@ -1,5 +1,6 @@
 export const QUEUE_NAME = 'rss-feed-maintenance'
 export const PRIORITY_DEFAULT = 10
+export const PRIORITY_HARD_DELETE = 50
 export const PRIORITY_RECOVERY = 100
 export const CATEGORY_SNAPSHOT_RECOVERY_DEDUPLICATION_ID =
   'rss-feed-item-categories:reconcile-snapshots'

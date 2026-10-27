@@ -21,8 +21,8 @@ import {
 
 describe('all-time moderation transparency pages', () => {
   it('offers a global continuation only for an older globally visible cohort', async () => {
-    const now = new Date('1971-01-15T12:00:00.000Z')
-    const older = new Date('1970-01-05T12:00:00.000Z')
+    const now = await uniqueTransparencyNow()
+    const older = new Date(Date.UTC(now.getUTCFullYear() - 1, now.getUTCMonth(), 5, 12))
     const [owner, author, moderator] = await Promise.all([
       createTestUser(),
       createTestUser(),
@@ -140,9 +140,7 @@ describe('all-time moderation transparency pages', () => {
   })
 
   it('does not disclose a sparse older cohort', async () => {
-    const now = new Date(
-      Date.UTC(1972, Number.parseInt(crypto.randomUUID().slice(0, 2), 16) % 12, 15, 12),
-    )
+    const now = await uniqueTransparencyNow()
     const moderator = await createTestUser()
     const older = new Date(Date.UTC(now.getUTCFullYear() - 2, now.getUTCMonth(), 5))
     await Promise.all(

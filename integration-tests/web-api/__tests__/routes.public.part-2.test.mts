@@ -13,6 +13,14 @@ import {
   createWebApiTestCookieHeader,
   listenOnFetchSafeLoopback,
 } from '../routes.mts'
+import {
+  closeWebApiClientRuntime,
+  withWebApiClientRuntime,
+} from '../../test-helpers/web-api-client-runtime.mts'
+
+function unset(target: object, key: string) {
+  delete (target as Record<string, unknown>)[key]
+}
 
 describe('routes — public and direct', () => {
   let backendServer: http.Server
@@ -74,52 +82,35 @@ describe('routes — public and direct', () => {
 
     const post = await createTestPost({ user })
     postId = post.id
-  }, 15_000)
+  })
 
-  afterAll(async () => {
-    await new Promise<void>(resolve => {
-      backendServer.close(() => resolve())
-    })
-    if (previousApiBaseUrl === undefined) {
-      delete process.env.API_BASE_URL
-    } else {
-      process.env.API_BASE_URL = previousApiBaseUrl
-    }
+  afterAll(() =>
+    closeWebApiClientRuntime({
+      backendServer,
+      previousApiBaseUrl,
+      previousPublicApiBaseUrl,
+      previousFetch,
+      hadWindow,
+      previousWindow,
+      unset,
+    }),
+  )
 
-    if (previousPublicApiBaseUrl === undefined) {
-      delete process.env.NEXT_PUBLIC_API_BASE_URL
-    } else {
-      process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
-    }
-
-    globalThis.fetch = previousFetch
-    if (hadWindow) {
-      ;(globalThis as { window?: unknown }).window = previousWindow
-    } else {
-      delete (globalThis as { window?: unknown }).window
-    }
-  }, 15_000)
-
-  async function withClientRuntime<T>(
+  function withClientRuntime<T>(
     run: () => Promise<T>,
     cookieHeader?: Record<string, string>,
   ): Promise<T> {
-    clientRuntimeActive = true
-    clientCookieValue = cookieHeader?.Cookie
-    ;(globalThis as { window?: unknown }).window = {}
-
-    try {
-      return await run()
-    } finally {
-      clientRuntimeActive = false
-      clientCookieValue = undefined
-
-      if (hadWindow) {
-        ;(globalThis as { window?: unknown }).window = previousWindow
-      } else {
-        delete (globalThis as { window?: unknown }).window
-      }
-    }
+    return withWebApiClientRuntime({
+      hadWindow,
+      previousWindow,
+      cookieHeader,
+      setActive: (active, cookie) => {
+        clientRuntimeActive = active
+        clientCookieValue = cookie
+      },
+      unset,
+      run,
+    })
   }
 
   describe('web client API public routes', () => {

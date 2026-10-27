@@ -13,7 +13,7 @@ type TestOAuthAuthorizationProvider =
   | 'linkedin'
   | 'microsoft'
   | 'google'
-type TestOAuthAuthorizationPurpose = 'authenticate' | 'connect'
+type TestOAuthAuthorizationPurpose = 'authenticate' | 'connect' | 're_auth'
 type TestOAuthAuthorizationCallbackMode = 'native' | 'web'
 
 export type TestOAuthAuthorizationRow = {

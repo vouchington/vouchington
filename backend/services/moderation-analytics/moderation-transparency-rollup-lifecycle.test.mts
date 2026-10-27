@@ -22,6 +22,7 @@ import {
   updateTestModeratorActionType,
 } from '@voucha/test-helpers'
 import { getModerationTransparency } from './get-moderation-transparency.mts'
+import { observeTestModerationTransparencyRollupRelease } from '@voucha/test-helpers/moderation-transparency-rollup-observer'
 
 describe('moderation transparency daily rollup lifecycle', () => {
   it('counts a jointly flagged clearance rejection in both immutable source cohorts', async () => {
@@ -217,19 +218,23 @@ describe('moderation transparency daily rollup lifecycle', () => {
       metric: 'moderation_actions',
       category: 'pin',
     })
-    const release = getModerationTransparency('7d', now)
+    const release = observeTestModerationTransparencyRollupRelease(
+      { occurredAt: secondOccurredAt, metric: 'moderation_actions', category: 'warn' },
+      () => getModerationTransparency('7d', now),
+    )
+    onTestFinished(async () => {
+      await lock.release()
+      await release.result
+    })
     try {
-      await expect
-        .poll(
-          () =>
-            getTestReleasedModerationTransparencyRollupCount({
-              occurredAt: secondOccurredAt,
-              metric: 'moderation_actions',
-              category: 'warn',
-            }),
-          { interval: 20, timeout: 5_000 },
-        )
-        .toBe(20)
+      await release.released
+      await expect(
+        getTestReleasedModerationTransparencyRollupCount({
+          occurredAt: secondOccurredAt,
+          metric: 'moderation_actions',
+          category: 'warn',
+        }),
+      ).resolves.toBe(20)
       await expect(
         getTestReleasedModerationTransparencyRollupCount({
           occurredAt: firstOccurredAt,
@@ -239,7 +244,7 @@ describe('moderation transparency daily rollup lifecycle', () => {
       ).resolves.toBeUndefined()
     } finally {
       await lock.release()
-      await release
+      await release.result
     }
   })
 })

@@ -68,5 +68,5 @@ describe('PostForm image state', () => {
         }),
       )
     })
-  }, 10_000)
+  })
 })

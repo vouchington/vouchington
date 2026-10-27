@@ -10,8 +10,7 @@
     "backend/services/posts/review-successions/mutations.mts",
     "backend/services/posts/images-rollback.mts",
     "backend/services/posts/update-story-post-agent-result.mts",
-    "backend/services/images/delete-rollback.mts",
-    "backend/services/images/delete-while-storage-locked.mts",
+    "backend/services/images/delete-page.mts",
     "backend/services/posts/archive.mts",
     "backend/services/posts/post-ratings.mts",
     "backend/services/posts/post-ratings/delete.mts",
@@ -28,6 +27,8 @@
     "backend/services/communities/publications/platform-override.mts",
     "backend/services/communities/publications/unpublish.mts",
     "backend/services/rss-feeds/delete.mts",
+    "backend/services/rss-feeds/hard-delete-finalize.mts",
+    "backend/services/rss-feeds/hard-delete-source-page.mts",
     "backend/services/rss-feeds/discoverability.mts",
     "backend/services/rss-feeds/update.mts",
     "backend/services/rss-feeds/disable-and-hide-source.mts",
@@ -62,6 +63,14 @@
     "backend/services/rss-feed-items/reconcile-categories.mts"
   ],
   "excluded_writers": [
+    {
+      "path": "backend/services/data-retention/cleanup-histories-queries.mts",
+      "reason": "deletes superseded RSS setting history while retaining each current feed decision; it does not change projected feed publication state"
+    },
+    {
+      "path": "backend/services/data-retention/cleanup-moderation-delete-sanctions.mts",
+      "reason": "deletes only lifted user suspensions after twelve months; active suspensions that affect publication remain untouched"
+    },
     {
       "path": "backend/services/data-retention/cleanup-batches.mts",
       "reason": "delegates each selected user to the captured transactional cleanup writer"

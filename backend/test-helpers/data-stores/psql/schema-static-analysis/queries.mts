@@ -19,4 +19,40 @@ export async function getTypeViolations(udtName: 'json' | 'varchar'): Promise<Ty
   return rows
 }
 
+export async function getModerationRssTargetForeignKeys(): Promise<
+  { table_name: string; delete_rule: string }[]
+> {
+  const { rows } = await read<{ table_name: string; delete_rule: string }>(
+    `/* getModerationRssTargetForeignKeys */
+      SELECT source_table.relname AS table_name,
+        CASE foreign_key.confdeltype
+          WHEN 'c' THEN 'CASCADE'
+          ELSE foreign_key.confdeltype::text
+        END AS delete_rule
+      FROM pg_constraint foreign_key
+      JOIN pg_class source_table ON source_table.oid = foreign_key.conrelid
+      JOIN pg_attribute source_column
+        ON source_column.attrelid = foreign_key.conrelid
+       AND source_column.attname = 'rss_feed_item_id'
+      JOIN pg_attribute target_column
+        ON target_column.attrelid = foreign_key.confrelid
+       AND target_column.attname = 'id'
+      WHERE foreign_key.contype = 'f'
+        AND foreign_key.conrelid = ANY($1::regclass[])
+        AND foreign_key.confrelid = 'public.rss_feed_items'::regclass
+        AND foreign_key.conkey = ARRAY[source_column.attnum]
+        AND foreign_key.confkey = ARRAY[target_column.attnum]
+      ORDER BY source_table.relname`,
+    [
+      [
+        'public.moderation_cases',
+        'public.moderation_reports',
+        'public.moderation_report_judgements',
+        'public.report_integrity_flags',
+      ],
+    ],
+  )
+  return rows
+}
+
 /* v8 ignore stop */

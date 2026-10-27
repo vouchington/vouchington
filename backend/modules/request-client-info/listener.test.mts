@@ -1,14 +1,8 @@
-import {
-  createServer,
-  request as sendHttpRequest,
-  type IncomingMessage,
-  type ServerResponse,
-} from 'node:http'
+import { sendRequestClientInfo as send } from '@voucha/test-helpers/request-client-info-listener'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 import type { DeviceTokenPayload } from '@ts-shared/session-jwt'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
-import { getOptionalRequestClientInfo } from './index.mts'
 import { createRequestClientInfoListener } from './listener.mts'
 describe('request client information listener', () => {
   afterEach(vi.unstubAllEnvs)
@@ -235,60 +229,6 @@ describe('request client information listener', () => {
     expect(next).toHaveBeenCalledOnce()
   })
 })
-
-type SendOptions = {
-  method?: string
-  path?: string
-  headers: Record<string, string>
-  isEnforced?: () => boolean
-  mintDeviceId?: () => string
-  verifyDeviceIdentity?: (
-    token: string,
-    sessionToken?: string,
-  ) => Promise<DeviceTokenPayload | null>
-  useDefaultDependencies?: boolean
-}
-
-async function send(options: SendOptions): Promise<Response> {
-  const server = createServer(
-    createRequestClientInfoListener(
-      (_req, res) => {
-        res.setHeader('content-type', 'application/json')
-        res.end(JSON.stringify(getOptionalRequestClientInfo() ?? null))
-      },
-      options.useDefaultDependencies
-        ? undefined
-        : {
-            isEnforced: options.isEnforced ?? (() => true),
-            mintDeviceId: options.mintDeviceId ?? mintUUIDv7,
-            verifyDeviceIdentity: options.verifyDeviceIdentity ?? (async () => null),
-          },
-    ),
-  )
-  const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
-  try {
-    return await new Promise<Response>((resolve, reject) => {
-      const request = sendHttpRequest({
-        host: '127.0.0.1',
-        port,
-        path: options.path ?? '/api/v1/posts',
-        method: options.method,
-        headers: options.headers,
-      })
-      request.on('response', response => {
-        const body: Buffer[] = []
-        response.on('data', chunk => body.push(Buffer.from(chunk)))
-        response.on('end', () =>
-          resolve(new Response(Buffer.concat(body), { status: response.statusCode ?? 500 })),
-        )
-      })
-      request.on('error', reject)
-      request.end()
-    })
-  } finally {
-    server.close()
-  }
-}
 
 function validHeaders(overrides: Record<string, string> = {}): Record<string, string> {
   return {

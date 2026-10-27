@@ -1,22 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import {
-  deliverActivityToInbox,
-  type buildActivityJson,
-  type prepareActivityDistributionPage,
-} from '@services/activitypub-delivery'
+import { deliverActivityToInbox, type buildActivityJson } from '@services/activitypub-delivery'
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
-import {
-  enqueueBulkDeliverActivity,
-  getAcceptActivityId,
-  type DeliverActivityData,
-} from '@queues/activitypub/enqueues/delivery'
-import { deliverActivity, distributeActivity } from './delivery.mts'
+import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
+import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
+import { getAcceptActivityId, getUndoFollowActivityId } from '@queues/activitypub/enqueues/delivery'
 import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
+import { deliverActivity } from './delivery.mts'
+
+function expiredActivityId(): string {
+  return getMinUUIDv7ForDate(
+    new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
+  )
+}
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
 const buildActivityJsonMock = vi.fn<typeof buildActivityJson>()
@@ -37,6 +38,14 @@ const UNDO_FOLLOW_DATA: DeliverActivityData = {
   originalActivityId: FOLLOW_DATA.activityId,
   sourceUserId: 'user-1',
   targetUserId: 'user-2',
+  inboxUrl: 'https://a.example/inbox',
+}
+
+const LIKE_DATA: DeliverActivityData = {
+  activityId: mintUUIDv7(),
+  activityType: 'Like',
+  sourceUserId: 'user-1',
+  targetPostId: 'post-1',
   inboxUrl: 'https://a.example/inbox',
 }
 
@@ -83,13 +92,10 @@ describe('deliverActivity', () => {
     deliverActivityToInboxMock.mockResolvedValue(undefined)
   })
 
-  it('keeps direct Accept replies outside the outbound distribution floor', async () => {
+  it('keeps direct Accept replies outside the activity-age check', async () => {
     const accept: DeliverActivityData = {
       activityType: 'Accept',
-      activityId: getAcceptActivityId({
-        sourceUserId: 'user-1',
-        followActivityId: 'remote-follow',
-      }),
+      activityId: getAcceptActivityId({ sourceUserId: 'user-1', followActivityId: 'remote-follow' }),
       sourceUserId: 'user-1',
       inboxUrl: 'https://a.example/inbox',
       followActivityId: 'remote-follow',
@@ -97,6 +103,25 @@ describe('deliverActivity', () => {
     }
     expect(await deliverActivity(accept, deliverDeps())).toEqual({ delivered: true })
     expect(deliverActivityToInboxMock).toHaveBeenCalledOnce()
+  })
+
+  it('delivers an UndoFollow whose own id is derived but whose original Follow is recent', async () => {
+    const undo = { ...UNDO_FOLLOW_DATA, activityId: getUndoFollowActivityId(FOLLOW_DATA.activityId) }
+    expect(await deliverActivity(undo, deliverDeps())).toEqual({ delivered: true })
+  })
+
+  it.each([
+    ['expired Follow', { ...FOLLOW_DATA, activityId: expiredActivityId() }, 'expired-activity'],
+    [
+      'UndoFollow of an expired Follow',
+      { ...UNDO_FOLLOW_DATA, originalActivityId: expiredActivityId() },
+      'expired-activity',
+    ],
+    ['Follow with a non-UUIDv7 id', { ...FOLLOW_DATA, activityId: 'not-uuid-v7' }, 'unsupported-activity-id'],
+  ] as const)('drops an %s before opt-in reads or HTTP', async (_name, data, reason) => {
+    expect(await deliverActivity(data, deliverDeps())).toEqual({ delivered: false, reason })
+    expect(isFederationEnabledForUserMock).not.toHaveBeenCalled()
+    expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -119,6 +144,26 @@ describe('deliverActivity', () => {
     const result = await deliverActivity(FOLLOW_DATA, deliverDeps())
 
     expect(result).toEqual({ delivered: false, reason: 'federation-disabled' })
+    expect(getActorPrivateKeyPemMock).not.toHaveBeenCalled()
+    expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
+  })
+
+  it('drops a queued Like when the post becomes private before delivery', async () => {
+    const author = await createTestUserDirect()
+    const postId = await insertTestPost({
+      createdById: author.id,
+      title: 'Private delivery target',
+      slug: `private-delivery-${randomUUID()}`,
+      markdown: 'Only the author can read this post.',
+      broadcast: 'users',
+      privacy: 'private',
+    })
+    await expect(
+      deliverActivity({ ...LIKE_DATA, targetPostId: postId }, deliverDeps()),
+    ).resolves.toEqual({
+      delivered: false,
+      reason: 'post-not-public',
+    })
     expect(getActorPrivateKeyPemMock).not.toHaveBeenCalled()
     expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
   })
@@ -212,53 +257,5 @@ describe('deliverActivity', () => {
     deliverActivityToInboxMock.mockRejectedValueOnce(limited)
 
     await expect(deliverActivity(FOLLOW_DATA, deliverDeps())).rejects.toBe(limited)
-  })
-})
-
-describe('old outbound activity jobs', () => {
-  it('drops a job when the checkpoint claim finds a newly advanced replay floor', async () => {
-    const prepare = vi.fn<typeof prepareActivityDistributionPage>().mockResolvedValue({
-      status: 'expired',
-    })
-    const enqueue = vi.fn<typeof enqueueBulkDeliverActivity>()
-    const result = await distributeActivity(FOLLOW_DATA, {
-      isFederationEnabledForUser: vi
-        .fn<typeof isFederationEnabledForUser>()
-        .mockResolvedValue(true),
-      prepareActivityDistributionPage: prepare,
-      enqueueBulkDeliverActivity: enqueue,
-    })
-    expect(result).toEqual({ enqueued: 0, reason: 'expired-activity' })
-    expect(prepare).toHaveBeenCalledOnce()
-    expect(enqueue).not.toHaveBeenCalled()
-  })
-
-  it('cannot recreate a purged checkpoint or fan out an old UUIDv7 activity', async () => {
-    const oldId = getMinUUIDv7ForDate(
-      new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
-    )
-    const prepare = vi.fn<typeof prepareActivityDistributionPage>()
-    expect(
-      await distributeActivity(
-        { ...FOLLOW_DATA, activityId: oldId, sourceUserId: mintUUIDv7() },
-        {
-          prepareActivityDistributionPage: prepare,
-        },
-      ),
-    ).toEqual({ enqueued: 0, reason: 'expired-activity' })
-    expect(prepare).not.toHaveBeenCalled()
-  })
-
-  it('rejects an unsupported identity before checkpoint insertion', async () => {
-    const prepare = vi.fn<typeof prepareActivityDistributionPage>()
-    expect(
-      await distributeActivity(
-        { ...FOLLOW_DATA, activityId: 'not-uuid-v7' },
-        {
-          prepareActivityDistributionPage: prepare,
-        },
-      ),
-    ).toEqual({ enqueued: 0, reason: 'unsupported-activity-id' })
-    expect(prepare).not.toHaveBeenCalled()
   })
 })

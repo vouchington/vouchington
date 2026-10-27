@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { EventEmitter } from 'node:events'
 import {
-  registerPsqlPoolMetricsForTestEnvironment,
+  registerPsqlPoolMetrics,
   type PsqlPoolMetrics,
   type PsqlPoolSocketHandles,
-} from '@data-stores/psql/pool-metrics'
+} from '../backend/test-helpers/psql-pool-metrics.mts'
 import { getRegisteredPoolMetrics } from 'vouchington-tooling/vitest-diagnostics'
 
 function fakePsqlPool(
@@ -31,12 +31,9 @@ describe('fork leak growth diagnostics', () => {
     const advisoryLock = fakePsqlPool(4, 1, 3)
     const jobSerialization = fakePsqlPool(2, 1, 0)
     try {
-      expect(
-        registerPsqlPoolMetricsForTestEnvironment(
-          { write, read, advisoryLock, jobSerialization },
-          'test',
-        ),
-      ).toBe(true)
+      registerPsqlPoolMetrics({ write, read, advisoryLock, jobSerialization })
+      registerPsqlPoolMetrics({ write, read, advisoryLock, jobSerialization })
+      expect(write.listenerCount('connect')).toBe(1)
       write.emit('connect')
 
       expect(getRegisteredPoolMetrics()).toEqual({
@@ -71,21 +68,5 @@ describe('fork leak growth diagnostics', () => {
       if (previousHandles === undefined) delete target[handlesKey]
       else target[handlesKey] = previousHandles as () => PsqlPoolSocketHandles
     }
-  })
-
-  it('does not install or replace PostgreSQL metrics outside the test environment', () => {
-    const originalMetrics = getRegisteredPoolMetrics()
-    const registered = registerPsqlPoolMetricsForTestEnvironment(
-      {
-        write: fakePsqlPool(99, 0, 99),
-        read: fakePsqlPool(99, 0, 99),
-        advisoryLock: fakePsqlPool(99, 0, 99),
-        jobSerialization: fakePsqlPool(99, 0, 99),
-      },
-      'production',
-    )
-
-    expect(registered).toBe(false)
-    expect(getRegisteredPoolMetrics()).toEqual(originalMetrics)
   })
 })

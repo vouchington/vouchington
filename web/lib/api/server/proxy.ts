@@ -34,54 +34,6 @@ export async function getPostAuthorCacheTag(
   }
 }
 
-export interface ProxySessionResponse {
-  uid?: string | null
-  dt?: string
-  st?: string
-  dte: number
-  ste: number
-  secure: boolean
-}
-
-export async function refreshProxySession(
-  backendUrl: string,
-  body: { dt?: string; st?: string },
-  forwardedIpHeaders: Record<string, string>,
-): Promise<ProxySessionResponse | null> {
-  const sessionUrl = buildBackendApiUrl(backendUrl, '/api/v1/session')
-  const backendOriginHeaders = buildBackendOriginHeaders(backendUrl)
-  const cookie = [body.dt ? `dt=${body.dt}` : '', body.st ? `st=${body.st}` : '']
-    .filter(Boolean)
-    .join('; ')
-  // backendUrl is trusted deployment configuration and is normalized before use.
-  const response = await fetch(sessionUrl, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildWorkerSecretHeader(),
-      ...buildWebClientInfoHeaders(),
-      ...backendOriginHeaders,
-      ...forwardedIpHeaders,
-      ...(cookie ? { cookie } : {}),
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) return null
-
-  const data = (await response.json()) as { session?: ProxySessionResponse }
-  const session = data.session
-  if (
-    session &&
-    typeof session.dte === 'number' &&
-    typeof session.ste === 'number' &&
-    typeof session.secure === 'boolean'
-  ) {
-    return session
-  }
-  return null
-}
-
 export async function recordProxyReferralAttribution(
   backendUrl: string,
   body: {
@@ -133,4 +85,15 @@ function buildBackendApiUrl(backendUrl: string, pathname: string): string {
   url.search = ''
   url.hash = ''
   return url.toString()
+}
+
+export function getProxyClientHeaders(request: { headers: Headers }): Record<string, string> {
+  const headers: Record<string, string> = {}
+  const userAgent = request.headers.get('user-agent')
+  if (userAgent) headers['user-agent'] = userAgent
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const cfConnectingIp = request.headers.get('cf-connecting-ip')
+  if (forwardedFor) headers['x-forwarded-for'] = forwardedFor
+  if (cfConnectingIp) headers['cf-connecting-ip'] = cfConnectingIp
+  return headers
 }

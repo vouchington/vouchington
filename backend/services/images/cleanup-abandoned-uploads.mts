@@ -109,6 +109,7 @@ async function readPhase(
         ORDER BY id LIMIT ${batchSize} FOR UPDATE
       )
       UPDATE images SET deleted_at = CURRENT_TIMESTAMP,
+        deletion_posts_completed_at = CURRENT_TIMESTAMP,
         upload_error = ${ABANDONED_UPLOAD_ERROR}
       FROM candidates WHERE images.id = candidates.id`)
   }

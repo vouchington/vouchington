@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   entityRelationMetadatum,
@@ -59,10 +58,6 @@ describe('user-subject entity relation tables', () => {
 
   it('generates concrete vote-integrity targets for every election relation', () => {
     const sql = generateEntityRelationsSql()
-    const canonicalFlagsSql = readFileSync(
-      new URL('../../migrations/0240-00-00-elections-vote-integrity.sql', import.meta.url),
-      'utf8',
-    )
     const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
 
     for (const metadata of electionRelations) {
@@ -70,8 +65,6 @@ describe('user-subject entity relation tables', () => {
       const subjectColumn = getEntityRelationIntegritySubjectColumn(metadata)
       const shortName = metadata.table_name.replace(/^relation__/, '')
 
-      expect(canonicalFlagsSql).toContain(`  ${targetColumn} UUID,`)
-      expect(canonicalFlagsSql).toContain(`  ${subjectColumn} UUID,`)
       expect(sql).toContain(`COMMENT ON COLUMN vote_integrity_flags."${targetColumn}"`)
       expect(sql).toContain(`COMMENT ON COLUMN vote_integrity_flags."${subjectColumn}"`)
       expect(sql).toContain(

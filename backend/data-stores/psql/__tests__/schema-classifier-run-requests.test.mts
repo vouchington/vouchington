@@ -72,7 +72,7 @@ describe('classifier run request, candidate set and local outcome schema', () =>
 
     await settleClassifierRunRequestForSchemaTest(requestId, { noWorkAt: new Date() })
     expect(await readClassifierRunRequestForSchemaTest(requestId)).toMatchObject({
-      run_id: null,
+      run_identity_id: null,
       no_work_at: expect.any(Date),
     })
     await expect(
@@ -83,7 +83,7 @@ describe('classifier run request, candidate set and local outcome schema', () =>
     ).rejects.toMatchObject({ code: '23514' })
   })
 
-  it('returns a request to the sweep when its run is deleted, and removes it with its post', async () => {
+  it('retains the request identity after run payload and live post deletion', async () => {
     const classifier = await createClassifierFixture()
     const fixture = await createFixture({
       classifierId: classifier.classifierId,
@@ -96,10 +96,14 @@ describe('classifier run request, candidate set and local outcome schema', () =>
     })
 
     await deleteClassifierRunForSchemaTest(fixture.id)
-    expect(await readClassifierRunRequestForSchemaTest(requestId)).toMatchObject({ run_id: null })
+    expect(await readClassifierRunRequestForSchemaTest(requestId)).toMatchObject({
+      run_identity_id: fixture.id,
+    })
 
     await deletePostForSchemaTest(classifier.postId)
-    expect(await readClassifierRunRequestForSchemaTest(requestId)).toBeUndefined()
+    expect(await readClassifierRunRequestForSchemaTest(requestId)).toMatchObject({
+      run_identity_id: fixture.id,
+    })
   })
 
   it('retains one insert-only local outcome per run and removes it with the run', async () => {

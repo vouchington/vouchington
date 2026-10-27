@@ -1,7 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 }
 const SEEDED_TOPIC_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'
@@ -10,7 +10,7 @@ const SEEDED_TOPIC_PATH = `/card/${SEEDED_TOPIC_ID}`
 // ── Section A: Settings dropdown (replaces removed TopicAdminAside) ─────────
 
 test.describe('Settings dropdown links', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT)
@@ -56,7 +56,7 @@ test.describe('Settings dropdown links', () => {
 // ── Section B: DomainAdminDetails ──────────────────────────────────────────
 
 test.describe('DomainAdminDetails crawler links', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT)
@@ -98,7 +98,7 @@ test.describe('DomainAdminDetails crawler links', () => {
 // ── Topic Aliases → per-topic aliases ───────────────────────────────────────
 
 test.describe('Admin topic aliases search — Edit Aliases navigation', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT)

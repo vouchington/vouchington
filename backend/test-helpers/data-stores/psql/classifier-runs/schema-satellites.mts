@@ -14,10 +14,12 @@ export async function insertClassifierRunRequestForSchemaTest(input: {
   const orNull = <T,>(value: T | null | undefined): T | null => (value === undefined ? null : value)
   const { rows } = await write<{ id: string }>(sql`/* insertClassifierRunRequestForSchemaTest */
     INSERT INTO classifier_run_requests (
-      classifier_id, post_id, rss_feed_item_id, input_sha256, run_id, no_work_at, stale_at
+      classifier_id, post_id, rss_feed_item_id, input_sha256, run_identity_id, run_settled_at,
+      no_work_at, stale_at
     ) VALUES (
       ${input.classifierId}, ${orNull(input.postId)}, ${orNull(input.rssFeedItemId)},
       ${input.inputSha256 ?? Buffer.alloc(32, 1)}, ${orNull(input.runId)},
+      ${input.runId ? new Date() : null},
       ${orNull(input.noWorkAt)}, ${orNull(input.staleAt)}
     ) RETURNING id
   `)
@@ -26,11 +28,11 @@ export async function insertClassifierRunRequestForSchemaTest(input: {
 
 export async function readClassifierRunRequestForSchemaTest(id: string) {
   const { rows } = await read<{
-    run_id: string | null
+    run_identity_id: string | null
     no_work_at: Date | null
     stale_at: Date | null
   }>(sql`/* readClassifierRunRequestForSchemaTest */
-    SELECT run_id, no_work_at, stale_at FROM classifier_run_requests WHERE id = ${id}
+    SELECT run_identity_id, no_work_at, stale_at FROM classifier_run_requests WHERE id = ${id}
   `)
   return rows[0]
 }

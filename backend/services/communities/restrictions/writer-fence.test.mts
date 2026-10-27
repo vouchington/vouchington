@@ -7,7 +7,7 @@ import {
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import {
-  FENCE_HELD_EXPIRY_OFFSET_MS,
+  expireTestCommunityRestrictionWhileFenceHeld,
   withHeldDelegatedCommunityFenceForTest,
   withCommunityRestrictionApplicationClockForTest,
 } from '@voucha/test-helpers/community-restriction-writer-race'
@@ -50,17 +50,25 @@ async function fixture() {
 }
 
 describe('community restriction writers share delegated post fences', () => {
-  it('uses database expiry time when the application clock trails PostgreSQL', async () => {
-    const { currentUser, loaded, community } = await fixture()
+  it('uses database expiry time when the application clock trails PostgreSQL', async ({
+    signal,
+  }) => {
+    const { currentUser, loaded, community, delegateActorId } = await fixture()
     const expiresAt = new Date(Date.now() - 1000)
     await withCommunityRestrictionApplicationClockForTest(
       new Date(expiresAt.getTime() - 1000),
       async () => {
         await expect(
-          activateCommunityRestrictions(currentUser, loaded, {
-            restrictionTypes: ['no_links'],
-            expiresAt,
-          }),
+          withHeldDelegatedCommunityFenceForTest(
+            community.id,
+            delegateActorId,
+            () =>
+              activateCommunityRestrictions(currentUser, loaded, {
+                restrictionTypes: ['no_links'],
+                expiresAt,
+              }),
+            { signal },
+          ),
         ).rejects.toMatchObject({ status: 422, message: 'expires_at must be in the future' })
         expect(await countTestCommunityRestrictions(community.id)).toBe(0)
         expect(await readStaffActionHistory(currentUser.id)).toEqual([])
@@ -75,32 +83,11 @@ describe('community restriction writers share delegated post fences', () => {
       ),
     ).rejects.toMatchObject({ code: '25P02' })
   })
-  it('refuses activation if its expiry passes while waiting for the fence', async () => {
-    const { currentUser, loaded, community, delegateActorId } = await fixture()
-    let expiresAt: Date
-    await expect(
-      withHeldDelegatedCommunityFenceForTest(
-        community.id,
-        delegateActorId,
-        () => {
-          expiresAt = new Date(Date.now() + FENCE_HELD_EXPIRY_OFFSET_MS)
-          return activateCommunityRestrictions(currentUser, loaded, {
-            restrictionTypes: ['no_links'],
-            expiresAt,
-          })
-        },
-        () => expiresAt,
-      ),
-    ).rejects.toMatchObject({ status: 422, message: 'expires_at must be in the future' })
-    expect(await countTestCommunityRestrictions(community.id)).toBe(0)
-    expect(await readStaffActionHistory(currentUser.id)).toEqual([])
-  })
   it('does not manually lift a restriction that expires while waiting for the fence', async () => {
     const { currentUser, loaded, community, delegateActorId } = await fixture()
-    const expiresAt = new Date(Date.now() + FENCE_HELD_EXPIRY_OFFSET_MS)
     const [restriction] = await activateCommunityRestrictions(currentUser, loaded, {
       restrictionTypes: ['no_links'],
-      expiresAt,
+      expiresAt: null,
     })
     const history = await readStaffActionHistory(currentUser.id)
     await expect(
@@ -108,7 +95,10 @@ describe('community restriction writers share delegated post fences', () => {
         community.id,
         delegateActorId,
         () => liftCommunityRestriction(currentUser, loaded, restriction!.id),
-        () => expiresAt,
+        {
+          beforeRelease: query =>
+            expireTestCommunityRestrictionWhileFenceHeld(query, community.id, restriction!.id),
+        },
       ),
     ).rejects.toMatchObject({ status: 404, message: 'No active restriction found' })
     expect((await getTestCommunityRestriction(restriction!.id)).lifted_at).toBeNull()

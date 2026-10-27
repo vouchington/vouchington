@@ -1,20 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 
-const { mockGet, mockPost } = vi.hoisted(() => ({
+const { mockGet, mockPost, mockDelete } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),
   mockPost: vi.fn<VitestLooseMock>(),
+  mockDelete: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(
   import('@/lib/api/client/instance'),
   () =>
     ({
-      clientApi: { get: mockGet, post: mockPost },
+      clientApi: { get: mockGet, post: mockPost, delete: mockDelete },
     }) as unknown as typeof import('@/lib/api/client/instance'),
 )
 
 import {
   getMyEmailAddressesClient,
+  deleteMyEmailAddress,
   getMySpendingCategoriesClient,
   requestMyEmailAddressVerification,
 } from '@/lib/api/client/my'
@@ -38,10 +40,11 @@ describe('my email address client helpers', () => {
   it('requests verification for the supplied email address', async () => {
     mockPost.mockResolvedValue({ email_address: 'tests+client@voucha.ai' })
 
-    await requestMyEmailAddressVerification('Tests+Client@Voucha.ai')
+    await requestMyEmailAddressVerification('Tests+Client@Voucha.ai', 'email-proof')
 
     expect(mockPost).toHaveBeenCalledWith('/api/v1/my/email-addresses', {
       email_address: 'Tests+Client@Voucha.ai',
+      re_auth_token: 'email-proof',
     })
   })
 
@@ -61,5 +64,17 @@ describe('my email address client helpers', () => {
       searchParams: { after: 'opaque-cursor', limit: 25 },
     })
     expect(result).toBe(page)
+  })
+
+  it('encodes the selected email and requires its fresh deletion proof', async () => {
+    mockDelete.mockResolvedValue(undefined)
+
+    await expect(
+      deleteMyEmailAddress('member+old@example.test', 'fresh-proof'),
+    ).resolves.toBeUndefined()
+    expect(mockDelete).toHaveBeenCalledWith(
+      '/api/v1/my/email-addresses/member%2Bold%40example.test',
+      { body: { re_auth_token: 'fresh-proof' } },
+    )
   })
 })

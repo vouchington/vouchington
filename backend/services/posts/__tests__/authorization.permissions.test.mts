@@ -7,7 +7,6 @@ import {
 } from '../authorization.mts'
 import { getPostByAny } from '../get.mts'
 import { createTestUser, insertTestPost } from '@voucha/test-helpers'
-import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
 
 describe('authorization', () => {
@@ -211,8 +210,7 @@ describe('authorization', () => {
     it('returns true when user is an admin', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const testCreator = await createTestUser()
-      const testAdmin = await createTestUser()
-      await addUserRole(testAdmin!.id, 'administrator')
+      const testAdmin = await createTestUser({ administrator: true })
 
       // Refetch user to get updated roles from view
       const updatedAdmin = await getPrivateUserByAny(testAdmin!.id)

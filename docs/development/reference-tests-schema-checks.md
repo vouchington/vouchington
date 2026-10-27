@@ -2,9 +2,9 @@
 
 [Back to Tests and Checks](tests.md#schema-checks)
 
-PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vitest project against a freshly migrated database. The production migration task also checks the live schema after applying migrations; see [staging schema drift](postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
+PostgreSQL final-state schema invariants run against a restored, migration-prepared baseline. The production migration task also checks the live schema after applying migrations; see [staging schema drift](postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
 
-The dedicated schema workflow also checks staging RSS seed data after its normal fresh migration. A schema snapshot cannot establish that a configuration-dependent seed ran in the intended order or that its publisher relation actually exists, so this check reads the resulting rows without applying SQL inside a test.
+Database preparation checks staging RSS seed data and its publisher relations before archiving the baseline. A schema snapshot cannot establish that a configuration-dependent seed ran in the intended order or that its publisher relation actually exists, so this check reads the resulting rows without applying SQL inside a test.
 
 ## Coverage visibility
 
@@ -18,7 +18,7 @@ Setup and assertions for schema tests live behind typed APIs in the approved `te
 
 ## Snapshot
 
-The committed schema snapshot is verified separately by `pnpm run db:snapshot:check` in `tests-postgres-schema.yml` against a digest-pinned `pgvector/pgvector:pg18` image. The digest and the generated extension-version snapshot must move together, which prevents mutable-tag drift across persistent Docker hosts. After a schema change, push and request `/postgresql-snapshot-update` on the PR (or run `pnpm run db:snapshot:update`); the workflow commits the snapshot to the PR head, so fetch before further edits. Pre-push runs the same freshness check after a clean migration, because snapshot-backed repository guards read the committed artifact before the database-backed phase verifies it. See [schema-snapshot/README.md](postgresql/schema-snapshot/README.md).
+The committed schema snapshot is checked against the freshly migrated database before it is dumped. PostgreSQL can reparse equivalent check and trigger expressions during restoration, so comparing the restored text would obscure whether the canonical creators produced the expected schema. Generation and verification use the same pinned PostgreSQL image; its digest and the generated extension-version snapshot must move together to prevent mutable-tag drift across persistent Docker hosts. See [schema snapshot generation](postgresql/schema-snapshot/README.md) for the update and verification runbook.
 
 Prelaunch index changes belong in their canonical creators; there is no cross-revision index-rename deployment check.
 

@@ -1,5 +1,5 @@
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { sessionExpirySecondsFor } from '@ts-shared/session-jwt'
 import {
   getRequestUserAgentStringId,
@@ -62,8 +62,6 @@ async function writeAuthenticatedSession(
         ${deviceName}, ${userAgentId}, ${ipAddress}, ${options.expiresAt}, CURRENT_TIMESTAMP
       WHERE EXISTS (SELECT 1 FROM users WHERE id = ${currentUserId} AND deleted_at IS NULL)
       ON CONFLICT (id) DO UPDATE SET
-        user_id = EXCLUDED.user_id,
-        device_id = EXCLUDED.device_id,
         device_name = CASE WHEN ${refreshMetadata} AND ${userAgent} <> ''
           AND EXCLUDED.device_name <> 'Unknown device' THEN EXCLUDED.device_name
           ELSE user_sessions.device_name END,
@@ -72,7 +70,7 @@ async function writeAuthenticatedSession(
         ip_address = CASE WHEN ${refreshMetadata}
           THEN COALESCE(EXCLUDED.ip_address, user_sessions.ip_address)
           ELSE user_sessions.ip_address END,
-        expires_at = EXCLUDED.expires_at,
+        expires_at = CASE WHEN user_sessions.device_token_digest IS NULL THEN EXCLUDED.expires_at ELSE user_sessions.expires_at END,
         last_seen_at = CURRENT_TIMESTAMP
       WHERE user_sessions.revoked_at IS NULL
         AND user_sessions.user_id = EXCLUDED.user_id
@@ -85,111 +83,67 @@ async function writeAuthenticatedSession(
   return (rows[0] as UserSessionRow | undefined) ?? null
 }
 
-export async function registerAuthenticatedSession({
-  sid,
-  uid,
-  did,
-  deviceClass,
-  deviceContext,
-  expiresAt,
-  refreshMetadata,
-  authOrigin,
-}: {
-  sid: string
-  uid: string | null
-  did: string
-  deviceClass?: DeviceClass
-  deviceContext?: DeviceContext
-  expiresAt?: Date
-  refreshMetadata?: boolean
-  authOrigin?: 'web' | 'native'
-}): Promise<void> {
-  if (uid === null) return
-
-  const options: AuthenticatedSessionOptions = {
+export async function registerAuthenticatedSession(
+  {
     sid,
-    deviceId: did,
-    expiresAt: expiresAt ?? new Date(Date.now() + sessionExpirySecondsFor(deviceClass) * 1000),
-    ipAddress: deviceContext?.ip_address,
-    userAgent: deviceContext?.user_agent,
+    uid,
+    did,
+    deviceClass,
+    deviceContext,
+    expiresAt,
     refreshMetadata,
     authOrigin,
-  }
-  if (!hasRequestContext()) {
-    await upsertAuthenticatedSession(uid, options)
+  }: {
+    sid: string
+    uid: string | null
+    did: string
+    deviceClass?: DeviceClass
+    deviceContext?: DeviceContext
+    expiresAt?: Date
+    refreshMetadata?: boolean
+    authOrigin?: 'web' | 'native'
+  },
+  queryOptions?: QueryOptions,
+): Promise<void> {
+  if (uid === null) return
+
+  if (!queryOptions?.query && hasRequestContext()) {
+    const options: AuthenticatedSessionOptions = {
+      sid,
+      deviceId: did,
+      expiresAt: expiresAt ?? new Date(Date.now() + sessionExpirySecondsFor(deviceClass) * 1000),
+      ipAddress: deviceContext?.ip_address,
+      userAgent: deviceContext?.user_agent,
+      refreshMetadata,
+      authOrigin,
+    }
+    const normalizedUserAgent = normalizeText(options.userAgent, 1024)
+    let userAgentId: string | null | undefined = getRequestUserAgentStringId(normalizedUserAgent)
+    if (userAgentId === undefined) {
+      const resolvedUserAgentId = await upsertUserAgentString(normalizedUserAgent)
+      userAgentId = resolvedUserAgentId
+      if (resolvedUserAgentId !== null)
+        setRequestUserAgentStringId(normalizedUserAgent, resolvedUserAgentId)
+    }
+    await using transaction = await beginTransaction()
+    await writeAuthenticatedSession(transaction, uid, options, userAgentId)
+    await transaction.commit()
     return
   }
 
-  const normalizedUserAgent = normalizeText(options.userAgent, 1024)
-  let userAgentId: string | null | undefined = getRequestUserAgentStringId(normalizedUserAgent)
-  if (userAgentId === undefined) {
-    const resolvedUserAgentId = await upsertUserAgentString(normalizedUserAgent)
-    userAgentId = resolvedUserAgentId
-    if (resolvedUserAgentId !== null)
-      setRequestUserAgentStringId(normalizedUserAgent, resolvedUserAgentId)
-  }
-  await using transaction = await beginTransaction()
-  await writeAuthenticatedSession(transaction, uid, options, userAgentId)
-  await transaction.commit()
-}
-
-export async function listActiveUserSessions(
-  currentUserId: string,
-  currentSessionId: string,
-  options: { limit?: number; after?: { timestamp: string; id: string } } = {},
-) {
-  const limit = options.limit ?? 25
-  const query = sql`/* listActiveUserSessions */
-    SELECT s.id, s.device_id, s.device_name, ua.user_agent, s.ip_address, s.created_at,
-      s.last_seen_at, s.expires_at,
-      COALESCE(native_connections.connections, '[]'::json) AS mcp_connections,
-      to_char(s.last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_seen_cursor
-    -- no-mistakes-disable-next-line postgres-required-predicates: a session ID can be minted before its owning user and refreshed later, so active-session pagination must search all ID partitions
-    FROM user_sessions s
-    JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
-    LEFT JOIN LATERAL (
-      SELECT json_agg(json_build_object(
-        'grant_id', connection.id,
-        'client_name', connection.client_name,
-        'attestation_status', connection.attestation_status,
-        'last_minted_at', connection.last_used_at
-      ) ORDER BY connection.id DESC) AS connections
-      FROM (
-        SELECT oauth_grant.id, client.client_name, oauth_grant.attestation_status, oauth_grant.last_used_at
-        FROM oauth_grants AS oauth_grant
-        JOIN oauth_clients AS client ON client.id = oauth_grant.client_id AND client.revoked_at IS NULL
-        WHERE oauth_grant.session_id = s.id
-          AND oauth_grant.revoked_at IS NULL
-        ORDER BY oauth_grant.id DESC
-        LIMIT 1
-      ) AS connection
-    ) AS native_connections ON TRUE
-    WHERE s.user_id = ${currentUserId}
-      AND s.revoked_at IS NULL
-      AND s.expires_at > CURRENT_TIMESTAMP
-  `
-  if (options.after) {
-    query.append(sql` AND (s.last_seen_at < ${options.after.timestamp}::timestamptz
-      OR (s.last_seen_at = ${options.after.timestamp}::timestamptz AND s.id < ${options.after.id}))`)
-  }
-  query.append(sql` ORDER BY s.last_seen_at DESC, s.id DESC LIMIT ${limit + 1}`)
-  const { rows } = await write(query)
-
-  const hasNextPage = rows.length > limit
-  const results = (rows.slice(0, limit) as (UserSessionRow & { last_seen_cursor: string })[]).map(
-    row => ({
-      id: row.id,
-      device_id: row.device_id,
-      device_name: row.device_name,
-      user_agent: row.user_agent,
-      ip_address: row.ip_address,
-      created_at: row.created_at,
-      last_seen_at: row.last_seen_at,
-      expires_at: row.expires_at,
-      mcp_connections: row.mcp_connections,
-      is_current: row.id === currentSessionId,
-      cursor_timestamp: row.last_seen_cursor,
-    }),
+  await upsertAuthenticatedSession(
+    uid,
+    {
+      sid,
+      deviceId: did,
+      expiresAt: expiresAt ?? new Date(Date.now() + sessionExpirySecondsFor(deviceClass) * 1000),
+      ipAddress: deviceContext?.ip_address,
+      userAgent: deviceContext?.user_agent,
+      refreshMetadata,
+      authOrigin,
+    },
+    queryOptions,
   )
-  return { results, hasNextPage }
 }
+
+export { listActiveUserSessions } from './list-active-user-sessions.mts'

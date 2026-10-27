@@ -64,7 +64,7 @@ describe('staff route request contract ordering', () => {
       const response = await request[method](url).send(body as object)
 
       expect(response.status).toBe(401)
-      expect(response.text).not.toMatch(/schema|must be|required|invalid/i)
+      expect(response.body.message).not.toMatch(/schema|must be|required|invalid/i)
     },
   )
 

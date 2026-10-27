@@ -63,8 +63,9 @@ Commands, log group names, and Logs Insights queries live in
 [Deployed Error Investigation](../../operations/deployed-error-investigation.md).
 
 Backend `onError()` copies the edge `x-request-id` into structured console diagnostics and Sentry
-tags when request client context is available. This keeps backend 5xx captures searchable by the
-same `request_id` returned in the JSON error response without logging request headers or bodies.
+tags when request client context is available. Edge captures use that same `request_id` tag. Web
+Sentry events for an `ApiError` copy it only when the value is the gateway id, so one search covers
+the worker, the API, and the browser event without logging request headers, bodies, or free text.
 
 ## Cloudflare Worker Edge Errors
 

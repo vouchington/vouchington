@@ -17,10 +17,10 @@ and MCP `snapshot_cleanup` procedure.
 
 Accept optional `--retro-days <N>` (default 1) and `--session-days <N>` (default 7). Validate
 both non-negative finite values before export and compute the cutoffs once. Use the
-machine-registered `vouchington-tooling` MCP server and this checkout's
-`pnpm exec agent-blackboard snapshot partition` command to create bounded read-only partitions
-from the verified export. Only the root retains its cleanup token; follow canonical MCP
-`snapshot_cleanup` after all archive checks. Do not use a local cleanup command for the export.
+machine-registered `vouchington-tooling` MCP server's `snapshot_export` and `snapshot_partition`
+tools to create bounded read-only partitions from the verified export. Only the root retains its
+cleanup token; follow canonical MCP `snapshot_cleanup` after all archive checks. Do not use a
+local partition or cleanup command for the export.
 
 On Codex, partition inspectors use the read-only `explore` role; on Claude Code, the built-in
 read-only `Explore` subagent. Before hand-reading entries, each inspector runs

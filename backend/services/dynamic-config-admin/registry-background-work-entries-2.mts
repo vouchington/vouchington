@@ -22,6 +22,7 @@ export const backgroundWorkEntries2 = [
     maxValues: imagesWorkMaxValues,
     descriptions: {
       cleanup_batch_size: 'Cleanup batch size for images processing.',
+      deletion_page_size: 'Posts reset or updates admitted per image deletion page.',
       recovery_threshold_hours: 'Recovery threshold hours for images processing.',
       abandoned_threshold_hours: 'Abandoned threshold hours for images processing.',
     },

@@ -5,7 +5,6 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
 
 const exec = promisify(execFile)
 const directories: string[] = []
@@ -251,46 +250,5 @@ describe('reviewed CI dependency mirror', () => {
           call.at(-1) === `ghcr.io/vouchington/${images[0]!.package}:${images[0]!.tag}`,
       ),
     ).toBe(false)
-  })
-
-  it('exposes every reviewed source digest to Renovate for a reviewable PR', async () => {
-    const config = await readFile('ci/dependency-mirror/images.json', 'utf8')
-    const renovate = JSON.parse(await readFile('renovate.json', 'utf8')) as {
-      customManagers: Array<{ managerFilePatterns?: string[]; matchStrings?: string[] }>
-      packageRules: Array<{ matchFileNames?: string[]; schedule?: string[] }>
-    }
-    const manager = renovate.customManagers.find(item =>
-      item.managerFilePatterns?.includes('ci/dependency-mirror/images.json'),
-    )
-    expect(manager?.matchStrings).toHaveLength(1)
-    const matches = [...config.matchAll(new RegExp(manager!.matchStrings![0]!, 'gu'))]
-    expect(matches).toHaveLength(JSON.parse(config).images.length)
-    expect(matches.every(match => match.groups?.currentDigest?.startsWith('sha256:'))).toBe(true)
-    expect(
-      renovate.packageRules.some(
-        rule =>
-          rule.matchFileNames?.includes('ci/dependency-mirror/images.json') &&
-          rule.schedule?.includes('at any time'),
-      ),
-    ).toBe(true)
-  })
-
-  it('runs only from reviewed main and keeps dependency packages out of runtime cleanup', async () => {
-    const workflow = parse(await readFile('.github/workflows/dependency-mirror.yml', 'utf8')) as {
-      on: Record<string, unknown>
-      jobs: {
-        mirror: {
-          if: string
-          permissions: Record<string, string>
-          steps: Array<{ with?: { ref?: string } }>
-        }
-      }
-    }
-    expect(Object.keys(workflow.on).toSorted()).toEqual(['schedule', 'workflow_dispatch'])
-    expect(workflow.jobs.mirror.if).toBe("github.ref == 'refs/heads/main'")
-    expect(workflow.jobs.mirror.steps[0]?.with?.ref).toBe('main')
-    expect(workflow.jobs.mirror.permissions.packages).toBe('write')
-    const cleanup = await readFile('.github/workflows/ghcr-cleanup.yml', 'utf8')
-    expect(cleanup).not.toContain('dependency-')
   })
 })

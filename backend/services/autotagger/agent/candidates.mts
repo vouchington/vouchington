@@ -9,7 +9,7 @@ import sql from 'sql-template-strings'
  * probability per candidate) however many topics paying users follow, and it is the only bound:
  * the candidates are ranked by how close they are to the subject, so the cut keeps the likeliest.
  */
-export const AUTOTAGGER_AGENT_MAX_CANDIDATES = 10
+const AUTOTAGGER_AGENT_MAX_CANDIDATES = 10
 
 /**
  * Roles whose follows are staff curation, not a paying reader's interest. There is no shared SQL

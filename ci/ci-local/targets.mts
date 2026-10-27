@@ -66,9 +66,9 @@ export const targets = {
     commands: [
       workflowCommand(
         'clean database and run migrations',
-        'bash -c \'if [ -f .env ]; then set -a; source .env; set +a; fi; export READ_DATABASE_URL="$DATABASE_URL"; pnpm --dir backend run db:clean && cd backend && node data-stores/psql/migrate.mts\'',
-        'tests-postgres-schema.yml',
-        'node data-stores/psql/migrate.mts',
+        'bash -c \'if [ -f .env ]; then set -a; source .env; set +a; fi; export READ_DATABASE_URL="$DATABASE_URL"; pnpm --dir backend run db:clean && cd backend && ENVIRONMENT=staging node data-stores/psql/migrate.mts\'',
+        'prepare-postgres.yml',
+        'ENVIRONMENT=staging node data-stores/psql/migrate.mts',
       ),
       workflowCommand(
         'postgres schema tests',

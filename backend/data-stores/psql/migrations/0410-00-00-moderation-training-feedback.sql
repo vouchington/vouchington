@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS moderation_training_feedbacks (
   community_id UUID REFERENCES communities(id) ON DELETE CASCADE,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
   agent_moderation_id UUID,
-  moderation_report_id UUID REFERENCES moderation_reports(id) ON DELETE CASCADE,
+  moderation_report_id UUID REFERENCES moderation_reports(id) ON DELETE SET NULL,
   moderation_appeal_id UUID,
   review_dispute_id UUID REFERENCES review_disputes(id) ON DELETE SET NULL,
   post_clearance_change_id UUID REFERENCES post_clearance_changes(id) ON DELETE SET NULL,
@@ -90,9 +90,10 @@ CREATE TABLE IF NOT EXISTS moderation_training_feedbacks (
     AND (agent_moderation_id IS NOT NULL) = (
       source_type IN ('agent_moderation', 'community_prompt', 'agent_moderation_vote')
     )
-    AND (moderation_report_id IS NOT NULL) = (source_type = 'moderation_report')
-    AND (moderation_appeal_id IS NOT NULL) = (source_type = 'moderation_appeal')
-    AND (review_dispute_id IS NOT NULL) = (source_type = 'review_dispute')
+    -- A retained false-positive label may outlive its resolved source record.
+    AND (moderation_report_id IS NULL OR source_type = 'moderation_report')
+    AND (moderation_appeal_id IS NULL OR source_type = 'moderation_appeal')
+    AND (review_dispute_id IS NULL OR source_type = 'review_dispute')
     AND (post_clearance_change_id IS NULL OR source_type = 'community_review')
   )
 );
@@ -115,7 +116,7 @@ CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__agent_moderation_i
 CREATE INDEX IF NOT EXISTS idx_moderation_training_feedbacks__source
   ON moderation_training_feedbacks (source_type, event_type, id DESC);
 
-COMMENT ON TABLE moderation_training_feedbacks IS 'Human moderation feedback events used to build agent training and evaluation datasets.';
+COMMENT ON TABLE moderation_training_feedbacks IS 'Human moderation feedback events. Rows are deleted after 180 days except false-positive suppression still needed by a flagged post.';
 COMMENT ON COLUMN moderation_training_feedbacks.source_type IS 'Which moderation workflow produced the candidate example.';
 COMMENT ON COLUMN moderation_training_feedbacks.event_type IS 'Which human or automated moderation event generated this label.';
 COMMENT ON COLUMN moderation_training_feedbacks.label IS 'Normalized training label inferred from the human moderation action.';

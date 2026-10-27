@@ -20,6 +20,7 @@ import {
   dataExportVariables,
   ownershipVariables,
   roleChangeVariables,
+  reauthenticationVariables,
   stringVariables,
 } from './job-payload-templates.mts'
 
@@ -48,7 +49,13 @@ const templateParsers = {
       'token',
       'expiration',
     ]),
+  processSendAccountSecurityEmail: (data: unknown) => {
+    const record = asRecord(data, 'variables')
+    assertExactKeys(record, [])
+    return record
+  },
   processSendDataExportReadyEmail: dataExportVariables,
+  processSendReauthenticationToken: reauthenticationVariables,
   processSendEmailVerificationToken: (data: unknown) =>
     stringVariables<ProcessSendEmailVerificationTokenVariables>(data, verificationVariableKeys, [
       'token',

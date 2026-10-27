@@ -13,8 +13,10 @@ describe('User vouch-context route', () => {
   it('GET /api/v1/users/:id/vouch-context returns 401 for anonymous viewers', async () => {
     const target = await createTestUser()
     await createRequest().get(`/api/v1/users/${target.id}/vouch-context`).expect(401)
-  }, 30_000)
+  })
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('GET /api/v1/users/:id/vouch-context returns vouchers and disavowers among followed users', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -86,8 +88,10 @@ describe('User vouch-context route', () => {
     expect(response.body.positive_by_following.total).toBe(0)
     expect(response.body.negative_by_following.total).toBe(0)
     expect(response.body.election_vote).toBeNull()
-  }, 30_000)
+  })
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('GET /api/v1/users/:id/vouch-context buckets each voter by their most recent vote', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()
@@ -116,6 +120,8 @@ describe('User vouch-context route', () => {
     )
   }, 30_000)
 
+  // no-mistakes-timeout-reason: real GlideMQ worker drain for the user-vouch stats admission
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('GET /api/v1/users/:id/vouch-context excludes voters whose likes_visibility hides them', async () => {
     const viewer = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     const target = await createTestUser()

@@ -29,7 +29,7 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
   const query = sql`/* expireActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
-      FROM activitypub_inbox_delivery_work_items delivery
+      FROM activitypub_inbox_envelopes delivery
       WHERE delivery.retention_expires_at <= CURRENT_TIMESTAMP
         AND `
   query.append(
@@ -37,12 +37,6 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
       ? sql`delivery.verified_at IS NULL`
       : sql`delivery.verified_at IS NOT NULL`,
   )
-  query.append(sql`
-        AND (
-          delivery.failed_at IS NOT NULL
-          OR delivery.leased_at IS NULL
-          OR delivery.lease_expires_at <= clock_timestamp()
-        )`)
   if (deliveryIds) {
     query.append(sql` AND delivery.id = ANY(${deliveryIds}::uuid[])`)
   }
@@ -51,7 +45,7 @@ export function buildExpireActivityPubInboxDeliveriesQuery(
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
     ), deleted AS (
-      DELETE FROM activitypub_inbox_delivery_work_items delivery
+      DELETE FROM activitypub_inbox_envelopes delivery
       USING candidates
       WHERE delivery.id = candidates.id
       RETURNING OCTET_LENGTH(delivery.raw_body) AS raw_body_bytes

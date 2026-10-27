@@ -33,7 +33,7 @@
     "@ts-shared/deploy-environment": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
     "@vouchington/rate-limit": "^0.3.0",
-    "valkyries": "^0.12.1"
+    "valkyries": "^0.13.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

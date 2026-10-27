@@ -4,11 +4,8 @@ import { BrowseFeedResults } from '@/components/sources/browse-feed-results'
 import { getRssFeeds } from '@/lib/api/server/rss-feeds'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
-import {
-  createBreadcrumbSchema,
-  createCollectionPageSchema,
-  createItemListSchema,
-} from '@/lib/seo/structured-data'
+import { createBreadcrumbSchema } from '@/lib/seo/structured-data-breadcrumbs'
+import { createCollectionPageSchema, createItemListSchema } from '@/lib/seo/structured-data'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { PageWithAside } from '@/components/page-with-aside'

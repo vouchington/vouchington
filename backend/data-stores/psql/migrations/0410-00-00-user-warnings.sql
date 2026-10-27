@@ -36,7 +36,7 @@ WHERE report_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_user_warnings__case_id
   ON user_warnings (case_id);
 
-COMMENT ON TABLE user_warnings IS 'Records of formal warnings issued to users by moderators or admins.';
+COMMENT ON TABLE user_warnings IS 'Formal warnings. Appeals may open for 12 months after issue. A warning is deleted after 12 months from issue or 90 days from revoke, once all linked appeals have expired.';
 COMMENT ON COLUMN user_warnings.user_id IS 'The user who received this warning.';
 COMMENT ON COLUMN user_warnings.community_id IS 'The community scope of this warning, or NULL for a global warning.';
 COMMENT ON COLUMN user_warnings.issued_by_id IS 'The moderator or admin who issued this warning.';

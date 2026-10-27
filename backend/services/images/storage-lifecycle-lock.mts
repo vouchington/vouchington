@@ -2,7 +2,7 @@ import { advisoryLockPool } from '@data-stores/psql'
 
 const IMAGE_STORAGE_LIFECYCLE_LOCK_NAMESPACE = 0x496d
 
-/** Serialize rollback-capable image deletion with irreversible storage cleanup. */
+/** Serialize image deletion pages and admissions with irreversible storage cleanup. */
 export async function withImageStorageLifecycleLock<T>(
   imageId: string,
   callback: () => Promise<T>,

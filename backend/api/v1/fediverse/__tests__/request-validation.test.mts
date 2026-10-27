@@ -44,7 +44,7 @@ describe('fediverse request contracts', () => {
     for (const body of MALFORMED_CHANGES) {
       const anonymous = await createRequest().post(url).send(body)
       expect(anonymous.status).toBe(401)
-      expect(anonymous.text).not.toMatch(DIAGNOSTIC)
+      expect(anonymous.body.message).not.toMatch(DIAGNOSTIC)
       await asMember.post(url).send(body).expect(403)
       await asAdmin.post(url).send(body).expect(422)
     }
@@ -71,7 +71,7 @@ describe('fediverse request contracts', () => {
   it('answers 422 for a malformed create body and keeps 401 ahead of it', async () => {
     const anonymous = await createRequest().post('/api/v1/fediverse/instances').send({})
     expect(anonymous.status).toBe(401)
-    expect(anonymous.text).not.toMatch(DIAGNOSTIC)
+    expect(anonymous.body.message).not.toMatch(DIAGNOSTIC)
 
     const request = createRequest()
     await request.authenticateAs(member)

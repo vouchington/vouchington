@@ -123,7 +123,7 @@ describe('posts', () => {
 
       // Verify the mock was not called since we reused existing results
       expect(createOpenAIModeration).not.toHaveBeenCalled()
-    }, 15_000)
+    })
 
     it('calls mocked OpenAI API when no existing results', async () => {
       const random = randomSuffix()

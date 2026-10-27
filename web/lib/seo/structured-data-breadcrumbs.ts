@@ -1,3 +1,4 @@
+import { createBreadcrumbJsonLd } from '@vouchington/utils/json-ld'
 import type { MessageKey, Translator } from '@ts-shared/ui-messages'
 import { buildAbsoluteUrl } from './constants'
 
@@ -19,14 +20,8 @@ export function createBreadcrumbSchema(
   items: BreadcrumbNavItem[],
   t: Translator,
 ): Record<string, unknown> {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      name: resolveBreadcrumbName(item, t),
-      item: buildAbsoluteUrl(item.path),
-    })),
-  }
+  return createBreadcrumbJsonLd(
+    { absoluteUrl: buildAbsoluteUrl },
+    items.map(item => ({ path: item.path, name: resolveBreadcrumbName(item, t) })),
+  )
 }

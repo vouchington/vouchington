@@ -68,7 +68,7 @@ describe('searchRssFeedItemsBySemantic', () => {
     storyId = story.id
     await setTestItemStoryId(upserted[1].id, storyId)
     await setTestItemStoryId(storyItemId, storyId)
-  }, 30_000)
+  })
 
   beforeEach(() => {
     vi.clearAllMocks()

@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
-import { getReportIntegrityPenalties } from '@/lib/api/server'
+import { getReportIntegrityPenalties, getReportIntegrityPenaltyReviewsDue } from '@/lib/api/server'
+import { requireAdmin } from '@/lib/auth/require-admin'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import type {
   IntegrityPenaltyStatusFilter,
+  ReportIntegrityPenaltyReviewsDueResponse,
   ReportIntegrityPenaltiesResponse,
 } from '@/types/report-integrity'
 import { ReportIntegrityPenaltiesClient } from './report-integrity-penalties-client'
-import { ApiError } from '@vouchington/api-client'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = createNoIndexMetadata('Report Integrity Penalties | Admin')
@@ -19,23 +20,18 @@ export default async function ReportIntegrityPenaltiesPage({
 }: {
   searchParams: Promise<{ status?: string }>
 }) {
+  await requireAdmin()
   const [params, t] = await Promise.all([searchParams, getTranslations()])
   const status: IntegrityPenaltyStatusFilter =
     params.status === 'revoked' || params.status === 'all' ? params.status : 'active'
-  let available = true
-  let initialData: ReportIntegrityPenaltiesResponse
-  try {
-    initialData = await getReportIntegrityPenalties<ReportIntegrityPenaltiesResponse>({
+  const [initialData, initialDuePage] = await Promise.all([
+    getReportIntegrityPenalties<ReportIntegrityPenaltiesResponse>({
       searchParams: { status: status === 'all' ? undefined : status },
-    })
-  } catch (err) {
-    if (!(err instanceof ApiError) || err.status !== 404) throw err
-    available = false
-    initialData = {
-      results: [],
-      page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
-    }
-  }
+    }),
+    status === 'active'
+      ? getReportIntegrityPenaltyReviewsDue<ReportIntegrityPenaltyReviewsDueResponse>()
+      : null,
+  ])
   const path = '/report-integrity/penalties'
   const breadcrumbItems = buildBreadcrumbsForPath(path, {
     isAuthenticated: true,
@@ -52,7 +48,7 @@ export default async function ReportIntegrityPenaltiesPage({
     <>
       <Breadcrumbs items={breadcrumbItems} />
       <ReportIntegrityPenaltiesClient
-        available={available}
+        initialDuePage={initialDuePage}
         initialData={initialData}
         initialStatus={status}
       />

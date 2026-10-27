@@ -19,6 +19,7 @@ export const PRIORITY_DISPATCH = 100
  * job ids, and scheduler ids. Add a domain here and register it in `enqueues/registry.mts`.
  */
 export const BACKGROUND_DOMAINS = [
+  'image-deletion',
   'ses-inbound',
   'openai-moderation',
   'post-mentions',

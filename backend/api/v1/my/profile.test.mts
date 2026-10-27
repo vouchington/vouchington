@@ -221,7 +221,7 @@ describe('Domain blacklist enforcement', () => {
     await insertTestDomainBlacklist(TEST_API_BLOCKED_DOMAIN, TEST_API_SOURCE_NAME)
     await addDomainsToBloomFilter([TEST_API_BLOCKED_DOMAIN])
     user = await createTestUser()
-  }, 30_000)
+  })
 
   it('PATCH /api/v1/my/profile returns 400 when markdown contains blocked domain', async () => {
     const request = createRequest()

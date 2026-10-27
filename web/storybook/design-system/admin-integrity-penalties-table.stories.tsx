@@ -44,6 +44,7 @@ const confirmedRevokeState = {
   penalties: [penalty],
   reconcile: fn(async () => true),
   reconciliationRequired: {},
+  removedIds: new Set<string>(),
   resetKey: Symbol('integrity-penalties-pagination'),
   revokeWithConfirmation: fn(async () => {}),
   scopeAvailable: true,

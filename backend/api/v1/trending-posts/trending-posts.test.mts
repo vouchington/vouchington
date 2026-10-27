@@ -203,7 +203,7 @@ describe('trending-posts', () => {
           .query({ min_score: 10, topic_id: topicId })
           .expect(200)
         expect(owned.body.results.map((row: { id: string }) => row.id)).toEqual([postId])
-      }, 30_000)
+      })
 
       it('should support after cursor for pagination', async () => {
         const namespace = randomUUID()

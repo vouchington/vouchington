@@ -171,6 +171,31 @@ describe('sequential scan near-ties', () => {
       expect(isStaleSeqScanNearTie(over, 'posts')).toBe(false)
     })
 
+    it('compares the scan nodes when the forced plan replans unrelated joins', () => {
+      // Run 40427732470: index-only scan 318.09 against a forced seq scan 321.88, while the
+      // forced plan's total was inflated by disabled index paths elsewhere in the statement.
+      const indexed = (scanCost: number) =>
+        seqScanResult({
+          plan: {
+            Plan: {
+              'Node Type': 'Limit',
+              'Total Cost': INDEX_COST,
+              Plans: [
+                {
+                  'Node Type': 'Index Only Scan',
+                  'Relation Name': 'posts__default',
+                  'Total Cost': scanCost,
+                },
+              ],
+            },
+          },
+          forced_seq_scans: { posts: { total_cost: INDEX_COST * 1e6, scan_cost: SEQ_SCAN_COST } },
+        })
+      expect(isStaleSeqScanNearTie(indexed(SEQ_SCAN_COST - 3), 'posts')).toBe(true)
+      expect(isStaleSeqScanNearTie(indexed(SEQ_SCAN_COST * 0.75), 'posts')).toBe(true)
+      expect(isStaleSeqScanNearTie(indexed(SEQ_SCAN_COST * 0.74), 'posts')).toBe(false)
+    })
+
     it('still fails a stale entry whose forced scan costs clearly more', () => {
       const clear = [indexResult({ total_cost: INDEX_COST * 3, scan_cost: SEQ_SCAN_COST })]
       expect(() => assertNoNewSeqScans(clear, clear, baseline)).toThrow(

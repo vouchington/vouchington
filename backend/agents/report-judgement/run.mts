@@ -1,4 +1,4 @@
-import { callReceiptedAgentModel } from '@agents/_shared'
+import { callAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
@@ -6,6 +6,7 @@ import {
   getReportJudgementContextForEntity,
   insertReportJudgement,
   getJudgementByRunId,
+  hasAutomaticJudgementForReport,
   shouldRefreshReportJudgementForEntity,
   type ModerationReportEntityType,
   type ModerationReportJudgement,
@@ -15,11 +16,7 @@ import onError from '@modules/on-error'
 import { fetchEntityContent } from '@services/moderation'
 import { moderationAiConfig } from '@services/moderation-ai-config'
 import { withPrimaryReads } from '@services/moderation-reports/primary-reads'
-import {
-  callJudgementModel,
-  REPORT_JUDGEMENT_PROMPT_VERSION,
-  type JudgementModelCaller,
-} from './model.mts'
+import { callJudgementModel, type JudgementModelCaller } from './model.mts'
 
 interface JudgementInput {
   entityType: ModerationReportEntityType
@@ -27,7 +24,6 @@ interface JudgementInput {
   triggeringReportId: string
   rerunById?: string | null
   runId?: string | null
-  operationId?: string
 }
 
 export type { JudgementModelCaller } from './model.mts'
@@ -58,6 +54,14 @@ export async function runReportJudgementAgent(
       return { judgement: existing, communityId: null, authorId: null }
     }
   }
+
+  // Cheap start-of-job check on the primary: this report's automatic judgement is already stored,
+  // so a duplicate delivery makes no second provider request.
+  if (
+    !rerunById &&
+    (await withPrimaryReads(() => hasAutomaticJudgementForReport(triggeringReportId)))
+  )
+    return null
 
   const loadCurrentInput = async (): Promise<{
     entityContent: NonNullable<Awaited<ReturnType<typeof fetchEntityContent>>>
@@ -141,12 +145,8 @@ export async function runReportJudgementAgent(
   // 'comment' -- both are rows in `posts` (see fetch-entity.mts's combined post-or-comment query)
   // -- but not for 'user', 'url_hostname', or 'rss_feed_item', which don't reference a row in
   // `posts`, and ai_usage_records.post_id has a real FK to it.
-  const result = await callReceiptedAgentModel({
+  const result = await callAgentModel({
     agentSlug: 'report-judgement',
-    reportTarget: { entityType, entityId },
-    promptVersion: REPORT_JUDGEMENT_PROMPT_VERSION,
-    operationId:
-      input.operationId ?? `${entityType}:${entityId}:${triggeringReportId}:${rerunById ?? ''}`,
     selection,
     input: userInput,
     safetyIdentifier,

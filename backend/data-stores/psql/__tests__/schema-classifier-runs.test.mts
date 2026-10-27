@@ -40,23 +40,28 @@ describe('classifier run schema', () => {
     ).toEqual([])
   })
 
-  it('fences one receipt per content and configuration identity, and stamps the community', async () => {
+  it('fences one receipt per content, prompt and configuration identity, and stamps the community', async () => {
     const { classifierId } = await createClassifierFixture()
     const fixture = await createFixture({ classifierId, community: true })
 
     expect((await fixture.read())?.community_identity_id).toBe(fixture.communityId)
     await expect(fixture.insertRun()).rejects.toMatchObject({ code: '23505' })
-    await expect(
-      fixture.insertRun({ configurationJson: JSON.stringify({ other: 1 }) }),
-    ).resolves.toEqual(expect.any(String))
+    expect(await fixture.insertRun({ configurationJson: JSON.stringify({ other: 1 }) })).not.toBe(
+      fixture.id,
+    )
     await expect(fixture.insertRun({ inputSha256: Buffer.alloc(32, 7) })).resolves.toEqual(
       expect.any(String),
     )
-    await expect(fixture.insertRun({ configurationJson: 'not-json' })).rejects.toMatchObject({
+    await expect(
+      fixture.insertRun({ configurationJson: 'not-json', inputSha256: Buffer.alloc(32, 8) }),
+    ).rejects.toMatchObject({
       code: '22P02',
     })
     await expect(
-      fixture.insertRun({ configurationSha256: Buffer.alloc(32, 2) }),
+      fixture.insertRun({
+        configurationSha256: Buffer.alloc(32, 2),
+        inputSha256: Buffer.alloc(32, 9),
+      }),
     ).rejects.toMatchObject({ code: '23514' })
     await expect(fixture.insertRun({ postId: null })).rejects.toMatchObject({ code: '23514' })
   })
@@ -75,6 +80,9 @@ describe('classifier run schema', () => {
       rss_feed_item_id: classifier.rssFeedItemId,
       community_identity_id: null,
     })
+    expect(await fixture.insertRun({ configurationJson: JSON.stringify({ other: 1 }) })).not.toBe(
+      fixture.id,
+    )
     await expect(
       fixture.insertRun({ postId: classifier.postId, rssFeedItemId: classifier.rssFeedItemId }),
     ).rejects.toMatchObject({ code: '23514' })
@@ -244,19 +252,19 @@ describe('classifier run schema', () => {
     expect((await fixture.read())?.superseded_at).toBeNull()
   })
 
-  it('keeps a usage ledger row when its run is deleted, dropping only the attribution', async () => {
+  it('keeps usage attribution to the retained identity after run payload deletion', async () => {
     const { classifierId } = await createClassifierFixture()
     const fixture = await createFixture({ classifierId })
     const ledgerId = await insertTestAiUsageRecord({ classifierRunId: fixture.id, latencyMs: 40 })
 
     await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
-      classifier_run_id: fixture.id,
+      classifier_run_identity_id: fixture.id,
       latency_milliseconds: 40,
     })
     await deleteClassifierRunForSchemaTest(fixture.id)
 
     await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
-      classifier_run_id: null,
+      classifier_run_identity_id: fixture.id,
       latency_milliseconds: 40,
     })
   })

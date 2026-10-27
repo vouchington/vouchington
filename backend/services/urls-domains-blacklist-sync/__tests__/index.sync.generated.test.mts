@@ -66,7 +66,7 @@ describe('index.generated (syncBlacklistSource)', () => {
 
     const count2 = await countBlacklistEntriesBySource(sourceId)
     expect(count2).toBe(count)
-  }, 30_000)
+  })
 
   it('syncBlacklistSource removes domains no longer in list', async () => {
     const sourceId = await createTestBlacklistSource({

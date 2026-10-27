@@ -1,6 +1,10 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 export const ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
+    'membership_operational_cleanup_cursors.cursor_id',
+    'Deletion-stable UUIDv7 keyset position across three operational retention streams; the scanned row is deleted before checkpointing.',
+  ],
+  [
     'membership_renewal_price_increase_notification_work_items.lease_token',
     'Opaque notice delivery fence; not a relationship.',
   ],
@@ -9,7 +13,6 @@ export const ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, stri
     'Opaque execution lease fence; not a relationship.',
   ],
   ['stripe_event_processing_work_items.lease_token', 'Opaque event-processing ownership token.'],
-  ['membership_verification_processing_work_items.lease_token', 'Opaque adapter ownership token.'],
   [
     'membership_google_play_acknowledgment_work_items.lease_token',
     'Ephemeral fencing token for the current acknowledgement processor; it intentionally identifies no durable relation.',

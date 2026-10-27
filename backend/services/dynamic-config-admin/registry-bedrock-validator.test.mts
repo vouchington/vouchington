@@ -21,6 +21,15 @@ describe('Bedrock minimum request ceilings', () => {
     ).toThrow(DynamicConfigValidationError)
   })
 
+  it('rejects a creation lease renewal interval that would overload Valkey', () => {
+    const entry = dynamicConfigRegistry.get('bedrock-embeddings-batch-config')!
+    expect(() =>
+      validateDynamicConfigUpdate(entry, normalizeFields(entry, entry.config.defaultFields), {
+        creation_lease_renewal_interval_ms: 99,
+      }),
+    ).toThrow(DynamicConfigValidationError)
+  })
+
   it.each(['max_requests_per_file', 'max_requests_per_hour'])(
     'rejects lowering %s or raising the minimum across that ceiling',
     ceiling => {

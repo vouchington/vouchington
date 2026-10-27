@@ -75,6 +75,6 @@ export async function removeMember(
 
   // Free any agent prompt slots when removing an owner or moderator
   if (shouldDeactivatePrompts) {
-    void enqueueOnCommunityAgentPromptsDeactivated(currentUserId, targetUserId, communityId)
+    await enqueueOnCommunityAgentPromptsDeactivated(currentUserId, targetUserId, communityId)
   }
 }

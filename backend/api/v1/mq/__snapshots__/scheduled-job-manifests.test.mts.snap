@@ -328,43 +328,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Drain durable post publication reconciliation work",
-        "id": "reconcile-post-publication",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "background",
-    "registration": "sequential",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "reconcile-post-publication",
-    "template": {
-      "data": {},
-      "name": "post-publication.reconcile",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "post-publication",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Recover vote-weight recalculation dirty markers",
         "id": "voteWeightDirtyMarkers",
         "kind": "scheduled-jobs",
@@ -944,12 +907,84 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 5,
-          "key": "notifications",
+          "concurrency": 1,
+          "key": "notifications:digest-schedule",
         },
         "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover pending outbound ActivityPub follows distribution",
+        "id": "activitypub-outbound-follows-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-outbound-follows-recovery",
+    "template": {
+      "data": {
+        "source": "follows",
+      },
+      "name": "activitypub.recoverOutboundDistribution",
+      "opts": {
+        "attempts": 2147483647,
+        "backoff": {
+          "delay": 1000,
+          "type": "paged-dispatch-activitypub",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "activitypub:outbound-recovery",
+        },
+        "priority": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover pending outbound ActivityPub votes distribution",
+        "id": "activitypub-outbound-votes-recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "activitypub-outbound-votes-recovery",
+    "template": {
+      "data": {
+        "source": "votes",
+      },
+      "name": "activitypub.recoverOutboundDistribution",
+      "opts": {
+        "attempts": 2147483647,
+        "backoff": {
+          "delay": 1000,
+          "type": "paged-dispatch-activitypub",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "activitypub:outbound-recovery",
+        },
+        "priority": 100,
       },
     },
   },
@@ -981,8 +1016,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 4,
-          "key": "activitypub:inbound",
+          "concurrency": 1,
+          "key": "activitypub:inbound-recovery",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2595,11 +2630,14 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
       "data": {},
       "name": "recoverMembershipVerifications",
       "opts": {
-        "attempts": 3,
+        "attempts": 2147483647,
         "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
+          "delay": 1000,
+          "type": "paged-dispatch-memberships",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "memberships:verification-dispatch",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2631,6 +2669,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "deployed",
+    "operatorSurfaces": [
+      {
+        "description": "Start a bounded moderation-history sweep with immediate continuation",
+        "id": "moderation-retention-cleanup-daily",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "psql",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "moderation-retention-cleanup-daily",
+    "template": {
+      "data": {},
+      "name": "moderationRetentionCleanup",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "psql:moderation-retention",
+        },
+        "priority": 10,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -2957,6 +3032,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
+        "ordering": {
+          "concurrency": 1,
+          "key": "data_retention:cleanup",
+        },
         "priority": 10,
         "removeOnComplete": 100,
         "removeOnFail": 100,
@@ -2991,6 +3070,45 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "priority": 10,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Resume bounded staff RSS feed hard deletes",
+        "id": "recoverRssFeedHardDeletes",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feed-maintenance",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "recoverRssFeedHardDeletes",
+    "template": {
+      "data": {
+        "afterId": null,
+      },
+      "name": "processRecoverRssFeedHardDeletes",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "hard-delete-rss-feed-recovery",
+        },
+        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -3082,6 +3200,22 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "background",
     "schedule": "0 * * * *",
     "triggerName": "enqueueDispatchApiKeyExpiryReminders",
+  },
+  {
+    "description": "Recover pending outbound ActivityPub follows distribution",
+    "id": "activitypub-outbound-follows-recovery",
+    "job_name": "activitypub.recoverOutboundDistribution",
+    "queue_name": "background",
+    "schedule": "every 5m",
+    "triggerName": "trigger",
+  },
+  {
+    "description": "Recover pending outbound ActivityPub votes distribution",
+    "id": "activitypub-outbound-votes-recovery",
+    "job_name": "activitypub.recoverOutboundDistribution",
+    "queue_name": "background",
+    "schedule": "every 5m",
+    "triggerName": "trigger",
   },
   {
     "description": "Recover abandoned durable ActivityPub inbox envelopes",
@@ -3313,7 +3447,15 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "job_name": "dataRetentionCleanup",
     "queue_name": "psql",
     "schedule": "0 4 * * *",
-    "triggerName": "[anonymous]",
+    "triggerName": "enqueueDataRetentionCleanup",
+  },
+  {
+    "description": "Start a bounded moderation-history sweep with immediate continuation",
+    "id": "moderation-retention-cleanup-daily",
+    "job_name": "moderationRetentionCleanup",
+    "queue_name": "psql",
+    "schedule": "0 4 * * *",
+    "triggerName": "enqueueModerationRetentionCleanup",
   },
   {
     "description": "Reconcile denormalized post vote counters against the post_votes source of truth",
@@ -3484,12 +3626,12 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueReconcileRssFeedItemCategorySnapshots",
   },
   {
-    "description": "Drain durable post publication reconciliation work",
-    "id": "reconcile-post-publication",
-    "job_name": "post-publication.reconcile",
-    "queue_name": "background",
+    "description": "Resume bounded staff RSS feed hard deletes",
+    "id": "recoverRssFeedHardDeletes",
+    "job_name": "processRecoverRssFeedHardDeletes",
+    "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
-    "triggerName": "enqueueReconcilePostPublication",
+    "triggerName": "enqueueRecoverRssFeedHardDeletes",
   },
   {
     "description": "Drain durable story post related URL projections",

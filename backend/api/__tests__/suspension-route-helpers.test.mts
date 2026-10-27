@@ -139,6 +139,7 @@ function makeContext(
   const events: string[] = []
   return {
     events,
+    cookies: { get: vi.fn<() => undefined>().mockReturnValue(undefined) },
     getCurrentUser: vi.fn<() => Promise<PrivateUser | null>>().mockImplementation(async () => {
       events.push('currentUser')
       return currentUser

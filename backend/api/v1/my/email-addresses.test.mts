@@ -1,3 +1,4 @@
+import { createTestAccountChangeProof } from '@voucha/test-helpers/account-change'
 import { describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -43,6 +44,7 @@ describe('email address list and verification request', () => {
     const address = newAddress()
     const request = createRequest()
     await request.authenticateAs(user)
+    const reAuthToken = await createTestAccountChangeProof(user.id, request)
 
     const gate = holdQueueAdmission(
       emails,
@@ -59,7 +61,10 @@ describe('email address list and verification request', () => {
     let entered = false
     let settled = false
     const responsePromise = Promise.resolve(
-      request.post('/api/v1/my/email-addresses').send({ email_address: address }).expect(200),
+      request
+        .post('/api/v1/my/email-addresses')
+        .send({ email_address: address, re_auth_token: reAuthToken })
+        .expect(200),
     ).then(response => {
       settled = true
       return response
@@ -95,6 +100,7 @@ describe('email address list and verification request', () => {
     const address = newAddress()
     const request = createRequest()
     await request.authenticateAs(user)
+    const reAuthToken = await createTestAccountChangeProof(user.id, request)
     const failure = new Error('Owned email verification admission failure')
     const originalAdd = emails.add
     const spy = vi.spyOn(emails, 'add').mockImplementation((name, data, options) => {
@@ -114,7 +120,7 @@ describe('email address list and verification request', () => {
     try {
       const response = await request
         .post('/api/v1/my/email-addresses')
-        .send({ email_address: address })
+        .send({ email_address: address, re_auth_token: reAuthToken })
         .expect(200)
       expect(response.body.email_address).toBe(address)
       expect(await getLatestEmailAddressLoginTokenHash(address)).not.toBeNull()
@@ -133,7 +139,10 @@ describe('email address list and verification request', () => {
 
     const response = await request
       .post('/api/v1/my/email-addresses')
-      .send({ email_address: user.email_address })
+      .send({
+        email_address: user.email_address,
+        re_auth_token: await createTestAccountChangeProof(user.id, request),
+      })
       .expect(422)
 
     expect(response.body.message).toBe('Email address already added to your account')
@@ -147,7 +156,10 @@ describe('email address list and verification request', () => {
 
     const response = await request
       .post('/api/v1/my/email-addresses')
-      .send({ email_address: otherUser.email_address })
+      .send({
+        email_address: otherUser.email_address,
+        re_auth_token: await createTestAccountChangeProof(user.id, request),
+      })
       .expect(422)
 
     expect(response.body.message).toBe('Email address is already in use')
@@ -164,7 +176,10 @@ describe('email address list and verification request', () => {
 
       await request
         .post('/api/v1/my/email-addresses')
-        .send({ email_address: newAddress() })
+        .send({
+          email_address: newAddress(),
+          re_auth_token: await createTestAccountChangeProof(user.id, request),
+        })
         .expect(200)
 
       const profileLines = stderr.mock.calls

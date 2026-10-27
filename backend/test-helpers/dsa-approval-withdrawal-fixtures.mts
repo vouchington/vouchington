@@ -4,26 +4,29 @@ import { encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { createTestUser } from './entities/users.mts'
 import { createHostedImagePost } from './services/copyright-notices/hosted-post-audience.mts'
+import { withdrawCopyrightJurisdictionPolicyApproval } from '../services/copyright-notices/jurisdiction-policy.mts'
 import { territorialLabels } from '../services/copyright-notices/territorial-labels.mts'
 
-/** Owns an encrypted receipt and its old approval without replacing the current policy. */
-export async function createTestDsaApprovalWithdrawalScene() {
+/** Commits an owned receipt and its withdrawn approval atomically, without enabling intake. */
+export async function createTestDsaApprovalWithdrawalScene(
+  jurisdiction: 'eu_dsa' | 'uk' = 'eu_dsa',
+) {
   const post = await createHostedImagePost('public')
   const [staff, administrator] = await Promise.all([
     createTestUser({ extraRoles: ['moderator'] }),
     createTestUser({ administrator: true }),
   ])
   const key = crypto.randomUUID()
-  const policyVersion = `eu-${key.slice(0, 12)}`
+  const policyVersion = `${jurisdiction === 'eu_dsa' ? 'eu' : 'uk'}-${key.slice(0, 12)}`
   const email = `withdrawal-${key}@example.test`
-  const purpose = `${territorialLabels('eu_dsa').noticePurpose}:${key}`
+  const purpose = `${territorialLabels(jurisdiction).noticePurpose}:${key}`
   const hostedUseUrl = `https://voucha.ai/discussion/${post.postId}`
   await using transaction = await beginTransaction()
   const { rows: approvals } = await transaction<{ id: string }>(sql`
     /* createTestDsaApprovalWithdrawalScene:approval */
     INSERT INTO copyright_jurisdiction_policy_approvals
       (jurisdiction, policy_version, approved_at, approved_by_id)
-    VALUES ('eu_dsa', ${policyVersion}, ${new Date('2000-01-01T00:00:00.000Z')}, ${administrator.id})
+    VALUES (${jurisdiction}, ${policyVersion}, ${new Date('2000-01-01T00:00:00.000Z')}, ${administrator.id})
     RETURNING id
   `)
   const approvalId = approvals[0]?.id
@@ -34,7 +37,7 @@ export async function createTestDsaApprovalWithdrawalScene() {
       jurisdiction, legal_basis, received_at, claimant_user_id, claimant_display_name,
       claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      'eu_dsa', 'copyright', CURRENT_TIMESTAMP, ${post.claimant.id}, 'Owned notifier',
+      ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP, ${post.claimant.id}, 'Owned notifier',
       ${encryptSecret(email, `${purpose}:contact`)}, 'Photographic work', ${policyVersion}
     ) RETURNING id
   `)
@@ -47,16 +50,21 @@ export async function createTestDsaApprovalWithdrawalScene() {
       requester_user_id, requester_identity_sha256, idempotency_key, request_sha256,
       hosted_use_url, grounds_ciphertext, notifier_email_ciphertext, has_good_faith_statement
     ) VALUES (
-      ${noticeId}, 'eu_dsa', ${approvalId}, ${post.claimant.id}, ${randomBytes(32)}, ${key}, ${randomBytes(32)},
+      ${noticeId}, ${jurisdiction}, ${approvalId}, ${post.claimant.id}, ${randomBytes(32)}, ${key}, ${randomBytes(32)},
       ${hostedUseUrl}, ${encryptSecret('The hosted image reproduces my work', `${purpose}:grounds`)},
-      ${encryptSecret(email, `${purpose}:notifier_email`)}, TRUE
+      ${jurisdiction === 'eu_dsa' ? encryptSecret(email, `${purpose}:notifier_email`) : null},
+      ${jurisdiction === 'eu_dsa' ? true : null}
     )
   `)
+  const withdrawal = await withdrawCopyrightJurisdictionPolicyApproval(administrator, approvalId, {
+    query: transaction,
+  })
   await transaction.commit()
   return {
     staff,
     administrator,
     approvalId,
+    withdrawalId: withdrawal.id,
     noticeId,
     targets: [
       {

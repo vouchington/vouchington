@@ -17,6 +17,10 @@ export function createTestOAuthExchangeDependencies(
     claim: vi.fn<ExchangeDependencies['claim']>(async () => ({
       id: 'flow-id',
       provider,
+      purpose: 'authenticate',
+      initiating_user_id: null,
+      initiating_device_id: 'test-device',
+      initiating_session_id: 'test-session',
       redirect_uri: 'https://example.com/callback',
       callback_code_ciphertext: 'encrypted-code',
       pkce_verifier_ciphertext: 'encrypted-verifier',

@@ -64,7 +64,7 @@ export const GENERAL_FINITE_VALUES = {
     'refresh_reuse_detected',
   ],
   oauth_authorization_providers: ['facebook', 'x', 'github', 'linkedin', 'microsoft', 'google'],
-  oauth_authorization_purposes: ['authenticate', 'connect'],
+  oauth_authorization_purposes: ['authenticate', 'connect', 're_auth'],
   oauth_authorization_statuses: [
     'pending',
     'callback_received',
@@ -79,15 +79,6 @@ export const GENERAL_FINITE_VALUES = {
   post_admission_quota_consumption_modes: ['all_windows', 'daily_only'],
   post_admission_reservation_states: ['in_progress', 'committed'],
   post_classifier_local_outcome_classifications: ['ai', 'human'],
-  post_publication_identity_bridge_families: [
-    'post',
-    'community',
-    'rss_feed_item',
-    'author',
-    'rss_feed',
-    'topic_alias',
-    'story',
-  ],
   post_topic_alias_source_types: ['title', 'markdown', 'explicit'],
   user_deletion_external_work_kinds: [
     'cloudflare-cache-tag',

@@ -20,8 +20,10 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
   it('reactivates matching completed and failed stable IDs without touching unrelated jobs', async () => {
     const queueName = `oauth_authorization_exchange_recovery_${randomUUID()}`
     const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
-    // A graceful close waits out the worker's in-flight blocking read, so keep that read short.
-    const workerOptions = { ...connection, blockTimeout: 1000 }
+    // A graceful close waits out the worker's in-flight blocking read. This case opens two
+    // workers, and each pays that wait on its first poll and again on close. 100ms keeps those
+    // four waits inside the five-second case budget when the shared Valkey is busy.
+    const workerOptions = { ...connection, blockTimeout: 100 }
     const queue = new Queue<OAuthAuthorizationExchangeJobData>(queueName, connection)
     const completedAuthorizationId = randomUUID()
     const failedAuthorizationId = randomUUID()
@@ -62,7 +64,8 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
       attempts: 1,
       removeOnComplete: 100,
       removeOnFail: 100,
-      priority: 1,
+      // Stable-ID recovery does not exercise priority scheduling or its promotion cadence.
+      priority: 0,
       deduplication: { id: authorizationId, mode: 'simple' as const },
     })
     let recoveryWorker: Worker<OAuthAuthorizationExchangeJobData> | undefined

@@ -1,14 +1,14 @@
 import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 // Seeded topic for read-only tests
 const SEEDED_TOPIC_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'
 const SEEDED_TOPIC_TYPE = 'card'
 
 test.describe('Admin Topics Edit', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
   test.describe.configure({ mode: 'serial' })
 
   let topicId: string

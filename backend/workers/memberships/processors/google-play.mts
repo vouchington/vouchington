@@ -20,7 +20,6 @@ export { refreshConfiguredGoogleOidcTrustMaterial } from '@services/memberships/
 export async function processGooglePlayNotification(data: { evidenceId: string }): Promise<void> {
   await reconcileGooglePlayRtdnNotification({
     evidenceId: data.evidenceId,
-    client: createConfiguredGooglePlaySubscriptionsV2Client(),
   })
 }
 
@@ -41,7 +40,6 @@ export async function recoverGooglePlayActiveSources(): Promise<void> {
 export async function processGooglePlayActiveSource(data: { sourceId: string }): Promise<void> {
   await reconcileGooglePlayActiveSource({
     sourceId: data.sourceId,
-    client: createConfiguredGooglePlaySubscriptionsV2Client(),
   })
 }
 

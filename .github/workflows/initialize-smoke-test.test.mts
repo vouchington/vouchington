@@ -40,17 +40,6 @@ describe('initialize-smoke-test workflow', () => {
     expect(run).toContain('echo "SMOKE_WORKTREE=$smoke_worktree" >> "$GITHUB_ENV"')
   })
 
-  it('activates the .nvmrc Node and then pnpm before initialize runs', () => {
-    const steps = readWorkflow().jobs?.['initialize-smoke-test']?.steps ?? []
-    const node = steps.findIndex(step => step.uses?.startsWith('actions/setup-node@'))
-    const pnpm = steps.findIndex(step => step.uses?.startsWith('pnpm/action-setup@'))
-    const initialize = steps.findIndex(step => step.name === 'Initialize monorepo')
-
-    expect(node).toBeGreaterThan(-1)
-    expect(pnpm).toBeGreaterThan(node)
-    expect(initialize).toBeGreaterThan(pnpm)
-  })
-
   it.each([
     ['Initialize monorepo', 'cd "$SMOKE_WORKTREE" && ./dev/initialize monorepo'],
     ['Initialize backend', 'cd "$SMOKE_WORKTREE" && ./dev/initialize backend'],

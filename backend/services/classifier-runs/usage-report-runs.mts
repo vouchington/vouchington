@@ -2,6 +2,7 @@ import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
 import type { ClassifierRunUsage, ClassifierUsageWindow } from './usage-report-types.mts'
+import { assertClassifierWindowWithinRetention } from '@services/classifiers/retention-window'
 
 /**
  * A ledger row's id carries the request start time from the application clock (`createdAt` in
@@ -54,6 +55,7 @@ export function assertClassifierUsageWindow({ from, to }: ClassifierUsageWindow)
   if (!(from.getTime() < to.getTime())) {
     throw new RangeError('Classifier usage window must start before it ends')
   }
+  assertClassifierWindowWithinRetention(from)
 }
 
 /**
@@ -81,7 +83,7 @@ export async function readClassifierRunUsage(
       encode(run.configuration_sha256, 'hex') AS configuration_sha256,
       run.community_identity_id,
       run.decision_batch_id AS batch_id,
-      batch.prompt_version_id,
+      run.prompt_version_id,
       -- An agent run has no prompt version: its provider and model are what the ledger billed.
       COALESCE(prompt.model_provider::text, usage.ledger_provider) AS provider,
       COALESCE(prompt.model_name, usage.ledger_model) AS model,
@@ -90,7 +92,6 @@ export async function readClassifierRunUsage(
       (SELECT count(*)::int FROM classifier_decision_calls call
         WHERE call.batch_id = run.decision_batch_id) AS shard_count,
       (SELECT count(*)::int FROM (
-        -- no-mistakes-disable-next-line postgres-required-predicates: batch-wide usage counts results for every topic_id partition
         SELECT 1 FROM topic_classifier_results result
           WHERE result.batch_id = run.decision_batch_id
         UNION ALL
@@ -125,7 +126,7 @@ export async function readClassifierRunUsage(
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
     LEFT JOIN classifier_decision_batches batch ON batch.id = run.decision_batch_id
-    LEFT JOIN classifier_prompt_versions prompt ON prompt.id = batch.prompt_version_id
+    LEFT JOIN classifier_prompt_versions prompt ON prompt.id = run.prompt_version_id
     LEFT JOIN post_classifier_local_outcomes local_outcome ON local_outcome.run_id = run.id
     CROSS JOIN LATERAL (
       SELECT count(*)::int AS provider_calls,
@@ -141,7 +142,7 @@ export async function readClassifierRunUsage(
         min(ledger.model_provider::text) AS ledger_provider,
         min(ledger.model) AS ledger_model
       FROM ai_usage_records ledger
-      WHERE ledger.classifier_run_id = run.id AND ledger.id >= ${ledgerLowerBound}
+      WHERE ledger.classifier_run_identity_id = run.id AND ledger.id >= ${ledgerLowerBound}
     ) usage
     WHERE run.id >= ${lowerBound} AND run.id < ${upperBound}
     ORDER BY run.id

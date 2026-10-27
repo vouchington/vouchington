@@ -1,20 +1,36 @@
 name: backend-smoke
 
 # The backend API/worker smoke gate is deliberately separate from Vitest shards. It owns the
-# one migration and deterministic server-port handoff needed to exercise the running backend;
-# backend-unit retains its own service setup and migration in every shard.
+# deterministic server-port handoff needed to exercise the running backend. Each database
+# consumer restores the shared prepared baseline into its own PostgreSQL service.
 on:
   workflow_call:
+    inputs:
+      prepared_database:
+        description: 'Use the prepared backend PostgreSQL artifact from the caller'
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   NODE_ENV: test
 
 jobs:
+  prepare-postgres:
+    if: ${{ !inputs.prepared_database }}
+    uses: ./.github/workflows/prepare-postgres.yml
+    permissions:
+      actions: read
+      contents: read
+
   smoke:
+    needs: [prepare-postgres]
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -50,10 +66,21 @@ jobs:
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 6
-      - name: Migrate backend database
-        working-directory: backend
-        run: node data-stores/psql/migrate.mts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        timeout-minutes: 2
+        with:
+          name: backend-postgres-${{ github.run_id }}
+          path: ${{ runner.temp }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+      - name: Restore prepared PostgreSQL database
         timeout-minutes: 3
+        run: |
+          docker run --rm --network host -i \
+            ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62 \
+            pg_restore --dbname="$DATABASE_URL" --exit-on-error --no-owner --no-privileges \
+            < "$RUNNER_TEMP/backend-postgres.dump"
       - name: Allocate backend port
         timeout-minutes: 1
         run: |

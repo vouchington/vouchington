@@ -4,6 +4,7 @@ import { WebIntegrationClient } from '../helpers/client.mts'
 import { PLAYWRIGHT_CHROME_UA } from '../helpers/constants.mts'
 import { parseHtml } from '../helpers/html-assertions.mts'
 import {
+  authenticateAdminWithVerifiedMfa,
   authenticateTestUserWithDirectSessionTokens,
   expectManualRedirectMatches,
   expectManualRedirectPath,
@@ -97,7 +98,7 @@ describe('web route baseline tests', () => {
     })
 
     it('covers authenticated route baselines', async () => {
-      await authenticateTestUserWithDirectSessionTokens(client)
+      await authenticateAdminWithVerifiedMfa(client)
 
       const valkeyAdmin = await client.loadPage('/admin/valkey', 'route-admin-valkey', {
         userAgent: PLAYWRIGHT_CHROME_UA,
@@ -107,6 +108,7 @@ describe('web route baseline tests', () => {
         'Valkey',
       )
 
+      await authenticateTestUserWithDirectSessionTokens(client)
       const newsImportExport = await client.loadPage(
         '/my/news-sources/import-export',
         'route-my-news-sources-import-export',

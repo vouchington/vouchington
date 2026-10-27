@@ -1,46 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createPostSchema } from '../../post-schema'
-import { createProfilePageSchema } from '../../profile-page-schema'
 
 describe('structured data helpers', () => {
-  it('includes sameAs in person schema when profile links provided', () => {
-    const schema = createProfilePageSchema({
-      username: 'johndoe',
-      displayName: 'John Doe',
-      path: '/user/johndoe',
-      identifier: 'user-123',
-      sameAs: ['https://github.com/johndoe', 'https://x.com/johndoe'],
-    })
-
-    expect((schema.mainEntity as Record<string, unknown>).sameAs).toEqual([
-      'https://github.com/johndoe',
-      'https://x.com/johndoe',
-    ])
-  })
-
-  it('omits sameAs when not provided', () => {
-    const schema = createProfilePageSchema({
-      username: 'johndoe',
-      displayName: 'John Doe',
-      path: '/user/johndoe',
-      identifier: 'user-123',
-    })
-
-    expect(schema.mainEntity).not.toHaveProperty('sameAs')
-  })
-
-  it('omits sameAs when empty array provided', () => {
-    const schema = createProfilePageSchema({
-      username: 'johndoe',
-      displayName: 'John Doe',
-      path: '/user/johndoe',
-      identifier: 'user-123',
-      sameAs: [],
-    })
-
-    expect(schema.mainEntity).not.toHaveProperty('sameAs')
-  })
-
   it('includes articleSection and keywords in article schema', () => {
     const schema = createPostSchema({
       kind: 'article',

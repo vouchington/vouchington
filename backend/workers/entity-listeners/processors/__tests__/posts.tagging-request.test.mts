@@ -25,7 +25,7 @@ describe('post entity listener requests C6 for a post created already approved',
     await processPostCreated({ id: postId })
 
     expect(await getClassifierRunRequestFacts(postId, TAGGING_CLASSIFIER_SLUG)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: null },
+      { run_identity_id: null, no_work_at: null, stale_at: null },
     ])
     expect(await readClassifierRunDispatcherJobsForTest(postId)).toHaveLength(1)
   })

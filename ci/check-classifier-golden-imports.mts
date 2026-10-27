@@ -20,8 +20,8 @@ const configurationWrite = new RegExp(
 const firstPartyWorkspaceImport = /^@(?:agents|services)\//u
 
 export const classifierGoldenEntrypoints = [
-  'backend/agents/post-classifier/post-classifier.golden.openrouter.test.mts',
-  'backend/agents/autotagger/autotagger.golden.openrouter.test.mts',
+  'backend/agents/post-classifier/post-classifier.openrouter.eval.test.mts',
+  'backend/agents/autotagger/autotagger.openrouter.eval.test.mts',
 ]
 
 /** Files whose absence would mean the traversal no longer reaches the classifier call path. */

@@ -1,5 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createTestUser, createTestUserDirect, insertTestTopic } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createTestUserDirect,
+  insertTestTopic,
+  insertTestTotpAuthenticator,
+} from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
 import type { PrivateUser } from '@services/users/types'
 import { registerTopicRevisionChangeDetection } from '../../test-helpers/revision-change-detection-tests.mts'
@@ -212,6 +217,7 @@ describe('index', () => {
         { markdown: { before: null, after: `Pre-promotion content ${random}` } },
         promotedUser.id,
       )
+      await insertTestTotpAuthenticator(promotedUser.id, `administrator-promotion-${random}`)
       await addUserRole(promotedUser.id, 'administrator')
 
       expect(revision.changes.revised_by_roles).not.toContain('administrator')

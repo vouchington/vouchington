@@ -1,6 +1,7 @@
 import type * as Sentry from '@sentry/nextjs'
 import { createVouchaSentryInitOptions } from '@ts-shared/utils/sentry-init-options'
 import { isExpectedApiError } from '@vouchington/api-client'
+import { withApiErrorRequestId } from './sentry-api-error-request-id'
 import {
   getBrowserRuntimePublicConfig,
   getBrowserRuntimePublicConfigIfAvailable,
@@ -21,7 +22,7 @@ interface RuntimePublicConfigEventTarget {
 export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): SentryInitOptions {
   const runtimeConfig = (deps.getRuntimePublicConfig ?? getBrowserRuntimePublicConfig)() ?? {}
 
-  return {
+  return withApiErrorRequestId({
     ...createVouchaSentryInitOptions({
       dsn: runtimeConfig.sentryDsn,
       environment: runtimeConfig.environment,
@@ -64,7 +65,7 @@ export function createSentryClientInitOptions(deps: SentryClientInitDeps = {}): 
       // User-initiated request cancellations.
       'AbortError',
     ],
-  }
+  })
 }
 
 /** Initializes once the server-rendered runtime config bootstrap has executed. */

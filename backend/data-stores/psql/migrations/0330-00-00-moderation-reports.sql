@@ -129,7 +129,7 @@ CREATE INDEX IF NOT EXISTS idx_moderation_reports__resolved_by_id
   ON moderation_reports (resolved_by_id)
   WHERE resolved_by_id IS NOT NULL;
 
-COMMENT ON TABLE moderation_reports IS 'User-submitted reports flagging content or accounts for moderator review. Exactly one entity FK is set per row.';
+COMMENT ON TABLE moderation_reports IS 'User-submitted reports flagging content or accounts for moderator review. Exactly one entity FK is set per row. Resolved reports are deleted 24 months after review; pending reports remain.';
 COMMENT ON COLUMN moderation_reports.reporter_user_id IS 'User who submitted the report. System-generated reports use a dedicated system user (e.g. the ban-evasion system user).';
 COMMENT ON COLUMN moderation_reports.reviewed_at IS 'Timestamp when a moderator reviewed the report.';
 COMMENT ON COLUMN moderation_reports.post_id IS 'Reported post or comment; set when entity is a post or comment (distinguished by posts.post_type).';

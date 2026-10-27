@@ -1,3 +1,4 @@
+import type { ReAuthMethods } from '@/lib/api/client/auth-reauth'
 import { ClientRequest } from '@vouchington/api-client'
 import { updatedLandingPage } from '@/storybook/mocks/my-account-landing'
 import {
@@ -6,6 +7,13 @@ import {
   resetPendingTotpName,
 } from '@/storybook/mocks/my-account-routes'
 
+const defaultReAuthMethods: ReAuthMethods = {
+  has_email: true,
+  has_totp: true,
+  has_passkey: true,
+  providers: [],
+}
+let reAuthMethods = defaultReAuthMethods
 let myAccountFixture = false
 const previousGet = ClientRequest.prototype.get
 const previousPost = ClientRequest.prototype.post
@@ -15,13 +23,15 @@ const previousDelete = ClientRequest.prototype.delete
 const previousFetch = globalThis.fetch
 const previousAnchorClick = HTMLAnchorElement.prototype.click
 
-export function setMyAccountFixture(): void {
+export function setMyAccountFixture(methods: ReAuthMethods = defaultReAuthMethods): void {
+  reAuthMethods = methods
   myAccountFixture = true
   resetPendingTotpName()
 }
 
 export function clearMyAccountFixture(): void {
   myAccountFixture = false
+  reAuthMethods = defaultReAuthMethods
   resetPendingTotpName()
 }
 
@@ -56,6 +66,22 @@ ClientRequest.prototype.get = function storybookMyAccountGet<T>(
   options?: Parameters<ClientRequest['get']>[1],
 ): Promise<T> {
   if (!myAccountFixture) return previousGet.call(this, endpoint, options) as Promise<T>
+  if (endpoint === '/api/v1/auth/re-auth/methods') return Promise.resolve(reAuthMethods as T)
+  if (endpoint === '/api/v1/auth/passkeys') {
+    return Promise.resolve({
+      results: [
+        {
+          id: '01931e00-0000-7000-8000-000000000123',
+          name: 'Security key',
+          device_type: 'singleDevice',
+          is_backed_up: false,
+          created_at: '2026-05-01T12:00:00Z',
+          last_used_at: null,
+        },
+      ],
+      page_info: { has_next_page: false, end_cursor: null },
+    } as T)
+  }
   if (endpoint === '/api/v1/availability') {
     return Promise.resolve({ available: true, conflict: null } as T)
   }

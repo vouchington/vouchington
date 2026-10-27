@@ -48,7 +48,7 @@ describe('election-vote-handler', () => {
       slug: randomSlug('vote-handler-test'),
       createdById: adminUser.id,
     })
-  }, 30_000)
+  })
   // Tests createVoteHandler via the topic route (simplest: no extra access check)
   describe('createVoteHandler (via PUT /api/v1/topics/:id/vote)', () => {
     it('returns 415 when Content-Type is not JSON', async () => {
@@ -59,30 +59,30 @@ describe('election-vote-handler', () => {
         .set('Content-Type', 'text/plain')
         .send('choice=like')
         .expect(415)
-    }, 30_000)
+    })
     it('returns 422 for non-UUID id', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
       await request.put('/api/v1/topics/not-a-uuid/vote').send({ choice: 'like' }).expect(422)
-    }, 30_000)
+    })
     it('returns 401 when not authenticated', async () => {
       const request = createRequest()
       await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(401)
-    }, 30_000)
+    })
 
     it('returns 404 for non-existent entity', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
 
       await request.put(`/api/v1/topics/${uuidv7()}/vote`).send({ choice: 'like' }).expect(404)
-    }, 30_000)
+    })
 
     it('returns 422 when choice field is missing', async () => {
       const request = createRequest()
       await request.authenticateAs(user)
 
       await request.put(`/api/v1/topics/${topicId}/vote`).send({}).expect(422)
-    }, 30_000)
+    })
 
     it('consumes the route rate limit before parsing the body', async () => {
       const parseError = new Error('malformed JSON')
@@ -155,7 +155,7 @@ describe('election-vote-handler', () => {
         .set('Content-Type', 'application/json')
         .send('null')
         .expect(422)
-    }, 30_000)
+    })
 
     it('rejects numeric and cross-policy choices', async () => {
       const request = createRequest()
@@ -163,7 +163,7 @@ describe('election-vote-handler', () => {
 
       await request.put(`/api/v1/topics/${topicId}/vote`).send({ score: 1 }).expect(422)
       await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'support' }).expect(422)
-    }, 30_000)
+    })
 
     it('returns 204 on a successful semantic vote', async () => {
       ownedWork.requireAdmission('elections')
@@ -171,7 +171,7 @@ describe('election-vote-handler', () => {
       await request.authenticateAs(user)
 
       await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(204)
-    }, 30_000)
+    })
 
     it('does not consume contribution quota for an immediate same-choice retry', async () => {
       ownedWork.requireAdmission('elections')
@@ -188,7 +188,7 @@ describe('election-vote-handler', () => {
 
       expect(afterFirstVote.used).toBe(1)
       expect(afterRetry.used).toBe(afterFirstVote.used)
-    }, 30_000)
+    })
 
     it('consumes one contribution quota unit for concurrent identical votes', async () => {
       ownedWork.requireAdmission('elections')
@@ -209,7 +209,7 @@ describe('election-vote-handler', () => {
       await expect(getContributionQuota(concurrentUser.id, false, null)).resolves.toMatchObject({
         used: 1,
       })
-    }, 30_000)
+    })
 
     it('returns 403 with OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN for official accounts', async () => {
       const request = createRequest()
@@ -223,7 +223,7 @@ describe('election-vote-handler', () => {
       expect(response.body.message).toBe(
         'Official and automated accounts cannot create community trust signals.',
       )
-    }, 30_000)
+    })
 
     it('returns 204 on dislike and then Neutral retract', async () => {
       ownedWork.requireAdmission('elections')
@@ -232,7 +232,7 @@ describe('election-vote-handler', () => {
 
       await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'dislike' }).expect(204)
       await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'neutral' }).expect(204)
-    }, 30_000)
+    })
 
     it('allows a fresh verified-email account to vote', async () => {
       ownedWork.requireAdmission('elections')
@@ -241,7 +241,7 @@ describe('election-vote-handler', () => {
       await request.authenticateAs(freshUser)
 
       await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(204)
-    }, 30_000)
+    })
 
     it('returns 403 with EMAIL_VERIFICATION_REQUIRED for account without verified email', async () => {
       const noEmailUser = await createTestUserDirect()
@@ -256,7 +256,7 @@ describe('election-vote-handler', () => {
       expect(response.body.message).toBe(
         'A verified non-disposable email address is required to vote.',
       )
-    }, 30_000)
+    })
 
     it('returns 429 when rate limit is exceeded', async () => {
       ownedWork.requireAdmission('elections')
@@ -273,7 +273,7 @@ describe('election-vote-handler', () => {
         .send({ choice: 'like' })
         .expect(429)
       expect(limited.headers['retry-after']).toBe('60')
-    }, 30_000)
+    })
   })
 
   // Tests preAssertAccess enforcement via agent-moderation route (admin-only)
@@ -285,7 +285,7 @@ describe('election-vote-handler', () => {
         .put(`/api/v1/agent-moderations/${uuidv7()}/vote`)
         .send({ choice: 'like' })
         .expect(401)
-    }, 30_000)
+    })
 
     it('returns 403 when non-admin (preAssertAccess runs before entity lookup)', async () => {
       const request = createRequest()
@@ -295,6 +295,6 @@ describe('election-vote-handler', () => {
         .put(`/api/v1/agent-moderations/${uuidv7()}/vote`)
         .send({ choice: 'like' })
         .expect(403)
-    }, 30_000)
+    })
   })
 })

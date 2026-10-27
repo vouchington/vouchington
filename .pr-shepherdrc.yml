@@ -8,7 +8,9 @@ checks:
   # pr-shepherd matches against the raw name; composite-name entries silently never match.
   ignore:
     - 'Kilo Code Review'
-    - 'CodeRabbit'
+    # Not 'CodeRabbit': its commit status stays pending while a review runs, so ignoring it lets
+    # READY fire before the review posts. Notice-only CodeRabbit comments are already hidden by
+    # the bundled `coderabbit-notices` rule below.
     # Informational live-provider smoke checks. The `backend` gate does not wait on them, so shepherd
     # must not either; the red check, its job summary, and the Nightly run still report a failure.
     # See docs/development/tests.md#live-provider-smoke-checks.
@@ -24,6 +26,7 @@ classify:
     all: true
 
 # Single source of the WAIT-tick cadence: checked-in guidance omits `--interval` so this applies.
-# GraphQL quota-warning bands scale from it (2x/5x/10x → 6/15/30 minutes).
+# Multi-PR and stack polls double it (`stack-interval-factor` 2): 1 minute here, 2 minutes there.
+# GraphQL quota-warning bands scale from it (2x/5x/10x → 2/5/10 minutes).
 poll:
-  interval-seconds: 180
+  interval-seconds: 60

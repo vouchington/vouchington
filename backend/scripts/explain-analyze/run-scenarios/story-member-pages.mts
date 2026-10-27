@@ -44,7 +44,6 @@ export async function runStoryMemberPageScenarios(): Promise<void> {
     })
     let first: StoryMemberPage
     try {
-      // no-mistakes-disable-next-line query-reached-per-item: two fixed page limits pair EXPLAIN captures around bounded ANALYZE
       first = await capturePage(`story-members-${kind}-first`, storyId, limit, () =>
         getStoryPreviews(viewer, [primary]),
       )
@@ -53,16 +52,13 @@ export async function runStoryMemberPageScenarios(): Promise<void> {
     }
     if (first.item_ids.includes(primaryId))
       throw new Error(`${kind} included its primary in related previews`)
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed page limits pair hydration captures around bounded ANALYZE
     await captureHydration(`story-hydration-${kind}-first`, viewer, storyId, first, request)
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed page limits pair continuation captures around bounded ANALYZE
     const after = await capturePage(`story-members-${kind}-after`, storyId, limit, () =>
       getStoryMemberPagesBatch(viewer, [{ ...request, after: first.page_info.end_cursor! }], {
         limit,
       }),
     )
     assertDisjoint(first, after, kind)
-    // no-mistakes-disable-next-line query-reached-per-item: two fixed page limits pair continuation hydration around bounded ANALYZE
     await captureHydration(`story-hydration-${kind}-after`, viewer, storyId, after, request)
   }
 

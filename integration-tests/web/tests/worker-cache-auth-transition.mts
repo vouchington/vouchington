@@ -31,7 +31,7 @@ describe('worker authentication cache transition', () => {
     expect(varyTokens).toEqual(expect.arrayContaining(['cookie', 'authorization']))
     expect(anonymousBody).not.toHaveProperty('election_vote')
 
-    const authCookies = await createTestAuthCookies(TEST_USER_ID)
+    const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)
     client.setCookie('dt', authCookies.dt)
     client.setCookie('st', authCookies.st)
 

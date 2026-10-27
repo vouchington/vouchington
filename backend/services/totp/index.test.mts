@@ -21,7 +21,7 @@ describe('TOTP service', () => {
 
   beforeAll(async () => {
     user = await createTestUserDirect()
-  }, 15_000)
+  })
 
   describe('createTotpAuthenticator', () => {
     it('returns setup data with secret and URI', async () => {

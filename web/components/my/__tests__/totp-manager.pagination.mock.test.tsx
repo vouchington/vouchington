@@ -1,4 +1,9 @@
+import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+vi.mock(import('@/components/my/use-fresh-authentication'), () => ({
+  useFreshAuthentication: useFreshAuthenticationMock,
+}))
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import type { ListResponse } from '@/types/api-responses'
 import type { TotpAuthenticator } from '@/types/user'
@@ -179,6 +184,7 @@ describe('TotpManager — pagination', () => {
     const startBtn = startButtons.find(btn => btn.getAttribute('type') === 'submit')
     fireEvent.click(startBtn!)
 
+    fireEvent.click(await screen.findByRole('button', { name: /^Confirm$/ }))
     await screen.findByText(/Enter the 6-digit code/i)
     const otpInput =
       (document.querySelector('input[autocomplete="one-time-code"]') as HTMLInputElement | null) ??

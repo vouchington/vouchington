@@ -35,6 +35,7 @@ export const sourcesVariableKeys = {
 export const moderationVariableKeys = {
   userName: true,
   generatedForDate: true,
+  dispatchTimeZone: true,
   settingsUrl: true,
   unsubscribeUrl: true,
   physicalAddress: true,

@@ -33,13 +33,14 @@ export class WebIntegrationClient {
   // is unsafe to blindly retry at the transport level. Retrying the whole mint-and-POST here
   // instead is safe by construction: each attempt mints a fresh token, so a retried login() never
   // reuses one that may already have been consumed by an attempt whose response we never saw.
-  login(): Promise<Response> {
+  login(options: { userAgent?: string; headers?: Record<string, string> } = {}): Promise<Response> {
     return retryOnTransportError(
       async () => {
         const rawToken = randomUUID()
         await insertEmailAddressLoginToken(TEST_USER_EMAIL, rawToken)
         return this.request('/api/v1/auth/email-address/login', {
           method: 'POST',
+          userAgent: options.userAgent,
           body: {
             email_address: TEST_USER_EMAIL,
             token: rawToken,
@@ -47,6 +48,7 @@ export class WebIntegrationClient {
           headers: {
             'Content-Type': 'application/json',
             'cf-connecting-ip': createUniqueLoginIp(),
+            ...options.headers,
           },
         })
       },
@@ -155,6 +157,10 @@ export class WebIntegrationClient {
 
   clearCookies(): void {
     this.cookies.clear()
+  }
+
+  getCookie(name: string): string | undefined {
+    return this.cookies.get(name)
   }
 
   setCookie(name: string, value: string): void {

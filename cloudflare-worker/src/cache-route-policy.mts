@@ -42,8 +42,8 @@ export const isRscRequest = (request: Request, url: URL): boolean =>
 export const isFullyCachedRoute = (pathname: string, staticCachedPaths: Set<string>): boolean =>
   isSitemapRoute(pathname) || RSS_ROUTE_RE.test(pathname) || staticCachedPaths.has(pathname)
 
-export const isLoginRoute = (pathname: string): boolean =>
-  pathname === '/login' || pathname === '/login/'
+export const isSessionEntryRoute = (pathname: string): boolean =>
+  ['/login', '/login/', '/session-renewal', '/session-renewal/'].includes(pathname)
 
 // OAuth popup-relay pages must never be cached: a stale cached page would replay a previous
 // provider's callback params (code/state) to the client relay script, minting a stale session.

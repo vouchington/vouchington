@@ -64,6 +64,8 @@ export const ENTITY_LISTENERS_POST_CREATED_JOB = defineBackgroundJob<ProcessPost
 export const ENTITY_LISTENERS_POST_UPDATED_JOB = defineBackgroundJob<{
   id: string
   contentChanged?: boolean
+  /** The producer committed the clearance reset with its content mutation. */
+  clearanceAlreadyReset?: boolean
 }>(ENTITY_LISTENERS_DOMAIN, { name: 'processPostUpdated', priority: PRIORITY_TASK })
 export const ENTITY_LISTENERS_POST_DELETED_JOB = defineBackgroundJob<{ id: string }>(
   ENTITY_LISTENERS_DOMAIN,

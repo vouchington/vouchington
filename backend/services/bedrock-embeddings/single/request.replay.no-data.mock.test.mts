@@ -34,7 +34,6 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
     // Without credentials the client falls back to the default chain and fails before signing.
     vi.stubEnv('BEDROCK_AWS_ACCESS_KEY_ID', 'AKIATESTFAKEKEYID000')
     vi.stubEnv('BEDROCK_AWS_SECRET_ACCESS_KEY', 'fakeSecretKeyForTestingPurposesOnly00000')
-    vi.stubEnv('REQUIRE_BEDROCK_INTEGRATION', 'false')
     vi.spyOn(analytics, 'trackAIEmbeddingCall')
     replay.reset()
   })
@@ -122,18 +121,7 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
     replay.assertDrained()
   })
 
-  it('suppresses logging for an access-denied error when the integration is optional', async () => {
-    replay.respondWith(loadRecordedResponse('bedrock/invoke-access-denied-403.http'))
-
-    await expect(createBedrockEmbedding(TEXT, { entityType: 'post' })).rejects.toMatchObject({
-      name: 'AccessDeniedException',
-      tags: { suppressLogging: true },
-    })
-    replay.assertDrained()
-  })
-
-  it('keeps logging an access-denied error when the integration is required', async () => {
-    vi.stubEnv('REQUIRE_BEDROCK_INTEGRATION', 'true')
+  it('records and rethrows an SDK access-denied error without changing its logging metadata', async () => {
     replay.respondWith(loadRecordedResponse('bedrock/invoke-access-denied-403.http'))
 
     const error: unknown = await createBedrockEmbedding(TEXT, { entityType: 'post' }).catch(
@@ -142,6 +130,17 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
 
     expect(error).toMatchObject({ name: 'AccessDeniedException' })
     expect(error).not.toHaveProperty('tags')
+    expect(analytics.trackAIEmbeddingCall).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        service: 'bedrock',
+        model: BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
+        tokens: 0,
+        success: false,
+        errorType: (error as Error).message,
+        entityType: 'post',
+        invocation: 'single',
+      }),
+    )
     replay.assertDrained()
   })
 })

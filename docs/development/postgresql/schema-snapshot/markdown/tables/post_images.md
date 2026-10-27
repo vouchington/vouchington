@@ -31,7 +31,7 @@ _none_
 
 **Indexes:**
 
-- `idx_post_images__image_id`: `CREATE INDEX idx_post_images__image_id ON public.post_images USING btree (image_id)`
+- `idx_post_images__image_id__post_id`: `CREATE INDEX idx_post_images__image_id__post_id ON public.post_images USING btree (image_id, post_id)`
 - `idx_post_images__post_id__order_index`: `CREATE INDEX idx_post_images__post_id__order_index ON public.post_images USING btree (post_id, order_index)`
 - `post_images_pkey`: `CREATE UNIQUE INDEX post_images_pkey ON public.post_images USING btree (post_id, image_id)`
 

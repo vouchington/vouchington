@@ -40,7 +40,7 @@ describe('writeExportFiles', () => {
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }
-  }, 30_000)
+  })
 
   it('emails.csv contains the user email row', async () => {
     const user = await createTestUser()
@@ -57,7 +57,7 @@ describe('writeExportFiles', () => {
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }
-  }, 30_000)
+  })
 
   it('profile.csv contains every privacy and processing control', async () => {
     const user = await createTestUser()
@@ -100,7 +100,7 @@ describe('writeExportFiles', () => {
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }
-  }, 30_000)
+  })
 
   it('profile.csv exports explicitly disabled third-party marketing as false', async () => {
     const user = await createTestUser()
@@ -121,7 +121,7 @@ describe('writeExportFiles', () => {
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }
-  }, 30_000)
+  })
 
   it('consents.csv contains legal consent ledger rows', async () => {
     const user = await createTestUser()
@@ -172,7 +172,7 @@ describe('writeExportFiles', () => {
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }
-  }, 30_000)
+  })
 
   it('followed export CSVs contain followed topic and RSS feed details', async () => {
     const user = await createTestUser()
@@ -204,7 +204,7 @@ describe('writeExportFiles', () => {
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }
-  }, 30_000)
+  })
 })
 
 function readSingleRowCsv(csv: string): Record<string, string> {

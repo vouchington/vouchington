@@ -34,36 +34,32 @@ describe('createTranslator', () => {
 })
 
 describe('loadMessages', () => {
-  it('resolves the en catalog for "en"', { timeout: 30_000 }, async () => {
+  it('resolves the en catalog for "en"', async () => {
     expect(await loadMessages('en')).toStrictEqual(enMessages)
   })
 
-  it('resolves the es catalog for "es"', { timeout: 30_000 }, async () => {
+  it('resolves the es catalog for "es"', async () => {
     expect(await loadMessages('es')).toStrictEqual(esMessages)
   })
 
-  it('resolves the fr catalog for "fr"', { timeout: 30_000 }, async () => {
+  it('resolves the fr catalog for "fr"', async () => {
     expect(await loadMessages('fr')).toStrictEqual(frMessages)
   })
 
-  it('resolves the pt catalog for "pt"', { timeout: 30_000 }, async () => {
+  it('resolves the pt catalog for "pt"', async () => {
     expect(await loadMessages('pt')).toStrictEqual(ptMessages)
   })
 
-  it('falls back to en for an unrecognized locale', { timeout: 30_000 }, async () => {
+  it('falls back to en for an unrecognized locale', async () => {
     expect(await loadMessages('xx')).toStrictEqual(enMessages)
   })
 
-  it(
-    'preserves message descriptors after assembling split namespace chunks',
-    { timeout: 30_000 },
-    async () => {
-      const catalog = await loadMessages('en')
-      const t = createTranslator('en', catalog)
+  it('preserves message descriptors after assembling split namespace chunks', async () => {
+    const catalog = await loadMessages('en')
+    const t = createTranslator('en', catalog)
 
-      expect(t('settings.language.supportedCount', { count: 2 })).toBe('2 languages')
-    },
-  )
+    expect(t('settings.language.supportedCount', { count: 2 })).toBe('2 languages')
+  })
 })
 
 describe('web catalog size', () => {

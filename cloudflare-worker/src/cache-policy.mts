@@ -4,7 +4,7 @@ import { bypassPolicy, cachedPolicy, type CachePolicy as EdgeCachePolicy } from 
 import {
   isAuthCallbackRoute,
   isFullyCachedRoute,
-  isLoginRoute,
+  isSessionEntryRoute,
   isOAuthConsentRoute,
   isPrivateBackendCacheBypassRoute,
 } from './cache-route-policy.mts'
@@ -88,7 +88,7 @@ export const getCachePolicy = (input: CachePolicyInput): CachePolicy => {
   }
 
   if (
-    isLoginRoute(input.pathname) ||
+    isSessionEntryRoute(input.pathname) ||
     isAuthCallbackRoute(input.pathname) ||
     input.hasReferralAttributionSignal ||
     input.hasFeatureFlagOverrideCookie

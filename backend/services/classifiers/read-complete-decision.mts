@@ -1,7 +1,9 @@
-import { write, type QueryExecutor } from '@data-stores/psql'
+import { write, type OwnedTransaction, type QueryExecutor } from '@data-stores/psql'
 import type { ClassifierCandidateKind } from '@voucha/types'
 import sql from 'sql-template-strings'
+import { assertRetainedActiveDecisionReservation } from './classifier-retained-active-reservation.mts'
 import { readResults, toScope } from './read-complete-decision-results.mts'
+import { assertClassifierBatchWithinRetention } from './retention-window.mts'
 import type { ClassifierDecisionScope, PersistedClassifierDecision } from './types.mts'
 
 type BatchRow = {
@@ -22,6 +24,7 @@ export async function readCompleteClassifierDecision(
   batchId: string,
   candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision> {
+  assertClassifierBatchWithinRetention(batchId)
   const batch = await readBatchRow(query, batchId)
   if (!batch) throw new Error('Classifier decision batch disappeared before replay verification')
   if (batch.completed_at === null) {
@@ -45,9 +48,44 @@ export async function readCompleteClassifierDecisionIfExistsFromPrimary(
   batchId: string,
   candidateKind: ClassifierCandidateKind,
 ): Promise<PersistedClassifierDecision | null> {
+  assertClassifierBatchWithinRetention(batchId)
   const batch = await readBatchRow(write, batchId)
   if (!batch || batch.completed_at === null) return null
   return assembleCompleteClassifierDecision(write, batch, candidateKind)
+}
+
+/** An unfinished run retains its committed decision beyond the public replay window. */
+export async function readCompleteClassifierDecisionForActiveRun(
+  query: QueryExecutor,
+  runId: string,
+  batchId: string,
+  candidateKind: ClassifierCandidateKind,
+): Promise<PersistedClassifierDecision> {
+  const { rows } = await query<{ id: string }>(sql`
+    /* readCompleteClassifierDecisionActiveRun */
+    SELECT id FROM classifier_runs
+    WHERE id = ${runId} AND decision_batch_id = ${batchId}
+      AND outcomes_persisted_at IS NOT NULL
+      AND completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL
+    FOR SHARE
+  `)
+  if (!rows[0]) throw new RangeError('Classifier decision batch is outside the retention window')
+  const batch = await readBatchRow(query, batchId)
+  if (!batch?.completed_at) throw new Error('Active classifier run lost its committed decision')
+  return assembleCompleteClassifierDecision(query, batch, candidateKind)
+}
+
+/** Readback for a leased run that has just persisted its reserved decision in this transaction. */
+export async function readCompleteClassifierDecisionForActiveReservation(
+  query: OwnedTransaction,
+  runId: string,
+  batchId: string,
+  candidateKind: ClassifierCandidateKind,
+): Promise<PersistedClassifierDecision> {
+  await assertRetainedActiveDecisionReservation(query, runId, batchId)
+  const batch = await readBatchRow(query, batchId)
+  if (!batch?.completed_at) throw new Error('Active classifier reservation is not complete')
+  return assembleCompleteClassifierDecision(query, batch, candidateKind)
 }
 
 async function assembleCompleteClassifierDecision(

@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchStructuredDecisionProvider } from '../modules/structured-decisions/transport.mts'
+import { withCurrentClassifierUsage } from './classifier-current-usage.mts'
 import { installEfficiencyProvider } from './classifier-call-efficiency-provider.mts'
 import {
   deliverRun,
@@ -10,22 +11,21 @@ import {
   type EfficiencyDriver,
   type EfficiencySeed,
 } from './classifier-call-efficiency-run.mts'
-import { DAILY_CAP_MICROUNITS, OUTAGE } from './classifier-provider-failure-scenarios.mts'
+import { OUTAGE } from './classifier-provider-failure-scenarios.mts'
 import {
   expireClassifierRunLeaseForTest,
   getSubjectClassifierRunFacts,
 } from './data-stores/psql/classifier-runs/run-facts.mts'
 import { listAiUsageRecordsForClassifierRun } from './entities/ai-usage.mts'
-import { withReservedAiUsageDay } from './with-reserved-ai-usage-day.mts'
 
 /**
  * The D3 call-efficiency scenarios the four scopes #223 names share (C5, C6, C8 and C9). Each
  * asserts the provider's own request count and the ledger rows as well as what the C12 usage
  * report says, so a report that miscounted could not pass them. C7, the reasoning pass, is not one
  * of the four: it runs the same `executeTopicRun` as C6, which this suite covers through C6, and
- * its own worker test proves one billed call, replay and the attempt cap. The window is taken
- * before the reserved day fakes `Date`, and every ledger read is inside that day: releasing it
- * deletes the rows it holds.
+ * its own worker test proves one billed call, replay and the attempt cap. Each scenario uses the
+ * current clock for PostgreSQL receipts, ledger rows and reports, then cleans only its own run's
+ * ledger rows after all assertions settle.
  */
 export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void {
   const [fewer] = driver.fanOuts
@@ -60,8 +60,9 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
         })
         const window = efficiencyWindow()
         const seed = await driver.seed(fanOut)
-        await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+        await withCurrentClassifierUsage(async trackRunId => {
           const run = await reserveSeededRun(driver.slug, seed)
+          trackRunId(run.runId)
           const delivery = deliverRun(driver.slug, run)
           let outcome: PromiseSettledResult<void>
           try {
@@ -102,8 +103,9 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
       const provider = installEfficiencyProvider()
       const window = efficiencyWindow()
       const seed = await driver.seed(fewer)
-      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+      await withCurrentClassifierUsage(async trackRunId => {
         const run = await reserveSeededRun(driver.slug, seed)
+        trackRunId(run.runId)
         expect(await driver.executeWithoutCompleting(run)).toBe('persisted')
         await expireClassifierRunLeaseForTest(run.runId)
         expect(await deliverRun(driver.slug, run)).toBe('completed')
@@ -127,8 +129,9 @@ export function describeClassifierCallEfficiency(driver: EfficiencyDriver): void
       provider.refuseNext(1)
       const window = efficiencyWindow()
       const seed = await driver.seed(fewer)
-      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+      await withCurrentClassifierUsage(async trackRunId => {
         const run = await reserveSeededRun(driver.slug, seed)
+        trackRunId(run.runId)
         await expect(deliverRun(driver.slug, run)).rejects.toThrow(OUTAGE.message)
         expect(await deliverRun(driver.slug, run)).toBe('completed')
 
@@ -166,8 +169,9 @@ export function describeClassifierLateCandidateReplay(driver: EfficiencyDriver):
     it('asks nothing again when the candidate set changed after the run completed', async () => {
       const provider = installEfficiencyProvider()
       const seed = await driver.seed(fewer)
-      await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+      await withCurrentClassifierUsage(async trackRunId => {
         const run = await reserveSeededRun(driver.slug, seed)
+        trackRunId(run.runId)
         expect(await deliverRun(driver.slug, run)).toBe('completed')
         if (!seed.addCandidate) throw new Error('Late-candidate driver requires an actual mutation')
         await seed.addCandidate()

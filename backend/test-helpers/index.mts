@@ -25,6 +25,10 @@ export * from './crawl-retirement-reference.mts'
 export * from './web-push.mts'
 export * from './web-push-contract.mts'
 export * from './auth-session-retention.mts'
+export * from './notification-email-retention.mts'
+export * from './notification-email-cursor.mts'
+export * from './ses-address-suppressions.mts'
+export * from './moderation-summary-retention.mts'
 export * from './notification-push-missing-intent.mts'
 export * from './notification-publication.mts'
 export * from './database-clock.mts'
@@ -39,7 +43,11 @@ export * from './query-capture.mts'
 export * from './query-plans.mts'
 export * from './dynamic-config.mts'
 export * from './entity-relation-vote-locks.mts'
-export { beginBoundedTransaction, beginTransaction } from '@data-stores/psql'
+export {
+  beginBoundedTransaction,
+  beginTransaction,
+  withTransactionOptions,
+} from '@data-stores/psql'
 export {
   isTestPostgresQueryWaitingForLock,
   setPostDeletedForTest,
@@ -105,17 +113,15 @@ export {
   type FederationRetentionFixtureIds,
 } from './federation-retention.mts'
 export {
-  prepareFederationDistributionReplayForTest,
-  prepareFederationDistributionPageForTest,
-  insertCompletedFederationReplayForTest,
+  insertFederationInboxReplayForTest,
   readFederationReplayFloorForTest,
   advanceFederationReplayFloorForTest,
   ensureFederationReplayFloorForTest,
   isReplayFloorLockedForTest,
   deleteFederationInboxFixturesForTest,
   deleteFederationInboxActivityForTest,
-  insertFederationReplayDecoysForTest,
-  countFederationReplayDecoysForTest,
+  insertFederationReplayDecoyForTest,
+  countFederationReplayDecoyForTest,
 } from './federation-retention-replay.mts'
 export {
   setCommunityLanguageDetectionFieldsForTest,

@@ -1,6 +1,4 @@
-import sql from 'sql-template-strings'
 import { afterEach, beforeEach } from 'vitest'
-import { write } from '@data-stores/psql'
 import { copyrightConfig } from '../../../services/copyright-notices/config.mts'
 import { overrideDynamicConfigFieldsForTest } from '../../dynamic-config.mts'
 
@@ -18,19 +16,6 @@ const permissiveGateFields = {
 } satisfies ConfigFields
 
 /**
- * Records that the switch went on a year ago. Automation acts only on submissions received since
- * the audited switch-on; a test flips the switch in memory, so it needs this backdated record to
- * stand in for that flip. Each call appends its own immutable row, old enough for fresh test notices.
- */
-async function recordBackdatedSwitchOn(): Promise<void> {
-  await write(sql`/* recordBackdatedAutomaticWithholdingSwitchOn */
-    INSERT INTO dynamic_configuration_revisions (id, configuration_key, revised_by_id, revision_type, changes)
-    VALUES (uuidv7(interval '-1 year'), 'copyright', NULL, 'update',
-      '{"automaticProvisionalWithholding": {"before": false, "after": true}}'::jsonb)
-  `)
-}
-
-/**
  * Turns `automaticProvisionalWithholding` on for this fork, with permissive abuse gates unless the
  * caller overrides them, and returns its restore function. The config is detached from Valkey
  * pub/sub first, so a namespace update from another fork cannot flip the switch mid-test in
@@ -41,11 +26,24 @@ export async function enableAutomaticProvisionalWithholdingForTest(
 ): Promise<() => void> {
   await copyrightConfig.waitForInitialization()
   await copyrightConfig.close()
-  await recordBackdatedSwitchOn()
   return overrideDynamicConfigFieldsForTest(copyrightConfig, {
     ...permissiveGateFields,
     ...fields,
     automaticProvisionalWithholding: true,
+    automaticProvisionalWithholdingSince: new Date(
+      Date.now() - 365 * 24 * 60 * 60 * 1000,
+    ).toISOString(),
+  })
+}
+
+/** Change only the current on-period for an exact receipt-boundary assertion. */
+export async function overrideAutomaticWithholdingSinceForTest(
+  at: Date | string,
+): Promise<() => void> {
+  await copyrightConfig.waitForInitialization()
+  await copyrightConfig.close()
+  return overrideDynamicConfigFieldsForTest(copyrightConfig, {
+    automaticProvisionalWithholdingSince: at instanceof Date ? at.toISOString() : at,
   })
 }
 

@@ -39,9 +39,11 @@ describe('Microsoft Store provider verification outcomes', () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: failingClient(error),
-    })
+    await expect(
+      processMicrosoftStoreMembershipVerification(verification.id, {
+        client: failingClient(error),
+      }),
+    ).rejects.toBe(error)
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),
@@ -53,23 +55,25 @@ describe('Microsoft Store provider verification outcomes', () => {
     const fixture = await createFixture()
     const verification = await fixture.submit()
 
-    await processMicrosoftStoreMembershipVerification(verification.id, {
-      client: {
-        queryCollections: async () => [],
-        queryRecurrences: async () => [
-          {
-            id: `recurrence-${randomUUID()}`,
-            productId: fixture.productId,
-            skuId: '0001',
-            startTime: new Date(Date.now() - 86_400_000).toISOString(),
-            expirationTime: new Date(Date.now() + 86_400_000).toISOString(),
-            lastModified: new Date().toISOString(),
-            recurrenceState: 'Active',
-            autoRenew: true,
-          },
-        ],
-      },
-    })
+    await expect(
+      processMicrosoftStoreMembershipVerification(verification.id, {
+        client: {
+          queryCollections: async () => [],
+          queryRecurrences: async () => [
+            {
+              id: `recurrence-${randomUUID()}`,
+              productId: fixture.productId,
+              skuId: '0001',
+              startTime: new Date(Date.now() - 86_400_000).toISOString(),
+              expirationTime: new Date(Date.now() + 86_400_000).toISOString(),
+              lastModified: new Date().toISOString(),
+              recurrenceState: 'Active',
+              autoRenew: true,
+            },
+          ],
+        },
+      }),
+    ).rejects.toThrow('Microsoft Store Collections/Recurrence response lag')
 
     await expect(
       getMembershipVerification(fixture.user.id, verification.id),

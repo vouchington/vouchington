@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
+import { withTestOwnedAdvisoryWait } from '@voucha/test-helpers/advisory-client-lock-observer'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestUserDirect,
   getTestPostgresAdvisoryLockHolderProcessId,
   insertTestBlueskyLinkedAccount,
   readEnqueuedJob,
-  waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
@@ -142,17 +142,11 @@ describe('durable Bluesky disconnect', () => {
       blueskyDid: linked.bluesky_did,
       linkAuthorizationId: linked.link_authorization_id,
     }
-    let releaseRequest!: () => void
-    const requestGate = new Promise<void>(resolve => {
-      releaseRequest = resolve
-    })
-    let markRequestEntered!: () => void
-    const requestEntered = new Promise<void>(resolve => {
-      markRequestEntered = resolve
-    })
+    const requestGate = Promise.withResolvers<void>()
+    const requestEntered = Promise.withResolvers<void>()
     const requestCleanup = vi.fn<() => Promise<void>>(async () => {
-      markRequestEntered()
-      await requestGate
+      requestEntered.resolve()
+      await requestGate.promise
     })
     const acceptedCleanup = vi.fn<() => Promise<void>>(async () => {})
 
@@ -163,26 +157,42 @@ describe('durable Bluesky disconnect', () => {
       reportError: vi.fn<(error: Error) => void>(),
       disconnectWithoutLock: requestCleanup,
     })
-    await requestEntered
+    void requested.catch(requestEntered.reject)
+    let managed = false
+    let holderRelease: Promise<void> | undefined
+    const releaseHolder = () => {
+      requestGate.resolve()
+      return (holderRelease ??= requested)
+    }
+    onTestFinished(async () => {
+      if (managed) await Promise.allSettled([releaseHolder()])
+      else await releaseHolder()
+    })
+    await requestEntered.promise
     const requestHolderProcessId = await getTestPostgresAdvisoryLockHolderProcessId({
       namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE,
       key: user.id,
     })
-    let accepted: Promise<void> | undefined
-    try {
-      accepted = disconnectAcceptedBlueskyAccountAndCleanupFollows(user.id, generation, {
-        disconnectWithoutLock: acceptedCleanup,
-      })
-
-      await waitForTestPostgresLockWaiter(requestHolderProcessId, 'withBlueskyDisconnectLock:lock')
-      expect(acceptedCleanup).not.toHaveBeenCalled()
-      releaseRequest()
-      await Promise.all([requested, accepted])
-      expect(acceptedCleanup).toHaveBeenCalledWith(user.id, generation)
-    } finally {
-      releaseRequest()
-      await Promise.allSettled(accepted ? [requested, accepted] : [requested])
-    }
+    managed = true
+    await withTestOwnedAdvisoryWait(
+      {
+        holderProcessId: requestHolderProcessId,
+        namespace: BLUESKY_DISCONNECT_LOCK_NAMESPACE,
+        key: user.id,
+        queryMarker: 'withBlueskyDisconnectLock:lock',
+        releaseHolder,
+      },
+      async waitForLock => {
+        const accepted = disconnectAcceptedBlueskyAccountAndCleanupFollows(user.id, generation, {
+          disconnectWithoutLock: acceptedCleanup,
+        })
+        await waitForLock(accepted)
+        expect(acceptedCleanup).not.toHaveBeenCalled()
+        await releaseHolder()
+        await accepted
+        expect(acceptedCleanup).toHaveBeenCalledWith(user.id, generation)
+      },
+    )
   })
 
   it('pages pending disconnects by authorization id, never over the page size, covering each once', async () => {

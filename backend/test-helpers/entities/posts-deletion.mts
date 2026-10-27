@@ -1,7 +1,9 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { retainHardDeletedPostPublication } from '../../services/post-publication/capture-hard-delete.mts'
-import { lockPostPublicationPostScopes } from '../../services/post-publication/capture-posts.mts'
+import {
+  lockPostPublicationPostScopes,
+  recordPostPublicationChanges,
+} from '../../services/post-publication/capture-posts.mts'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 
 export async function markTestPostDeletedBy(postId: string, deletedById: string): Promise<void> {
@@ -22,7 +24,11 @@ export async function hardDeleteTestPosts(postIds: readonly string[]): Promise<v
   if (postIds.length === 0) return
   await using transaction = await beginTransaction()
   await lockPostPublicationPostScopes(transaction, postIds)
-  await retainHardDeletedPostPublication(transaction, postIds)
+  await recordPostPublicationChanges(
+    transaction,
+    'post_deleted',
+    postIds.map(postId => ({ postId })),
+  )
   await transaction(sql`/* hardDeleteTestPosts */
     DELETE FROM posts
     WHERE id = ANY(${postIds})

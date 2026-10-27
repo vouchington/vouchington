@@ -3,6 +3,7 @@ import {
   renderCommunityModerationSummaryEmail,
   renderDataExportReadyEmail,
   renderEmailVerificationEmail,
+  renderReauthenticationEmail,
   renderFollowNewsSourcesEmail,
   renderFollowTopicsEmail,
   renderLoginTokenEmail,
@@ -15,6 +16,10 @@ import { describe, expect, it } from 'vitest'
 import { COPYRIGHT_YEAR, colors } from './styles.mts'
 
 const templateDefs = [
+  {
+    name: 'reauthentication',
+    render: () => renderReauthenticationEmail({ token: 'ABCDEFG234', expiresInMinutes: 15 }),
+  },
   {
     name: 'login-token',
     render: () =>

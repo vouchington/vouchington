@@ -84,9 +84,9 @@ async function settleSetupOperations<const T extends readonly unknown[]>(operati
 }
 
 export async function setup() {
+  const setupStart = performance.now()
   const [
     { Logger },
-    { default: seed },
     { warmUpEmbeddingBloomFilter },
     { warmUpUrlBlocklistBloomFilter, warmUpEmailBlocklistBloomFilter },
     { dynamicConfigRegistry },
@@ -94,7 +94,6 @@ export async function setup() {
   ] = await timedSetupPhase('imports', () =>
     settleSetupOperations([
       import('@valkey/valkey-glide'),
-      import('@voucha/scripts/seed'),
       import('@services/bedrock-embeddings'),
       import('@services/urls-domains-blacklist'),
       import('@services/dynamic-config-admin/registry'),
@@ -105,7 +104,6 @@ export async function setup() {
   // Suppress WARN-level messages from Glide's Rust logger (e.g. "item exists" from BF.RESERVE)
   Logger.setLoggerConfig('error')
 
-  await timedSetupPhase('seed', seed)
   await timedSetupPhase(
     'dynamic-config',
     () =>
@@ -129,6 +127,8 @@ export async function setup() {
       ]),
     false,
   )
+  // Always retain the total so ordinary CI shards can compare setup costs without verbose logs.
+  emitSetupDiagnostic(`[vitest-setup] total ms=${Math.round(performance.now() - setupStart)}\n`)
 }
 
 const emitTeardownTiming = process.env.VITEST_DIAGNOSTICS === '1'

@@ -4,7 +4,6 @@ import { activityPubInboxDeliveryTransitions } from './durable-delivery-transiti
 import {
   registerActivityPubInboxAdmission,
   acceptTestDelivery,
-  claimTestDelivery,
   exhaustTestDelivery,
   rejectTestDelivery,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
@@ -12,31 +11,25 @@ import {
 registerActivityPubInboxAdmission()
 
 describe('ActivityPub rearm scope', () => {
-  it('re-arms only an owned failed delivery while another eligible failure keeps its token', async () => {
+  it('rearms only the selected failed delivery', async () => {
     const [selected, unrelated] = await Promise.all([
       acceptTestDelivery(createActivityPubInboxEnvelope()),
       acceptTestDelivery(createActivityPubInboxEnvelope()),
     ])
     await Promise.all(
       [selected, unrelated].map(delivery =>
-        claimTestDelivery(delivery.deliveryId, delivery.leaseToken),
+        exhaustTestDelivery(delivery.deliveryId, new Error('provider outage')),
       ),
     )
-    await Promise.all(
-      [selected, unrelated].map(delivery =>
-        exhaustTestDelivery(delivery.deliveryId, delivery.leaseToken, new Error('provider outage')),
-      ),
-    )
-
     const rearmed = await activityPubInboxDeliveryTransitions.rearm([selected.deliveryId])
     expect(rearmed.map(delivery => delivery.deliveryId)).toEqual([selected.deliveryId])
-    expect(rearmed[0]?.leaseToken).not.toBe(selected.leaseToken)
-    expect(await claimTestDelivery(unrelated.deliveryId, unrelated.leaseToken)).toBeNull()
-    const unrelatedRearmed = await activityPubInboxDeliveryTransitions.rearm([unrelated.deliveryId])
-    expect(unrelatedRearmed.map(delivery => delivery.deliveryId)).toEqual([unrelated.deliveryId])
-    await Promise.all([
-      rejectTestDelivery(selected.deliveryId, rearmed[0]!.leaseToken),
-      rejectTestDelivery(unrelated.deliveryId, unrelatedRearmed[0]!.leaseToken),
-    ])
+    expect(await rejectTestDelivery(unrelated.deliveryId)).toBe(false)
+    expect(await rejectTestDelivery(selected.deliveryId)).toBe(true)
+    expect(
+      (await activityPubInboxDeliveryTransitions.rearm([unrelated.deliveryId])).map(
+        delivery => delivery.deliveryId,
+      ),
+    ).toEqual([unrelated.deliveryId])
+    expect(await rejectTestDelivery(unrelated.deliveryId)).toBe(true)
   })
 })

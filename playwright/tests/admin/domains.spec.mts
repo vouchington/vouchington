@@ -1,9 +1,9 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 
 test.describe('Admin Domains', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('allows anonymous users to view domains list without admin filters', async ({ page }) => {
     await page.context().clearCookies()

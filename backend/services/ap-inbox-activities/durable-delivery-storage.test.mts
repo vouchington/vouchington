@@ -86,12 +86,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
       unverifiedRawBodyBytes: measured.before.unverifiedRawBodyBytes,
     })
 
-    await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken)
-    await activityPubInboxDeliveryTransitions.verify(
-      delivery.deliveryId,
-      delivery.leaseToken,
-      actor.id,
-    )
+    await activityPubInboxDeliveryTransitions.verify(delivery.deliveryId, actor.id)
 
     expect(
       (await getActivityPubInboxRetentionStateForTest(delivery.deliveryId)).retention_expires_at,
@@ -101,12 +96,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
   it('records the first operational failure and preserves its sticky deadline through rearm', async () => {
     const actor = await createRemoteActorFixture()
     const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope(), actor.id)
-    await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken)
-    await activityPubInboxDeliveryTransitions.exhaust(
-      delivery.deliveryId,
-      delivery.leaseToken,
-      new Error('failed'),
-    )
+    await activityPubInboxDeliveryTransitions.exhaust(delivery.deliveryId, new Error('failed'))
     const failed = await getActivityPubInboxRetentionStateForTest(delivery.deliveryId)
 
     const rearmed = (await activityPubInboxDeliveryTransitions.rearm([delivery.deliveryId])).find(
@@ -118,13 +108,13 @@ describe('ActivityPub inbox durable storage bounds', () => {
     expect(afterRearm.retention_expires_at).toEqual(failed.retention_expires_at)
   })
 
-  it('prevents expired deliveries from claim, recovery, and rearm', async () => {
+  it('prevents expired deliveries from load, recovery, and rearm', async () => {
     const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
     await expireActivityPubInboxDeliveryForTest(delivery.deliveryId)
 
-    expect(
-      await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken),
-    ).toEqual({ outcome: 'stale' })
+    expect(await activityPubInboxDeliveryTransitions.load(delivery.deliveryId)).toEqual({
+      outcome: 'stale',
+    })
     expect(
       await activityPubInboxDeliveryTransitions.recover([delivery.deliveryId]),
     ).not.toContainEqual(expect.objectContaining({ deliveryId: delivery.deliveryId }))
@@ -135,7 +125,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
     ).not.toContainEqual(expect.objectContaining({ deliveryId: delivery.deliveryId }))
   })
 
-  it('deletes expired rows in deterministic lease-aware locked batches', async () => {
+  it('deletes expired rows in deterministic bounded batches', async () => {
     const active = await acceptTestDelivery(createActivityPubInboxEnvelope())
     const stale = await acceptTestDelivery(createActivityPubInboxEnvelope())
     const idle = await acceptTestDelivery(createActivityPubInboxEnvelope())
@@ -152,9 +142,12 @@ describe('ActivityPub inbox durable storage bounds', () => {
     expect(await expireActivityPubInboxDeliveries('unverified', 2, ownedIds)).toMatchObject({
       deletedRows: 2,
     })
-    expect(
-      await getExistingActivityPubInboxDeliveryIdsForTest([...ownedIds, foreign.deliveryId]),
-    ).toEqual([active.deliveryId, foreign.deliveryId].toSorted())
+    const remaining = await getExistingActivityPubInboxDeliveryIdsForTest([
+      ...ownedIds,
+      foreign.deliveryId,
+    ])
+    expect(remaining).toContain(foreign.deliveryId)
+    expect(remaining.filter(id => ownedIds.includes(id))).toHaveLength(1)
   })
 
   it('rolls the storage counter back with the owned insert', async () => {

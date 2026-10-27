@@ -2,7 +2,10 @@ import { nativeModerationFixtureCase as fixtureCase } from './native-moderation-
 import {
   adminId,
   penaltyCursor,
+  penaltyReviewCursor,
   revokedAt,
+  reviewedAt,
+  nextReviewDueAt,
   terminalPage,
   voteActivePenalty,
   votePenaltyId,
@@ -110,6 +113,35 @@ export const nativeVoteIntegrityPenaltyApiFixtureCases = [
       pathParams: { id: votePenaltyId },
     },
     body: { penalty: { ...voteActivePenalty, revoked_at: revokedAt, revoked_by_id: adminId } },
+    migratedFrom,
+  }),
+  fixtureCase({
+    id: 'native.moderation.vote-integrity.penalties.review-due',
+    method: 'GET',
+    path: '/api/v1/vote-integrity/penalties/review-due',
+    route: { routeTemplate: '/api/v1/vote-integrity/penalties/review-due' },
+    body: {
+      results: [{ ...voteActivePenalty, user_username: 'penalty-recipient' }],
+      page_info: terminalPage(penaltyReviewCursor('vote', votePenaltyId)),
+    },
+    migratedFrom,
+  }),
+  fixtureCase({
+    id: 'native.moderation.vote-integrity.penalties.review',
+    method: 'POST',
+    path: `/api/v1/vote-integrity/penalties/${votePenaltyId}/reviews`,
+    route: {
+      routeTemplate: '/api/v1/vote-integrity/penalties/:id/reviews',
+      pathParams: { id: votePenaltyId },
+    },
+    body: {
+      penalty: {
+        ...voteActivePenalty,
+        reviewed_at: reviewedAt,
+        reviewed_by_id: adminId,
+        review_due_at: nextReviewDueAt,
+      },
+    },
     migratedFrom,
   }),
 ]

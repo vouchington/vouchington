@@ -8,7 +8,6 @@ import {
   truncateEmbeddingText,
 } from '@vouchington/utils/bedrock-embeddings'
 import { BEDROCK_NOVA_MULTIMODAL_MODEL_NAME } from '../config.mts'
-import { shouldSkipUnavailableBedrockIntegration } from '../test-availability.mts'
 
 type CreateBedrockEmbeddingOptions = {
   entityType: 'post' | 'topic' | 'rss_feed_item' | 'crawl_chunk' | 'search'
@@ -39,13 +38,6 @@ export const createBedrockEmbedding = async (
     // Stored token counts represent provider usage; the estimate is analytics-only.
     return { embedding: result.embedding, tokens: null }
   } catch (err: unknown) {
-    if (
-      err instanceof Error &&
-      process.env.NODE_ENV === 'test' &&
-      shouldSkipUnavailableBedrockIntegration(err)
-    ) {
-      Object.assign(err, { tags: { suppressLogging: true } })
-    }
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
     trackAIEmbeddingCall({
       service: 'bedrock',

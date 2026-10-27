@@ -1,6 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import {
   createTestUser,
   insertTestPost,
@@ -69,7 +69,7 @@ test.describe('User Suspension — Content Visibility', () => {
 })
 
 test.describe('User Suspension — Admin Panel', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin can view the user admin panel', async ({ page }) => {
     await navigateTo(page, `/user/${suspendedUserId}/admin`)

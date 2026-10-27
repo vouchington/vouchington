@@ -1,4 +1,5 @@
 import { deliverReviewDisputeForTest } from '@voucha/test-helpers/dispute-delivery'
+import { hardDeleteTestReviewDispute } from '@voucha/test-helpers/entities/review-disputes'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
@@ -70,6 +71,18 @@ describe('getActiveAnnotationForPost', () => {
     expect(annotation).not.toBeNull()
     expect(annotation!.post_id).toBe(postId)
     expect(annotation!.body_text).toBe('Service annotation body.')
+  })
+
+  it('keeps a public annotation after its resolved dispute is deleted', async () => {
+    const { postId, disputeId } = await makeAnnotatedPost(staff.id)
+    await hardDeleteTestReviewDispute(disputeId)
+
+    const annotation = await getActiveAnnotationForPost(postId)
+    expect(annotation).toMatchObject({
+      post_id: postId,
+      review_dispute_id: null,
+      body_text: 'Service annotation body.',
+    })
   })
 
   it('returns null when no annotation exists', async () => {

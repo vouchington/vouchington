@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import {
   createTestUser,
   insertTestReportAbusePenalty,
@@ -9,7 +9,7 @@ import {
 } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin Report Integrity', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('browses and revokes report integrity penalties', async ({ page }) => {
     const penalizedUser = requireTestValue(
@@ -72,7 +72,7 @@ test.describe('Admin Report Integrity', () => {
 })
 
 test.describe('Admin Report Integrity — flag actions', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin can resolve/dismiss a report integrity flag', async ({ page }) => {
     // Seed a fresh user and flag — report_integrity_flags requires exactly one entity FK (num_nonnulls = 1)

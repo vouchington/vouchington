@@ -23,6 +23,7 @@ describe('votes-upsert', () => {
     await setTestUserAdminVoteWeight(voter.id, 1)
   })
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('liking a user leaves follow and mute relations alone', async () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
@@ -44,6 +45,7 @@ describe('votes-upsert', () => {
     expect(muteRelations).toHaveLength(0)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('disavowing a user (-2) auto-mutes and soft-deletes the existing follow', async () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
@@ -66,6 +68,7 @@ describe('votes-upsert', () => {
     expect(muteRelations).toHaveLength(1)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('retracting a disavow (0) does not unmute or restore the follow', async () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
@@ -91,6 +94,7 @@ describe('votes-upsert', () => {
     expect(muteRelations).toHaveLength(1)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('clearing a disavow keeps its committed mute and unfollow side effects', async () => {
     const target = await createTestUser()
     await insertTestLocalFollow(voter.id, target.id)
@@ -106,6 +110,7 @@ describe('votes-upsert', () => {
     expect(muteRelations).toHaveLength(1)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('keeps the last semantic choice for duplicate target votes', async () => {
     const target = await createTestUser()
 
@@ -131,6 +136,7 @@ describe('votes-upsert', () => {
     expect(muteRelations).toHaveLength(1)
   }, 30_000)
 
+  // no-mistakes-timeout-reason: shared-database setup and multi-row writes exceed the 5s default in CI
   it('completes with a user agent while its transaction holds the final write-pool client', async () => {
     const target = await createTestUser()
     await withOwnedVouchStats(target.id, async () => {

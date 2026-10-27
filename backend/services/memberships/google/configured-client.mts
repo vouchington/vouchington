@@ -1,6 +1,8 @@
+import { throwIfRateLimitedResponse } from '@modules/queue-errors'
 import { createHash, createSign } from 'node:crypto'
 import type { GooglePlaySubscriptionV2, GooglePlaySubscriptionsV2Client } from './types.mts'
 import { getExternalFetch } from '@modules/utils'
+import { MembershipProviderUnavailableError } from '../provider-unavailable.mts'
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GOOGLE_PUBLISHER_BASE_URL = 'https://androidpublisher.googleapis.com/androidpublisher/v3'
@@ -59,7 +61,9 @@ function getGooglePlayServiceAccountConfig(): GooglePlayServiceAccountConfig {
   const clientEmail = requiredEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL')
   const privateKey = requiredEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY').replaceAll('\\n', '\n')
   if (!privateKey.includes('BEGIN PRIVATE KEY'))
-    throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY must be a PEM private key')
+    throw new MembershipProviderUnavailableError(
+      'GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY must be a PEM private key',
+    )
   return { clientEmail, privateKey }
 }
 
@@ -74,6 +78,7 @@ async function getGooglePlaySubscription(
     `${GOOGLE_PUBLISHER_BASE_URL}/applications/${encodeURIComponent(options.packageName)}/purchases/subscriptionsv2/tokens/${encodeURIComponent(options.purchaseToken)}`,
     { headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) },
   )
+  throwIfRateLimitedResponse(response, 'https://androidpublisher.googleapis.com/subscriptionsv2')
   if (!response.ok) {
     let reason: string | null = null
     if (response.status === 400) {
@@ -142,6 +147,7 @@ async function getGooglePlayAccessToken(
     }).toString(),
     signal: AbortSignal.timeout(15_000),
   })
+  throwIfRateLimitedResponse(response, GOOGLE_TOKEN_URL)
   if (!response.ok) throw new Error(`Google OAuth token exchange failed with ${response.status}`)
   const payload = (await response.json()) as { access_token?: unknown; expires_in?: unknown }
   if (typeof payload.access_token !== 'string' || typeof payload.expires_in !== 'number')
@@ -171,6 +177,9 @@ function signServiceAccountAssertion(config: GooglePlayServiceAccountConfig, now
 }
 function requiredEnv(name: string): string {
   const value = process.env[name]?.trim()
-  if (!value) throw new Error(`${name} is required for Google Play membership verification`)
+  if (!value)
+    throw new MembershipProviderUnavailableError(
+      `${name} is required for Google Play membership verification`,
+    )
   return value
 }

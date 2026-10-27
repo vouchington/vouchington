@@ -2,8 +2,9 @@ import { exclusions } from './mcp-write-exclusions-builder.mts'
 
 // Each reason names the REST guard in backend/api/v1 and backend/services/*/authorization.mts.
 // A guard that admits only `administrator` (or the system topic seed actor) is not a user write.
+const adminReason = (guard: string) => `REST guard requires the administrator role (${guard})`
 const admin = (guard: string, routes: string[]) =>
-  exclusions('staff-only', `REST guard requires the administrator role (${guard})`, routes)
+  exclusions('staff-only', adminReason(guard), routes)
 
 export const directStaffExclusions = [
   ...admin('isAdminUser', [

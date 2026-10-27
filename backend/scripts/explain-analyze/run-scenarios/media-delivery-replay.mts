@@ -90,7 +90,6 @@ export async function runMediaDeliveryReplayScenarios() {
     let replayResult:
       | Awaited<ReturnType<typeof replayFailedMediaDeliveryRegistryRecords>>
       | undefined
-    // no-mistakes-disable-next-line query-reached-per-item: three fixed replay-page EXPLAIN scenarios pair captures around bounded ANALYZE
     await runAndCapture(
       scenario.id,
       async () => {

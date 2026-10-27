@@ -194,7 +194,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications__review_dispute
 ON notifications (review_dispute_id)
 WHERE review_dispute_id IS NOT NULL AND deleted_at IS NULL;
 
-COMMENT ON TABLE review_disputes IS 'Disputes filed by verified topic claimants against reviews of their topic. Goes through a public moderation queue with AI-assisted draft resolution; all messaging is human-approved before delivery.';
+COMMENT ON TABLE review_disputes IS 'Disputes filed by verified topic claimants against reviews of their topic. Resolved disputes and their lifecycle changes are deleted after 24 months; public annotations survive independently.';
 COMMENT ON COLUMN review_disputes.post_id IS 'The disputed review post.';
 COMMENT ON COLUMN review_disputes.topic_id IS 'The topic the disputed review rates (the claimant''s topic).';
 COMMENT ON COLUMN review_disputes.disputed_rating IS 'Immutable snapshot of the topic rating when the dispute was filed.';
@@ -232,7 +232,7 @@ COMMENT ON TABLE review_dispute_lifecycle_changes IS 'Append-only audit log of s
 CREATE TABLE IF NOT EXISTS post_dispute_annotations (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   post_id uuid NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
-  review_dispute_id uuid NOT NULL REFERENCES review_disputes (id) ON DELETE CASCADE,
+  review_dispute_id uuid REFERENCES review_disputes (id) ON DELETE SET NULL,
   body_text text NOT NULL CHECK (char_length(body_text) > 0 AND char_length(body_text) <= 2000),
   created_by_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   removed_at timestamptz,
@@ -259,7 +259,7 @@ CREATE INDEX IF NOT EXISTS idx_post_dispute_annotations__created_by ON post_disp
 
 COMMENT ON TABLE post_dispute_annotations IS 'Public, human-approved rebuttal annotations attached to reviewed posts as the outcome of a resolved review dispute. At most one active annotation per dispute.';
 COMMENT ON COLUMN post_dispute_annotations.post_id IS 'The review post this annotation is attached to.';
-COMMENT ON COLUMN post_dispute_annotations.review_dispute_id IS 'The resolved dispute that produced this annotation.';
+COMMENT ON COLUMN post_dispute_annotations.review_dispute_id IS 'The resolved dispute that produced this annotation, when its retention window has not elapsed. A public annotation survives dispute deletion.';
 COMMENT ON COLUMN post_dispute_annotations.body_text IS 'The human-authored, moderator-approved annotation text.';
 COMMENT ON COLUMN post_dispute_annotations.created_by_id IS 'The moderator who created the annotation.';
 COMMENT ON COLUMN post_dispute_annotations.removed_at IS 'When the annotation was retracted.';

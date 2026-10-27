@@ -1,0 +1,42 @@
+export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
+  [
+    'bedrock_embedding_batches',
+    'Terminal batches are deleted after 30 days by capped deletion batches; in-flight batches remain until terminal.',
+  ],
+  [
+    'bedrock_embedding_batch_entities',
+    'Batch member rows cascade when a terminal parent batch expires.',
+  ],
+  [
+    'ai_usage_provider_response_keys',
+    'Provider response identities expire after 90 days through bounded UUIDv7 deletion batches.',
+  ],
+  [
+    'stripe_event_processing_work_items',
+    'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
+  ],
+  [
+    'membership_purchase_intents',
+    'Live launch replays remain; failed or unlaunched intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
+  ],
+  [
+    'payment_operational_cleanup_cursors',
+    'One persisted keyset position per payment operational cleanup stream.',
+  ],
+  [
+    'post_admission_quota_consumptions',
+    'Committed quota rows are retained for seven days, while policy windows are capped at one day; bounded cleanup keeps cardinality tied to recent admission traffic.',
+  ],
+  [
+    'topic_alias_category_mapping_reconciliations',
+    'One coalesced row per alias with pending category-mapping work; successful reconciliation deletes the row, bounding cardinality to the active backlog.',
+  ],
+  [
+    'rss_feed_item_category_snapshot_reconciliations',
+    'One coalesced row per RSS item with pending category snapshot work; successful exact-generation reconciliation deletes the row, bounding cardinality to the active backlog.',
+  ],
+  [
+    'rss_feed_item_source_category_snapshots',
+    'One current snapshot per RSS feed-to-item source row; the source primary key bounds cardinality to live RSS feed item sources.',
+  ],
+])

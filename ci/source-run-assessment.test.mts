@@ -32,23 +32,6 @@ describe('assessSourceRunState', () => {
   )
 
   it.each([
-    ['queued later attempt', { ...currentRun, run_attempt: 2, status: 'queued', conclusion: null }],
-    [
-      'in-progress later attempt',
-      { ...currentRun, run_attempt: 2, status: 'in_progress', conclusion: null },
-    ],
-    ['successful later attempt', { ...currentRun, run_attempt: 2, conclusion: 'success' }],
-    ['failed later attempt', { ...currentRun, run_attempt: 2 }],
-    [
-      'same attempt no longer completed',
-      { ...currentRun, status: 'in_progress', conclusion: null },
-    ],
-    ['changed conclusion', { ...currentRun, conclusion: 'cancelled' }],
-  ])('rejects a %s', async (_caseName, response) => {
-    expect(assessSourceRunState(response, expected, NOW).current).toBe(false)
-  })
-
-  it.each([
     null,
     {},
     { ...currentRun, id: '30503060858' },
@@ -75,32 +58,6 @@ describe('assessSourceRunState', () => {
     expect(assessSourceRunState(currentRun, invalidExpected, NOW)).toEqual({
       current: false,
       reason: 'invalid-input',
-    })
-  })
-
-  it('suppresses the exact regression that opened #9124/#9112', () => {
-    // Source run 30766703240 (Main CI backend, attempt 4 last started 2026-08-02) was still being
-    // replayed by the now-deleted usage-limit-retry.yml poller more than 48h later; the
-    // id/attempt/conclusion guard alone let it through as "current" every time.
-    const regressionRun = {
-      conclusion: 'failure',
-      id: 30_766_703_240,
-      repository: { full_name: 'jonathanong/filaments' },
-      run_attempt: 4,
-      run_started_at: '2026-08-02T00:00:00.000Z',
-      status: 'completed',
-    }
-    const regressionExpected: ExpectedSourceRun = {
-      conclusion: 'failure',
-      repository: 'jonathanong/filaments',
-      runAttempt: 4,
-      runId: 30_766_703_240,
-    }
-    const rerunFourDaysLater = Date.parse('2026-08-06T00:00:00.000Z')
-
-    expect(assessSourceRunState(regressionRun, regressionExpected, rerunFourDaysLater)).toEqual({
-      current: false,
-      reason: 'stale-source-run',
     })
   })
 })

@@ -1,5 +1,5 @@
 import {
-  callReceiptedAgentModel,
+  callAgentModel,
   QUEUED_BACKGROUND_RETRY_POLICY,
   type AgentModelCaller,
 } from '@agents/_shared'
@@ -78,7 +78,6 @@ export async function callStoryPostAgent(
   itemSummaries: Array<{ title: string; summary: string }>,
   selection: ModelSelection,
   callModel: StoryPostModelCaller = callStoryPostModel,
-  operationId = story.id,
 ): Promise<StoryPostAgentResult> {
   const [sanitizedArticles, sanitizedStoryTitle] = await Promise.all([
     Promise.all(
@@ -102,10 +101,8 @@ export async function callStoryPostAgent(
   // Records the ledger row for both outcomes: a successful answer, or a billed one that failed
   // validation (which still billed tokens) before the error propagates, so a queued retry doesn't
   // compound an unrecorded charge with another one.
-  const { output } = await callReceiptedAgentModel({
+  const { output } = await callAgentModel({
     agentSlug: 'story-post',
-    operationId,
-    promptVersion: STORY_POST_PROMPT_VERSION,
     selection,
     input: content,
     safetyIdentifier: story.id,

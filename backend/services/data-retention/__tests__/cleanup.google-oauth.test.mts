@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
   createRandomString,
@@ -11,6 +11,7 @@ import {
   setOAuthAccountCreatedAt,
 } from '@voucha/test-helpers'
 import { completeOAuthAuthorizationTransaction } from '@services/oauth/authorization-completion-transaction'
+import { createTestAccountChangeActor } from '@voucha/test-helpers/account-change'
 import {
   insertCompletionReadyAuthorization,
   registerCleanup,
@@ -34,8 +35,9 @@ describe('Google broker account retention', () => {
     await setOAuthAccountCreatedAt('google', unrelatedProviderId, window.secondEligibleDate)
     const user = await createTestUserDirect()
     cleanup.userIds.push(user.id)
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
+    const actor = await createTestAccountChangeActor(user.id)
+    const deviceId = actor.session.did
+    const sessionId = actor.session.sid
     const completionToken = randomBytes(32).toString('base64url')
     const proofVerifier = randomBytes(32).toString('base64url')
     const flowId = await insertCompletionReadyAuthorization(

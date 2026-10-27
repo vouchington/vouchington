@@ -185,7 +185,7 @@ describe('revokeMembershipGrant', () => {
     )
 
     expect(result).toMatchObject({ grantId: grant.grantId, alreadyRevoked: false })
-    expect(result!.revokedAt.getTime()).toBeGreaterThanOrEqual(releasedAt.getTime() - 50)
+    expect(result!.revokedAt.getTime()).toBeGreaterThanOrEqual(releasedAt.getTime())
   })
 
   it('closes the active grant and promotes the next FIFO grant', async () => {

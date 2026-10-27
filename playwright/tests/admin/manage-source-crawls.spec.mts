@@ -1,12 +1,12 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { insertTestRssFeedCrawl } from '../../helpers/insert-test-rss-feed-crawl.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 
 test.describe('Admin Source Crawl Pages', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
   test.describe.configure({ mode: 'serial' })
 
   let sourceTopicId: string

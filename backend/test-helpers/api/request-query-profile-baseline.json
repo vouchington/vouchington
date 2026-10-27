@@ -1,5 +1,13 @@
 [
   {
+    "annotation": "assertOAuthAccountConnectionUserActive",
+    "maxCount": 4,
+    "reason": "The callback writes the provider session and then attaches it in separate transactions. Each checks active ownership before reading the authorization and again after locking the initiating session; suspension can commit between those transactions.",
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
+  },
+  {
     "annotation": "addListItem",
     "maxCount": 100,
     "reason": "The recorded #3345 decision keeps these writes per target so each batch result retains its own persisted row; the delegated batch contract caps the loop at 100 items.",
@@ -184,48 +192,6 @@
     "routes": ["POST /api/v1/my/import/topics"]
   },
   {
-    "annotation": "fencePublicationIdentityBridgeCapture",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:72",
-    "routes": [
-      "DELETE /api/v1/communities/:idOrSlug",
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/rss-feeds/:id",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/rss-feeds/:id",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/fediverse/instances",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "POST /api/v1/topics",
-      "POST /api/v1/topics/:idOrSlug/aliases",
-      "POST /api/v1/topics/:sourceIdOrSlug/merges",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
-  },
-  {
     "annotation": "fetchElectionVoteRowsByUser",
     "maxCount": null,
     "reason": "The caller's own vote is re-read under the election request lock after the pre-lock ballot admission. Visibility changes do not take that lock.",
@@ -313,6 +279,41 @@
       "POST /api/v1/topic-recommendations/:id/approvals",
       "PUT /api/v1/posts/:id/vote"
     ]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "First verified native attestation reads the current actor before accepting hardware proof, then rereads under the session authority lock before replacing its SID so deletion or factor changes committed during proof verification cannot authorize the upgrade.",
+    "permanent": true,
+    "code": "backend/api/v1/app-attestation/app-attestation.mts:50",
+    "routes": ["POST /api/v1/app-attestation/attest"]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
+    "maxCount": 3,
+    "reason": "A verified device identifies the user for the route usage meter, which reads the current membership plan before proof work. Signed-proof admission rereads the live user before spending the challenge; session refresh rereads after that separate commit so deletion or credential changes during verification cannot authorize rotation. Each stage needs its own current primary view.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/auth-dbsc.mts:75",
+    "routes": [
+      "POST /api/v1/auth/device-bound-sessions",
+      "POST /api/v1/auth/device-bound-sessions/refreshes"
+    ]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "Existing-user native email login reads the private projection before credential admission, then rereads it under the user lock before minting authority. The locked reread must see a concurrent first-factor removal or deletion.",
+    "permanent": true,
+    "code": "backend/services/users/authentication-flows.mts:81",
+    "routes": ["POST /api/v1/auth/native/email-address/login"]
+  },
+  {
+    "annotation": "getPrivateUserByAny",
+    "maxCount": 2,
+    "reason": "A durable completed broker result first resolves its user after commit, then credential admission rereads the account under the login lock before minting. The locked read must reject deletion or first-factor removal committed between those steps.",
+    "permanent": true,
+    "code": "backend/services/oauth/oauth-flow-result.mts:43",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"]
   },
   {
     "annotation": "getPrivateUserByAny",
@@ -439,6 +440,14 @@
     "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
+    "annotation": "lockBlueskyInitiatingSession",
+    "maxCount": 2,
+    "reason": "SDK session persistence and final account attachment commit separately, so each transaction rechecks the initiating authorization and current actor session.",
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
+  },
+  {
     "annotation": "lockBlueskyLinkAuthorization",
     "maxCount": null,
     "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
@@ -495,17 +504,20 @@
     "routes": ["POST /api/v1/fediverse/instances"]
   },
   {
-    "annotation": "lockPostPublicationCaptures",
-    "maxCount": null,
-    "reason": "Post-scope advisory locks stay in one sorted order when the id set is split across capture-batch pages.",
+    "annotation": "lockOAuthAccountConnectionUser",
+    "maxCount": 4,
+    "reason": "Each of the two callback transactions admits the active account before authorization lookup and again with the initiating SID and device authority; both checks take the deletion fence.",
     "permanent": true,
-    "code": "backend/services/post-publication/capture-posts.mts:100",
-    "routes": [
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts"
-    ]
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:19",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
+  },
+  {
+    "annotation": "lockOAuthAccountConnectionUserRow",
+    "maxCount": 4,
+    "reason": "Each active-account admission locks the user row after the deletion fence, twice in provider persistence and twice in final attachment.",
+    "permanent": true,
+    "code": "backend/services/oauth-accounts/connect.mts:99",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
     "annotation": "lockPostPublicationScope",
@@ -527,30 +539,84 @@
     ]
   },
   {
-    "annotation": "lockPreparedPublicationScopes",
-    "maxCount": null,
-    "reason": "A multi-scope capture takes the sorted advisory locks for its whole declared set before the first dirty-work write.",
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["GET /api/v1/auth/bluesky/callback"],
+    "maxCount": 2,
+    "reason": "Provider session persistence and final attachment separately lock and verify the original initiating SID against revocation.",
     "permanent": true,
-    "code": "backend/services/post-publication/prepare-identity-bridges.mts:21",
-    "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/rss-feeds/:id",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "PUT /api/v1/posts/:idOrSlug/images"
-    ]
+    "code": "backend/services/mfa/active-account-session.mts:56"
   },
   {
-    "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
-    "maxCount": null,
-    "reason": "The hard-delete capture re-reads category aliases after the feed row lock so it sees aliases committed by the previous lock holder.",
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["POST /api/v1/app-attestation/attest"],
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade locks the old browser SID before revocation and the replacement native SID before minting, so exactly two distinct session admissions share one transaction.",
     "permanent": true,
-    "code": "backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts:13",
-    "routes": ["DELETE /api/v1/rss-feeds/:id"]
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["POST /api/v1/auth/device-bound-sessions"],
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["POST /api/v1/auth/device-bound-sessions/refreshes"],
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"],
+    "maxCount": 2,
+    "reason": "Completed broker replay checks the original issued SID for preserved assurance, then canonical mint reacquires its reentrant SID fence before checking the stored device credential and issuing the response.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/assurance.mts:41"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["GET /api/v1/auth/bluesky/callback"],
+    "maxCount": 2,
+    "reason": "Provider session persistence and final attachment separately lock and verify the original account and SID against deletion and revocation.",
+    "permanent": true,
+    "code": "backend/services/mfa/active-account-session.mts:56"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["POST /api/v1/app-attestation/attest"],
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade admits the old browser authority and the replacement native SID in one transaction. Each canonical mint guard takes the same user fence; the second acquisition is reentrant and bounded to these two admissions.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["POST /api/v1/auth/device-bound-sessions"],
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["POST /api/v1/auth/device-bound-sessions/refreshes"],
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"],
+    "maxCount": 2,
+    "reason": "Completed broker replay checks original SID assurance before mint; mint reacquires the account fence to reject a revoked or changed durable device credential.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/assurance.mts:41"
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
@@ -575,21 +641,6 @@
     "permanent": true,
     "code": "backend/services/user-warnings/issue-warning.mts:26-34",
     "routes": ["POST /api/v1/admin/warnings", "POST /api/v1/communities/:idOrSlug/warnings"]
-  },
-  {
-    "annotation": "orderPostPublicationRetainedKeyInput",
-    "maxCount": null,
-    "reason": "Each scope orders its retained keys only after that scope's advisory lock and dirty-work row exist.",
-    "permanent": true,
-    "code": "backend/services/post-publication/retained-key-writes.mts:107",
-    "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/topic-recommendations/:id/approvals"
-    ]
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
@@ -643,6 +694,54 @@
       "POST /api/v1/copyright-form-intakes/:id/reviews",
       "POST /api/v1/copyright-uk-notices/:id/reviews"
     ]
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["GET /api/v1/auth/bluesky/callback"],
+    "maxCount": 4,
+    "reason": "Each of the two independently committed callback stages reads the original SID to derive its device and rereads under the SID lock before accepting that stage.",
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/initiating-session.mts:34"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["POST /api/v1/app-attestation/attest"],
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade reads and locks the current old browser authority, then the replacement SID row created by the joined native mint. These are two distinct rows required by the revocation-safe handoff.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["POST /api/v1/auth/device-bound-sessions"],
+    "maxCount": 3,
+    "reason": "Browser proof verification first reads current authority without holding a database lock during signature verification. Challenge consumption locks and rechecks the binding, then canonical credential rotation takes its own lock and rechecks the current digest before spending its unforgeable one-use proof. All three reads are bounded to the same SID.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-proof.mts:81"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["POST /api/v1/auth/device-bound-sessions/refreshes"],
+    "maxCount": 3,
+    "reason": "Browser proof verification first reads current authority without holding a database lock during signature verification. Challenge consumption locks and rechecks the binding, then canonical credential rotation takes its own lock and rechecks the current digest before spending its unforgeable one-use proof. All three reads are bounded to the same SID.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-proof.mts:81"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["POST /api/v1/auth/email-address/login"],
+    "maxCount": 2,
+    "reason": "Credential mint locks and writes the durable authority; HTTPS browser registration advertising subsequently rechecks the committed fresh credential before issuing its single-use registration nonce.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-registration.mts:12"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "routes": ["POST /api/v1/auth/oauth/authorizations/:flowId/complete"],
+    "maxCount": 2,
+    "reason": "Completed broker replay first reads original SID assurance, then mint checks stored authority again before exact credential replay. Both reads are bounded to the same SID under reentrant transaction fences.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/assurance.mts:42"
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
@@ -765,102 +864,6 @@
     ]
   },
   {
-    "annotation": "retainCurrentRssFeedPublicationKeys",
-    "maxCount": null,
-    "reason": "The topic-change capture reads the feed after the topic update, so it sees the topic the earlier state-change capture did not.",
-    "permanent": true,
-    "code": "backend/services/post-publication/capture-rss-feeds.mts:153",
-    "routes": ["PATCH /api/v1/rss-feeds/:id"]
-  },
-  {
-    "annotation": "retainPostPublicationDirtyWorkKeys",
-    "maxCount": null,
-    "reason": "Each scope inserts its retained keys only after that scope's advisory lock and dirty-work row exist.",
-    "permanent": true,
-    "code": "backend/services/post-publication/retained-key-writes.mts:92",
-    "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/topic-recommendations/:id/approvals"
-    ]
-  },
-  {
-    "annotation": "retainPublicationIdentityBridges",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:98",
-    "routes": [
-      "DELETE /api/v1/communities/:idOrSlug",
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/rss-feeds/:id",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/rss-feeds/:id",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/fediverse/instances",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "POST /api/v1/topics",
-      "POST /api/v1/topics/:idOrSlug/aliases",
-      "POST /api/v1/topics/:sourceIdOrSlug/merges",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
-  },
-  {
-    "annotation": "retainPublicationIdentityRoots",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:80",
-    "routes": [
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
-  },
-  {
     "annotation": "revokeAllAuthenticatedSessions",
     "maxCount": null,
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
@@ -909,48 +912,6 @@
     "routes": ["PATCH /api/v1/my/email-addresses/:email"]
   },
   {
-    "annotation": "sharePublicationIdentityBridgeOwnership",
-    "maxCount": null,
-    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
-    "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:106",
-    "routes": [
-      "DELETE /api/v1/communities/:idOrSlug",
-      "DELETE /api/v1/posts/:idOrSlug",
-      "DELETE /api/v1/rss-feeds/:id",
-      "DELETE /api/v1/topic-recommendations/:id",
-      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
-      "DELETE /api/v1/users/:userId/suspension",
-      "PATCH /api/v1/communities/:idOrSlug",
-      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
-      "PATCH /api/v1/my/identity",
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
-      "PATCH /api/v1/rss-feeds/:id",
-      "PATCH /api/v1/topic-recommendations/:id",
-      "PATCH /api/v1/users/:idOrSlug",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/disputes/:id/resolution",
-      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
-      "POST /api/v1/fediverse/instances",
-      "POST /api/v1/mcp",
-      "POST /api/v1/my/import/topics",
-      "POST /api/v1/posts",
-      "POST /api/v1/posts/:idOrSlug/clearances",
-      "POST /api/v1/posts/:idOrSlug/ratings",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "POST /api/v1/topics",
-      "POST /api/v1/topics/:idOrSlug/aliases",
-      "POST /api/v1/topics/:sourceIdOrSlug/merges",
-      "PUT /api/v1/posts/:idOrSlug/images",
-      "PUT /api/v1/users/:userId/suspension"
-    ]
-  },
-  {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
     "maxCount": null,
     "reason": "Stats refresh is chunked with bounded iteration, and publication scopes are locked before the relation FOR UPDATE.",
@@ -965,6 +926,41 @@
     "permanent": true,
     "code": "backend/services/topic-recommendations/update-topic-recommendation.mts:37",
     "routes": ["PATCH /api/v1/topic-recommendations/:id"]
+  },
+  {
+    "annotation": "updateSessionRevocationRegistry",
+    "maxCount": 2,
+    "reason": "A rejected DELETE may carry two different signed session principals: the cookie pair and a body-selected pair. The failure path durably revokes each SID once before returning the validation error.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
+    "routes": ["DELETE /api/v1/session"]
+  },
+  {
+    "annotation": "updateSessionRevocationRegistry:sessionFence",
+    "maxCount": 2,
+    "reason": "Each of the two independently presented signed SIDs needs its own advisory fence before durable revocation in a rejected DELETE request.",
+    "permanent": true,
+    "code": "backend/api/v1/sessions-authentication/session.mts:104-109",
+    "routes": ["DELETE /api/v1/session"]
+  },
+  {
+    "annotation": "upsertAuthenticatedSession",
+    "maxCount": 2,
+    "reason": "A single refresh registration takes the user advisory lock and then writes the durable session row; both statements use this annotation in one transaction.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
+    "routes": ["PATCH /api/v1/session"]
+  },
+  {
+    "annotation": "upsertAuthenticatedSession",
+    "maxCount": 2,
+    "reason": "One device-bound registration or refresh writes the authenticated session once; its user advisory lock and session-row upsert carry the same annotation in two SQL statements.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
+    "routes": [
+      "POST /api/v1/auth/device-bound-sessions",
+      "POST /api/v1/auth/device-bound-sessions/refreshes"
+    ]
   },
   {
     "annotation": "upsertAuthenticatedSession",
@@ -983,22 +979,22 @@
     ]
   },
   {
-    "annotation": "upsertPostPublicationDirtyWork",
-    "maxCount": null,
-    "reason": "Each scope family upserts through its own conflict column, after that family's identity lock and before its keys.",
+    "annotation": "upsertUserAgentString",
+    "maxCount": 3,
+    "reason": "Email login persists a cold request user agent once: read, conflict-tolerant insert, and reread to observe a concurrent winner.",
     "permanent": true,
-    "code": "backend/services/post-publication/upsert-dirty-work.mts:30",
+    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
+    "routes": ["POST /api/v1/auth/email-address/login"]
+  },
+  {
+    "annotation": "upsertUserAgentString",
+    "maxCount": 3,
+    "reason": "Cold device-bound and native credential registration each resolve one immutable user agent through a read, conflict-tolerant insert, and reread.",
+    "permanent": true,
+    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:upsertUserAgentString",
     "routes": [
-      "PATCH /api/v1/posts/:idOrSlug",
-      "PATCH /api/v1/rss-feeds/:id",
-      "POST /api/v1/communities/:idOrSlug/posts",
-      "POST /api/v1/mcp",
-      "POST /api/v1/posts",
-      "POST /api/v1/rss-feed-categories/assignments",
-      "POST /api/v1/rss-feed-items/:id/discussions",
-      "POST /api/v1/stories/:storyId/discussions",
-      "POST /api/v1/topic-recommendations/:id/approvals",
-      "PUT /api/v1/posts/:idOrSlug/images"
+      "POST /api/v1/auth/device-bound-sessions",
+      "POST /api/v1/auth/native/email-address/login"
     ]
   },
   {
@@ -1055,5 +1051,13 @@
     "reason": "Expiring one projection can activate an already elapsed queued grant, so revocation must normalize through a variable number of rechecks before locking and checking the grant.",
     "permanent": true,
     "code": "backend/services/memberships/grants/expire-elapsed.mts:39-75"
+  },
+  {
+    "annotation": "lockTopicAliasPublicationCaptures",
+    "maxCount": 2,
+    "reason": "Approval captures the requested alias set in one ordered page and the canonical slug alias in a second page; per-alias capture reuses those held scope locks.",
+    "permanent": true,
+    "code": "backend/services/post-publication/capture-topic-alias.mts:39",
+    "routes": ["POST /api/v1/topic-recommendations/:id/approvals"]
   }
 ]

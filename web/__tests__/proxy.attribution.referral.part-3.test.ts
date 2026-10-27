@@ -21,7 +21,12 @@ describe('proxy attribution', () => {
   })
 
   it('omits utm from attribution body when no utm params present', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
     await proxy(
       makeRequest({
         cookies: { dt: 'my-dt', st: 'my-st' },

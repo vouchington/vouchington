@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
-import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
+import { nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
+import { createNativeRequest as createRequest } from '@voucha/test-helpers/native-api-request'
 import {
   createUniqueTestEmail,
   createTestUser,
@@ -21,7 +22,7 @@ import {
   EMAIL_LOGIN_VERIFY_RATE_LIMIT_PREFIX,
   EMAIL_LOGIN_VERIFY_RATE_LIMIT_THRESHOLD,
   EMAIL_LOGIN_VERIFY_RATE_LIMIT_TTL_SECONDS,
-} from '@services/users/authentication-flows'
+} from '@services/users/email-auth-rate-limits'
 import { sanitizeEmailAddress } from '@services/email-address-validator'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
@@ -46,7 +47,7 @@ describe('Email Address Authentication Routes', () => {
     anonymousSessionId = sid
     deviceToken = tokens.deviceToken.token
     sessionToken = tokens.sessionToken.token
-  }, 30_000)
+  })
 
   afterEach(async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)

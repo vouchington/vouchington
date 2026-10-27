@@ -25,8 +25,9 @@ export async function getUserMfaStatus(userId: string, opts?: QueryOptions): Pro
   }
 }
 
-export async function userHasMfa(userId: string): Promise<boolean> {
-  const result = await read<{ has_mfa: boolean }>(sql`
+export async function userHasMfa(userId: string, options?: QueryOptions): Promise<boolean> {
+  const result = await read<{ has_mfa: boolean }>(
+    sql`
     /* userHasMfa */
     SELECT EXISTS(
       SELECT 1 FROM user_passkeys WHERE user_id = ${userId}
@@ -34,6 +35,8 @@ export async function userHasMfa(userId: string): Promise<boolean> {
       SELECT 1 FROM user_totp_authenticators WHERE user_id = ${userId} AND verified_at IS NOT NULL
       LIMIT 1
     ) AS has_mfa
-  `)
+  `,
+    options,
+  )
   return result.rows[0].has_mfa
 }

@@ -2,7 +2,7 @@ import { expect, test, type Page, protectPlaywrightHookTimeouts } from '../../he
 import { createTestUser, insertTestModerationReport } from '../../../backend/test-helpers/index.mts'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { ADMIN_AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 
 let targetUserId = ''
@@ -39,7 +39,7 @@ async function openSeededUserReportCluster(page: Page) {
 }
 
 test.describe('User Mod Notes — Reports Page', () => {
-  test.use({ storageState: AUTH_STATE })
+  test.use({ storageState: ADMIN_AUTH_STATE })
 
   test('admin sees Notes trigger for user-type reports', async ({ page }) => {
     await navigateTo(page, '/reports')

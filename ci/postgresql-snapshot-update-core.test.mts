@@ -92,6 +92,8 @@ describe('PostgreSQL snapshot update contracts', () => {
   it('extracts the exact PostgreSQL service image from candidate workflow data', () => {
     const workflow = `jobs:\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n      valkey:\n        image: registry.test/example/cache\n`
     expect(postgresImageFromWorkflow(workflow)).toBe(image)
+    const precedingJob = `jobs:\n  prepare-postgres:\n    uses: ./.github/workflows/prepare-postgres.yml\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n`
+    expect(postgresImageFromWorkflow(precedingJob)).toBe(image)
     expect(() =>
       postgresImageFromWorkflow(workflow.replace(image, 'registry.test/example/unpinned')),
     ).toThrow('Expected exactly one digest-pinned PostgreSQL')
@@ -104,7 +106,9 @@ describe('PostgreSQL snapshot update contracts', () => {
       postgresImageFromWorkflow(`${workflow}  unrelated:\n    image: ${image}\n`),
     ).not.toThrow('Expected exactly one digest-pinned PostgreSQL')
     const decoy = `jobs:\n  unrelated:\n    services:\n      postgres:\n        image: ${image}\n  postgres-schema-tests:\n    services:\n      postgres:\n        image: registry.test/example/unpinned\n`
-    expect(() => postgresImageFromWorkflow(decoy)).toThrow('Expected one postgres-schema-tests job')
+    expect(() => postgresImageFromWorkflow(decoy)).toThrow(
+      'Expected exactly one digest-pinned PostgreSQL',
+    )
     expect(() =>
       postgresImageFromWorkflow(
         `${workflow}  postgres-schema-tests:\n    services:\n      postgres:\n        image: ${image}\n`,

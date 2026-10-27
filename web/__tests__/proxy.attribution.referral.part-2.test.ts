@@ -22,7 +22,12 @@ describe('proxy attribution', () => {
   })
 
   it('schedules attribution via after() to extend edge runtime lifetime', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
     await proxy(
       makeRequest({
         cookies: { dt: 'my-dt', st: 'my-st' },
@@ -40,7 +45,12 @@ describe('proxy attribution', () => {
   })
 
   it('does not schedule attribution when Global Privacy Control is active', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
 
     await proxy(
       makeRequest({
@@ -58,7 +68,12 @@ describe('proxy attribution', () => {
   })
 
   it('forwards utm params in attribution request body', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
     await proxy(
       makeRequest({
         cookies: { dt: 'my-dt', st: 'my-st' },
@@ -93,7 +108,12 @@ describe('proxy attribution', () => {
   })
 
   it('forwards ref param as utm_source when utm_source is absent', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
     await proxy(
       makeRequest({
         cookies: { dt: 'my-dt', st: 'my-st' },

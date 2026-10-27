@@ -12,6 +12,7 @@ import {
 } from '../../test-helpers/schema-growth-test-policies.mts'
 import { PARTITION_POLICIES, UNBOUNDED_UNPARTITIONED_TABLES } from './schema-growth-registry.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
+import { CLASSIFIER_RETENTION_POLICIES } from '../../test-helpers/schema-growth-classifier-retention.mts'
 
 const uuidv7Identity = {
   idPolicy: 'uuidv7' as SchemaIdPolicy,
@@ -25,9 +26,8 @@ describe('schema growth classification', () => {
     expect(tables.get('communities')).toContain('product adoption')
     expect(tables.get('rss_feed_item_guids')).toContain('Relationship edges')
     expect(tables.get('admin_import_batches')).toContain('audit/workflow')
-    expect(tables.get('ai_usage_provider_response_keys')).toContain(
-      'global response-id idempotency',
-    )
+    expect(tables.has('ai_usage_provider_response_keys')).toBe(false)
+    expect(EXPLICIT_BOUNDED_TABLES.get('ai_usage_provider_response_keys')).toContain('90 days')
     expect(tables.get('web_push_endpoint_owners')).toContain('cross-user endpoint uniqueness')
     expect(tables.get('community_members')).toContain('Relationship edges')
     expect(tables.get(EXTRA_UNBOUNDED_TABLES[0]!)).toContain('owning entity or workflow')
@@ -63,20 +63,33 @@ describe('schema growth classification', () => {
     expect(EXPLICIT_BOUNDED_TABLES.get('notification_push_intent_retention_cursors')).toContain(
       'checked singleton',
     )
+    for (const table of [
+      'user_moderation_email_sends',
+      'notification_email_retention_cleanup_cursors',
+      'amazon_ses_bounce_events',
+    ]) {
+      expect(EXPLICIT_BOUNDED_TABLES.has(table)).toBe(true)
+    }
+    expect(UNBOUNDED_UNPARTITIONED_TABLES.has('amazon_ses_address_suppressions')).toBe(true)
+    expect(EXPLICIT_BOUNDED_TABLES.has('notifications')).toBe(false)
     expect(NON_DEFAULT_ID_EXCEPTIONS.get('user_sessions')).toMatchObject({ policy: 'uuidv7' })
   })
 
-  it('records parent-owned membership work without a time-based retention window', () => {
-    for (const table of [
-      'membership_google_play_acknowledgment_work_items',
-      'membership_renewal_price_increase_notification_work_items',
-      'membership_verification_processing_work_items',
-    ]) {
+  it('classifies membership work by its actual retention path', () => {
+    for (const table of ['membership_google_play_acknowledgment_work_items']) {
       expect(EXPLICIT_BOUNDED_TABLES.has(table)).toBe(false)
       expect(UNBOUNDED_UNPARTITIONED_TABLES.get(table)).toContain(
         'owning parent is removed; no time-based retention',
       )
     }
+    expect(
+      EXPLICIT_BOUNDED_TABLES.get('membership_renewal_price_increase_notification_work_items'),
+    ).toContain('bounded operational cleanup')
+    expect(
+      UNBOUNDED_UNPARTITIONED_TABLES.has(
+        'membership_renewal_price_increase_notification_work_items',
+      ),
+    ).toBe(false)
   })
 })
 
@@ -108,19 +121,7 @@ describe('schema growth registry', () => {
     expect(registry[2]).not.toHaveProperty('noPartitionRationale')
   })
 
-  it('keeps transient high-fanout work bounded even when target-partitioned', () => {
-    const [entry] = buildSchemaGrowthRegistry(
-      new Map([['post_publication_dirty_work_keys', uuidv7Identity]]),
-    )
-
-    expect(entry).toMatchObject({
-      growth: 'bounded',
-      partition: PARTITION_POLICIES.get('post_publication_dirty_work_keys'),
-    })
-    expect(entry).not.toHaveProperty('noPartitionRationale')
-  })
-
-  it('keeps global response-id uniqueness as the partitioning gate for usage keys', () => {
+  it('classifies provider response keys by their 90-day retention', () => {
     const [entry] = buildSchemaGrowthRegistry(
       new Map([
         [
@@ -131,9 +132,9 @@ describe('schema growth registry', () => {
     )
 
     expect(entry).toMatchObject({
-      growth: 'unbounded',
+      growth: 'bounded',
       partition: null,
-      reconsiderPartitioningWhen: expect.stringContaining('global response-id uniqueness'),
+      reconsiderPartitioningWhen: expect.stringContaining('bounded-cardinality'),
     })
   })
 
@@ -214,13 +215,15 @@ describe('schema growth registry', () => {
     })
     expect(PARTITION_POLICIES.get('topic_classifier_results')).toMatchObject({
       strategy: 'RANGE',
-      key: 'topic_id',
+      key: 'batch_id',
       children: 'default',
+      retentionOwner: 'operatorPartitionDrop',
     })
     expect(PARTITION_POLICIES.get('classifier_decision_batch_candidates')).toMatchObject({
       strategy: 'RANGE',
       key: 'batch_id',
       children: 'default',
+      retentionOwner: 'operatorPartitionDrop',
     })
     expect(PARTITION_POLICIES.get('story_classifier_results')).toMatchObject({
       strategy: 'RANGE',
@@ -233,6 +236,10 @@ describe('schema growth registry', () => {
       children: 'default',
     })
     expect(UNBOUNDED_UNPARTITIONED_TABLES.has('classifier_candidate_thresholds')).toBe(true)
+    expect(CLASSIFIER_RETENTION_POLICIES.get('classifier_decision_batches')).toMatchObject({
+      minimumDays: 90,
+      owner: 'data-retention',
+    })
   })
 
   it('classifies RSS feed item identity and content storage separately', () => {

@@ -9,6 +9,7 @@ import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
 } from './entities/bedrock-embeddings-batches.mts'
+import { insertActiveSizeControl } from './embedding-creation-quota-active-control.mts'
 
 /** Coordinates these fixtures, not unrelated production writers or a separate provider account. */
 export async function acquireEmbeddingQuotaFixture() {
@@ -73,7 +74,7 @@ export async function acquireEmbeddingQuotaFixture() {
       ids.length = 0
       return { verifiedAbsentCount: ownedIds.length, remainingCount: 0 }
     },
-    insertCompletedControl: () => {
+    insertCompletedControl: (records = 1) => {
       assertOpen()
       const id = mintUUIDv7()
       ids.push(id)
@@ -82,11 +83,23 @@ export async function acquireEmbeddingQuotaFixture() {
         await insertTestEmbeddingsBatch({
           id,
           bedrockStatus: 'Completed',
-          records: 1,
+          records,
           batchData: { metadata: { inputSizeMB: 0 } },
         })
-        await assertOwnedCompletedControl(id)
-        return { id, records: 1 }
+        await assertOwnedCompletedControl(id, records)
+        return { id, records }
+      })
+      writes.push(write)
+      void write.catch(() => {})
+      return write
+    },
+    insertActiveSizeControl: (inputSizeMB: number) => {
+      assertOpen()
+      const id = mintUUIDv7()
+      ids.push(id)
+      const write = Promise.resolve().then(async () => {
+        assertOpen()
+        return insertActiveSizeControl(id, inputSizeMB)
       })
       writes.push(write)
       void write.catch(() => {})
@@ -165,7 +178,7 @@ async function assertOwnedAccountingRemoved(ids: string[]) {
 }
 
 /** Verify a real completed hourly contribution, with no active count or size contribution. */
-async function assertOwnedCompletedControl(id: string) {
+async function assertOwnedCompletedControl(id: string, records: number) {
   const { rows } = await read<{ id: string; records: number; input_size_mb: number }>(
     `/* embeddingQuotaFixture:completedControl */
     SELECT id, records,
@@ -176,5 +189,5 @@ async function assertOwnedCompletedControl(id: string) {
       AND created_at > NOW() - INTERVAL '1 hour'`,
     [id],
   )
-  expect(rows).toEqual([{ id, records: 1, input_size_mb: 0 }])
+  expect(rows).toEqual([{ id, records, input_size_mb: 0 }])
 }

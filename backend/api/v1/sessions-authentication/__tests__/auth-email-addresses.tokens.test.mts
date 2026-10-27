@@ -36,7 +36,7 @@ describe('Email Address Authentication Routes', () => {
     const tokens = await createDeviceAndSessionTokens({ did, sid })
     deviceToken = tokens.deviceToken.token
     sessionToken = tokens.sessionToken.token
-  }, 30_000)
+  })
 
   afterEach(async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
@@ -72,7 +72,7 @@ describe('Email Address Authentication Routes', () => {
       expect(response.body.message).toBe(
         'Please use a permanent email address. Disposable email providers are not supported.',
       )
-    }, 30_000)
+    })
 
     it('creates login tokens for emailAddress and email_address fields', async () => {
       const req = createRequest()

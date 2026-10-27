@@ -20,7 +20,7 @@ describe('requestApprovedPostClassifierRuns (real PG)', () => {
     const requests = await requestsOf(fixture)
     expect(requests).toHaveLength(1)
     expect(requests[0]!.input_sha256.equals(fixture.inputSha256)).toBe(true)
-    expect(requests[0]).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+    expect(requests[0]).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
   })
 
   it('requests nothing for a post that is not approved', async () => {

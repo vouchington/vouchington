@@ -46,11 +46,13 @@ export function OAuthBrokerButton({
   purpose,
   returnTo,
   disabled,
+  requestReAuth,
 }: {
   provider: BrokerOAuthProvider
   purpose: OAuthBrokerPurpose
   returnTo: string
   disabled?: boolean
+  requestReAuth?: () => Promise<string | null>
 }) {
   const activeProvider = useSyncExternalStore(
     subscribeToBrokerLease,
@@ -63,7 +65,7 @@ export function OAuthBrokerButton({
   async function startBrokerAuthorization() {
     if (!acquireBrokerLease(provider)) return
     try {
-      await startOAuthBrokerAuthorization({ provider, purpose, returnTo })
+      await startOAuthBrokerAuthorization({ provider, purpose, returnTo, requestReAuth })
     } catch (err) {
       onError(err, {
         fallback: `Unable to connect ${label}. Please try again.`,

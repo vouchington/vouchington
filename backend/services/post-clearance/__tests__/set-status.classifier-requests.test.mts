@@ -3,6 +3,11 @@ import {
   requestAutotaggerRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import {
+  AUTOTAGGER_AGENT_SLUG,
+  completeTaggingRunForTest,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-agent-fixture'
+import { retireClassifierRunPayloadForTest } from '@voucha/test-helpers/classifier-cache-retention'
+import {
   sweepableAutotaggerPostIds,
   sweepablePostIds,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/request-retirement'
@@ -16,6 +21,11 @@ import {
 import { setPostClassifierPostHashForTest } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
 import { POST_CLASSIFIER_SLUG } from '@voucha/types/entities/post-classifier'
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
+import { createAutotaggerAgentRunAdapter } from '../../autotagger/agent/adapter.mts'
+import {
+  listPendingClassifierRunRequests,
+  reserveClassifierRun,
+} from '../../classifier-runs/index.mts'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { restorePostClearanceStatus, setPostClearanceStatus } from '../set-status.mts'
 
@@ -115,5 +125,35 @@ describe('approving a post returns the requests the sweep retired (real PG)', ()
 
     for (const { slug } of classifiers)
       expect(await getClassifierRunRequestFacts(post.id, slug)).toEqual([])
+  })
+
+  it('does not re-arm an unchanged follow-on after its first-stage payload retires', async () => {
+    const fixture = await createAutotaggerPostFixture()
+    const { lease } = await completeTaggingRunForTest(fixture)
+    const agentAdapter = createAutotaggerAgentRunAdapter()
+    const before = await getClassifierRunRequestFacts(fixture.post.id, AUTOTAGGER_AGENT_SLUG)
+    expect(before).toHaveLength(1)
+
+    await setPostClearanceStatus(fixture.post.id, 'rejected')
+    expect((await listPendingClassifierRunRequests(agentAdapter, null)).items).not.toContainEqual(
+      expect.objectContaining({ postId: fixture.post.id }),
+    )
+    expect(
+      (await getClassifierRunRequestFacts(fixture.post.id, AUTOTAGGER_AGENT_SLUG))[0]!.stale_at,
+    ).not.toBeNull()
+
+    expect(await retireClassifierRunPayloadForTest(lease.runId)).toBe(1)
+    await setPostClearanceStatus(fixture.post.id, 'approved')
+
+    const after = await getClassifierRunRequestFacts(fixture.post.id, AUTOTAGGER_AGENT_SLUG)
+    expect(after).toEqual(before.map(request => ({ ...request, stale_at: expect.any(Date) })))
+    expect((await listPendingClassifierRunRequests(agentAdapter, null)).items).not.toContainEqual(
+      expect.objectContaining({ postId: fixture.post.id }),
+    )
+    expect(await reserveClassifierRun(agentAdapter, fixture.subject)).toEqual({ kind: 'not-ready' })
+    expect(
+      (await getClassifierRunRequestFacts(fixture.post.id, TAGGING_CLASSIFIER_SLUG))[0]!
+        .run_settled_at,
+    ).not.toBeNull()
   })
 })

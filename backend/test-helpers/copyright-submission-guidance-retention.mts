@@ -11,7 +11,7 @@ import { getCopyrightNoticePrivateAggregate } from './services/copyright-notices
 /** Adds encrypted guidance to the filed counter-notice and hold in an existing retention case. */
 export async function addTestCopyrightSubmissionGuidanceForRetentionCase(
   noticeId: string,
-): Promise<{ counterSubmissionId: string; holdSubmissionId: string }> {
+): Promise<void> {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)
   if (!aggregate) throw new Error('retention guidance fixture notice is missing')
   const counter = aggregate.submissions.find(({ kind }) => kind === 'counter_notice')
@@ -51,5 +51,4 @@ export async function addTestCopyrightSubmissionGuidanceForRetentionCase(
     model: 'retention-fixture',
     guidance: holdGuidance,
   })
-  return { counterSubmissionId: counter.id, holdSubmissionId: hold.id }
 }

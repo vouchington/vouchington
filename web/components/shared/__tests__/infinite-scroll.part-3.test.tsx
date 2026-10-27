@@ -67,7 +67,7 @@ describe('InfiniteScroll', () => {
   function flushRaf() {
     const cbs = [...rafCallbacks.values()]
     rafCallbacks.clear()
-    for (const cb of cbs) cb(performance.now())
+    for (const cb of cbs) cb(0)
   }
 
   function triggerIntersection(isIntersecting: boolean) {

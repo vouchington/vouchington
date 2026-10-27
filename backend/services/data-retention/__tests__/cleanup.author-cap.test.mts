@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { listExistingTestPostIds } from '../../../test-helpers/publication-test-queries.mts'
 import {
   createTestUserDirect,
   countTestPostsCreatedBy,
@@ -6,7 +7,6 @@ import {
   getTestUserRaw,
   createTestRetentionWindow,
   softDeleteUserAt,
-  readTestPublicationIdentityBridge,
   insertTestPostsForUser,
   insertTestPostSourcesForContributor,
   countTestPostSourcesForContributor,
@@ -41,8 +41,9 @@ describe('author deletion budget', () => {
     await cleanupSoftDeletedUsers(options)
     await cleanupSoftDeletedUsers(options)
     expect(await getTestUserRaw(user.id)).toBeNull()
-    expect(await readTestPublicationIdentityBridge('post', first.id)).not.toBeNull()
-    expect(await readTestPublicationIdentityBridge('post', second.id)).not.toBeNull()
+    expect(await listExistingTestPostIds([first.id, second.id])).toEqual(
+      [first.id, second.id].toSorted(),
+    )
   })
   it('shares the row allowance across selected authors instead of giving each a full page', async () => {
     const first = await createTestUserDirect()

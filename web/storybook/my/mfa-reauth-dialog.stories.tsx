@@ -1,3 +1,5 @@
+import { PasskeyReAuthPane } from '@/components/my/mfa-reauth-dialog/passkey-pane'
+import { ProviderReAuthPane } from '@/components/my/mfa-reauth-dialog/provider-pane'
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { MfaReauthDialog } from '@/components/my/mfa-reauth-dialog'
@@ -74,10 +76,32 @@ export const MethodChoice: Story = {
       <MethodSelector
         loading={false}
         method='totp'
+        methods={['totp', 'email']}
         setEmailCode={() => {}}
         setEmailSent={() => {}}
         setMethod={() => {}}
         setSentToEmail={() => {}}
+      />
+    </StoryFrame>
+  ),
+}
+
+export const ProviderOnly: Story = {
+  beforeEach() {
+    setMyAccountFixture({
+      has_email: false,
+      has_totp: false,
+      has_passkey: false,
+      providers: ['github'],
+    })
+  },
+  render: () => (
+    <StoryFrame>
+      <MfaReauthDialog
+        open
+        mfaStatus={{ has_mfa: false, passkeys_count: 0, totp_count: 0 }}
+        onVerified={() => {}}
+        onClose={() => {}}
       />
     </StoryFrame>
   ),
@@ -99,4 +123,29 @@ function TotpCode() {
 
 export const AuthenticatorPane: Story = {
   render: () => <TotpCode />,
+}
+
+export const NamedPasskeyChoices: Story = {
+  render: () => (
+    <StoryFrame width='max-w-md'>
+      <PasskeyReAuthPane
+        loading={false}
+        setLoading={() => {}}
+        onVerified={() => {}}
+      />
+    </StoryFrame>
+  ),
+}
+
+export const LinkedProviderProof: Story = {
+  render: () => (
+    <StoryFrame width='max-w-md'>
+      <ProviderReAuthPane
+        provider='github'
+        loading={false}
+        setLoading={() => {}}
+        onVerified={() => {}}
+      />
+    </StoryFrame>
+  ),
 }

@@ -73,7 +73,7 @@ describe('database emailable flag', () => {
 
     // `.test` resolves to no MX records in the suite stub.
     await expect(validateEmailDomain(hostname)).rejects.toThrow(EmailDomainInvalidError)
-  }, 15_000)
+  })
 })
 
 // Tests for blacklist functionality - needs fresh cache

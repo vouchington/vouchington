@@ -1,4 +1,9 @@
+import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+vi.mock(import('@/components/my/use-fresh-authentication'), () => ({
+  useFreshAuthentication: useFreshAuthenticationMock,
+}))
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock(import('@/lib/api/client'), () => ({
@@ -99,9 +104,9 @@ describe('EmailManager error handling', () => {
     fireEvent.click(sendBtn!)
 
     // Wait for the verification step to render, then type a full OTP value to trigger
-    // autosubmit (the OTP onChange invokes submitVerify when length === 8).
+    // autosubmit (the OTP onChange invokes submitVerify when length === 10).
     const otpInput = (await screen.findByLabelText(/verification code/i)) as HTMLInputElement
-    fireEvent.input(otpInput, { target: { value: '12345678' } })
+    fireEvent.input(otpInput, { target: { value: 'ABCDEFG234' } })
 
     await waitFor(() => {
       expect(toastMock.error).toHaveBeenCalledWith('Invalid or expired verification code')
@@ -152,7 +157,7 @@ describe('EmailManager error handling', () => {
     fireEvent.click(sendBtn!)
 
     const otpInput = (await screen.findByLabelText(/verification code/i)) as HTMLInputElement
-    fireEvent.input(otpInput, { target: { value: '12345678' } })
+    fireEvent.input(otpInput, { target: { value: 'ABCDEFG234' } })
 
     await waitFor(() => {
       expect(toastMock.success).toHaveBeenCalledWith('Email verified')

@@ -1,11 +1,17 @@
 import { orderingMaxValue } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
 
+/** Shared lane for direct publication effects and their continuations. */
+export const POST_PUBLICATION_EFFECTS_ORDERING_KEY = 'post-publication:effects' as const
+
 export const BACKGROUND_ORDERING_CAPS = {
+  'image-deletion': 2,
+  'image-deletion:recovery': 1,
   'ses-inbound': 1,
   'openai-moderation': 5,
   'post-mentions': 5,
   'story-post-related-url-projections': 1,
   'post-publication': 1,
+  'post-publication:effects': 5,
   'vote-aggregation': 10,
   'entity-listeners': 5,
   'account-lifecycle': 2,
@@ -13,8 +19,14 @@ export const BACKGROUND_ORDERING_CAPS = {
   'oauth-authorization-exchange': 4,
   'oauth-authorization-exchange:dispatcher': 1,
   notifications: 5,
+  'notifications:digest-windows': 1,
+  'notifications:digest-schedule': 1,
+  'notifications:mark-all-read': 1,
   'activitypub:outbound': 5,
+  'activitypub:outbound-dispatch': 2,
+  'activitypub:outbound-recovery': 1,
   'activitypub:inbound': 4,
+  'activitypub:inbound-recovery': 1,
   'activitypub:cleanup': 1,
   'follower-distributions': 5,
   'bluesky-follow-propagation': 1,
@@ -44,5 +56,9 @@ export function getBackgroundOrderingLimits(key: string): {
   const configKey = key
   const defaultValue = BACKGROUND_ORDERING_CAPS[configKey as keyof typeof BACKGROUND_ORDERING_CAPS]
   if (defaultValue === undefined) throw new Error(`Unregistered background ordering key: ${key}`)
-  return { configKey, defaultValue, maxValue: orderingMaxValue(defaultValue) }
+  return {
+    configKey,
+    defaultValue,
+    maxValue: orderingMaxValue(defaultValue),
+  }
 }
