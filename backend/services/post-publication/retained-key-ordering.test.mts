@@ -1,10 +1,7 @@
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import {
-  beginTransaction,
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers'
+import { beginTransaction } from '@voucha/test-helpers'
+import { createTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-waiter'
 import { readTestPublicationRetainedKeys } from '@voucha/test-helpers/entities/post-publication-snapshots'
 import { describe, expect, it } from 'vitest'
 import { recordPostPublicationChange } from './capture.mts'
@@ -69,37 +66,42 @@ async function assertOverlappingWrites(
   secondKeys: PostPublicationRetainedKey[],
 ): Promise<void> {
   await using first = await beginTransaction()
-  await using second = await beginTransaction()
-  const firstPid = await getTestPostgresBackendProcessId(first)
+  await using second = await createTestPostgresLockWaiter({
+    holder: first,
+    lock: { kind: 'transaction' },
+    selected: {
+      marker: '/* retainPostPublicationDirtyWorkKeys */',
+      binding: { index: 0, value: workId },
+    },
+  })
   const inserted = Promise.withResolvers<void>()
   let insertCount = 0
+  const secondWrite = inserted.promise
+    .then(() => retainPostPublicationKeys(second.query, workId, secondKeys))
+    .then(() => second.query.commit())
+    .catch(async err => {
+      await second.query.rollback()
+      throw err
+    })
   const barrieredQuery = Object.assign(
     async (input: string, values?: unknown[]) => {
       const result = await first(input, values)
       if (input.includes('/* retainPostPublicationDirtyWorkKeys */') && ++insertCount === 1) {
         inserted.resolve()
-        await waitForTestPostgresLockWaiter(firstPid, 'retainPostPublicationDirtyWorkKeys')
+        await second.waitForLock(secondWrite)
       }
       return result
     },
     { client: first.client },
   ) as TransactionQuery
-  const outcomes = await Promise.allSettled([
-    retainPostPublicationKeys(barrieredQuery, workId, firstKeys)
-      .then(() => first.commit())
-      .catch(async err => {
-        inserted.reject(err)
-        await first.rollback()
-        throw err
-      }),
-    inserted.promise
-      .then(() => retainPostPublicationKeys(second, workId, secondKeys))
-      .then(() => second.commit())
-      .catch(async err => {
-        await second.rollback()
-        throw err
-      }),
-  ])
+  const firstWrite = retainPostPublicationKeys(barrieredQuery, workId, firstKeys)
+    .then(() => first.commit())
+    .catch(async err => {
+      inserted.reject(err)
+      await first.rollback()
+      throw err
+    })
+  const outcomes = await Promise.allSettled([firstWrite, secondWrite])
   expect(outcomes).toEqual([
     { status: 'fulfilled', value: undefined },
     { status: 'fulfilled', value: undefined },

@@ -9,8 +9,12 @@ type Settings = {
 }
 
 /** Observe one real reserved connection; PostgreSQL emits this LOG while its lock is still blocked. */
-export function observeTestAdvisoryLockNotice(client: PoolClient, lockTag: string) {
-  return observeTestPostgresLockNotice(client, lockTag, 'ExclusiveLock')
+export function observeTestAdvisoryLockNotice(
+  client: PoolClient,
+  lockTag: string,
+  eligible: () => boolean = () => true,
+) {
+  return observeTestPostgresLockNotice(client, lockTag, 'ExclusiveLock', eligible)
 }
 
 export function observeTestTransactionLockNotice(
