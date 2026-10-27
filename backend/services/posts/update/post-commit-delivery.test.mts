@@ -1,8 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, onTestFinished } from 'vitest'
 import { finalizePostUpdateAndDeliver } from './post-commit-delivery.mts'
-import type { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
-import { startPostCacheInvalidation } from '@services/entity-cache/invalidate'
-import type onError from '@modules/on-error'
+import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
+import { ValkeyCache } from '@data-stores/valkey/cache'
+import { caches } from '@services/entity-cache/caches'
+import { entityCacheBloomFilters } from '@services/entity-cache/bloom-filter-instances'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   createPostCompletionFixture,
   drainOwnedTestAction,
@@ -22,67 +25,118 @@ async function fixture() {
 describe('finalizePostUpdateAndDeliver', () => {
   it('returns the transaction-captured post and sends one update event', async () => {
     const input = await fixture()
-    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>(() => Promise.resolve())
-    const invalidatePosts = vi.fn<typeof startPostCacheInvalidation>().mockReturnValue({
-      completion: Promise.resolve(),
-      rejectionReported: false,
+    const originalAdd = entitiesListeners.add
+    const calls: unknown[] = []
+    const spy = vi.spyOn(entitiesListeners, 'add').mockImplementation((name, data, options) => {
+      if (
+        name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
+        data &&
+        typeof data === 'object' &&
+        'id' in data &&
+        data.id === input.updatedPost.id
+      )
+        calls.push(data)
+      return originalAdd.call(entitiesListeners, name, data, options)
     })
-    await expect(
-      finalizePostUpdateAndDeliver(input, { enqueueOnPostUpdated: enqueueUpdate, invalidatePosts }),
-    ).resolves.toBe(input.updatedPost)
-    expect(invalidatePosts).toHaveBeenCalledOnce()
-    expect(enqueueUpdate).toHaveBeenCalledOnce()
-    expect(enqueueUpdate).toHaveBeenCalledWith(input.updatedPost.id, { contentChanged: true })
+    onTestFinished(() => spy.mockRestore())
+    await expect(finalizePostUpdateAndDeliver(input)).resolves.toBe(input.updatedPost)
+    expect(calls).toEqual([{ id: input.updatedPost.id, contentChanged: true }])
   })
 
   it('reports cache failure without rejecting a committed post update', async () => {
     const input = await fixture()
-    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>(() => Promise.resolve())
-    const reportError = vi.fn<typeof onError>()
-    const error = new Error('cache unavailable')
+    const error = new Error('Owned cache unavailable')
+    const originalDelete = ValkeyCache.deleteFromCaches
+    const cacheSpy = vi.spyOn(ValkeyCache, 'deleteFromCaches').mockImplementation(groups => {
+      if (
+        groups.some(
+          group => group.cache === caches.posts && group.keys.includes(input.updatedPost.id),
+        )
+      )
+        return Promise.reject(error)
+      return originalDelete.call(ValkeyCache, groups)
+    })
+    const originalAdd = entitiesListeners.add
+    const calls: unknown[] = []
+    const queueSpy = vi
+      .spyOn(entitiesListeners, 'add')
+      .mockImplementation((name, data, options) => {
+        if (
+          name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
+          data &&
+          typeof data === 'object' &&
+          'id' in data &&
+          data.id === input.updatedPost.id
+        )
+          calls.push(data)
+        return originalAdd.call(entitiesListeners, name, data, options)
+      })
+    onTestFinished(() => {
+      cacheSpy.mockRestore()
+      queueSpy.mockRestore()
+    })
     await expect(
-      finalizePostUpdateAndDeliver(
-        { ...input, changes: {}, contentChanged: false },
-        {
-          enqueueOnPostUpdated: enqueueUpdate,
-          invalidatePosts: vi.fn<typeof startPostCacheInvalidation>().mockReturnValue({
-            completion: Promise.reject(error),
-            rejectionReported: false,
-          }),
-          onError: reportError,
-        },
-      ),
+      finalizePostUpdateAndDeliver({ ...input, changes: {}, contentChanged: false }),
     ).resolves.toBe(input.updatedPost)
-    expect(enqueueUpdate).toHaveBeenCalledOnce()
-    expect(enqueueUpdate).toHaveBeenCalledWith(input.updatedPost.id, { contentChanged: false })
-    expect(reportError).toHaveBeenCalledWith(error)
+    expect(calls).toEqual([{ id: input.updatedPost.id, contentChanged: false }])
+    expect(sentryCaptureExceptionMock.mock.calls.filter(([err]) => err === error)).toHaveLength(1)
   })
 
   it('drains both cache and listener admissions before returning the captured response', async () => {
     const input = await fixture()
-    const cache = Promise.withResolvers<void>()
-    const queue = Promise.withResolvers<void>()
-    const starts: string[] = []
-    const operation = () =>
-      finalizePostUpdateAndDeliver(input, {
-        invalidatePosts: () => {
-          starts.push('cache')
-          return { completion: cache.promise, rejectionReported: false }
-        },
-        enqueueOnPostUpdated: () => {
-          starts.push('queue')
-          return queue.promise
-        },
+    const cacheStarted = Promise.withResolvers<void>()
+    const queueStarted = Promise.withResolvers<void>()
+    const cacheRelease = Promise.withResolvers<void>()
+    const queueRelease = Promise.withResolvers<void>()
+    const queueFinished = Promise.withResolvers<void>()
+    const originalDelete = ValkeyCache.deleteFromCaches
+    const cacheSpy = vi.spyOn(ValkeyCache, 'deleteFromCaches').mockImplementation(groups => {
+      if (
+        !groups.some(
+          group => group.cache === caches.posts && group.keys.includes(input.updatedPost.id),
+        )
+      )
+        return originalDelete.call(ValkeyCache, groups)
+      cacheStarted.resolve()
+      return cacheRelease.promise.then(() => originalDelete.call(ValkeyCache, groups))
+    })
+    const originalAdd = entitiesListeners.add
+    const queueSpy = vi
+      .spyOn(entitiesListeners, 'add')
+      .mockImplementation((name, data, options) => {
+        if (
+          name !== ENTITY_LISTENERS_POST_UPDATED_JOB.name ||
+          !(data && typeof data === 'object' && 'id' in data && data.id === input.updatedPost.id)
+        )
+          return originalAdd.call(entitiesListeners, name, data, options)
+        queueStarted.resolve()
+        return queueRelease.promise.then(async () => {
+          const job = await originalAdd.call(entitiesListeners, name, data, options)
+          queueFinished.resolve()
+          return job
+        })
       })
+    onTestFinished(() => {
+      cacheSpy.mockRestore()
+      queueSpy.mockRestore()
+    })
+    let completed = false
     await expect(
       drainOwnedTestAction(
-        operation,
+        () =>
+          finalizePostUpdateAndDeliver(input).then(result => {
+            completed = true
+            return result
+          }),
         () => {
-          cache.resolve()
-          queue.resolve()
+          cacheRelease.resolve()
+          queueRelease.resolve()
         },
         async () => {
-          expect(starts).toEqual(['cache', 'queue'])
+          await Promise.all([cacheStarted.promise, queueStarted.promise])
+          queueRelease.resolve()
+          await queueFinished.promise
+          expect(completed).toBe(false)
         },
       ),
     ).resolves.toBe(input.updatedPost)
@@ -90,13 +144,41 @@ describe('finalizePostUpdateAndDeliver', () => {
 
   it('preserves bloom work and suppresses update admission when the captured decision is false', async () => {
     const input = await fixture()
-    const bloom = vi.fn<() => Promise<void>>(() => Promise.resolve())
-    const enqueueUpdate = vi.fn<typeof enqueueOnPostUpdated>(() => Promise.resolve())
-    await finalizePostUpdateAndDeliver(
-      { ...input, changes: { slug: input.updatedPost.slug! }, shouldEnqueuePostUpdated: false },
-      { addEntityBloomKeys: bloom, enqueueOnPostUpdated: enqueueUpdate },
-    )
-    expect(bloom).toHaveBeenCalledOnce()
-    expect(enqueueUpdate).not.toHaveBeenCalled()
+    const originalBloom = entityCacheBloomFilters.posts.addOrThrow
+    const bloomCalls: string[][] = []
+    const bloomSpy = vi
+      .spyOn(entityCacheBloomFilters.posts, 'addOrThrow')
+      .mockImplementation(keys => {
+        if (!keys.includes(input.updatedPost.slug!))
+          return originalBloom.call(entityCacheBloomFilters.posts, keys)
+        bloomCalls.push(keys)
+        return Promise.resolve()
+      })
+    const originalAdd = entitiesListeners.add
+    const queueCalls: unknown[] = []
+    const queueSpy = vi
+      .spyOn(entitiesListeners, 'add')
+      .mockImplementation((name, data, options) => {
+        if (
+          name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
+          data &&
+          typeof data === 'object' &&
+          'id' in data &&
+          data.id === input.updatedPost.id
+        )
+          queueCalls.push(data)
+        return originalAdd.call(entitiesListeners, name, data, options)
+      })
+    onTestFinished(() => {
+      bloomSpy.mockRestore()
+      queueSpy.mockRestore()
+    })
+    await finalizePostUpdateAndDeliver({
+      ...input,
+      changes: { slug: input.updatedPost.slug! },
+      shouldEnqueuePostUpdated: false,
+    })
+    expect(bloomCalls).toEqual([[input.updatedPost.slug]])
+    expect(queueCalls).toEqual([])
   })
 })
