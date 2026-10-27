@@ -1,5 +1,8 @@
-import { beginTransaction, read, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
+import { insertTestCommunity } from './entities/communities.mts'
+import { insertTestCommunityMember } from './entities/community-members.mts'
 import { createOwnedSqlFixtureLifetime } from './owned-sql-fixture-lifetime.mts'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
 
@@ -80,4 +83,24 @@ export async function readTestCommunityActivityDigestDelivery(userId: string, wi
 export function beforeTestDigestUserId(userId: string): string {
   const hex = (BigInt(`0x${userId.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/** Adjacent UUIDv7 identities bound a recipient page to only this fixture's users. */
+export async function createTestDigestAdjacentUsers(): Promise<[string, string]> {
+  const prefix = uuidv7().slice(0, -1)
+  const first = `${prefix}0`
+  const second = `${prefix}1`
+  await write(sql`/* createTestDigestAdjacentUsers */
+    INSERT INTO users (id) VALUES (${first}::uuid), (${second}::uuid)`)
+  return [first, second]
+}
+
+export async function addTestDigestMember(userId: string, now: Date): Promise<void> {
+  const community = await insertTestCommunity({ createdById: userId })
+  await insertTestCommunityMember({
+    communityId: community.id,
+    userId,
+    role: 'owner',
+    createdAt: now,
+  })
 }

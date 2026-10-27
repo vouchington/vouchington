@@ -26,7 +26,7 @@ const enqueueBulkWindowJobs = createBackgroundBulkEnqueue(
 )
 
 export function communityActivityDigestWindowJobId(data: CommunityActivityDigestDispatchData) {
-  return `digest:${data.windowStart}`
+  return `digest__${new Date(data.windowStart).getTime()}`
 }
 
 export function getCommunityActivityDigestDispatchData(

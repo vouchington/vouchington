@@ -16,6 +16,7 @@ import { insertTestCommunity } from '@voucha/test-helpers/entities/communities'
 import { insertTestCommunityMember } from '@voucha/test-helpers/entities/community-members'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { createCommunityActivityDigestBatch } from './community-activity-digest.mts'
+import { notifications } from '../../queues/notifications/queues.mts'
 import {
   advanceCommunityActivityDigestCursor,
   isCommunityActivityDigestWindowComplete,
@@ -35,6 +36,26 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => origina
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 describe('community activity digest real queue admission', () => {
+  it('publishes the epoch identity and digest lane through the registered producer', async () => {
+    const start = new Date(Date.UTC(2400, 0, 1) + Number.parseInt(randomUUID().slice(0, 8), 16))
+    const window = {
+      windowStart: start.toISOString(),
+      windowEnd: new Date(start.getTime() + WEEK_MS).toISOString(),
+    }
+    const id = `digest__${start.getTime()}`
+    try {
+      const [job] = await enqueueCommunityActivityDigestWindows([window])
+      expect(job?.id).toBe(id)
+      const stored = await notifications.getJob(id)
+      expect(stored?.data).toEqual(window)
+      expect(stored?.opts.ordering).toEqual(
+        expect.objectContaining({ key: 'notifications:digest-windows' }),
+      )
+    } finally {
+      await (await notifications.getJob(id))?.remove()
+    }
+  })
+
   it('reactivates a failed stable window on the next tick without duplicating its delivery', async () => {
     const businessNow = new Date()
     const windowStart = new Date(businessNow)
@@ -66,6 +87,7 @@ describe('community activity digest real queue admission', () => {
       const harness = await startRealGlideBackgroundLifecycle({
         queueNamePrefix: 'community_digest_recovery',
         connection: getTestCommunityActivityDigestQueueConnection(),
+        workerOptions: { blockTimeout: 100 },
         processor: async job => {
           runs += 1
           try {
@@ -120,7 +142,7 @@ describe('community activity digest real queue admission', () => {
             },
           )
         await tick()
-        const jobId = `digest:${windowStart.toISOString()}`
+        const jobId = `digest__${windowStart.getTime()}`
         expect(await harness.settled({ id: jobId })).toBe('failed')
         expect(await readTestCommunityActivityDigestCursor(query)).toEqual(windowStart)
         expect(await readTestCommunityActivityDigestDelivery(user.id, windowStart)).toEqual({
