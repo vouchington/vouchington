@@ -6,6 +6,7 @@ import {
   updateSourceCacheHeaders,
   getBlacklistSourceById,
   type DomainBlacklistSourceId,
+  type SourceCacheHeaders,
 } from '@services/urls-domains-blacklist/sources'
 import {
   parseSourceId,
@@ -16,13 +17,18 @@ import {
 } from './sync-utils.mts'
 import { syncDomainsWithDatabase } from './sync-db.mts'
 import type { SyncBlacklistSourceResult } from './sync-types.mts'
+import { readWriterWalLsn, ReplicaBehindError } from './replica-freshness.mts'
 export type { SyncBlacklistSourceResult } from './sync-types.mts'
+export { readWriterWalLsn, ReplicaBehindError } from './replica-freshness.mts'
 
 const FETCH_TIMEOUT_MS = 30_000
 
-type SourceCacheHeaders = {
-  etag: string | null
-  last_modified_at: Date | null
+/** Retryable. The list has not changed, and this source has no committed membership diff. */
+export class BlocklistUnmodifiedWithoutSyncError extends Error {
+  constructor() {
+    super('Blocklist source returned 304 before a successful membership diff')
+    this.name = 'BlocklistUnmodifiedWithoutSyncError'
+  }
 }
 
 type SyncBlacklistDependencies = {
@@ -31,6 +37,8 @@ type SyncBlacklistDependencies = {
   updateSourceCacheHeaders: typeof updateSourceCacheHeaders
   fetchBlacklist: typeof fetchBlacklist
   syncDomainsWithDatabase: typeof syncDomainsWithDatabase
+  /** Writer LSN captured at job start. Direct callers read one when this is omitted. */
+  writerLsn?: string
 }
 
 const defaultDependencies: SyncBlacklistDependencies = {
@@ -55,6 +63,9 @@ export async function syncBlacklistSourceById(
   try {
     await syncBlacklistSource(sourceId, source.url, source.type, syncDependencies)
   } catch (err) {
+    if (err instanceof ReplicaBehindError || err instanceof BlocklistUnmodifiedWithoutSyncError) {
+      throw err
+    }
     onError(err instanceof Error ? err : createSyncFailedError(source.url, err))
   }
 }
@@ -68,9 +79,15 @@ export async function syncBlacklistSource(
   const syncDependencies = { ...defaultDependencies, ...dependencies }
   const id = parseSourceId(sourceId)
   const cache = await syncDependencies.getSourceCacheHeaders(sourceId)
-  const response = await syncDependencies.fetchBlacklist(url, cache)
+  const successRecorded = cache?.membership_diff_applied_at != null
+  let response = await syncDependencies.fetchBlacklist(url, successRecorded ? cache : null)
+  // A 304 without a committed diff is not proof the membership matches. Read the list once more.
+  if (response.status === 304 && !successRecorded) {
+    response = await syncDependencies.fetchBlacklist(url, null)
+  }
 
   if (response.status === 304) {
+    if (!successRecorded) throw new BlocklistUnmodifiedWithoutSyncError()
     await syncDependencies.updateSourceCacheHeaders(sourceId, {
       etag: cache?.etag ?? null,
       lastModifiedAt: cache?.last_modified_at ?? null,
@@ -82,7 +99,16 @@ export async function syncBlacklistSource(
     throw createFetchError(response.status, response.statusText)
   }
 
-  const result = await syncDependencies.syncDomainsWithDatabase(id, response, sourceType)
+  const writerLsn = syncDependencies.writerLsn ?? (await readWriterWalLsn())
+  const result = await syncDependencies.syncDomainsWithDatabase(
+    id,
+    response,
+    sourceType,
+    undefined,
+    {
+      writerLsn,
+    },
+  )
   await syncDependencies.updateSourceCacheHeaders(sourceId, getCacheHeadersFromResponse(response))
   return result
 }
@@ -103,8 +129,9 @@ export function createBlacklistFetchHeaders(
   const headers: Record<string, string> = {
     'Accept-Encoding': 'gzip, deflate, br',
   }
-  if (cache?.etag) headers['If-None-Match'] = cache.etag
-  if (cache?.last_modified_at) {
+  if (cache?.membership_diff_applied_at == null) return headers
+  if (cache.etag) headers['If-None-Match'] = cache.etag
+  if (cache.last_modified_at) {
     headers['If-Modified-Since'] = new Date(cache.last_modified_at).toUTCString()
   }
   return headers

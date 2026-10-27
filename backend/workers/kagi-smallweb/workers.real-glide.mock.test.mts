@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, rmSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { background } from '@queues/background/queues'
@@ -109,7 +110,7 @@ describe('Kagi paged dispatcher through the background handler', () => {
     }
   })
 
-  it('uses the job feedListDir and downloads again when that directory is gone', async () => {
+  it('re-fetches each page from the cursor and keeps no feed-list directory', async () => {
     const suffix = randomUUID()
     const urls = [
       `https://kagi-dir-${suffix}-a.example.com/feed.xml`,
@@ -144,6 +145,7 @@ describe('Kagi paged dispatcher through the background handler', () => {
       candidate => candidate.job.name === KAGI_SMALLWEB_SYNC_JOB.name,
     )
     if (!handler) throw new Error('Kagi sync handler is not registered')
+    const beforeDirectories = new Set(feedListDirectories())
     const root = await background.add(
       KAGI_SMALLWEB_SYNC_JOB.name,
       {},
@@ -155,17 +157,16 @@ describe('Kagi paged dispatcher through the background handler', () => {
       await handler.handle(root as Job<never>)
       expect(fetchSpy).toHaveBeenCalledTimes(3)
       const first = await continuationFor(urls)
-      const directory = feedListDirectory(first)
-      expect(existsSync(directory)).toBe(true)
+      expect(first.data).toEqual({ cursor: urls[0] })
 
       await handler.handle(first as Job<never>)
-      expect(fetchSpy).toHaveBeenCalledTimes(3)
-      const second = await continuationFor(urls, first.id)
-      expect(feedListDirectory(second)).toBe(directory)
-
-      rmSync(directory, { recursive: true, force: true })
-      await handler.handle(second as Job<never>)
       expect(fetchSpy).toHaveBeenCalledTimes(6)
+      const second = await continuationFor(urls, first.id)
+      expect(second.data).toEqual({ cursor: urls[1] })
+
+      await handler.handle(second as Job<never>)
+      expect(fetchSpy).toHaveBeenCalledTimes(9)
+      expect(feedListDirectories().filter(name => !beforeDirectories.has(name))).toEqual([])
       const finalJobs = await Promise.all(
         urls.map(feedUrl =>
           background.searchJobs({
@@ -213,8 +214,6 @@ async function continuationFor(urls: readonly string[], exceptId?: string) {
   return persisted
 }
 
-function feedListDirectory(job: { data: unknown }): string {
-  const directory = (job.data as { feedListDir?: string }).feedListDir
-  if (!directory) throw new Error('continuation is missing feedListDir')
-  return directory
+function feedListDirectories(): string[] {
+  return readdirSync(tmpdir()).filter(name => name.startsWith(`kagi-feed-list-${process.pid}-`))
 }

@@ -126,19 +126,30 @@ export async function listBlacklistDomainsBySource(
   return result.rows.map(row => row.domain)
 }
 
-/** Plan for the C-collation source-cache keyset. The planner settings roll back with the transaction. */
+/** Plan a reader membership select. Sequential and bitmap scans stay off until this transaction ends. */
 export async function explainBlocklistedDomainOrderPlan(
   sourceId: DomainBlacklistSourceId,
+  membershipSelectSql: string,
 ): Promise<string> {
   await using transaction = await beginTransaction()
   await transaction(`/* explainMembership */ SET LOCAL enable_seqscan = off`)
   await transaction(`/* explainMembership */ SET LOCAL enable_bitmapscan = off`)
   const explained = await transaction<{ 'QUERY PLAN': string }>(
-    `/* explainMembership */ EXPLAIN SELECT domain FROM blocklisted_domains
-     WHERE source_id = $1::bigint AND domain COLLATE "C" > $2::text COLLATE "C"
-     ORDER BY domain COLLATE "C"
-     LIMIT 64`,
-    [sourceId, ''],
+    `/* explainMembership */ EXPLAIN ${membershipSelectSql}`,
+    [sourceId],
   )
   return explained.rows.map(row => row['QUERY PLAN']).join('\n')
+}
+
+export async function getTestBlacklistMembershipDiffAppliedAt(
+  sourceId: DomainBlacklistSourceId,
+): Promise<Date | null> {
+  const result = await read<{ membership_diff_applied_at: Date | null }>(
+    allowUnannotatedQuery(sql`
+    SELECT membership_diff_applied_at
+    FROM domain_blocklist_sources
+    WHERE id = ${sourceId}
+  `),
+  )
+  return result.rows[0]?.membership_diff_applied_at ?? null
 }

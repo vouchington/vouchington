@@ -18,9 +18,9 @@ const DEFAULTS = {
 
 /**
  * One page of the Small Web lists. `cursor` is the last feed URL of the page before it.
- * `feedListDir` is that run's on-disk diff, so a continuation does not download the lists again.
+ * Each run re-fetches the lists and slices from that cursor.
  */
-export type KagiSyncData = { cursor?: string; feedListDir?: string }
+export type KagiSyncData = { cursor?: string }
 
 export type KagiFeedJobData = {
   feedUrl: string

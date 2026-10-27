@@ -16,6 +16,7 @@ import { ADDED_DOMAINS_TABLE } from './sync-cache.mts'
 import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
 import { BLOCKLIST_DIFF_DIRECTORY_PREFIX, syncDomainsWithDatabase } from './sync-db.mts'
 import { stageBothDiffFiles } from './membership-diff-stage.mts'
+import { sourceMembershipOrderSql } from './membership-copy-sql.mts'
 import { persistDomainDiff } from './sync-db-domain-diff.mts'
 
 describe('blocklist file diff', () => {
@@ -104,13 +105,13 @@ describe('blocklist file diff', () => {
         Error,
       )
       expect(await countBlacklistEntriesBySource(sourceId)).toBe(0)
-      expect(diffDirectories().filter(name => !before.has(name))).toEqual([])
+      expect(diffDirectories().filter(directory => !before.has(directory))).toEqual([])
     } finally {
       await deleteTestBlacklistSource(sourceId)
     }
   })
 
-  it('plans the source-cache keyset with the C-collation index', async () => {
+  it('plans the reader membership COPY with the C-collation index', async () => {
     const suffix = sourceNameSuffix()
     const name = `explain-${suffix}`
     const sourceId = await createTestBlacklistSource({
@@ -120,7 +121,7 @@ describe('blocklist file diff', () => {
     })
     try {
       await insertTestDomainBlacklist(`explain-${suffix}.example`, name)
-      const plan = await explainBlocklistedDomainOrderPlan(sourceId)
+      const plan = await explainBlocklistedDomainOrderPlan(sourceId, sourceMembershipOrderSql('$1'))
       expect(plan).toContain('idx_blocklisted_domains__source_id__domain')
       expect(plan).toMatch(/Index (?:Only )?Scan/)
       expect(plan).not.toContain('Sort')

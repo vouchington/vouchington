@@ -1,21 +1,28 @@
 import { readPool, writePool, type TransactionQuery } from '@data-stores/psql'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
-import { prepareMembershipDiff, type MembershipDiffPaths } from './membership-diff-stage.mts'
+import { writeCommDiff } from './diff-files.mts'
+import type { MembershipDiffPaths } from './membership-diff-stage.mts'
+import { copyFreshSourceMembership, copySourceMembership } from './reader-membership-copy.mts'
+import { ReplicaBehindError } from './replica-freshness.mts'
 
 const MAX_MEMBERSHIP_PREPARATIONS = 3
+
+export type MembershipPrepareHooks = {
+  writerLsn: string
+  replicaCoversWriterLsn?: (writerLsn: string) => Promise<boolean>
+  copySourceMembership?: typeof copySourceMembership
+  writeCommDiff?: typeof writeCommDiff
+}
 
 /** Rebuild only after another writer changed this source during off-lock preparation. */
 export async function applyWithPreparedMembership<T>(
   sourceId: DomainBlacklistSourceId,
   paths: MembershipDiffPaths,
   apply: (version: string | null) => Promise<T | null>,
+  hooks: MembershipPrepareHooks,
 ): Promise<T> {
   async function attempt(index: number): Promise<T> {
-    const version = await prepareVersionedMembership(
-      sourceId,
-      paths,
-      index === 0 ? readPool : writePool,
-    )
+    const version = await prepareVersionedMembership(sourceId, paths, index, hooks)
     const result = await apply(version)
     if (result !== null) return result
     if (index + 1 >= MAX_MEMBERSHIP_PREPARATIONS) {
@@ -29,11 +36,34 @@ export async function applyWithPreparedMembership<T>(
 async function prepareVersionedMembership(
   sourceId: DomainBlacklistSourceId,
   paths: MembershipDiffPaths,
-  pool: typeof readPool,
+  index: number,
+  hooks: MembershipPrepareHooks,
 ): Promise<string | null> {
   const version = await sourceVersion(sourceId)
-  await prepareMembershipDiff(sourceId, paths, pool)
+  // Copy and diff stay outside the source lock. The first attempt uses the replica and
+  // refuses a snapshot from before the job's writer LSN. A mismatch retries from the writer.
+  if (index === 0) await copyReplicaMembership(sourceId, paths.membershipPath, hooks)
+  else await copySourceMembership(sourceId, paths.membershipPath, writePool)
+  await (hooks.writeCommDiff ?? writeCommDiff)(paths)
   return version
+}
+
+async function copyReplicaMembership(
+  sourceId: DomainBlacklistSourceId,
+  destination: string,
+  hooks: MembershipPrepareHooks,
+): Promise<void> {
+  // An injected snapshot does not open a client. The replica hook decides whether to apply it.
+  if (hooks.replicaCoversWriterLsn) {
+    if (!(await hooks.replicaCoversWriterLsn(hooks.writerLsn))) throw new ReplicaBehindError()
+    await (hooks.copySourceMembership ?? copySourceMembership)(sourceId, destination, readPool)
+    return
+  }
+  if (hooks.copySourceMembership) {
+    await hooks.copySourceMembership(sourceId, destination, readPool)
+    return
+  }
+  await copyFreshSourceMembership(sourceId, destination, hooks.writerLsn, readPool)
 }
 
 async function sourceVersion(sourceId: DomainBlacklistSourceId): Promise<string | null> {

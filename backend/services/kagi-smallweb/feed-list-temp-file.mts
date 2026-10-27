@@ -1,14 +1,15 @@
 import { createWriteStream } from 'node:fs'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { lstat, mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { iterateFeedListEntries, type FeedListSourceType, type ParsedFeedEntry } from './parse.mts'
-import { entryFromLine, linesOf, numberedLine } from './feed-list-lines.mts'
+import { entryFromLine, feedUrlFromLine, linesOf, numberedLine } from './feed-list-lines.mts'
 import { sortAndDiff } from './feed-list-sort.mts'
 
 const KAGI_FEED_LIST_DIRECTORY_PREFIX = `kagi-feed-list-${process.pid}-`
+export const FEED_LIST_DIRECTORY_MAX_AGE_MS = 60 * 60 * 1000
 
 export type FeedListChunkSource = {
   chunks: Readable
@@ -23,6 +24,27 @@ type FeedListPage = {
 
 export function createFeedListDirectory(): Promise<string> {
   return mkdtemp(join(tmpdir(), KAGI_FEED_LIST_DIRECTORY_PREFIX))
+}
+
+/** Drop this process's feed-list directories once they are older than one hour. */
+export async function sweepExpiredFeedListDirectories(now = Date.now()): Promise<void> {
+  const names = await readdir(tmpdir())
+  await Promise.all(
+    names.map(async name => {
+      if (!name.startsWith(KAGI_FEED_LIST_DIRECTORY_PREFIX)) return
+      const directory = join(tmpdir(), name)
+      let info: Awaited<ReturnType<typeof lstat>>
+      try {
+        info = await lstat(directory)
+      } catch (err) {
+        if (isMissingFile(err)) return
+        throw err
+      }
+      if (!info.isDirectory()) return
+      if (now - info.mtimeMs > FEED_LIST_DIRECTORY_MAX_AGE_MS)
+        await removeFeedListDirectory(directory)
+    }),
+  )
 }
 
 export async function removeFeedListDirectory(directory: string): Promise<void> {
@@ -64,21 +86,27 @@ export async function readFeedListPage(
   let total = 0
   try {
     for await (const line of dedupedLines) {
-      const entry = entryFromLine(line)
-      if (!entry || (cursor !== undefined && compareUtf8(entry.feedUrl, cursor) <= 0)) continue
+      const feedUrl = feedUrlFromLine(line)
+      if (feedUrl === null || (cursor !== undefined && compareUtf8(feedUrl, cursor) <= 0)) continue
       total += 1
-      while (!pending.done && compareUtf8(pending.value, entry.feedUrl) < 0)
+      while (!pending.done && compareUtf8(pending.value, feedUrl) < 0)
         // oxlint-disable-next-line no-await-in-loop -- each advance depends on the preceding line
         pending = await added.next()
       if (page.length >= pageSize) continue
+      const entry = entryFromLine(line)
+      if (!entry) continue
       page.push(entry)
-      if (!pending.done && compareUtf8(pending.value, entry.feedUrl) === 0) newEntries.push(entry)
+      if (!pending.done && compareUtf8(pending.value, feedUrl) === 0) newEntries.push(entry)
     }
   } finally {
     await dedupedLines.return(undefined)
     await added.return(undefined)
   }
   return { page, newEntries, total }
+}
+
+function isMissingFile(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && err.code === 'ENOENT'
 }
 
 function compareUtf8(left: string, right: string): number {

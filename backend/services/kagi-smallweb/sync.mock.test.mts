@@ -28,7 +28,7 @@ function unbufferedResponse(body: string): Response {
 }
 
 describe('dispatchKagiSmallWeb with the import enabled', () => {
-  it('downloads every list once and resumes later pages from that file', async () => {
+  it('re-fetches the lists for each page and resumes from the cursor', async () => {
     overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, {
       enabled: true,
       candidate_batch_size: 1,
@@ -48,17 +48,16 @@ describe('dispatchKagiSmallWeb with the import enabled', () => {
 
     const first = await dispatchKagiSmallWeb()
     expect(first).toMatchObject({ enqueued: 1, hasMore: true, total: 4 })
+    expect(first).not.toHaveProperty('feedListDir')
     expect(fetchSpy).toHaveBeenCalledTimes(3)
-    if (!first.feedListDir)
-      throw new Error('expected the first page to keep the feed list directory')
 
     let cursor = first.nextCursor
     let pages = 0
     while (cursor !== undefined && pages < 5) {
-      const resumed = await dispatchKagiSmallWeb(cursor, undefined, first.feedListDir)
-      expect(fetchSpy).toHaveBeenCalledTimes(3)
-      cursor = resumed.nextCursor
+      const resumed = await dispatchKagiSmallWeb(cursor)
       pages += 1
+      expect(fetchSpy).toHaveBeenCalledTimes(3 * (pages + 1))
+      cursor = resumed.nextCursor
     }
     expect(pages).toBe(3)
   })
@@ -217,11 +216,9 @@ describe('dispatchKagiSmallWeb page retries', () => {
       expect(call[1].headers).toHaveProperty('If-None-Match')
     }
     await forgetFeedListValidators(names)
-    let directory = retried.feedListDir
     let cursor = retried.nextCursor
     while (cursor !== undefined) {
-      const page = await dispatchKagiSmallWeb(cursor, undefined, directory)
-      directory = page.feedListDir ?? directory
+      const page = await dispatchKagiSmallWeb(cursor)
       cursor = page.nextCursor
     }
   })

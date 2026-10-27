@@ -388,6 +388,7 @@ CREATE TABLE IF NOT EXISTS domain_blocklist_sources (
   etag TEXT,
   last_modified_at TIMESTAMPTZ,
   last_fetched_at TIMESTAMPTZ,
+  membership_diff_applied_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -405,6 +406,7 @@ COMMENT ON COLUMN domain_blocklist_sources.url IS 'URL where the blacklist can b
 COMMENT ON COLUMN domain_blocklist_sources.etag IS 'HTTP ETag from the last fetch, for conditional requests.';
 COMMENT ON COLUMN domain_blocklist_sources.last_modified_at IS 'HTTP Last-Modified from the last fetch.';
 COMMENT ON COLUMN domain_blocklist_sources.last_fetched_at IS 'When this source was last successfully fetched.';
+COMMENT ON COLUMN domain_blocklist_sources.membership_diff_applied_at IS 'When the last membership diff for this source committed. Conditional fetches skip only while this is set.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS blocklisted_domains (

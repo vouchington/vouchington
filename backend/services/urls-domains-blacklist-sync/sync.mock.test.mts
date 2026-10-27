@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import undici from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { BLACKLISTS } from '@services/urls-domains-blacklist/sources-constants'
-import { createBlacklistFetchHeaders, syncBlacklistSource } from './sync.mts'
+import {
+  BlocklistUnmodifiedWithoutSyncError,
+  createBlacklistFetchHeaders,
+  ReplicaBehindError,
+  syncBlacklistSource,
+  syncBlacklistSourceById,
+} from './sync.mts'
 
 type UndiciResponse = Awaited<ReturnType<typeof undici.fetch>>
 
@@ -24,6 +30,7 @@ const dependencies = {
   getSourceCacheHeaders,
   updateSourceCacheHeaders,
   syncDomainsWithDatabase,
+  writerLsn: '0/1',
 }
 
 describe('syncBlacklistSource', () => {
@@ -39,6 +46,7 @@ describe('syncBlacklistSource', () => {
     const cache = {
       etag: '"old-etag"',
       last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
+      membership_diff_applied_at: new Date('2025-02-03T10:00:00.000Z'),
     }
     getSourceCacheHeaders.mockResolvedValue(cache)
     const timeoutSpy = vi.spyOn(AbortSignal, 'timeout')
@@ -78,6 +86,8 @@ describe('syncBlacklistSource', () => {
         String(sourceId),
         response,
         source.type,
+        undefined,
+        { writerLsn: '0/1' },
       )
     }
 
@@ -90,11 +100,21 @@ describe('syncBlacklistSource', () => {
       createBlacklistFetchHeaders({
         etag: '"old-etag"',
         last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
+        membership_diff_applied_at: new Date('2025-02-03T10:00:00.000Z'),
       }),
     ).toEqual({
       'Accept-Encoding': 'gzip, deflate, br',
       'If-Modified-Since': 'Mon, 03 Feb 2025 10:00:00 GMT',
       'If-None-Match': '"old-etag"',
+    })
+    expect(
+      createBlacklistFetchHeaders({
+        etag: '"old-etag"',
+        last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
+        membership_diff_applied_at: null,
+      }),
+    ).toEqual({
+      'Accept-Encoding': 'gzip, deflate, br',
     })
   })
 
@@ -102,6 +122,7 @@ describe('syncBlacklistSource', () => {
     const cache = {
       etag: '"old-etag"',
       last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
+      membership_diff_applied_at: new Date('2025-02-03T10:00:00.000Z'),
     }
     getSourceCacheHeaders.mockResolvedValue(cache)
     fetchSpy.mockResolvedValue({
@@ -123,5 +144,129 @@ describe('syncBlacklistSource', () => {
       lastModifiedAt: new Date('2025-02-03T10:00:00.000Z'),
     })
     expect(syncDomainsWithDatabase).not.toHaveBeenCalled()
+  })
+
+  it('refetches without validators when a 304 arrives before a successful diff', async () => {
+    getSourceCacheHeaders.mockResolvedValue({
+      etag: '"old-etag"',
+      last_modified_at: new Date('2025-02-03T10:00:00.000Z'),
+      membership_diff_applied_at: null,
+    })
+    const unmodified = {
+      ok: false,
+      status: 304,
+      statusText: 'Not Modified',
+    } as unknown as UndiciResponse
+    const fresh = {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+    } as unknown as UndiciResponse
+    fetchSpy.mockResolvedValueOnce(unmodified).mockResolvedValueOnce(fresh)
+
+    await expect(
+      syncBlacklistSource(7, 'https://example.com/list.txt', 'url', dependencies),
+    ).resolves.toEqual(syncResult)
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    for (const call of fetchSpy.mock.calls) {
+      expect(call[1].headers).toEqual({ 'Accept-Encoding': 'gzip, deflate, br' })
+    }
+    expect(syncDomainsWithDatabase).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails when the source stays unmodified before a successful diff', async () => {
+    getSourceCacheHeaders.mockResolvedValue({
+      etag: '"old-etag"',
+      last_modified_at: null,
+      membership_diff_applied_at: null,
+    })
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 304,
+      statusText: 'Not Modified',
+    } as unknown as UndiciResponse)
+
+    await expect(
+      syncBlacklistSource(7, 'https://example.com/list.txt', 'url', dependencies),
+    ).rejects.toBeInstanceOf(BlocklistUnmodifiedWithoutSyncError)
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(syncDomainsWithDatabase).not.toHaveBeenCalled()
+    expect(updateSourceCacheHeaders).not.toHaveBeenCalled()
+  })
+
+  it('rethrows replica lag so the source sync backs off', async () => {
+    getSourceCacheHeaders.mockResolvedValue({
+      etag: null,
+      last_modified_at: null,
+      membership_diff_applied_at: null,
+    })
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers(),
+    } as unknown as UndiciResponse)
+    syncDomainsWithDatabase.mockRejectedValueOnce(new ReplicaBehindError())
+
+    await expect(
+      syncBlacklistSourceById(1, {
+        ...dependencies,
+        getBlacklistSourceById: async () => ({
+          id: '1',
+          type: 'url',
+          name: 'example',
+          url: 'https://example.com/list.txt',
+        }),
+      }),
+    ).rejects.toBeInstanceOf(ReplicaBehindError)
+  })
+
+  it('rethrows an unmodified source that has never applied a diff', async () => {
+    getSourceCacheHeaders.mockResolvedValue({
+      etag: '"old-etag"',
+      last_modified_at: null,
+      membership_diff_applied_at: null,
+    })
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 304,
+      statusText: 'Not Modified',
+    } as unknown as UndiciResponse)
+
+    await expect(
+      syncBlacklistSourceById(1, {
+        ...dependencies,
+        getBlacklistSourceById: async () => ({
+          id: '1',
+          type: 'url',
+          name: 'example',
+          url: 'https://example.com/list.txt',
+        }),
+      }),
+    ).rejects.toBeInstanceOf(BlocklistUnmodifiedWithoutSyncError)
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('records other sync failures without failing the job', async () => {
+    getSourceCacheHeaders.mockResolvedValue(null)
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: 'nope',
+    } as unknown as UndiciResponse)
+
+    await expect(
+      syncBlacklistSourceById(1, {
+        ...dependencies,
+        getBlacklistSourceById: async () => ({
+          id: '1',
+          type: 'url',
+          name: 'example',
+          url: 'https://example.com/list.txt',
+        }),
+      }),
+    ).resolves.toBeUndefined()
   })
 })

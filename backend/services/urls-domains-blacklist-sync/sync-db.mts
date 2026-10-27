@@ -23,9 +23,19 @@ import {
 } from './sync-cache.mts'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
-import { writeSortedDesiredDomains } from './diff-files.mts'
+import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
 import { stageBothDiffFiles, type MembershipDiffPaths } from './membership-diff-stage.mts'
 import { applyWithPreparedMembership, lockSourceForDiff } from './membership-version.mts'
+import { copySourceMembership } from './reader-membership-copy.mts'
+import { readWriterWalLsn } from './replica-freshness.mts'
+
+export type DomainDiffHooks = {
+  writerLsn?: string
+  replicaCoversWriterLsn?: (writerLsn: string) => Promise<boolean>
+  copySourceMembership?: typeof copySourceMembership
+  writeCommDiff?: typeof writeCommDiff
+  persistDomainDiff?: typeof persistDomainDiff
+}
 
 type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
 
@@ -36,8 +46,10 @@ export async function syncDomainsWithDatabase(
   sourceId: DomainBlacklistSourceId,
   response: Response,
   sourceType: 'url' | 'email' = 'url',
-  bloomRebuildDependencies: BloomRebuildDependencies = defaultBloomRebuildDependencies,
+  bloomRebuildDependencies?: BloomRebuildDependencies,
+  hooks: DomainDiffHooks = {},
 ): Promise<SyncBlacklistSourceResult> {
+  const bloom = bloomRebuildDependencies ?? defaultBloomRebuildDependencies
   await entityCacheWorkConfig.waitForInitialization()
   const directory = mkdtempSync(join(tmpdir(), BLOCKLIST_DIFF_DIRECTORY_PREFIX))
   const desiredPath = join(directory, 'desired')
@@ -45,6 +57,8 @@ export async function syncDomainsWithDatabase(
   const addedPath = join(directory, 'added')
   const removedPath = join(directory, 'removed')
   try {
+    // The job captures this before the fetch. Direct callers capture it here, still before COPY.
+    const writerLsn = hooks.writerLsn ?? (await readWriterWalLsn())
     await writeSortedDesiredDomains(response, desiredPath)
     const paths: MembershipDiffPaths = {
       membershipPath,
@@ -55,15 +69,25 @@ export async function syncDomainsWithDatabase(
     // The first preparation uses the reader. A concurrent writer sync changes
     // the source row's MVCC version; then rebuild from the writer outside the
     // short apply lock so the second sync replaces, rather than unions, feeds.
-    const result = await applyWithPreparedMembership(sourceId, paths, version =>
-      applyLockedDomainDiff(
-        sourceId,
-        sourceType,
-        client => stageBothDiffFiles(client, addedPath, removedPath),
-        version,
-      ),
+    const result = await applyWithPreparedMembership(
+      sourceId,
+      paths,
+      version =>
+        applyLockedDomainDiff(
+          sourceId,
+          sourceType,
+          client => stageBothDiffFiles(client, addedPath, removedPath),
+          version,
+          hooks.persistDomainDiff,
+        ),
+      {
+        writerLsn,
+        replicaCoversWriterLsn: hooks.replicaCoversWriterLsn,
+        copySourceMembership: hooks.copySourceMembership,
+        writeCommDiff: hooks.writeCommDiff,
+      },
     )
-    await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
+    await rebuildBloomForSource(sourceType, bloom)
     return result
   } finally {
     rmSync(directory, { recursive: true, force: true })
@@ -75,6 +99,7 @@ async function applyLockedDomainDiff(
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
   expectedVersion: string | null,
+  persist: typeof persistDomainDiff = persistDomainDiff,
 ): Promise<SyncBlacklistSourceResult | null> {
   await entityCacheWorkConfig.waitForInitialization()
   const client = await writePool.connect()
@@ -87,6 +112,7 @@ async function applyLockedDomainDiff(
       sourceType,
       stage,
       expectedVersion,
+      persist,
     )
     if (!applied) return null
     await transaction.commit()
@@ -107,16 +133,18 @@ async function stageLockedDiff(
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
   expectedVersion: string | null,
+  persist: typeof persistDomainDiff,
 ): Promise<AppliedDomainDiff | null> {
   await stage(client)
   const version = await lockSourceForDiff(transaction, sourceId, sourceType)
   if (version !== expectedVersion) return null
-  const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType)
-  // Advance the generation atomically with membership writes. Source metadata
-  // updates already change xmin, so they also invalidate in-flight diffs.
+  const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType, persist)
+  // The timestamp records a committed diff and bumps xmin with the membership writes.
   await transaction(
-    `/* syncDomainsWithDatabase:advanceVersion */
-     UPDATE domain_blocklist_sources SET updated_at = updated_at WHERE id = $1`,
+    `/* syncDomainsWithDatabase:recordMembershipDiff */
+     UPDATE domain_blocklist_sources
+     SET membership_diff_applied_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
     [sourceId],
   )
   return applied
@@ -126,21 +154,17 @@ async function applyPreparedDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
+  persist: typeof persistDomainDiff,
 ): Promise<AppliedDomainDiff> {
-  const [{ rows: addedRows }, { rows: removedRows }] = await Promise.all([
-    query<{ count: string }>(
-      `/* syncDomainsWithDatabase */ SELECT COUNT(*)::text AS count FROM ${ADDED_DOMAINS_TABLE}`,
-    ),
-    query<{ count: string }>(
-      `/* syncDomainsWithDatabase */ SELECT COUNT(*)::text AS count FROM ${REMOVED_DOMAINS_TABLE}`,
-    ),
-  ])
-  await persistDomainDiff(query, sourceId, sourceType)
+  const { rows: removedRows } = await query<{ count: string }>(
+    `/* syncDomainsWithDatabase */ SELECT COUNT(*)::text AS count FROM ${REMOVED_DOMAINS_TABLE}`,
+  )
+  const persisted = await persist(query, sourceId, sourceType)
   const inlineHostnameIds = await enqueueChangedHostnameCaches(query)
   return {
     result: {
       skipped: false,
-      domainsAdded: Number(addedRows[0]?.count ?? 0),
+      domainsAdded: persisted.domainsAdded,
       domainsRemoved: Number(removedRows[0]?.count ?? 0),
     },
     inlineHostnameIds,
