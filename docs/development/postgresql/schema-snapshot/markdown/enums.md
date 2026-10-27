@@ -1616,6 +1616,12 @@
 - `rss_feed`
 - `fediverse_instance`
 
+## `url_hostname_block_cleanup_stages`
+
+- `subdomains`
+- `relations`
+- `penalties`
+
 ## `url_hostname_block_sources`
 
 - `admin`

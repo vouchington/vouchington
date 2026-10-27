@@ -1224,6 +1224,9 @@
         "fediverse_instance"
       ]
     },
+    "url_hostname_block_cleanup_stages": {
+      "values": ["subdomains", "relations", "penalties"]
+    },
     "url_hostname_block_sources": {
       "values": ["admin", "google_web_risk", "parent_hostname", "url_blocklist", "email_blocklist"]
     },
@@ -127420,10 +127423,6 @@
         "chk_url_hostname_blocks__relation_cleanup_progress": {
           "definition": "CHECK ((relation_cleanup_progress >= 0))",
           "validated": true
-        },
-        "chk_url_hostname_blocks__relation_cleanup_stage": {
-          "definition": "CHECK ((relation_cleanup_stage = ANY (ARRAY['subdomains'::text, 'relations'::text, 'penalties'::text])))",
-          "validated": true
         }
       },
       "columns": {
@@ -127579,8 +127578,8 @@
         },
         "relation_cleanup_stage": {
           "comment": "Stage the bounded cleanup operation is in; descendants may attach to a root only while it is still projecting subdomains.",
-          "dataType": "text",
-          "defaultExpression": "'subdomains'::text",
+          "dataType": "url_hostname_block_cleanup_stages",
+          "defaultExpression": "'subdomains'::url_hostname_block_cleanup_stages",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
