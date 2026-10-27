@@ -32,7 +32,7 @@ export async function dispatchKagiSmallWeb(
   cursor?: string,
   pageSize = getKagiCandidateBatchSize(),
 ): Promise<DispatchKagiSmallWebResult> {
-  await sweepExpiredFeedListDirectories()
+  await sweepExpiredFeedListDirectories().catch(onError)
   if (!isKagiSmallWebImportEnabled()) return { disabled: true, enqueued: 0, total: 0 }
 
   try {
