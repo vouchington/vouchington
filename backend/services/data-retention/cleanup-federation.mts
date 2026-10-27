@@ -29,13 +29,12 @@ export async function cleanupFederationRetention(options: {
     maxBatches: options.maxBatches,
     ...(options.now ? { now: options.now } : {}),
   }
-  const [page, inboxReplay, terminalFollowIdentities, terminalLikeIdentities] =
-    await Promise.all([
-      cleanupSweep(options),
-      cleanupActivityPubReplayLedger(replayOptions),
-      cleanupActivityPubTerminalIdentities('follow', replayOptions),
-      cleanupActivityPubTerminalIdentities('like', replayOptions),
-    ])
+  const [page, inboxReplay, terminalFollowIdentities, terminalLikeIdentities] = await Promise.all([
+    cleanupSweep(options),
+    cleanupActivityPubReplayLedger(replayOptions),
+    cleanupActivityPubTerminalIdentities('follow', replayOptions),
+    cleanupActivityPubTerminalIdentities('like', replayOptions),
+  ])
   return {
     followerDistributions: page,
     inboxReplay,

@@ -14,9 +14,11 @@ export type ReplayCleanupPage = {
 }
 
 /** Each capped ledger page and its floor advance commit before the next page begins. */
-export async function cleanupActivityPubReplayLedger(
-  options: { batchSize: number; maxBatches: number; now?: Date },
-): Promise<ReplayCleanupPage> {
+export async function cleanupActivityPubReplayLedger(options: {
+  batchSize: number
+  maxBatches: number
+  now?: Date
+}): Promise<ReplayCleanupPage> {
   return cleanupActivityPubReplayPages(options, beginTransaction)
 }
 

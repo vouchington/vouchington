@@ -81,15 +81,13 @@ export async function cleanupFederationRetentionForTest(options: {
 }
 
 /** Real SQL pages, narrowed to this test's identities and kept in its rollback-only transaction. */
-export async function cleanupActivityPubReplayLedgerForTest(
-  options: {
-    batchSize: number
-    maxBatches: number
-    now?: Date
-    borrowedQuery: TransactionQuery
-    scope: { activityIds: readonly string[] }
-  },
-): Promise<ReplayCleanupPage> {
+export async function cleanupActivityPubReplayLedgerForTest(options: {
+  batchSize: number
+  maxBatches: number
+  now?: Date
+  borrowedQuery: TransactionQuery
+  scope: { activityIds: readonly string[] }
+}): Promise<ReplayCleanupPage> {
   const cutoff = new Date(
     (options.now ?? new Date()).getTime() - getMaximumActivityAgeDays() * 86_400_000,
   )

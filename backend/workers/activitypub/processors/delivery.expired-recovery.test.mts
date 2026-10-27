@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import { insertUndispatchedTestUserFollow } from '@voucha/test-helpers/activitypub-distribution-state'
-import { insertPostElectionVote } from '@voucha/test-helpers/entities/post-election-votes'
+import { insertPendingOutboundLikeForTest } from '@voucha/test-helpers/entities/post-election-votes'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import {
   listPendingOutboundDistributionPage,
@@ -35,16 +35,16 @@ describe('expired outbound activities and recovery sweeps', () => {
       getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
     const followId = await insertUndispatchedTestUserFollow(source.id, target.id, expiredId())
     const likeId = expiredId()
-    await insertPostElectionVote(source.id, postId, 1, likeId)
+    await insertPendingOutboundLikeForTest(source.id, postId, likeId)
 
     const followCursor = `${source.id}__${ZERO_UUID}`
     const likeCursor = `${postId}__${ZERO_UUID}`
     const pendingFollow = async () =>
-      (await listPendingOutboundDistributionPage('follows', followCursor, 1)).rows.find(
+      (await listPendingOutboundDistributionPage('follows', followCursor, 50)).rows.find(
         row => row.sourceUserId === source.id,
       )
     const pendingLike = async () =>
-      (await listPendingOutboundDistributionPage('votes', likeCursor, 1)).rows.find(
+      (await listPendingOutboundDistributionPage('votes', likeCursor, 50)).rows.find(
         row => row.source === 'votes' && row.activityId === likeId,
       )
     expect(await pendingFollow()).toBeDefined()

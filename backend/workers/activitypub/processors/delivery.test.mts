@@ -7,16 +7,17 @@ import { deliverActivityToInbox, type buildActivityJson } from '@services/activi
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
-import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
-import { getAcceptActivityId, getUndoFollowActivityId } from '@queues/activitypub/enqueues/delivery'
+import {
+  getAcceptActivityId,
+  getUndoFollowActivityId,
+  type DeliverActivityData,
+} from '@queues/activitypub/enqueues/delivery'
 import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import { deliverActivity } from './delivery.mts'
 
 function expiredActivityId(): string {
-  return getMinUUIDv7ForDate(
-    new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
-  )
+  return getMinUUIDv7ForDate(new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000))
 }
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
@@ -95,7 +96,10 @@ describe('deliverActivity', () => {
   it('keeps direct Accept replies outside the activity-age check', async () => {
     const accept: DeliverActivityData = {
       activityType: 'Accept',
-      activityId: getAcceptActivityId({ sourceUserId: 'user-1', followActivityId: 'remote-follow' }),
+      activityId: getAcceptActivityId({
+        sourceUserId: 'user-1',
+        followActivityId: 'remote-follow',
+      }),
       sourceUserId: 'user-1',
       inboxUrl: 'https://a.example/inbox',
       followActivityId: 'remote-follow',
@@ -106,7 +110,10 @@ describe('deliverActivity', () => {
   })
 
   it('delivers an UndoFollow whose own id is derived but whose original Follow is recent', async () => {
-    const undo = { ...UNDO_FOLLOW_DATA, activityId: getUndoFollowActivityId(FOLLOW_DATA.activityId) }
+    const undo = {
+      ...UNDO_FOLLOW_DATA,
+      activityId: getUndoFollowActivityId(FOLLOW_DATA.activityId),
+    }
     expect(await deliverActivity(undo, deliverDeps())).toEqual({ delivered: true })
   })
 
@@ -117,7 +124,11 @@ describe('deliverActivity', () => {
       { ...UNDO_FOLLOW_DATA, originalActivityId: expiredActivityId() },
       'expired-activity',
     ],
-    ['Follow with a non-UUIDv7 id', { ...FOLLOW_DATA, activityId: 'not-uuid-v7' }, 'unsupported-activity-id'],
+    [
+      'Follow with a non-UUIDv7 id',
+      { ...FOLLOW_DATA, activityId: 'not-uuid-v7' },
+      'unsupported-activity-id',
+    ],
   ] as const)('drops an %s before opt-in reads or HTTP', async (_name, data, reason) => {
     expect(await deliverActivity(data, deliverDeps())).toEqual({ delivered: false, reason })
     expect(isFederationEnabledForUserMock).not.toHaveBeenCalled()

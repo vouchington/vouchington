@@ -78,7 +78,11 @@ describe('distributeActivity', () => {
       },
       'expired-activity',
     ],
-    ['a Like with a non-UUIDv7 id', { ...LIKE_DATA, activityId: 'not-uuid-v7' }, 'unsupported-activity-id'],
+    [
+      'a Like with a non-UUIDv7 id',
+      { ...LIKE_DATA, activityId: 'not-uuid-v7' },
+      'unsupported-activity-id',
+    ],
   ] as const)(
     'settles %s without opt-in reads, paging, or fan-out so recovery stops rescanning it',
     async (_name, data, reason) => {

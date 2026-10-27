@@ -58,7 +58,7 @@ describe('recordAndDispatchInboundActivity', () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const signedAt = new Date(Date.now() - 40 * 86_400_000)
     await withPostgresTransactionForTest(async query => {
-      await advanceFederationReplayFloorForTest(query, 'inbox', signedAt)
+      await advanceFederationReplayFloorForTest(query, signedAt)
       await expect(
         recordAndDispatchInboundActivityInTransaction(query, remoteActor, {
           id: `https://remote.example/activities/${randomSuffix()}`,
