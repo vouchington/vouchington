@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { retrieveOpenAIResponse } from '@modules/openai-utils/create-response'
 import { makeSdkTextResponse } from '@voucha/test-helpers/modules/openai-utils/responses'
@@ -48,62 +49,63 @@ function completedResponse(id: string) {
 }
 
 describe('retained AI response sweeps with real GlideMQ', () => {
-  it('prunes a retained failed job whose completed response has no usage', async () => {
-    const name = `ai_response_no_usage_${randomUUID()}`
-    const queue = new Queue<AIAgentJobData>(name, connection)
-    const response = pendingResponse()
-    const admitted = await queue.add(
-      'report-judgement',
-      { backgroundResponses: [response] } as AIAgentJobData,
-      { attempts: 1, removeOnFail: false },
-    )
-    if (!admitted) throw new Error('Expected an admitted job')
-    const failed = Promise.withResolvers<void>()
-    const worker = new Worker<AIAgentJobData>(
-      name,
-      async () => {
-        throw new UnrecoverableError('test terminal failure')
-      },
-      { ...connection, blockTimeout: 1_000 },
-    )
-    worker.on('failed', failedJob => {
-      if (failedJob?.id === admitted.id) failed.resolve()
-    })
-    worker.on('error', failed.reject)
-    try {
-      await waitForRealGlideEvent(failed.promise, `AI no-usage failure ${admitted.id}`)
-    } finally {
-      await worker.close(true)
-    }
-    try {
-      vi.mocked(retrieveOpenAIResponse).mockReset()
-      vi.mocked(retrieveOpenAIResponse).mockResolvedValue(
-        makeSdkTextResponse('done', { id: response.responseId, usage: undefined }),
+  it('prunes a retained failed job whose completed response has no usage', async () =>
+    withReservedAiUsageDay(1_000_000, async () => {
+      const name = `ai_response_no_usage_${randomUUID()}`
+      const queue = new Queue<AIAgentJobData>(name, connection)
+      const response = pendingResponse()
+      const admitted = await queue.add(
+        'report-judgement',
+        { backgroundResponses: [response] } as AIAgentJobData,
+        { attempts: 1, removeOnFail: false },
       )
-      const cleanup = await queue.add('reconcile-background-responses', {
-        phase: 'cleanup',
-        failedOffset: 0,
-        sweepId: randomUUID(),
-        page: 0,
-      })
-      if (!cleanup) throw new Error('Expected a cleanup job')
-      await processReconcileBackgroundResponses(
-        cleanup as Job<ReconcileBackgroundResponsesJobData>,
-        {
-          queue,
-          enqueuePage: data => queue.add('reconcile-background-responses', data),
-          failedJobVisibilityCount: 0,
+      if (!admitted) throw new Error('Expected an admitted job')
+      const failed = Promise.withResolvers<void>()
+      const worker = new Worker<AIAgentJobData>(
+        name,
+        async () => {
+          throw new UnrecoverableError('test terminal failure')
         },
+        { ...connection, blockTimeout: 1_000 },
       )
-      await expect(queue.getJob(admitted.id)).resolves.toBeNull()
-      await expect(
-        findAiUsageRecordForAgent(response.agentSlug, { inputTokens: 0, outputTokens: 0 }),
-      ).resolves.toBeNull()
-    } finally {
-      await queue.obliterate({ force: true })
-      await queue.close()
-    }
-  })
+      worker.on('failed', failedJob => {
+        if (failedJob?.id === admitted.id) failed.resolve()
+      })
+      worker.on('error', failed.reject)
+      try {
+        await waitForRealGlideEvent(failed.promise, `AI no-usage failure ${admitted.id}`)
+      } finally {
+        await worker.close(true)
+      }
+      try {
+        vi.mocked(retrieveOpenAIResponse).mockReset()
+        vi.mocked(retrieveOpenAIResponse).mockResolvedValue(
+          makeSdkTextResponse('done', { id: response.responseId, usage: undefined }),
+        )
+        const cleanup = await queue.add('reconcile-background-responses', {
+          phase: 'cleanup',
+          failedOffset: 0,
+          sweepId: randomUUID(),
+          page: 0,
+        })
+        if (!cleanup) throw new Error('Expected a cleanup job')
+        await processReconcileBackgroundResponses(
+          cleanup as Job<ReconcileBackgroundResponsesJobData>,
+          {
+            queue,
+            enqueuePage: data => queue.add('reconcile-background-responses', data),
+            failedJobVisibilityCount: 0,
+          },
+        )
+        await expect(queue.getJob(admitted.id)).resolves.toBeNull()
+        await expect(
+          findAiUsageRecordForAgent(response.agentSlug, { inputTokens: 0, outputTokens: 0 }),
+        ).resolves.toBeNull()
+      } finally {
+        await queue.obliterate({ force: true })
+        await queue.close()
+      }
+    }))
 
   it('releases a failed classifier identity after accounting for its retained response', async () => {
     const name = `ai_classifier_recovery_${randomUUID()}`
@@ -182,61 +184,65 @@ describe('retained AI response sweeps with real GlideMQ', () => {
     }
   })
 
-  it('settles a retained response once so a second sweep makes no provider call', async () => {
-    const name = `ai_response_settled_once_${randomUUID()}`
-    const queue = new Queue<AIAgentJobData>(name, connection)
-    const response = pendingResponse()
-    const admitted = await queue.add(
-      'report-judgement',
-      { backgroundResponses: [response] } as AIAgentJobData,
-      { attempts: 1, removeOnFail: false },
-    )
-    if (!admitted) throw new Error('Expected an admitted job')
-    const failed = Promise.withResolvers<void>()
-    const worker = new Worker<AIAgentJobData>(
-      name,
-      async () => {
-        throw new UnrecoverableError('test terminal failure')
-      },
-      { ...connection, blockTimeout: 1_000 },
-    )
-    worker.on('failed', failedJob => {
-      if (failedJob?.id === admitted.id) failed.resolve()
-    })
-    worker.on('error', failed.reject)
-    try {
-      await waitForRealGlideEvent(failed.promise, `AI settled-once failure ${admitted.id}`)
-    } finally {
-      await worker.close(true)
-    }
-    try {
-      vi.mocked(retrieveOpenAIResponse).mockReset()
-      vi.mocked(retrieveOpenAIResponse).mockResolvedValue(
-        makeSdkTextResponse('done', { id: response.responseId, usage: undefined }),
+  it('settles a retained response once so a second sweep makes no provider call', async () =>
+    withReservedAiUsageDay(1_000_000, async () => {
+      const name = `ai_response_settled_once_${randomUUID()}`
+      const queue = new Queue<AIAgentJobData>(name, connection)
+      const response = pendingResponse()
+      const admitted = await queue.add(
+        'report-judgement',
+        { backgroundResponses: [response] } as AIAgentJobData,
+        { attempts: 1, removeOnFail: false },
       )
-      const sweep = async () => {
-        const job = await queue.add('reconcile-background-responses', {
-          phase: 'failed',
-          failedOffset: 0,
-          sweepId: randomUUID(),
-          page: 0,
-        })
-        if (!job) throw new Error('Expected a sweep job')
-        await processReconcileBackgroundResponses(job as Job<ReconcileBackgroundResponsesJobData>, {
-          queue,
-          enqueuePage: data => queue.add('reconcile-background-responses', data),
-        })
+      if (!admitted) throw new Error('Expected an admitted job')
+      const failed = Promise.withResolvers<void>()
+      const worker = new Worker<AIAgentJobData>(
+        name,
+        async () => {
+          throw new UnrecoverableError('test terminal failure')
+        },
+        { ...connection, blockTimeout: 1_000 },
+      )
+      worker.on('failed', failedJob => {
+        if (failedJob?.id === admitted.id) failed.resolve()
+      })
+      worker.on('error', failed.reject)
+      try {
+        await waitForRealGlideEvent(failed.promise, `AI settled-once failure ${admitted.id}`)
+      } finally {
+        await worker.close(true)
       }
-      await sweep()
-      expect(retrieveOpenAIResponse).toHaveBeenCalledTimes(1)
-      const retained = await queue.getJob(admitted.id)
-      expect(retained?.data.backgroundResponses).toEqual([])
+      try {
+        vi.mocked(retrieveOpenAIResponse).mockReset()
+        vi.mocked(retrieveOpenAIResponse).mockResolvedValue(
+          makeSdkTextResponse('done', { id: response.responseId, usage: undefined }),
+        )
+        const sweep = async () => {
+          const job = await queue.add('reconcile-background-responses', {
+            phase: 'failed',
+            failedOffset: 0,
+            sweepId: randomUUID(),
+            page: 0,
+          })
+          if (!job) throw new Error('Expected a sweep job')
+          await processReconcileBackgroundResponses(
+            job as Job<ReconcileBackgroundResponsesJobData>,
+            {
+              queue,
+              enqueuePage: data => queue.add('reconcile-background-responses', data),
+            },
+          )
+        }
+        await sweep()
+        expect(retrieveOpenAIResponse).toHaveBeenCalledTimes(1)
+        const retained = await queue.getJob(admitted.id)
+        expect(retained?.data.backgroundResponses).toEqual([])
 
-      await sweep()
-      expect(retrieveOpenAIResponse).toHaveBeenCalledTimes(1)
-    } finally {
-      await queue.obliterate({ force: true })
-      await queue.close()
-    }
-  })
+        await sweep()
+        expect(retrieveOpenAIResponse).toHaveBeenCalledTimes(1)
+      } finally {
+        await queue.obliterate({ force: true })
+        await queue.close()
+      }
+    }))
 })

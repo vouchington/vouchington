@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { Queue, UnrecoverableError, Worker, type Job } from 'glide-mq'
 import { Responses } from 'openai/resources/responses/responses'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +11,6 @@ import {
   makeSdkResponse,
   makeSdkTextResponse,
 } from '@voucha/test-helpers/modules/openai-utils/responses'
-import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { aiAgentsQueueConfig } from '@queues/ai-agents/config'
 import type { AIAgentJobData, ReconcileBackgroundResponsesJobData } from '@queues/ai-agents/types'
 import { processReconcileBackgroundResponses } from '../process-reconcile-background-responses.mts'
