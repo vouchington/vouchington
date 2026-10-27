@@ -1,4 +1,4 @@
-import { processStoryPostRelatedUrlProjectionPage } from '../../../services/stories/story-post-related-url-projection-page.mts'
+import { processStoryPostRelatedUrlProjectionPage } from '../../../services/stories/story-post-related-url-projection-reconcile.mts'
 import { createTestStoryProjectionLease } from '../../entities/story-projection-work.mts'
 
 export async function processOwnedStoryProjectionPage(postId: string) {
