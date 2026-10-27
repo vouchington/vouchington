@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 
-/** Simulates source work disappearance while retaining the durable moderation outcome. */
+/** Simulates attempt-row disappearance while retaining the durable moderation outcome. */
 export async function deleteModerationWorkForAdmissionTest(versionId: string): Promise<void> {
   await using query = await beginTransaction()
   await query(
@@ -11,7 +11,7 @@ export async function deleteModerationWorkForAdmissionTest(versionId: string): P
   )
   await query(
     `/* deleteModerationWorkForAdmissionTest */
-    DELETE FROM post_moderation_work_items WHERE version_id = $1`,
+    DELETE FROM post_moderation_attempts WHERE version_id = $1`,
     [versionId],
   )
   await query.commit()

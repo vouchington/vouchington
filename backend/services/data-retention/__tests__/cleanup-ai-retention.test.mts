@@ -23,7 +23,7 @@ import { cleanupTerminalEmbeddingBatches } from '../cleanup-embedding-batches.mt
 import { cleanupOldProviderResponseKeys } from '../cleanup-provider-response-keys.mts'
 import {
   countTestPostModerationIncompleteWork,
-  getTestPostModerationWorkAttemptCount,
+  countTestPostModerationAttempts,
 } from '@voucha/test-helpers/post-moderation-attempt-state'
 import {
   beginPostModerationAttempt,
@@ -135,8 +135,8 @@ describe('AI and embedding retention', () => {
     await expireTestPostModerationVersion(version.id)
 
     expect((await ensureCurrentPostModerationVersion(postId)).id).toBe(version.id)
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'openai_omni')).toBeNull()
-    expect(await getTestPostModerationWorkAttemptCount(postId, 'spam_detection')).toBeNull()
+    expect(await countTestPostModerationAttempts(postId, 'openai_omni')).toBe(0)
+    expect(await countTestPostModerationAttempts(postId, 'spam_detection')).toBe(0)
     expect(await countTestPostModerationIncompleteWork(postId)).toBe(0)
     expect((await reconcilePostModerationWork(undefined, [postId])).exhausted_post_ids).toEqual([])
     await checkPostClearance(postId)
