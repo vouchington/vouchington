@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS url_hostname_blocks (
   relation_cleanup_root_block_id UUID,
   should_penalize_relation_creators BOOLEAN NOT NULL DEFAULT FALSE,
   relation_cleanup_progress INTEGER NOT NULL DEFAULT 0,
-  relation_cleanup_stage TEXT NOT NULL DEFAULT 'subdomains',
+  relation_cleanup_stage url_hostname_block_cleanup_stages NOT NULL DEFAULT 'subdomains',
   relation_cleanup_resume_after TEXT,
   relation_cleanup_blocked_hostname_count INTEGER NOT NULL DEFAULT 0,
   relation_cleanup_soft_deleted_relation_count INTEGER NOT NULL DEFAULT 0,
@@ -51,12 +51,6 @@ ALTER TABLE url_hostname_blocks
   CHECK (relation_cleanup_progress >= 0) NOT VALID;
 ALTER TABLE url_hostname_blocks
   VALIDATE CONSTRAINT chk_url_hostname_blocks__relation_cleanup_progress;
-
-ALTER TABLE url_hostname_blocks
-  ADD CONSTRAINT chk_url_hostname_blocks__relation_cleanup_stage
-  CHECK (relation_cleanup_stage IN ('subdomains', 'relations', 'penalties')) NOT VALID;
-ALTER TABLE url_hostname_blocks
-  VALIDATE CONSTRAINT chk_url_hostname_blocks__relation_cleanup_stage;
 
 ALTER TABLE url_hostname_blocks
   ADD CONSTRAINT chk_url_hostname_blocks__relation_cleanup_counts

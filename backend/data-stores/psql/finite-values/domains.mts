@@ -111,6 +111,7 @@ export const DOMAIN_FINITE_VALUES = {
     'url_blocklist',
     'email_blocklist',
   ],
+  url_hostname_block_cleanup_stages: ['subdomains', 'relations', 'penalties'],
   http_request_methods: [
     'GET',
     'HEAD',

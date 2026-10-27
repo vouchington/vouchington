@@ -31,7 +31,7 @@ export async function advanceHostnameBlockCleanupProgress(
       UPDATE url_hostname_blocks block
       SET relation_cleanup_progress = relation_cleanup_progress + 1,
         relation_cleanup_stage =
-          COALESCE(${deltas.next?.stage ?? null}::text, relation_cleanup_stage),
+          COALESCE(${deltas.next?.stage ?? null}::url_hostname_block_cleanup_stages, relation_cleanup_stage),
         relation_cleanup_resume_after = CASE WHEN ${deltas.next !== undefined}::boolean
           THEN ${deltas.next ? cursorResumeAfter(deltas.next) : null}::text
           ELSE relation_cleanup_resume_after END,
