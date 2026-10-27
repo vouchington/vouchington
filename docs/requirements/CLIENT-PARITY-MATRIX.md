@@ -40,7 +40,7 @@ the dependent native model and fixture changes. This adds no native UI parity cl
 REST and MCP mark one bounded page, return the immediate `marked_read` count and `has_more`, and
 continue the older backlog in background jobs. The web notification page avoids presenting every
 loaded row as read while work remains; it refreshes one page and the unread summary on request or
-when the tab regains focus. Swift and .NET invoke the endpoint as a mutation without consuming its
+when the tab regains focus or becomes visible. Swift and .NET invoke the endpoint as a mutation without consuming its
 result and optimistically present read state. Background continuation usually completes their
 mark-all intent, but a lost or terminally failed job leaves unread rows; another mark-all request
 resumes them. Their current clients do not automatically retry that case.
