@@ -6,7 +6,6 @@ import {
 } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
-import { enqueueContinuePostPublicationReconciliation } from '@queues/post-publication/enqueues'
 import { enqueueTopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
 import type { TopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/types'
 import {
@@ -57,9 +56,6 @@ export async function applyTopicAliasUnlinkPage(
       impactedRssFeedItemIds: captured.rssFeedItemIds,
       topicAliasText: alias.alias,
     })
-    registerPostCommitAction(query, () =>
-      awaitReportedEnqueueAdmission(() => enqueueContinuePostPublicationReconciliation()),
-    )
     return selectTopicAliasUnlinkNextPage(query, alias.id, preservesHashtag)
   }
 

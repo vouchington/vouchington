@@ -66,6 +66,7 @@ export const TOPIC_MERGE_REFERENCE_GROUPS = {
   'spending_category_topics.topic_id': 'subtype',
   'spending_entries.spending_category_topic_id': 'subtype',
   'topic_aliases.topic_id': 'alias',
+  'topic_aliases.unlink_topic_id': 'alias',
   'topic_claims.topic_id': 'collisions',
   'topic_classifier_results.topic_id': 'derived',
   'topic_metrics.topic_id': 'derived',

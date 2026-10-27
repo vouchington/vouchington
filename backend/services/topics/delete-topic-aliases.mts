@@ -5,7 +5,6 @@ import {
   withTransactionOptions,
 } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueueContinuePostPublicationReconciliation } from '@queues/post-publication/enqueues'
 import { enqueueTopicAliasUnlinkPage } from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { lockTopicAliasPublicationScopes } from '@services/post-publication'
@@ -134,14 +133,7 @@ export async function unlinkTopicAlias(
         nextTopicId: null,
       },
     ])
-    registerPostCommitAction(query, () =>
-      awaitReportedEnqueueAdmission(() => enqueueContinuePostPublicationReconciliation()),
-    )
-    await enqueueUnlinkPage(query, {
-      ...existing,
-      topic_id: null,
-      unlink_topic_id: detachedTopicId,
-    })
+    await enqueueUnlinkPage(query, { id: existing.id, alias: existing.alias, topic_id: null })
     return {
       alias: { id: existing.id, alias: existing.alias, topic_id: null },
       previousTopicId: detachedTopicId,

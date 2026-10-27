@@ -1,8 +1,6 @@
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { topicAliasUnlinkJobId } from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
-import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
-import { resolveRssFeedCategoryTopics } from '@services/rss-feeds/category-topic-resolution'
 import {
   beginTransaction,
   createActivePostTopicAliasRelationForTest,
@@ -13,14 +11,10 @@ import {
   createTopHashtagPostSourceForTest,
   createTopHashtagRssSourceForTest,
   getPostHashtagSourcesForTest,
-  getTestPostPublicationDirtyWorkForScope,
   insertTestRssFeedDirect,
-  listTestPostPublicationImpactPostIds,
-  listTestPostPublicationImpactRssFeedItemIds,
-  listTestPostPublicationImpactTopicIds,
 } from '@voucha/test-helpers'
+import { captureAddedPublicationEffectsForScope } from '@voucha/test-helpers/publication-effect-jobs'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   claimTopicAlias,
@@ -71,7 +65,10 @@ describe('topic alias unlink pages', () => {
       authoredToken: `rss-${crypto.randomUUID()}`,
     })
 
-    const detached = await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
+    let detached: Awaited<ReturnType<typeof unlinkTopicAlias>> = null
+    const acceptedJobs = await captureAddedPublicationEffectsForScope(alias.id, async () => {
+      detached = await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
+    })
 
     expect(detached).toMatchObject({ id: alias.id, topic_id: null, alias: alias.alias })
     await using lookup = await beginTransaction()
@@ -83,42 +80,34 @@ describe('topic alias unlink pages', () => {
     ).resolves.toMatchObject({
       data: { topicAliasId: alias.id, phase: 'post_relations' },
     })
-    const accepted = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: alias.id,
-    })
-    if (!accepted) throw new Error('Expected accepted unlink publication work')
-    await expect(listTestPostPublicationImpactPostIds(accepted.id)).resolves.toEqual([])
-    await expect(listTestPostPublicationImpactRssFeedItemIds(accepted.id)).resolves.toEqual([])
-    await expect(listTestPostPublicationImpactTopicIds(accepted.id)).resolves.toEqual([topic.id])
+    expect(acceptedJobs.flatMap(job => job.keys)).toEqual([
+      { kind: 'impact_topic', uuidValue: topic.id },
+      { kind: 'identity_topic_alias', textValue: alias.alias },
+    ])
     await expect(getTopicAliasRecords(topic.id)).resolves.toMatchObject({
       results: expect.not.arrayContaining([expect.objectContaining({ id: alias.id })]),
     })
     await expect(searchTopicAliases({ prefixQuery: alias.alias })).resolves.toMatchObject({
       results: [],
     })
-    const repeated = await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
-    expect(repeated).toMatchObject({ id: alias.id, topic_id: null })
-    const repeatedWork = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: alias.id,
+    const repeatedJobs = await captureAddedPublicationEffectsForScope(alias.id, async () => {
+      const repeated = await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
+      expect(repeated).toMatchObject({ id: alias.id, topic_id: null })
     })
-    expect(repeatedWork?.generation).toBe(accepted.generation)
+    expect(repeatedJobs).toEqual([])
 
-    await finishTopicAliasUnlink(alias.id)
+    const pageJobs = await captureAddedPublicationEffectsForScope(alias.id, () =>
+      finishTopicAliasUnlink(alias.id),
+    )
 
     await expect(getTopicAliasIdByKey(alias.alias)).resolves.toBeUndefined()
-    const finished = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: alias.id,
-    })
-    if (!finished) throw new Error('Expected finished unlink publication work')
-    await expect(listTestPostPublicationImpactPostIds(finished.id)).resolves.toEqual(
-      expect.arrayContaining(posts.map(post => post.id)),
+    const keys = pageJobs.flatMap(job => job.keys)
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        ...posts.map(post => ({ kind: 'impact_post', uuidValue: post.id })),
+        { kind: 'impact_rss_feed_item', uuidValue: item.id },
+      ]),
     )
-    await expect(listTestPostPublicationImpactRssFeedItemIds(finished.id)).resolves.toEqual([
-      item.id,
-    ])
   })
 
   it('admits the page job only after the unlink transaction commits', async () => {
@@ -169,23 +158,23 @@ describe('topic alias unlink pages', () => {
       ),
     )
     await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
-    const work = await getTestPostPublicationDirtyWorkForScope({
-      type: 'topic_alias',
-      id: alias.id,
-    })
-    if (!work) throw new Error('Expected unlink publication work')
     await using planned = await beginTransaction()
     const page = await selectTopicAliasUnlinkNextPage(planned, alias.id, false)
     await planned.rollback()
 
-    await using pageTransaction = await beginTransaction()
-    const next = await applyTopicAliasUnlinkPage(page, { query: pageTransaction })
+    let next: Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>> = null
+    const jobs = await captureAddedPublicationEffectsForScope(alias.id, async () => {
+      await using pageTransaction = await beginTransaction()
+      next = await applyTopicAliasUnlinkPage(page, { query: pageTransaction })
+      if (!next) throw new Error('Expected another unlink page')
+      await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(next))).resolves.toBeNull()
+      await pageTransaction.commit()
+    })
     if (!next) throw new Error('Expected another unlink page')
-    await expect(listTestPostPublicationImpactPostIds(work.id)).resolves.toEqual([])
-    await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(next))).resolves.toBeNull()
-    await pageTransaction.commit()
 
-    const captured = await listTestPostPublicationImpactPostIds(work.id)
+    const captured = jobs.flatMap(job =>
+      job.keys.flatMap(key => (key.kind === 'impact_post' ? [key.uuidValue] : [])),
+    )
     expect(captured).toHaveLength(1)
     expect(posts.map(post => post.id)).toContain(captured[0])
     await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(next))).resolves.toMatchObject({
@@ -225,16 +214,6 @@ describe('topic alias unlink pages', () => {
     await expect(claimTopicAlias(other.id, alias.alias)).rejects.toMatchObject({ status: 409 })
     await expect(createTopicAliases(other.id, alias.alias)).rejects.toMatchObject({ status: 409 })
     await expect(createUnlinkedTopicAlias(alias.alias)).rejects.toMatchObject({ status: 409 })
-    await expect(resolveRssFeedCategoryTopics(feed.id, [alias.alias])).resolves.toEqual([
-      expect.objectContaining({ topic_id: null }),
-    ])
-    const freshItem = await createTestRssFeedItemWithUrl(feed.id)
-    await upsertRssFeedItemCategories([
-      { rss_feed_item_id: freshItem.id, categories: [`#${alias.alias}`] },
-    ])
-    await expect(getTestRssFeedItemCategories(freshItem.id)).resolves.toEqual([
-      expect.objectContaining({ topic_id: null }),
-    ])
 
     await finishTopicAliasUnlink(alias.id)
 

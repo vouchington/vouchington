@@ -29,5 +29,6 @@ export async function createUnlinkedTopicAlias(
   )
   assert(existing[0], 409, 'Hashtag alias conflict disappeared')
   assert(!existing[0].unlink_requested_at, 409, 'Topic alias unlink is in progress')
-  return existing[0]
+  const { id, topic_id, alias } = existing[0]
+  return { id, topic_id, alias }
 }
