@@ -1369,9 +1369,6 @@
     "fn_create_membership_operation_work": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.completed_at IS NULL THEN\n    INSERT INTO membership_operation_execution_work_items (membership_operation_id)\n    VALUES (NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
-    "fn_create_membership_verification_processing_work": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO membership_verification_processing_work_items (membership_verification_id, completed_at)\n    VALUES (NEW.id, COALESCE(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at));\n  RETURN NEW;\nEND;\n$function$\n"
-    },
     "fn_create_metrics": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_metrics()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  EXECUTE format('INSERT INTO %I.%I (%I) VALUES ($1) ON CONFLICT (%I) DO NOTHING',\n    TG_TABLE_SCHEMA, TG_ARGV[0], TG_ARGV[1], TG_ARGV[1]) USING NEW.id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1815,9 +1812,6 @@
     },
     "fn_update_membership_renewal_notice_end": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_renewal_notice_end()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE membership_renewal_price_increase_notification_work_items\n  SET projection_ended_at = NEW.projection_ended_at\n  WHERE membership_id = NEW.id;\n  RETURN NEW;\nEND $function$\n"
-    },
-    "fn_update_membership_verification_processing_work": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN\n    UPDATE membership_verification_processing_work_items\n    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_verification_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_moderation_report_transparency_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.moderation_transparency_community_id IS NULL THEN\n    IF NEW.community_id IS NOT NULL THEN\n      NEW.moderation_transparency_community_id := NEW.community_id;\n    ELSIF NEW.post_id IS NOT NULL THEN\n      SELECT community_id INTO NEW.moderation_transparency_community_id FROM posts WHERE id = NEW.post_id;\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -61838,196 +61832,6 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
-    "membership_verification_processing_work_items": {
-      "checkConstraints": {
-        "membership_verification_processing_work_ite_attempt_count_check": "CHECK ((attempt_count >= 0))",
-        "membership_verification_processing_work_items_check": "CHECK ((num_nonnulls(lease_token, leased_at, lease_expires_at) = ANY (ARRAY[0, 3])))",
-        "membership_verification_processing_work_items_check1": "CHECK (((lease_expires_at IS NULL) OR (lease_expires_at > leased_at)))",
-        "membership_verification_processing_work_items_check2": "CHECK (((completed_at IS NULL) OR (lease_token IS NULL)))",
-        "membership_verification_processing_work_items_last_error_check": "CHECK (((last_error IS NULL) OR ((char_length(last_error) >= 1) AND (char_length(last_error) <= 1000))))"
-      },
-      "columns": {
-        "attempt_count": {
-          "collation": null,
-          "comment": "Number of successful claims, including retry claims.",
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5,
-          "type": "integer"
-        },
-        "available_at": {
-          "collation": null,
-          "comment": "Earliest time the provider task may be claimed.",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "timestamp with time zone"
-        },
-        "completed_at": {
-          "collation": null,
-          "comment": "When provider processing produced a final verification outcome.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "timestamp with time zone"
-        },
-        "last_error": {
-          "collation": null,
-          "comment": "Bounded diagnostic for the latest deferred provider attempt.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "text"
-        },
-        "lease_expires_at": {
-          "collation": null,
-          "comment": "Deadline after which current worker results are rejected.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "timestamp with time zone"
-        },
-        "lease_token": {
-          "collation": null,
-          "comment": "Fencing token of the current provider verification worker.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2,
-          "type": "uuid"
-        },
-        "leased_at": {
-          "collation": null,
-          "comment": "Time this processing lease was acquired.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
-        },
-        "membership_verification_id": {
-          "collation": null,
-          "comment": "Durable verification whose provider adapter must run.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        }
-      },
-      "comment": "One provider-verification task per durable verification record; terminal work remains because no verification retention currently removes its parent.",
-      "foreignKeys": {
-        "membership_verification_process_membership_verification_id_fkey": {
-          "columns": ["membership_verification_id"],
-          "definition": "FOREIGN KEY (membership_verification_id) REFERENCES membership_verifications(id) ON DELETE CASCADE",
-          "onDelete": "cascade",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "membership_verifications",
-          "validated": true
-        }
-      },
-      "growth": "unbounded",
-      "indexes": {
-        "idx_membership_verification_processing_work_items__claim": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_verification_processing_work_items__claim ON public.membership_verification_processing_work_items USING btree (available_at, membership_verification_id) WHERE (completed_at IS NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "available_at",
-              "descending": false,
-              "expression": "available_at",
-              "nullsFirst": false,
-              "opclass": "timestamptz_ops"
-            },
-            {
-              "column": "membership_verification_id",
-              "descending": false,
-              "expression": "membership_verification_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(completed_at IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "membership_verification_processing_work_items_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX membership_verification_processing_work_items_pkey ON public.membership_verification_processing_work_items USING btree (membership_verification_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "membership_verification_id",
-              "descending": false,
-              "expression": "membership_verification_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_membership_verification_processing_work_items__lease_token": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_membership_verification_processing_work_items__lease_token ON public.membership_verification_processing_work_items USING btree (lease_token) WHERE (lease_token IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "lease_token",
-              "descending": false,
-              "expression": "lease_token",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(lease_token IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["membership_verification_id"],
-        "definition": "PRIMARY KEY (membership_verification_id)"
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {}
-    },
     "membership_verifications": {
       "checkConstraints": {
         "membership_verifications_check": "CHECK ((num_nonnulls(verified_at, conflicted_at, rejected_at) <= 1))",
@@ -62231,6 +62035,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_membership_verifications__pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_verifications__pending ON public.membership_verifications USING btree (id) WHERE ((verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((verified_at IS NULL) AND (conflicted_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_verifications__pending_microsoft_source_recovery": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -62375,8 +62199,6 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_membership_verifications_complete_processing_work": "CREATE TRIGGER trigger_membership_verifications_complete_processing_work AFTER UPDATE OF verified_at, conflicted_at, rejected_at ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_membership_verification_processing_work()",
-        "trigger_membership_verifications_processing_work": "CREATE TRIGGER trigger_membership_verifications_processing_work AFTER INSERT ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_create_membership_verification_processing_work()",
         "trigger_membership_verifications_updated_at": "CREATE TRIGGER trigger_membership_verifications_updated_at BEFORE UPDATE ON public.membership_verifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
