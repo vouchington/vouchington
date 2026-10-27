@@ -160,6 +160,6 @@ describe('AI and embedding retention', () => {
     await deleteModerationWorkForAdmissionTest(version.id)
 
     expect((await ensureCurrentPostModerationVersion(postId)).id).toBe(version.id)
-    expect(await countTestPostModerationIncompleteWork(postId)).toBe(2)
+    expect(await countTestPostModerationAttempts(postId)).toBe(2)
   })
 })
