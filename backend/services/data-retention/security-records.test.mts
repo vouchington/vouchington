@@ -9,6 +9,7 @@ import {
   readTestCopyrightDecisionRationales,
 } from '@voucha/test-helpers/copyright-mcp-audit'
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { testRationaleRetentionEligible } from '@voucha/test-helpers/security-retention'
 import { lockCopyrightRationaleRetentionPage } from '@services/copyright-notices/retention-erasure-preservation'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
@@ -128,8 +129,14 @@ describe('security record cleanup', () => {
   it('rechecks a noncase rationale after a concurrent account hold commits', async () => {
     const actor = await createTestUserDirect({ administrator: true })
     const subject = await createTestUserDirect()
-    const rationaleId = await insertTestAccountCopyrightRationale(subject.id, actor.id)
-    const cutoff = sourcePlan('copyright_rationales_noncase', new Date('2032-01-01')).cutoffAt
+    const now = new Date()
+    const recordedAt = new Date(Date.UTC(now.getUTCFullYear() - 7, 0, 1))
+    const rationaleId = await insertTestAccountCopyrightRationale(subject.id, actor.id, recordedAt)
+    const cutoff = sourcePlan('copyright_rationales_noncase', now).cutoffAt
+    {
+      await using eligibility = await beginTransaction()
+      expect(await testRationaleRetentionEligible(eligibility, rationaleId, cutoff)).toBe(true)
+    }
     const listed = Promise.withResolvers<void>()
     await using hold = await beginTransaction()
     await placeTestAccountPreservationHold(hold, subject.id, actor.id)

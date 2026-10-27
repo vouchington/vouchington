@@ -6,14 +6,17 @@ import { v7 as uuidv7 } from 'uuid'
 export async function insertTestAccountCopyrightRationale(
   accountUserId: string,
   recordedById: string,
+  recordedAt: Date,
 ): Promise<string> {
-  const rationaleId = uuidv7()
+  const rationaleId = uuidv7({ msecs: recordedAt.getTime() })
+  const reviewId = uuidv7({ msecs: recordedAt.getTime() })
   await write(
     `/* insertTestAccountCopyrightRationale:terminalReview */
      INSERT INTO copyright_repeat_infringer_reviews
-       (account_user_id, opened_at, outcome, outcome_at, rationale_ciphertext)
-     VALUES ($1::uuid, CURRENT_TIMESTAMP, 'reinstatement', CURRENT_TIMESTAMP, 'synthetic-review')`,
-    [accountUserId],
+       (id, account_user_id, opened_at, outcome, outcome_at, rationale_ciphertext)
+     VALUES ($1::uuid, $2::uuid, $3::timestamptz, 'reinstatement',
+       $3::timestamptz, 'synthetic-review')`,
+    [reviewId, accountUserId, recordedAt],
   )
   await write(
     `/* insertTestAccountCopyrightRationale:rationale */
