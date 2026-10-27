@@ -108,7 +108,7 @@ export async function lockCopyrightRationaleRetentionPage(
   )
   /* oxlint-disable no-await-in-loop -- advisory locks must follow one stable account order. */
   for (const account of accounts.rows) {
-    // no-mistakes-disable-next-line query-reached-per-item: one sorted advisory lock per distinct account in this capped rationale page, at most batchSize
+    // One sorted advisory lock per distinct account in this capped rationale page, at most batchSize.
     await transaction(
       `/* lockCopyrightRationaleRetentionAccount */
        SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
