@@ -19,8 +19,7 @@ import { createImageUploadsWorker } from '../processors/create-image-uploads-wor
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('image upload worker', () => {
-  // Native GlideMQ, PostgreSQL, and pubsub participate in this lifecycle, including graceful
-  // worker startup and cleanup; allow this integration case up to 15 seconds under load.
+  // no-mistakes-timeout-reason: real GlideMQ worker startup and cleanup while content-analysis slots stay busy
   it('publishes completion while all content-analysis slots are busy and work remains pending', async () => {
     const prefix = `image-uploads-${randomUUID()}`
     const uploads = new Queue(IMAGE_UPLOADS_QUEUE_NAME, {
@@ -121,5 +120,5 @@ describe('image upload worker', () => {
       await analysis.close()
       restoreStaydown()
     }
-  })
+  }, 15_000)
 })
