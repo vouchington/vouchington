@@ -33,12 +33,7 @@ import {
   cleanupTerminalNotificationPushIntents,
   type PendingNotificationPushIntentCleanupResult,
 } from './cleanup-notification-push-intents.mts'
-import {
-  cleanupDeliveredMembershipEntitlementEffects,
-  cleanupEndedMembershipRenewalNotices,
-  cleanupTerminalGooglePlayAcknowledgments,
-  type MembershipOperationalCleanupOptions,
-} from './cleanup-membership-operational.mts'
+import type { MembershipOperationalCleanupOptions } from './cleanup-membership-operational.mts'
 import { cleanupMembershipOperational } from './cleanup-membership-operational-families.mts'
 import {
   cleanupTerminalStripeEventWork,
@@ -93,11 +88,6 @@ export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletio
 export { cleanupExpiredOAuthAuthorizations }
 export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
-export {
-  cleanupDeliveredMembershipEntitlementEffects,
-  cleanupEndedMembershipRenewalNotices,
-  cleanupTerminalGooglePlayAcknowledgments,
-}
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
