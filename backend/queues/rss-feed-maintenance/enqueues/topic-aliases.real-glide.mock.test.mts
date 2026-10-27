@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { UnrecoverableError, Worker } from 'glide-mq'
+import { UnrecoverableError, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
@@ -26,9 +26,9 @@ describe('topic alias post-invalidation continuation through real GlideMQ', () =
       settled.set(run, created)
       return created
     }
-    const worker = new Worker(
+    const worker = new Worker<{ changeId: string }>(
       QUEUE_NAME,
-      async job => {
+      async (job: Job<{ changeId: string }>) => {
         if (job.data.changeId !== changeId) return
         runs += 1
         if (outcome === 'fail') throw new UnrecoverableError('expected terminal job failure')
@@ -45,20 +45,20 @@ describe('topic alias post-invalidation continuation through real GlideMQ', () =
 
     try {
       await worker.waitUntilReady()
-      const [first] = await enqueueContinueInvalidatingPostsForTopicAliases(
+      const [first] = (await enqueueContinueInvalidatingPostsForTopicAliases(
         topicAliasIds,
         changeId,
         afterPostId,
-      )
+      )) as Job[]
       await waitForRealGlideEvent(settledRun(1).promise, 'first continuation')
       await expect(first?.getState()).resolves.toBe('failed')
 
       outcome = 'complete'
-      const retried = await enqueueContinueInvalidatingPostsForTopicAliases(
+      const retried = (await enqueueContinueInvalidatingPostsForTopicAliases(
         [...topicAliasIds].toReversed(),
         changeId,
         afterPostId,
-      )
+      )) as Job[]
       await waitForRealGlideEvent(settledRun(2).promise, 'reactivated continuation')
 
       expect(retried.map(job => job.id)).toEqual([first?.id])
