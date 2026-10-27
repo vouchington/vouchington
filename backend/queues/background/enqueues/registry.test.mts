@@ -40,6 +40,15 @@ describe('background registry', () => {
     expect(key('cleanupExpiredDeliveries')).toBe('activitypub:cleanup')
   })
 
+  it('keeps mark-all continuation off the notification delivery lane', () => {
+    expect(
+      getBackgroundJob('notifications.processMarkAllNotificationsRead')?.options.ordering,
+    ).toEqual({ key: 'notifications:mark-all-read', concurrency: 1 })
+    expect(
+      getBackgroundJob('notifications.processDeliverNotificationPushIntent')?.options.ordering?.key,
+    ).toBe('notifications')
+  })
+
   it('ranks tasks at the default tier and dispatchers at 100', () => {
     for (const job of BACKGROUND_JOBS) {
       expect([10, 100]).toContain(job.options.priority)

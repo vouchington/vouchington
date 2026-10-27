@@ -7622,6 +7622,8 @@
 {"alias":"extracted.notifications.notificationsHeader.manageYourInboxAndBrowserPush_ae9adb67","consumer":"web","copyId":"copy.extracted.notifications.notificationsHeader.manageYourInboxAndBrowserPush_ae9adb67"},
 {"alias":"extracted.notifications.notificationsHeader.markAllAsRead_d7592650","consumer":"web","copyId":"copy.extracted.notifications.inboxButton.markAllAsRead_d7592650"},
 {"alias":"extracted.notifications.notificationsHeader.notifications_78801183","consumer":"web","copyId":"copy.extracted.intents.productCommunication.notifications_78801183"},
+{"alias":"extracted.notifications.notificationsPage.markAllPending_3955","consumer":"web","copyId":"copy.notifications.markAllPending"},
+{"alias":"extracted.notifications.notificationsPage.refreshReadState_3955","consumer":"web","copyId":"copy.notifications.refreshReadState"},
 {"alias":"extracted.notifications.pushNotificationsPanel.disable_b7e3e4aa","consumer":"web","copyId":"copy.extracted.manageSource.feedActionsSection.disable_b7e3e4aa"},
 {"alias":"extracted.notifications.pushNotificationsPanel.enable_5342e09f","consumer":"web","copyId":"copy.extracted.manageSource.feedActionsSection.enable_5342e09f"},
 {"alias":"extracted.notifications.pushNotificationsPanel.pushNotifications_3b1776f5","consumer":"web","copyId":"copy.extracted.notifications.pushNotificationsPanel.pushNotifications_3b1776f5"},

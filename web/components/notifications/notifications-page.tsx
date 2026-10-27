@@ -12,6 +12,8 @@ import {
   markAllMyNotificationsRead,
   markMyNotificationReadKeepalive,
 } from '@/lib/api/client/my'
+import { Button } from '@/components/ui/button'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import { navigateToTarget, resolveNotificationTarget } from './utils'
 import type { NotificationListNotification } from './notification-list-notification'
 import { toast } from 'sonner'
@@ -20,6 +22,7 @@ import { mergeNotificationPages } from './merged-notifications'
 import { NotificationsHeader } from './notifications-header'
 import { NotificationsListPanel } from './notifications-list-panel'
 import { useNotificationPushActions } from './use-notification-push-actions'
+import { useMarkAllReadProgress } from './use-mark-all-read-progress'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 
 import type { NotificationPushSubscription } from './notification-push-subscription'
@@ -32,12 +35,24 @@ export function NotificationsPage({
   initialNotifications: NotificationsResponseBody
   initialSubscriptions: WebPushSubscriptionsResponseBody | NotificationPushSubscription[]
 }) {
-  const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
-    usePaginatedList(initialNotifications, '/api/v1/my/notifications', {})
+  const {
+    pages,
+    hasNextPage,
+    endCursor,
+    loadMore,
+    loadingMore,
+    fetchError,
+    clearError,
+    resetKey,
+    resetToFirstPage,
+  } = usePaginatedList(initialNotifications, '/api/v1/my/notifications', {})
+  const t = useTranslations()
   const pushActions = useNotificationPushActions(initialSubscriptions)
   const handleLoadMorePushSubscriptions = pushActions.pagination.loadMore
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const [readAtById, setReadAtById] = useState<Record<string, string>>({})
+  const { readAllPending, refreshingReadState, refreshReadState, setReadAllPending } =
+    useMarkAllReadProgress(resetToFirstPage)
 
   const notifications = mergeNotificationPages(pages, deletedIds, readAtById)
 
@@ -65,7 +80,13 @@ export function NotificationsPage({
 
   async function handleMarkAllRead() {
     try {
-      await markAllMyNotificationsRead()
+      const result = await markAllMyNotificationsRead()
+      if (result.has_more) {
+        setReadAllPending(true)
+        await refreshReadState()
+        return
+      }
+      setReadAllPending(false)
       setReadAtById(() => {
         const now = new Date().toISOString()
         return Object.fromEntries(
@@ -83,6 +104,20 @@ export function NotificationsPage({
         canMarkAllRead={!notifications.results.every(result => result.read_at)}
         onMarkAllRead={handleMarkAllRead}
       />
+      {readAllPending && (
+        <div className='flex items-center justify-between gap-3 text-sm text-muted-foreground'>
+          <output>{t('extracted.notifications.notificationsPage.markAllPending_3955')}</output>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            disabled={refreshingReadState}
+            onClick={() => refreshReadState().catch(Sentry.captureException)}
+          >
+            {t('extracted.notifications.notificationsPage.refreshReadState_3955')}
+          </Button>
+        </div>
+      )}
 
       <InfiniteScroll
         hasNextPage={pushActions.pagination.hasNextPage}

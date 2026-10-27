@@ -35,6 +35,16 @@ REST membership overview and verification reads expose domain outcomes. Queue re
 clients must not infer a retry deadline from a pending verification. The producer contract lands before
 the dependent native model and fixture changes. This adds no native UI parity claim.
 
+## Notification mark-all continuation
+
+REST and MCP mark one bounded page, return the immediate `marked_read` count and `has_more`, and
+continue the older backlog in background jobs. The web notification page avoids presenting every
+loaded row as read while work remains; it refreshes one page and the unread summary on request or
+when the tab regains focus or becomes visible. Swift and .NET invoke the endpoint as a mutation without consuming its
+result and optimistically present read state. Background continuation usually completes their
+mark-all intent, but a lost or terminally failed job leaves unread rows; another mark-all request
+resumes them. Their current clients do not automatically retry that case.
+
 ## Hostname identity in presentation
 
 On crawler and integrity screens, hostname links and labels use the hostname string. Their reads

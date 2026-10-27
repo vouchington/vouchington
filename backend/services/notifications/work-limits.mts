@@ -7,6 +7,7 @@ const defaultFields = {
   reconcile_batch_size: 500,
   reconcile_recipient_page_size: 5000,
   push_intent_recovery_page_size: 100,
+  mark_all_read_page_size: 100,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
@@ -16,6 +17,7 @@ export const notificationsWorkMaxValues = {
   reconcile_batch_size: 5000,
   reconcile_recipient_page_size: 50_000,
   push_intent_recovery_page_size: 1000,
+  mark_all_read_page_size: 1000,
 }
 
 export const notificationsWorkConfig = new DynamicConfig({
@@ -26,6 +28,7 @@ export const notificationsWorkConfig = new DynamicConfig({
     reconcile_batch_size: 'number',
     reconcile_recipient_page_size: 'number',
     push_intent_recovery_page_size: 'number',
+    mark_all_read_page_size: 'number',
   },
   defaultFields,
 })
