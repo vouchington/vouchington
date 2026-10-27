@@ -202,74 +202,58 @@ exit 0
     )
   })
 
-  it(
-    'runs two passes: internal (--offline + --include-fragments) then external (--scheme http/https)',
-    { timeout: 15_000 },
-    async () => {
-      const dir = await makeRepo()
-      const { captured, exitCode } = await runLintLinks([], dir)
+  it('runs two passes: internal (--offline + --include-fragments) then external (--scheme http/https)', async () => {
+    const dir = await makeRepo()
+    const { captured, exitCode } = await runLintLinks([], dir)
 
-      expect(exitCode).toBe(0)
+    expect(exitCode).toBe(0)
 
-      const [pass1, pass2] = captured.split('===\n')
+    const [pass1, pass2] = captured.split('===\n')
 
-      // Pass 1: offline + fragments, no scheme filter
-      expect(pass1).toContain('--offline\n')
-      expect(pass1).toContain('--include-fragments\n')
-      expect(pass1).not.toContain('--scheme\n')
-      expect(pass1).toContain('README.md\n')
+    // Pass 1: offline + fragments, no scheme filter
+    expect(pass1).toContain('--offline\n')
+    expect(pass1).toContain('--include-fragments\n')
+    expect(pass1).not.toContain('--scheme\n')
+    expect(pass1).toContain('README.md\n')
 
-      // Pass 2: scheme-filtered, no offline
-      expect(pass2).toContain('--scheme\nhttp\n')
-      expect(pass2).toContain('--scheme\nhttps\n')
-      expect(pass2).not.toContain('--offline\n')
-      expect(pass2).toContain('README.md\n')
-    },
-  )
+    // Pass 2: scheme-filtered, no offline
+    expect(pass2).toContain('--scheme\nhttp\n')
+    expect(pass2).toContain('--scheme\nhttps\n')
+    expect(pass2).not.toContain('--offline\n')
+    expect(pass2).toContain('README.md\n')
+  })
 
-  it(
-    'hard-fails the script when the internal link check (offline pass) fails',
-    { timeout: 15_000 },
-    async () => {
-      const dir = await makeRepo()
-      const { exitCode } = await runLintLinks([], dir, 'offline')
+  it('hard-fails the script when the internal link check (offline pass) fails', async () => {
+    const dir = await makeRepo()
+    const { exitCode } = await runLintLinks([], dir, 'offline')
 
-      expect(exitCode).not.toBe(0)
-    },
-  )
+    expect(exitCode).not.toBe(0)
+  })
 
-  it(
-    'exits zero and emits a ::warning:: when the external link check fails',
-    { timeout: 15_000 },
-    async () => {
-      const dir = await makeRepo()
-      const { exitCode, stdout } = await runLintLinks([], dir, 'external')
+  it('exits zero and emits a ::warning:: when the external link check fails', async () => {
+    const dir = await makeRepo()
+    const { exitCode, stdout } = await runLintLinks([], dir, 'external')
 
-      expect(exitCode).toBe(0)
-      expect(stdout).toContain('::warning')
-    },
-  )
+    expect(exitCode).toBe(0)
+    expect(stdout).toContain('::warning')
+  })
 
-  it(
-    'skips the external pass when --offline is passed (offline mode)',
-    { timeout: 15_000 },
-    async () => {
-      const dir = await makeRepo()
-      const { captured, exitCode } = await runLintLinks(['--offline'], dir)
+  it('skips the external pass when --offline is passed (offline mode)', async () => {
+    const dir = await makeRepo()
+    const { captured, exitCode } = await runLintLinks(['--offline'], dir)
 
-      expect(exitCode).toBe(0)
+    expect(exitCode).toBe(0)
 
-      // Exactly one "===" separator means only pass 1 ran
-      const parts = captured.split('===\n')
-      expect(parts.length).toBe(2)
+    // Exactly one "===" separator means only pass 1 ran
+    const parts = captured.split('===\n')
+    expect(parts.length).toBe(2)
 
-      // Pass 1 runs with --offline and --include-fragments
-      expect(parts[0]).toContain('--offline\n')
-      expect(parts[0]).toContain('--include-fragments\n')
-    },
-  )
+    // Pass 1 runs with --offline and --include-fragments
+    expect(parts[0]).toContain('--offline\n')
+    expect(parts[0]).toContain('--include-fragments\n')
+  })
 
-  it('forwards non-offline options to both passes', { timeout: 15_000 }, async () => {
+  it('forwards non-offline options to both passes', async () => {
     const dir = await makeRepo()
     const { captured } = await runLintLinks(['--verbose'], dir)
 
