@@ -8,7 +8,6 @@ type StartupDeps = Parameters<typeof startApiServer>[2]
 
 function makeStartupDeps(overrides: Partial<StartupDeps> = {}): StartupDeps {
   return {
-    prepare: vi.fn<() => Promise<void>>(async () => {}),
     exitWithFailure: vi.fn<() => void>(),
     flushErrorReporting: vi.fn<() => Promise<void>>(() => Promise.resolve()),
     logError: vi.fn<(error: Error) => void>(),
@@ -58,7 +57,7 @@ describe('startApiServer', () => {
   })
 
   it.each(['staging', 'production'])(
-    'rejects missing %s keys before preparation or binding',
+    'rejects missing %s keys before binding',
     async environment => {
       configureDeployedEnvironment(environment)
       vi.stubEnv('VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64', '')
@@ -67,13 +66,12 @@ describe('startApiServer', () => {
       const deps = makeStartupDeps()
 
       await expect(startApiServer(server, 4321, deps)).rejects.toThrow('must be configured')
-      expect(deps.prepare).not.toHaveBeenCalled()
       expect(server.listen).not.toHaveBeenCalled()
     },
   )
 
   it.each(['staging', 'production'])(
-    'rejects the %s Playwright bypass before preparation or binding',
+    'rejects the %s Playwright bypass before binding',
     async environment => {
       configureDeployedEnvironment(environment)
       vi.stubEnv('PLAYWRIGHT_TEST', 'true')
@@ -81,47 +79,10 @@ describe('startApiServer', () => {
       const deps = makeStartupDeps()
 
       await expect(startApiServer(server, 4321, deps)).rejects.toThrow('PLAYWRIGHT_TEST')
-      expect(deps.prepare).not.toHaveBeenCalled()
       expect(server.listen).not.toHaveBeenCalled()
     },
   )
 
-  it('waits for preparation after valid deployed keys and before binding', async () => {
-    configureDeployedEnvironment('staging')
-    const prepared = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const { server } = makeServer()
-    const starting = startApiServer(
-      server,
-      4321,
-      makeStartupDeps({
-        prepare: async () => {
-          prepared.resolve()
-          await release.promise
-        },
-      }),
-    )
-
-    await prepared.promise
-    expect(server.listen).not.toHaveBeenCalled()
-    release.resolve()
-    await starting
-    expect(server.listen).toHaveBeenCalledOnce()
-  })
-
-  it('propagates a preparation failure without binding', async () => {
-    configureDeployedEnvironment('staging')
-    const error = new Error('localization preparation failed')
-    const { server } = makeServer()
-    const deps = makeStartupDeps({
-      prepare: async () => {
-        throw error
-      },
-    })
-
-    await expect(startApiServer(server, 4321, deps)).rejects.toBe(error)
-    expect(server.listen).not.toHaveBeenCalled()
-  })
   it.each(['resolve', 'reject'] as const)(
     'exits one microtask after error reporting %ss',
     async outcome => {

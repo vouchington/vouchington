@@ -9,7 +9,7 @@ export default validatePlaywrightConfigTimeouts(
       timeout: 30_000,
       junitOutputFile: 'test-report.junit.xml',
       backendCommand:
-        'NODE_ENV=test PLAYWRIGHT_TEST=true SKIP_CAPTCHA_VERIFICATION=true node backend/entrypoints/api/serve.mts',
+        'NODE_ENV=test PLAYWRIGHT_TEST=true SKIP_CAPTCHA_VERIFICATION=true node playwright/test-helpers/launch-api.mts',
       reuseExistingServer: false,
       projects: [
         {
