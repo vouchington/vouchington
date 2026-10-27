@@ -9,6 +9,7 @@ import {
 import * as notifications from '@services/notifications'
 import { upsertWebPushSubscription } from '@services/notifications'
 import { v7 } from 'uuid'
+import { withLogoutCleanupClock } from '../../../test-helpers/logout-cleanup-clock.mts'
 
 describe('POST /api/v1/auth/logout concurrent replay', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -52,16 +53,14 @@ describe('POST /api/v1/auth/logout concurrent replay', () => {
         .set('Cookie', [`dt=${tokens.deviceToken.token}`, `st=${tokens.sessionToken.token}`])
         .set('Sec-Fetch-Site', 'same-origin')
 
-    try {
-      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-      vi.setTimerTickMode('nextTimerAsync')
-      const blocked = await request().expect(500)
-      expect(blocked.headers['set-cookie']).toEqual(
-        expect.arrayContaining([expect.stringContaining('dt=;'), expect.stringContaining('st=;')]),
-      )
-    } finally {
-      vi.useRealTimers()
-    }
+    const requestId = v7()
+    const blocked = await withLogoutCleanupClock(
+      async () => request().set('x-request-id', requestId).expect(500),
+      { requestId },
+    )
+    expect(blocked.headers['set-cookie']).toEqual(
+      expect.arrayContaining([expect.stringContaining('dt=;'), expect.stringContaining('st=;')]),
+    )
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
 
     await logoutCleanupLease.release(sid, 'stalled-owner')

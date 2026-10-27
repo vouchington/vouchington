@@ -12,6 +12,7 @@ import {
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { v7 } from 'uuid'
 import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
+import { withLogoutCleanupClock } from '../../test-helpers/logout-cleanup-clock.mts'
 
 describe('logout cleanup lease', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -42,10 +43,12 @@ describe('logout cleanup lease', () => {
     expect(owner).toEqual({ state: 'reserved', token: 'stalled-owner' })
 
     await expect(
-      runLogoutPushCleanupAndRevoke(
-        sid,
-        { userId, issuedAt: Math.floor(Date.now() / 1000) },
-        async () => {},
+      withLogoutCleanupClock(() =>
+        runLogoutPushCleanupAndRevoke(
+          sid,
+          { userId, issuedAt: Math.floor(Date.now() / 1000) },
+          async () => {},
+        ),
       ),
     ).rejects.toThrow('logout push cleanup is already in progress')
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
