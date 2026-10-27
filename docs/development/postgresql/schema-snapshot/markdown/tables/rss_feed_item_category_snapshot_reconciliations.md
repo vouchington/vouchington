@@ -6,13 +6,14 @@ One coalesced durable desired category snapshot per RSS item; exact-generation a
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                             |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
-| `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | RSS feed item whose complete category snapshot must be reconciled.                                  |
-| `categories`       | `jsonb`                    | no       |                     |          |           |           | Normalized desired RSS category strings, including an empty array when all categories were removed. |
-| `generation`       | `bigint`                   | no       | `1`                 |          |           |           | Monotonic per-item generation fence; stale workers cannot acknowledge newer snapshots.              |
-| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this item first entered the durable category snapshot backlog.                                 |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this item category snapshot was most recently replaced.                                        |
+| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                                    |
+| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rss_feed_item_id` | `uuid`                     | no       |                     |          |           |           | RSS feed item whose complete category snapshot must be reconciled.                                                                                         |
+| `change_id`        | `uuid`                     | no       | `uuidv7()`          |          |           |           | Opaque notification change identity; stable for replay of this snapshot and refreshed on every generation bump, including a new row after acknowledgement. |
+| `categories`       | `jsonb`                    | no       |                     |          |           |           | Normalized desired RSS category strings, including an empty array when all categories were removed.                                                        |
+| `generation`       | `bigint`                   | no       | `1`                 |          |           |           | Monotonic fence while this item remains pending; acknowledgement deletes the row and a later snapshot starts a new generation sequence.                    |
+| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this item first entered the durable category snapshot backlog.                                                                                        |
+| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this item category snapshot was most recently replaced.                                                                                               |
 
 **Primary key:** `PRIMARY KEY (rss_feed_item_id)`
 

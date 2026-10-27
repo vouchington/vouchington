@@ -46,8 +46,6 @@ export function recordSpendCapBreach(context: SpendCapBreachContext): void {
 }
 
 function shouldCaptureSentryMessage(): boolean {
-  if (process.env.NODE_ENV === 'test') return true
-
   const now = Date.now()
   if (
     lastSpendCapBreachReportedAt !== undefined &&

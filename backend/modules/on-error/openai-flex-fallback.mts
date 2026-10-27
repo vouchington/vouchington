@@ -46,8 +46,6 @@ export function recordOpenAiFlexFallback(context: OpenAiFlexFallbackContext): vo
 }
 
 function shouldCaptureSentryMessage(context: OpenAiFlexFallbackContext): boolean {
-  if (process.env.NODE_ENV === 'test') return true
-
   const throttleKey = `${context.provider}:${context.trigger}`
   const now = Date.now()
   const lastReportedAt = lastSentryReportByKey.get(throttleKey)

@@ -98,8 +98,8 @@ _none_
 - `idx_notifications__moderation_report_id`: `CREATE INDEX idx_notifications__moderation_report_id ON ONLY public.notifications USING btree (moderation_report_id) WHERE (moderation_report_id IS NOT NULL)`
 - `idx_notifications__post_id`: `CREATE INDEX idx_notifications__post_id ON ONLY public.notifications USING btree (post_id) WHERE ((post_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_notifications__post_id__foreign_key`: `CREATE INDEX idx_notifications__post_id__foreign_key ON ONLY public.notifications USING btree (post_id) WHERE (post_id IS NOT NULL)`
-- `idx_notifications__publication_post_id`: `CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id) WHERE (publication_post_id IS NOT NULL)`
-- `idx_notifications__publication_rss_feed_item_id`: `CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id) WHERE (publication_rss_feed_item_id IS NOT NULL)`
+- `idx_notifications__publication_post_id`: `CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id, user_id, id) WHERE (publication_post_id IS NOT NULL)`
+- `idx_notifications__publication_rss_feed_item_id`: `CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id, user_id, id) WHERE (publication_rss_feed_item_id IS NOT NULL)`
 - `idx_notifications__review_dispute`: `CREATE INDEX idx_notifications__review_dispute ON ONLY public.notifications USING btree (review_dispute_id) WHERE ((review_dispute_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_notifications__review_dispute_id`: `CREATE INDEX idx_notifications__review_dispute_id ON ONLY public.notifications USING btree (review_dispute_id) WHERE (review_dispute_id IS NOT NULL)`
 - `idx_notifications__rss_feed_item`: `CREATE INDEX idx_notifications__rss_feed_item ON ONLY public.notifications USING btree (rss_feed_item_id) WHERE ((rss_feed_item_id IS NOT NULL) AND (deleted_at IS NULL))`

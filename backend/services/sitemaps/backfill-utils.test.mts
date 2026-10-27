@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
+import { sitemapsWorkConfig } from './work-limits.mts'
 import {
   getMonthlyBackfillPage,
   getNightlyBackfillEntries,
@@ -6,6 +8,16 @@ import {
 } from './backfill-utils.mts'
 
 describe('sitemap backfill utilities', () => {
+  it('uses the runtime nightly overlap window', () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { nightly_backfill_days: 2 }),
+    )
+    expect(getNightlyBackfillEntries(new Date('2026-03-03T07:15:00.000Z'), ['article'])).toEqual([
+      { postType: 'article', day: '2026-03-02' },
+      { postType: 'article', day: '2026-03-03' },
+    ])
+  })
+
   it('builds a week of daily backfills for the nightly job', () => {
     const entries = getNightlyBackfillEntries(new Date('2026-03-03T07:15:00.000Z'), [
       'discussion',

@@ -38,8 +38,8 @@ const streamContext = {
   trigger: 'stream_failed' as const,
 }
 
-// The Sentry throttle is module-level state -- vi.resetModules() plus a dynamic import per test
-// gives each test a fresh, unthrottled instance.
+// The Sentry throttle is module-level state, so vi.resetModules() plus a dynamic import gives each
+// test a fresh instance.
 describe('recordOpenAiFlexFallback', () => {
   beforeEach(() => {
     vi.resetModules()

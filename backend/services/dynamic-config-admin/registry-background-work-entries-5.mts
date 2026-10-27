@@ -80,6 +80,8 @@ export const backgroundWorkRegistryEntries5 = {
       reconcile_batch_size: 'Reconcile batch size for notifications processing.',
       reconcile_recipient_page_size:
         'Recipients one post or RSS feed item notification reconcile job handles before it continues.',
+      content_visibility_page_size:
+        'Maximum notification targets one content or subscription visibility page examines.',
       push_intent_recovery_page_size: 'Page size for durable notification push intent recovery.',
       mark_all_read_page_size:
         'Maximum unread notifications marked by one request or continuation job.',

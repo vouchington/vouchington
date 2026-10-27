@@ -37,6 +37,7 @@
     "valkyries": "^0.13.0"
   },
   "devDependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/urls": "workspace:^",

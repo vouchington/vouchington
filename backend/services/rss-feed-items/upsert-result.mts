@@ -14,6 +14,7 @@ export async function finishRssFeedItemUpsert(
   unchangedUnlinkedExistingRows: ExistingRssFeedItemRow[],
   insertedUnchangedSourceRows: Array<{ rss_feed_item_id: string }>,
   upsertedRows: UpsertedRssFeedItemRow[],
+  notificationChangeId: string,
 ) {
   void enqueueRssFeedItemCategorySnapshotReconciliationBestEffort()
   enqueueTopHashtagRefreshIfNeeded(
@@ -22,10 +23,16 @@ export async function finishRssFeedItemUpsert(
     insertedUnchangedSourceRows,
     upsertedRows,
   )
-  return enqueueRssFeedItemPostUpsertJobs(itemsToUpsert, existingRows, upsertedRows, {
-    existingRowsForFanout: unchangedUnlinkedExistingRows,
-    languageDetectionRows: [...upsertedRows, ...unchangedUnlinkedExistingRows],
-  })
+  return enqueueRssFeedItemPostUpsertJobs(
+    itemsToUpsert,
+    existingRows,
+    upsertedRows,
+    notificationChangeId,
+    {
+      existingRowsForFanout: unchangedUnlinkedExistingRows,
+      languageDetectionRows: [...upsertedRows, ...unchangedUnlinkedExistingRows],
+    },
+  )
 }
 
 export async function finishUnchangedRssFeedItemUpsert(
@@ -33,6 +40,7 @@ export async function finishUnchangedRssFeedItemUpsert(
   existingRows: ExistingRssFeedItemRow[],
   unchangedUnlinkedExistingRows: ExistingRssFeedItemRow[],
   insertedSourceRows: Array<{ rss_feed_item_id: string }>,
+  notificationChangeId: string,
 ): Promise<void> {
   enqueueTopHashtagRefreshIfNeeded(
     isEligibleTopHashtagSource,
@@ -40,9 +48,15 @@ export async function finishUnchangedRssFeedItemUpsert(
     insertedSourceRows,
     [],
   )
-  await enqueueRssFeedItemPostUpsertJobs([], unchangedUnlinkedExistingRows, [], {
-    languageDetectionRows: unchangedUnlinkedExistingRows,
-  })
+  await enqueueRssFeedItemPostUpsertJobs(
+    [],
+    unchangedUnlinkedExistingRows,
+    [],
+    notificationChangeId,
+    {
+      languageDetectionRows: unchangedUnlinkedExistingRows,
+    },
+  )
   await enqueueMissingRssFeedItemEmbeddings(
     existingRows.filter(row => row.is_linked_to_current_feed),
   )

@@ -1,6 +1,4 @@
-import { type PoolClient, write } from '@data-stores/psql'
-import { itemHasDiscoverableSourceSql } from '@modules/feed-query-builders/discoverability-sql'
-import sql from 'sql-template-strings'
+import type { PoolClient } from '@data-stores/psql'
 import {
   type ReconcileNotificationsOptions,
   type RecipientPage,
@@ -8,83 +6,81 @@ import {
 } from './reconcile-batches.mts'
 import {
   insertRssFeedItemNotificationsForRecipients,
-  pruneRssFeedItemNotificationsExceptRecipients,
   type RssFeedItemSnapshot,
 } from './reconcile-rss-feed-item-writes.mts'
-import { pruneMissingRssFeedItemContentNotifications } from './content-visibility-writes.mts'
+import {
+  reconcileRssFeedItemContentNotificationVisibility,
+  type ContentVisibilityCursor,
+  type ContentVisibilityPage,
+} from './content-visibility-writes.mts'
+import { reconcileMembershipNotificationVisibility } from './membership-visibility-writes.mts'
+import { getRssFeedItemNotificationSnapshot } from './reconcile-rss-feed-item-snapshot.mts'
 export async function reconcileNotificationsForRssFeedItem(
   rssFeedItemId: string,
   options: ReconcileNotificationsOptions = {},
 ) {
   const item = await getRssFeedItemNotificationSnapshot(rssFeedItemId)
-  if (!item)
+  if (!item) {
+    const visibility = await reconcileRssFeedItemContentNotificationVisibility(rssFeedItemId)
     return {
       created: 0,
-      pruned: await pruneMissingRssFeedItemContentNotifications(rssFeedItemId),
+      pruned: visibility.pruned,
+      nextVisibilityCursor: visibility.nextCursor,
     }
-  return reconcileNotificationBatches(
+  }
+  const reconciled = await reconcileNotificationBatches(
     {
       batchQueryComment: 'selectRssFeedItemNotificationRecipientBatch',
       createRecipients: (client, recipientTable, page) =>
         populateRssFeedItemNotificationRecipients(client, recipientTable, item, page),
       insertBatch: (client, recipientIds, createdTable) =>
         insertRssFeedItemNotificationsForRecipients(item, recipientIds, client, createdTable),
-      prune: (client, recipientTable, range) =>
-        pruneRssFeedItemNotificationsExceptRecipients(
-          item.rss_feed_item_id,
-          item.is_content_eligible,
-          client,
-          recipientTable,
-          range,
-        ),
     },
     options,
   )
+  if (options.afterUserId) return reconciled
+  const visibility = await reconcileRssFeedItemContentNotificationVisibility(rssFeedItemId)
+  const membership = await reconcileRssFeedItemMembershipVisibility(rssFeedItemId)
+  return {
+    ...reconciled,
+    pruned: reconciled.pruned + visibility.pruned + membership.pruned,
+    nextVisibilityCursor: visibility.nextCursor,
+    nextMembershipCursor: membership.nextCursor,
+  }
 }
-async function getRssFeedItemNotificationSnapshot(
+
+/** A membership continuation reads source and recipient eligibility again for its target page. */
+export async function reconcileRssFeedItemMembershipVisibility(
   rssFeedItemId: string,
-): Promise<RssFeedItemSnapshot | null> {
-  const query = sql`/* getRssFeedItemNotificationSnapshot */
-    SELECT
-      rss_feed_items.id AS rss_feed_item_id,
-      COALESCE(rss_feeds.title, urls.url, 'RSS Feed') AS feed_name,
-      COALESCE(
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'title', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        'New RSS Feed Item'
-      ) AS title,
-      COALESCE(
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'contentSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(rss_feed_items.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''),
-        ''
-      ) AS description,
-      urls.url,
-      rss_feed_items.deleted_at,
-      (rss_feed_items.deleted_at IS NULL AND `
-  query.append(itemHasDiscoverableSourceSql('rss_feed_items.id'))
-    .append(sql`) AS is_content_eligible
-    FROM rss_feed_items
-    JOIN rss_feed_item_sources ON rss_feed_item_sources.rss_feed_item_id = rss_feed_items.id
-    JOIN rss_feeds ON rss_feeds.id = rss_feed_item_sources.rss_feed_id
-    JOIN urls ON urls.id = rss_feed_items.url_id
-    WHERE rss_feed_items.id = ${rssFeedItemId}
-    ORDER BY rss_feed_item_sources.created_at ASC
-    LIMIT 1
-  `)
-  const { rows } = await write(query)
-  return (rows[0] as RssFeedItemSnapshot | undefined) ?? null
+  after?: ContentVisibilityCursor,
+): Promise<ContentVisibilityPage> {
+  const item = await getRssFeedItemNotificationSnapshot(rssFeedItemId)
+  if (!item) return { updated: 0, pruned: 0 }
+  return reconcileMembershipNotificationVisibility({
+    kind: 'rss',
+    entityId: rssFeedItemId,
+    eligible: item.is_content_eligible,
+    after,
+    populateRecipients: (client, table, userIds) =>
+      populateRssFeedItemNotificationRecipients(
+        client,
+        table,
+        item,
+        { afterUserId: null, limit: userIds.length },
+        userIds,
+      ),
+  })
 }
+
 async function populateRssFeedItemNotificationRecipients(
   client: PoolClient,
   recipientTable: string,
   item: RssFeedItemSnapshot,
   page: RecipientPage,
+  targetUserIds?: string[],
 ): Promise<void> {
   if (!item.is_content_eligible) return
+  const targetSubjectFilter = targetUserIds ? 'AND rel.subject_id = ANY($4::uuid[])' : ''
 
   await client.query(
     `/* populateRssFeedItemNotificationRecipients */
@@ -117,6 +113,7 @@ async function populateRssFeedItemNotificationRecipients(
       JOIN item ON item.id = src.rss_feed_item_id
       JOIN relation__user__subscribe__rss_feed rel ON rel.object_id = src.rss_feed_id
       WHERE src.rss_feed_item_id = $1
+        ${targetSubjectFilter}
         AND rel.created_at <= item.notification_at
         AND (
           rel.deleted_at IS NULL
@@ -128,6 +125,7 @@ async function populateRssFeedItemNotificationRecipients(
       JOIN topic_matches ON topic_matches.topic_id = rel.object_id
       CROSS JOIN item
       WHERE rel.created_at <= item.notification_at
+        ${targetSubjectFilter}
         AND (
           rel.deleted_at IS NULL
           OR rel.deleted_at > item.notification_at
@@ -143,6 +141,11 @@ async function populateRssFeedItemNotificationRecipients(
     LIMIT $3
     ON CONFLICT (user_id) DO NOTHING
   `,
-    [item.rss_feed_item_id, page.afterUserId, page.limit],
+    [
+      item.rss_feed_item_id,
+      page.afterUserId,
+      page.limit,
+      ...(targetUserIds ? [targetUserIds] : []),
+    ],
   )
 }

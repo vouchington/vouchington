@@ -118,7 +118,7 @@ describe('post notification reconcile pages', () => {
     ])
   })
 
-  it('prunes a lost recipient inside its own page range and in the final tail', async () => {
+  it('prunes lost recipients across creation page ranges', async () => {
     const { author, subscribers, postId, postCreatedAt } = await createSubscribedPost(5)
     await walkPages(reconcilePage(postId))
     const ordered = subscribers.toSorted((a, b) => a.id.localeCompare(b.id))
@@ -135,7 +135,7 @@ describe('post notification reconcile pages', () => {
 
     const pages = await walkPages(reconcilePage(postId))
 
-    expect(pages.map(page => page.result.pruned)).toEqual([1, 1])
+    expect(pages.map(page => page.result.pruned)).toEqual([2, 0])
     expect((await listNotifications(first!.id)).results).toHaveLength(0)
     expect((await listNotifications(last!.id)).results).toHaveLength(0)
     for (const kept of ordered.slice(1, 4)) {

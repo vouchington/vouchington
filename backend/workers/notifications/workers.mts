@@ -12,6 +12,8 @@ import {
 } from '@queues/background/enqueues/define-handler'
 import {
   NOTIFICATIONS_APPLY_COPYRIGHT_ACTION_JOB,
+  NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+  NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
   NOTIFICATIONS_APPLY_MEDIA_REGISTRY_RECORD_JOB,
   NOTIFICATIONS_CHECK_COPYRIGHT_REVIEW_TARGET_JOB,
   NOTIFICATIONS_CONVERSATION_MESSAGE_JOB,
@@ -36,6 +38,7 @@ import {
   NOTIFICATIONS_SWEEP_COPYRIGHT_RETENTION_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import * as processors from './processors.mts'
+import { enqueueVisibilityContinuations } from './processors/visibility-continuations.mts'
 import { processCommunityActivityDigestScheduleTick } from './processors/community-activity-digest-schedule.mts'
 
 export const notificationsHandlers = [
@@ -47,10 +50,17 @@ export const notificationsHandlers = [
       targetName: 'background',
       readAndDispatch: async pageSize => {
         const result = await processors.processReconcilePostNotifications({ ...job.data, pageSize })
+        await enqueueVisibilityContinuations(job.data, result)
         return {
           result,
           ...(result.nextAfterUserId
-            ? { next: { postId: job.data.postId, afterUserId: result.nextAfterUserId } }
+            ? {
+                next: {
+                  postId: job.data.postId,
+                  changeId: job.data.changeId,
+                  afterUserId: result.nextAfterUserId,
+                },
+              }
             : {}),
         }
       },
@@ -68,12 +78,14 @@ export const notificationsHandlers = [
           ...job.data,
           pageSize,
         })
+        await enqueueVisibilityContinuations(job.data, result)
         return {
           result,
           ...(result.nextAfterUserId
             ? {
                 next: {
                   rssFeedItemId: job.data.rssFeedItemId,
+                  changeId: job.data.changeId,
                   afterUserId: result.nextAfterUserId,
                 },
               }
@@ -82,6 +94,14 @@ export const notificationsHandlers = [
       },
       enqueueNext: enqueueContinueReconcileRssFeedItemNotifications,
     }),
+  ),
+  backgroundDataHandler(
+    NOTIFICATIONS_CONTENT_VISIBILITY_JOB,
+    processors.processReconcileContentVisibility,
+  ),
+  backgroundDataHandler(
+    NOTIFICATIONS_MEMBERSHIP_VISIBILITY_JOB,
+    processors.processReconcileMembershipVisibility,
   ),
   backgroundDataHandler(
     NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,

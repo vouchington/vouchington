@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { advisoryLockPool, type PoolClient } from '@data-stores/psql'
+import { advisoryLockPool, writePool, type PoolClient } from '@data-stores/psql'
 import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
 import { onTestFinished } from 'vitest'
 import { runPoolObservationExclusively } from 'vouchington-tooling/postgres-test-faults'
@@ -14,11 +14,12 @@ import {
 
 const actionScope = new AsyncLocalStorage<object>()
 
-/** Own only the first advisory Promise checkout of this direct action or actual HTTP request. */
+/** Own only the first selected pool's Promise checkout of this action or actual HTTP request. */
 export async function withTestOwnedAdvisoryWait<Result>(
   options: TestOwnedAdvisoryWaitOptions,
   action: (waitForLock: (operation: Promise<unknown>) => Promise<void>) => Promise<Result>,
 ): Promise<Result> {
+  const pool = options.pool === 'write' ? writePool : advisoryLockPool
   const token = {}
   const cancelled = Promise.withResolvers<never>()
   const captured = Promise.withResolvers<ReturnType<typeof createTestAdvisoryClientLoan>>()
@@ -123,16 +124,16 @@ export async function withTestOwnedAdvisoryWait<Result>(
       entered = true
       try {
         requireOpen()
-        observerLoan = reserveTestAdvisoryObserver()
+        observerLoan = reserveTestAdvisoryObserver(options.pool)
         const reservedObserver = await observerLoan.ready
         requireOpen()
         setup = getTestOwnedAdvisoryLockTag(reservedObserver, options)
         const tag = await setup
         requireOpen()
-        const descriptor = Object.getOwnPropertyDescriptor(advisoryLockPool, 'connect')
-        const original = advisoryLockPool.connect
+        const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
+        const original = pool.connect
         let claimed = false
-        Object.defineProperty(advisoryLockPool, 'connect', {
+        Object.defineProperty(pool, 'connect', {
           configurable: true,
           enumerable: descriptor?.enumerable ?? true,
           writable: true,
@@ -166,8 +167,8 @@ export async function withTestOwnedAdvisoryWait<Result>(
           }),
         })
         restorePool = () => {
-          if (descriptor) Object.defineProperty(advisoryLockPool, 'connect', descriptor)
-          else Reflect.deleteProperty(advisoryLockPool, 'connect')
+          if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
+          else Reflect.deleteProperty(pool, 'connect')
         }
         callbackOutcome = Promise.allSettled([
           Promise.resolve().then(() => actionScope.run(token, () => action(waitForLock))),

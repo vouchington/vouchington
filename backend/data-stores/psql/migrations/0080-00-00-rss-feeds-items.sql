@@ -618,6 +618,7 @@ COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.updated_at IS 'When thi
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_category_snapshot_reconciliations (
   rss_feed_item_id UUID PRIMARY KEY CONSTRAINT fk_rss_feed_item_category_snapshot_reconciliations__item REFERENCES rss_feed_items ON DELETE CASCADE,
+  change_id UUID NOT NULL DEFAULT uuidv7(),
   categories JSONB NOT NULL,
   generation BIGINT NOT NULL DEFAULT 1 CONSTRAINT chk_rss_feed_item_category_snapshot_reconciliations__generation CHECK (generation > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -636,8 +637,9 @@ ON rss_feed_item_category_snapshot_reconciliations (updated_at, rss_feed_item_id
 
 COMMENT ON TABLE rss_feed_item_category_snapshot_reconciliations IS 'One coalesced durable desired category snapshot per RSS item; exact-generation acknowledgement deletes successfully reconciled work.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.rss_feed_item_id IS 'RSS feed item whose complete category snapshot must be reconciled.';
+COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.change_id IS 'Opaque notification change identity; stable for replay of this snapshot and refreshed on every generation bump, including a new row after acknowledgement.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.categories IS 'Normalized desired RSS category strings, including an empty array when all categories were removed.';
-COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.generation IS 'Monotonic per-item generation fence; stale workers cannot acknowledge newer snapshots.';
+COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.generation IS 'Monotonic fence while this item remains pending; acknowledgement deletes the row and a later snapshot starts a new generation sequence.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.created_at IS 'When this item first entered the durable category snapshot backlog.';
 COMMENT ON COLUMN rss_feed_item_category_snapshot_reconciliations.updated_at IS 'When this item category snapshot was most recently replaced.';
 

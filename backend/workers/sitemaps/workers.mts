@@ -1,3 +1,4 @@
+import { processRetiredSitemapCleanup } from './processors/retired-cleanup.mts'
 import { backgroundHandler } from '@queues/background/enqueues/define-handler'
 import {
   SITEMAPS_FAMILY_JOB,
@@ -7,6 +8,7 @@ import {
   SITEMAPS_POST_DAY_JOB,
   SITEMAPS_POST_TYPE_INDEX_JOB,
   SITEMAPS_ROOT_INDEX_JOB,
+  SITEMAPS_RETIRED_CLEANUP_JOB,
   SITEMAPS_WEEKLY_BACKFILL_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
 import {
@@ -19,7 +21,12 @@ import {
   processUpdateRootIndex,
   processWeeklyBackfillMonthDispatcher,
 } from './processors.mts'
-import { requireJobFamily, requireJobPostType, requireJobString } from './processors/job-data.mts'
+import {
+  optionalGenerationId,
+  requireJobFamily,
+  requireJobPostType,
+  requireJobString,
+} from './processors/job-data.mts'
 
 const sitemapJobProcessors = {
   processUpdatePostDaySitemap,
@@ -29,6 +36,7 @@ const sitemapJobProcessors = {
   processUpdateRootIndex,
   processNightlyBackfillWeekDispatcher,
   processWeeklyBackfillMonthDispatcher,
+  processRetiredSitemapCleanup,
   processMonthlyBackfillArchiveDispatcher,
 }
 
@@ -37,10 +45,14 @@ type SitemapJobProcessors = typeof sitemapJobProcessors
 /** @internal Handlers over the processors; tests pass substitute processors to observe the routing. */
 export function createSitemapsHandlers(processors: SitemapJobProcessors = sitemapJobProcessors) {
   return [
+    backgroundHandler(SITEMAPS_RETIRED_CLEANUP_JOB, () =>
+      processors.processRetiredSitemapCleanup(),
+    ),
     backgroundHandler(SITEMAPS_POST_DAY_JOB, job =>
       processors.processUpdatePostDaySitemap({
         postType: requireJobPostType(job.data?.postType),
         day: requireJobString(job.data?.day, 'day'),
+        ...optionalGenerationId(job.data?.generationId),
       }),
     ),
     backgroundHandler(SITEMAPS_POST_TYPE_INDEX_JOB, job =>
@@ -48,7 +60,10 @@ export function createSitemapsHandlers(processors: SitemapJobProcessors = sitema
     ),
     backgroundHandler(SITEMAPS_POSTS_INDEX_JOB, () => processors.processUpdatePostsIndex()),
     backgroundHandler(SITEMAPS_FAMILY_JOB, job =>
-      processors.processUpdateFamilySitemap(requireJobFamily(job.data?.family)),
+      processors.processUpdateFamilySitemap({
+        family: requireJobFamily(job.data?.family),
+        ...optionalGenerationId(job.data?.generationId),
+      }),
     ),
     backgroundHandler(SITEMAPS_ROOT_INDEX_JOB, () => processors.processUpdateRootIndex()),
     backgroundHandler(SITEMAPS_NIGHTLY_BACKFILL_JOB, () =>

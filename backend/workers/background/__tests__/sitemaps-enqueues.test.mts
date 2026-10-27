@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
 import { readAllQueueJobs } from '@voucha/test-helpers'
@@ -7,11 +7,13 @@ import {
   SITEMAPS_POSTS_INDEX_JOB,
   SITEMAPS_POST_DAY_JOB,
   SITEMAPS_POST_TYPE_INDEX_JOB,
+  SITEMAPS_RETIRED_CLEANUP_JOB,
   SITEMAPS_ROOT_INDEX_JOB,
 } from '@queues/background/enqueues/sitemaps-jobs'
 import {
   enqueueBulkUpdatePostDaySitemaps,
   enqueueMonthlyBackfillArchiveContinuation,
+  enqueueRetiredSitemapCleanupContinuation,
   enqueueUpdateFamilySitemap,
   enqueueUpdateLandingPagesSitemapForReconciliation,
   enqueueUpdatePostsIndex,
@@ -136,5 +138,18 @@ describe('enqueues.generated', () => {
         removeOnFail: true,
       },
     })
+  })
+
+  it('collapses cleanup continuations from the same durable state and separates later steps', async () => {
+    const token = `${randomUUID()}|`
+    await enqueueRetiredSitemapCleanupContinuation(token)
+    await enqueueRetiredSitemapCleanupContinuation(token)
+    await enqueueRetiredSitemapCleanupContinuation(`${token}next`)
+
+    const jobs = await readAllQueueJobs(sitemapsQueue)
+    const sha = (value: string) => createHash('sha256').update(value).digest('hex').slice(0, 32)
+    const idFor = (value: string) => `${SITEMAPS_RETIRED_CLEANUP_JOB.name}__${sha(value)}`
+    expect(jobs.filter(job => job.id === idFor(token))).toHaveLength(1)
+    expect(jobs.filter(job => job.id === idFor(`${token}next`))).toHaveLength(1)
   })
 })

@@ -38,6 +38,20 @@ describe('bounded work namespace policy', () => {
       defineBoundedWorkNamespace({ ...options, namespace: 'unrelated-work-config' }),
     ).toThrow('must match its DynamicConfig key')
   })
+  it('keeps a caller-specified safety minimum in the registry', () => {
+    const entry = defineBoundedWorkNamespace({
+      ...options,
+      minValues: { release_batch_size: 50 },
+      descriptions: { release_batch_size: 'Rows per release page.' },
+    })
+    expect(entry.fields.release_batch_size?.minValue).toBe(50)
+    expect(() =>
+      defineBoundedWorkNamespace({ ...options, minValues: { release_batch_size: 101 } }),
+    ).toThrow('default or ceiling')
+    expect(() => defineBoundedWorkNamespace({ ...options, minValues: { obsolete: 50 } })).toThrow(
+      'unknown field',
+    )
+  })
 })
 
 const additionalOwners = [

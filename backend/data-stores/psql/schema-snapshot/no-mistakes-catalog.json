@@ -74313,7 +74313,7 @@
         "idx_notifications__publication_post_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id) WHERE (publication_post_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_notifications__publication_post_id ON ONLY public.notifications USING btree (publication_post_id, user_id, id) WHERE (publication_post_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -74321,6 +74321,24 @@
               "column": "publication_post_id",
               "descending": false,
               "expression": "publication_post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -74336,7 +74354,7 @@
         "idx_notifications__publication_rss_feed_item_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id) WHERE (publication_rss_feed_item_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_notifications__publication_rss_feed_item_id ON ONLY public.notifications USING btree (publication_rss_feed_item_id, user_id, id) WHERE (publication_rss_feed_item_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -74344,6 +74362,24 @@
               "column": "publication_rss_feed_item_id",
               "descending": false,
               "expression": "publication_rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -117604,6 +117640,16 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
+          "ordinalPosition": 3
+        },
+        "change_id": {
+          "comment": "Opaque notification change identity; stable for replay of this snapshot and refreshed on every generation bump, including a new row after acknowledgement.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
           "ordinalPosition": 2
         },
         "created_at": {
@@ -117614,17 +117660,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "generation": {
-          "comment": "Monotonic per-item generation fence; stale workers cannot acknowledge newer snapshots.",
+          "comment": "Monotonic fence while this item remains pending; acknowledgement deletes the row and a later snapshot starts a new generation sequence.",
           "dataType": "bigint",
           "defaultExpression": "1",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "rss_feed_item_id": {
           "comment": "RSS feed item whose complete category snapshot must be reconciled.",
@@ -117644,7 +117690,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         }
       },
       "comment": "One coalesced durable desired category snapshot per RSS item; exact-generation acknowledgement deletes successfully reconciled work.",

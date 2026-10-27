@@ -3407,6 +3407,13 @@ importers:
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/queues/rss-feeds:
     dependencies:
@@ -3810,6 +3817,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../services/rss-feeds
+      '@services/sitemaps':
+        specifier: workspace:^
+        version: link:../services/sitemaps
       '@services/stories':
         specifier: workspace:^
         version: link:../services/stories
@@ -8679,6 +8689,9 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
     devDependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../bookmarks
@@ -14293,6 +14306,9 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../../services/bookmarks
@@ -14631,6 +14647,9 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.1156.0
+        version: 3.1156.0
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

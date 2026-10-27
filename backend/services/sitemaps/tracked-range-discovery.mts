@@ -47,7 +47,7 @@ function parseTrackedDayFromStorageKey(key: string | undefined): string | null {
   if (!key) return null
 
   const normalized = stripStoragePrefix(key)
-  const match = normalized.match(/^posts\/(\d{4})\/(\d{2})\/(\d{2})\/[^/]+\/[^/]+$/)
+  const match = normalized.match(/^posts\/(\d{4})\/(\d{2})\/(\d{2})\/[^/]+\/index\.xml$/)
   if (!match) return null
 
   return `${match[1]}-${match[2]}-${match[3]}`

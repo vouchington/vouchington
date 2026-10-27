@@ -1,4 +1,5 @@
 import { getRssFeedItemsWorkLimit } from './work-limits.mts'
+import { randomUUID } from 'node:crypto'
 import type { RssFeedItemToUpsert } from './types.mts'
 import {
   buildExistingRssFeedItemsMap,
@@ -152,13 +153,14 @@ export async function upsertRssFeedItems(
       ),
     ]),
   )
-  if (insertedSourceRows.length > 0) {
-    await recordPostPublicationChange(txQuery, {
-      scope: { type: 'rss_feed', rssFeedId },
-      reason: 'rss_feed_source_changed',
-      impactedRssFeedItemIds: insertedRssFeedItemIds(insertedSourceRows),
-    })
-  }
+  const notificationChangeId =
+    insertedSourceRows.length > 0
+      ? await recordPostPublicationChange(txQuery, {
+          scope: { type: 'rss_feed', rssFeedId },
+          reason: 'rss_feed_source_changed',
+          impactedRssFeedItemIds: insertedSourceRows.map(row => row.rss_feed_item_id),
+        })
+      : randomUUID()
   await txQuery.commit()
   if (markedStoryPostRelatedUrlProjections)
     void enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort()
@@ -170,6 +172,7 @@ export async function upsertRssFeedItems(
         existingRows,
         unchangedUnlinkedExistingRows,
         insertedSourceRows,
+        notificationChangeId,
       )
     } else {
       await enqueueMissingRssFeedItemEmbeddings(existingRows)
@@ -188,13 +191,10 @@ export async function upsertRssFeedItems(
     unchangedUnlinkedExistingRows,
     insertedUnchangedSourceRows,
     upsertedRows,
+    notificationChangeId,
   )
 }
 
 function rssFeedItemIdsOf(rows: Array<{ id: string }>): string[] {
   return rows.map(row => row.id)
-}
-
-function insertedRssFeedItemIds(insertedSourceRows: Array<{ rss_feed_item_id: string }>): string[] {
-  return insertedSourceRows.map(row => row.rss_feed_item_id)
 }

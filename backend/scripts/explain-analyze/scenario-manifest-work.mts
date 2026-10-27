@@ -1,5 +1,6 @@
 import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
 import { PUBLICATION_SCOPE_SCENARIO_IDS } from './publication-scope-scenario-ids.mts'
+import { NOTIFICATION_VISIBILITY_SCENARIO_IDS } from './notification-visibility-scenario-ids.mts'
 
 export const BOUNDED_WORK_SCENARIOS = [
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
@@ -13,6 +14,10 @@ export const BOUNDED_WORK_SCENARIOS = [
   'upload-cleanup-abandonment-first',
   'upload-cleanup-abandonment-forward',
   ...PUBLICATION_SCOPE_SCENARIO_IDS,
+  ...NOTIFICATION_VISIBILITY_SCENARIO_IDS,
+  'sitemap-users-page',
+  'sitemap-topics-page',
+  'sitemap-post-day-page',
   'dispatch-hostname-url-selectivity',
   'dispatch-tier1-url-selectivity',
   'dispatch-tier2-url-selectivity',
