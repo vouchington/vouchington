@@ -33,7 +33,6 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'membership_verifications',
   'stripe_events',
   'user_data_requests',
-  'user_engagement_email_sends',
   'user_import_requests',
   'user_rss_feed_import_batches',
   'user_rss_feed_import_rows',
