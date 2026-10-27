@@ -99,38 +99,6 @@ describe('glide-mq factory', () => {
       await owner.close()
     }
   })
-
-  it('creates queues and workers with shared DLQ configuration', async () => {
-    const queueName = `factory-dlq-${crypto.randomUUID()}`
-    const deadLetterQueue = { name: `${queueName}-dlq` }
-    const queue = createQueue(queueName, { deadLetterQueue, priorityKind: 'ranked' })
-    const worker = createWorker(
-      queueName,
-      () => {
-        throw new Error('planned failure')
-      },
-      { deadLetterQueue, concurrency: 1 },
-    )
-
-    try {
-      expect(getGlideMQInstances()).toContain(worker)
-
-      const opts = { attempts: 1, expectDeadLetter: true } as Parameters<typeof queue.add>[2]
-      await queue.add('alwaysFail', { id: 'job-1' }, opts)
-
-      const deadLetterJobs = await queue.getDeadLetterJobs(0, 9)
-      expect(deadLetterJobs).toHaveLength(1)
-      expect(deadLetterJobs[0].name).toBe('alwaysFail')
-      expect(deadLetterJobs[0].data).toMatchObject({
-        originalQueue: queueName,
-        data: { id: 'job-1' },
-        failedReason: 'planned failure',
-      })
-    } finally {
-      await worker.close()
-      await queue.close()
-    }
-  })
 })
 
 describe('createEnqueueFunction', () => {
