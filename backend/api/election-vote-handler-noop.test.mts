@@ -116,7 +116,7 @@ describe('election vote no-op reconciliation', () => {
     await expect(getTopicElectionsByIdBatch([topicId])).resolves.toEqual([
       expect.objectContaining({ votes_count_up: 1, votes_count_down: 0, votes_score_net: 1 }),
     ])
-  }, 30_000)
+  })
 
   it('reconciles missing stats after a same-choice retry without appending an event', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
@@ -133,7 +133,7 @@ describe('election vote no-op reconciliation', () => {
     await expect(getTopicElectionsByIdBatch([topicId])).resolves.toEqual([
       expect.objectContaining({ votes_count_up: 1, votes_count_down: 0, votes_score_net: 1 }),
     ])
-  }, 30_000)
+  })
 
   it('reconciles aggregate stats when an official Clear retry follows a missed enqueue', async () => {
     // The writer rejects a platform account's vote, so the +1 predates the promotion.
@@ -152,7 +152,7 @@ describe('election vote no-op reconciliation', () => {
     await expect(getTopicElectionsByIdBatch([topicId])).resolves.toEqual([
       expect.objectContaining({ votes_count_up: 0, votes_count_down: 0, votes_score_net: 0 }),
     ])
-  }, 30_000)
+  })
 
   it('does not append a Clear event for an official retry of a legacy zero ballot', async () => {
     const user = await createTestUser({ administrator: true })

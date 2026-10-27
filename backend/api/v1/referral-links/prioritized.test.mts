@@ -32,7 +32,7 @@ describe('prioritized referral links routes', () => {
       url: `https://${testHostname}/ref/${createRandomString(8)}`,
       label: 'API cache test link',
     })
-  }, 30_000)
+  })
 
   describe('GET /api/v1/topics/:id/prioritized-referral-links', () => {
     it('sets public Cache-Control for anonymous requests', async () => {

@@ -44,7 +44,7 @@ describe('Discoverable Passkey Sign-In Routes', () => {
     await routeRateLimitConfig.waitForInitialization()
     routeRateLimitConfig.unsubscribe()
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
-  }, 15_000)
+  })
 
   afterAll(async () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: false })
