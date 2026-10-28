@@ -1,14 +1,12 @@
-import type {
-  AdminModerationReport,
-  AdminModerationReportsResponse,
-} from '@/components/admin/reports-client-types'
+import type { StaffFlatModerationReportsResponse } from '@/lib/api/client/reports'
+import type { AdminModerationReport } from '@/components/admin/reports-client-types'
 
 export function makeReportsResponse(
   overrides: {
     status?: 'pending' | 'reviewed' | 'actioned' | 'dismissed'
     judgement?: AdminModerationReport['judgement']
   } & Partial<AdminModerationReport> = {},
-): AdminModerationReportsResponse {
+): StaffFlatModerationReportsResponse {
   return {
     results: [makeReport(overrides)],
     page_info: {

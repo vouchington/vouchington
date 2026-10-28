@@ -23,7 +23,7 @@ export interface IntegrityPenaltyRecord {
   created_at: string
 }
 
-export interface IntegrityPenaltyPage<P extends IntegrityPenaltyRecord> {
+interface IntegrityPenaltyPage<P extends IntegrityPenaltyRecord> {
   results: P[]
   page_info: PageInfo
 }

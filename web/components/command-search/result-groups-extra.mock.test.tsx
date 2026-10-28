@@ -40,7 +40,9 @@ vi.mock(import('../command-search/command-link-item'), () => ({
   }: {
     href: string
     external: boolean
-    label: import('../command-search/command-link-item').CommandItemLabel
+    label: Parameters<
+      typeof import('../command-search/command-link-item').CommandLinkItem
+    >[0]['label']
     sublabel: string
     onOpenChange: (open: boolean) => void
     pushRoute?: (href: string) => void

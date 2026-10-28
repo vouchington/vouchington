@@ -20,6 +20,7 @@ import {
   resolveModerationReport,
   rerunReportJudgement,
   type MemberModerationReport,
+  type StaffFlatModerationReportsResponse,
   type ModerationReportSortParam,
 } from '@/lib/api/client/reports'
 import { MODERATION_QUEUE_SHORTCUTS } from '@/lib/keyboard-shortcuts'
@@ -36,12 +37,10 @@ import { useReportsAiPolling } from './use-reports-ai-polling'
 export type {
   AdminModerationReport,
   AdminClusteredModerationReportsResponse,
-  AdminModerationReportsResponse,
 } from './reports-client-types'
 import type {
   AdminClusteredModerationReportsResponse,
   AdminModerationReport,
-  AdminModerationReportsResponse,
   MemberModerationReportsResponse,
 } from './reports-client-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -49,7 +48,7 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 type ReportsClientProps = (
   | {
       viewerTier: 'staff'
-      data: AdminModerationReportsResponse | AdminClusteredModerationReportsResponse
+      data: StaffFlatModerationReportsResponse | AdminClusteredModerationReportsResponse
       canBulkRemove?: boolean
     }
   | { viewerTier: 'member'; data: MemberModerationReportsResponse }
@@ -104,7 +103,7 @@ export function ReportsClient(props: ReportsClientProps) {
 }
 
 type FlatReportsClientProps = (
-  | { viewerTier: 'staff'; data: AdminModerationReportsResponse }
+  | { viewerTier: 'staff'; data: StaffFlatModerationReportsResponse }
   | { viewerTier: 'member'; data: MemberModerationReportsResponse }
 ) & {
   canBulkRemove: boolean
@@ -381,7 +380,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
 }
 
 function isClusteredReportsResponse(
-  data: AdminModerationReportsResponse | AdminClusteredModerationReportsResponse,
+  data: StaffFlatModerationReportsResponse | AdminClusteredModerationReportsResponse,
 ): data is AdminClusteredModerationReportsResponse {
   return 'cluster_mode' in data
 }

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
+import type { StaffFlatModerationReportsResponse } from '@/lib/api/client/reports'
 
 const mockNav = createNavMock()
 
@@ -24,11 +25,7 @@ vi.mock(
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 
-import {
-  ReportsClient,
-  type AdminModerationReport,
-  type AdminModerationReportsResponse,
-} from '../reports-client'
+import { ReportsClient, type AdminModerationReport } from '../reports-client'
 
 describe('ReportsClient keyboard shortcuts', () => {
   afterEach(() => {
@@ -255,7 +252,7 @@ describe('ReportsClient keyboard shortcuts', () => {
   })
 })
 
-function makeReportsResponse(reports: AdminModerationReport[]): AdminModerationReportsResponse {
+function makeReportsResponse(reports: AdminModerationReport[]): StaffFlatModerationReportsResponse {
   return {
     results: reports,
     page_info: {

@@ -57,7 +57,7 @@ export interface StaffModerationReport extends ModerationReportListItem {
   post_moderation_context: unknown | null
 }
 
-export interface ModerationReportsPageInfo {
+interface ModerationReportsPageInfo {
   page_info: {
     has_next_page: boolean
     has_previous_page: boolean
@@ -74,7 +74,7 @@ export interface StaffFlatModerationReportsResponse extends ModerationReportsPag
   results: StaffModerationReport[]
 }
 
-export interface ModerationReportClusterIndicators {
+interface ModerationReportClusterIndicators {
   content_hash_duplicate: boolean
   embeddings_similarity: boolean
   velocity_spike: boolean

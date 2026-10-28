@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { ApiError, isExpectedApiError, getApiErrorMessage } from '@vouchington/api-client'
 import { getRateLimitMessage, isRateLimitError } from '@/lib/api/rate-limit-error'
 
-export interface OnErrorOptions {
+interface OnErrorOptions {
   fallback: string
   /** Replaces server prose for known API error codes while preserving expected-error handling. */
   displayMessageByCode?: Readonly<Record<string, string>>

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
+import type { StaffFlatModerationReportsResponse } from '@/lib/api/client/reports'
 
 const mockNav = createNavMock()
 
@@ -29,11 +30,7 @@ vi.mock(
   () => navMockModule as unknown as typeof import('next/navigation'),
 )
 
-import {
-  ReportsClient,
-  type AdminModerationReport,
-  type AdminModerationReportsResponse,
-} from '../reports-client'
+import { ReportsClient, type AdminModerationReport } from '../reports-client'
 
 describe('ReportsClient bulk actions', () => {
   afterEach(() => {
@@ -251,7 +248,7 @@ function getBulkToolbar(): HTMLElement {
 
 function makeReportsResponse(
   overrides: Partial<AdminModerationReport> = {},
-): AdminModerationReportsResponse {
+): StaffFlatModerationReportsResponse {
   return {
     results: [makeReport(overrides)],
     page_info: {

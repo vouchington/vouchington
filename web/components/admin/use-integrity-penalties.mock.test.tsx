@@ -4,10 +4,13 @@ import { ApiError } from '@vouchington/api-client'
 import {
   isAmbiguousIntegrityMutationFailure,
   useIntegrityPenalties,
-  type IntegrityPenaltyPage,
   type IntegrityPenaltyRecord,
   type IntegrityPenaltyStatus,
 } from './use-integrity-penalties'
+
+type IntegrityPenaltyScopeGuard = NonNullable<
+  Parameters<typeof useIntegrityPenalties<IntegrityPenaltyRecord>>[0]['scopeGuard']
+>
 
 const mockReplace = vi.fn<VitestLooseMock>()
 const mockRefresh = vi.fn<VitestLooseMock>()
@@ -40,7 +43,7 @@ function renderPenaltyHook(options?: {
   getById?: (id: string) => Promise<{ penalty: IntegrityPenaltyRecord }>
   initialStatus?: IntegrityPenaltyStatus
   revoke?: (id: string) => Promise<{ penalty: IntegrityPenaltyRecord }>
-  scopeGuard?: (page: IntegrityPenaltyPage<IntegrityPenaltyRecord>) => boolean
+  scopeGuard?: IntegrityPenaltyScopeGuard
 }) {
   return renderHook(() =>
     useIntegrityPenalties({

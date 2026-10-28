@@ -2,11 +2,13 @@ import '@/test-helpers/i18n/mock-json-messages'
 import type { ElementType, ReactNode } from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render } from '@testing-library/react'
-import { TopicListPage, type TopicListLoader } from './topic-list-page'
+import { TopicListPage } from './topic-list-page'
 import { getActiveIntent } from '@/lib/navigation/intents'
 import { getTopics } from '@/lib/api/server'
 import { RecommendedTopicsAside } from '@/components/asides/recommended-topics-aside'
 import type { TopicListProps } from './topic-list'
+
+type TopicListLoader = NonNullable<Parameters<typeof TopicListPage>[0]['loadPage']>
 
 const capturedTopicListProps: Record<string, unknown>[] = []
 
