@@ -85,20 +85,4 @@ function CardContent({
 }
 CardContent.displayName = 'CardContent'
 
-function CardFooter({
-  className,
-  ref,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement> & { ref?: React.Ref<HTMLDivElement> }) {
-  return (
-    <div
-      data-pw='card-footer'
-      ref={ref}
-      className={cn('flex items-center p-4 pt-0', className)}
-      {...props}
-    />
-  )
-}
-CardFooter.displayName = 'CardFooter'
-
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export { Card, CardHeader, CardTitle, CardDescription, CardContent }

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { SearchInput, SearchInputShell } from '@/components/shared/search-input'
-import { FILTER_CONTROL_HEIGHT } from '@/components/shared/filter-control-height'
+import { SearchInput } from '@/components/shared/search-input'
 
 const meta = {
   title: 'Shared/SearchInput',
@@ -57,18 +56,4 @@ export const Focused: Story = {
       </Frame>
     )
   },
-}
-
-export const ShellOnly: Story = {
-  render: () => (
-    <Frame>
-      <SearchInputShell>
-        <input
-          aria-label='Custom search'
-          className={`flex ${FILTER_CONTROL_HEIGHT} w-full rounded-md border-0 bg-transparent px-0 py-2 text-sm shadow-none outline-none focus-visible:ring-0`}
-          placeholder='Custom inner input...'
-        />
-      </SearchInputShell>
-    </Frame>
-  ),
 }

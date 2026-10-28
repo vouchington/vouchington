@@ -4,8 +4,6 @@ import { DisputesClient } from '@/components/disputes/disputes-client'
 import { DisputeContext } from '@/components/disputes/dispute-context'
 import { DisputeRow } from '@/components/disputes/dispute-row'
 import { MemberDisputeRow } from '@/components/disputes/member-dispute-row'
-import { DisputeStatusCard } from '@/components/disputes/dispute-status-card'
-import { DisputeAnnotation } from '@/components/disputes/dispute-annotation'
 import { TopicClaimReview } from '@/components/admin/topic-claim-review'
 import { EntityStoryFrame } from './entity-story-frame'
 import {
@@ -13,7 +11,6 @@ import {
   resolvedDispute,
   staffData,
   memberData,
-  annotation,
   verifiedClaim,
   pendingClaim,
 } from './fixtures/review-disputes'
@@ -91,22 +88,6 @@ export const MemberRow: Story = {
           <MemberDisputeRow dispute={resolvedDispute} />
         </tbody>
       </table>
-    </EntityStoryFrame>
-  ),
-}
-
-export const StatusCard: Story = {
-  render: () => (
-    <EntityStoryFrame title='Dispute Status Card'>
-      <DisputeStatusCard dispute={resolvedDispute} />
-    </EntityStoryFrame>
-  ),
-}
-
-export const Annotation: Story = {
-  render: () => (
-    <EntityStoryFrame title='Public Rebuttal Annotation'>
-      <DisputeAnnotation annotation={annotation} />
     </EntityStoryFrame>
   ),
 }

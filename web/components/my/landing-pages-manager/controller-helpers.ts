@@ -1,5 +1,3 @@
-import { toast } from 'sonner'
-import { ApiError } from '@vouchington/api-client'
 import type { LandingPageCandidates, LandingPageItem } from '@/types/landing-pages'
 
 type TopicGroupEntries = Extract<LandingPageItem, { type: 'topic_group' }>['entries']
@@ -21,23 +19,4 @@ export function buildTopicGroupEntries(
         : []
     }),
   ]
-}
-
-export async function withLoading(
-  setLoading: (value: boolean) => void,
-  action: () => Promise<void>,
-  message: string,
-) {
-  setLoading(true)
-  try {
-    await action()
-  } catch (err) {
-    showLandingPageError(err, message)
-  } finally {
-    setLoading(false)
-  }
-}
-
-export function showLandingPageError(error: unknown, fallback: string) {
-  toast.error(error instanceof ApiError ? error.message : fallback)
 }

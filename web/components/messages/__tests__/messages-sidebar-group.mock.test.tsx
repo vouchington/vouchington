@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, waitFor, fireEvent, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { MessagesSidebarProvider } from '@/lib/messages-sidebar-provider'
+
+const mockUseAuth = vi.hoisted(() => vi.fn<VitestLooseMock>())
+vi.mock(import('@/lib/auth/context'), () => ({ useAuth: mockUseAuth }))
+
+import { SignedInMessagesSidebarProvider } from '@/lib/messages-sidebar-provider'
 
 let mockPathname = '/messages'
 
@@ -70,6 +74,7 @@ import { MessagesSidebarGroup } from '../messages-sidebar-group'
 describe('MessagesSidebarGroup', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseAuth.mockReturnValue({ isAuthenticated: true })
     mockPathname = '/messages'
     mockGetMyMessages.mockResolvedValue({ results: [], page_info: makePageInfo() })
   })
@@ -80,9 +85,9 @@ describe('MessagesSidebarGroup', () => {
 
   function renderWithProvider() {
     return render(
-      <MessagesSidebarProvider>
+      <SignedInMessagesSidebarProvider>
         <MessagesSidebarGroup />
-      </MessagesSidebarProvider>,
+      </SignedInMessagesSidebarProvider>,
     )
   }
 

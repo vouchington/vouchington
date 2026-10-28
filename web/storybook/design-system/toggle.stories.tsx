@@ -2,44 +2,14 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Bold, Italic, Underline } from 'lucide-react'
 import { expect, userEvent, within } from 'storybook/test'
 
-import { Toggle } from '@/components/ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const meta = {
-  title: 'Design System/Components/Toggle',
-  component: Toggle,
-} satisfies Meta<typeof Toggle>
+  title: 'Design System/Components/Toggle Group',
+} satisfies Meta
 
 export default meta
 type Story = StoryObj<typeof meta>
-
-export const Simple: Story = {
-  render: () => (
-    <Toggle aria-label='Toggle bold'>
-      <Bold className='h-4 w-4' />
-    </Toggle>
-  ),
-}
-
-export const Outline: Story = {
-  render: () => (
-    <Toggle
-      variant='outline'
-      aria-label='Toggle italic'
-    >
-      <Italic className='h-4 w-4' />
-    </Toggle>
-  ),
-}
-
-export const WithText: Story = {
-  render: () => (
-    <Toggle aria-label='Toggle italic'>
-      <Italic className='h-4 w-4' />
-      Italic
-    </Toggle>
-  ),
-}
 
 export const Group: Story = {
   render: () => (

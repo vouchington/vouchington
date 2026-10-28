@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { TopicAutocomplete } from '@/components/posts/topic-autocomplete'
 import { TagAutocomplete } from '@/components/tags/tag-autocomplete'
 import { UserAutocomplete } from '@/components/users/user-autocomplete'
-import { PostAutocomplete } from '@/components/posts/post-autocomplete'
 import { createAutocompleteFetch } from './autocomplete-fixtures'
 
 interface AutocompleteFetchFixture {
@@ -59,8 +58,6 @@ export function AutocompleteShowcase() {
   const [topicLabel, setTopicLabel] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [userLabel, setUserLabel] = useState('')
-  const [postId, setPostId] = useState<string | null>(null)
-  const [postLabel, setPostLabel] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
 
   return (
@@ -131,25 +128,6 @@ export function AutocompleteShowcase() {
             {userId && (
               <p className='text-sm text-muted-foreground'>
                 Selected: {userLabel} ({userId})
-              </p>
-            )}
-          </div>
-
-          <div className='flex flex-col gap-4'>
-            <h2 className='text-lg font-semibold'>Post Autocomplete</h2>
-            <div className='max-w-sm'>
-              <PostAutocomplete
-                value={postId}
-                label={postLabel}
-                onChange={(id, title) => {
-                  setPostId(id)
-                  setPostLabel(title)
-                }}
-              />
-            </div>
-            {postId && (
-              <p className='text-sm text-muted-foreground'>
-                Selected: {postLabel} ({postId})
               </p>
             )}
           </div>

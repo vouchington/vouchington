@@ -3,7 +3,7 @@ import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { RssFeedLink } from '@/components/shared/rss-feed-link'
-import { SearchInput, SearchInputShell } from '@/components/shared/search-input'
+import { SearchInput } from '@/components/shared/search-input'
 import { HashtagSearchInput } from '@/components/shared/hashtag-search-input'
 import { LinkSelectDropdown } from '@/components/shared/link-select-dropdown'
 import { ListSearchError } from '@/components/shared/list-search-error'
@@ -19,7 +19,6 @@ import { ReportReasonFieldset } from '@/components/shared/report-reason-fieldset
 import { FollowContextCard } from '@/components/social/follow-context-card'
 import { IdentityVerifiedBadge } from '@/components/users/identity-verified-badge'
 import { Separator } from '@/components/ui/separator'
-import { Input } from '@/components/ui/input'
 import { publicUsers } from '../entities/entity-fixtures'
 
 const meta = {
@@ -57,13 +56,6 @@ export const SharedBadgesAndLinks: Story = {
         aria-label='Search examples'
         placeholder='Search'
       />
-      <SearchInputShell>
-        <Input
-          aria-label='Custom search'
-          placeholder='Custom shell'
-          className='border-0 shadow-none focus-visible:ring-0'
-        />
-      </SearchInputShell>
     </Frame>
   ),
 }

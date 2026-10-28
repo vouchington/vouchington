@@ -4,7 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { VoteStoreProvider } from '@/lib/votes/vote-store-provider'
 import { UserAccountBadge } from '@/components/shared/user-account-badge'
 import { RssFeedLink } from '@/components/shared/rss-feed-link'
-import { SearchInput, SearchInputShell } from '@/components/shared/search-input'
+import { SearchInput } from '@/components/shared/search-input'
 import { DataPointResultBadge, DataPointRow } from '@/components/posts/data-point-detail-fields'
 import { ReviewContentCounter } from '@/components/posts/review-content-counter'
 import { TopicVouchDisavowVote } from '@/components/topics/topic-vouch-disavow-vote'
@@ -31,17 +31,12 @@ describe('pure leaf component contracts', () => {
     expect(screen.getByLabelText('RSS')).toHaveAttribute('data-pw', 'rss-feed-link')
   })
 
-  it('renders SearchInputShell and SearchInput data-pw hooks', () => {
+  it('renders the SearchInput data-pw hooks', () => {
     const { container } = render(
-      <>
-        <SearchInputShell>
-          <input aria-label='Custom' />
-        </SearchInputShell>
-        <SearchInput
-          aria-label='Search'
-          data-pw='custom-search'
-        />
-      </>,
+      <SearchInput
+        aria-label='Search'
+        data-pw='custom-search'
+      />,
     )
 
     expect(container.querySelector('[data-pw="search-input-shell"]')).not.toBeNull()

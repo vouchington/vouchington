@@ -5,15 +5,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
-  SheetOverlay,
-  SheetPortal,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet'
 
 const meta = {
@@ -26,10 +21,7 @@ type Story = StoryObj<typeof meta>
 
 export const Right: Story = {
   render: () => (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant='outline'>Open sheet</Button>
-      </SheetTrigger>
+    <Sheet defaultOpen>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Edit profile</SheetTitle>
@@ -52,46 +44,15 @@ export const Right: Story = {
             />
           </div>
         </div>
-        <SheetFooter>
-          <SheetClose asChild>
-            <Button type='button'>Save changes</Button>
-          </SheetClose>
-        </SheetFooter>
+        <Button type='button'>Save changes</Button>
       </SheetContent>
-    </Sheet>
-  ),
-}
-
-export const ExplicitChrome: Story = {
-  render: () => (
-    <Sheet defaultOpen>
-      <SheetTrigger asChild>
-        <Button variant='outline'>Open sheet</Button>
-      </SheetTrigger>
-      <SheetPortal>
-        <SheetOverlay />
-        <SheetContent hideOverlay>
-          <SheetHeader>
-            <SheetTitle>Edit profile</SheetTitle>
-            <SheetDescription>Update the name shown on your profile.</SheetDescription>
-          </SheetHeader>
-          <SheetFooter>
-            <SheetClose asChild>
-              <Button type='button'>Done</Button>
-            </SheetClose>
-          </SheetFooter>
-        </SheetContent>
-      </SheetPortal>
     </Sheet>
   ),
 }
 
 export const Left: Story = {
   render: () => (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant='outline'>Open left sheet</Button>
-      </SheetTrigger>
+    <Sheet defaultOpen>
       <SheetContent side='left'>
         <SheetHeader>
           <SheetTitle>Navigation</SheetTitle>
