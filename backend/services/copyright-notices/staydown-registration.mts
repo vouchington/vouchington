@@ -40,10 +40,10 @@ async function registerCopyrightStaydownEntriesInTransaction(
         )
       )
       AND NOT `
-      .append(anyReversalSourceSql)
+      .append(anyReversalSourceSql())
       .append(sql`
       AND NOT `)
-      .append(statutoryRestorationSourceSql).append(sql`
+      .append(statutoryRestorationSourceSql()).append(sql`
     ON CONFLICT (copyright_restriction_id) DO NOTHING
     RETURNING image_id
   `),

@@ -1,21 +1,28 @@
 import sql from 'sql-template-strings'
 
-/** All fragments correlate to the copyright_restrictions alias `restriction`. */
-export const reverseReviewSourceSql = sql`(restriction.human_review_action IS NOT DISTINCT FROM 'reverse')`
+/** Fresh fragments correlate to the copyright_restrictions alias `restriction`. */
+export function reverseReviewSourceSql() {
+  return sql`(restriction.human_review_action IS NOT DISTINCT FROM 'reverse')`
+}
 
-export const appealReversalSourceSql = sql`EXISTS (
+export function appealReversalSourceSql() {
+  return sql`EXISTS (
   SELECT 1 FROM copyright_notice_appeal_reviews appeal_review
   WHERE appeal_review.copyright_restriction_id = restriction.id
     AND appeal_review.action = 'reverse'
 )`
+}
 
-export const administratorLiftSourceSql = sql`EXISTS (
+export function administratorLiftSourceSql() {
+  return sql`EXISTS (
   SELECT 1 FROM copyright_restriction_administrator_lifts administrator_lift
   WHERE administrator_lift.copyright_restriction_id = restriction.id
 )`
+}
 
 /** Reversal authority is scoped to the assessment of this territorial decision. */
-export const territorialComplaintReversalSourceSql = sql`EXISTS (
+export function territorialComplaintReversalSourceSql() {
+  return sql`EXISTS (
   SELECT 1 FROM copyright_territorial_decisions decision
   JOIN copyright_territorial_redress_requests request
     ON request.copyright_territorial_decision_id = decision.id
@@ -24,9 +31,11 @@ export const territorialComplaintReversalSourceSql = sql`EXISTS (
   WHERE decision.copyright_notice_submission_assessment_id = restriction.authorizing_assessment_id
     AND decision.outcome = 'restrict' AND redress.staff_disposition = 'revoke'
 )`
+}
 
 /** Correlates to an assessment alias before a restriction has been created. */
-export const territorialAssessmentRevokedSql = sql`EXISTS (
+export function territorialAssessmentRevokedSql() {
+  return sql`EXISTS (
   SELECT 1 FROM copyright_territorial_decisions territorial_decision
   JOIN copyright_territorial_redress_requests territorial_request
     ON territorial_request.copyright_territorial_decision_id = territorial_decision.id
@@ -36,6 +45,7 @@ export const territorialAssessmentRevokedSql = sql`EXISTS (
     AND territorial_decision.outcome = 'restrict'
     AND territorial_redress.staff_disposition = 'revoke'
 )`
+}
 
 /**
  * The restriction was restored under the 17 U.S.C. 512(g) counter-notice process: a completed
@@ -45,20 +55,24 @@ export const territorialAssessmentRevokedSql = sql`EXISTS (
  * incident sync and staydown registration treat it as ending the restriction's consequences.
  * `state = 'completed'` matters: `stale`, `blocked` and `failed` intents also set `completed_at`.
  */
-export const statutoryRestorationSourceSql = sql`EXISTS (
+export function statutoryRestorationSourceSql() {
+  return sql`EXISTS (
   SELECT 1 FROM copyright_notice_action_work_items statutory_intent
   WHERE statutory_intent.copyright_restriction_id = restriction.id
     AND statutory_intent.action = 'restore'
     AND statutory_intent.state = 'completed'
     AND statutory_intent.copyright_notice_deadline_id IS NOT NULL
 )`
+}
 
-export const anyReversalSourceSql = sql`(`
-  .append(reverseReviewSourceSql)
-  .append(sql` OR `)
-  .append(appealReversalSourceSql)
-  .append(sql` OR `)
-  .append(administratorLiftSourceSql)
-  .append(sql` OR `)
-  .append(territorialComplaintReversalSourceSql)
-  .append(sql`)`)
+export function anyReversalSourceSql() {
+  return sql`(`
+    .append(reverseReviewSourceSql())
+    .append(sql` OR `)
+    .append(appealReversalSourceSql())
+    .append(sql` OR `)
+    .append(administratorLiftSourceSql())
+    .append(sql` OR `)
+    .append(territorialComplaintReversalSourceSql())
+    .append(sql`)`)
+}

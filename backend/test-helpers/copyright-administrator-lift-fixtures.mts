@@ -162,13 +162,13 @@ export async function readTestLiftReversalFacts(restrictionId: string) {
 /** Reads the source predicates even before a restore intent exists. */
 export async function readTestLiftSourceFlags(restrictionId: string) {
   const statement = sql`/* readTestLiftSourceFlags */ SELECT `
-    .append(anyReversalSourceSql)
+    .append(anyReversalSourceSql())
     .append(sql` AS reversal_authorized, `)
-    .append(reverseReviewSourceSql)
+    .append(reverseReviewSourceSql())
     .append(sql` AS reversal_by_review, `)
-    .append(appealReversalSourceSql)
+    .append(appealReversalSourceSql())
     .append(sql` AS reversal_by_appeal, `)
-    .append(administratorLiftSourceSql).append(sql` AS reversal_by_administrator_lift
+    .append(administratorLiftSourceSql()).append(sql` AS reversal_by_administrator_lift
       FROM copyright_restrictions restriction WHERE restriction.id = ${restrictionId}`)
   const { rows } = await read<{
     reversal_authorized: boolean
