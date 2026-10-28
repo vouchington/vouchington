@@ -17,7 +17,10 @@
     "entry": [
       ".pr-shepherd/classification/auto-harness-session.mts",
       "backend/data-stores/psql/config-driven/*.mts",
+      "backend/entrypoints/api/executable.mts",
       "backend/entrypoints/api/verify-ipv6-egress.mts",
+      "backend/entrypoints/worker-cpu/executable.mts",
+      "backend/entrypoints/worker-io/executable.mts",
       "backend/entrypoints/worker-cpu/serve.mts",
       "backend/modules/structured-decisions/benchmark.mts",
       "backend/scripts/backfill-rss-feed-item-source-publications.mts",
