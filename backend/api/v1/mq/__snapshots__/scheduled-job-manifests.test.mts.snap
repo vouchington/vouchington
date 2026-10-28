@@ -3260,6 +3260,45 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
       },
     },
   },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Resume accepted topic alias unlinks",
+        "id": "recoverTopicAliasUnlinks",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "rss-feed-maintenance",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "recoverTopicAliasUnlinks",
+    "template": {
+      "data": {
+        "afterId": null,
+      },
+      "name": "processRecoverTopicAliasUnlinks",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "topic-alias-unlink:recovery",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
 ]
 `;
 
@@ -3704,6 +3743,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "rss-feed-maintenance",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileTopicAliasCategoryMappings",
+  },
+  {
+    "description": "Resume accepted topic alias unlinks",
+    "id": "recoverTopicAliasUnlinks",
+    "job_name": "processRecoverTopicAliasUnlinks",
+    "queue_name": "rss-feed-maintenance",
+    "schedule": "every 5m",
+    "triggerName": "enqueueRecoverTopicAliasUnlinks",
   },
   {
     "description": "Drain durable RSS item category snapshots",

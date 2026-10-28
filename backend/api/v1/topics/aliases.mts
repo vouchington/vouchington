@@ -180,7 +180,6 @@ app
     })
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
-
     const aliasReference = ctx.params.aliasId!
     const aliasId = isUuid(aliasReference)
       ? aliasReference
@@ -192,7 +191,8 @@ app
       expectedTopicId: topic.id,
     })
     ctx.assert(alias, 404, 'Topic alias not found')
-    ctx.setStatus(204)
+    ctx.setStatus(202)
+    ctx.json({ topic_alias_id: alias.id, topic_id: topic.id, status: 'unlinking' })
   })
 
 function isUuid(value: string): boolean {

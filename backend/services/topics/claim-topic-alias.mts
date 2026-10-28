@@ -37,7 +37,8 @@ export async function claimTopicAlias(
       VALUES ($1, $2)
       ON CONFLICT (alias) DO UPDATE
       SET topic_id = EXCLUDED.topic_id
-      WHERE topic_aliases.topic_id IS NULL OR topic_aliases.topic_id = EXCLUDED.topic_id
+      WHERE topic_aliases.unlink_requested_at IS NULL
+        AND (topic_aliases.topic_id IS NULL OR topic_aliases.topic_id = EXCLUDED.topic_id)
       RETURNING id, topic_id, alias
     `,
       [topicId, normalizedAlias],

@@ -27,6 +27,14 @@ provider verdict can commit an independent ancestor-domain block; fresh local po
 lock wait connects that durable verdict to the ownership write. A redirected feed's source hide
 stays scoped to the discovered topic, so concurrent feed reassignment cannot hide its new owner.
 
+## Alias unlink
+
+An accepted unlink detaches the alias from its topic immediately, so readers and new categorisation
+treat it as unlinked before the relation rows are gone. The row stays until bounded jobs finish
+deleting those relations and recording each page's publication change. A hashtag alias remains
+after that work so it can be claimed again. Clients receive acceptance, then see the finished
+alias state on a later read.
+
 ## Merge lifecycle
 
 A merge consolidates current references into one topic so follows, content, feeds and program

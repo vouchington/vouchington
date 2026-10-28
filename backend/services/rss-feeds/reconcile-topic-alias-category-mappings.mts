@@ -57,16 +57,26 @@ export function buildTopicAliasCategoryMappingDirtyRowsQuery(
 ): SQLStatement {
   if (!topicAliasIds) {
     return sql`/* getTopicAliasCategoryMappingDirtyRows */
-    SELECT topic_alias_id, alias, generation
-    FROM topic_alias_category_mapping_reconciliations
-    ORDER BY updated_at, topic_alias_id
+    SELECT reconciliation.topic_alias_id, reconciliation.alias, reconciliation.generation
+    FROM topic_alias_category_mapping_reconciliations reconciliation
+    WHERE NOT EXISTS (
+      SELECT 1 FROM topic_aliases pending
+      WHERE pending.id = reconciliation.topic_alias_id
+        AND pending.unlink_requested_at IS NOT NULL
+    )
+    ORDER BY reconciliation.updated_at, reconciliation.topic_alias_id
     LIMIT ${limit}`
   }
   return sql`/* getTopicAliasCategoryMappingDirtyRows */
-    SELECT topic_alias_id, alias, generation
-    FROM topic_alias_category_mapping_reconciliations
-    WHERE topic_alias_id = ANY(${topicAliasIds}::uuid[])
-    ORDER BY updated_at, topic_alias_id
+    SELECT reconciliation.topic_alias_id, reconciliation.alias, reconciliation.generation
+    FROM topic_alias_category_mapping_reconciliations reconciliation
+    WHERE reconciliation.topic_alias_id = ANY(${topicAliasIds}::uuid[])
+      AND NOT EXISTS (
+        SELECT 1 FROM topic_aliases pending
+        WHERE pending.id = reconciliation.topic_alias_id
+          AND pending.unlink_requested_at IS NOT NULL
+      )
+    ORDER BY reconciliation.updated_at, reconciliation.topic_alias_id
     LIMIT ${limit}`
 }
 

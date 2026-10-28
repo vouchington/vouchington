@@ -118,6 +118,10 @@ window. Staff clients receive the operation identity and read its durable progre
 Unblocking remains fenced until cleanup completes, so a newly accepted relation cannot race an
 older block operation and be deleted by it.
 
+An accepted topic-alias unlink is durable PostgreSQL state: the alias is already detached, and
+the queue only delivers bounded deletion pages. A lost page is resumed from the aliases that are
+still marked, so the queue is not a second source of truth and there is no dead-letter.
+
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing

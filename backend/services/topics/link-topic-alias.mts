@@ -36,9 +36,12 @@ export async function linkTopicAlias(
     const topic = topicRows[0]
     assert(topic, 404, 'Topic not found')
     assert(!topic.merged_into_topic_id, 409, 'Cannot add aliases to a merged topic')
-    const { rows: aliasRows } = await query<Pick<TopicAlias, 'topic_id'>>(
+    const { rows: aliasRows } = await query<{
+      topic_id: string | null
+      unlink_requested_at: Date | null
+    }>(
       `/* linkTopicAlias lockAlias */
-      SELECT topic_id
+      SELECT topic_id, unlink_requested_at
       FROM topic_aliases
       WHERE id = $1
       FOR UPDATE`,
@@ -46,12 +49,14 @@ export async function linkTopicAlias(
     )
     const existingAlias = aliasRows[0]
     assert(existingAlias, 404, 'Topic alias not found')
+    assert(!existingAlias.unlink_requested_at, 409, 'Topic alias unlink is in progress')
     previousTopicId = existingAlias.topic_id
     const { rows } = await query<TopicAlias>(
       `/* linkTopicAlias */
       UPDATE topic_aliases
       SET topic_id = $1
       WHERE id = $2
+        AND unlink_requested_at IS NULL
         AND (
           topic_id IS NULL
           OR topic_id = $1

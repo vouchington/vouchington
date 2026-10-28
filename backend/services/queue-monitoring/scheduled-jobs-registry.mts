@@ -58,6 +58,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'hostnameCacheInvalidationSweep',
   'hostnameBlockingRecovery',
   'reconcileTopicAliasCategoryMappings',
+  'recoverTopicAliasUnlinks',
   'reconcileRssFeedItemCategorySnapshots',
   'recoverRssFeedHardDeletes',
   'reconcileStoryPostRelatedUrlProjections',

@@ -22,6 +22,7 @@ export async function resolveRssFeedCategoryTopics(
       LEFT JOIN rss_feed_categories existing
         ON existing.rss_feed_id = ${rssFeedId} AND existing.category_identity_id = identity.id
       LEFT JOIN topic_aliases ta ON ta.alias = input.category_text
+        AND ta.unlink_requested_at IS NULL
       LEFT JOIN topics t_alias ON t_alias.id = ta.topic_id AND t_alias.deleted_at IS NULL
       LEFT JOIN topics t_name ON LOWER(t_name.name) = input.category_text
         AND t_name.deleted_at IS NULL AND t_name.merged_into_topic_id IS NULL

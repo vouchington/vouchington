@@ -36,7 +36,8 @@ export async function getTopicAliasRecordByValue(
     `/* getTopicAliasRecordByValue */
       SELECT id, alias, topic_id
       FROM topic_aliases
-      WHERE topic_id = $1 AND alias = LOWER($2)
+      WHERE alias = LOWER($2)
+        AND (topic_id = $1 OR unlink_topic_id = $1)
       LIMIT 1`,
     [topicId, alias],
   )

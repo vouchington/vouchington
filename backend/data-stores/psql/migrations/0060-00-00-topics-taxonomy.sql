@@ -704,10 +704,16 @@ COMMENT ON COLUMN spending_category_topics.default_spending_frequency IS 'Defaul
 CREATE TABLE IF NOT EXISTS topic_aliases (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   topic_id UUID REFERENCES topics ON DELETE RESTRICT,
+  -- Set together when an administrator accepts an unlink. topic_id is cleared immediately so
+  -- readers treat the alias as unlinked; unlink_topic_id keeps the detached topic until the
+  -- bounded jobs finish. A hashtag row stays after those timestamps are cleared.
+  unlink_requested_at TIMESTAMPTZ,
+  unlink_topic_id UUID REFERENCES topics ON DELETE RESTRICT,
   alias TEXT NOT NULL,
   CHECK (char_length(alias) <= 255),
   CHECK (alias = LOWER(alias)),
   CHECK (alias = TRIM(alias)),
+  CHECK ((unlink_requested_at IS NULL) = (unlink_topic_id IS NULL)),
 
   search_vector TSVECTOR GENERATED ALWAYS AS (setweight(to_tsvector('voucha_english', alias), 'A')) STORED,
 
@@ -818,6 +824,15 @@ ON topic_aliases (created_by_id);
 CREATE INDEX IF NOT EXISTS idx_topic_aliases__updated_by_id
 ON topic_aliases (updated_by_id);
 
+-- Resumes an accepted unlink without scanning aliases that are not pending.
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__unlink_requested
+ON topic_aliases (id)
+WHERE unlink_requested_at IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_topic_aliases__unlink_topic_id
+ON topic_aliases (unlink_topic_id)
+WHERE unlink_topic_id IS NOT NULL;
+
 COMMENT ON TABLE topic_aliases IS 'Topic aliases and standalone hashtags. Linked aliases are synced to topics.aliases.';
 
 CREATE TABLE IF NOT EXISTS topic_merge_operation_aliases (
@@ -833,7 +848,9 @@ ON topic_merge_operation_aliases (alias_id);
 COMMENT ON TABLE topic_merge_operation_aliases IS 'Concrete alias identities moved by a merge, retained for bounded post-commit cache invalidation.';
 COMMENT ON COLUMN topic_merge_operation_aliases.operation_id IS 'Merge operation that moved this alias.';
 COMMENT ON COLUMN topic_merge_operation_aliases.alias_id IS 'Alias identity whose cache keys need invalidation.';
-COMMENT ON COLUMN topic_aliases.topic_id IS 'The linked topic. NULL identifies a standalone hashtag.';
+COMMENT ON COLUMN topic_aliases.topic_id IS 'The linked topic. NULL identifies a standalone hashtag or an alias whose unlink has been accepted.';
+COMMENT ON COLUMN topic_aliases.unlink_requested_at IS 'When an administrator accepted unlinking. NULL means the alias is not waiting on bounded deletion.';
+COMMENT ON COLUMN topic_aliases.unlink_topic_id IS 'Topic detached by the accepted unlink. NULL exactly when unlink_requested_at is NULL.';
 COMMENT ON COLUMN topic_aliases.alias IS 'Lowercase canonical alias or hashtag lookup key. Unique globally.';
 
 -- Durable, coalesced work for category mappings changed by a linked alias. This intentionally has

@@ -232,6 +232,10 @@
       "reason": "inserts or reads unowned aliases only; no existing alias ownership changes or post-topic projection exists."
     },
     {
+      "path": "backend/services/topics/unlink-topic-alias-phase.mts",
+      "reason": "unlink-topic-alias-page.mts records the returned post and feed-item ids as a publication change inside the same transaction."
+    },
+    {
       "path": "backend/services/rss-feed-items/categories-chunks.mts",
       "reason": "The parent category transaction captures each returned rss_feed_item_categories.topic_id mutation as a durable story scope."
     }

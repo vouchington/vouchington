@@ -7,6 +7,10 @@ import { upsertRssFeedItems } from '../upsert.mts'
 import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
+import {
+  applyTopicAliasUnlinkPage,
+  selectTopicAliasUnlinkNextPage,
+} from '@services/topics/unlink-topic-alias-page'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
 import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -20,6 +24,7 @@ import {
   hardDeleteEntityRelationTest,
   insertTestRssFeedDirect,
   withFailingTransactionQueryOptionsForTest,
+  beginTransaction,
 } from '@voucha/test-helpers'
 
 describe('RSS feed item category relation retries', () => {
@@ -180,6 +185,7 @@ describe('RSS feed item category relation retries', () => {
       slug: `rss-retry-destination-${suffix}`,
     })
     await unlinkTopicAlias(aliasId!, { expectedTopicId: topicId, skipSideEffects: true })
+    await finishTopicAliasUnlink(aliasId!)
     await linkTopicAlias(destination.id, aliasId!, { skipSideEffects: true })
 
     await expect(
@@ -192,7 +198,7 @@ describe('RSS feed item category relation retries', () => {
     )
     await expect(getTestRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ category_text: movedAlias, topic_id: topicId }),
+        expect.objectContaining({ category_text: movedAlias, topic_id: null }),
       ]),
     )
 
@@ -206,3 +212,12 @@ describe('RSS feed item category relation retries', () => {
     )
   })
 })
+
+async function finishTopicAliasUnlink(topicAliasId: string): Promise<void> {
+  await using lookup = await beginTransaction()
+  let page: Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>> =
+    await selectTopicAliasUnlinkNextPage(lookup, topicAliasId, false)
+  await lookup.rollback()
+  for (let n = 0; n < 16 && page; n += 1) page = await applyTopicAliasUnlinkPage(page)
+  if (page) throw new Error(`Topic alias unlink did not finish for ${topicAliasId}`)
+}

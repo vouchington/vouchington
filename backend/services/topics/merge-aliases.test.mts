@@ -4,8 +4,11 @@ import { getTopicCacheKeys } from '@services/entity-cache/keys'
 import { createTestTopic, createTestUser, getTopicRevisionsForTest } from '@voucha/test-helpers'
 
 import { describe, expect, it } from 'vitest'
-import { createTopicAliases } from './aliases.mts'
-import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
+import { createTopicAliases, unlinkTopicAlias } from './aliases.mts'
+import {
+  getTopicAliasesForTest,
+  getTopicAliasUnlinkOwnerForTest,
+} from '@voucha/test-helpers/topic-aliases'
 import { getTopicByAny, getTopicByAnyWithRedirect, getTopicBySlug } from './get.mts'
 import { mergeTopicsForTest as mergeTopicAliases } from '@voucha/test-helpers/merge-topics'
 import { createTopicMergeOperation, getTopicMergeOperation } from './merge-operations.mts'
@@ -183,8 +186,26 @@ describe('mergeTopicAliases', () => {
     expect((await getTopicAliasesForTest(destination.id)).results).toContain(alias)
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: destination.id })
   })
-})
 
-// The 'post queryability' case (getPostIds still surfaces a merged source topic's tagged posts)
-// relocated to backend/services/posts/__tests__/topic-merge-post-queryability.test.mts — @services/topics
-// must not depend on @services/posts (posts already prod-deps topics, the kept direction).
+  it('repoints a pending alias unlink to the destination topic', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const source = await createFullTestTopic({
+      user: admin,
+      name: `Unlink source ${crypto.randomUUID()}`,
+    })
+    const destination = await createFullTestTopic({
+      user: admin,
+      name: `Unlink destination ${crypto.randomUUID()}`,
+    })
+    const [alias] = await createTopicAliases(source.id, `pending-unlink-${crypto.randomUUID()}`)
+    if (!alias) throw new Error('Expected alias')
+    await unlinkTopicAlias(alias.id, { expectedTopicId: source.id })
+
+    await mergeTopicAliases(admin, source, destination)
+
+    await expect(getTopicAliasUnlinkOwnerForTest(alias.id)).resolves.toEqual({
+      topic_id: null,
+      unlink_topic_id: destination.id,
+    })
+  })
+})

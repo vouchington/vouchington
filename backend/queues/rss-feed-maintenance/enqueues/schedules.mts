@@ -12,6 +12,10 @@ import {
 import { enqueueReconcileRssFeedItemCategorySnapshots } from './item-categories.mts'
 import { enqueueRecoverRssFeedHardDeletes } from './hard-delete.mts'
 import { enqueueReconcileTopicAliasCategoryMappings } from './topic-aliases.mts'
+import {
+  enqueueRecoverTopicAliasUnlinks,
+  topicAliasUnlinkRecoveryOrdering,
+} from './unlink-topic-alias.mts'
 import { rssFeedMaintenance } from '../queues.mts'
 import type { RssFeedHardDeleteJobs, RssFeedItemCategoriesJobs } from '../types.mts'
 
@@ -82,6 +86,29 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
         schedule: 'every 5m',
         description: 'Drain durable RSS category-mapping transitions for hashtag aliases',
         trigger: enqueueReconcileTopicAliasCategoryMappings,
+      },
+    ],
+  },
+  {
+    schedulerId: 'recoverTopicAliasUnlinks',
+    registration: 'sequential',
+    repeat: { every: 300_000 },
+    template: {
+      name: 'processRecoverTopicAliasUnlinks',
+      data: { afterId: null },
+      opts: {
+        ...ENQUEUE_BASE_DEFAULTS,
+        priority: PRIORITY_RECOVERY,
+        ordering: topicAliasUnlinkRecoveryOrdering(),
+      },
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs',
+        id: 'recoverTopicAliasUnlinks',
+        schedule: 'every 5m',
+        description: 'Resume accepted topic alias unlinks',
+        trigger: enqueueRecoverTopicAliasUnlinks,
       },
     ],
   },

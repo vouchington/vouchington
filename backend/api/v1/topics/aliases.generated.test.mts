@@ -253,7 +253,7 @@ describe('DELETE /api/v1/topics/:idOrSlug/aliases/:alias', () => {
   it('should delete alias successfully', async () => {
     const admin = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user: admin! })
-    const aliasValue = `test-alias-delete-${topic.id.slice(0, 8)}`
+    const aliasValue = `test-alias-delete-${topic.id}`
 
     // Create alias first
     const createReq = createRequest()
@@ -266,9 +266,14 @@ describe('DELETE /api/v1/topics/:idOrSlug/aliases/:alias', () => {
     // Delete alias
     const deleteReq = createRequest()
     await deleteReq.authenticateAs(admin!)
-    await deleteReq
+    const deleted = await deleteReq
       .delete(`/api/v1/topics/${topic.id}/aliases/${created.body.added[0].id}`)
-      .expect(204)
+      .expect(202)
+    expect(deleted.body).toEqual({
+      topic_alias_id: created.body.added[0].id,
+      topic_id: topic.id,
+      status: 'unlinking',
+    })
 
     // Verify deleted
     const readReq = createRequest()
@@ -280,7 +285,7 @@ describe('DELETE /api/v1/topics/:idOrSlug/aliases/:alias', () => {
   it('accepts the legacy alias value when deleting', async () => {
     const admin = await createTestUser({ administrator: true })
     const topic = await createTestTopic({ user: admin })
-    const aliasValue = `legacy-alias-delete-${topic.id.slice(0, 8)}`
+    const aliasValue = `legacy-alias-delete-${topic.id}`
     const request = createRequest()
     await request.authenticateAs(admin)
     await request
@@ -288,6 +293,6 @@ describe('DELETE /api/v1/topics/:idOrSlug/aliases/:alias', () => {
       .send({ aliases: aliasValue })
       .expect(201)
 
-    await request.delete(`/api/v1/topics/${topic.id}/aliases/${aliasValue}`).expect(204)
+    await request.delete(`/api/v1/topics/${topic.id}/aliases/${aliasValue}`).expect(202)
   })
 })
