@@ -34,6 +34,7 @@ export async function eraseTestCopyrightEmailIntakeSender(
 /** Hold a second owner's FK lock while the real erasure query tries to lock the object. */
 export async function beginTestCopyrightStorageObjectOwnershipRace(
   options: Parameters<typeof eraseCopyrightRetentionCase>[1],
+  createWriter = beginTransaction,
 ): Promise<{
   lockWait: Promise<void>
   erasure: ReturnType<typeof eraseCopyrightRetentionCase>
@@ -51,7 +52,7 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
   if (!objectId) throw new Error('Owned storage object missing')
   const mediaTypeId = await upsertMediaTypes('application/pdf')
 
-  const writer = await beginTransaction()
+  const writer = await createWriter()
   let erasurePromise: ReturnType<typeof eraseCopyrightRetentionCase> | undefined
   const lockWaitEvent = Promise.withResolvers<void>()
   const writerCommitGate = Promise.withResolvers<void>()
@@ -132,6 +133,7 @@ export async function beginTestCopyrightStorageObjectOwnershipRace(
         })()),
     }
   } catch (err) {
+    lockWaitEvent.reject(err)
     await releaseWriter()
     writerCommitGate.resolve()
     await erasurePromise?.catch(() => undefined)

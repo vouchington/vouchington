@@ -7,8 +7,8 @@ import {
   getUrlHostnameTopicId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { withApprovalHostnameWait } from '@voucha/test-helpers/topic-recommendation-hostname-lock-race'
 import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
-import { getFirstTestHostnameOwnershipLockKey } from '@voucha/test-helpers/hostname-ownership'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import type { TopicRecommendationPost } from './types.mts'
 import { createTopicRecommendation } from './create-topic-recommendation.mts'
@@ -200,27 +200,3 @@ describe('hostname ownership serialization against approval', () => {
     },
   )
 })
-
-async function withApprovalHostnameWait<Result>(
-  holder: Awaited<ReturnType<typeof beginTransaction>>,
-  hostnameId: string,
-  start: () => Promise<Result>,
-): Promise<Result> {
-  const holderProcessId = await getTestPostgresBackendProcessId(holder)
-  const heldHostnameKey = await getFirstTestHostnameOwnershipLockKey(holder, hostnameId)
-  return withTestOwnedPostgresWait(
-    {
-      holderProcessId,
-      pool: 'write',
-      lock: { kind: 'advisory', key: heldHostnameKey },
-      queryMarker: 'lockHostnameOwnership',
-      releaseHolder: () => holder[Symbol.asyncDispose](),
-    },
-    async waitForLock => {
-      const pending = start()
-      await waitForLock(pending)
-      await holder.commit()
-      return pending
-    },
-  )
-}

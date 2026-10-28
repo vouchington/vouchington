@@ -8,7 +8,7 @@ import {
   insertTestCommunityMember,
   updateTestCommunityMemberRole,
 } from '@voucha/test-helpers'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { withHeldCommunityUserWait } from '@voucha/test-helpers/community-membership-lock-race'
 import { banUserFromCommunity } from '../bans/create.mts'
 import { getActiveCommunityBan } from '../bans/get.mts'
 import { liftCommunityBan } from '../bans/lift.mts'
@@ -224,32 +224,6 @@ describe('community membership role locks', () => {
     expect(moderatorMembership?.role).toBe('member')
   })
 })
-
-async function withHeldCommunityUserWait<Result>(input: {
-  holderProcessId: number
-  communityId: string
-  userId: string
-  releaseHolder: () => Promise<void>
-  start: () => Promise<Result>
-  whileBlocked?: () => Promise<void>
-}): Promise<Result> {
-  return withTestOwnedPostgresWait(
-    {
-      holderProcessId: input.holderProcessId,
-      pool: 'write',
-      lock: { kind: 'advisory', key: `${input.communityId}:${input.userId}` },
-      queryMarker: 'lockCommunityUsers',
-      releaseHolder: input.releaseHolder,
-    },
-    async waitForLock => {
-      const action = input.start()
-      await waitForLock(action)
-      await input.whileBlocked?.()
-      await input.releaseHolder()
-      return action
-    },
-  )
-}
 
 async function createOwnerAndTarget(role: 'member' | 'moderator') {
   const [owner, target] = await Promise.all([createTestUser(), createTestUser()])

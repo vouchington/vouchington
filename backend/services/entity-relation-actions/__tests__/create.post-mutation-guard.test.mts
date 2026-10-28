@@ -11,7 +11,7 @@ import {
   insertTestTopic,
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
-import { withTestOwnedPostgresWait } from '@voucha/test-helpers/postgres-client-lock-observer'
+import { withPublicationWait } from '@voucha/test-helpers/post-publication-lock-race'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { PrivateUser } from '@services/users/types'
 import { lockPostPublication } from '@services/post-publication'
@@ -174,34 +174,6 @@ describe('createEntityRelationAction post mutation guard', () => {
     await expect(getEntityRelation(relation.table_name, reply.id, topicId)).resolves.toEqual([])
   })
 })
-
-function withPublicationWait<Result>(
-  holderProcessId: number,
-  postId: string,
-  release: PromiseWithResolvers<void>,
-  holder: Promise<void>,
-  start: () => Promise<Result>,
-): Promise<Result> {
-  const releaseHolder = async () => {
-    release.resolve()
-    await holder
-  }
-  return withTestOwnedPostgresWait(
-    {
-      holderProcessId,
-      pool: 'write',
-      lock: { kind: 'advisory', key: `post:${postId.toLowerCase()}` },
-      queryMarker: 'lockPostPublicationCaptures',
-      releaseHolder,
-    },
-    async waitForLock => {
-      const action = start()
-      await waitForLock(action)
-      await releaseHolder()
-      return action
-    },
-  )
-}
 
 async function holdPublicationLockThenMutate(
   postId: string,
