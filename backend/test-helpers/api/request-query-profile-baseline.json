@@ -74,14 +74,6 @@
     "routes": ["POST /api/v1/copyright-email-intakes/:id/notice-associations"]
   },
   {
-    "annotation": "blockHostname_findPostRelatedUrlPosts",
-    "maxCount": null,
-    "reason": "Discovery takes no lock because publication locks must come before relation-row locks. The terminal read catches rows committed during the lock wait.",
-    "permanent": true,
-    "code": "backend/services/hostname-blocking/soft-delete-relations.mts:81",
-    "routes": ["PATCH /api/v1/hostnames/:id"]
-  },
-  {
     "annotation": "canViewPostsBatch",
     "maxCount": null,
     "reason": "The voter visibility precheck admits the ballot; after the vote commits, one batched anonymous visibility check gates the conditional federated Like or UndoLike for the voted post and root. It cannot reuse the voter's access result or move before the commit",
@@ -235,6 +227,18 @@
       "POST /api/v1/referral-links",
       "POST /api/v1/referral-programs/:id/official-referral-links",
       "POST /api/v1/topic-recommendations/:id/approvals"
+    ]
+  },
+  {
+    "annotation": "getLocalHostnamePolicies",
+    "maxCount": 2,
+    "reason": "URL-relation admission reads local policy before provider assessment, then rereads it after hostname ownership locks so a block committed during the lock wait rejects the write.",
+    "permanent": true,
+    "code": "backend/services/entity-relations/publication-mutation.mts:51",
+    "routes": [
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/mcp",
+      "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
     ]
   },
   {

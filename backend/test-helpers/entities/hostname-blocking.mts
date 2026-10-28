@@ -41,3 +41,32 @@ export async function insertTestPostRelatedUrlBatch(options: {
     ],
   )
 }
+
+export async function insertTestTopicLandingPageUrlRelations(options: {
+  topicIds: string[]
+  urlId: string
+  createdById: string
+}): Promise<void> {
+  await write(
+    `/* insertTestTopicLandingPageUrlRelations */
+    INSERT INTO relation__topic__landing_page__url (subject_id, object_id, created_by_id)
+    SELECT topic_id, $2, $3
+    FROM unnest($1::uuid[]) AS relation(topic_id)`,
+    [options.topicIds, options.urlId, options.createdById],
+  )
+}
+
+export async function insertTestHostnameBlockCleanupRoot(options: {
+  blockId: string
+  hostnameId: string
+  blockedById: string
+}): Promise<void> {
+  await write(
+    `/* insertTestHostnameBlockCleanupRoot */
+    INSERT INTO url_hostname_blocks (
+      id, url_hostname_id, blocked_by_id, blocked_source,
+      relation_cleanup_root_block_id, relation_cleanup_blocked_hostname_count
+    ) VALUES ($1, $2, $3, 'admin', $1, 1)`,
+    [options.blockId, options.hostnameId, options.blockedById],
+  )
+}

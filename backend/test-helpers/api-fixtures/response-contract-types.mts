@@ -19,6 +19,11 @@ export function routeShape(routeTemplate: string): string {
   return routeTemplate.replace(/:[^/]+/g, ':')
 }
 
+export function routeKeyForResponseContract(contractKey: string): string {
+  const variant = contractKey.indexOf('#')
+  return variant < 0 ? contractKey : contractKey.slice(0, variant)
+}
+
 export function responseStatusCodesForContract(contract: BackendResponseContract): number[] {
   if (contract.statusKnowledge === 'unknown') return []
   if (contract.statusCodes) return [...new Set(contract.statusCodes)].toSorted((a, b) => a - b)

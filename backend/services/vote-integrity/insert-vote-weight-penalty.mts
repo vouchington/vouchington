@@ -9,8 +9,9 @@ type InsertVoteWeightPenaltyOptions = QueryOptions & {
   reason: string
   sourceFlagId?: string
   sourceHostnameId?: string
+  sourceHostnameBlockId?: string
   sourcePostId?: string
-  createdById: string
+  createdById: string | null
   enqueueRecalculation?: boolean
 }
 
@@ -49,6 +50,9 @@ export async function insertVoteWeightPenalty(
 }
 
 function assertAtMostOneSource(options: InsertVoteWeightPenaltyOptions): void {
+  if (options.sourceHostnameBlockId !== undefined && options.sourceHostnameId === undefined) {
+    throw new Error('sourceHostnameBlockId requires sourceHostnameId')
+  }
   const sourceCount = [options.sourceFlagId, options.sourceHostnameId, options.sourcePostId].filter(
     source => source !== undefined,
   ).length
@@ -63,6 +67,7 @@ function appendSourceColumn(
 ) {
   if (options.sourceFlagId !== undefined) query.append(sql`, source_flag_id`)
   if (options.sourceHostnameId !== undefined) query.append(sql`, source_hostname_id`)
+  if (options.sourceHostnameBlockId !== undefined) query.append(sql`, source_hostname_block_id`)
   if (options.sourcePostId !== undefined) query.append(sql`, source_post_id`)
 }
 
@@ -71,6 +76,8 @@ function appendSourceValue(query: ReturnType<typeof sql>, options: InsertVoteWei
     query.append(sql`, ${options.sourceFlagId}::uuid AS source_flag_id`)
   if (options.sourceHostnameId !== undefined)
     query.append(sql`, ${options.sourceHostnameId}::uuid AS source_hostname_id`)
+  if (options.sourceHostnameBlockId !== undefined)
+    query.append(sql`, ${options.sourceHostnameBlockId}::uuid AS source_hostname_block_id`)
   if (options.sourcePostId !== undefined)
     query.append(sql`, ${options.sourcePostId}::uuid AS source_post_id`)
 }
@@ -81,8 +88,9 @@ function appendConflictOrderBy(
 ) {
   if (options.sourceFlagId !== undefined)
     query.append(sql` ORDER BY user_id ASC NULLS LAST, source_flag_id ASC NULLS LAST`)
-  if (options.sourceHostnameId !== undefined)
+  if (options.sourceHostnameId !== undefined) {
     query.append(sql` ORDER BY user_id ASC NULLS LAST, source_hostname_id ASC NULLS LAST`)
+  }
   if (options.sourcePostId !== undefined)
     query.append(sql` ORDER BY user_id ASC NULLS LAST, source_post_id ASC NULLS LAST`)
 }

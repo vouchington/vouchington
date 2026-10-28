@@ -19,7 +19,7 @@ export async function assertUrlObjectsAreValid(
 
   const urlIds = objects.map(getEntityId)
   if (!options?.skipBlockedHostnameGuard) {
-    await getRegisteredBlockedHostnameGuard()(urlIds, userId)
+    await getRegisteredBlockedHostnameGuard()(urlIds, userId, options)
   }
   if (relation.predicate === 'related') {
     await getRegisteredReferralLinkGuard()(urlIds, userId, options)

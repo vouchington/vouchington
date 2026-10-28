@@ -1477,6 +1477,42 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Recover pending hostname-block relation cleanup",
+        "id": "hostnameBlockingRecovery",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "hostnameBlockingRecovery",
+    "template": {
+      "data": {},
+      "name": "hostname-blocking.recoverBlocks",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "key": "hostname-blocking:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Dispatch due hostname crawl jobs (hourly)",
         "id": "crawl:crawl_hostnames_dispatcher",
         "kind": "scheduled-jobs",
@@ -3608,6 +3644,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueHostnameCacheInvalidationSweep",
+  },
+  {
+    "description": "Recover pending hostname-block relation cleanup",
+    "id": "hostnameBlockingRecovery",
+    "job_name": "hostname-blocking.recoverBlocks",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueHostnameBlockRecovery",
   },
   {
     "description": "Drain durable RSS category-mapping transitions for hashtag aliases",

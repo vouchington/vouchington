@@ -41,6 +41,7 @@ import { fromCaseFile } from './resolve-case-file.mts'
 import { swiftApiFixtureCases } from './swift-cases.mts'
 import type { ResolvedApiFixtureCase } from './types.mts'
 import { webApiFixtureCases } from './web-cases.mts'
+import { webHostnameBlockingApiFixtureCases } from './web-hostname-blocking-cases.mts'
 const caseRoot = 'backend/test-helpers/api-fixtures/'
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
@@ -116,6 +117,10 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
     dynamicConfigApiFixtureCases,
   ),
   ...fromCaseFile('backend/test-helpers/api-fixtures/web-cases.mts', webApiFixtureCases),
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/web-hostname-blocking-cases.mts',
+    webHostnameBlockingApiFixtureCases,
+  ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-tags-bookmarks-cases.mts',
     nativeTagsBookmarksApiFixtureCases,

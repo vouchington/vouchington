@@ -12,6 +12,15 @@ CREATE TABLE IF NOT EXISTS url_hostname_blocks (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   lifted_at TIMESTAMPTZ,
   lifted_by_id UUID REFERENCES users ON DELETE SET NULL,
+  relation_cleanup_root_block_id UUID,
+  should_penalize_relation_creators BOOLEAN NOT NULL DEFAULT FALSE,
+  relation_cleanup_progress INTEGER NOT NULL DEFAULT 0,
+  relation_cleanup_stage url_hostname_block_cleanup_stages NOT NULL DEFAULT 'subdomains',
+  relation_cleanup_resume_after TEXT,
+  relation_cleanup_blocked_hostname_count INTEGER NOT NULL DEFAULT 0,
+  relation_cleanup_soft_deleted_relation_count INTEGER NOT NULL DEFAULT 0,
+  relation_cleanup_penalized_user_count INTEGER NOT NULL DEFAULT 0,
+  relation_cleanup_completed_at TIMESTAMPTZ,
   CONSTRAINT chk_url_hostname_blocks__domain_source CHECK (
     (blocked_source IN ('url_blocklist', 'email_blocklist')) =
       (domain_blocklist_source_id IS NOT NULL)
@@ -23,6 +32,36 @@ ALTER TABLE url_hostname_blocks
   ON DELETE RESTRICT NOT VALID;
 ALTER TABLE url_hostname_blocks VALIDATE CONSTRAINT fk_url_hostname_blocks__domain_blocklist_source;
 
+ALTER TABLE url_hostname_blocks
+  ADD CONSTRAINT fk_url_hostname_blocks__relation_cleanup_root_block
+  FOREIGN KEY (relation_cleanup_root_block_id) REFERENCES url_hostname_blocks(id)
+  ON DELETE SET NULL NOT VALID;
+ALTER TABLE url_hostname_blocks
+  VALIDATE CONSTRAINT fk_url_hostname_blocks__relation_cleanup_root_block;
+
+ALTER TABLE vote_weight_penalties
+  ADD CONSTRAINT fk_vote_weight_penalties__source_hostname_block
+  FOREIGN KEY (source_hostname_block_id) REFERENCES url_hostname_blocks(id)
+  ON DELETE SET NULL NOT VALID;
+ALTER TABLE vote_weight_penalties
+  VALIDATE CONSTRAINT fk_vote_weight_penalties__source_hostname_block;
+
+ALTER TABLE url_hostname_blocks
+  ADD CONSTRAINT chk_url_hostname_blocks__relation_cleanup_progress
+  CHECK (relation_cleanup_progress >= 0) NOT VALID;
+ALTER TABLE url_hostname_blocks
+  VALIDATE CONSTRAINT chk_url_hostname_blocks__relation_cleanup_progress;
+
+ALTER TABLE url_hostname_blocks
+  ADD CONSTRAINT chk_url_hostname_blocks__relation_cleanup_counts
+  CHECK (
+    relation_cleanup_blocked_hostname_count >= 0
+    AND relation_cleanup_soft_deleted_relation_count >= 0
+    AND relation_cleanup_penalized_user_count >= 0
+  ) NOT VALID;
+ALTER TABLE url_hostname_blocks
+  VALIDATE CONSTRAINT chk_url_hostname_blocks__relation_cleanup_counts;
+
 CREATE OR REPLACE TRIGGER trigger_url_hostname_blocks_updated_at
   BEFORE UPDATE ON url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
@@ -33,6 +72,18 @@ CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__hostname ON url_hostname_blo
 CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__active_nonfeed
   ON url_hostname_blocks (url_hostname_id)
   WHERE lifted_at IS NULL AND blocked_source NOT IN ('url_blocklist', 'email_blocklist');
+
+CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__relation_cleanup_root__hostname
+  ON url_hostname_blocks (relation_cleanup_root_block_id, url_hostname_id)
+  WHERE relation_cleanup_root_block_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__pending_relation_cleanup
+  ON url_hostname_blocks (id)
+  WHERE relation_cleanup_root_block_id = id AND relation_cleanup_completed_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__hostname_block
+  ON vote_weight_penalties (source_hostname_block_id, user_id)
+  WHERE source_hostname_block_id IS NOT NULL;
 
 CREATE UNIQUE INDEX idx_url_hostname_blocks__active_domain_source
   ON url_hostname_blocks (url_hostname_id, domain_blocklist_source_id)
@@ -76,21 +127,29 @@ CREATE OR REPLACE FUNCTION fn_update_url_hostname_blocked_after_update()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM host.id FROM url_hostnames host
-  JOIN (
-    SELECT url_hostname_id AS id FROM prior_blocks
+  JOIN (WITH prior_active AS (
+    SELECT DISTINCT url_hostname_id AS id FROM prior_blocks
     WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), updated_active AS (
+    SELECT DISTINCT url_hostname_id AS id FROM updated_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  )
+    (SELECT id FROM prior_active EXCEPT SELECT id FROM updated_active)
     UNION
-    SELECT url_hostname_id AS id FROM updated_blocks
-    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+    (SELECT id FROM updated_active EXCEPT SELECT id FROM prior_active)
   ) affected ON affected.id = host.id
   ORDER BY host.id FOR UPDATE OF host;
 
-  WITH affected AS MATERIALIZED (
-    SELECT url_hostname_id AS id FROM prior_blocks
+  WITH prior_active AS MATERIALIZED (
+    SELECT DISTINCT url_hostname_id AS id FROM prior_blocks
     WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), updated_active AS MATERIALIZED (
+    SELECT DISTINCT url_hostname_id AS id FROM updated_blocks
+    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+  ), affected AS MATERIALIZED (
+    (SELECT id FROM prior_active EXCEPT SELECT id FROM updated_active)
     UNION
-    SELECT url_hostname_id AS id FROM updated_blocks
-    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'
+    (SELECT id FROM updated_active EXCEPT SELECT id FROM prior_active)
   ), states AS MATERIALIZED (
     SELECT affected.id, EXISTS (
       SELECT 1 FROM url_hostname_blocks block
@@ -184,6 +243,15 @@ COMMENT ON COLUMN url_hostname_blocks.domain_blocklist_source_id IS 'External bl
 COMMENT ON COLUMN url_hostname_blocks.lifted_at IS 'When the block was lifted. NULL means still active.';
 COMMENT ON COLUMN url_hostname_blocks.reason IS 'Optional reason for the block.';
 COMMENT ON COLUMN url_hostname_blocks.lifted_by_id IS 'Who lifted the block.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_root_block_id IS 'First owning staff or provider block whose bounded cleanup operation owns this hostname; self-reference marks the operation root.';
+COMMENT ON COLUMN url_hostname_blocks.should_penalize_relation_creators IS 'Immutable creator-penalty intent captured when the cleanup root is first created.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_progress IS 'Monotonic generation used to fence and identify bounded cleanup continuation jobs.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_stage IS 'Stage the bounded cleanup operation is in; descendants may attach to a root only while it is still projecting subdomains.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_resume_after IS 'Keyset position (reversed hostname or user id) at which a lost continuation job resumes the current stage.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_blocked_hostname_count IS 'Durable total of hostnames first assigned to this bounded cleanup operation.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_soft_deleted_relation_count IS 'Durable total of relations soft-deleted by this bounded cleanup operation.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_penalized_user_count IS 'Durable total of distinct creator penalties inserted by this bounded cleanup operation.';
+COMMENT ON COLUMN url_hostname_blocks.relation_cleanup_completed_at IS 'When every hostname, URL, relation, and penalty page owned by this root finished processing.';
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_url_hostname_blocks__url_hostname_id

@@ -148,12 +148,14 @@ describe('PATCH /api/v1/hostnames/:id', () => {
       .patch(`/api/v1/hostnames/${id}`)
       .send({ is_blocked: true })
       .expect(200)
-    expect(typeof response.body.blocked_hostname_count).toBe('number')
-    expect(typeof response.body.soft_deleted_relation_count).toBe('number')
-    expect(typeof response.body.penalized_user_count).toBe('number')
+    expect(response.body).toEqual({
+      operation_id: expect.any(String),
+      status: 'pending',
+      totals: null,
+    })
   })
 
-  it('invalidates cached subdomain detail after blocking a parent hostname', async () => {
+  it('leaves subdomain projection to the bounded cleanup operation', async () => {
     const suffix = `${Date.now()}.example.com`
     const id = await insertTestUrlHostname({
       hostname: `patch-block-cache-${suffix}`,
@@ -175,7 +177,7 @@ describe('PATCH /api/v1/hostnames/:id', () => {
     await request.patch(`/api/v1/hostnames/${id}`).send({ is_blocked: true }).expect(200)
 
     const after = await request.get(`/api/v1/hostnames/${subdomain}`).expect(200)
-    expect(after.body.hostname.is_blocked).toBe(true)
+    expect(after.body.hostname.is_blocked).toBe(false)
   })
 
   it('unblocks hostname and returns 204', async () => {

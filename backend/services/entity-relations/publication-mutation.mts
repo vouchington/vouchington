@@ -17,6 +17,7 @@ import {
   getHostnamePolicyGroups,
   getLocalHostnamePolicies,
 } from '@services/urls-hostnames/policies'
+import { getEntityRelationUrlTables } from './url-tables.mts'
 import assert from 'http-assert'
 import {
   lockHostnameOwnershipForUrls,
@@ -39,17 +40,22 @@ export async function runRelationPublicationMutation<
   const run = async (query: TransactionQuery): Promise<T[]> => {
     if (relationTable === 'relation__topic__landing_page__url') {
       await lockTopicHostnameMutations(query, subjectIds)
+    }
+    if (
+      mutationKind === 'activate' &&
+      getEntityRelationUrlTables().includes(relationTable) &&
+      (relationTable === 'relation__topic__landing_page__url' ||
+        options?.skipBlockedHostnameGuard !== true)
+    ) {
       const hostnames = await lockHostnameOwnershipForUrls(query, objectIds)
-      if (mutationKind === 'activate') {
-        const policies = await getLocalHostnamePolicies(getHostnamePolicyGroups(hostnames), {
-          query,
-        })
-        assert(
-          ![...policies.values()].some(policy => policy.is_blocked),
-          422,
-          'URL hostname is blocked',
-        )
-      }
+      const policies = await getLocalHostnamePolicies(getHostnamePolicyGroups(hostnames), {
+        query,
+      })
+      assert(
+        ![...policies.values()].some(policy => policy.is_blocked),
+        422,
+        'URL hostname is blocked',
+      )
     }
     await lockActiveUserSubjectsForMutation(query, activeUserSubjectIds)
     const topicIds = [

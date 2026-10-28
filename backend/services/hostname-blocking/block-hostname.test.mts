@@ -1,284 +1,280 @@
-import { describe, it, expect, beforeAll, onTestFinished } from 'vitest'
 import { randomBytes } from 'node:crypto'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import {
-  overrideDynamicConfigFieldsForTest,
   createTestUser,
-  createTestUserDirect,
-  insertTestPost,
-  insertTestPostBatch,
-  insertTestPostRelatedUrlBatch,
-  insertTestUrlDirect,
-  insertTestUrlHostname,
-  getTestPenaltiesByHostnameId,
   getTestHostnameRow,
+  getTestPenaltiesByHostnameId,
   getTestRelationDeletedAt,
-  createEntityRelationWithElection,
+  insertTestPost,
+  insertTestPostRelatedUrlBatch,
+  insertTestUrlHostname,
 } from '@voucha/test-helpers'
-import { captureAddedPublicationEffectsForScopes } from '@voucha/test-helpers/publication-effect-jobs'
-import { upsertEntityRelation } from '@services/entity-relations/upsert'
-import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import '@voucha/test-helpers/entity-url-guard-registrations'
+import type { HostnameBlockCleanupCursor } from '@queues/background/enqueues/hostname-blocking-jobs'
+import { getEntityRelationUrlTables } from '@services/entity-relations/url-tables'
+import { DEFAULT_PENALTY_MULTIPLIER } from '@services/vote-integrity/config'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { blockHostname } from './block-hostname.mts'
+import {
+  getHostnameBlockCleanupOperation,
+  type HostnameBlockCleanupOperation,
+} from './cleanup-operation.mts'
+import {
+  advanceHostnameBlockPenaltyPage,
+  getHostnameBlockPenaltyPage,
+} from './cleanup-penalties.mts'
+import { projectNextHostnameBlockSubdomainPage } from './cleanup-subdomains.mts'
+import { softDeleteNextBlockedHostnameRelationPage } from './soft-delete-relation-page.mts'
 import { unblockHostname } from './unblock-hostname.mts'
-import { hostnameBlockingWorkConfig } from './work-limits.mts'
-import { DEFAULT_PENALTY_MULTIPLIER } from '@services/vote-integrity/config'
 
-describe('block-hostname', () => {
-  const rand = () => randomBytes(6).toString('hex')
-
-  function randomHostname() {
-    return `block-test-${rand()}.example.com`
-  }
-
-  let admin: PrivateUser
+describe('blockHostname', () => {
+  let administrator: PrivateUser
 
   beforeAll(async () => {
-    admin = (await createTestUser({ administrator: true })) as PrivateUser
+    administrator = (await createTestUser({ administrator: true })) as PrivateUser
   })
 
-  /** Link a post to a URL via the post->related->url entity relation */
-  async function relatePostToUrl(creator: PrivateUser, postId: string, urlId: string) {
-    const metadata = entityRelationMetadatum.find(
-      m => m.subject_type === 'post' && m.object_type === 'url' && m.predicate === 'related',
-    )!
-    await upsertEntityRelation(creator, metadata, { id: postId }, [{ id: urlId }])
-  }
+  it('rejects a missing hostname', async () => {
+    await expect(blockHostname(administrator.id, uuidv7())).rejects.toMatchObject({ status: 404 })
+  })
 
-  describe('blockHostname', () => {
-    it('introduces private target and subdomain on staff block without clearing provenance on unblock', async () => {
-      const moderator = (await createTestUser({ administrator: true })) as PrivateUser
-      const hostname = randomHostname()
-      const targetId = uuidv7()
-      const childId = uuidv7()
-      await insertTestUrlHostname({ id: targetId, hostname })
-      await insertTestUrlHostname({ id: childId, hostname: `child.${hostname}` })
-      expect((await getTestHostnameRow(targetId))?.publicly_introduced_at).toBeNull()
-      expect((await getTestHostnameRow(childId))?.publicly_introduced_at).toBeNull()
+  it('blocks and introduces only the target before returning a durable pending operation', async () => {
+    const hostname = randomHostname()
+    const childHostname = `child.${hostname}`
+    const [hostnameId, childId] = await Promise.all([
+      insertTestUrlHostname({ id: uuidv7(), hostname, is_blocked: false }),
+      insertTestUrlHostname({ id: uuidv7(), hostname: childHostname, is_blocked: false }),
+    ])
 
-      await blockHostname(moderator.id, targetId, { penalizeCreators: false })
-      const introducedAt = (await getTestHostnameRow(targetId))?.publicly_introduced_at
-      expect(introducedAt).toBeInstanceOf(Date)
-      expect((await getTestHostnameRow(childId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    const result = await blockHostname(administrator.id, hostnameId)
+    const [target, child, operation] = await Promise.all([
+      getTestHostnameRow(hostnameId),
+      getTestHostnameRow(childId),
+      getHostnameBlockCleanupOperation(result.operation_id),
+    ])
 
-      await unblockHostname(moderator.id, targetId)
-      expect((await getTestHostnameRow(targetId))?.publicly_introduced_at).toEqual(introducedAt)
+    expect(result).toEqual({ operation_id: expect.any(String), status: 'pending', totals: null })
+    expect(target).toMatchObject({ is_blocked: true, blocked_by_id: administrator.id })
+    expect(target?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect(child).toMatchObject({ is_blocked: false, publicly_introduced_at: null })
+    expect(operation).toMatchObject({
+      hostnameId,
+      blockedHostnameCount: 1,
+      softDeletedRelationCount: 0,
+      penalizedUserCount: 0,
+      completedAt: null,
+    })
+  })
+
+  it('reuses the first active block operation and its immutable penalty intent', async () => {
+    const hostnameId = await insertTestUrlHostname({ hostname: randomHostname() })
+    const first = await blockHostname(administrator.id, hostnameId, { penalizeCreators: false })
+    const repeated = await blockHostname(administrator.id, hostnameId, { penalizeCreators: true })
+
+    expect(repeated).toEqual(first)
+    expect((await getHostnameBlockCleanupOperation(first.operation_id))?.penalizeCreators).toBe(
+      false,
+    )
+  })
+
+  it('gives a child with a different penalty intent its own cleanup root before projection', async () => {
+    const rootHostname = randomHostname()
+    const childHostname = `child.${rootHostname}`
+    const [rootId, childId, creator] = await Promise.all([
+      insertTestUrlHostname({ hostname: rootHostname }),
+      insertTestUrlHostname({ hostname: childHostname }),
+      createTestUser({ username: `child-before-projection-${randomToken()}` }),
+    ])
+    const postId = await insertTestPost({
+      title: `Child before projection ${randomToken()}`,
+      slug: `child-before-projection-${randomToken()}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+    const urlId = uuidv7()
+    await insertTestPostRelatedUrlBatch({
+      postIds: [postId],
+      urlIds: [urlId],
+      hostname: childHostname,
+      hostnameId: childId,
+      createdById: creator.id,
     })
 
-    it('throws 404 for a non-existent hostname', async () => {
-      await expect(blockHostname(admin.id, uuidv7())).rejects.toMatchObject({ status: 404 })
+    const parent = await blockHostname(administrator.id, rootId, { penalizeCreators: false })
+    const child = await blockHostname(administrator.id, childId, { penalizeCreators: true })
+
+    expect(child.operation_id).not.toBe(parent.operation_id)
+    await expect(getHostnameBlockCleanupOperation(parent.operation_id)).resolves.toMatchObject({
+      penalizeCreators: false,
+      blockedHostnameCount: 1,
+    })
+    await expect(getHostnameBlockCleanupOperation(child.operation_id)).resolves.toMatchObject({
+      penalizeCreators: true,
+    })
+    await completeAdmittedCleanup(parent.operation_id)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeNull()
+    await completeAdmittedCleanup(child.operation_id)
+    await expect(getTestRelationDeletedAt(postId, urlId)).resolves.toBeInstanceOf(Date)
+    await expect(getTestPenaltiesByHostnameId(childId)).resolves.toHaveLength(1)
+  })
+
+  it('rejects unblock until accepted cleanup completes, then leaves new relations alone', async () => {
+    const hostname = randomHostname()
+    const [hostnameId, childHostnameId] = await Promise.all([
+      insertTestUrlHostname({ hostname }),
+      insertTestUrlHostname({ hostname: `child.${hostname}` }),
+    ])
+    const result = await blockHostname(administrator.id, hostnameId, { penalizeCreators: true })
+    const introducedAt = (await getTestHostnameRow(hostnameId))?.publicly_introduced_at
+
+    await expect(unblockHostname(administrator.id, hostnameId)).rejects.toMatchObject({
+      status: 409,
+      message: 'Hostname cleanup is still in progress. Try unblocking again after it completes.',
+    })
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
+
+    const initial = await getHostnameBlockCleanupOperation(result.operation_id)
+    const projection = await projectNextHostnameBlockSubdomainPage(
+      result.operation_id,
+      initial!.progress,
+      undefined,
+      10,
+    )
+    expect((await getTestHostnameRow(childHostnameId))?.is_blocked).toBe(true)
+    await expect(unblockHostname(administrator.id, childHostnameId)).rejects.toMatchObject({
+      status: 409,
     })
 
-    it('sets blocked=true, blocked_at, blocked_by_id on the target hostname', async () => {
-      const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, is_blocked: false })
+    const completed = await completeCleanupOperation(projection.operation!, projection.cursor)
+    await unblockHostname(administrator.id, hostnameId)
 
-      await blockHostname(admin.id, hostnameId)
+    const creator = await createTestUser({ username: `post-unblock-${randomToken()}` })
+    const postId = await insertTestPost({
+      title: `Post-unblock relation ${randomToken()}`,
+      slug: `post-unblock-relation-${randomToken()}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+    const urlId = uuidv7()
+    await insertTestPostRelatedUrlBatch({
+      postIds: [postId],
+      urlIds: [urlId],
+      hostname,
+      hostnameId,
+      createdById: creator.id,
+    })
+    const staleCleanup = await softDeleteNextBlockedHostnameRelationPage(
+      completed.blockId,
+      completed.progress,
+      { stage: 'relations' },
+      { hostname: 10, url: 10, relation: 10 },
+    )
 
-      const row = await getTestHostnameRow(hostnameId)
-      expect(row).toBeDefined()
-      expect(row!.is_blocked).toBe(true)
-      expect(row!.blocked_at).toBeInstanceOf(Date)
-      expect(row!.blocked_by_id).toBe(admin.id)
+    expect(await getTestRelationDeletedAt(postId, urlId)).toBeNull()
+    expect(staleCleanup.deleted).toBe(0)
+    await expect(getHostnameBlockPenaltyPage(completed, undefined, 10)).resolves.toEqual([])
+    expect(await getTestHostnameRow(hostnameId)).toMatchObject({
+      is_blocked: false,
+      publicly_introduced_at: introducedAt,
+    })
+  })
+
+  it('keeps one active hostname penalty across unblock and reblock operations', async () => {
+    const hostname = randomHostname()
+    const hostnameId = await insertTestUrlHostname({ hostname })
+    const creator = await createTestUser({ username: `reblock-creator-${randomToken()}` })
+    const firstPostId = await insertTestPost({
+      title: `First reblock relation ${randomToken()}`,
+      slug: `first-reblock-relation-${randomToken()}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+    await insertTestPostRelatedUrlBatch({
+      postIds: [firstPostId],
+      urlIds: [uuidv7()],
+      hostname,
+      hostnameId,
+      createdById: creator.id,
     })
 
-    it('also blocks subdomains of the target hostname', async () => {
-      const base = `subdomain-base-${rand()}.example.com`
-      const sub1 = `www.${base}`
-      const sub2 = `cdn.${base}`
+    const first = await blockHostname(administrator.id, hostnameId)
+    await completeAdmittedCleanup(first.operation_id)
+    await unblockHostname(administrator.id, hostnameId)
 
-      const [baseId, sub1Id, sub2Id] = await Promise.all([
-        insertTestUrlHostname({ hostname: base }),
-        insertTestUrlHostname({ hostname: sub1 }),
-        insertTestUrlHostname({ hostname: sub2 }),
-      ])
-
-      await blockHostname(admin.id, baseId)
-
-      const [baseRow, sub1Row, sub2Row] = await Promise.all([
-        getTestHostnameRow(baseId),
-        getTestHostnameRow(sub1Id),
-        getTestHostnameRow(sub2Id),
-      ])
-      expect(baseRow!.is_blocked).toBe(true)
-      expect(sub1Row!.is_blocked).toBe(true)
-      expect(sub2Row!.is_blocked).toBe(true)
+    const secondPostId = await insertTestPost({
+      title: `Second reblock relation ${randomToken()}`,
+      slug: `second-reblock-relation-${randomToken()}`,
+      createdById: creator.id,
+      markdown: 'test',
+    })
+    await insertTestPostRelatedUrlBatch({
+      postIds: [secondPostId],
+      urlIds: [uuidv7()],
+      hostname,
+      hostnameId,
+      createdById: creator.id,
     })
 
-    it('returns correct blocked_hostname_count including subdomains', async () => {
-      const base = `count-test-${rand()}.example.com`
-      const sub = `api.${base}`
+    const second = await blockHostname(administrator.id, hostnameId)
+    await completeAdmittedCleanup(second.operation_id)
 
-      const [baseId] = await Promise.all([
-        insertTestUrlHostname({ hostname: base }),
-        insertTestUrlHostname({ hostname: sub }),
-      ])
-
-      const result = await blockHostname(admin.id, baseId)
-      expect(result.blocked_hostname_count).toBeGreaterThanOrEqual(2)
-    })
-
-    it('soft-deletes post->related->url entity relations for the blocked hostname', async () => {
-      const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
-
-      const creator = (await createTestUserDirect({
-        username: `bh-creator-${rand()}`,
-      })) as PrivateUser
-      const postId = await insertTestPost({
-        title: `Block Hostname Test ${rand()}`,
-        slug: `bh-test-${rand()}`,
-        createdById: creator.id,
-        markdown: 'test',
-      })
-
-      // Add a URL under the hostname and link the post to it
-      const urlStr = `https://${hostname}/page`
-      const urlObj = await insertTestUrlDirect(creator.id, urlStr)
-      expect(urlObj).toBeDefined()
-
-      // The real guard permits this URL before its hostname is blocked.
-      await relatePostToUrl(creator, postId, urlObj!.id)
-
-      // Relation should not be deleted yet
-      expect(await getTestRelationDeletedAt(postId, urlObj!.id)).toBeNull()
-
-      const result = await blockHostname(admin.id, hostnameId)
-      expect(result.soft_deleted_relation_count).toBeGreaterThanOrEqual(1)
-
-      // Relation should now be soft-deleted
-      expect(await getTestRelationDeletedAt(postId, urlObj!.id)).toBeInstanceOf(Date)
-    })
-
-    it('captures affected posts when blocking a hostname and its subdomains', async () => {
-      const hostname = randomHostname()
-      const subdomain = `news.${hostname}`
-      const [hostnameId] = await Promise.all([
-        insertTestUrlHostname({ hostname, is_crawlable: false }),
-        insertTestUrlHostname({ hostname: subdomain, is_crawlable: false }),
-      ])
-      const creator = (await createTestUserDirect({
-        username: `bh-capture-${rand()}`,
-      })) as PrivateUser
-      const postIds = await Promise.all(
-        ['target', 'subdomain'].map(suffix =>
-          insertTestPost({
-            title: `Hostname capture ${suffix} ${rand()}`,
-            slug: `bh-capture-${suffix}-${rand()}`,
-            createdById: creator.id,
-            markdown: 'test',
-          }),
-        ),
-      )
-      const [targetUrl, subdomainUrl] = await Promise.all([
-        insertTestUrlDirect(creator.id, `https://${hostname}/captured`),
-        insertTestUrlDirect(creator.id, `https://${subdomain}/captured`),
-      ])
-      await Promise.all([
-        createEntityRelationWithElection(postIds[0]!, targetUrl!.id, creator.id, 1),
-        createEntityRelationWithElection(postIds[1]!, subdomainUrl!.id, creator.id, 1),
-      ])
-      const jobs = await captureAddedPublicationEffectsForScopes(postIds, () =>
-        blockHostname(admin.id, hostnameId),
-      )
-      for (const postId of postIds)
-        expect(jobs).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              postId,
-              reason: 'post_related_urls_changed',
-              keys: expect.arrayContaining([{ kind: 'impact_post', uuidValue: postId }]),
-            }),
-          ]),
-        )
-    })
-
-    it('captures every affected post across bounded hostname relation batches', async () => {
-      const restoreWorkLimit = overrideDynamicConfigFieldsForTest(hostnameBlockingWorkConfig, {
-        post_related_url_delete_batch_size: 3,
-      })
-      onTestFinished(restoreWorkLimit)
-      const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
-      const creator = (await createTestUserDirect({
-        username: `bh-batch-${rand()}`,
-      })) as PrivateUser
-      const postIds = await insertTestPostBatch(creator.id, 4)
-      const urlIds = postIds.map(() => uuidv7())
-      await insertTestPostRelatedUrlBatch({
-        postIds,
-        urlIds,
-        hostname,
-        hostnameId,
-        createdById: creator.id,
-      })
-
-      let result: Awaited<ReturnType<typeof blockHostname>> | undefined
-      const jobs = await captureAddedPublicationEffectsForScopes(postIds, async () => {
-        result = await blockHostname(admin.id, hostnameId)
-      })
-
-      expect(result?.soft_deleted_relation_count).toBe(4)
-      expect(
-        new Set(
-          jobs.filter(job => job.reason === 'post_related_urls_changed').map(job => job.postId),
-        ),
-      ).toEqual(new Set(postIds))
-    })
-
-    it('applies a 20% vote weight penalty to users who created the relations', async () => {
-      const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
-
-      const creator = (await createTestUserDirect({
-        username: `bh-penalize-${rand()}`,
-      })) as PrivateUser
-      const postId = await insertTestPost({
-        title: `Penalty Test ${rand()}`,
-        slug: `penalty-${rand()}`,
-        createdById: creator.id,
-        markdown: 'test',
-      })
-      const urlStr = `https://${hostname}/penalize`
-      const urlObj = await insertTestUrlDirect(creator.id, urlStr)
-      await relatePostToUrl(creator, postId, urlObj!.id)
-
-      const result = await blockHostname(admin.id, hostnameId)
-      expect(result.penalized_user_count).toBe(1)
-
-      const penalties = await getTestPenaltiesByHostnameId(hostnameId)
-      expect(penalties).toHaveLength(1)
-      expect(penalties[0]!.user_id).toBe(creator.id)
-      expect(penalties[0]!.penalty_multiplier).toBe(DEFAULT_PENALTY_MULTIPLIER)
-      expect(penalties[0]!.reason).toBe('blocked_hostname')
-      expect(penalties[0]!.revoked_at).toBeNull()
-    })
-
-    it('is idempotent: re-blocking does not create duplicate penalties', async () => {
-      const hostname = randomHostname()
-      const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: false })
-
-      const creator = (await createTestUserDirect({ username: `bh-idem-${rand()}` })) as PrivateUser
-      const postId = await insertTestPost({
-        title: `Idempotent Test ${rand()}`,
-        slug: `idem-${rand()}`,
-        createdById: creator.id,
-        markdown: 'test',
-      })
-      const urlStr = `https://${hostname}/idempotent`
-      const urlObj = await insertTestUrlDirect(creator.id, urlStr)
-      await relatePostToUrl(creator, postId, urlObj!.id)
-
-      // Block twice — second call should not create duplicate penalties
-      await blockHostname(admin.id, hostnameId)
-      const result2 = await blockHostname(admin.id, hostnameId)
-
-      expect(result2.penalized_user_count).toBe(0)
-
-      const penalties = await getTestPenaltiesByHostnameId(hostnameId)
-      const userPenalties = penalties.filter(p => p.user_id === creator.id)
-      expect(userPenalties).toHaveLength(1)
-    })
+    const activePenalties = (await getTestPenaltiesByHostnameId(hostnameId)).filter(
+      penalty => penalty.revoked_at === null,
+    )
+    expect(activePenalties).toEqual([
+      expect.objectContaining({
+        user_id: creator.id,
+        penalty_multiplier: DEFAULT_PENALTY_MULTIPLIER,
+        source_hostname_block_id: first.operation_id,
+      }),
+    ])
   })
 })
+
+async function completeAdmittedCleanup(blockId: string): Promise<HostnameBlockCleanupOperation> {
+  const initial = await getHostnameBlockCleanupOperation(blockId)
+  const projection = await projectNextHostnameBlockSubdomainPage(
+    blockId,
+    initial!.progress,
+    undefined,
+    10,
+  )
+  return completeCleanupOperation(projection.operation!, projection.cursor)
+}
+
+async function completeCleanupOperation(
+  initialOperation: HostnameBlockCleanupOperation,
+  initialCursor: HostnameBlockCleanupCursor,
+): Promise<HostnameBlockCleanupOperation> {
+  let operation = initialOperation
+  let cursor = initialCursor
+  const maximumPages = getEntityRelationUrlTables().length + 8
+  for (let page = 0; page < maximumPages && cursor.stage === 'relations'; page += 1) {
+    const result = await softDeleteNextBlockedHostnameRelationPage(
+      operation.blockId,
+      operation.progress,
+      cursor,
+      { hostname: 10, url: 10, relation: 10 },
+    )
+    operation = result.operation!
+    cursor = result.cursor
+  }
+  expect(cursor).toEqual({ stage: 'penalties' })
+  const userIds = await getHostnameBlockPenaltyPage(operation, undefined, 10)
+  expect(userIds.length).toBeLessThan(10)
+  const completed = await advanceHostnameBlockPenaltyPage(
+    operation.blockId,
+    operation.progress,
+    userIds.length < 10,
+  )
+  expect(completed?.completedAt).toBeInstanceOf(Date)
+  return completed!
+}
+
+function randomHostname(): string {
+  return `block-test-${randomBytes(6).toString('hex')}.example.com`
+}
+
+function randomToken(): string {
+  return randomBytes(6).toString('hex')
+}

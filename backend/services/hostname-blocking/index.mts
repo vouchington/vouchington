@@ -1,4 +1,6 @@
 export { blockHostname } from './block-hostname.mts'
+export { getHostnameBlockCleanupOperation } from './cleanup-operation.mts'
+export { toHostnameBlockOperationResult } from './cleanup-operation-result.mts'
 export { unblockHostname } from './unblock-hostname.mts'
 export * from './penalize-blocked-hostname-attempt.mts'
 export * from './upsert-and-block-hostname.mts'

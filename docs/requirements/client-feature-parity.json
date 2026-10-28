@@ -2459,6 +2459,48 @@
       }
     },
     {
+      "id": "hostname-blocking-administration",
+      "title": "Hostname blocking administration",
+      "domain": "Staff",
+      "intents": [],
+      "requirements": [],
+      "matrixRows": [
+        {
+          "table": "B",
+          "surface": "domains / hostnames / urls"
+        }
+      ],
+      "clients": {
+        "web": {
+          "status": "full",
+          "uiEvidence": [
+            "web/components/domains/hostname-moderation-controls.tsx",
+            "web/components/domains/block-hostname-quick-add.tsx"
+          ],
+          "behaviorTests": [
+            "web/components/domains/__tests__/hostname-moderation-controls.mock.test.tsx",
+            "web/components/domains/__tests__/block-hostname-quick-add.mock.test.tsx",
+            "web/lib/api/client/__tests__/hostnames.mock.test.ts"
+          ],
+          "apiEvidence": ["web/lib/api/client/hostnames.ts"]
+        },
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
+      },
+      "gap": {
+        "summary": "Swift and .NET do not expose staff hostname blocking or its bounded cleanup operation status. The web staff controls and current REST contract are the canonical implementation.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/3954"
+      }
+    },
+    {
       "id": "direct-media-playback",
       "title": "Direct podcast and video playback",
       "domain": "Media",

@@ -1,9 +1,14 @@
-import { write } from '@data-stores/psql'
+import { withPrimaryReads, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
 import { penalizeBlockedHostnameAttempt } from '@services/hostname-blocking/penalize-blocked-hostname-attempt'
 import { assertUrlsAllowedByWebRisk } from '@services/web-risk/check'
+import {
+  getHostnamePolicyGroups,
+  getLocalHostnamePolicies,
+} from '@services/urls-hostnames/policies'
 
 /**
  * Throws 422 if any of the given URL IDs belong to a site-wide blocked hostname.
@@ -15,16 +20,23 @@ import { assertUrlsAllowedByWebRisk } from '@services/web-risk/check'
 export async function assertUrlsHaveNoBlockedHostnames(
   urlIds: string[],
   userId?: string | null,
+  options: QueryOptions = {},
 ): Promise<void> {
   if (urlIds.length === 0) return
 
-  const { rows } = await write(sql`/* assertUrlsHaveNoBlockedHostnames */
-    SELECT urls.url, url_hostnames.is_blocked
+  const { rows } = await write<{ url: string; hostname: string }>(
+    sql`/* assertUrlsHaveNoBlockedHostnames */
+    SELECT urls.url, url_hostnames.hostname
     FROM urls
     JOIN url_hostnames ON url_hostnames.id = urls.hostname_id
     WHERE urls.id = ANY(${urlIds}::uuid[])
-  `)
-  const blocked = rows.some(row => row.is_blocked)
+  `,
+    options,
+  )
+  const policies = await withPrimaryReads(() =>
+    getLocalHostnamePolicies(getHostnamePolicyGroups(rows.map(row => row.hostname)), options),
+  )
+  const blocked = [...policies.values()].some(policy => policy.is_blocked)
   if (blocked && userId) {
     try {
       await penalizeBlockedHostnameAttempt(userId)
@@ -34,5 +46,8 @@ export async function assertUrlsHaveNoBlockedHostnames(
   }
 
   assert(!blocked, 422, 'URL hostname is blocked')
-  await assertUrlsAllowedByWebRisk((rows as Array<{ url: string }>).map(row => row.url))
+  await assertUrlsAllowedByWebRisk(
+    rows.map(row => row.url),
+    { localPolicies: policies },
+  )
 }

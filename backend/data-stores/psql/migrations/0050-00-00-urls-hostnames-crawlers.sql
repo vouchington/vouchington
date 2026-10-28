@@ -194,6 +194,10 @@ ON url_hostnames USING GIN (hostname gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__reversed_hostname__text_pattern_ops
 ON url_hostnames (reversed_hostname text_pattern_ops);
 
+-- Bounded policy projection and cleanup walk hostname families in deterministic suffix order.
+CREATE INDEX IF NOT EXISTS idx_url_hostnames__reversed_hostname__id
+ON url_hostnames (reversed_hostname COLLATE "C", id);
+
 -- Partial index for fast exact and prefix hostname lookups among blocked hostnames.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked
@@ -340,10 +344,10 @@ BEFORE UPDATE ON urls
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- filter urls by hostname
+-- Filter URLs by hostname and support bounded UUIDv7 walks within a hostname.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_urls__hostname_id
-ON urls (hostname_id);
+ON urls (hostname_id, id);
 
 -- search urls by url prefix
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

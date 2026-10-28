@@ -12893,6 +12893,44 @@
       "type": "object"
     },
     "BlockHostnameResult": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "operation_id": {
+              "type": "string"
+            },
+            "status": {
+              "const": "pending",
+              "type": "string"
+            },
+            "totals": {
+              "type": "null"
+            }
+          },
+          "required": ["operation_id", "status", "totals"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "operation_id": {
+              "type": "string"
+            },
+            "status": {
+              "const": "completed",
+              "type": "string"
+            },
+            "totals": {
+              "$ref": "#/components/schemas/BlockHostnameTotals"
+            }
+          },
+          "required": ["operation_id", "status", "totals"],
+          "type": "object"
+        }
+      ]
+    },
+    "BlockHostnameTotals": {
       "additionalProperties": false,
       "properties": {
         "blocked_hostname_count": {
@@ -12907,6 +12945,56 @@
       },
       "required": ["blocked_hostname_count", "penalized_user_count", "soft_deleted_relation_count"],
       "type": "object"
+    },
+    "CreateHostnameBlockResult": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "hostname": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "operation_id": {
+              "type": "string"
+            },
+            "status": {
+              "const": "pending",
+              "type": "string"
+            },
+            "totals": {
+              "type": "null"
+            }
+          },
+          "required": ["hostname", "id", "operation_id", "status", "totals"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "hostname": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "operation_id": {
+              "type": "string"
+            },
+            "status": {
+              "const": "completed",
+              "type": "string"
+            },
+            "totals": {
+              "$ref": "#/components/schemas/BlockHostnameTotals"
+            }
+          },
+          "required": ["hostname", "id", "operation_id", "status", "totals"],
+          "type": "object"
+        }
+      ]
     },
     "BloomFilterRebuildRequest": {
       "additionalProperties": false,
@@ -43403,6 +43491,18 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/hostname-block-operations/:operationId": {
+      "path": {
+        "properties": {
+          "operationId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["operationId"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/hostnames": {
       "query": {
         "properties": {
@@ -51095,6 +51195,9 @@
     "GET:/api/v1/growth-metrics": {
       "$ref": "#/components/schemas/GrowthMetrics"
     },
+    "GET:/api/v1/hostname-block-operations/:operationId": {
+      "$ref": "#/components/schemas/BlockHostnameResult"
+    },
     "GET:/api/v1/households": {
       "$ref": "#/components/schemas/HouseholdPage"
     },
@@ -51364,6 +51467,9 @@
     "PATCH:/api/v1/hostnames/:id": {
       "$ref": "#/components/schemas/BlockHostnameResult"
     },
+    "PATCH:/api/v1/hostnames/:id#block": {
+      "$ref": "#/components/schemas/BlockHostnameResult"
+    },
     "PATCH:/api/v1/my/messages/:conversationId": {
       "additionalProperties": false,
       "properties": {
@@ -51418,6 +51524,9 @@
     },
     "POST:/api/v1/fediverse/instances": {
       "$ref": "#/components/schemas/CreateInstanceResult"
+    },
+    "POST:/api/v1/hostnames#block": {
+      "$ref": "#/components/schemas/CreateHostnameBlockResult"
     },
     "POST:/api/v1/households": {
       "$ref": "#/components/schemas/HouseholdResponse"

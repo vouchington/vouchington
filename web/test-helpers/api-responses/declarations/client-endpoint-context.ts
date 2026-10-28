@@ -107,6 +107,10 @@ export interface WebFixtureClientEndpointContext {
     | 'getHouseholdsClient'
     | 'removeHouseholdMembership'
   >
+  readonly hostnames: Pick<
+    typeof import('@/lib/api/client/hostnames'),
+    'createHostname' | 'fetchHostnameBlockOperation' | 'updateHostname'
+  >
   readonly memberships: Pick<
     typeof import('@/lib/api/client/memberships'),
     'createMembershipRefund' | 'fetchRefundableCharges'

@@ -449,6 +449,10 @@
       "fixtureIds": ["web.growth-metrics.default"],
       "hash": "44b673150e44d489701c6b73fccd83a65ad8a53d3a340e60ab556b83169d3faa"
     },
+    "GET:/api/v1/hostname-block-operations/:operationId": {
+      "fixtureIds": ["web.hostname-block-operation.completed"],
+      "hash": "9482712bb43f3f37ebf1ad8bc86f135cb999a900b6b299c7c69646083f02613f"
+    },
     "GET:/api/v1/hostnames": {
       "fixtureIds": ["native.hostnames.default"],
       "hash": "f2a4f8752aed210fe7f8e146372a83647290f089a0883b60cd12c995c099d168"
@@ -1053,6 +1057,10 @@
       "fixtureIds": ["native.dynamic-config.update.changed", "native.dynamic-config.update.no-op"],
       "hash": "648843673029bdbaa69cea646858d411a25f8083820c9e8d40782eb3096f03d7"
     },
+    "PATCH:/api/v1/hostnames/:id#block": {
+      "fixtureIds": ["web.hostname-block-admission.default"],
+      "hash": "9482712bb43f3f37ebf1ad8bc86f135cb999a900b6b299c7c69646083f02613f"
+    },
     "PATCH:/api/v1/my/cards/:id": {
       "fixtureIds": ["native.cards.update.clear", "native.cards.update.full"],
       "hash": "c5b2f0aa6b233fdc5d29768c76bb4d30aa65009e4167c40dddd7bfcb7020013e"
@@ -1293,6 +1301,10 @@
         "native.entity-relations.user.category.topic.create.default"
       ],
       "hash": "7abda8a8d059b2087dd42b241c40e6dd9a35f16100a44d5ced127c8a829a7133"
+    },
+    "POST:/api/v1/hostnames#block": {
+      "fixtureIds": ["web.hostname-block-create-admission.default"],
+      "hash": "f0c2e4df758655b27a561e97b808a5243de47bea9759373debd0fd78237ed151"
     },
     "POST:/api/v1/households": {
       "fixtureIds": ["native.households.create.default"],
@@ -3280,6 +3292,18 @@
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],
       "hash": "9f0de577377137f7d006bd52535c382875fa6343bea9b2e9f0037eeacb82ccfc"
+    },
+    "web.hostname-block-admission.default": {
+      "fixtureIds": ["web.hostname-block-admission.default"],
+      "hash": "ac6ae51647231aff409ec31118f2ffe50059af7c76c4e93735f54ded973c63ab"
+    },
+    "web.hostname-block-create-admission.default": {
+      "fixtureIds": ["web.hostname-block-create-admission.default"],
+      "hash": "68f77dd78abbee208473f91074919a748cb1ffc75f9075e0e6c42f5bc0179b57"
+    },
+    "web.hostname-block-operation.completed": {
+      "fixtureIds": ["web.hostname-block-operation.completed"],
+      "hash": "ee28f41c282ce5876167cc3c183690a356a06bfa8207527332bc3f12904b854c"
     },
     "web.household-invitations.accept": {
       "fixtureIds": ["web.household-invitations.accept"],

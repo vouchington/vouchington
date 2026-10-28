@@ -16,6 +16,7 @@ import { followerDistributionsHandlers } from '@workers/follower-distributions/w
 import { emailDigestsHandlers } from '@workers/email-digests/workers'
 import { kagiSmallWebHandlers } from '@workers/kagi-smallweb/workers'
 import { moderationSignalsHandlers } from '@workers/moderation-signals/workers'
+import { hostnameBlockingHandlers } from './hostname-blocking.mts'
 import { notificationsHandlers } from '@workers/notifications/workers'
 import { oauthAuthorizationExchangeHandlers } from '@workers/oauth-authorization-exchange/workers'
 import { openAiModerationHandlers } from '@workers/openai-moderation/workers'
@@ -64,4 +65,5 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...adminImportsHandlers,
   ...userRssFeedImportsHandlers,
   ...moderationSignalsHandlers,
+  ...hostnameBlockingHandlers,
 ]

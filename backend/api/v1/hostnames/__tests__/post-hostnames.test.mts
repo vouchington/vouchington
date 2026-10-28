@@ -83,7 +83,7 @@ describe('POST /api/v1/hostnames', () => {
     const response = await request.post('/api/v1/hostnames').send({ hostname }).expect(200)
     expect(response.body.id).toBeTruthy()
     expect(response.body.hostname).toBe(hostname)
-    expect(response.body.blocked_hostname_count).toBeUndefined()
+    expect(response.body.operation_id).toBeUndefined()
   })
 
   it('normalizes protocol-prefixed hostname input', async () => {
@@ -119,12 +119,16 @@ describe('POST /api/v1/hostnames', () => {
 
     expect(response.body.id).toBeTruthy()
     expect(response.body.hostname).toBe(hostname)
-    expect(typeof response.body.blocked_hostname_count).toBe('number')
-    expect(typeof response.body.soft_deleted_relation_count).toBe('number')
-    expect(typeof response.body.penalized_user_count).toBe('number')
+    expect(response.body).toMatchObject({
+      id: expect.any(String),
+      hostname,
+      operation_id: expect.any(String),
+      status: 'pending',
+      totals: null,
+    })
   })
 
-  it('invalidates cached subdomain detail when quick-add blocking a parent hostname', async () => {
+  it('leaves quick-add subdomain projection to bounded cleanup', async () => {
     const request = createRequest()
     await request.authenticateAs(adminUser!)
     const hostname = `quick-block-cache-${Date.now()}.example.com`
@@ -141,6 +145,6 @@ describe('POST /api/v1/hostnames', () => {
     await request.post('/api/v1/hostnames').send({ hostname, is_blocked: true }).expect(200)
 
     const after = await request.get(`/api/v1/hostnames/${subdomain}`).expect(200)
-    expect(after.body.hostname.is_blocked).toBe(true)
+    expect(after.body.hostname.is_blocked).toBe(false)
   })
 })

@@ -75,6 +75,14 @@ CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'reverse_
 ON "${metadata.table_name}" (${objectColumns}, ${subjectColumns});
 `
 
+  if (metadata.object_type === 'url') {
+    query += `
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(metadata.table_name, 'active_reverse')}
+ON "${metadata.table_name}" (${objectColumns}, ${subjectColumns})
+WHERE deleted_at IS NULL;
+`
+  }
+
   // Emit any extra indexes defined on the relation config
   for (const extraIndex of metadata.extra_indexes) {
     query += `\n${extraIndex}\n`

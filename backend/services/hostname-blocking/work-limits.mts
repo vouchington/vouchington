@@ -2,18 +2,30 @@ import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
-  post_related_url_delete_batch_size: 500,
+  relation_delete_batch_size: 500,
+  hostname_scan_batch_size: 500,
+  url_scan_batch_size: 500,
+  penalty_enqueue_batch_size: 500,
+  recovery_batch_size: 100,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const hostnameBlockingWorkMaxValues = {
-  post_related_url_delete_batch_size: 5000,
+  relation_delete_batch_size: 5000,
+  hostname_scan_batch_size: 5000,
+  url_scan_batch_size: 5000,
+  penalty_enqueue_batch_size: 5000,
+  recovery_batch_size: 1000,
 }
 
 export const hostnameBlockingWorkConfig = new DynamicConfig({
   key: 'hostname-blocking-work-config',
   fieldTypes: {
-    post_related_url_delete_batch_size: 'number',
+    relation_delete_batch_size: 'number',
+    hostname_scan_batch_size: 'number',
+    url_scan_batch_size: 'number',
+    penalty_enqueue_batch_size: 'number',
+    recovery_batch_size: 'number',
   },
   defaultFields,
 })

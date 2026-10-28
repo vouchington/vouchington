@@ -182,6 +182,7 @@ CREATE TABLE IF NOT EXISTS vote_weight_penalties (
   reason TEXT NOT NULL,
   source_flag_id UUID REFERENCES vote_integrity_flags ON DELETE SET NULL,
   source_hostname_id UUID REFERENCES url_hostnames ON DELETE SET NULL,
+  source_hostname_block_id UUID,
   source_post_id UUID REFERENCES posts ON DELETE SET NULL,
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
   revoked_at TIMESTAMPTZ,
@@ -245,7 +246,8 @@ COMMENT ON COLUMN vote_weight_penalties.user_id IS 'The penalized user.';
 COMMENT ON COLUMN vote_weight_penalties.penalty_multiplier IS 'Multiplier applied to vote weight (0-1, where 1 means no penalty).';
 COMMENT ON COLUMN vote_weight_penalties.reason IS 'Human-readable explanation of why the penalty was applied.';
 COMMENT ON COLUMN vote_weight_penalties.source_flag_id IS 'The integrity flag that triggered this penalty, if auto-generated.';
-COMMENT ON COLUMN vote_weight_penalties.source_hostname_id IS 'The blocked hostname that triggered this penalty (for initial block penalties). NULL for stacking attempt penalties.';
+COMMENT ON COLUMN vote_weight_penalties.source_hostname_id IS 'The blocked hostname whose active penalty identity prevents stacking across unblock and reblock operations. NULL for stacking attempt penalties.';
+COMMENT ON COLUMN vote_weight_penalties.source_hostname_block_id IS 'The exact hostname block event whose bounded relation cleanup first created this penalty fact.';
 COMMENT ON COLUMN vote_weight_penalties.source_post_id IS 'The post that triggered this penalty (for referral_link_in_post penalties). NULL for other penalty types.';
 COMMENT ON COLUMN vote_weight_penalties.created_by_id IS 'User who created the penalty, or NULL after that account is purged.';
 COMMENT ON COLUMN vote_weight_penalties.revoked_at IS 'When the penalty was revoked.';

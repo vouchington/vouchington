@@ -57,16 +57,25 @@ export interface HostnameDetailResponse {
   crawlers?: ViewCrawler[]
 }
 
-export interface BlockHostnameResult {
+type BlockHostnameTotals = {
   blocked_hostname_count: number
   soft_deleted_relation_count: number
   penalized_user_count: number
 }
 
-export type CreateHostnameResponse = {
+export type BlockHostnameResult = { operation_id: string } & (
+  | { status: 'pending'; totals: null }
+  | { status: 'completed'; totals: BlockHostnameTotals }
+)
+
+type CreatedHostname = {
   id: string
   hostname: string
-} & Partial<BlockHostnameResult>
+}
+
+export type CreateHostnameResponse =
+  | (CreatedHostname & { operation_id?: never; status?: never; totals?: never })
+  | (CreatedHostname & BlockHostnameResult)
 
 export interface HostnamesCompareResponse {
   hostnames: Record<string, Hostname>

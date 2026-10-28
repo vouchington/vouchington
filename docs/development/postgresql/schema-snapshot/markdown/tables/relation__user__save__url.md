@@ -32,6 +32,7 @@ _none_
 
 **Indexes:**
 
+- `idx_relation__user__save__url__active_reverse`: `CREATE INDEX idx_relation__user__save__url__active_reverse ON public.relation__user__save__url USING btree (object_id, subject_id) WHERE (deleted_at IS NULL)`
 - `idx_relation__user__save__url__reverse_index`: `CREATE INDEX idx_relation__user__save__url__reverse_index ON public.relation__user__save__url USING btree (object_id, subject_id)`
 - `idx_relation__user__save__url__subject__newest`: `CREATE INDEX idx_relation__user__save__url__subject__newest ON public.relation__user__save__url USING btree (subject_id, created_at DESC, object_id DESC) WHERE (deleted_at IS NULL)`
 - `relation__user__save__url_pkey`: `CREATE UNIQUE INDEX relation__user__save__url_pkey ON public.relation__user__save__url USING btree (subject_id, object_id)`

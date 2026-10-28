@@ -3,7 +3,9 @@ import {
   beginTransaction,
   createTestTopic,
   createTestUser,
+  getEntityRelation,
   getTestPostgresBackendProcessId,
+  insertTestPost,
   waitForTestPostgresLockWaiter,
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
@@ -22,8 +24,13 @@ const landing = getEntityRelationMetadataOrThrow({
   objectType: 'url',
   predicate: 'landing_page',
 })
+const postRelatedUrl = getEntityRelationMetadataOrThrow({
+  subjectType: 'post',
+  objectType: 'url',
+  predicate: 'related',
+})
 
-describe('landing-page local policy after ownership waits', () => {
+describe('URL relation local policy after ownership waits', () => {
   it.each(['upsert', 'write'] as const)(
     'rejects a generic %s after a parent block commits during its ownership wait',
     async kind => {
@@ -66,4 +73,36 @@ describe('landing-page local policy after ownership waits', () => {
       expect(await getActiveLandingPageHostnameClaims([url.hostname.id])).toEqual([])
     },
   )
+
+  it('rejects a post URL relation after a parent block commits during its ownership wait', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const parent = `post-policy-${crypto.randomUUID()}.test`
+    const parentId = (await upsertUrlHostnames(administrator.id, [parent])).get(parent)!
+    const url = (await addUrl(administrator.id, `https://blog.${parent}/`))!
+    const postId = await insertTestPost({
+      title: `Post policy ${crypto.randomUUID()}`,
+      slug: `post-policy-${crypto.randomUUID()}`,
+      createdById: administrator.id,
+      markdown: 'test',
+    })
+    await using holder = await beginTransaction()
+    await blockHostnameInTransaction(administrator.id, parentId, holder, {
+      penalizeCreators: false,
+    })
+    const pid = await getTestPostgresBackendProcessId(holder)
+    const relating = upsertEntityRelation(administrator, postRelatedUrl, { id: postId }, [
+      { id: url.id },
+    ]).then(
+      () => null,
+      (err: unknown) => err,
+    )
+    try {
+      await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
+    } finally {
+      await holder.commit()
+    }
+
+    expect(await relating).toMatchObject({ status: 422, message: 'URL hostname is blocked' })
+    await expect(getEntityRelation(postRelatedUrl.table_name, postId, url.id)).resolves.toEqual([])
+  })
 })

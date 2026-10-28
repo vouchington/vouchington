@@ -23,7 +23,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@queues/vote-aggregation": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/post-publication": "workspace:^",

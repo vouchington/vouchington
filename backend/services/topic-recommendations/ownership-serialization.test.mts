@@ -195,7 +195,10 @@ describe('hostname ownership serialization against approval', () => {
         (err: unknown) => err,
       )
       try {
-        await waitForTestPostgresLockWaiter(pid, 'lockHostnameOwnership')
+        await waitForTestPostgresLockWaiter(
+          pid,
+          operation === 'delete' ? 'lockTopicRssFeedAttachmentLifecycles' : 'lockHostnameOwnership',
+        )
       } finally {
         await holder.commit()
       }

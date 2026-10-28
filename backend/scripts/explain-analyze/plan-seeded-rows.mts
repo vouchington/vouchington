@@ -22,6 +22,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   post_feed_shares: 4_064,
   user_topic_import_attempts: 25_001,
   url_hostnames: 4_017, // Existing 2000 hosts, 11 policy flags and 2006 crawl-sweep hosts.
+  url_hostname_blocks: 6,
   urls: 3_100,
   rss_feeds: 2_500,
   rss_feed_items: 25_000,

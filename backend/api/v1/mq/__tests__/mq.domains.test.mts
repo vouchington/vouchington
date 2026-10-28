@@ -75,6 +75,7 @@ describe('background queue domain routes', () => {
         'entity-listeners',
         'fediverse-instances',
         'follower-distributions',
+        'hostname-blocking',
         'image-deletion',
         'imports',
         'kagi-smallweb',

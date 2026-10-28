@@ -1,5 +1,9 @@
 import { runCrawlerBatchScenario } from './crawler-batch.mts'
-import { runHostnameRelationPolicyScenario } from './hostname-relation-policy.mts'
+import {
+  runHostnameBlockRelationCleanupScenario,
+  runHostnameRelationPolicyScenario,
+} from './hostname-relation-policy.mts'
+import { runHostnameBlockOwnershipLookupScenarios } from './hostname-block-cleanup-ownership.mts'
 import { runHostnameOwnershipScenarios } from './hostname-ownership.mts'
 import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import { getFollowedUsersFollowingTopicIds } from '@services/users/follow-context-topic-query'
@@ -27,6 +31,8 @@ export async function runRelationReadBatchScenarios(): Promise<void> {
   await runRelationRoundTripScenarios()
   await runHostnameOwnershipScenarios()
   await runHostnameRelationPolicyScenario()
+  await runHostnameBlockRelationCleanupScenario()
+  await runHostnameBlockOwnershipLookupScenarios()
   await runCrawlerBatchScenario()
   await runRelatablePostAccessScenario()
   registerScenarioContract('url-blocked-policy-with-values', {
