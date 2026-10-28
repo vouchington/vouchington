@@ -5,5 +5,5 @@ import type { ServerRequest } from '@vouchington/api-client'
 export interface WebFixtureEndpointContext {
   readonly client: WebFixtureClientEndpointContext
   readonly server: WebFixtureServerEndpointContext
-  readonly rawServer: Pick<ServerRequest, 'get'>
+  readonly rawServer: Pick<ServerRequest, 'get' | 'post'>
 }

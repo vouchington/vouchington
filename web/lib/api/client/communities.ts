@@ -12,22 +12,8 @@ import type {
   CommunityPostTypeSettingsResponseBody,
 } from '@/types/api-responses'
 export { banMember, liftBan, fetchCommunityBans } from './community-bans'
-export {
-  activateCommunityRestrictions,
-  fetchCommunityRestrictions,
-  liftCommunityRestriction,
-} from './community-restrictions'
 export { fetchCommunities, searchMyCommunities } from './community-search'
 export { archiveCommunity, unarchiveCommunity } from './community-archive'
-export {
-  addCommunityListItemByType,
-  addCommunityListDomain,
-  addCommunityListPost,
-  addCommunityListRssFeed,
-  addCommunityListTopic,
-  addCommunityListUrl,
-  removeCommunityListItem,
-} from './community-list-items'
 
 export function createCommunity(input: CreateCommunityInput): Promise<CommunityResponseBody> {
   return clientApi.post<CommunityResponseBody>('/api/v1/communities', input)
@@ -175,3 +161,5 @@ export function setCommunityPinnedPosts(
     { post_ids: postIds },
   )
 }
+
+export { addCommunityListItemByType, removeCommunityListItem } from './community-list-items'

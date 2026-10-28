@@ -1,13 +1,9 @@
 'use client'
 
 import { clientApi } from './instance'
-import type {
-  CommunityAgentPrompt,
-  CommunityAgentPromptsResponseBody,
-  CommunityAutomodActionSetting,
-} from '@/types/api-responses'
+import type { CommunityAgentPrompt, CommunityAutomodActionSetting } from '@/types/api-responses'
 
-export type { CommunityAgentPrompt, CommunityAgentPromptsResponseBody } from '@/types/api-responses'
+export type { CommunityAgentPrompt } from '@/types/api-responses'
 
 export interface CommunityAgentPromptHistoryEntry {
   id: string
@@ -46,23 +42,6 @@ export interface CommunityAutomodSimulation {
     } | null
   }
   results: CommunityAutomodSimulationResult[]
-}
-
-export function fetchCommunityAgentPrompts(
-  slug: string,
-): Promise<CommunityAgentPromptsResponseBody> {
-  return clientApi.get<CommunityAgentPromptsResponseBody>(
-    `/api/v1/communities/${encodeURIComponent(slug)}/agent-prompts`,
-  )
-}
-
-export function fetchCommunityAgentPrompt(
-  slug: string,
-  promptId: string,
-): Promise<{ community_agent_prompt: CommunityAgentPrompt }> {
-  return clientApi.get(
-    `/api/v1/communities/${encodeURIComponent(slug)}/agent-prompts/${encodeURIComponent(promptId)}`,
-  )
 }
 
 export function createCommunityAgentPrompt(

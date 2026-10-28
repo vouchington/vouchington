@@ -10,7 +10,6 @@ import * as clientCommunityAgentPrompts from '../../../lib/api/client/community-
 import * as clientCommunityAiAgents from '../../../lib/api/client/community-ai-agents'
 import * as clientCommunityArchive from '../../../lib/api/client/community-archive'
 import * as clientCommunityAutomod from '../../../lib/api/client/community-automod'
-import * as clientCommunityRestrictions from '../../../lib/api/client/community-restrictions'
 import * as clientCommunitySearch from '../../../lib/api/client/community-search'
 import * as clientCommunityModeratorStats from '../../../lib/api/client/community-moderator-stats'
 import * as clientCurrencies from '../../../lib/api/client/currencies'
@@ -29,7 +28,6 @@ import * as clientImportExport from '../../../lib/api/client/import-export'
 import * as clientMemberships from '../../../lib/api/client/memberships'
 import * as clientModmail from '../../../lib/api/client/modmail'
 import * as clientModlog from '../../../lib/api/client/modlog'
-import * as clientModeratorVacation from '../../../lib/api/client/moderator-vacation'
 import * as clientMq from '../../../lib/api/client/mq'
 import * as clientMy from '../../../lib/api/client/my'
 import * as clientMyNotifications from '../../../lib/api/client/my-notifications'
@@ -90,7 +88,6 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     communityAiAgents: clientCommunityAiAgents,
     communityArchive: clientCommunityArchive,
     communityAutomod: clientCommunityAutomod,
-    communityRestrictions: clientCommunityRestrictions,
     communitySearch: clientCommunitySearch,
     communityModeratorStats: clientCommunityModeratorStats,
     currencies: clientCurrencies,
@@ -109,7 +106,6 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     memberships: clientMemberships,
     modmail: clientModmail,
     modlog: clientModlog,
-    moderatorVacation: clientModeratorVacation,
     mq: clientMq,
     my: clientMy,
     myNotifications: clientMyNotifications,

@@ -26,7 +26,7 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly communityAgentPrompts: Pick<
     typeof import('@/lib/api/client/community-agent-prompts'),
-    'fetchCommunityAgentPromptHistory' | 'fetchCommunityAgentPrompts' | 'simulateCommunityAutomod'
+    'fetchCommunityAgentPromptHistory' | 'simulateCommunityAutomod'
   >
   readonly communityAiAgents: Pick<
     typeof import('@/lib/api/client/community-ai-agents'),
@@ -39,10 +39,6 @@ export interface WebFixtureClientEndpointContext {
   readonly communityAutomod: Pick<
     typeof import('@/lib/api/client/community-automod'),
     'recordCommunityAutomodFeedback' | 'updateCommunityAutomodSettings'
-  >
-  readonly communityRestrictions: Pick<
-    typeof import('@/lib/api/client/community-restrictions'),
-    'fetchCommunityRestrictions'
   >
   readonly communitySearch: Pick<
     typeof import('@/lib/api/client/community-search'),
@@ -114,16 +110,9 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly modmail: Pick<
     typeof import('@/lib/api/client/modmail'),
-    | 'createSavedReply'
-    | 'getCommunitySavedReplies'
-    | 'getModmailInboxClient'
-    | 'getModmailMessagesClient'
+    'getModmailInboxClient' | 'getModmailMessagesClient'
   >
   readonly modlog: Pick<typeof import('@/lib/api/client/modlog'), 'fetchCommunityModlog'>
-  readonly moderatorVacation: Pick<
-    typeof import('@/lib/api/client/moderator-vacation'),
-    'fetchMyModeratorVacation'
-  >
   readonly mq: EngineeringQueueEndpointContext
   readonly my: Pick<
     typeof import('@/lib/api/client/my'),

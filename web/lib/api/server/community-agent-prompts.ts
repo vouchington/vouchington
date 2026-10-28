@@ -1,9 +1,7 @@
+import type { CommunityAgentPromptsResponseBody } from '@/types/api-responses'
 import { cache } from 'react'
 import { serverApi } from './instance'
-import type {
-  CommunityAgentPromptHistoryEntry,
-  CommunityAgentPromptsResponseBody,
-} from '../client/community-agent-prompts'
+import type { CommunityAgentPromptHistoryEntry } from '../client/community-agent-prompts'
 
 export const getCommunityAgentPrompts = cache(
   async (idOrSlug: string): Promise<CommunityAgentPromptsResponseBody> => {

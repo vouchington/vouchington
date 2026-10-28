@@ -9,6 +9,7 @@ const {
   mockClientPost,
   mockClientPut,
   mockServerGet,
+  mockServerPost,
 } = vi.hoisted(() => ({
   mockClientDelete: vi.fn<VitestLooseMock>(),
   mockClientFetch: vi.fn<typeof import('../client/raw-fetch').clientFetch>(),
@@ -17,6 +18,7 @@ const {
   mockClientPost: vi.fn<VitestLooseMock>(),
   mockClientPut: vi.fn<VitestLooseMock>(),
   mockServerGet: vi.fn<VitestLooseMock>(),
+  mockServerPost: vi.fn<typeof import('../server/instance').serverApi.post>(),
 }))
 
 vi.mock(
@@ -53,7 +55,7 @@ vi.mock(
   import('../server/instance'),
   () =>
     ({
-      serverApi: { get: mockServerGet },
+      serverApi: { get: mockServerGet, post: mockServerPost },
     }) as unknown as typeof import('../server/instance'),
 )
 
@@ -84,6 +86,7 @@ const apiMocks = [
   { method: 'PATCH', mock: mockClientPatch },
   { method: 'DELETE', mock: mockClientDelete },
   { method: 'GET', mock: mockServerGet },
+  { method: 'POST', mock: mockServerPost },
 ]
 
 function webManifestFixtures() {

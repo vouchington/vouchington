@@ -4,7 +4,6 @@ import { clientApi } from './instance'
 import type {
   ActivateCommunityRestrictionsResponseBody,
   CommunityRestrictionType,
-  CommunityRestrictionsResponseBody,
 } from '@/types/api-responses'
 
 interface ActivateCommunityRestrictionsInput {
@@ -29,14 +28,4 @@ export function activateCommunityRestrictions(
 
 export function liftCommunityRestriction(idOrSlug: string, restrictionId: string): Promise<void> {
   return clientApi.delete(`/api/v1/communities/${idOrSlug}/restrictions/${restrictionId}`)
-}
-
-export function fetchCommunityRestrictions(
-  idOrSlug: string,
-  after?: string,
-): Promise<CommunityRestrictionsResponseBody> {
-  return clientApi.get<CommunityRestrictionsResponseBody>(
-    `/api/v1/communities/${idOrSlug}/restrictions`,
-    { searchParams: { after } },
-  )
 }

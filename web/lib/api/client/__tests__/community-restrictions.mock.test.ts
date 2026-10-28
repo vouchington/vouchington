@@ -5,7 +5,6 @@ vi.mock(
   () =>
     ({
       clientApi: {
-        get: vi.fn<VitestLooseMock>(),
         delete: vi.fn<VitestLooseMock>(),
         post: vi.fn<VitestLooseMock>(),
       },
@@ -13,13 +12,8 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import {
-  activateCommunityRestrictions,
-  fetchCommunityRestrictions,
-  liftCommunityRestriction,
-} from '../community-restrictions'
+import { activateCommunityRestrictions, liftCommunityRestriction } from '../community-restrictions'
 
-const mockGet = vi.mocked(clientApi.get)
 const mockDelete = vi.mocked(clientApi.delete)
 const mockPost = vi.mocked(clientApi.post)
 
@@ -54,17 +48,5 @@ describe('community-restrictions client', () => {
     expect(mockDelete).toHaveBeenCalledWith(
       '/api/v1/communities/credit-cards/restrictions/restriction-1',
     )
-  })
-
-  it('fetches community restrictions with a cursor', async () => {
-    const response = { results: [], page_info: {}, community_restrictions: {} }
-    mockGet.mockResolvedValueOnce(response)
-
-    const result = await fetchCommunityRestrictions('credit-cards', 'cursor-abc')
-
-    expect(result).toBe(response)
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/credit-cards/restrictions', {
-      searchParams: { after: 'cursor-abc' },
-    })
   })
 })

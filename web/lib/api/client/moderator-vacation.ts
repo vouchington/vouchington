@@ -6,14 +6,6 @@ import type {
   ModeratorVacationResponseBody,
 } from '@/types/api-responses'
 
-export function fetchMyModeratorVacation(
-  communitySlug: string,
-): Promise<ModeratorVacationResponseBody> {
-  return clientApi.get<ModeratorVacationResponseBody>(
-    `/api/v1/communities/${encodeURIComponent(communitySlug)}/moderator-vacation`,
-  )
-}
-
 export function setMyModeratorVacation(
   communitySlug: string,
   options: { endsAt?: string | null } = {},
