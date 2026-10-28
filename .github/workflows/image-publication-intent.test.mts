@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest'
 
 import { runtimePathFilters } from '../test-helpers/path-filter-test-fixtures.mts'
 
-type Step = { id?: string; with?: { filters?: string; 'predicate-quantifier'?: string } }
+type Step = {
+  id?: string
+  uses?: string
+  with?: { filters?: string; 'predicate-quantifier'?: string; 'fetch-depth'?: number }
+}
 type Workflow = {
   jobs?: Record<string, { outputs?: Record<string, string>; steps?: Step[] }>
   on?: { push?: { paths?: string[] } }
@@ -35,6 +39,14 @@ function mainTriggerMatches(group: 'backend' | 'web', path: string): boolean {
 }
 
 describe('image publication intent', () => {
+  it('bounds the web publication selector checkout instead of fetching every branch and tag', () => {
+    const workflow = load(readFileSync('.github/workflows/main-web.yml', 'utf8')) as Workflow
+    const checkout = workflow.jobs?.['detect-image-publication']?.steps?.find(step =>
+      step.uses?.startsWith('actions/checkout@'),
+    )
+    expect(checkout?.with?.['fetch-depth']).toBe(1)
+  })
+
   it.each([
     ['pnpm-lock.yaml', true, true],
     ['backend/services/example.mts', true, false],
