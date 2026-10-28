@@ -2,23 +2,15 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarInput,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 
@@ -35,12 +27,8 @@ export const Expanded: Story = {
     <SidebarProvider>
       <Sidebar collapsible='icon'>
         <SidebarHeader>
-          <SidebarInput
-            aria-label='Search navigation'
-            placeholder='Search'
-          />
+          <p className='px-2 text-sm font-medium'>Voucha</p>
         </SidebarHeader>
-        <SidebarSeparator decorative />
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -53,26 +41,10 @@ export const Expanded: Story = {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton type='button'>Topics</SidebarMenuButton>
-              <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    href='#trending'
-                    isActive
-                  >
-                    <span>Trending</span>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton href='#following'>
-                    <span>Following</span>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              </SidebarMenuSub>
             </SidebarMenuItem>
           </SidebarMenu>
           <SidebarGroup>
             <SidebarGroupLabel>Communities</SidebarGroupLabel>
-            <SidebarGroupAction aria-label='Add community'>+</SidebarGroupAction>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
@@ -82,10 +54,6 @@ export const Expanded: Story = {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>
-          <p className='px-2 text-xs text-sidebar-foreground/70'>cardholder</p>
-        </SidebarFooter>
-        <SidebarRail />
       </Sidebar>
       <SidebarInset>
         <header className='flex h-12 items-center gap-2 border-b px-3'>

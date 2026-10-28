@@ -34,9 +34,7 @@ vi.mock(
         </select>
       ),
       SelectContent: () => null,
-      SelectGroup: () => null,
       SelectItem: () => null,
-      SelectLabel: () => null,
       SelectTrigger: () => null,
       SelectValue: () => null,
     }) as unknown as typeof import('@/components/ui/select'),

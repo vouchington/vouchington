@@ -7,20 +7,21 @@ import { cn } from '@/lib/utils'
 
 function ScrollBar({
   className,
-  orientation = 'vertical',
   ref,
   ...props
-}: React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar> & {
+}: Omit<
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
+  'orientation'
+> & {
   ref?: React.Ref<React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>>
 }) {
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
       ref={ref}
-      orientation={orientation}
+      orientation='vertical'
       className={cn(
         'flex touch-none select-none transition-colors',
-        orientation === 'vertical' && 'h-full w-2.5 border-l border-l-transparent p-[1px]',
-        orientation === 'horizontal' && 'h-2.5 flex-col border-t border-t-transparent p-[1px]',
+        'h-full w-2.5 border-l border-l-transparent p-[1px]',
         className,
       )}
       {...props}
@@ -58,4 +59,4 @@ function ScrollArea({
 }
 ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
 
-export { ScrollArea, ScrollBar }
+export { ScrollArea }

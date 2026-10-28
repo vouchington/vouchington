@@ -4,9 +4,7 @@ import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -38,34 +36,6 @@ export const Default: Story = {
             <SelectItem value='new'>New</SelectItem>
             <SelectItem value='best'>Best</SelectItem>
             <SelectItem value='relevance'>Relevance</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </Frame>
-  ),
-}
-
-export const WithGroups: Story = {
-  render: () => (
-    <Frame>
-      <div className='flex flex-col gap-1'>
-        <Label htmlFor='select-grouped'>Filter</Label>
-        <Select defaultValue='discussion'>
-          <SelectTrigger id='select-grouped'>
-            <SelectValue placeholder='Pick a kind' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Posts</SelectLabel>
-              <SelectItem value='discussion'>Discussion</SelectItem>
-              <SelectItem value='review'>Review</SelectItem>
-              <SelectItem value='data_point'>Data point</SelectItem>
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>News</SelectLabel>
-              <SelectItem value='story'>Story</SelectItem>
-              <SelectItem value='article'>Article</SelectItem>
-            </SelectGroup>
           </SelectContent>
         </Select>
       </div>

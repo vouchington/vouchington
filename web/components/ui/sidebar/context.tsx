@@ -11,7 +11,6 @@ const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
 const SIDEBAR_KEYBOARD_SHORTCUT = '/'
-const SIDEBAR_SKELETON_TEXT_WIDTH = '72%'
 
 interface SidebarContextProps {
   state: 'expanded' | 'collapsed'
@@ -147,4 +146,4 @@ function SidebarProvider({
 }
 SidebarProvider.displayName = 'SidebarProvider'
 
-export { SIDEBAR_SKELETON_TEXT_WIDTH, SIDEBAR_WIDTH_MOBILE, SidebarProvider, useSidebar }
+export { SIDEBAR_WIDTH_MOBILE, SidebarProvider, useSidebar }
