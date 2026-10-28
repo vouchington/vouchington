@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { acquireReportPaginationTestLock } from '@voucha/test-helpers/report-pagination-lock'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import {
   createTestUser,
   deleteTestPost,
@@ -132,6 +133,7 @@ describe('moderation-reports/redaction', () => {
     })
 
     it('masks deleted target facts and links in the real list path for staff and members', async () => {
+      const createdAt = new Date(Date.now() + 60_000)
       const title = `Deleted Report Target ${crypto.randomUUID().slice(0, 8)}`
       const postId = await insertTestPost({
         createdById: author.id,
@@ -144,11 +146,17 @@ describe('moderation-reports/redaction', () => {
         entityType: 'post',
         entityId: postId,
         reason: 'spam',
+        createdAt,
       })
       await deleteTestPost(postId)
 
-      const staff = await listModerationReports({ limit: 1000 })
-      const member = await listRedactedModerationReports({ limit: 1000 })
+      const options = {
+        limit: 1000,
+        sort: 'created_at_desc' as const,
+        beforeCursor: { id: timestampToUuidv7LowerBound(createdAt.getTime() + 1) },
+      }
+      const staff = await listModerationReports(options)
+      const member = await listRedactedModerationReports(options)
       for (const reports of [staff.reports, member.reports]) {
         const report = reports.find(row => row.entity_id === postId)
         expect(report).toBeDefined()
