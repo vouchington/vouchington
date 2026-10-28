@@ -1,12 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import type {
-  getRssFeedsToFetch,
-  getTierSlaMs,
-  RssFeedDispatchCandidate,
-} from '@services/rss-feeds'
+import type { getRssFeedsToFetch, getTierSlaMs } from '@services/rss-feeds'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import { processFetchRssFeed, processRssFeedsDispatcher } from '../processors.mts'
+
+type RssFeedDispatchCandidate = Awaited<ReturnType<typeof getRssFeedsToFetch>>[number]
 
 const mockEnqueueBulkFetchRssFeeds = vi.fn<typeof enqueueBulkFetchRssFeeds>()
 const mockGetRssFeedsToFetch = vi.fn<typeof getRssFeedsToFetch>()

@@ -9,7 +9,7 @@ import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email
 /** Notice or email intake ids reported per bucket; the counts stay exact. */
 const COPYRIGHT_REVIEW_TARGET_ID_LIMIT = 20
 
-export type CopyrightReviewTargetBreaches = {
+type CopyrightReviewTargetBreaches = {
   waitingPastTarget: { count: number; noticeIds: string[] }
   missedEscalation: { count: number; noticeIds: string[] }
   missedRestorationDeadline: { count: number; noticeIds: string[] }

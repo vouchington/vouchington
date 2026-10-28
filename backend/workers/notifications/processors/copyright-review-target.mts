@@ -4,7 +4,7 @@ import {
   readCopyrightReviewTargetBreaches,
 } from '@services/copyright-notices'
 
-export type CheckCopyrightReviewTargetDeps = {
+type CheckCopyrightReviewTargetDeps = {
   getReviewTargetMinutes: typeof getCopyrightReviewTargetMinutes
   readBreaches: typeof readCopyrightReviewTargetBreaches
   recordBreach: typeof recordCopyrightReviewTargetBreach

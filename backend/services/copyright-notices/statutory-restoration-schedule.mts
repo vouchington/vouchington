@@ -15,7 +15,7 @@ type RestoreCandidate = {
   placement_revision: number
 }
 
-export type DueRestorationPage = CopyrightSweepIdPage & {
+type DueRestorationPage = CopyrightSweepIdPage & {
   candidates: Record<string, RestoreCandidate[]>
 }
 

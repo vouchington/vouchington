@@ -9,7 +9,7 @@ import { getImageFromS3 } from '@services/images/s3'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import { computeStaydownDhash } from './staydown-dhash.mts'
 
-export type ProcessStaydownHashDeps = {
+type ProcessStaydownHashDeps = {
   getImageFromS3: typeof getImageFromS3
   getDeployEnvironment: typeof getDeployEnvironment
 }

@@ -5,7 +5,7 @@ import { streamMailParts, type ParsedMimeAttachment } from './streamed-mail-part
 
 export const MAX_MIME_HEADER_BYTES = 1024 * 1024
 
-export type ParsedSesInboundEmail = {
+type ParsedSesInboundEmail = {
   fromEmail: string
   fromName?: string
   subject: string

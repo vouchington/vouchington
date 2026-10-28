@@ -5,7 +5,7 @@ import {
 } from '@services/openai-background-responses'
 import pMap from 'p-map'
 
-export type ReconcileBackgroundResponsesDeps = {
+type ReconcileBackgroundResponsesDeps = {
   getExpiredBackgroundResponses: typeof getExpiredBackgroundResponses
   reconcileExpiredBackgroundResponse: typeof reconcileExpiredBackgroundResponse
 }

@@ -20,7 +20,7 @@ type CopyrightDeliveryChannel = Parameters<
 
 type BulkEnqueue = (intentIds: string[]) => Promise<unknown>
 
-export type ReconcileCopyrightDeliveryIntentsDeps = {
+type ReconcileCopyrightDeliveryIntentsDeps = {
   enqueueContinuation: typeof enqueueReconcileCopyrightDeliveryIntents
   searchDeliveryIntents: typeof searchRecoverableCopyrightDeliveryIntentIds
   enqueueBulkDeliverCopyrightNotices: BulkEnqueue

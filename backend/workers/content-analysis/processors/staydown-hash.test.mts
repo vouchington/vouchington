@@ -18,7 +18,9 @@ import {
   enableStaydownMatchingForTest,
   useStaydownMatching,
 } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
-import { type ProcessStaydownHashDeps, processStaydownHash } from './staydown-hash.mts'
+import { processStaydownHash } from './staydown-hash.mts'
+
+type ProcessStaydownHashDeps = Required<NonNullable<Parameters<typeof processStaydownHash>[1]>>
 
 /** A random seed per test: the shared test database keeps earlier runs' registry entries. */
 function randomSeed(): number {

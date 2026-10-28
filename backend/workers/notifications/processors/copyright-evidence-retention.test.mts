@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  processSweepCopyrightEvidenceRetention,
-  type SweepCopyrightEvidenceRetentionDeps as Deps,
-} from './copyright-evidence-retention.mts'
+import { processSweepCopyrightEvidenceRetention } from './copyright-evidence-retention.mts'
+
+type Deps = Required<NonNullable<Parameters<typeof processSweepCopyrightEvidenceRetention>[0]>>
 
 function sweepDeps(result: Awaited<ReturnType<Deps['sweep']>>) {
   return {

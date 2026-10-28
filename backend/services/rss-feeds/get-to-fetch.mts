@@ -22,7 +22,7 @@ export type RssFeedToFetch = {
 }
 
 export type RssFeedDispatchCursor = { lane: number; afterId: string }
-export type RssFeedDispatchCandidate = RssFeedToFetch & { dispatch_lane: number }
+type RssFeedDispatchCandidate = RssFeedToFetch & { dispatch_lane: number }
 
 type GetRssFeedsToFetchOptions = {
   limit?: number

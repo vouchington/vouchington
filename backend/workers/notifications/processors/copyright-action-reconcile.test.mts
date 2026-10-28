@@ -2,11 +2,10 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightSweepIdPage } from '@services/copyright-notices'
-import type { DueRestorationPage } from '@services/copyright-notices/statutory-restoration-schedule'
-import {
-  processReconcileCopyrightActionIntents,
-  type ReconcileCopyrightActionIntentsDeps as Deps,
-} from './copyright-action-reconcile.mts'
+import { processReconcileCopyrightActionIntents } from './copyright-action-reconcile.mts'
+
+type Deps = Required<NonNullable<Parameters<typeof processReconcileCopyrightActionIntents>[0]>>
+type DueRestorationPage = Awaited<ReturnType<Deps['searchDueRestorations']>>
 
 const NOW = new Date('2026-07-01T12:00:00.000Z')
 function page(results: string[], endCursor: string | null): DueRestorationPage {
