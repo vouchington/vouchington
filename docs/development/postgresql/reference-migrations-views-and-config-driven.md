@@ -17,7 +17,8 @@
 
 Canonical config-driven generators are explicit lazy dependencies of the runner so static analysis
 can verify their runtime use without export exceptions. Lazy loading preserves bootstrap ordering
-and avoids initializing later generators before earlier files finish.
+and avoids initializing later generators before earlier files finish. Bootstrap APIs stay on the
+migration subpath so ordinary query imports do not pull configuration writers into read-only evals.
 
 The Amex all-cards parent and its URL validation rule are invariant application data because
 referral unfurling identifies that parent by its canonical slug. Bootstrap provisions them without

@@ -24,7 +24,7 @@ import { psql, write } from './setup.mts'
 
 const __dirname = import.meta.dirname
 
-export type RunViewsOptions = Partial<Omit<PlatformRunViewsOptions, 'folder' | 'writer'>> & {
+type RunViewsOptions = Partial<Omit<PlatformRunViewsOptions, 'folder' | 'writer'>> & {
   folder?: string
   writer?: PlatformRunViewsOptions['writer']
 }
@@ -38,7 +38,7 @@ export {
   type RunConfigDrivenOptions,
 }
 
-export type MigrationPlatform = Pick<Psql, 'runMigrations' | 'withMigrationSession' | 'write'>
+type MigrationPlatform = Pick<Psql, 'runMigrations' | 'withMigrationSession' | 'write'>
 
 export async function runMigrations(platform: Pick<Psql, 'runMigrations'> = psql) {
   const selectedPlatform = platform
@@ -104,7 +104,7 @@ async function initializeMigrationSql(): Promise<void> {
   }
 }
 
-export type VerifySchemaAfterMigration = () => Promise<void>
+type VerifySchemaAfterMigration = () => Promise<void>
 type MigrationPhase = 'application' | 'verification'
 
 export async function runAllMigrations(

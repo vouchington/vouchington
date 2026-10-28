@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { write, refreshMaterializedView } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { refreshMaterializedView } from '@data-stores/psql/migrate'
 import {
   reconcilePostContentNotificationVisibility,
   reconcileRssFeedItemContentNotificationVisibility,

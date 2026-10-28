@@ -1,6 +1,6 @@
 /* v8 ignore start -- live PostgreSQL catalog adapter; db:snapshot:check covers it */
 import type { CatalogQuery } from '@vouchington/postgres/pg-schema-snapshot'
-// runtime.mts defines read. The psql barrel re-exports migrate.mts, which imports this folder.
+// Keep catalog access independent of bootstrap initialization.
 import { read } from '../runtime.mts'
 
 export const catalogQuery: CatalogQuery = (sql, values) =>

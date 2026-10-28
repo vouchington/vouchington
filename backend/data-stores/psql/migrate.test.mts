@@ -11,12 +11,11 @@ import { createMigrationPlatformFixture } from '@voucha/test-helpers/migration-p
 
 import { read, readPool, write } from './index.mts'
 import type { QueryExecutor, QueryInput } from './types.mts'
-import {
-  applyAllMigrations,
-  runAllMigrations,
-  runViews,
-  type VerifySchemaAfterMigration,
-} from './migrate.mts'
+import { applyAllMigrations, runAllMigrations, runViews } from './migrate.mts'
+
+type VerifySchemaAfterMigration = NonNullable<
+  NonNullable<Parameters<typeof runAllMigrations>[0]>['verifySchema']
+>
 
 describe('applyAllMigrations', () => {
   it('passes the forced CLI flag through the all-migrations entry point', async () => {
