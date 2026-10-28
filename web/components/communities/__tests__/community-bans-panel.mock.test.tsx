@@ -102,6 +102,27 @@ describe('CommunityBansPanel', () => {
     expect(screen.getByText(/^Lifted: /).textContent).toMatch(/^Lifted: \d{4}-\d{2}-\d{2}$/)
   })
 
+  it('keeps an older expired ban Expired after lifting the same user’s active ban', async () => {
+    mockLiftBan.mockResolvedValueOnce(undefined)
+    render(
+      <CommunityBansPanel
+        community={makeCommunity()}
+        initialData={makeData([
+          makeBan({ id: 'ban-active' }),
+          makeBan({ id: 'ban-expired', expires_at: '2000-01-01T00:00:00.000Z' }),
+        ])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('community-ban-lift'))
+
+    await waitFor(() => expect(screen.getByText('Lifted')).toBeVisible())
+    const [activeRow, expiredRow] = screen.getAllByTestId('community-ban-row')
+    expect(activeRow).toHaveTextContent('Lifted')
+    expect(expiredRow).toHaveTextContent('Expired')
+    expect(expiredRow).not.toHaveTextContent('Lifted')
+  })
+
   it('shows an error when lift fails', async () => {
     mockLiftBan.mockRejectedValueOnce(new Error('nope'))
     render(

@@ -31,7 +31,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
     )
   const [liftingUserId, setLiftingUserId] = useState<string | null>(null)
   const [liftError, setLiftError] = useState<string | null>(null)
-  const [liftedAtByUserId, setLiftedAtByUserId] = useState<Record<string, string>>({})
+  const [liftedAtByBanId, setLiftedAtByBanId] = useState<Record<string, string>>({})
   const users = Object.assign(
     {},
     ...pages.map(page => page.users),
@@ -44,16 +44,16 @@ export function CommunityBansPanel({ community, initialData }: Props) {
       }),
     ),
   ).map(ban => {
-    const liftedAt = liftedAtByUserId[ban.user_id]
+    const liftedAt = liftedAtByBanId[ban.id]
     return liftedAt ? { ...ban, lifted_at: ban.lifted_at ?? liftedAt } : ban
   })
 
-  async function handleLiftBan(userId: string) {
+  async function handleLiftBan(banId: string, userId: string) {
     setLiftingUserId(userId)
     setLiftError(null)
     try {
       await liftBan(community.slug, userId)
-      setLiftedAtByUserId(prev => ({ ...prev, [userId]: new Date().toISOString() }))
+      setLiftedAtByBanId(prev => ({ ...prev, [banId]: new Date().toISOString() }))
       setLiftingUserId(null)
       router.refresh()
     } catch (err) {
@@ -145,7 +145,7 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                     loading={isLifting}
                     disabled={isLifting}
                     data-pw='community-ban-lift'
-                    onClick={() => handleLiftBan(ban.user_id)}
+                    onClick={() => handleLiftBan(ban.id, ban.user_id)}
                   >
                     {isLifting ? 'Lifting…' : 'Lift ban'}
                   </Button>
