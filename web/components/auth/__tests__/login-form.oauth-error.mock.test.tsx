@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { resetFacebookSdkStateForTests } from '@/hooks/use-facebook-sdk'
 import type { OAuthProvider } from '@/types/user'
 import {
   clearRuntimePublicConfigForTest,
@@ -127,7 +126,6 @@ describe('LoginForm — OAuth error fallback', () => {
   })
 
   afterEach(() => {
-    resetFacebookSdkStateForTests()
     clearRuntimePublicConfigForTest()
   })
 

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactNode } from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { LoginForm } from '../login-form'
-import { resetFacebookSdkStateForTests } from '@/hooks/use-facebook-sdk'
 import type { OAuthProvider } from '@/types/user'
 import {
   clearRuntimePublicConfigForTest,
@@ -120,7 +119,6 @@ describe('LoginForm OAuth', () => {
   })
 
   afterEach(() => {
-    resetFacebookSdkStateForTests()
     clearRuntimePublicConfigForTest()
     vi.restoreAllMocks()
   })
@@ -236,7 +234,6 @@ describe('LoginForm OAuth', () => {
 
 describe('LoginForm — OAuth provider visibility', () => {
   afterEach(() => {
-    resetFacebookSdkStateForTests()
     clearRuntimePublicConfigForTest()
   })
 

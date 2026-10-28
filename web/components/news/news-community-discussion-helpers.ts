@@ -17,7 +17,7 @@ export async function loadAvailableCommunities(
   return communities.map(toTarget)
 }
 
-export function buildDiscussionMarkdown(relatedUrls: NewsCommunityDiscussionUrl[]): string {
+function buildDiscussionMarkdown(relatedUrls: NewsCommunityDiscussionUrl[]): string {
   const seen = new Set<string>()
   const sourceLinks: string[] = []
   for (const url of relatedUrls) {
@@ -28,7 +28,7 @@ export function buildDiscussionMarkdown(relatedUrls: NewsCommunityDiscussionUrl[
   return sourceLinks.length > 0 ? `Source article:\n\n${sourceLinks.join('\n')}` : ''
 }
 
-export async function linkRelatedUrls(postId: string, relatedUrls: NewsCommunityDiscussionUrl[]) {
+async function linkRelatedUrls(postId: string, relatedUrls: NewsCommunityDiscussionUrl[]) {
   const seen = new Set<string>()
   const uniqueUrls: NewsCommunityDiscussionUrl[] = []
   for (const url of relatedUrls) {

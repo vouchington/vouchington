@@ -1,26 +1,25 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildHnAlgoliaSearchUrl, mapHnAlgoliaHits, searchHnDiscussionsForUrls } from '../search'
+import { searchHnDiscussionsForUrls } from '../search'
 
-describe('buildHnAlgoliaSearchUrl', () => {
-  it('restricts the query to story URLs', () => {
-    const url = new URL(buildHnAlgoliaSearchUrl('https://example.com/a'))
-    expect(url.origin).toBe('https://hn.algolia.com')
-    expect(url.pathname).toBe('/api/v1/search')
-    expect(url.searchParams.get('query')).toBe('https://example.com/a')
-    expect(url.searchParams.get('restrictSearchableAttributes')).toBe('url')
-    expect(url.searchParams.get('tags')).toBe('story')
-    expect(url.searchParams.get('hitsPerPage')).toBe('5')
+describe('searchHnDiscussionsForUrls', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
-})
 
-describe('mapHnAlgoliaHits', () => {
-  it('keeps title, score, and comment count for URL matches', () => {
-    expect(
-      mapHnAlgoliaHits(
-        [
+  it('queries story URLs and returns only normalized URL matches', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async input => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      expect(new URL(url).origin).toBe('https://hn.algolia.com')
+      expect(new URL(url).pathname).toBe('/api/v1/search')
+      expect(new URL(url).searchParams.get('query')).toBe('https://example.com/a')
+      expect(new URL(url).searchParams.get('restrictSearchableAttributes')).toBe('url')
+      expect(new URL(url).searchParams.get('tags')).toBe('story')
+      expect(new URL(url).searchParams.get('hitsPerPage')).toBe('5')
+      return Response.json({
+        hits: [
           {
             objectID: '123',
-            title: 'Example',
+            title: ' Example ',
             url: 'https://example.com/a/',
             points: 42,
             num_comments: 18,
@@ -34,9 +33,11 @@ describe('mapHnAlgoliaHits', () => {
           },
           { objectID: '124', title: '', url: 'https://example.com/a', points: 2, num_comments: 2 },
         ],
-        'https://example.com/a',
-      ),
-    ).toEqual([
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(searchHnDiscussionsForUrls(['https://example.com/a'])).resolves.toEqual([
       {
         objectID: '123',
         title: 'Example',
@@ -45,12 +46,7 @@ describe('mapHnAlgoliaHits', () => {
         itemUrl: 'https://news.ycombinator.com/item?id=123',
       },
     ])
-  })
-})
-
-describe('searchHnDiscussionsForUrls', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('merges unique threads and fails closed on HTTP errors', async () => {

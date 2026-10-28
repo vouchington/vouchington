@@ -97,9 +97,3 @@ export function useFacebookSDK(): UseFacebookSDK {
     login,
   }
 }
-
-export function resetFacebookSdkStateForTests() {
-  hasInitializedFacebookSdk = false
-  isFacebookSdkReady = false
-  facebookSdkSubscribers.clear()
-}

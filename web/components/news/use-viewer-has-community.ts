@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 let cachedPromise: Promise<boolean> | null = null
 
-export function resetViewerHasCommunityCache(): void {
+function resetViewerHasCommunityCache(): void {
   cachedPromise = null
 }
 
