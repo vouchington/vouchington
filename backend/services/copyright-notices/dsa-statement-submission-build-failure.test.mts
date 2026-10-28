@@ -34,7 +34,7 @@ import {
 import { processDsaStatementSubmission } from './dsa-statement-submission.mts'
 
 type DsaStatementSweepDependencies = Required<
-  Parameters<typeof prepareDsaStatementSubmissionSweep>[0]
+  NonNullable<Parameters<typeof prepareDsaStatementSubmissionSweep>[0]>
 >
 
 async function newRestriction() {

@@ -6,7 +6,7 @@ import type { assertEligibleForIdentityVerification } from '../eligibility.mts'
 import { startIdentityVerification } from '../start.mts'
 
 type StartIdentityVerificationDependencies = Required<
-  Parameters<typeof startIdentityVerification>[2]
+  NonNullable<Parameters<typeof startIdentityVerification>[2]>
 >
 
 const mockBeginTransaction = vi.fn<typeof beginTransaction>()

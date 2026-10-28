@@ -23,7 +23,7 @@ import { replayDsaStatementSubmission } from './dsa-statement-submission-replay.
 import { claimDsaStatementSubmission } from './dsa-statement-submission-claims.mts'
 
 type ProcessDsaStatementSubmissionDependencies = Required<
-  Parameters<typeof processDsaStatementSubmission>[1]
+  NonNullable<Parameters<typeof processDsaStatementSubmission>[1]>
 >
 
 const credentials = {

@@ -28,7 +28,7 @@ import {
 import { prepareDsaStatementSubmissionSweep } from './dsa-statement-submission-sweep.mts'
 
 type DsaStatementSweepDependencies = Required<
-  Parameters<typeof prepareDsaStatementSubmissionSweep>[0]
+  NonNullable<Parameters<typeof prepareDsaStatementSubmissionSweep>[0]>
 >
 
 async function restrictionIdFor(noticeId: string): Promise<string> {
