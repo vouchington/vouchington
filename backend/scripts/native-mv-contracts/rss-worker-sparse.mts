@@ -17,8 +17,9 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { rssFeedsHandlers } from '@workers/rss-feeds/workers'
 import { updateRssFeedTiming } from '@voucha/test-helpers/entities/rss-feeds-state'
+import { captureRssJobs } from '@voucha/test-helpers/rss-dispatch-jobs'
 
-/** A succession of empty raw pages must retain the feed budget and reach backfill lanes. */
+/** A succession of empty raw pages must retain the feed budget and reach a later due feed. */
 export async function checkRssWorkerSparseLane(): Promise<void> {
   const ownedFeedIds: string[] = []
   const jobs: Array<Awaited<ReturnType<typeof background.getJob>>> = []
@@ -32,7 +33,7 @@ export async function checkRssWorkerSparseLane(): Promise<void> {
     await Promise.all([
       updateRssFeedTiming(ids[0]!, asOf),
       updateRssFeedTiming(ids[1]!, asOf),
-      updateRssFeedTiming(ids[2]!, new Date(asOf.getTime() - 60 * 60_000)),
+      updateRssFeedTiming(ids[2]!, new Date(asOf.getTime() - 25 * 60 * 60_000)),
     ])
     restorePage = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
       rss_page_size: 1,
@@ -50,7 +51,11 @@ export async function checkRssWorkerSparseLane(): Promise<void> {
     const first = await background.add(
       RSS_FEEDS_DISPATCH_JOB.name,
       {
-        cursor: { lane: 5, afterId: uuidBefore(ids[0]!), throughId: ids[2] },
+        cursor: {
+          lane: 5,
+          afterId: uuidBefore(ids[0]!),
+          throughId: ids[2],
+        },
         asOf: asOf.toISOString(),
         remainingBudget: 1,
       },
@@ -58,50 +63,74 @@ export async function checkRssWorkerSparseLane(): Promise<void> {
     )
     assert.ok(first)
     jobs.push(first)
-    const seen = new Set<string>()
-    let reachedBackfill = false
-    for (let page = 0; page < 20; page++) {
-      const current = jobs.at(-1)!
-      assert.ok(current)
-      seen.add(current.id)
-      await dispatcher.handle(current as Job<never>)
-      const fetches = await background.searchJobs({
-        name: RSS_FEEDS_FETCH_JOB.name,
-        data: { rssFeedId: ids[2] },
-      })
-      if (fetches.length > 0) {
-        reachedBackfill = true
-        break
-      }
-      const candidates = await background.searchJobs({ name: RSS_FEEDS_DISPATCH_JOB.name })
-      const next = candidates.find(
-        row => (row.data as RssFeedsDispatchData).asOf === asOf.toISOString() && !seen.has(row.id),
+    let current = first
+    for (let page = 0; page < 3; page++) {
+      const pageJob: Job<never> = current as Job<never>
+      const isEmptyPage = page < 2
+      const expectedAfterId = ids[page]
+      const admission: Awaited<ReturnType<typeof captureRssJobs>> = await captureRssJobs(
+        () => dispatcher.handle(pageJob),
+        1,
+        row =>
+          isEmptyPage
+            ? row.name === RSS_FEEDS_DISPATCH_JOB.name &&
+              (row.data as RssFeedsDispatchData).asOf === asOf.toISOString() &&
+              (row.data as RssFeedsDispatchData).cursor?.afterId === expectedAfterId
+            : row.name === RSS_FEEDS_FETCH_JOB.name &&
+              ids.includes((row.data as { rssFeedId: string }).rssFeedId),
       )
-      assert.ok(next, 'empty eligible page must admit a cursor continuation')
-      assert.equal((next.data as RssFeedsDispatchData).remainingBudget, 1)
-      jobs.push(await background.getJob(next.id))
+      jobs.push(...admission.jobs)
+      const next: NonNullable<Awaited<ReturnType<typeof background.getJob>>> | undefined =
+        admission.jobs[0]
+      assert.ok(next)
+      if (isEmptyPage) {
+        assert.equal(
+          (admission.result as { count: number }).count,
+          0,
+          'fresh raw page must admit no feed',
+        )
+        assert.equal(next.name, RSS_FEEDS_DISPATCH_JOB.name)
+        assert.equal((next.data as RssFeedsDispatchData).remainingBudget, 1)
+        assert.equal((next.data as RssFeedsDispatchData).cursor?.lane, 5)
+        current = next
+      } else {
+        assert.equal((admission.result as { count: number }).count, 1)
+        assert.equal(next.name, RSS_FEEDS_FETCH_JOB.name)
+        assert.equal((next.data as { rssFeedId: string }).rssFeedId, ids[2])
+      }
     }
-    assert.ok(reachedBackfill, 'sparse due lane must reach a backfill feed beyond the raw page cap')
-    for (const id of ids.slice(0, 2)) {
-      const fetches = await background.searchJobs({
-        name: RSS_FEEDS_FETCH_JOB.name,
-        data: { rssFeedId: id },
-      })
-      assert.equal(fetches.length, 0)
-    }
+    const emptyTail = await background.add(
+      RSS_FEEDS_DISPATCH_JOB.name,
+      {
+        cursor: { lane: 5, afterId: ids[2]!, throughId: ids[2] },
+        asOf: asOf.toISOString(),
+        remainingBudget: 1,
+      },
+      { ...RSS_FEEDS_DISPATCH_JOB.options, ordering: RSS_FEEDS_ORDERING.dispatcher },
+    )
+    assert.ok(emptyTail)
+    jobs.push(emptyTail)
+    const tail = await captureRssJobs(
+      () => dispatcher.handle(emptyTail as Job<never>),
+      1,
+      row =>
+        row.name === RSS_FEEDS_DISPATCH_JOB.name &&
+        (row.data as RssFeedsDispatchData).asOf === asOf.toISOString() &&
+        (row.data as RssFeedsDispatchData).cursor?.lane === 6,
+    )
+    assert.equal((tail.result as { count: number }).count, 0)
+    jobs.push(...tail.jobs)
+    const laneSix = tail.jobs[0]
+    assert.ok(laneSix, 'exhausted lane must continue to backfill with capacity retained')
+    assert.equal(laneSix.name, RSS_FEEDS_DISPATCH_JOB.name)
+    assert.equal((laneSix.data as RssFeedsDispatchData).cursor?.lane, 6)
+    assert.equal((laneSix.data as RssFeedsDispatchData).remainingBudget, 1)
   } finally {
     restorePage()
     restoreBudget()
     await Promise.all(
       jobs.filter((job): job is NonNullable<typeof job> => job !== null).map(job => job.remove()),
     )
-    for (const feedId of ownedFeedIds) {
-      const fetches = await background.searchJobs({
-        name: RSS_FEEDS_FETCH_JOB.name,
-        data: { rssFeedId: feedId },
-      })
-      await Promise.all(fetches.map(job => job.remove()))
-    }
     await deleteRssFeedsByIds(ownedFeedIds)
   }
 }

@@ -4,8 +4,6 @@ import type { getRssFeedsToFetch, getTierSlaMs } from '@services/rss-feeds'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import { processFetchRssFeed, processRssFeedsDispatcher } from '../processors.mts'
 
-type RssFeedDispatchCandidate = Awaited<ReturnType<typeof getRssFeedsToFetch>>['feeds'][number]
-
 const mockEnqueueBulkFetchRssFeeds = vi.fn<typeof enqueueBulkFetchRssFeeds>()
 const mockGetRssFeedsToFetch = vi.fn<typeof getRssFeedsToFetch>()
 const mockGetTierSlaMs = vi.fn<typeof getTierSlaMs>()

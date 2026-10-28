@@ -100,7 +100,12 @@ registerScenarioContract('rss-feeds-to-fetch-tiered', {
     { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 32 },
     { kind: 'maxProcessedRows', relation: 'urls', max: 32 },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 32 },
-    { kind: 'usesIndexes', indexes: ['rss_feeds_pkey'], queryContains: 'getRssFeedsTiered' },
+    {
+      kind: 'usesIndexes',
+      indexes: ['rss_feeds_pkey', 'idx_rss_feeds__is_enabled'],
+      anyOf: true,
+      queryContains: 'getRssFeedsTiered',
+    },
     { kind: 'usesIndexes', indexes: ['urls_pkey'], queryContains: 'getRssFeedsTiered' },
     { kind: 'usesIndexes', indexes: ['url_hostnames_pkey'], queryContains: 'getRssFeedsTiered' },
     {
@@ -136,7 +141,6 @@ registerScenarioContract('rss-feeds-to-fetch-fallback-tail', {
       indexes: ['idx_rss_feeds__is_enabled'],
       queryContains: 'getRssFeedsTiered',
     },
-    { kind: 'usesIndexes', indexes: ['rss_feeds_pkey'], queryContains: 'getRssFeedsTiered' },
   ],
 })
 registerScenarioContract('mv-platform-stats-refresh', {

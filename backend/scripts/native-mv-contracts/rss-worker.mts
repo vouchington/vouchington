@@ -19,6 +19,7 @@ import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatch
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { uuidBefore } from '../../test-helpers/uuid-before.mts'
 import { rssFeedsHandlers } from '@workers/rss-feeds/workers'
+import { captureRssJobs } from '@voucha/test-helpers/rss-dispatch-jobs'
 
 export async function checkRssWorkerContracts(): Promise<void> {
   const older = await insertTestRssFeedDirect({})
@@ -38,6 +39,7 @@ export async function checkRssWorkerContracts(): Promise<void> {
   )
   assert.ok(dispatcher, 'RSS dispatcher handler must be registered')
   let job: Awaited<ReturnType<typeof background.add>> | undefined
+  const admitted: NonNullable<Awaited<ReturnType<typeof background.getJob>>>[] = []
   let failed = false
   let failure: unknown
   try {
@@ -51,23 +53,25 @@ export async function checkRssWorkerContracts(): Promise<void> {
     await updateRssFeedTiming(older.id, new Date(Date.now() - 10 * 60_000))
     job = await background.add(
       RSS_FEEDS_DISPATCH_JOB.name,
-      { cursor: { lane: newerTier, afterId: uuidBefore(older.id) } },
+      { cursor: { lane: newerTier, afterId: uuidBefore(older.id), throughId: newer.id } },
       { ...RSS_FEEDS_DISPATCH_JOB.options, ordering: RSS_FEEDS_ORDERING.dispatcher },
     )
     assert.ok(job, 'RSS dispatcher job admission')
-    await dispatcher.handle(job as Job<never>)
-    const [due, backfill] = await Promise.all([
-      background.searchJobs({
-        name: RSS_FEEDS_FETCH_JOB.name,
-        data: { rssFeedId: newer.id },
-      }),
-      background.searchJobs({
-        name: RSS_FEEDS_FETCH_JOB.name,
-        data: { rssFeedId: older.id },
-      }),
-    ])
+    const admission = await captureRssJobs(
+      () => dispatcher.handle(job as Job<never>),
+      1,
+      row =>
+        row.name === RSS_FEEDS_FETCH_JOB.name &&
+        ownedFeedIds.includes((row.data as { rssFeedId: string }).rssFeedId),
+    )
+    admitted.push(...admission.jobs)
+    assert.equal((admission.result as { count: number }).count, 1)
+    const due = admission.jobs.filter(
+      row =>
+        row.name === RSS_FEEDS_FETCH_JOB.name &&
+        (row.data as { rssFeedId: string }).rssFeedId === newer.id,
+    )
     assert.equal(due.length, 1, 'the newer due feed must consume the single run slot')
-    assert.equal(backfill.length, 0, 'the older backfill feed must wait')
   } catch (err) {
     failed = true
     failure = err
@@ -77,13 +81,7 @@ export async function checkRssWorkerContracts(): Promise<void> {
     restorePage()
     restoreBudget()
     await job?.remove()
-    for (const feedId of ownedFeedIds) {
-      const rows = await background.searchJobs({
-        name: RSS_FEEDS_FETCH_JOB.name,
-        data: { rssFeedId: feedId },
-      })
-      await Promise.all(rows.map(row => row.remove()))
-    }
+    await Promise.all(admitted.map(row => row.remove()))
     await deleteRssFeedsByIds(ownedFeedIds)
     await refreshMaterializedView('mv_rss_feed_crawl_tiers')
   } catch (err) {

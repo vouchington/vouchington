@@ -30,6 +30,7 @@ export async function getStaleBatches(
   const rawPage = rows
   // A full raw page may be the tail; the next empty page resolves that without
   // reading a lookahead row outside the configured physical page budget.
+  // ast-grep-ignore: pagination-no-exact-limit-has-next -- worker continuation conservatively confirms an exact-full raw page with a separate empty page instead of reading an out-of-budget lookahead row.
   const hasMore = rows.length === limit
   return {
     batches: rawPage
