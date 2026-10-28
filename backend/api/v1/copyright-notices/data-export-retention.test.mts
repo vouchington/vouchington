@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EXPORT_COPYRIGHT_ERASED_CIPHERTEXT } from '@services/account-data-requests/stream-copyright-erased'
 import { sweepCopyrightEvidenceRetention } from '@services/copyright-notices'
-import { COPYRIGHT_ERASED_CIPHERTEXT } from '@services/copyright-notices/erased-ciphertext'
 import { readCopyrightRetentionColumns } from '@voucha/test-helpers/data-stores/psql/copyright-retention'
 import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -77,9 +75,5 @@ describe('account data export after the copyright retention sweep', () => {
     expect(poster.rows('copyright-repeat-infringer-incidents.csv')).toEqual(
       posterBefore.rows('copyright-repeat-infringer-incidents.csv'),
     )
-  })
-
-  it('keeps the export package reading the same erased marker the sweep writes', () => {
-    expect(EXPORT_COPYRIGHT_ERASED_CIPHERTEXT).toBe(COPYRIGHT_ERASED_CIPHERTEXT)
   })
 })

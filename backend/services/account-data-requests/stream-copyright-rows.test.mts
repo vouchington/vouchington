@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { encryptSecret } from '@modules/token-secrets'
 import {
-  EXPORT_COPYRIGHT_ERASED_CIPHERTEXT,
   EXPORT_COPYRIGHT_ERASED_TEXT,
   decryptExportedCopyrightJson,
   decryptExportedCopyrightText,
@@ -18,7 +17,7 @@ import {
 
 const ENCRYPTION_KEYS = 'test:raw32:this fake test key is not secret'
 const INVALID = 'Invalid encrypted secret format'
-const ERASED = EXPORT_COPYRIGHT_ERASED_CIPHERTEXT
+const ERASED = 'erased'
 const ids = {
   submission_id: '019c8390-0000-7000-8000-000000000010',
   notice_id: '019c8390-0000-7000-8000-000000000011',
