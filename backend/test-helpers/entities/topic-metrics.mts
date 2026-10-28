@@ -1,16 +1,15 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function setTopicBestSortInputs(topicId: string, score4: number): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setTopicBestSortInputs */
     UPDATE topic_metrics
     SET ratings__score__4 = ${score4},
       ratings__count__4 = ${Math.round(score4)},
       ratings__updated_at = CURRENT_TIMESTAMP
     WHERE topic_id = ${topicId}
-  `),
+  `,
   )
 }
 

@@ -1,13 +1,5 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
-import { getEntityRelationTableNameOrThrow } from '@voucha/types/entities/entity-relations-metadata'
 import sql from 'sql-template-strings'
-
-const TOPIC_PARENT_RELATION_TABLE = getEntityRelationTableNameOrThrow({
-  subjectType: 'topic',
-  predicate: 'parent',
-  objectType: 'topic',
-})
 
 /**
  * Insert a parent-child relation between two topics
@@ -18,12 +10,8 @@ export async function insertTestTopicParentRelation(data: {
   createdById: string
 }): Promise<void> {
   await write(
-    allowUnannotatedQuery(
-      sql`INSERT INTO `.append(TOPIC_PARENT_RELATION_TABLE).append(
-        sql` (subject_id, object_id, created_by_id)
+    sql`/* insertTestTopicParentRelation */ INSERT INTO relation__topic__parent__topic (subject_id, object_id, created_by_id)
       VALUES (${data.childTopicId}, ${data.parentTopicId}, ${data.createdById})
       ON CONFLICT DO NOTHING`,
-      ),
-    ),
   )
 }

@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { insertTestCentralizedEmbeddingsBulk } from '../_bedrock-embeddings-support.mts'
 import sql from 'sql-template-strings'
@@ -6,7 +5,7 @@ import pgvector from 'pgvector/pg'
 
 export async function getTopicEmbeddingData(topicId: string): Promise<unknown | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getTopicEmbeddingData */
     SELECT
       bedrock_nova_multimodal_v1_content_sha256,
       bedrock_nova_multimodal_v1_input_sha256,
@@ -15,7 +14,7 @@ export async function getTopicEmbeddingData(topicId: string): Promise<unknown | 
       bedrock_nova_multimodal_v1_embedding_created_at
     FROM topics
     WHERE id = ${topicId}
-  `),
+  `,
   )
   return rows[0] || null
 }
@@ -32,13 +31,13 @@ export async function updateTopicEmbeddingData(data: {
     { content_sha256: data.inputSha256, embedding: data.embedding },
   ])
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* updateTopicEmbeddingData */
     UPDATE topics
     SET bedrock_nova_multimodal_v1_input_sha256 = ${data.inputSha256},
       bedrock_nova_multimodal_v1_embedding = ${pgvector.toSql(data.embedding)},
       bedrock_nova_multimodal_v1_input_token_count = ${data.tokens},
       bedrock_nova_multimodal_v1_embedding_created_at = ${createdAt}
     WHERE id = ${data.topicId}
-  `),
+  `,
   )
 }
