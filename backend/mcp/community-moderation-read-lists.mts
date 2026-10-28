@@ -40,20 +40,24 @@ async function readBanPage(communityId: string, args: CommunityModerationArgs) {
   }
 }
 
+async function readApplicationPage(communityId: string, args: CommunityModerationArgs) {
+  const result = await searchApplications(communityId, {
+    ...page(args),
+    status: args.status as 'pending' | 'approved' | 'rejected' | undefined,
+  })
+  const publicUsers = await getUserPublicByAnyCachedBatch(result.results.map(a => a.user_id))
+  return {
+    results: result.results.map(a => ({ __entity_type: 'community_application', id: a.id })),
+    page_info: result.page_info,
+    community_applications: indexById(result.results),
+    users: indexById(publicUsers.filter(user => user != null)),
+  }
+}
+
 export const communityModerationReadLists: Record<string, CommunityModerationHandler> = {
   async list_applications(user, args) {
     const { community } = await loadCommunityForModerator(user, args.community)
-    const result = await searchApplications(community.id, {
-      ...page(args),
-      status: args.status as 'pending' | 'approved' | 'rejected' | undefined,
-    })
-    const publicUsers = await getUserPublicByAnyCachedBatch(result.results.map(a => a.user_id))
-    return {
-      results: result.results.map(a => ({ __entity_type: 'community_application', id: a.id })),
-      page_info: result.page_info,
-      community_applications: indexById(result.results),
-      users: indexById(publicUsers.filter(user => user != null)),
-    }
+    return readApplicationPage(community.id, args)
   },
 
   async list_bans(user, args) {

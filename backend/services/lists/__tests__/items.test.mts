@@ -6,6 +6,7 @@ import {
   insertTestTopic,
   createTestRssFeedItemWithUrl,
   deleteTestPost,
+  deleteTestPostSlugs,
   insertTestRssFeed,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -14,7 +15,6 @@ import { createList } from '../lists.mts'
 import { addListItem, removeListItem, searchListItems } from '../items.mts'
 import { markRead } from '../../read-states/mutations.mts'
 import { updateRssFeedById } from '../../rss-feeds/update.mts'
-import { write } from '@data-stores/psql'
 
 describe('items service', () => {
   let user: PrivateUser
@@ -111,7 +111,7 @@ describe('items service', () => {
         rootId: postId,
         parentId: postId,
       })
-      await write('/* removeTestPostSlug */ DELETE FROM post_slugs WHERE post_id = $1', [commentId])
+      await deleteTestPostSlugs(commentId)
       const commentList = await createList(user.id, WEB_PROVENANCE, {
         name: `Comment list ${createRandomString(8)}`,
       })
@@ -132,7 +132,7 @@ describe('items service', () => {
         rootId: postId,
         parentId: postId,
       })
-      await write('/* removeTestPostSlug */ DELETE FROM post_slugs WHERE post_id = $1', [commentId])
+      await deleteTestPostSlugs(commentId)
       const commentList = await createList(user.id, WEB_PROVENANCE, {
         name: `Whitespace list ${createRandomString(8)}`,
       })
