@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { AgentToolTurnCaller } from '@agents/_shared'
 import { ModelProviderError } from '@vouchington/ai/providers'
 import { SpendCapBreachError, spendCapConfig } from '@services/ai-usage'
+import { refreshDailyAiCostTotalMicrounits } from '@services/ai-usage/daily-total'
 import { createAutotaggerAgentRunAdapter } from '@services/autotagger'
 import {
   makeToolTurnResult,
@@ -16,8 +17,12 @@ import {
 import { createAutotaggerPostFixture } from '@voucha/test-helpers/data-stores/psql/classifier-runs/autotagger-fixture'
 import { getSubjectClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
+import {
+  insertTestAiUsageRecord,
+  listAiUsageRecordsForClassifierRun,
+} from '@voucha/test-helpers/entities/ai-usage'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import { executeAutotaggerAgentRun } from './agent-run.mts'
 
 const adapter = createAutotaggerAgentRunAdapter()
@@ -222,12 +227,18 @@ describe('executeAutotaggerAgentRun failures (real PG)', () => {
     const { fixture, lease } = await leasedAgentRun()
     await spendCapConfig.waitForInitialization()
     let restore: (() => void) | undefined
-    const callTurn = vi.fn<AgentToolTurnCaller>(() => {
+    const callTurn = vi.fn<AgentToolTurnCaller>(async () => {
+      // The first turn must leave known priced spend on the reserved day before the next check.
+      await insertTestAiUsageRecord({
+        id: timestampToUuidv7LowerBound(Date.now()),
+        costMicrounits: 1,
+      })
+      await refreshDailyAiCostTotalMicrounits()
       restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
         enabled: true,
         daily_cap_microunits: 0,
       })
-      return Promise.resolve(search())
+      return search()
     })
 
     try {

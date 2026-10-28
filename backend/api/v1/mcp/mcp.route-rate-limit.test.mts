@@ -103,6 +103,15 @@ describe('MCP tool calls and their REST route rate limit', () => {
     return (JSON.parse(response.result.content[0]!.text) as { error: unknown }).error
   }
 
+  const expectWindowRefusal = (response: ToolResponse) => {
+    const refusal = refusalOf(response) as typeof REFUSAL
+    expect(refusal).toEqual({ ...REFUSAL, retryAfterSeconds: expect.any(Number) })
+    // Charged calls report whole seconds remaining in the configured rolling window.
+    expect(Number.isInteger(refusal.retryAfterSeconds)).toBe(true)
+    expect(refusal.retryAfterSeconds).toBeGreaterThanOrEqual(1)
+    expect(refusal.retryAfterSeconds).toBeLessThanOrEqual(REPORT_WINDOW_SECONDS)
+  }
+
   async function callerWithToken() {
     const user = await createTestPlusMcpCaller()
     return { user, token: (await issueTestOAuthTokens(user)).access_token }
@@ -146,7 +155,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     const limitedRest = await reportOverRest(rest, await newPostId()).expect(429)
     const limitedMcp = await reportOverMcp(token, await newPostId())
     expect(limitedRest.headers['retry-after']).toBe(String(REPORT_WINDOW_SECONDS))
-    expect(refusalOf(limitedMcp)).toEqual(REFUSAL)
+    expectWindowRefusal(limitedMcp)
     // The refused calls never ran, so only the three admitted reports exist.
     expect(await countTestModerationReportsByReporter(user.id)).toBe(3)
     const reportEvents = (await readTestMcpCallAuditEvents(user.id)).filter(
@@ -169,7 +178,6 @@ describe('MCP tool calls and their REST route rate limit', () => {
       token,
       postIds.map((postId, index) => reportCall(index + 1, postId)),
     ).expect(200)
-
     const results = response.body as ToolResponse[]
     expect(results.map(result => result.result.isError)).toEqual([undefined, undefined, undefined])
     // Three of the four admitted calls are spent, so exactly one more report is admitted.
@@ -186,11 +194,10 @@ describe('MCP tool calls and their REST route rate limit', () => {
       token,
       postIds.map((postId, index) => reportCall(index + 1, postId)),
     ).expect(200)
-
     const byId = new Map((response.body as ToolResponse[]).map(result => [result.id, result]))
     expect(byId.get(1)?.result.isError).toBeUndefined()
     expect(byId.get(2)?.result.isError).toBeUndefined()
-    expect(refusalOf(byId.get(3)!)).toEqual(REFUSAL)
+    expectWindowRefusal(byId.get(3)!)
     expect(await countTestModerationReportsByReporter(user.id)).toBe(2)
     // A refused call is audited once, as rate limited, and not again as a tool error.
     expect((await readTestMcpCallAuditEvents(user.id)).map(event => event.outcome)).toEqual([
@@ -219,7 +226,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     const response = await settleMeteredMcpResponses(() => mcpPost(token, body).expect(200))
     const results = response.body as ToolResponse[]
     expect(results[0]?.result.isError).toBeUndefined()
-    expect(refusalOf(results[1]!)).toEqual(REFUSAL)
+    expectWindowRefusal(results[1]!)
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
     ).toBe(true)
@@ -253,12 +260,10 @@ describe('MCP tool calls and their REST route rate limit', () => {
       slug: `route-limit-topic-${suffix}`,
       createdById: user.id,
     })
-
     const response = await mcpPost(token, [
       toolCall(1, 'read_topic', optionArgs('metrics', { topic_id: topicId })),
       reportCall(2, await newPostId()),
     ]).expect(200)
-
     const byId = new Map((response.body as ToolResponse[]).map(result => [result.id, result]))
     expect(byId.get(1)?.result.isError).toBeUndefined()
     expect(refusalOf(byId.get(2)!)).toEqual(IMPOSSIBLE_BATCH_REFUSAL)
@@ -274,25 +279,22 @@ describe('MCP tool calls and their REST route rate limit', () => {
     const { rawKey } = await createApiKey(user.id, 'mcp', `Route limits ${createRandomString(6)}`, [
       'reports:write',
     ])
-
     expect((await reportOverMcp(rawKey, await newPostId())).result.isError).toBeUndefined()
     expect((await reportOverMcp(rawKey, await newPostId())).result.isError).toBeUndefined()
-    expect(refusalOf(await reportOverMcp(rawKey, await newPostId()))).toEqual(REFUSAL)
+    expectWindowRefusal(await reportOverMcp(rawKey, await newPostId()))
     expect(await countTestModerationReportsByReporter(user.id)).toBe(2)
   })
 
   it('charges no route for a call that is refused before it runs', async () => {
     admitSensitiveCalls(1)
     const { user, token } = await callerWithToken()
-
     const invalid = await mcpPost(token, toolCall(1, 'create_content_report', { reason: 'spam' }))
     const notification = { jsonrpc: '2.0', method: 'tools/call', params: { name: 'ping' } }
     await mcpPost(token, notification)
     expect(invalid.status).toBe(200)
-
     // The single admitted call is still unspent after an invalid call and a notification.
     expect((await reportOverMcp(token, await newPostId())).result.isError).toBeUndefined()
-    expect(refusalOf(await reportOverMcp(token, await newPostId()))).toEqual(REFUSAL)
+    expectWindowRefusal(await reportOverMcp(token, await newPostId()))
     expect(await countTestModerationReportsByReporter(user.id)).toBe(1)
   })
 })

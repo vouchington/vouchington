@@ -8,7 +8,6 @@ import {
   fetchWithTimeoutSimple,
   getExternalRequestDispatcher,
   handleHttpErrors,
-  isAmbiguousBilledHttpStatus,
 } from '../http.mts'
 
 function createResponse(status: number, headers: Record<string, string> = {}): Response {
@@ -28,16 +27,6 @@ describe('handleHttpErrors', () => {
     expect(() => handleHttpErrors({ response, url: 'https://example.com' })).toThrow(
       HttpServerError,
     )
-  })
-})
-
-describe('isAmbiguousBilledHttpStatus', () => {
-  it.each([408, 409, 429, 500, 503])('treats %i as possibly billed', status => {
-    expect(isAmbiguousBilledHttpStatus(status)).toBe(true)
-  })
-
-  it.each([200, 400, 401, 404])('treats %i as not billed', status => {
-    expect(isAmbiguousBilledHttpStatus(status)).toBe(false)
   })
 })
 

@@ -11,6 +11,7 @@ import {
 } from '@voucha/test-helpers'
 import { answerCommunityQuestions } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-provider'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import type { PrivateUser } from '@services/users/types'
 import { spendCapConfig } from '@services/ai-usage'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
@@ -163,20 +164,12 @@ describe('POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/test-runs',
   })
 
   it('returns 429 and does not call the provider when the daily spend cap is breached', async () => {
-    await spendCapConfig.waitForInitialization()
-    // 0 is the true kill-switch value (#8773 review round 4): totalMicrounits is never negative, so
-    // this breaches on the very first call regardless of what other tests have written today.
-    const restore = overrideDynamicConfigFieldsForTest(spendCapConfig, {
-      daily_cap_microunits: 0,
-    })
-    try {
+    await withReservedAiUsageDay(0, async () => {
       const { testRun } = await createPrompt()
 
       await testRun({ text: 'Sample content to moderate' }).expect(429)
 
       expect(provider).not.toHaveBeenCalled()
-    } finally {
-      restore()
-    }
+    })
   })
 })
