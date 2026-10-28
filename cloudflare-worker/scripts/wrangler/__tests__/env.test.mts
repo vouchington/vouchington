@@ -4,7 +4,19 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { loadStartWranglerEnv, readInspectorPort } from '../env.mts'
+import { loadStartWranglerEnv } from '../env.mts'
+
+function createWorkerFixture(tempRoot: string): string {
+  const workerDir = join(tempRoot, 'cloudflare-worker')
+  mkdirSync(join(workerDir, 'dist'), { recursive: true })
+  mkdirSync(join(workerDir, 'scripts', 'wrangler'), { recursive: true })
+  mkdirSync(join(workerDir, 'node_modules', 'workerd'), { recursive: true })
+  mkdirSync(join(workerDir, 'node_modules', 'wrangler'), { recursive: true })
+  writeFileSync(join(workerDir, 'dist', 'index.js'), '')
+  writeFileSync(join(workerDir, 'node_modules', 'workerd', 'package.json'), '{"version":"1.2.3"}')
+  writeFileSync(join(workerDir, 'node_modules', 'wrangler', 'package.json'), '{"version":"4.5.6"}')
+  return workerDir
+}
 
 describe('start-wrangler env', () => {
   afterEach(() => {
@@ -89,8 +101,58 @@ describe('start-wrangler env', () => {
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     const exitSpy = vi.spyOn(process, 'exit').mockReturnValue(undefined as never)
 
-    expect(() => readInspectorPort(false, {})).toThrow('unreachable: process.exit returned')
+    expect(() => loadStartWranglerEnv({ WORKER_PORT: '3902' })).toThrow(
+      'unreachable: process.exit returned',
+    )
     expect(stderrSpy).toHaveBeenCalledWith('start-wrangler: INSPECTOR_PORT is required\n')
     expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('reads an explicit CI inspector port through the startup configuration', () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'voucha-wrangler-inspector-'))
+    try {
+      const workerDir = createWorkerFixture(tempRoot)
+      const env = loadStartWranglerEnv(
+        { CI: 'true', INSPECTOR_PORT: '3904', TMPDIR: tempRoot, WORKER_PORT: '3902' },
+        join(workerDir, 'scripts', 'wrangler'),
+      )
+
+      expect(env.inspectorPort).toBe('3904')
+      const index = env.wranglerArgs.args.indexOf('--inspector-port')
+      expect(env.wranglerArgs.args[index + 1]).toBe('0')
+    } finally {
+      rmSync(tempRoot, { force: true, recursive: true })
+    }
+  })
+
+  it('selects local HTTPS only when both cert files exist and HTTP is not forced', () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'voucha-wrangler-certs-'))
+    try {
+      const workerDir = createWorkerFixture(tempRoot)
+      const certDir = join(tempRoot, 'dev', 'certs')
+      mkdirSync(certDir, { recursive: true })
+      writeFileSync(join(certDir, 'localhost.pem'), 'cert')
+      writeFileSync(join(certDir, 'localhost-key.pem'), 'key')
+      const scriptDir = join(workerDir, 'scripts', 'wrangler')
+
+      const https = loadStartWranglerEnv(
+        { INSPECTOR_PORT: '3904', TMPDIR: tempRoot, WORKER_PORT: '3902' },
+        scriptDir,
+      )
+      expect(https.hasCerts).toBe(true)
+      expect(https.wranglerArgs.args).toContain('--local-protocol')
+      expect(https.wranglerArgs.args).toContain('https')
+
+      for (const override of [{ WRANGLER_LOCAL_PROTOCOL: 'http' }, { WRANGLER_FORCE_HTTP: '1' }]) {
+        const http = loadStartWranglerEnv(
+          { ...override, INSPECTOR_PORT: '3904', TMPDIR: tempRoot, WORKER_PORT: '3902' },
+          scriptDir,
+        )
+        expect(http.hasCerts).toBe(false)
+        expect(http.wranglerArgs.args).not.toContain('--local-protocol')
+      }
+    } finally {
+      rmSync(tempRoot, { force: true, recursive: true })
+    }
   })
 })

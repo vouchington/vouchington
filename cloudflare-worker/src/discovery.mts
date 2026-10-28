@@ -24,7 +24,7 @@ export function addDiscoveryHeaders(response: Response, requestUrl: URL, env: En
   return appendHeaders(response, [['link', formatLinkHeader(entries)]])
 }
 
-export function buildDiscoveryLinkEntries(requestUrl: URL, env: Env): LinkEntry[] {
+function buildDiscoveryLinkEntries(requestUrl: URL, env: Env): LinkEntry[] {
   if (isPrivateDiscoveryPath(requestUrl.pathname) || requestUrl.searchParams.has('apikey')) {
     return []
   }

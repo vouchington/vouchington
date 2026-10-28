@@ -207,25 +207,18 @@ describe('isCachePlaceholderNonceValid', () => {
   })
 
   it('rejects a non-empty value shorter than the minimum length', async () => {
-    const { isCachePlaceholderNonceValid, MIN_CACHE_PLACEHOLDER_NONCE_LENGTH } =
-      await importEnvValidation()
-    expect(isCachePlaceholderNonceValid('a'.repeat(MIN_CACHE_PLACEHOLDER_NONCE_LENGTH - 1))).toBe(
-      false,
-    )
+    const { isCachePlaceholderNonceValid } = await importEnvValidation()
+    expect(isCachePlaceholderNonceValid('a'.repeat(31))).toBe(false)
   })
 
   it('accepts a value at exactly the minimum length', async () => {
-    const { isCachePlaceholderNonceValid, MIN_CACHE_PLACEHOLDER_NONCE_LENGTH } =
-      await importEnvValidation()
-    expect(isCachePlaceholderNonceValid('a'.repeat(MIN_CACHE_PLACEHOLDER_NONCE_LENGTH))).toBe(true)
+    const { isCachePlaceholderNonceValid } = await importEnvValidation()
+    expect(isCachePlaceholderNonceValid('a'.repeat(32))).toBe(true)
   })
 
   it('accepts a value longer than the minimum length', async () => {
-    const { isCachePlaceholderNonceValid, MIN_CACHE_PLACEHOLDER_NONCE_LENGTH } =
-      await importEnvValidation()
-    expect(isCachePlaceholderNonceValid('a'.repeat(MIN_CACHE_PLACEHOLDER_NONCE_LENGTH + 10))).toBe(
-      true,
-    )
+    const { isCachePlaceholderNonceValid } = await importEnvValidation()
+    expect(isCachePlaceholderNonceValid('a'.repeat(42))).toBe(true)
   })
 })
 

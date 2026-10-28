@@ -18,7 +18,7 @@ let sentryConfigurationInvalidLogged = false
 // Below this length the placeholder is guessable enough that a cached page's CSP nonce
 // stops being meaningfully secret. Shared with request-handler.mts's canUseCachedOriginForWeb
 // gate so a short-but-truthy secret can't slip past that fail-closed check.
-export const MIN_CACHE_PLACEHOLDER_NONCE_LENGTH = 32
+const MIN_CACHE_PLACEHOLDER_NONCE_LENGTH = 32
 
 export function isCachePlaceholderNonceValid(nonce: string | undefined): nonce is string {
   return Boolean(nonce) && (nonce?.length ?? 0) >= MIN_CACHE_PLACEHOLDER_NONCE_LENGTH

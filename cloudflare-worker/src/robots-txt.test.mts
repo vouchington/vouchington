@@ -2,9 +2,26 @@ import { describe, expect, it } from 'vitest'
 
 import { ROBOTS_DISALLOW_PREFIXES } from '@ts-shared/route-classification'
 
-import { AI_CRAWLERS, generateRobotsTxt } from './robots-txt.mts'
+import { generateRobotsTxt } from './robots-txt.mts'
 
 const SITE_ORIGIN = 'https://voucha.ai'
+const AI_CRAWLERS = [
+  'GPTBot',
+  'PerplexityBot',
+  'Claude-Web',
+  'anthropic-ai',
+  'ClaudeBot',
+  'OAI-SearchBot',
+  'Google-Extended',
+  'Bingbot',
+  'Applebot',
+  'Amazonbot',
+  'CCBot',
+  'Meta-ExternalAgent',
+  'DuckAssistBot',
+  'Google-CloudVertexBot',
+  'Bytespider',
+]
 
 describe('generateRobotsTxt', () => {
   const output = generateRobotsTxt(SITE_ORIGIN)

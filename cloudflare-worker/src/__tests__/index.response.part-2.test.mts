@@ -4,8 +4,6 @@ import worker from '../index.mts'
 
 import { ROBOTS_DISALLOW_PREFIXES } from '@ts-shared/route-classification'
 
-import { AI_CRAWLERS } from '../robots-txt.mts'
-
 import {
   createContext,
   restoreGlobals,
@@ -204,6 +202,5 @@ describe('worker fetch handler — response headers and edge behaviors', () => {
     expect(response.headers.get('server-timing')).toMatch(/^origin;dur=\d+$/)
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof AI_CRAWLERS)
   void (0 as unknown as typeof ROBOTS_DISALLOW_PREFIXES)
 })

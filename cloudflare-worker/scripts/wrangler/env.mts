@@ -9,7 +9,7 @@ export function resolveCloudflareWorkerDir(scriptDir = import.meta.dirname) {
   return resolve(scriptDir, '..', '..')
 }
 
-export function hasWranglerHttpsCerts(
+function hasWranglerHttpsCerts(
   certPath: string,
   keyPath: string,
   env: NodeJS.ProcessEnv = process.env,
@@ -89,7 +89,7 @@ function requireEnv(name: 'WORKER_PORT', env: NodeJS.ProcessEnv = process.env) {
   return value
 }
 
-export function readInspectorPort(isCi: boolean, env: NodeJS.ProcessEnv = process.env): string {
+function readInspectorPort(isCi: boolean, env: NodeJS.ProcessEnv = process.env): string {
   const value = env.INSPECTOR_PORT
   if (value) return value
   if (isCi) return '0'

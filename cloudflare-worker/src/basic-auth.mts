@@ -72,14 +72,10 @@ const BASIC_AUTH_EXEMPT_METHODS_BY_PATH: ReadonlyMap<string, ReadonlySet<string>
   ['/manifest.webmanifest', new Set(['GET', 'HEAD'])],
 ])
 
-export const basicAuthTestExports = {
-  BASIC_AUTH_EXEMPT_METHODS_BY_PATH,
-} as const
-
 const ACTIVITYPUB_ACTOR_PATH_RE =
   /^\/ap\/users\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
-export function isBasicAuthExemptRequest(method: string, pathname: string): boolean {
+function isBasicAuthExemptRequest(method: string, pathname: string): boolean {
   const normalized =
     pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
   const normalizedPath = normalized.toLowerCase()

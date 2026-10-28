@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createWorker } from '../index.mts'
-import type { WorkerExceptionTags } from '../sentry.mts'
+import type { captureWorkerException } from '../sentry.mts'
 import { createContext } from '../../test-helpers/src/mock-env.mts'
 import type { Env } from '../types.mts'
 
 describe('worker unexpected-error boundary', () => {
   it('captures fetchInner rejections and returns a standardized secured 500', async () => {
     const error = new Error('unexpected failure')
-    const captureException = vi.fn<(error: unknown, tags?: WorkerExceptionTags) => void>()
+    const captureException =
+      vi.fn<(error: unknown, tags?: Parameters<typeof captureWorkerException>[1]) => void>()
     const worker = createWorker({
       fetchInner: () => Promise.reject(error),
       captureException,
@@ -37,7 +38,8 @@ describe('worker unexpected-error boundary', () => {
   })
 
   it('returns a secured fallback when browser-upload origins are malformed', async () => {
-    const captureException = vi.fn<(error: unknown, tags?: WorkerExceptionTags) => void>()
+    const captureException =
+      vi.fn<(error: unknown, tags?: Parameters<typeof captureWorkerException>[1]) => void>()
     const worker = createWorker({ captureException })
     const env = {
       WEB_ORIGIN: 'https://web.example.com',
@@ -62,7 +64,8 @@ describe('worker unexpected-error boundary', () => {
 
   it('captures failures before fetchInner and returns a standardized secured 500', async () => {
     const error = new Error('route resolution failed')
-    const captureException = vi.fn<(error: unknown, tags?: WorkerExceptionTags) => void>()
+    const captureException =
+      vi.fn<(error: unknown, tags?: Parameters<typeof captureWorkerException>[1]) => void>()
     const fetchInner = vi.fn<() => Promise<Response>>()
     const worker = createWorker({
       fetchInner,
@@ -117,7 +120,8 @@ describe('worker unexpected-error boundary', () => {
   })
 
   it.each([null, 0, 'invalid'])('rejects non-object worker bindings: %s', async invalidEnv => {
-    const captureException = vi.fn<(error: unknown, tags?: WorkerExceptionTags) => void>()
+    const captureException =
+      vi.fn<(error: unknown, tags?: Parameters<typeof captureWorkerException>[1]) => void>()
     const fetchInner = vi.fn<() => Promise<Response>>(() => Promise.resolve(new Response()))
     const worker = createWorker({ fetchInner, captureException })
 

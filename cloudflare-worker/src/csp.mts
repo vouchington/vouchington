@@ -34,7 +34,7 @@ export type RegisteredWebCspOrigin = {
   directives: readonly WebCspDirective[]
 }
 
-export const REGISTERED_WEB_CSP_ORIGINS: readonly RegisteredWebCspOrigin[] = [
+const REGISTERED_WEB_CSP_ORIGINS: readonly RegisteredWebCspOrigin[] = [
   { origin: 'https://g.voucha.ai', directives: ['script-src', 'frame-src', 'connect-src'] },
   {
     origin: 'https://challenges.cloudflare.com',

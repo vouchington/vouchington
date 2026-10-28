@@ -28,18 +28,18 @@ const ORIGIN_ERROR_MESSAGES: Record<RouteTarget, string> = {
 }
 
 export const API_ROUTE_RE = /^\/api(?:\/|$)/i
-export const INFRA_ROUTE_RE = /^\/infra(?:\/|$)/i
-export const MD_ROUTE_RE = /^\/md(?:\/|$)/i
+const INFRA_ROUTE_RE = /^\/infra(?:\/|$)/i
+const MD_ROUTE_RE = /^\/md(?:\/|$)/i
 export const RSS_ROUTE_RE = /^\/rss(?:\/|$)/i
 // WELL_KNOWN_ROUTE_RE is intentionally broad — it forwards every /.well-known/* path to backend
 // (webfinger/nodeinfo), but worker-owned static documents (security.txt, api-catalog, etc.) are
 // matched exactly and served inline in inline-responses.mts before getRouteTarget ever runs.
-export const WELL_KNOWN_ROUTE_RE = /^\/\.well-known(?:\/|$)/i
-export const AP_ROUTE_RE = /^\/ap(?:\/|$)/i
-export const NODEINFO_ROUTE_RE = /^\/nodeinfo(?:\/|$)/i
+const WELL_KNOWN_ROUTE_RE = /^\/\.well-known(?:\/|$)/i
+const AP_ROUTE_RE = /^\/ap(?:\/|$)/i
+const NODEINFO_ROUTE_RE = /^\/nodeinfo(?:\/|$)/i
 // Bluesky AT-Protocol OAuth client metadata document (Phase D1), served at a bare root path (not
 // under /.well-known/) per the AT-Protocol OAuth spec — backend/api/bluesky/client-metadata.mts.
-export const CLIENT_METADATA_ROUTE_RE = /^\/client-metadata\.json$/i
+const CLIENT_METADATA_ROUTE_RE = /^\/client-metadata\.json$/i
 export { isOAuthAuthorizationServerRoute } from './oauth-authorization-server-routing.mts'
 
 export const resolveOrigin = (target: RouteTarget, env: Env): ResolveOriginResult => {

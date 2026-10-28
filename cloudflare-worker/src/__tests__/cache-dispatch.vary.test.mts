@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { dispatchToCachedOrigin, type CacheDispatchInput } from '../cache-dispatch.mts'
+import { dispatchToCachedOrigin } from '../cache-dispatch.mts'
+
+type CacheDispatchInput = Parameters<typeof dispatchToCachedOrigin>[0]
 import type { EdgeExecutionContext, Env } from '../types.mts'
 
 const unusedPurge = () => Promise.reject(new Error('purge unexpectedly called in this test'))

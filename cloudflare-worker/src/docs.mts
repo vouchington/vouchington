@@ -35,7 +35,7 @@ const ENCODED_PATH_TRAVERSAL_RE = /%(?:2e|2f|5c)/i
  * root and trailing-slash paths resolve to `index.html`; extensionless paths (no `.` in
  * the final segment) are treated as directories and resolve to `<path>/index.html` too.
  */
-export function resolveDocsObjectKey(pathname: string): string {
+function resolveDocsObjectKey(pathname: string): string {
   const withoutLeadingSlash = pathname.replace(/^\/+/, '')
   if (withoutLeadingSlash === '' || withoutLeadingSlash.endsWith('/')) {
     return `${withoutLeadingSlash}index.html`
@@ -47,9 +47,8 @@ export function resolveDocsObjectKey(pathname: string): string {
   return withoutLeadingSlash
 }
 
-export function contentTypeForKey(key: string): string {
+function contentTypeForKey(key: string): string {
   const dotIndex = key.lastIndexOf('.')
-  if (dotIndex === -1) return DEFAULT_MIME_TYPE
   const extension = key.slice(dotIndex + 1).toLowerCase()
   return MIME_TYPES[extension] ?? DEFAULT_MIME_TYPE
 }

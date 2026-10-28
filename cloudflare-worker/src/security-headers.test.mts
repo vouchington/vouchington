@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isKeyedRssReferrerRequest, shouldPreserveOriginNoReferrer } from './security-headers.mts'
+import { shouldPreserveOriginNoReferrer } from './security-headers.mts'
 
 describe('shouldPreserveOriginNoReferrer', () => {
   it.each(['facebook', 'x', 'github', 'google', 'linkedin', 'microsoft'])(
@@ -23,31 +23,16 @@ describe('shouldPreserveOriginNoReferrer', () => {
     expect(shouldPreserveOriginNoReferrer(new URL(`https://voucha.ai${pathname}`))).toBe(false)
   })
 
-  it('returns true for keyed RSS', () => {
+  it('preserves the origin policy for keyed RSS only', () => {
     expect(
       shouldPreserveOriginNoReferrer(new URL('https://voucha.ai/rss/posts?apikey=fil_xxx')),
     ).toBe(true)
-  })
-})
-
-describe('isKeyedRssReferrerRequest', () => {
-  it.each(['/rss/posts', '/rss/news', '/rss'])('returns true for keyed RSS route %s', pathname => {
-    expect(isKeyedRssReferrerRequest(new URL(`https://voucha.ai${pathname}?apikey=fil_xxx`))).toBe(
-      true,
+    expect(shouldPreserveOriginNoReferrer(new URL('https://voucha.ai/rss/posts'))).toBe(false)
+    expect(shouldPreserveOriginNoReferrer(new URL('https://voucha.ai/rss/posts?apikey='))).toBe(
+      false,
     )
-  })
-
-  it('returns false for anonymous RSS', () => {
-    expect(isKeyedRssReferrerRequest(new URL('https://voucha.ai/rss/posts'))).toBe(false)
-  })
-
-  it('returns false for an empty apikey value', () => {
-    expect(isKeyedRssReferrerRequest(new URL('https://voucha.ai/rss/posts?apikey='))).toBe(false)
-  })
-
-  it('returns false for non-RSS routes even with an apikey param', () => {
     expect(
-      isKeyedRssReferrerRequest(new URL('https://voucha.ai/api/v1/posts?apikey=fil_xxx')),
+      shouldPreserveOriginNoReferrer(new URL('https://voucha.ai/api/v1/posts?apikey=fil_xxx')),
     ).toBe(false)
   })
 })

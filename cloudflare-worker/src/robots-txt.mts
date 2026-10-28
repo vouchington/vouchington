@@ -1,7 +1,7 @@
 import { ROBOTS_DISALLOW_PREFIXES } from '@ts-shared/route-classification'
 
 // Major AI crawler user-agents to explicitly allow.
-export const AI_CRAWLERS = [
+const AI_CRAWLERS = [
   'GPTBot',
   'PerplexityBot',
   'Claude-Web',

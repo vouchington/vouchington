@@ -1,10 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   MAX_RESTARTS,
   burstAttemptNumber,
   formatWranglerRestartMessage,
-  readStableUptimeMs,
-  WRANGLER_RESTART_MARKER_PREFIX,
 } from './restart-policy.mts'
 
 const STABLE = 60_000
@@ -63,29 +61,32 @@ describe('burstAttemptNumber', () => {
   })
 })
 
-describe('readStableUptimeMs', () => {
-  it('defaults to 60s when unset', () => {
-    expect(readStableUptimeMs({})).toBe(60_000)
-  })
-
-  it('honors a positive numeric override', () => {
-    expect(readStableUptimeMs({ WRANGLER_STABLE_UPTIME_MS: '2000' })).toBe(2000)
-  })
-
-  it('falls back to the default for a non-numeric override', () => {
-    expect(readStableUptimeMs({ WRANGLER_STABLE_UPTIME_MS: 'not-a-number' })).toBe(60_000)
-  })
-
-  it('falls back to the default for a zero or negative override', () => {
-    expect(readStableUptimeMs({ WRANGLER_STABLE_UPTIME_MS: '0' })).toBe(60_000)
-    expect(readStableUptimeMs({ WRANGLER_STABLE_UPTIME_MS: '-500' })).toBe(60_000)
-  })
-})
-
 describe('formatWranglerRestartMessage', () => {
   it('formats the attempt/max marker used in stderr', () => {
     expect(formatWranglerRestartMessage(2, MAX_RESTARTS)).toBe(
-      `${WRANGLER_RESTART_MARKER_PREFIX} (attempt 2/${MAX_RESTARTS})`,
+      'start-wrangler: restarting wrangler (attempt 2/5)',
     )
+  })
+})
+
+describe('configured stable uptime behavior', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it.each([
+    [undefined, 60_000],
+    ['2000', 2_000],
+    ['not-a-number', 60_000],
+    ['0', 60_000],
+    ['-500', 60_000],
+  ])('uses the stable uptime setting %s', async (value, expected) => {
+    vi.stubEnv('WRANGLER_STABLE_UPTIME_MS', value)
+    vi.resetModules()
+
+    const policy = await import('./restart-policy.mts')
+    expect(policy.STABLE_UPTIME_MS).toBe(expected)
+    expect(policy.burstAttemptNumber(2, 2_000)).toBe(expected === 2_000 ? 1 : 3)
   })
 })

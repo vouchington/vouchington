@@ -1,9 +1,9 @@
 import '../../backend/test-helpers/s3-test-environment.mts'
 import { devices, type PlaywrightTestConfig } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { hasWranglerHttpsCerts } from '../../cloudflare-worker/scripts/wrangler/env.mts'
 import {
   assetHostResolverRule,
   originOrFallback,
@@ -25,10 +25,11 @@ const WEB_PORT = process.env.NEXT_PORT || process.env.WEB_PORT || '3000'
 const BACKEND_PORT = process.env.PORT || '2900'
 const WORKER_PORT = process.env.WORKER_PORT || '8787'
 const IMAGE_LAMBDA_PORT = process.env.IMAGE_LAMBDA_PORT || '3100'
-const HAS_LOCAL_CERTS = hasWranglerHttpsCerts(
-  join(__dirname, 'dev', 'certs', 'localhost.pem'),
-  join(__dirname, 'dev', 'certs', 'localhost-key.pem'),
-)
+const HAS_LOCAL_CERTS =
+  process.env.WRANGLER_LOCAL_PROTOCOL !== 'http' &&
+  process.env.WRANGLER_FORCE_HTTP !== '1' &&
+  existsSync(join(__dirname, 'dev', 'certs', 'localhost.pem')) &&
+  existsSync(join(__dirname, 'dev', 'certs', 'localhost-key.pem'))
 const WORKER_PROTOCOL = HAS_LOCAL_CERTS ? 'https' : 'http'
 const WEB_URL = `http://localhost:${WEB_PORT}`
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`
