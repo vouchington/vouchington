@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../../backend/entrypoints/api/index.mts'
 import * as clientRoutes from '@/lib/api/client'
+import { fetchTopicRecommendations } from '@/test-helpers/integration-client-reads'
 import * as serverRoutes from '@/lib/api/server'
 import {
   createTestPost,
@@ -222,10 +223,7 @@ describe('routes-extended', () => {
 
   describe('topic-recommendations client routes', () => {
     it('fetchTopicRecommendations includes the created topic recommendation', async () => {
-      const result = await withClientRuntime(
-        () => clientRoutes.fetchTopicRecommendations(),
-        userCookieHeader,
-      )
+      const result = await withClientRuntime(() => fetchTopicRecommendations(), userCookieHeader)
       expect(result.results.some(entry => entry.id === topicRecPostId)).toBe(true)
     })
 

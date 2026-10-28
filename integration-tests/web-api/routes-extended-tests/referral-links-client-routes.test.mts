@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as clientRoutes from '@/lib/api/client'
+import { getMyReferralClicksClient } from '@/test-helpers/integration-client-reads'
 import * as serverRoutes from '@/lib/api/server'
 import { installRoutesExtendedHarness } from '../../test-helpers/routes-extended-harness.mts'
 
@@ -85,7 +86,7 @@ describe('routes-extended', () => {
   describe('my referral-clicks client routes', () => {
     it('getMyReferralClicksClient returns 200', async () => {
       const res = await harness.withClientRuntime(
-        () => clientRoutes.getMyReferralClicksClient(),
+        () => getMyReferralClicksClient(),
         harness.userCookieHeader,
       )
       expect(res).toBeDefined()

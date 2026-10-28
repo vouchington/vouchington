@@ -6,7 +6,7 @@ import {
   insertTestRssFeedDirect,
 } from '../../../../backend/test-helpers/index.mts'
 import { rssFeedsQueue } from '../../../../backend/queues/rss-feeds/queues.mts'
-import { getRssFeedImport } from '@/lib/api/client/import-export'
+import { getRssFeedImport } from '@/test-helpers/integration-client-reads'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
 
 function unset(target: object, key: string) {
