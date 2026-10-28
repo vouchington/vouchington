@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import assert from 'node:assert'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -26,11 +25,11 @@ export async function createTestUsersDirect(count: number): Promise<PrivateUser[
   const usernames = Array.from({ length: count }, () => `test-user-${createRandomString(12)}`)
 
   const { rows } = await write<{ id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* createTestUsersDirect */
     INSERT INTO users (username)
     SELECT unnest(${usernames}::text[])
     RETURNING id
-  `),
+  `,
   )
 
   const userIds = rows.map(row => row.id)
