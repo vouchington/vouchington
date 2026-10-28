@@ -45,6 +45,12 @@ describe('durable copyright decision recovery', () => {
       submissionIds.push(intake.copyright_notice_submission_id)
       noticeIds.push(intake.copyright_notice_id)
     }
+    const emptyScope = await recoverMissingDecisionAssessments({
+      ids: [],
+      limit: 1,
+      after: encodeUuidCursorBefore(submissionIds[0]!),
+    })
+    expect(emptyScope.results).toEqual([])
     await appendTestCopyrightAssessmentWhileRecoveryWaits(
       {
         submissionId: submissionIds[4]!,
@@ -55,18 +61,21 @@ describe('durable copyright decision recovery', () => {
       () =>
         recoverMissingDecisionAssessments({
           limit: 1,
+          ids: submissionIds,
           after: encodeUuidCursorBefore(submissionIds[4]!),
         }),
     )
     // Sequential fixtures prove cap/resume independently of concurrent scheduling.
     const first = await recoverMissingDecisionAssessments({
       limit: 1,
+      ids: submissionIds,
       after: encodeUuidCursorBefore(submissionIds[0]!),
     })
     expect(first.results).toEqual([submissionIds[0]])
     expect(first.page_info.has_next_page).toBe(true)
     const second = await recoverMissingDecisionAssessments({
       limit: 1,
+      ids: submissionIds,
       after: first.page_info.end_cursor!,
     })
     expect(second.results).toEqual([submissionIds[1]])
@@ -74,6 +83,7 @@ describe('durable copyright decision recovery', () => {
       Array.from({ length: 2 }, () =>
         recoverMissingDecisionAssessments({
           limit: 1,
+          ids: submissionIds,
           after: encodeUuidCursorBefore(submissionIds[2]!),
         }),
       ),
@@ -85,12 +95,14 @@ describe('durable copyright decision recovery', () => {
     // The second call may legitimately start after the first commits and consume the next row.
     const remaining = await recoverMissingDecisionAssessments({
       limit: 1,
+      ids: submissionIds,
       after: encodeUuidCursorBefore(submissionIds[3]!),
     })
     const expectedRemaining = recovered.includes(submissionIds[3]!) ? [] : [submissionIds[3]]
     expect(remaining.results).toEqual(expectedRemaining)
     const replay = await recoverMissingDecisionAssessments({
       limit: 1,
+      ids: submissionIds,
       after: encodeUuidCursorBefore(submissionIds[0]!),
     })
     expect(replay.results).not.toContain(submissionIds[0])

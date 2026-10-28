@@ -20,11 +20,7 @@ export async function recoverMissingDecisionAssessments(
     'Invalid decision assessment cursor',
   )
   await using transaction = await beginTransaction()
-  const { rows } = await transaction<{
-    id: string
-    assessed_by_id: string
-    screening_id: string | null
-  }>(sql`/* recoverMissingCopyrightDecisionAssessments */
+  const candidateQuery = sql`/* recoverMissingCopyrightDecisionAssessments */
     WITH candidate_page AS (
       SELECT DISTINCT ON (submission_id)
         submission_id, copyright_notice_id, assessed_by_id, screening_id
@@ -46,7 +42,10 @@ export async function recoverMissingDecisionAssessments(
           AND submission.kind = 'notice'
         WHERE review.decision = 'approved'
       ) durable_decisions
-      WHERE (${afterId}::uuid IS NULL OR submission_id > ${afterId}::uuid)
+      WHERE (${afterId}::uuid IS NULL OR submission_id > ${afterId}::uuid)`
+  if (options.ids !== undefined)
+    candidateQuery.append(sql` AND submission_id = ANY(${options.ids}::uuid[])`)
+  candidateQuery.append(sql`
         AND NOT EXISTS (
         SELECT 1 FROM copyright_notice_submission_assessments assessment
         WHERE assessment.copyright_notice_submission_id = durable_decisions.submission_id
@@ -61,6 +60,11 @@ export async function recoverMissingDecisionAssessments(
     ORDER BY submission.id LIMIT ${limit + 1}
     FOR UPDATE OF notice, submission
   `)
+  const { rows } = await transaction<{
+    id: string
+    assessed_by_id: string
+    screening_id: string | null
+  }>(candidateQuery)
   const page = rows.slice(0, limit)
   // Parent locks match normal assessment writers; this separate statement observes their commits.
   await transaction(sql`/* recoverMissingCopyrightDecisionAssessments:insert */
