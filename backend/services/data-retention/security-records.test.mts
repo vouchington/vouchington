@@ -1,3 +1,4 @@
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
@@ -70,10 +71,14 @@ describe('security record cleanup', () => {
       hasMore: true,
     })
     expect(await testSecurityRetentionCursorAt(query, blockedRevokedAt)).toBe(true)
-    expect(await cleanupSecuritySourcePageInTransaction(query, 'oauth_grants', 1, now)).toEqual({
-      deleted: 1,
-      hasMore: false,
-    })
+    const { result, queries } = await withCapturedTestQueries(() =>
+      cleanupSecuritySourcePageInTransaction(query, 'oauth_grants', 1, now),
+    )
+    expect(result).toEqual({ deleted: 1, hasMore: false })
+    const deletion = queries.find(entry =>
+      entry.text.startsWith('/* deleteSecurityRetentionPage:oauth_grants */'),
+    )
+    expect(deletion?.values).toEqual([[deletableId]])
     expect(await testOAuthGrantExists(query, blockedId)).toBe(true)
     expect(await testOAuthGrantExists(query, deletableId)).toBe(false)
     // The transaction rolls back both fixture rows and its temporary cursor position.

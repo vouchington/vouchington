@@ -72,16 +72,23 @@ export async function listLivePostTopicPage(
       family === 'post_topic_relations' || family === 'post_alias_relations'
         ? `AND source.deleted_at IS NULL${family === 'post_alias_relations' ? ' AND source.votes_score_net > 0' : ''}`
         : ''
-    const result = await write<TopicRow>(
-      `/* listLivePostTopicPage:${family} */
+    // Keep complete literal names visible while preserving each statement's exact SQL text.
+    const pageBody = `
       SELECT source.${source.object}::text AS cursor, ${topic} AS topic_id
       FROM ${source.table} source ${source.join}
       WHERE source.${source.subject} = $1::uuid
         AND source.${source.object} > COALESCE($2::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
         ${active}
-      ORDER BY source.${source.object} LIMIT $3`,
-      [postId, after, limit],
-    )
+      ORDER BY source.${source.object} LIMIT $3`
+    const pageStatement =
+      family === 'post_data_topics'
+        ? `/* listLivePostTopicPage:post_data_topics */${pageBody}`
+        : family === 'post_review_topics'
+          ? `/* listLivePostTopicPage:post_review_topics */${pageBody}`
+          : family === 'post_topic_relations'
+            ? `/* listLivePostTopicPage:post_topic_relations */${pageBody}`
+            : `/* listLivePostTopicPage:post_alias_relations */${pageBody}`
+    const result = await write<TopicRow>(pageStatement, [postId, after, limit])
     rows = result.rows
   }
   return {

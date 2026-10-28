@@ -1,3 +1,4 @@
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { insertTestPostDataTopics } from '../../test-helpers/publication-test-queries.mts'
 import {
   createTestTopic,
@@ -11,6 +12,35 @@ import { listLivePostTopicPage } from './live-post-topic-pages.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'
 
 describe('live post topic continuation', () => {
+  it.each([
+    'post_data_topics',
+    'post_review_topics',
+    'post_topic_relations',
+    'post_alias_relations',
+  ] as const)('preserves the %s query annotation and continuation bindings', async family => {
+    const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
+      capture_batch_size: 2,
+    })
+    onTestFinished(restore)
+    const postId = crypto.randomUUID()
+    const after = crypto.randomUUID()
+    const { result, queries } = await withCapturedTestQueries(() =>
+      listLivePostTopicPage(postId, family, after),
+    )
+    expect(result).toEqual({ topicIds: [], cursor: null })
+    const page = queries.find(query =>
+      query.text.startsWith(`/* listLivePostTopicPage:${family} */`),
+    )
+    expect(page).toBeDefined()
+    expect(page?.values).toEqual([postId, after, 2])
+    expect(page?.text.includes('source.deleted_at IS NULL')).toBe(
+      family === 'post_topic_relations' || family === 'post_alias_relations',
+    )
+    expect(page?.text.includes('source.votes_score_net > 0')).toBe(
+      family === 'post_alias_relations',
+    )
+  })
+
   it('reads each current topic once in index order under the configured page bound', async () => {
     const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
       capture_batch_size: 2,

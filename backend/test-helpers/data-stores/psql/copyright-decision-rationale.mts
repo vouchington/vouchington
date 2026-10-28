@@ -6,8 +6,9 @@ import { encryptSecret } from '@modules/token-secrets'
 export async function insertTestCopyrightDecisionRationaleForCase(
   noticeId: string,
   recordedById: string,
+  recordedAt?: Date,
 ): Promise<string> {
-  const id = uuidv7()
+  const id = recordedAt ? uuidv7({ msecs: recordedAt.getTime() }) : uuidv7()
   await write(
     `/* insertTestCopyrightDecisionRationaleForCase */
      INSERT INTO copyright_decision_rationales

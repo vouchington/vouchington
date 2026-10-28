@@ -8,26 +8,26 @@ import {
   deleteExpiredOAuthRetentionTokens,
   lockExpiredOAuthRetentionFamilies,
 } from './retention-tokens.mts'
-
 export type OAuthAuthorizationServerRetentionResult = {
   deleted: number
   hasMore: boolean
 }
-
 const OAUTH_RETENTION_DELETE_ORDER = [
   'oauth_authorization_requests',
   'oauth_authorization_codes',
   'oauth_access_tokens',
   'oauth_refresh_token_families',
 ] as const
-
-type ExpiringOAuthTable = (typeof OAUTH_RETENTION_DELETE_ORDER)[number] | 'oauth_refresh_tokens'
+type ExpiringOAuthTable = Exclude<
+  (typeof OAUTH_RETENTION_DELETE_ORDER)[number],
+  'oauth_refresh_token_families'
+>
 const EXPIRING_OAUTH_TABLES: ReadonlySet<string> = new Set([
-  ...OAUTH_RETENTION_DELETE_ORDER,
-  'oauth_refresh_tokens',
+  'oauth_authorization_requests',
+  'oauth_authorization_codes',
+  'oauth_access_tokens',
 ])
 type RetentionWindow = { lowerBoundDate?: Date; now: Date }
-
 export async function deleteExpiredOAuthAuthorizationServerArtifacts(
   batchSize: number,
   options: { lowerBoundDate?: Date; now?: Date; maxBatches?: number } = {},
@@ -91,7 +91,6 @@ export async function deleteExpiredOAuthAuthorizationServerArtifacts(
     hasMore: deleted === budget || lastBatchFull || (await hasRemainingExpiredArtifacts(window)),
   }
 }
-
 async function deleteExpiredFamilyPhaseRows(
   query: TransactionQuery,
   window: RetentionWindow,
@@ -127,7 +126,6 @@ async function deleteExpiredFamilyPhaseRows(
     )
   return deleted
 }
-
 async function deleteExpiredRows(
   query: TransactionQuery,
   table: ExpiringOAuthTable,
@@ -139,7 +137,7 @@ async function deleteExpiredRows(
     EXPIRING_OAUTH_TABLES,
     'OAuth authorization-server retention table',
   )
-  if (table === 'oauth_access_tokens' || table === 'oauth_refresh_tokens')
+  if (table === 'oauth_access_tokens')
     return deleteExpiredOAuthRetentionTokens(
       query,
       table,
@@ -147,8 +145,8 @@ async function deleteExpiredRows(
       limit,
       await lockExpiredOAuthRetentionFamilies(query, window, limit),
     )
-  const result = await query(
-    `/* deleteExpiredOAuthAuthorizationServerArtifacts:${validatedTable} */
+  // Keep complete literal names visible while preserving each statement's exact SQL text.
+  const deleteBody = `
      /* deadlock-safe: page request/code IDs before SKIP LOCKED; family locks are skipped. */
      WITH page AS MATERIALIZED (
        SELECT artifact.id, artifact.expires_at FROM ${validatedTable} AS artifact
@@ -162,12 +160,14 @@ async function deleteExpiredRows(
        ORDER BY page.expires_at, page.id
        FOR UPDATE OF artifact SKIP LOCKED
      )
-     DELETE FROM ${validatedTable} target USING candidates WHERE target.id = candidates.id`,
-    [window.now, window.lowerBoundDate ?? null, limit],
-  )
+     DELETE FROM ${validatedTable} target USING candidates WHERE target.id = candidates.id`
+  const deleteStatement =
+    validatedTable === 'oauth_authorization_requests'
+      ? `/* deleteExpiredOAuthAuthorizationServerArtifacts:oauth_authorization_requests */${deleteBody}`
+      : `/* deleteExpiredOAuthAuthorizationServerArtifacts:oauth_authorization_codes */${deleteBody}`
+  const result = await query(deleteStatement, [window.now, window.lowerBoundDate ?? null, limit])
   return result.rowCount ?? 0
 }
-
 async function deleteEmptyFamilies(
   query: TransactionQuery,
   familyIds: readonly string[],

@@ -1,3 +1,4 @@
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
@@ -121,10 +122,22 @@ describe('OAuth token revocation and retention', () => {
     const window = createTestExpiryWindow()
     await setTestOAuthArtifactExpiry(flow.client.client_id, window.firstEligibleDate)
 
-    const retention = await deleteExpiredOAuthAuthorizationServerArtifacts(100, {
-      lowerBoundDate: window.lowerBoundDate,
-      now: window.now,
-    })
+    const { result: retention, queries } = await withCapturedTestQueries(() =>
+      deleteExpiredOAuthAuthorizationServerArtifacts(100, {
+        lowerBoundDate: window.lowerBoundDate,
+        now: window.now,
+      }),
+    )
+    const codes = queries.filter(query =>
+      query.text.startsWith(
+        '/* deleteExpiredOAuthAuthorizationServerArtifacts:oauth_authorization_codes */',
+      ),
+    )
+    expect(codes.length).toBeGreaterThan(0)
+    for (const query of codes) {
+      expect(query.values.slice(0, 2)).toEqual([window.now, window.lowerBoundDate])
+      expect(query.values[2]).toBeGreaterThan(0)
+    }
     expect(retention.deleted).toBeGreaterThanOrEqual(4)
     expect(retention.hasMore).toBe(false)
     await expect(getTestOAuthClientStorage(flow.client.client_id)).resolves.not.toBeNull()

@@ -1,3 +1,4 @@
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { describe, expect, it } from 'vitest'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
@@ -41,7 +42,13 @@ describe('security evidence preservation', () => {
     await cleanupSecuritySourcePageInTransaction(query, 'oauth_events', 32, now)
     expect(await testOAuthEventExists(query, eventId)).toBe(true)
     await releaseTestOpenPreservationHold(query, user.id, user.id)
-    await cleanupSecuritySourcePageInTransaction(query, 'oauth_events', 32, now)
+    const { queries } = await withCapturedTestQueries(() =>
+      cleanupSecuritySourcePageInTransaction(query, 'oauth_events', 32, now),
+    )
+    const deletion = queries.find(entry =>
+      entry.text.startsWith('/* deleteSecurityRetentionPage:oauth_events */'),
+    )
+    expect(deletion?.values).toEqual([[eventId], sourcePlan('oauth_events', now).cutoffAt])
     expect(await testOAuthEventExists(query, eventId)).toBe(false)
   })
 

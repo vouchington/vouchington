@@ -1,3 +1,4 @@
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { beginTransaction } from '@voucha/test-helpers'
 import { createTestExpiryWindow } from '@voucha/test-helpers/data'
@@ -33,10 +34,16 @@ describe('OAuth retention request locking', () => {
       now: window.upperBoundDate,
       maxBatches: 1,
     }
-    expect(await deleteExpiredOAuthAuthorizationServerArtifacts(1, options)).toEqual({
-      deleted: 0,
-      hasMore: true,
-    })
+    const { result, queries } = await withCapturedTestQueries(() =>
+      deleteExpiredOAuthAuthorizationServerArtifacts(1, options),
+    )
+    expect(result).toEqual({ deleted: 0, hasMore: true })
+    const page = queries.find(query =>
+      query.text.startsWith(
+        '/* deleteExpiredOAuthAuthorizationServerArtifacts:oauth_authorization_requests */',
+      ),
+    )
+    expect(page?.values).toEqual([window.upperBoundDate, window.lowerBoundDate, 1])
     expect((await getTestOAuthRetentionRowCounts(flow.client.client_id)).requests).toBe(2)
     await holder.rollback()
     released = true

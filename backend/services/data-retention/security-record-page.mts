@@ -46,15 +46,38 @@ export async function cleanupSecuritySourcePageInTransaction(
     source === 'copyright_rationales_noncase' ||
     source === 'oauth_events' ||
     source === 'oauth_native_mints'
-  const page = await query<{ id: string; key_at: string }>(
-    `/* listSecurityRetentionPage:${source} */
+  // Keep complete literal names visible while preserving each statement's exact SQL text.
+  const pageBody = `
      SELECT target.id, (${plan.keyAt})::text AS key_at
      FROM ${plan.table} target
      WHERE ${plan.predicate} AND ${keyset}
      ORDER BY ${order} LIMIT ${limitParameter}
-     ${needsAccountLocks ? '' : 'FOR UPDATE OF target SKIP LOCKED'}`,
-    pageParameters,
-  )
+     ${needsAccountLocks ? '' : 'FOR UPDATE OF target SKIP LOCKED'}`
+  const pageStatement =
+    source === 'oauth_events'
+      ? `/* listSecurityRetentionPage:oauth_events */${pageBody}`
+      : source === 'oauth_native_mints'
+        ? `/* listSecurityRetentionPage:oauth_native_mints */${pageBody}`
+        : source === 'oauth_grants'
+          ? `/* listSecurityRetentionPage:oauth_grants */${pageBody}`
+          : source === 'oauth_grant_anchors'
+            ? `/* listSecurityRetentionPage:oauth_grant_anchors */${pageBody}`
+            : source === 'oauth_clients'
+              ? `/* listSecurityRetentionPage:oauth_clients */${pageBody}`
+              : source === 'api_keys_revoked'
+                ? `/* listSecurityRetentionPage:api_keys_revoked */${pageBody}`
+                : source === 'api_keys_expired'
+                  ? `/* listSecurityRetentionPage:api_keys_expired */${pageBody}`
+                  : source === 'facebook_friends'
+                    ? `/* listSecurityRetentionPage:facebook_friends */${pageBody}`
+                    : source === 'github_friends'
+                      ? `/* listSecurityRetentionPage:github_friends */${pageBody}`
+                      : source === 'x_friends'
+                        ? `/* listSecurityRetentionPage:x_friends */${pageBody}`
+                        : source === 'copyright_rationales_erased'
+                          ? `/* listSecurityRetentionPage:copyright_rationales_erased */${pageBody}`
+                          : `/* listSecurityRetentionPage:copyright_rationales_noncase */${pageBody}`
+  const page = await query<{ id: string; key_at: string }>(pageStatement, pageParameters)
   const scanned = page.rows.slice(0, batchSize)
   let selected = scanned
   if (needsAccountLocks && scanned.length > 0) {
@@ -94,12 +117,34 @@ export async function cleanupSecuritySourcePageInTransaction(
   if (selected.length > 0) {
     const deleteParameters: unknown[] = [selected.map(row => row.id)]
     if (plan.deletePredicateUsesCutoff) deleteParameters.push(plan.cutoffAt)
-    const result = await query(
-      `/* deleteSecurityRetentionPage:${source} */
+    const deleteBody = `
        DELETE FROM ${plan.table} target
-       WHERE target.id = ANY($1::uuid[]) AND ${plan.deletePredicate ?? 'TRUE'}`,
-      deleteParameters,
-    )
+       WHERE target.id = ANY($1::uuid[]) AND ${plan.deletePredicate ?? 'TRUE'}`
+    const deleteStatement =
+      source === 'oauth_events'
+        ? `/* deleteSecurityRetentionPage:oauth_events */${deleteBody}`
+        : source === 'oauth_native_mints'
+          ? `/* deleteSecurityRetentionPage:oauth_native_mints */${deleteBody}`
+          : source === 'oauth_grants'
+            ? `/* deleteSecurityRetentionPage:oauth_grants */${deleteBody}`
+            : source === 'oauth_grant_anchors'
+              ? `/* deleteSecurityRetentionPage:oauth_grant_anchors */${deleteBody}`
+              : source === 'oauth_clients'
+                ? `/* deleteSecurityRetentionPage:oauth_clients */${deleteBody}`
+                : source === 'api_keys_revoked'
+                  ? `/* deleteSecurityRetentionPage:api_keys_revoked */${deleteBody}`
+                  : source === 'api_keys_expired'
+                    ? `/* deleteSecurityRetentionPage:api_keys_expired */${deleteBody}`
+                    : source === 'facebook_friends'
+                      ? `/* deleteSecurityRetentionPage:facebook_friends */${deleteBody}`
+                      : source === 'github_friends'
+                        ? `/* deleteSecurityRetentionPage:github_friends */${deleteBody}`
+                        : source === 'x_friends'
+                          ? `/* deleteSecurityRetentionPage:x_friends */${deleteBody}`
+                          : source === 'copyright_rationales_erased'
+                            ? `/* deleteSecurityRetentionPage:copyright_rationales_erased */${deleteBody}`
+                            : `/* deleteSecurityRetentionPage:copyright_rationales_noncase */${deleteBody}`
+    const result = await query(deleteStatement, deleteParameters)
     deleted = result.rowCount ?? 0
   }
   const hasMore = page.rows.length > batchSize
