@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
@@ -24,10 +23,10 @@ export async function insertTestSpendingCategory(data: {
 
   // Insert into spending_category_topics table
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestSpendingCategory */
     INSERT INTO spending_category_topics (topic_id)
     VALUES (${topicId})
-  `),
+  `,
   )
 
   return topicId
@@ -40,14 +39,14 @@ export async function insertTestSpendingEntry(data: {
 }): Promise<void> {
   const amount = data.amount ?? DEFAULT_SPENDING_AMOUNT
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestSpendingEntry */
     INSERT INTO spending_entries (
       individual_id, spending_category_topic_id, amount_minor_units, currency_code
     )
     VALUES (
       ${data.individualId}, ${data.spendingCategoryId}, ${amount.amount}, ${amount.currency}
     )
-  `),
+  `,
   )
 }
 
@@ -58,14 +57,14 @@ export async function insertTestHouseholdSpendingEntry(data: {
 }): Promise<void> {
   const amount = data.amount ?? DEFAULT_SPENDING_AMOUNT
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestHouseholdSpendingEntry */
     INSERT INTO spending_entries (
       household_id, spending_category_topic_id, amount_minor_units, currency_code
     )
     VALUES (
       ${data.householdId}, ${data.spendingCategoryId}, ${amount.amount}, ${amount.currency}
     )
-  `),
+  `,
   )
 }
 
