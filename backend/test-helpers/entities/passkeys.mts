@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
@@ -8,7 +7,7 @@ import { v7 } from 'uuid'
 // controlled by crafting the UUIDv7 id itself (matching `msecs`, differing tail).
 export async function insertTestPasskey(userId: string, suffix: string, id?: string) {
   const { rows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestPasskey */
     INSERT INTO user_passkeys (id, user_id, credential_id, public_key, counter, device_type, is_backed_up, name)
     VALUES (
       ${id ?? v7()},
@@ -21,18 +20,18 @@ export async function insertTestPasskey(userId: string, suffix: string, id?: str
       ${`Test Passkey ${suffix}`}
     )
     RETURNING id, name, device_type, is_backed_up, created_at, last_used_at
-  `),
+  `,
   )
   return rows[0] as { id: string; name: string }
 }
 
 export async function countTestPasskeys(userId: string): Promise<number> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* countTestPasskeys */
     SELECT COUNT(*)::int AS count
     FROM user_passkeys
     WHERE user_id = ${userId}
-  `),
+  `,
   )
   return rows[0]?.count ?? 0
 }
