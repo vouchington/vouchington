@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   API_ROUTE_RE,
-  AP_ROUTE_RE,
-  CLIENT_METADATA_ROUTE_RE,
-  INFRA_ROUTE_RE,
-  MD_ROUTE_RE,
-  NODEINFO_ROUTE_RE,
   RSS_ROUTE_RE,
-  WELL_KNOWN_ROUTE_RE,
   getOriginPathOverride,
   getRouteTarget,
   isAdminBackendRoute,
@@ -70,7 +64,7 @@ describe('routing', () => {
     expect(getRouteTarget('/infra/ping')).toBe('backend')
     expect(getRouteTarget('/INFRA/ping')).toBe('backend')
     expect(getRouteTarget('/infra/health')).toBe('backend')
-    expect(INFRA_ROUTE_RE.test('/infrastructure')).toBe(false)
+    expect(getRouteTarget('/infrastructure')).toBe('web')
   })
 
   it('routes /images/* to web (DNS for images-<env>.voucha.ai points directly at CloudFront; web frontend mints absolute URLs so the worker never sees these paths in production)', () => {
@@ -139,15 +133,10 @@ describe('routing', () => {
     expect(getRouteTarget('/admin/components/shell')).toBe('web')
   })
 
-  it('identifies md routes', () => {
-    expect(MD_ROUTE_RE.test('/md')).toBe(true)
-    expect(MD_ROUTE_RE.test('/md/')).toBe(true)
-    expect(MD_ROUTE_RE.test('/MD/posts')).toBe(true)
-    expect(MD_ROUTE_RE.test('/md/posts')).toBe(true)
-    expect(MD_ROUTE_RE.test('/md/users/johndoe')).toBe(true)
-    expect(MD_ROUTE_RE.test('/mdx')).toBe(false)
-    expect(MD_ROUTE_RE.test('/admin')).toBe(false)
-    expect(MD_ROUTE_RE.test('/about')).toBe(false)
+  it('routes markdown prefix near misses to web', () => {
+    expect(getRouteTarget('/mdx')).toBe('web')
+    expect(getRouteTarget('/admin')).toBe('web')
+    expect(getRouteTarget('/about')).toBe('web')
   })
 
   it('routes RSS paths to backend', () => {
@@ -183,30 +172,27 @@ describe('routing', () => {
     expect(getRouteTarget('/.well-known/agent-skills.json')).toBe('backend')
   })
 
-  it('identifies well-known routes case-insensitively', () => {
-    expect(WELL_KNOWN_ROUTE_RE.test('/.well-known')).toBe(true)
-    expect(WELL_KNOWN_ROUTE_RE.test('/.well-known/')).toBe(true)
-    expect(WELL_KNOWN_ROUTE_RE.test('/.well-known/webfinger')).toBe(true)
-    expect(WELL_KNOWN_ROUTE_RE.test('/.WELL-KNOWN/webfinger')).toBe(true)
-    expect(WELL_KNOWN_ROUTE_RE.test('/well-known/webfinger')).toBe(false)
-    expect(WELL_KNOWN_ROUTE_RE.test('/.well-knownx')).toBe(false)
+  it('routes well-known prefix near misses to web', () => {
+    expect(getRouteTarget('/.well-known')).toBe('backend')
+    expect(getRouteTarget('/.well-known/')).toBe('backend')
+    expect(getRouteTarget('/.WELL-KNOWN/webfinger')).toBe('backend')
+    expect(getRouteTarget('/well-known/webfinger')).toBe('web')
+    expect(getRouteTarget('/.well-knownx')).toBe('web')
   })
 
-  it('identifies AP routes case-insensitively without matching /api', () => {
-    expect(AP_ROUTE_RE.test('/ap')).toBe(true)
-    expect(AP_ROUTE_RE.test('/ap/')).toBe(true)
-    expect(AP_ROUTE_RE.test('/AP/inbox')).toBe(true)
-    expect(AP_ROUTE_RE.test('/ap/users/abc')).toBe(true)
-    expect(AP_ROUTE_RE.test('/api')).toBe(false)
-    expect(AP_ROUTE_RE.test('/api/v1/posts')).toBe(false)
-    expect(AP_ROUTE_RE.test('/apple')).toBe(false)
+  it('routes AP prefix near misses to web', () => {
+    expect(getRouteTarget('/ap')).toBe('backend')
+    expect(getRouteTarget('/ap/')).toBe('backend')
+    expect(getRouteTarget('/AP/inbox')).toBe('backend')
+    expect(getRouteTarget('/ap/users/abc')).toBe('backend')
+    expect(getRouteTarget('/apple')).toBe('web')
   })
 
-  it('identifies nodeinfo routes case-insensitively', () => {
-    expect(NODEINFO_ROUTE_RE.test('/nodeinfo')).toBe(true)
-    expect(NODEINFO_ROUTE_RE.test('/nodeinfo/2.0')).toBe(true)
-    expect(NODEINFO_ROUTE_RE.test('/NODEINFO/2.0')).toBe(true)
-    expect(NODEINFO_ROUTE_RE.test('/nodeinformation')).toBe(false)
+  it('routes nodeinfo prefix near misses to web', () => {
+    expect(getRouteTarget('/nodeinfo')).toBe('backend')
+    expect(getRouteTarget('/nodeinfo/2.0')).toBe('backend')
+    expect(getRouteTarget('/NODEINFO/2.0')).toBe('backend')
+    expect(getRouteTarget('/nodeinformation')).toBe('web')
   })
 
   it('routes the Bluesky AT-Protocol client-metadata document to backend (Phase D1)', () => {
@@ -214,11 +200,10 @@ describe('routing', () => {
     expect(getRouteTarget('/CLIENT-METADATA.JSON')).toBe('backend')
   })
 
-  it('identifies the client-metadata route exactly, not as a prefix', () => {
-    expect(CLIENT_METADATA_ROUTE_RE.test('/client-metadata.json')).toBe(true)
-    expect(CLIENT_METADATA_ROUTE_RE.test('/CLIENT-METADATA.JSON')).toBe(true)
-    expect(CLIENT_METADATA_ROUTE_RE.test('/client-metadata.json/extra')).toBe(false)
-    expect(CLIENT_METADATA_ROUTE_RE.test('/api/client-metadata.json')).toBe(false)
+  it('routes only the exact client-metadata path outside the API prefix', () => {
+    expect(getRouteTarget('/client-metadata.json')).toBe('backend')
+    expect(getRouteTarget('/CLIENT-METADATA.JSON')).toBe('backend')
+    expect(getRouteTarget('/client-metadata.json/extra')).toBe('web')
   })
 
   it('identifies admin backend routes', () => {

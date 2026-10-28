@@ -6,7 +6,6 @@ import {
   createWranglerStderrConsoleFilterState,
   createWranglerEvent,
   filterWranglerStderrConsoleLines,
-  isWranglerReadyText,
   stripAnsi,
 } from '../config.mts'
 
@@ -48,9 +47,9 @@ describe('start-wrangler config', () => {
   })
 
   it('detects wrangler ready output', () => {
-    expect(isWranglerReadyText('Ready on http://localhost:3902')).toBe(true)
-    expect(isWranglerReadyText('ready on https://localhost:3902')).toBe(true)
-    expect(isWranglerReadyText('starting wrangler dev')).toBe(false)
+    expect(appendWranglerReadySearchText('', 'Ready on http://localhost:3902').isReady).toBe(true)
+    expect(appendWranglerReadySearchText('', 'ready on https://localhost:3902').isReady).toBe(true)
+    expect(appendWranglerReadySearchText('', 'starting wrangler dev').isReady).toBe(false)
   })
 
   it('detects ready output before trimming the retained search text', () => {

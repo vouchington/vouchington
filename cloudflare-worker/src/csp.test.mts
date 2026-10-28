@@ -1,10 +1,29 @@
 import { describe, it, expect } from 'vitest'
-import { buildWebCsp, REGISTERED_WEB_CSP_ORIGINS } from './csp.mts'
+import { buildWebCsp } from './csp.mts'
 
 const BROWSER_UPLOAD_ORIGINS = JSON.stringify([
   'https://test-images.s3.us-west-2.amazonaws.com',
   'https://test-images.s3.dualstack.us-west-2.amazonaws.com',
 ])
+const REGISTERED_WEB_CSP_ORIGINS = [
+  { origin: 'https://g.voucha.ai', directives: ['script-src', 'frame-src', 'connect-src'] },
+  {
+    origin: 'https://challenges.cloudflare.com',
+    directives: ['script-src', 'frame-src', 'connect-src'],
+  },
+  { origin: 'https://connect.facebook.net', directives: ['script-src', 'connect-src'] },
+  { origin: 'https://accounts.google.com', directives: ['script-src', 'frame-src', 'connect-src'] },
+  { origin: 'https://appleid.cdn-apple.com', directives: ['script-src', 'connect-src'] },
+  { origin: 'https://www.google.com', directives: ['script-src', 'frame-src', 'connect-src'] },
+  { origin: 'https://www.gstatic.com', directives: ['script-src'] },
+  { origin: 'https://www.youtube-nocookie.com', directives: ['frame-src'] },
+  { origin: 'https://player.vimeo.com', directives: ['frame-src'] },
+  { origin: 'https://graph.facebook.com', directives: ['connect-src'] },
+  { origin: 'https://www.facebook.com', directives: ['connect-src'] },
+  { origin: 'https://hn.algolia.com', directives: ['connect-src'] },
+  { origin: 'https://images-staging.voucha.ai', directives: ['img-src'] },
+  { origin: 'https://images.voucha.ai', directives: ['img-src'] },
+] as const
 
 const buildTestWebCsp = (
   assetOrigin?: string,
@@ -130,7 +149,7 @@ describe('buildWebCsp', () => {
   })
 
   it('keeps every explicit third-party origin in the generated CSP registered', () => {
-    const registeredOrigins = new Set(REGISTERED_WEB_CSP_ORIGINS.map(entry => entry.origin))
+    const registeredOrigins = new Set<string>(REGISTERED_WEB_CSP_ORIGINS.map(entry => entry.origin))
     for (const origin of JSON.parse(BROWSER_UPLOAD_ORIGINS) as string[])
       registeredOrigins.add(origin)
     const origins = buildTestWebCsp().match(/https:\/\/[^\s;]+/g) ?? []

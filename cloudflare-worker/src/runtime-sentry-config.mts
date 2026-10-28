@@ -1,7 +1,7 @@
 import { buildRuntimeSentryConfigScript } from '@ts-shared/utils/runtime-sentry-config-script'
 import type { Env } from './types.mts'
 
-export const RUNTIME_SENTRY_CONFIG_PATH = '/runtime-sentry-config.js'
+const RUNTIME_SENTRY_CONFIG_PATH = '/runtime-sentry-config.js'
 
 /** Serves the minimal runtime config needed when Next's global-error document replaces RootLayout. */
 export function getRuntimeSentryConfigResponse(request: Request, env: Env): Response | null {

@@ -25,7 +25,7 @@ export function createSentryOptions(env: Env): CloudflareOptions {
   })
 }
 
-export interface WorkerExceptionTags {
+interface WorkerExceptionTags {
   routeTarget?: string
   botTier?: BotTier | null
   countryCode?: string | null

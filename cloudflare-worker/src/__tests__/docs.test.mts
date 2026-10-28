@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { R2Bucket, R2ObjectBody } from '@cloudflare/workers-types/index.ts'
 
-import { contentTypeForKey, resolveDocsObjectKey, serveDocs } from '../docs.mts'
+import { serveDocs } from '../docs.mts'
 import type { Env } from '../types.mts'
 
 const BASIC_AUTH_CREDENTIALS = 'alice:secret,bob:other:secret'
@@ -19,11 +19,14 @@ function authenticatedRequest(path = '/'): Request {
 function createFakeBucket(objects: Record<string, string>): {
   bucket: R2Bucket
   getCallCount: () => number
+  getKeys: () => string[]
 } {
   let calls = 0
+  const keys: string[] = []
   const bucket = {
     get: (key: string) => {
       calls += 1
+      keys.push(key)
       const content = objects[key]
       if (content === undefined) return Promise.resolve(null)
       // Ambient ReadableStream (from @types/node, pulled in via tsconfig `types: ["node"]`) and
@@ -32,7 +35,7 @@ function createFakeBucket(objects: Record<string, string>): {
       return Promise.resolve({ body: new Response(content).body } as unknown as R2ObjectBody)
     },
   } as unknown as R2Bucket
-  return { bucket, getCallCount: () => calls }
+  return { bucket, getCallCount: () => calls, getKeys: () => keys }
 }
 
 function configuredEnv(bucket?: R2Bucket): Env {
@@ -42,25 +45,20 @@ function configuredEnv(bucket?: R2Bucket): Env {
   }
 }
 
-describe('resolveDocsObjectKey', () => {
-  it('resolves root to index.html', () => {
-    expect(resolveDocsObjectKey('/')).toBe('index.html')
+describe('serveDocs path and content mapping', () => {
+  it.each([
+    ['/', 'index.html'],
+    ['/guide/', 'guide/index.html'],
+    ['/mcp', 'mcp/index.html'],
+    ['/mcp/mcp.json', 'mcp/mcp.json'],
+  ])('reads %s from its published R2 key', async (path, key) => {
+    const { bucket, getKeys } = createFakeBucket({ [key]: 'docs' })
+    const response = await serveDocs(authenticatedRequest(path), configuredEnv(bucket))
+
+    expect(response.status).toBe(200)
+    expect(getKeys()).toEqual([key])
   })
 
-  it('resolves trailing-slash paths to <path>index.html', () => {
-    expect(resolveDocsObjectKey('/guide/')).toBe('guide/index.html')
-  })
-
-  it('resolves extensionless paths to <path>/index.html', () => {
-    expect(resolveDocsObjectKey('/mcp')).toBe('mcp/index.html')
-  })
-
-  it('leaves paths with a file extension unchanged', () => {
-    expect(resolveDocsObjectKey('/mcp/mcp.json')).toBe('mcp/mcp.json')
-  })
-})
-
-describe('contentTypeForKey', () => {
   it.each([
     ['index.html', 'text/html; charset=utf-8'],
     ['data.json', 'application/json; charset=utf-8'],
@@ -70,16 +68,14 @@ describe('contentTypeForKey', () => {
     ['photo.png', 'image/png'],
     ['README.md', 'text/markdown; charset=utf-8'],
     ['notes.txt', 'text/plain; charset=utf-8'],
-  ])('maps %s to %s', (key, expected) => {
-    expect(contentTypeForKey(key)).toBe(expected)
-  })
+    ['archive.tar.gz', 'application/octet-stream'],
+    ['LICENSE.', 'application/octet-stream'],
+  ])('serves %s with the appropriate content type', async (key, contentType) => {
+    const { bucket } = createFakeBucket({ [key]: 'docs' })
+    const response = await serveDocs(authenticatedRequest(`/${key}`), configuredEnv(bucket))
 
-  it('defaults to application/octet-stream for unknown extensions', () => {
-    expect(contentTypeForKey('archive.tar.gz')).toBe('application/octet-stream')
-  })
-
-  it('defaults to application/octet-stream when the key has no extension', () => {
-    expect(contentTypeForKey('LICENSE')).toBe('application/octet-stream')
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe(contentType)
   })
 })
 

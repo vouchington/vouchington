@@ -74,13 +74,13 @@ export function getStaleWranglerCachePaths(options: StaleWranglerCacheOptions): 
   return [...new Set(paths)]
 }
 
-export function getWranglerLogLevel(isCi: boolean, override?: string): string {
+function getWranglerLogLevel(isCi: boolean, override?: string): string {
   return override?.trim() || (isCi ? 'error' : 'none')
 }
 
 // In CI, pass port 0 so the OS assigns the inspector port atomically, closing the TOCTOU gap
 // between pre-allocation and bind() (option 4 from #5365; makes the option-3 retry fallback moot).
-export function resolveEffectiveInspectorPort(isCi: boolean, configuredPort: string): string {
+function resolveEffectiveInspectorPort(isCi: boolean, configuredPort: string): string {
   return isCi ? '0' : configuredPort
 }
 
@@ -120,11 +120,7 @@ export function buildWranglerArgs(options: BuildWranglerArgsOptions): {
   return { args, logLevel, persistTo }
 }
 
-export const WRANGLER_READY_RE = /\bReady on\b/i
-
-export function isWranglerReadyText(text: string): boolean {
-  return WRANGLER_READY_RE.test(text)
-}
+const WRANGLER_READY_RE = /\bReady on\b/i
 
 export function appendWranglerReadySearchText(
   previousText: string,

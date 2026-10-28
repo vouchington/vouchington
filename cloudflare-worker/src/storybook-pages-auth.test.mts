@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import storybookPagesAuthWorker, {
-  serveStorybookPages,
-  type StorybookPagesEnv,
-} from './storybook-pages-auth.mts'
+import storybookPagesAuthWorker from './storybook-pages-auth.mts'
+
+type StorybookPagesEnv = Parameters<typeof storybookPagesAuthWorker.fetch>[1]
 
 function basic(value: string): string {
   return `Basic ${btoa(value)}`
@@ -24,7 +23,7 @@ describe('Storybook Pages Basic Auth worker', () => {
     const fetchAssets = vi.fn<(request: Request) => Promise<Response>>()
 
     for (const credentials of [null, '', 'alice:secret,bad']) {
-      const response = await serveStorybookPages(
+      const response = await storybookPagesAuthWorker.fetch(
         new Request('https://voucha-storybook.pages.dev/', {
           headers: { authorization: basic('alice:secret') },
         }),
@@ -40,7 +39,7 @@ describe('Storybook Pages Basic Auth worker', () => {
     const fetchAssets = vi.fn<(request: Request) => Promise<Response>>()
 
     for (const authorization of [undefined, basic('alice:wrong')]) {
-      const response = await serveStorybookPages(
+      const response = await storybookPagesAuthWorker.fetch(
         new Request('https://voucha-storybook.pages.dev/', {
           ...(authorization ? { headers: { authorization } } : {}),
         }),
@@ -55,7 +54,7 @@ describe('Storybook Pages Basic Auth worker', () => {
   })
 
   it('fails closed when the Pages asset binding is missing', async () => {
-    const response = await serveStorybookPages(
+    const response = await storybookPagesAuthWorker.fetch(
       new Request('https://voucha-storybook.pages.dev/', {
         headers: { authorization: basic('alice:secret') },
       }),
@@ -71,7 +70,7 @@ describe('Storybook Pages Basic Auth worker', () => {
       expect(request.headers.has('authorization')).toBe(false)
       return Promise.resolve(new Response('storybook'))
     })
-    const response = await serveStorybookPages(
+    const response = await storybookPagesAuthWorker.fetch(
       new Request('https://voucha-storybook.pages.dev/', {
         headers: { authorization: basic('alice:secret') },
       }),
@@ -85,7 +84,7 @@ describe('Storybook Pages Basic Auth worker', () => {
   })
 
   it('preserves the Storybook asset response status, headers, and body', async () => {
-    const response = await serveStorybookPages(
+    const response = await storybookPagesAuthWorker.fetch(
       new Request('https://voucha-storybook.pages.dev/missing', {
         headers: { authorization: basic('alice:secret') },
       }),

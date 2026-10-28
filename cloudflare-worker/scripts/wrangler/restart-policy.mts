@@ -12,7 +12,7 @@ export const MAX_RESTARTS = 5
 // ongoing restart loop -- the systemd `StartLimitIntervalSec` analogue. Well above the ~3.5s
 // observed wrangler boot time. Overridable so fault injection can exercise the window in seconds
 // instead of minutes; see cloudflare-worker/scripts/README.md.
-export function readStableUptimeMs(env: NodeJS.ProcessEnv = process.env): number {
+function readStableUptimeMs(env: NodeJS.ProcessEnv = process.env): number {
   const raw = env.WRANGLER_STABLE_UPTIME_MS
   if (!raw) return DEFAULT_STABLE_UPTIME_MS
   const parsed = Number(raw)
@@ -38,7 +38,7 @@ export function burstAttemptNumber(
   return uptimeMs >= stableUptimeMs ? 1 : previousAttempt + 1
 }
 
-export const WRANGLER_RESTART_MARKER_PREFIX = 'start-wrangler: restarting wrangler'
+const WRANGLER_RESTART_MARKER_PREFIX = 'start-wrangler: restarting wrangler'
 
 export function formatWranglerRestartMessage(attempt: number, max: number): string {
   return `${WRANGLER_RESTART_MARKER_PREFIX} (attempt ${attempt}/${max})`

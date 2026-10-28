@@ -70,7 +70,7 @@ function requireCachePlaceholderNonce(env: Env): string {
   return nonce
 }
 
-export type CacheDispatchInput = {
+type CacheDispatchInput = {
   audience: CacheAudience
   /** Only 'unknown' ever produces a dispatch header (see below) — known bots and human
    * traffic are never subject to checkBotRateLimit. */

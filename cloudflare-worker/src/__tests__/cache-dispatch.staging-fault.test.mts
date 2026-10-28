@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { dispatchToCachedOrigin, type CacheDispatchInput } from '../cache-dispatch.mts'
+import { dispatchToCachedOrigin } from '../cache-dispatch.mts'
+
+type CacheDispatchInput = Parameters<typeof dispatchToCachedOrigin>[0]
 import { INTERNAL_CANARY_FAULT_HEADER } from '../staging-control-headers.mts'
 import type { EdgeExecutionContext, Env } from '../types.mts'
 

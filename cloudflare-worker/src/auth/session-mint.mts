@@ -70,7 +70,7 @@ function isLocalOrigin(origin: string | undefined): boolean {
 // arrives here unverified; that case independently verifies dt on its own, deferred to this call
 // (post-rate-limit, and skipped entirely for bot/federation paths that never reach ensureSession)
 // rather than unconditionally on every request.
-export async function isBackendIssuedAnonSession(
+async function isBackendIssuedAnonSession(
   deviceToken: string | null,
   sessionToken: string | null,
   devicePayload: DeviceTokenPayload | null,

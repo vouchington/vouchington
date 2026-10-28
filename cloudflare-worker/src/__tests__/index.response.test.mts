@@ -4,8 +4,6 @@ import worker from '../index.mts'
 
 import { ROBOTS_DISALLOW_PREFIXES } from '@ts-shared/route-classification'
 
-import { AI_CRAWLERS } from '../robots-txt.mts'
-
 import {
   createContext,
   restoreGlobals,
@@ -78,7 +76,23 @@ describe('worker fetch handler — response headers and edge behaviors', () => {
     expect(body).toContain('Sitemap: https://voucha.ai/sitemap.xml')
     // Each AI crawler block must contain Allow: / and all ROBOTS_DISALLOW_PREFIXES,
     // and must not appear in another bot's block.
-    for (const bot of AI_CRAWLERS) {
+    for (const bot of [
+      'GPTBot',
+      'PerplexityBot',
+      'Claude-Web',
+      'anthropic-ai',
+      'ClaudeBot',
+      'OAI-SearchBot',
+      'Google-Extended',
+      'Bingbot',
+      'Applebot',
+      'Amazonbot',
+      'CCBot',
+      'Meta-ExternalAgent',
+      'DuckAssistBot',
+      'Google-CloudVertexBot',
+      'Bytespider',
+    ]) {
       const botIndex = body.indexOf(`User-agent: ${bot}\n`)
       expect(botIndex).toBeGreaterThan(-1)
       // Find the text between this bot's User-agent line and the next blank line

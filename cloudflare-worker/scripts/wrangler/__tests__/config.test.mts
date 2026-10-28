@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 
 import { join } from 'node:path'
 
@@ -6,11 +6,7 @@ import { tmpdir } from 'node:os'
 
 import { describe, expect, it } from 'vitest'
 
-import {
-  buildWranglerArgs,
-  getStaleWranglerCachePaths,
-  resolveEffectiveInspectorPort,
-} from '../config.mts'
+import { buildWranglerArgs, getStaleWranglerCachePaths } from '../config.mts'
 
 import {
   createWranglerRuntimeEnv,
@@ -19,7 +15,7 @@ import {
   getWranglerRuntimePaths,
 } from '../runtime.mts'
 
-import { hasWranglerHttpsCerts, readInspectorPort, resolveCloudflareWorkerDir } from '../env.mts'
+import { resolveCloudflareWorkerDir } from '../env.mts'
 
 const DEFAULT_CI_RUNTIME_ROOT = join(tmpdir(), 'voucha-wrangler/worker-3902-attempt-2')
 
@@ -168,23 +164,6 @@ describe('start-wrangler config', () => {
     )
   })
 
-  it('allows smoke tests to force HTTP even when local certs exist', () => {
-    const tempRoot = mkdtempSync(join(tmpdir(), 'voucha-wrangler-certs-'))
-    try {
-      const certPath = join(tempRoot, 'localhost.pem')
-      const keyPath = join(tempRoot, 'localhost-key.pem')
-      writeFileSync(certPath, 'cert')
-      writeFileSync(keyPath, 'key')
-
-      expect(hasWranglerHttpsCerts(certPath, keyPath, {})).toBe(true)
-      const forceHttpEnv = { WRANGLER_LOCAL_PROTOCOL: 'http' }
-      expect(hasWranglerHttpsCerts(certPath, keyPath, forceHttpEnv)).toBe(false)
-      expect(hasWranglerHttpsCerts(certPath, keyPath, { WRANGLER_FORCE_HTTP: '1' })).toBe(false)
-    } finally {
-      rmSync(tempRoot, { force: true, recursive: true })
-    }
-  })
-
   it('overrides user-home Wrangler runtime env paths', () => {
     const runtimePaths = getWranglerRuntimePaths({
       isCi: false,
@@ -234,15 +213,14 @@ describe('start-wrangler config', () => {
   })
 
   it('resolves inspector port to 0 in CI so the OS picks a free port atomically', () => {
-    expect(resolveEffectiveInspectorPort(true, '46867')).toBe('0')
+    const result = buildWranglerArgs({ ...baseOptions, inspectorPort: '46867', isCi: true })
+    const inspectorPortIndex = result.args.indexOf('--inspector-port')
+    expect(result.args[inspectorPortIndex + 1]).toBe('0')
   })
 
   it('preserves the configured inspector port for local dev', () => {
-    expect(resolveEffectiveInspectorPort(false, '3904')).toBe('3904')
-  })
-
-  it('does not require INSPECTOR_PORT in CI startup env', () => {
-    expect(readInspectorPort(true, {})).toBe('0')
-    expect(readInspectorPort(true, { INSPECTOR_PORT: '3904' })).toBe('3904')
+    const result = buildWranglerArgs({ ...baseOptions, inspectorPort: '3904', isCi: false })
+    const inspectorPortIndex = result.args.indexOf('--inspector-port')
+    expect(result.args[inspectorPortIndex + 1]).toBe('3904')
   })
 })

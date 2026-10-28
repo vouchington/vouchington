@@ -1,7 +1,7 @@
 import { requiredBasicAuthDecision } from '@vouchington/edge'
 import { INTERNAL_REFERENCE_BASIC_AUTH_CHALLENGE } from './basic-auth.mts'
 
-export interface StorybookPagesEnv {
+interface StorybookPagesEnv {
   ASSETS?: { fetch(request: Request): Promise<Response> }
   BASIC_AUTH_CREDENTIALS?: string
 }
@@ -41,10 +41,7 @@ function authErrorResponse(
   })
 }
 
-export async function serveStorybookPages(
-  request: Request,
-  env: StorybookPagesEnv,
-): Promise<Response> {
+async function serveStorybookPages(request: Request, env: StorybookPagesEnv): Promise<Response> {
   const decision = requiredBasicAuthDecision(
     request.headers.get('authorization'),
     env.BASIC_AUTH_CREDENTIALS,
