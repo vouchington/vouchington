@@ -1,5 +1,5 @@
-import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
-import { setTimeout as delay } from 'node:timers/promises'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { withTestOwnedPostgresWait } from '../../../postgres-client-lock-observer.mts'
 import sql from 'sql-template-strings'
 
 type MembershipUserLockTestOptions<T> = {
@@ -12,62 +12,63 @@ type MembershipUserLockTestOptions<T> = {
 export async function runTestActionWhileMembershipUserLocked<T>(
   options: MembershipUserLockTestOptions<T>,
 ): Promise<T> {
-  const userLocked = Promise.withResolvers<void>()
-  const actionBlocked = Promise.withResolvers<void>()
-  const lockTransaction = holdMembershipUserLock(options, userLocked, actionBlocked)
-  await Promise.race([
-    userLocked.promise,
-    lockTransaction.then(() => {
-      throw new Error('Membership user lock transaction completed before acquiring the lock')
-    }),
-  ])
-  const actionOutcome = Promise.allSettled([Promise.resolve().then(options.startAction)] as const)
+  await using holder = await beginTransaction()
+  let releasing: Promise<void> | undefined
+  const releaseHolder = () => (releasing ??= holder[Symbol.asyncDispose]())
+
   try {
-    await waitForTestActionToBlockOnMembershipUserLock(actionOutcome, options.lockingQueryComment)
-  } finally {
-    actionBlocked.resolve()
-    await lockTransaction
-  }
-  const [outcome] = await actionOutcome
-  if (outcome.status === 'rejected') throw outcome.reason
-  return outcome.value
-}
+    const { rows } = await holder<{ process_id: number }>(sql`
+      /* runTestActionWhileMembershipUserLocked:holder */
+      SELECT pg_backend_pid()::integer AS process_id
+      FROM users WHERE id = ${options.userId} FOR UPDATE`)
+    const holderProcessId = rows[0]?.process_id
+    if (holderProcessId === undefined)
+      throw new Error('Membership user lock transaction completed before acquiring the lock')
 
-async function holdMembershipUserLock<T>(
-  options: MembershipUserLockTestOptions<T>,
-  userLocked: PromiseWithResolvers<void>,
-  actionBlocked: PromiseWithResolvers<void>,
-): Promise<void> {
-  await using transaction = await beginTransaction()
-  const query = transaction
-  await query(sql`/* runTestActionWhileMembershipUserLocked */
-    SELECT id FROM users WHERE id = ${options.userId} FOR UPDATE`)
-  userLocked.resolve()
-  await actionBlocked.promise
-  await options.whileActionBlocked(query)
-  await transaction.commit()
-}
-
-async function waitForTestActionToBlockOnMembershipUserLock(
-  actionOutcome: Promise<[PromiseSettledResult<unknown>]>,
-  lockingQueryComment: string,
-): Promise<void> {
-  for (let attempt = 0; attempt < 500; attempt += 1) {
-    const { rows } = await write<{ blocked: boolean }>(
-      sql`/* waitForTestActionToBlockOnMembershipUserLock */ SELECT EXISTS (
-        SELECT 1 FROM pg_stat_activity
-        WHERE pid <> pg_backend_pid() AND state = 'active' AND wait_event_type = 'Lock'
-          AND query LIKE ${`%${lockingQueryComment}%`}
-      ) AS blocked`,
+    return await withTestOwnedPostgresWait(
+      {
+        pool: 'write',
+        holderProcessId,
+        lock: { kind: 'transaction' },
+        queryMarker: options.lockingQueryComment,
+        releaseHolder,
+      },
+      async waitForLock => {
+        const action = Promise.resolve().then(options.startAction)
+        const outcome = action.then(
+          value => ({ status: 'fulfilled' as const, value }),
+          err => ({ status: 'rejected' as const, reason: err }),
+        )
+        let waitFailure: { reason: unknown } | undefined
+        try {
+          await waitForLock(action)
+        } catch (err) {
+          waitFailure = { reason: err }
+        }
+        // Preserve the callback on early settlement, but roll back if it or commit fails.
+        try {
+          await options.whileActionBlocked(holder)
+          await holder.commit()
+        } finally {
+          await releaseHolder()
+        }
+        const result = await outcome
+        if (result.status === 'rejected') throw result.reason
+        if (waitFailure) {
+          const err = waitFailure.reason
+          if (
+            err instanceof Error &&
+            err.message === 'Owned action settled without its native lock wait'
+          )
+            throw new Error('Membership action completed before waiting for the user lock', {
+              cause: err,
+            })
+          throw err
+        }
+        return result.value
+      },
     )
-    if (rows[0]?.blocked) return
-    const [outcome] = await Promise.race([
-      actionOutcome,
-      delay(10).then(() => [undefined] as const),
-    ])
-    if (outcome?.status === 'rejected') throw outcome.reason
-    if (outcome?.status === 'fulfilled')
-      throw new Error('Membership action completed before waiting for the user lock')
+  } finally {
+    await releaseHolder()
   }
-  throw new Error('Membership action did not wait for the user lock')
 }

@@ -1863,7 +1863,6 @@ rules:
     scope: repository
     # Remaining polling violations are tracked by #2145.
     exclude:
-      - 'backend/test-helpers/entities/memberships/locks/action-while-user-locked.mts'
       - 'backend/test-helpers/polling.mts'
       - 'backend/test-helpers/polling.test.mts'
       - 'backend/test-helpers/postgres-lock-wait.mts'
