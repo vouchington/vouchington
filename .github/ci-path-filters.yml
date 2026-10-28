@@ -396,6 +396,7 @@ portability:
   - 'lambdas/dev-server.test.mts'
   - 'lambdas/image-resize/**'
   - 'lambdas/playwright-podcast-cover.mts'
+  - 'lambdas/test-helpers/dev-server.mts'
   - 'lambdas/test-helpers/playwright-image-urls.mts'
   - 'lambdas/shared/**'
   - 'package.json'
