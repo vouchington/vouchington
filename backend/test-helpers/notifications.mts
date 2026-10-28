@@ -1,43 +1,42 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function deleteNotificationsForPostIds(postIds: string[]) {
   if (postIds.length === 0) return
   await write(
-    allowUnannotatedQuery(sql`DELETE FROM notifications WHERE post_id = ANY(${postIds}::uuid[])`),
+    sql`/* deleteNotificationsForPostIds */ DELETE FROM notifications WHERE post_id = ANY(${postIds}::uuid[])`,
   )
 }
 
 export async function deleteNotificationsForRssFeedItemIds(rssFeedItemIds: string[]) {
   if (rssFeedItemIds.length === 0) return
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* deleteNotificationsForRssFeedItemIds */
     DELETE FROM notifications
     WHERE rss_feed_item_id = ANY(${rssFeedItemIds}::uuid[])
-  `),
+  `,
   )
 }
 
 export async function deleteNotificationsSentByUserIds(userIds: string[]) {
   if (userIds.length === 0) return
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* deleteNotificationsSentByUserIds */
     DELETE FROM notifications
     WHERE sent_by_id = ANY(${userIds}::uuid[])
-  `),
+  `,
   )
 }
 
 export async function getNotificationById(notificationId: string) {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getNotificationById */
     SELECT delivery_type, sent_by_id, post_id, rss_feed_item_id,
       publication_post_id, publication_rss_feed_item_id, read_at, pushed_at,
       deleted_at, delete_reason
     FROM notifications
     WHERE id = ${notificationId}::uuid
-  `),
+  `,
   )
 
   return rows[0] as

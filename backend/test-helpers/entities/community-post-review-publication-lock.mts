@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction } from '@data-stores/psql'
 import { runWithCapturedQueries } from '@data-stores/psql/query-capture'
 import type { PrivateUser } from '@voucha/types/entities/user'
@@ -148,7 +147,7 @@ async function holdCommunityPostReviewLock(input: {
 
 async function lockPostPublicationWithTimeout(postId: string): Promise<void> {
   await using query = await beginTransaction()
-  await query(allowUnannotatedQuery(`SET LOCAL lock_timeout = '50ms'`))
+  await query(`/* lockPostPublicationWithTimeout */ SET LOCAL lock_timeout = '50ms'`)
   await lockPostPublication(query, postId)
   await query.commit()
 }

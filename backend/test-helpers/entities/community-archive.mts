@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { CommunityVisibility } from '@voucha/types/entities/community'
@@ -8,11 +7,11 @@ export async function archiveTestCommunity(options: {
   archivedById: string
 }): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* archiveTestCommunity */
     UPDATE communities
     SET archived_at = CURRENT_TIMESTAMP,
         archived_by_id = ${options.archivedById}
-    WHERE id = ${options.communityId}`),
+    WHERE id = ${options.communityId}`,
   )
 }
 
