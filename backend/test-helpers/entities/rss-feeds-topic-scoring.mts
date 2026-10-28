@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * RSS-feed-owning-topic publisher-type/vote-score primitives split out of rss-feeds.mts (concern:
  * topic-level scoring, as opposed to rss-feeds.mts's feed CRUD). Re-exported by rss-feeds.mts so
@@ -42,10 +41,10 @@ export async function setRssFeedOwningTopicVoteScore(
   scoreDown: number,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setRssFeedOwningTopicVoteScore */
     UPDATE topics
     SET votes_score_up = ${scoreUp}, votes_score_down = ${scoreDown}
     WHERE id = (SELECT topic_id FROM rss_feeds WHERE id = ${feedId})
-  `),
+  `,
   )
 }

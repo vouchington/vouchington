@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
@@ -57,11 +56,11 @@ export async function getRssFeedCrawlById(crawlId: string): Promise<{
     feed_data: unknown
     feed_data_sha256: Buffer | null
   }>(
-    allowUnannotatedQuery(`
+    `/* getRssFeedCrawlById */
     SELECT response_code, feed_data, feed_data_sha256
     FROM rss_feed_crawls
     WHERE id = $1
-  `),
+  `,
     [crawlId],
   )
 
