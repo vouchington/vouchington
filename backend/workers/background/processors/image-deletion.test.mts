@@ -44,11 +44,12 @@ describe('image deletion recovery dispatcher', () => {
       ).rejects.toThrow('injected middle deletion page failure')
     }
     const data: ImageDeletionRecoveryData = { imageIds }
-    const job = await background.add(
-      IMAGE_DELETION_RECOVER_JOB.name,
-      data,
-      IMAGE_DELETION_RECOVER_JOB.options,
-    )
+    // The in-memory queue numbers jobs per process, but the page fences live in the shared
+    // Valkey under the job id; an owned id keeps another process's "1" from sharing them.
+    const job = await background.add(IMAGE_DELETION_RECOVER_JOB.name, data, {
+      ...IMAGE_DELETION_RECOVER_JOB.options,
+      jobId: `image-deletion-recovery-${randomUUID()}`,
+    })
     if (!job) throw new Error('Owned recovery dispatcher was not admitted')
     await expect(processImageDeletionRecovery(Object.assign(job, { data }))).resolves.toBe(1)
     await expect(
@@ -84,11 +85,10 @@ describe('image deletion recovery dispatcher', () => {
     const completedCalls = [...storage.calls]
     await processImageDeletionPage(randomUUID())
     expect(storage.calls).toEqual(completedCalls)
-    const converged = await background.add(
-      IMAGE_DELETION_RECOVER_JOB.name,
-      data,
-      IMAGE_DELETION_RECOVER_JOB.options,
-    )
+    const converged = await background.add(IMAGE_DELETION_RECOVER_JOB.name, data, {
+      ...IMAGE_DELETION_RECOVER_JOB.options,
+      jobId: `image-deletion-recovery-${randomUUID()}`,
+    })
     if (!converged) throw new Error('Owned convergence dispatcher was not admitted')
     await expect(processImageDeletionRecovery(Object.assign(converged, { data }))).resolves.toBe(0)
     expect(storage.calls).toEqual(completedCalls)
