@@ -70,7 +70,7 @@
     "@vouchington/postgres": "^0.1.2",
     "@vouchington/rate-limit": "^0.3.0",
     "@vouchington/utils": "^0.10.2",
-    "@vouchington/worker-runtime": "^0.2.1",
+    "@vouchington/worker-runtime": "^0.3.0",
     "glide-mq": "^0.20.0",
     "jose": "^6.2.13",
     "no-mistakes": "^0.103.0",
