@@ -3,13 +3,13 @@ import type { CurrencyCode, Money, MoneyRange } from '@ts-shared/money'
 export type DataPointVertical = 'credit_card' | 'bank_account'
 
 // Credit score brackets
-export type CreditScoreRange = '300-579' | '580-669' | '670-739' | '740-799' | '800-850'
+type CreditScoreRange = '300-579' | '580-669' | '670-739' | '740-799' | '800-850'
 
-export type ApplicationMethod = 'online' | 'in_branch' | 'phone' | 'pre_approved'
+type ApplicationMethod = 'online' | 'in_branch' | 'phone' | 'pre_approved'
 
-export type BankAccountType = 'checking' | 'savings' | 'cd' | 'money_market'
+type BankAccountType = 'checking' | 'savings' | 'cd' | 'money_market'
 
-export type CreditCardResult =
+type CreditCardResult =
   | 'approved'
   | 'denied'
   | 'pending'
@@ -18,7 +18,7 @@ export type CreditCardResult =
   | 'sign_up_bonus'
   | 'offer'
 
-export type BankAccountResult = 'approved' | 'denied' | 'sign_up_bonus' | 'offer'
+type BankAccountResult = 'approved' | 'denied' | 'sign_up_bonus' | 'offer'
 
 export type CreditCardDataPoint = {
   vertical: 'credit_card'

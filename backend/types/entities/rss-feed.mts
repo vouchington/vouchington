@@ -43,7 +43,7 @@ type ViewPublisherTypeTopic = {
   name: string
 }
 
-export type PodcastShow = {
+type PodcastShow = {
   itunes_author: string | null
   itunes_owner_name: string | null
   /** Raw itunes:image href; emitted as an absolute image-host /sideload/ URL at response time. */
@@ -52,7 +52,7 @@ export type PodcastShow = {
   itunes_type: 'episodic' | 'serial' | null
 }
 
-export type RssFeedCategory = {
+type RssFeedCategory = {
   category_text: string
   topic_id: string | null
   /** Slug of the resolved topic; null when topic_id is null or the topic is deleted/merged. */

@@ -16,7 +16,7 @@ export type ElectionVoteChoice =
   | 'accurate'
   | 'inaccurate'
 
-export type ElectionVoteChoiceForPolicy<TPolicy extends ElectionVotePolicy> = Extract<
+type ElectionVoteChoiceForPolicy<TPolicy extends ElectionVotePolicy> = Extract<
   ElectionVoteChoice,
   TPolicy extends 'sentiment'
     ? 'vouch' | 'like' | 'neutral' | 'dislike' | 'disavow'
@@ -39,8 +39,6 @@ export const ELECTION_VOTE_POLICY_SCORES = {
 export type ElectionVoteRequest<TPolicy extends ElectionVotePolicy> = {
   choice: ElectionVoteChoiceForPolicy<TPolicy>
 }
-
-export type ViewElection = { id: string }
 
 export type ViewBaseElection = {
   __entity_type: string
@@ -71,7 +69,7 @@ export type ElectionVoteEvent = {
   previous_score?: ElectionVoteScore
 }
 
-export type VoteStatsSnapshot = {
+type VoteStatsSnapshot = {
   /** Epoch-aware upper transaction-ID boundary from `pg_current_snapshot()`. */
   xmax: string
   /** In-progress transaction count; lower is newer when `xmax` is equal. */
