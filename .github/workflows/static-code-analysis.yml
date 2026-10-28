@@ -22,6 +22,9 @@ jobs:
         timeout-minutes: 1
       - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
         timeout-minutes: 5
+      - name: Check workflow runner policy
+        run: pnpm exec vouchington runner-policy --config .github/runner-policy.json --root .github/workflows
+        timeout-minutes: 1
       - name: Check query-profile baseline issues are open
         # Pull requests and merge groups run it only when the baseline file changes. Scheduled and
         # manual runs always run it, so an issue closed elsewhere is still caught.
