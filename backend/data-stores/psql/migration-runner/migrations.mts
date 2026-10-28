@@ -1,5 +1,6 @@
 import path from 'node:path'
 import type { QueryExecutor } from '../types.mts'
+import { readCanonicalConfigDrivenGenerator } from './config-driven-generators.mts'
 import { runConfigDrivenStatementsInTransaction } from './config-driven-statements.mts'
 import { getFilesFromFolder, readMigrationFile } from './files.mts'
 import { silentMigrationLogger, type MigrationLogger } from './migration-logger.mts'
@@ -26,13 +27,18 @@ export async function runConfigDriven(rootDir: string, options: RunConfigDrivenO
   const lockTimeoutMs = options.lockTimeoutMs ?? configDrivenLockTimeoutMs
   const waitForRetry = options.waitForRetry ?? waitForConfigDrivenRetry
   const configDriven = getFilesFromFolder(configDrivenFolder)
+  const isCanonicalFolder =
+    path.resolve(configDrivenFolder) === path.resolve(import.meta.dirname, '../config-driven')
 
   async function runConfigDrivenAt(index: number): Promise<void> {
     const file = configDriven[index]
     if (!file) return
 
     // ast-grep-ignore: no-three-sequential-awaits -- config-driven files must read and execute in sorted order
-    const string = await readMigrationFile(configDrivenFolder, file)
+    const string =
+      isCanonicalFolder && file.endsWith('.mts')
+        ? await readCanonicalConfigDrivenGenerator(file)
+        : await readMigrationFile(configDrivenFolder, file)
     await runConfigDrivenFile(file, string, logger, options.writer, lockTimeoutMs, waitForRetry)
 
     await runConfigDrivenAt(index + 1)

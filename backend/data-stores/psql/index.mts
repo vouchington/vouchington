@@ -15,4 +15,3 @@ export type {
   QueryValues,
   TransactionQuery,
 } from './types.mts'
-export * from './migrate.mts'

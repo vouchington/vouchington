@@ -1,13 +1,29 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { MigrationPlatform } from '@data-stores/psql/migrate'
+import type { applyAllMigrations } from '@data-stores/psql/migrate'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+
+type MigrationPlatform = NonNullable<
+  NonNullable<Parameters<typeof applyAllMigrations>[1]>['platform']
+>
+type MigrationClient = Parameters<Parameters<MigrationPlatform['withMigrationSession']>[0]>[0]
+type MigrationCall = { phase: string; client: unknown; input?: string; logger?: unknown }
+type MigrationPlatformFixture = {
+  root: string
+  client: MigrationClient
+  platform: MigrationPlatform
+  calls: MigrationCall[]
+  readonly sessions: number
+  fixedStarted: Promise<void>
+  releaseFixed: () => void
+  close: () => Promise<void>
+}
 
 /** Records only the public library boundary; it does not implement migrations or a ledger. */
 export async function createMigrationPlatformFixture(
-  client: Parameters<Parameters<MigrationPlatform['withMigrationSession']>[0]>[0],
-) {
+  client: MigrationClient,
+): Promise<MigrationPlatformFixture> {
   const root = await mkdtemp(join(tmpdir(), 'voucha-migration-forwarding-'))
   try {
     for (const folder of ['migrations', 'config-driven', 'views']) await mkdir(join(root, folder))
@@ -24,7 +40,7 @@ export async function createMigrationPlatformFixture(
       throw new AggregateError(errors, 'Migration fixture setup and cleanup failed', { cause: err })
     throw err
   }
-  const calls: { phase: string; client: unknown; input?: string; logger?: unknown }[] = []
+  const calls: MigrationCall[] = []
   const fixedStarted = Promise.withResolvers<void>()
   const fixedRelease = Promise.withResolvers<void>()
   let sessions = 0

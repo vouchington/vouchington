@@ -10,7 +10,8 @@ import {
 } from '@services/post-publication/live-topic-merge-category-pages'
 import { getPostPublicationWorkLimit } from '@services/post-publication/work-limits'
 import { listLiveTopicMergedSourcesPage } from '@services/post-publication/live-topic-merged-source-pages'
-import { write, refreshMaterializedView } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
+import { refreshMaterializedView } from '@data-stores/psql/migrate'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture } from '../run-support.mts'
 import {
