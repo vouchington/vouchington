@@ -7,8 +7,10 @@ import type {
   ResolvedPostMention,
   ResolvedTopicMention,
   ResolvedUserMention,
-  UnresolvedMention,
+  ResolvedMention,
 } from './types.mts'
+
+type UnresolvedMention = Extract<ResolvedMention, { type: 'unresolved' }>
 
 const originalSitemapBaseUrl = process.env.SITEMAP_BASE_URL
 

@@ -17,7 +17,7 @@ import {
 } from './attempts.mts'
 import createHttpError from 'http-errors'
 
-export type StartIdentityVerificationDependencies = {
+type StartIdentityVerificationDependencies = {
   assertEligibleForIdentityVerification: typeof assertEligibleForIdentityVerification
   createIdentityCheckoutSession: (
     payload: Omit<

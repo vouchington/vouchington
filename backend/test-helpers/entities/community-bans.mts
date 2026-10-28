@@ -1,8 +1,17 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { CommunityBanEvasionFlag } from '@voucha/types/entities/community-ban-evasion-flag'
 import type { CommunityBan } from '@voucha/types/entities/community'
 import { openOrGetOpenCase } from './_moderation-case-support.mts'
+
+type CommunityBanEvasionFlag = {
+  community_id: string
+  user_id: string
+  suspected_ban_evader_at: Date
+  suspected_ban_evader_source_user_id: string | null
+  suspected_ban_evader_score: number | null
+  suspected_ban_evader_dismissed_at: Date | null
+  suspected_ban_evader_dismissed_by_id: string | null
+}
 
 type InsertTestCommunityBanOptions = {
   communityId: string

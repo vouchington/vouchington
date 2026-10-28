@@ -24,7 +24,7 @@ export const SYSTEM_PROVENANCE: ContentProvenance = Object.freeze({
 // The app a public response names for an API or MCP created row. Facts only, never copy: each
 // client composes its own wording, and the only names the server sends are the hostname and the
 // staff-verified registered name.
-export type PublicProvenanceApp =
+type PublicProvenanceApp =
   // A client on the reviewed allowlist. `key` is a lowercase slug whose display copy lives in each
   // client's localization catalog.
   | { kind: 'known'; key: string }

@@ -18,12 +18,13 @@ import {
   seedTestDsaFailureRound,
   seedTestDsaSubmission,
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
-import {
-  processDsaStatementSubmission,
-  type ProcessDsaStatementSubmissionDependencies,
-} from './dsa-statement-submission.mts'
+import { processDsaStatementSubmission } from './dsa-statement-submission.mts'
 import { replayDsaStatementSubmission } from './dsa-statement-submission-replay.mts'
 import { claimDsaStatementSubmission } from './dsa-statement-submission-claims.mts'
+
+type ProcessDsaStatementSubmissionDependencies = Required<
+  Parameters<typeof processDsaStatementSubmission>[1]
+>
 
 const credentials = {
   url: () => 'https://transparency.dsa.ec.europa.eu/api/v1',

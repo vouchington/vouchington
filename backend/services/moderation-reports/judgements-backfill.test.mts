@@ -6,10 +6,14 @@ import {
   insertTestReportJudgement,
 } from '@voucha/test-helpers'
 import crypto from 'node:crypto'
-import {
-  type MissingJudgementEntity,
-  streamEntitiesMissingJudgementBatches,
-} from './judgements-backfill.mts'
+import { streamEntitiesMissingJudgementBatches } from './judgements-backfill.mts'
+
+type MissingJudgementEntity =
+  ReturnType<typeof streamEntitiesMissingJudgementBatches> extends AsyncGenerator<
+    infer Batch extends readonly unknown[]
+  >
+    ? Batch[number]
+    : never
 
 async function collectAll(
   gen: AsyncGenerator<MissingJudgementEntity[], void, unknown>,

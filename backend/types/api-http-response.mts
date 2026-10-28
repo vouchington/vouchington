@@ -1,5 +1,5 @@
 /** Compiler-discovered variants carried by an opaque response without reading its body. */
-export type ApiHttpResponseVariant =
+type ApiHttpResponseVariant =
   | { status: number; bodyKind: 'content'; mediaType: string; body: unknown }
   | { status: number; bodyKind: 'none' }
 

@@ -30,9 +30,12 @@ import { replayDsaStatementSubmission } from './dsa-statement-submission-replay.
 import {
   prepareDsaStatementSubmissionSweep,
   searchRecoverableDsaStatementSubmissionIds,
-  type DsaStatementSweepDependencies,
 } from './dsa-statement-submission-sweep.mts'
 import { processDsaStatementSubmission } from './dsa-statement-submission.mts'
+
+type DsaStatementSweepDependencies = Required<
+  Parameters<typeof prepareDsaStatementSubmissionSweep>[0]
+>
 
 async function newRestriction() {
   return createTestCopyrightRestrictionForImage(await createTestCopyrightImageFixture('post-image'))

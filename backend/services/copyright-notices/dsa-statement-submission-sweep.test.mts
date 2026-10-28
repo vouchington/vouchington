@@ -25,10 +25,11 @@ import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
 } from '@voucha/test-helpers/copyright-restoration-hold-scene'
-import {
-  prepareDsaStatementSubmissionSweep,
-  type DsaStatementSweepDependencies,
-} from './dsa-statement-submission-sweep.mts'
+import { prepareDsaStatementSubmissionSweep } from './dsa-statement-submission-sweep.mts'
+
+type DsaStatementSweepDependencies = Required<
+  Parameters<typeof prepareDsaStatementSubmissionSweep>[0]
+>
 
 async function restrictionIdFor(noticeId: string): Promise<string> {
   const aggregate = await getCopyrightNoticePrivateAggregate(noticeId)

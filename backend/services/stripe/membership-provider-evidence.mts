@@ -6,7 +6,7 @@ const MAX_ENCRYPTED_EVIDENCE_BYTES = 65_536
 const MAX_FULL_EVIDENCE_PLAINTEXT_BYTES = 32_768
 const MAX_ENVELOPE_STRING_LENGTH = 1_024
 
-export type StripeMembershipEvidenceEnvelope = {
+type StripeMembershipEvidenceEnvelope = {
   type: 'stripe_membership_provider_evidence'
   version: 2
   original: { byte_length: number; sha256: string }
