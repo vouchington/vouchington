@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -44,10 +43,10 @@ export async function buildTestCopyrightDsaPayload(restrictionId: string) {
 
 export async function readTestDsaImageUploadDate(imageId: string): Promise<string> {
   const { rows } = await read<{ upload_date: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* readTestDsaImageUploadDate */
     SELECT to_char(upload_completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS upload_date
     FROM images WHERE id = ${imageId}
-  `),
+  `,
   )
   if (!rows[0]) throw new Error('Test image missing')
   return rows[0].upload_date

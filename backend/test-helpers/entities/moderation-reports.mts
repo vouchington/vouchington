@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
 import sql from 'sql-template-strings'
@@ -63,13 +62,13 @@ export async function getTestModerationReportTransparencyCommunityId(
   reportedUserId: string,
 ): Promise<string | null | undefined> {
   const { rows } = await read<{ moderation_transparency_community_id: string | null }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestModerationReportTransparencyCommunityId */
     SELECT moderation_transparency_community_id
     FROM moderation_reports
     WHERE reported_user_id = ${reportedUserId}::uuid
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   return rows[0]?.moderation_transparency_community_id
 }
