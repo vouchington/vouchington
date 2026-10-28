@@ -1,7 +1,7 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import type { PoolClient } from '@data-stores/psql/types'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
 import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
@@ -37,18 +37,23 @@ export async function acquireEmbeddingQuotaFixture() {
     assertOpen()
     // A different valid invocation can hold the reservation for its whole test budget.
     // Acquisition has its own bounded hook budget; subsequent fixture queries remain short.
-    await client.query(allowUnannotatedQuery("SET statement_timeout = '20s'"))
+    await client.query(
+      "/* acquireEmbeddingQuotaFixture:initialTimeout */ SET statement_timeout = '20s'",
+    )
     assertOpen()
-    await client.query(allowUnannotatedQuery('SELECT pg_advisory_lock(hashtextextended($1, 0))'), [
-      key,
-    ])
+    await client.query(
+      '/* acquireEmbeddingQuotaFixture:advisoryLock */ SELECT pg_advisory_lock(hashtextextended($1, 0))',
+      [key],
+    )
     acquired = true
     assertOpen()
     lease = await claimEmbeddingQuotaLease(client, key)
     assertOpen()
     restoreConfig = await initializeEmbeddingCreationConfig()
     assertOpen()
-    await client.query(allowUnannotatedQuery("SET statement_timeout = '5s'"))
+    await client.query(
+      "/* acquireEmbeddingQuotaFixture:testTimeout */ SET statement_timeout = '5s'",
+    )
     assertOpen()
   } catch (err) {
     prepared.resolve()
