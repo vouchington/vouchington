@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
 import { seedMessages } from '@/lib/i18n/use-translations'
@@ -76,8 +76,10 @@ describe('AppealsClient — rendering and staff actions', () => {
     h.mockApproveAppeal.mockResolvedValueOnce({ appeal: makeAppeal({ approved_at: 'x' }) })
     h.mockUpdateAppealDraft.mockResolvedValueOnce({ appeal: makeAppeal() })
     renderStaffClient()
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
-    await waitFor(() => expect(h.mockApproveAppeal).toHaveBeenCalledWith('appeal-1'))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    })
+    expect(h.mockApproveAppeal).toHaveBeenCalledWith('appeal-1')
   })
 
   it('calls onError when approveAppeal fails', async () => {
@@ -85,8 +87,10 @@ describe('AppealsClient — rendering and staff actions', () => {
     h.mockApproveAppeal.mockRejectedValueOnce(err)
     h.mockUpdateAppealDraft.mockResolvedValueOnce({ appeal: makeAppeal() })
     renderStaffClient()
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
-    await waitFor(() => expect(h.mockOnError).toHaveBeenCalled())
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    })
+    expect(h.mockOnError).toHaveBeenCalled()
   })
 
   it('updates public_response in state when draft is edited', () => {
@@ -100,8 +104,10 @@ describe('AppealsClient — rendering and staff actions', () => {
     h.mockSendAppealResolution.mockResolvedValueOnce({ appeal: makeAppeal({ sent_at: 'x' }) })
     const approvedAppeal = makeAppeal({ approved_at: '2026-01-02T00:00:00Z', sent_at: null })
     renderStaffClient(makeAppealsData([approvedAppeal]))
-    fireEvent.click(screen.getByRole('button', { name: /send/i }))
-    await waitFor(() => expect(h.mockSendAppealResolution).toHaveBeenCalledWith('appeal-1'))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /send/i }))
+    })
+    expect(h.mockSendAppealResolution).toHaveBeenCalledWith('appeal-1')
   })
 
   it('replaces the row only with the authoritative appeal returned after Re-run AI is queued', async () => {
@@ -122,8 +128,10 @@ describe('AppealsClient — rendering and staff actions', () => {
       }),
     })
     renderStaffClient(makeAppealsData([appeal]))
-    fireEvent.click(screen.getByTitle('Re-run AI'))
-    await waitFor(() => expect(h.mockEnqueueAppealAIDraftRerun).toHaveBeenCalledWith('appeal-1'))
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Re-run AI'))
+    })
+    expect(h.mockEnqueueAppealAIDraftRerun).toHaveBeenCalledWith('appeal-1')
     expect(h.mockReconcileAppealAIDraft).toHaveBeenCalledWith(appeal)
     expect(await screen.findByText('Authoritative AI draft')).toBeInTheDocument()
   })
@@ -142,7 +150,6 @@ describe('AppealsClient — rendering and staff actions', () => {
       appeal.id === firstAppeal.id ? firstReconciliation.promise : secondReconciliation.promise,
     )
     renderStaffClient(makeAppealsData([firstAppeal, secondAppeal]))
-
     const [firstRerunButton, secondRerunButton] = screen.getAllByTitle('Re-run AI')
     const [firstResponse, secondResponse] = screen.getAllByPlaceholderText(
       'Edit the public response...',
@@ -150,19 +157,22 @@ describe('AppealsClient — rendering and staff actions', () => {
     if (!firstRerunButton || !secondRerunButton || !firstResponse || !secondResponse) {
       throw new Error('Expected rerun and response controls for each appeal')
     }
-    fireEvent.click(firstRerunButton)
-
-    await waitFor(() => expect(firstRerunButton).toBeDisabled())
+    await act(async () => {
+      fireEvent.click(firstRerunButton)
+    })
+    expect(firstRerunButton).toBeDisabled()
     expect(firstResponse).toBeDisabled()
     expect(secondRerunButton).toBeEnabled()
     expect(secondResponse).toBeEnabled()
-    fireEvent.click(secondRerunButton)
-    await waitFor(() =>
-      expect(h.mockEnqueueAppealAIDraftRerun).toHaveBeenCalledWith(secondAppeal.id),
-    )
-
-    firstReconciliation.resolve({ appeal: firstAppeal })
-    secondReconciliation.resolve({ appeal: secondAppeal })
+    await act(async () => {
+      fireEvent.click(secondRerunButton)
+    })
+    expect(h.mockEnqueueAppealAIDraftRerun).toHaveBeenCalledWith(secondAppeal.id)
+    await act(async () => {
+      firstReconciliation.resolve({ appeal: firstAppeal })
+      secondReconciliation.resolve({ appeal: secondAppeal })
+      await Promise.all([firstReconciliation.promise, secondReconciliation.promise])
+    })
   })
 
   it('replaces a local draft with the authoritative rerun response before approving', async () => {
@@ -185,18 +195,17 @@ describe('AppealsClient — rendering and staff actions', () => {
     })
     h.mockApproveAppeal.mockResolvedValueOnce({ appeal: makeAppeal({ approved_at: 'x' }) })
     renderStaffClient(makeAppealsData([appeal]))
-
     const textarea = screen.getByPlaceholderText('Edit the public response...')
     fireEvent.change(textarea, { target: { value: 'Stale local response' } })
-    fireEvent.click(screen.getByTitle('Re-run AI'))
-
-    await waitFor(() =>
-      expect((textarea as HTMLTextAreaElement).value).toBe('Authoritative public response'),
-    )
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Re-run AI'))
+    })
+    expect((textarea as HTMLTextAreaElement).value).toBe('Authoritative public response')
     expect(screen.queryByDisplayValue('Stale local response')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
-    await waitFor(() => expect(h.mockApproveAppeal).toHaveBeenCalledWith('appeal-1'))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    })
+    expect(h.mockApproveAppeal).toHaveBeenCalledWith('appeal-1')
     expect(h.mockUpdateAppealDraft).not.toHaveBeenCalled()
   })
 
@@ -221,16 +230,21 @@ describe('AppealsClient — rendering and staff actions', () => {
         }),
       })
     renderStaffClient(makeAppealsData([appeal]))
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Re-run AI'))
+    })
+    expect(h.mockOnError).toHaveBeenCalled()
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Re-run AI'))
+    })
 
-    fireEvent.click(screen.getByTitle('Re-run AI'))
-    await waitFor(() => expect(h.mockOnError).toHaveBeenCalled())
-    fireEvent.click(screen.getByTitle('Re-run AI'))
-
-    await waitFor(() => expect(h.mockReconcileAppealAIDraft).toHaveBeenCalledTimes(2))
+    expect(h.mockReconcileAppealAIDraft).toHaveBeenCalledTimes(2)
     expect(h.mockEnqueueAppealAIDraftRerun).toHaveBeenCalledTimes(1)
-    fireEvent.click(screen.getByTitle('Re-run AI'))
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Re-run AI'))
+    })
 
-    await waitFor(() => expect(h.mockReconcileAppealAIDraft).toHaveBeenCalledTimes(3))
+    expect(h.mockReconcileAppealAIDraft).toHaveBeenCalledTimes(3)
     expect(h.mockEnqueueAppealAIDraftRerun).toHaveBeenCalledTimes(2)
     expect(await screen.findByText('Reconciled AI draft')).toBeInTheDocument()
   })
@@ -253,8 +267,10 @@ describe('AppealsClient — rendering and staff actions', () => {
         }),
       ]),
     )
-    fireEvent.click(screen.getByRole('button', { name: /accept/i }))
-    await waitFor(() => expect(h.mockResolveAppeal).toHaveBeenCalledWith('appeal-1', 'accept'))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /accept/i }))
+    })
+    expect(h.mockResolveAppeal).toHaveBeenCalledWith('appeal-1', 'accept')
   })
 
   it('calls updateAppealDraft then approveAppeal when draft edited then Approve clicked', async () => {
@@ -263,9 +279,11 @@ describe('AppealsClient — rendering and staff actions', () => {
     renderStaffClient()
     const textarea = screen.getByPlaceholderText('Edit the public response...')
     fireEvent.change(textarea, { target: { value: 'New draft' } })
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
-    await waitFor(() => expect(h.mockUpdateAppealDraft).toHaveBeenCalled())
-    await waitFor(() => expect(h.mockApproveAppeal).toHaveBeenCalledWith('appeal-1'))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    })
+    expect(h.mockUpdateAppealDraft).toHaveBeenCalled()
+    expect(h.mockApproveAppeal).toHaveBeenCalledWith('appeal-1')
   })
 
   it('calls onError when updateAppealDraft fails and skips approve', async () => {
@@ -273,8 +291,10 @@ describe('AppealsClient — rendering and staff actions', () => {
     renderStaffClient()
     const textarea = screen.getByPlaceholderText('Edit the public response...')
     fireEvent.change(textarea, { target: { value: 'New draft' } })
-    fireEvent.click(screen.getByRole('button', { name: /approve/i }))
-    await waitFor(() => expect(h.mockOnError).toHaveBeenCalled())
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /approve/i }))
+    })
+    expect(h.mockOnError).toHaveBeenCalled()
     expect(h.mockApproveAppeal).not.toHaveBeenCalled()
   })
 })
