@@ -26,7 +26,7 @@ export function enqueuePostPublicationEffects(
   })
 }
 
-export function postPublicationEffectJobId(data: PostPublicationEffectsJobData): string {
+function postPublicationEffectJobId(data: PostPublicationEffectsJobData): string {
   const owner = data.postId ?? `${data.scope.type}__${data.scope.id}`
   const continuation = data.continuation
   const subjectId = continuation?.subjectIds[continuation.subjectIndex] ?? null

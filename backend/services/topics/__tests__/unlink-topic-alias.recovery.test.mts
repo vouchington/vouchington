@@ -1,8 +1,5 @@
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
-import {
-  enqueueTopicAliasUnlinkPages,
-  topicAliasUnlinkJobId,
-} from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
+import { enqueueTopicAliasUnlinkPages } from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
 import {
   beginTransaction,
@@ -52,7 +49,11 @@ describe('topic alias unlink recovery', () => {
     await using lookup = await beginTransaction()
     const page = await selectTopicAliasUnlinkNextPage(lookup, first!.id, false)
     await lookup.rollback()
-    await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(page))).resolves.not.toBeNull()
+    await expect(
+      rssFeedMaintenance.getJob(
+        `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`,
+      ),
+    ).resolves.not.toBeNull()
     await expect(
       rssFeedMaintenance.getJob(`unlink-topic-alias-recovery__${first!.id}`),
     ).resolves.not.toBeNull()
@@ -69,7 +70,11 @@ describe('topic alias unlink recovery', () => {
     await enqueueTopicAliasUnlinkPages(pages)
 
     for (const page of pages) {
-      await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(page))).resolves.not.toBeNull()
+      await expect(
+        rssFeedMaintenance.getJob(
+          `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`,
+        ),
+      ).resolves.not.toBeNull()
     }
   })
 

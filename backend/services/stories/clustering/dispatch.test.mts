@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { ai_agents } from '@queues/ai-agents/queues'
-import {
-  classifierRunDispatcherJobId,
-  type enqueueBulkClassifierRunDispatchers,
-} from '@queues/ai-agents/enqueues/classifier-run'
+import type { enqueueBulkClassifierRunDispatchers } from '@queues/ai-agents/enqueues/classifier-run'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { STORY_CLUSTERING_CLASSIFIER_SLUG as SLUG } from '@voucha/types/entities/story-clustering-classifier'
 import { describe, expect, it, vi } from 'vitest'
@@ -28,11 +25,7 @@ describe('dispatchStoryClusteringForEmbeddedItems (real queue)', () => {
       const jobs = await dispatchersFor(rssFeedItemId)
       expect(jobs).toHaveLength(1)
       expect(jobs[0]).toMatchObject({
-        id: classifierRunDispatcherJobId({
-          classifier: SLUG,
-          postId: null,
-          rssFeedItemId,
-        }),
+        id: `classifier_run_dispatcher_${SLUG}_${rssFeedItemId}`,
         data: { classifier: SLUG, postId: null, rssFeedItemId },
       })
     }

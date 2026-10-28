@@ -9,7 +9,7 @@ import { createBackgroundBulkEnqueue } from '../enqueues.mts'
 import type { JobOptions } from 'glide-mq'
 import { background } from '../queues.mts'
 
-export function getImageDeletionPageJobId(
+function getImageDeletionPageJobId(
   imageId: string,
   cursor: string | null,
   admittedThrough?: string,

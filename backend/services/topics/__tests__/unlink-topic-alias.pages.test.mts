@@ -1,5 +1,4 @@
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
-import { topicAliasUnlinkJobId } from '@queues/rss-feed-maintenance/enqueues/unlink-topic-alias'
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
 import {
   beginTransaction,
@@ -75,7 +74,9 @@ describe('topic alias unlink pages', () => {
     await lookup.rollback()
     expect(firstPage.phase).toBe('post_relations')
     await expect(
-      rssFeedMaintenance.getJob(topicAliasUnlinkJobId(firstPage)),
+      rssFeedMaintenance.getJob(
+        `unlink-topic-alias__${firstPage.topicAliasId}__${firstPage.phase}__${firstPage.pageCursor}`,
+      ),
     ).resolves.toMatchObject({
       data: { topicAliasId: alias.id, phase: 'post_relations' },
     })
@@ -124,12 +125,24 @@ describe('topic alias unlink pages', () => {
     await using transaction = await beginTransaction()
     await unlinkTopicAlias(alias.id, { query: transaction, expectedTopicId: topic.id })
     const page = await selectTopicAliasUnlinkNextPage(transaction, alias.id, false)
-    await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(page))).resolves.toBeNull()
+    await expect(
+      rssFeedMaintenance.getJob(
+        `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`,
+      ),
+    ).resolves.toBeNull()
     await transaction.rollback()
-    await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(page))).resolves.toBeNull()
+    await expect(
+      rssFeedMaintenance.getJob(
+        `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`,
+      ),
+    ).resolves.toBeNull()
 
     await unlinkTopicAlias(alias.id, { expectedTopicId: topic.id })
-    await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(page))).resolves.toMatchObject({
+    await expect(
+      rssFeedMaintenance.getJob(
+        `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`,
+      ),
+    ).resolves.toMatchObject({
       data: { topicAliasId: alias.id, phase: page.phase, pageCursor: page.pageCursor },
     })
   })
@@ -166,18 +179,27 @@ describe('topic alias unlink pages', () => {
       await using pageTransaction = await beginTransaction()
       next = await applyTopicAliasUnlinkPage(page, { query: pageTransaction })
       if (!next) throw new Error('Expected another unlink page')
-      await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(next))).resolves.toBeNull()
+      await expect(
+        rssFeedMaintenance.getJob(
+          `unlink-topic-alias__${next.topicAliasId}__${next.phase}__${next.pageCursor}`,
+        ),
+      ).resolves.toBeNull()
       await pageTransaction.commit()
     })
     if (!next) throw new Error('Expected another unlink page')
+    const continuedPage = next as NonNullable<Awaited<ReturnType<typeof applyTopicAliasUnlinkPage>>>
 
     const captured = jobs.flatMap(job =>
       job.keys.flatMap(key => (key.kind === 'impact_post' ? [key.uuidValue] : [])),
     )
     expect(captured).toHaveLength(1)
     expect(posts.map(post => post.id)).toContain(captured[0])
-    await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(next))).resolves.toMatchObject({
-      data: next,
+    await expect(
+      rssFeedMaintenance.getJob(
+        `unlink-topic-alias__${continuedPage.topicAliasId}__${continuedPage.phase}__${continuedPage.pageCursor}`,
+      ),
+    ).resolves.toMatchObject({
+      data: continuedPage,
     })
   })
 
@@ -236,7 +258,11 @@ describe('topic alias unlink pages', () => {
     await using lookup = await beginTransaction()
     const page = await selectTopicAliasUnlinkNextPage(lookup, alias.id, true)
     await lookup.rollback()
-    await expect(rssFeedMaintenance.getJob(topicAliasUnlinkJobId(page))).resolves.toBeNull()
+    await expect(
+      rssFeedMaintenance.getJob(
+        `unlink-topic-alias__${page.topicAliasId}__${page.phase}__${page.pageCursor}`,
+      ),
+    ).resolves.toBeNull()
     await expect(createUnlinkedTopicAlias(alias.alias)).resolves.toMatchObject({ id: alias.id })
   })
 })

@@ -12,15 +12,13 @@ import {
 } from '@voucha/test-helpers'
 import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import { executeTestPublicationChain } from '@voucha/test-helpers/publication-effect-chain'
+import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '../../../data-stores/valkey-core/glide-mq-client.mts'
 import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
-import {
-  enqueuePostPublicationEffects,
-  postPublicationEffectJobId,
-} from '@queues/post-publication/enqueues'
+import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
 import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { hashCapturedPublicationKeys } from '@services/post-publication/captured-keys'
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
@@ -70,7 +68,7 @@ describe('runtime publication scope and key bounds', () => {
     })
     const execute = async (data: PostPublicationEffectsJobData) => {
       const job = await worker.add(POST_PUBLICATION_EFFECTS_JOB, data, {
-        jobId: postPublicationEffectJobId(data),
+        jobId: randomUUID(),
       })
       expect(await worker.settled(job)).toBe('completed')
       expect(await worker.queue.getJob(job.id)).toBeNull()
@@ -150,9 +148,10 @@ describe('runtime publication scope and key bounds', () => {
         caches.topic_metrics.set(topic.slug, 'old topic slug'),
       ]),
     ])
-    await enqueuePostPublicationEffects(original)
-    const queued = await postPublicationQueue.getJob(postPublicationEffectJobId(original))
-    if (!queued) throw new Error('Expected accepted old-cap payload')
+    const queued = await readEnqueuedJob(
+      postPublicationQueue,
+      await enqueuePostPublicationEffects(original),
+    )
     await queued.remove()
     overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, { capture_batch_size: 1 })
     const worker = await startRealGlideBackgroundLifecycle({
@@ -164,7 +163,7 @@ describe('runtime publication scope and key bounds', () => {
     })
     const admitted = await executeTestPublicationChain(original, async data => {
       const job = await worker.add(POST_PUBLICATION_EFFECTS_JOB, data, {
-        jobId: postPublicationEffectJobId(data),
+        jobId: randomUUID(),
       })
       expect(await worker.settled(job)).toBe('completed')
     })
@@ -230,7 +229,7 @@ describe('runtime publication scope and key bounds', () => {
       observed.push(
         ...(await executeTestPublicationChain(data, async next => {
           const job = await worker.add(POST_PUBLICATION_EFFECTS_JOB, next, {
-            jobId: postPublicationEffectJobId(next),
+            jobId: randomUUID(),
           })
           expect(await worker.settled(job)).toBe('completed')
           expect(await worker.queue.getJob(job.id)).toBeNull()

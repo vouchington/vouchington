@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  enqueueUserDeletion,
-  userDeletionJobId,
-} from '@queues/account-lifecycle/enqueues/user-deletions'
+import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-deletions'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { claimRecoverableUserDeletions, createUserDeletionRequest } from '@services/user-deletions'
 import { createTestUser } from '@voucha/test-helpers'
@@ -23,7 +20,7 @@ describe('user deletion recovery with a retained failed job under the attempt to
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     const attempt = { requestId: request.id, processingAttemptId: request.processingAttemptId }
-    const jobId = userDeletionJobId(attempt)
+    const jobId = `user-deletion__${attempt.requestId}__${attempt.processingAttemptId}`
     let successorJobId: string | undefined
 
     try {
@@ -47,10 +44,7 @@ describe('user deletion recovery with a retained failed job under the attempt to
       const claimed = await getUserDeletionRequestForTest(request.id)
       expect(claimed?.processingAttempts).toBe(1)
       if (claimed) {
-        successorJobId = userDeletionJobId({
-          requestId: request.id,
-          processingAttemptId: claimed.processingAttemptId,
-        })
+        successorJobId = `user-deletion__${request.id}__${claimed.processingAttemptId}`
       }
     } finally {
       await Promise.all(
@@ -65,7 +59,7 @@ describe('user deletion recovery with a retained failed job under the attempt to
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
     const attempt = { requestId: request.id, processingAttemptId: request.processingAttemptId }
-    const jobId = userDeletionJobId(attempt)
+    const jobId = `user-deletion__${attempt.requestId}__${attempt.processingAttemptId}`
 
     try {
       await enqueueUserDeletion({ ...attempt, delayMs: 3_600_000 })

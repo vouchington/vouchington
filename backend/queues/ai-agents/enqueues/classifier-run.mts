@@ -11,12 +11,12 @@ import {
 import { ai_agents } from '../queues.mts'
 import type { ClassifierRunDispatcherJobData, ClassifierRunJobData } from '../types.mts'
 
-export function classifierRunJobId(runId: string): string {
+function classifierRunJobId(runId: string): string {
   return `classifier_run_${runId}`
 }
 
 /** One dispatcher per classifier and subject, so approval and the sweep cannot both dispatch. */
-export function classifierRunDispatcherJobId(data: ClassifierRunDispatcherJobData): string {
+function classifierRunDispatcherJobId(data: ClassifierRunDispatcherJobData): string {
   return `classifier_run_dispatcher_${data.classifier}_${data.postId ?? data.rssFeedItemId}`
 }
 

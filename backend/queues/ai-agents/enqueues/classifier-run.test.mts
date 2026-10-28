@@ -6,7 +6,6 @@ import { AI_AGENTS_DEFAULTS, CLASSIFIER_RUN_ATTEMPTS, CLASSIFIER_RUN_BACKOFF } f
 import { ai_agents } from '../queues.mts'
 import type { ClassifierRunJobData } from '../types.mts'
 import {
-  classifierRunDispatcherJobId,
   classifierRunJobExists,
   enqueueBulkClassifierRunDispatchers,
   enqueueBulkClassifierRuns,
@@ -56,15 +55,27 @@ describe('classifier run enqueue', () => {
   it('identifies a dispatcher by classifier and subject so approval and the sweep share it', async () => {
     const postId = randomUUID()
     const rssFeedItemId = randomUUID()
-
-    expect(classifierRunDispatcherJobId({ classifier: 'a', postId, rssFeedItemId: null })).toBe(
-      `classifier_run_dispatcher_a_${postId}`,
+    await enqueueBulkClassifierRunDispatchers([
+      { classifier: 'a', postId, rssFeedItemId: null },
+      { classifier: 'a', postId: null, rssFeedItemId },
+      { classifier: 'b', postId, rssFeedItemId: null },
+    ])
+    const jobs = (await readAllQueueJobs(ai_agents)).filter(
+      job =>
+        job.name === 'classifier-run-dispatcher' &&
+        [postId, rssFeedItemId].some(subjectId =>
+          [
+            (job.data as { postId?: string | null }).postId,
+            (job.data as { rssFeedItemId?: string | null }).rssFeedItemId,
+          ].includes(subjectId),
+        ),
     )
-    expect(classifierRunDispatcherJobId({ classifier: 'a', postId: null, rssFeedItemId })).toBe(
-      `classifier_run_dispatcher_a_${rssFeedItemId}`,
-    )
-    expect(classifierRunDispatcherJobId({ classifier: 'b', postId, rssFeedItemId: null })).not.toBe(
-      classifierRunDispatcherJobId({ classifier: 'a', postId, rssFeedItemId: null }),
+    expect(jobs.map(job => job.id)).toEqual(
+      expect.arrayContaining([
+        `classifier_run_dispatcher_a_${postId}`,
+        `classifier_run_dispatcher_a_${rssFeedItemId}`,
+        `classifier_run_dispatcher_b_${postId}`,
+      ]),
     )
   })
 
@@ -85,7 +96,7 @@ describe('classifier run enqueue', () => {
     expect(jobs[0]?.opts).toMatchObject({
       removeOnComplete: true,
       removeOnFail: true,
-      jobId: classifierRunDispatcherJobId(data),
+      jobId: `classifier_run_dispatcher_${data.classifier}_${data.postId}`,
       // The dispatcher never calls a provider, so it keeps the shared queue defaults.
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,

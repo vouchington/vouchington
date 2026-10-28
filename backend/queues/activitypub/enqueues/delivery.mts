@@ -73,7 +73,7 @@ export function enqueueDistributeActivity(data: DistributeActivityInput): Enqueu
   })
 }
 
-export type DeliverAcceptActivityInput = Pick<
+type DeliverAcceptActivityInput = Pick<
   Extract<DeliverActivityData, { activityType: 'Accept' }>,
   'sourceUserId' | 'inboxUrl' | 'followActivityId' | 'followActorUri'
 >
@@ -96,7 +96,7 @@ export function getUndoFollowActivityId(originalFollowActivityId: string): strin
  * the Follow id is the remote's, unique per follow request, and a re-follow after an Undo arrives
  * under a new Follow id and so gets a new Accept id.
  */
-export function getAcceptActivityId(
+function getAcceptActivityId(
   input: Pick<DeliverAcceptActivityInput, 'sourceUserId' | 'followActivityId'>,
 ): string {
   return uuidv5(`${input.sourceUserId}\n${input.followActivityId}`, ACCEPT_ACTIVITY_ID_NAMESPACE)

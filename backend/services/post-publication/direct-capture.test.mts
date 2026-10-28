@@ -18,10 +18,7 @@ import {
   readTestPostPreimageForUpdate,
 } from '../../test-helpers/publication-test-queries.mts'
 import { createTopicAliases } from '../topics/aliases.mts'
-import {
-  enqueuePostPublicationEffects,
-  postPublicationEffectJobId,
-} from '@queues/post-publication/enqueues'
+import { enqueuePostPublicationEffects } from '@queues/post-publication/enqueues'
 import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
@@ -52,8 +49,11 @@ function effectPayload(
   }
 }
 
-function effectId(changeId: string, change: PostPublicationChange): string {
-  return postPublicationEffectJobId(effectPayload(changeId, change))
+async function effectJobs(changeId: string) {
+  return postPublicationQueue.searchJobs({
+    name: 'post-publication.apply-effects',
+    data: { changeId },
+  })
 }
 
 describe('direct post-publication capture', () => {
@@ -122,20 +122,14 @@ describe('direct post-publication capture', () => {
     await query.commit()
 
     const keys = [{ kind: 'impact_post' as const, uuidValue: post.id }]
-    const id = postPublicationEffectJobId({
-      changeId,
-      postId: null,
-      scope: { type: 'topic_alias', id: alias.id },
-      reason: 'post_topics_changed',
-      keys,
-      keyHash: hashCapturedPublicationKeys(keys),
-      chunkIndex: 0,
-      scopeStart: false,
-      scopeTopicKeysCaptured: false,
-      keyOffset: 0,
-    })
-    onTestFinished(async () => (await postPublicationQueue.getJob(id))?.remove())
-    expect((await postPublicationQueue.getJob(id))?.data).toMatchObject({ keys })
+    const job = (await effectJobs(changeId)).find(candidate =>
+      (candidate.data as PostPublicationEffectsJobData).keys.some(
+        key => key.kind === 'impact_post' && key.uuidValue === post.id,
+      ),
+    )
+    if (!job) throw new Error('Expected captured alias effect')
+    onTestFinished(async () => job.remove())
+    expect(job.data).toMatchObject({ keys })
   })
 
   it('keeps every captured predelete key without a receipt after its row is removed', async () => {
@@ -173,9 +167,9 @@ describe('direct post-publication capture', () => {
     await deleteTestPostRow(query, postId)
     await query.commit()
 
-    const id = effectId(changeId, change)
-    onTestFinished(async () => (await postPublicationQueue.getJob(id))?.remove())
-    const job = await postPublicationQueue.getJob(id)
+    const [job] = await effectJobs(changeId)
+    if (!job) throw new Error('Expected captured post effect')
+    onTestFinished(async () => job.remove())
     expect((job?.data as PostPublicationEffectsJobData | undefined)?.keys).toEqual(
       expect.arrayContaining([
         { kind: 'impact_post', uuidValue: postId },
@@ -204,19 +198,19 @@ describe('direct post-publication capture', () => {
     const secondChangeId = await recordPostPublicationChange(query, change)
     await query.commit()
 
-    const firstId = effectId(firstChangeId, change)
-    const secondId = effectId(secondChangeId, change)
+    const [first] = await effectJobs(firstChangeId)
+    const [second] = await effectJobs(secondChangeId)
+    if (!first || !second) throw new Error('Expected both captured effects')
+    const firstId = first.id
+    const secondId = second.id
     onTestFinished(async () => {
       await Promise.all(
         [firstId, secondId].map(async id => (await postPublicationQueue.getJob(id))?.remove()),
       )
     })
     expect(firstId).not.toBe(secondId)
-    const first = await postPublicationQueue.getJob(firstId)
-    const second = await postPublicationQueue.getJob(secondId)
     expect(first).toMatchObject({ name: 'post-publication.apply-effects' })
     expect(second).toMatchObject({ name: 'post-publication.apply-effects' })
-    if (!first) throw new Error('Expected first captured job')
     const duplicate = await enqueuePostPublicationEffects(effectPayload(firstChangeId, change))
     expect(duplicate).toBeNull()
   })
@@ -229,22 +223,23 @@ describe('direct post-publication capture', () => {
     let rolledBackId: string
     {
       await using query = await beginTransaction()
-      rolledBackId = effectId(await recordPostPublicationChange(query, change), change)
+      rolledBackId = await recordPostPublicationChange(query, change)
     }
-    expect(await postPublicationQueue.getJob(rolledBackId)).toBeNull()
+    expect(await effectJobs(rolledBackId)).toEqual([])
 
     await using query = await beginTransaction()
     let nestedId: string | undefined
     await expect(
       withTransactionOptions({ client: query.client }, async nested => {
-        nestedId = effectId(await recordPostPublicationChange(nested, change), change)
+        nestedId = await recordPostPublicationChange(nested, change)
         throw new Error('rollback nested publication capture')
       }),
     ).rejects.toThrow('rollback nested publication capture')
-    const outerId = effectId(await recordPostPublicationChange(query, change), change)
-    onTestFinished(async () => (await postPublicationQueue.getJob(outerId))?.remove())
+    const outerId = await recordPostPublicationChange(query, change)
     await query.commit()
-    expect(await postPublicationQueue.getJob(nestedId!)).toBeNull()
-    expect(await postPublicationQueue.getJob(outerId)).not.toBeNull()
+    expect(await effectJobs(nestedId!)).toEqual([])
+    const [outer] = await effectJobs(outerId)
+    expect(outer).toBeDefined()
+    onTestFinished(async () => outer?.remove())
   })
 })

@@ -19,7 +19,7 @@ type ElectionErrorContext = {
   operation: string
 }
 
-export function buildElectionJobOptions(
+function buildElectionJobOptions(
   electionId: string,
   orderingKey: ElectionOrderingKey,
   relationTable?: string,

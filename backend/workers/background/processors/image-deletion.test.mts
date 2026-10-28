@@ -5,7 +5,6 @@ import {
   IMAGE_DELETION_RECOVER_JOB,
   type ImageDeletionRecoveryData,
 } from '@queues/background/enqueues/image-deletion-jobs'
-import { getImageDeletionPageJobId } from '@queues/background/enqueues/image-deletion'
 import { background } from '@queues/background/queues'
 import { deleteImageById, processImageDeletionPage } from '@services/images/delete'
 import { getImageByIdFromPrimary } from '@services/images/get'
@@ -53,7 +52,7 @@ describe('image deletion recovery dispatcher', () => {
     if (!job) throw new Error('Owned recovery dispatcher was not admitted')
     await expect(processImageDeletionRecovery(Object.assign(job, { data }))).resolves.toBe(1)
     await expect(
-      background.getJob(getImageDeletionPageJobId(imageIds[0]!, null)),
+      background.getJob(`image-deletion-${imageIds[0]!}-start-pending`),
     ).resolves.toMatchObject({
       data: { imageId: imageIds[0], cursor: null },
     })
@@ -74,7 +73,7 @@ describe('image deletion recovery dispatcher', () => {
       processImageDeletionRecovery(Object.assign(next, { data: nextData })),
     ).resolves.toBe(1)
     await expect(
-      background.getJob(getImageDeletionPageJobId(imageIds[1]!, null)),
+      background.getJob(`image-deletion-${imageIds[1]!}-start-pending`),
     ).resolves.toMatchObject({
       data: { imageId: imageIds[1], cursor: null },
     })

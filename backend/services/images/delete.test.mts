@@ -21,7 +21,6 @@ import {
 import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
-import { getImageDeletionPageJobId } from '@queues/background/enqueues/image-deletion'
 import { background } from '@queues/background/queues'
 import { deleteImageById, processImageDeletionPage } from './delete.mts'
 import { getImageByAny, getImageByIdFromPrimary } from './get.mts'
@@ -123,7 +122,7 @@ describe('paged image deletion', () => {
       try {
         await processImageDeletionPage(fixture.imageId)
         const partialAdmission = await background.getJob(
-          getImageDeletionPageJobId(fixture.imageId, fixture.postIds[1]!, fixture.postIds[0]!),
+          `image-deletion-${fixture.imageId}-${fixture.postIds[1]!}-${fixture.postIds[0]!}`,
         )
         expect(partialAdmission).toMatchObject({
           data: { cursor: fixture.postIds[1], admittedThrough: fixture.postIds[0] },
@@ -175,7 +174,7 @@ describe('paged image deletion', () => {
       const firstPageState = await getPostModerationResetState(paged.postIds[0]!)
       expect(storage.calls).toEqual([])
       const continuation = await background.getJob(
-        getImageDeletionPageJobId(paged.imageId, paged.postIds[0]!, paged.postIds[0]!),
+        `image-deletion-${paged.imageId}-${paged.postIds[0]!}-${paged.postIds[0]!}`,
       )
       expect(continuation).toMatchObject({
         data: { imageId: paged.imageId, cursor: paged.postIds[0] },

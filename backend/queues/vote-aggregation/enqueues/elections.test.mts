@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { it, expect, describe, afterEach, vi } from 'vitest'
+import { it, expect, describe, afterEach, onTestFinished, vi } from 'vitest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
-  buildElectionJobOptions,
+  enqueueBulkUpdateAgentModerationElectionVoteStats,
   enqueueBulkUpdateEntityRelationElectionVoteStats,
+  enqueueBulkUpdateHostnameElectionVoteStats,
   enqueueBulkUpdatePostElectionVoteStats,
+  enqueueBulkUpdateRssFeedItemElectionVoteStats,
   enqueueBulkUpdateTopicElectionVoteStats,
+  enqueueBulkUpdateUserVouchElectionVoteStats,
 } from './elections.mts'
 import { ELECTIONS_DEFAULTS } from '../config.mts'
 import {
@@ -15,9 +18,20 @@ import {
 import { voteAggregation } from '../queues.mts'
 import type { EntityRelationElectionTable } from './types-elections.mts'
 
-describe('buildElectionJobOptions', () => {
-  it('runs after the throttle window plus the replica-lag safety margin', () => {
-    const opts = buildElectionJobOptions('election-1', 'post')
+describe('election enqueue options', () => {
+  async function admittedPostOptions() {
+    const electionId = randomUUID()
+    await enqueueBulkUpdatePostElectionVoteStats([electionId])
+    const jobs = await voteAggregation.searchJobs({
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+      data: { electionId },
+    })
+    expect(jobs).toHaveLength(1)
+    return jobs[0]!.opts
+  }
+
+  it('runs after the throttle window plus the replica-lag safety margin', async () => {
+    const opts = await admittedPostOptions()
 
     expect(ELECTIONS_DEFAULTS.deduplicationTtlMs).toBe(5_000)
     expect(ELECTIONS_DEFAULTS.replicaLagSafetyMarginMs).toBe(1_000)
@@ -28,34 +42,85 @@ describe('buildElectionJobOptions', () => {
     expect(opts.delay).toBe(ELECTIONS_DEFAULTS.recomputeDelayMs)
   })
 
-  it('throttles each election ID for five seconds', () => {
-    const opts = buildElectionJobOptions('election-1', 'post')
+  it('throttles each election ID for five seconds', async () => {
+    const electionId = randomUUID()
+    await enqueueBulkUpdatePostElectionVoteStats([electionId])
+    const [job] = await voteAggregation.searchJobs({
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+      data: { electionId },
+    })
 
-    expect(opts.deduplication).toEqual({
-      id: 'processUpdateElectionVoteStats__post__election-1',
+    expect(job?.opts.deduplication).toEqual({
+      id: `processUpdateElectionVoteStats__post__${electionId}`,
       mode: 'throttle',
       ttl: 5_000,
     })
   })
 
-  it.each(ELECTION_LANES)('leaves the %s lane to the domain-wide group', orderingKey => {
-    expect(buildElectionJobOptions('election-1', orderingKey)).not.toHaveProperty('ordering')
+  it.each(ELECTION_LANES)('leaves the %s lane to the domain-wide group', async orderingKey => {
+    const electionId = randomUUID()
+    switch (orderingKey) {
+      case 'post':
+        await enqueueBulkUpdatePostElectionVoteStats([electionId])
+        break
+      case 'topic':
+        await enqueueBulkUpdateTopicElectionVoteStats([electionId])
+        break
+      case 'hostname':
+        await enqueueBulkUpdateHostnameElectionVoteStats([electionId])
+        break
+      case 'agent_moderation':
+        await enqueueBulkUpdateAgentModerationElectionVoteStats([electionId])
+        break
+      case 'rss_feed_item':
+        await enqueueBulkUpdateRssFeedItemElectionVoteStats([electionId])
+        break
+      case 'user_vouch':
+        await enqueueBulkUpdateUserVouchElectionVoteStats([electionId])
+        break
+      case 'entity_relation':
+        await enqueueBulkUpdateEntityRelationElectionVoteStats([
+          {
+            entityRelationId: electionId,
+            relationTable: 'relation__post__related__url' as EntityRelationElectionTable,
+          },
+        ])
+        break
+    }
+    const jobs = await voteAggregation.searchJobs({
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+      data: { electionId },
+    })
+    onTestFinished(async () => {
+      await Promise.all(jobs.map(job => job.remove()))
+    })
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]?.data).toMatchObject({ electionId, orderingKey })
+    expect(jobs[0]?.opts.ordering).toEqual(VOTE_AGGREGATION_UPDATE_ELECTION_JOB.options.ordering)
   })
 
-  it('includes the relation table in entity-relation deduplication identity', () => {
-    const first = buildElectionJobOptions(
-      'election-1',
-      'entity_relation',
+  it('includes the relation table in entity-relation deduplication identity', async () => {
+    const electionId = randomUUID()
+    const tables = [
       'relation__topic__related__post',
-    )
-    const second = buildElectionJobOptions(
-      'election-1',
-      'entity_relation',
       'relation__topic__faq__post',
+    ] as EntityRelationElectionTable[]
+    await enqueueBulkUpdateEntityRelationElectionVoteStats(
+      tables.map(relationTable => ({ entityRelationId: electionId, relationTable })),
     )
-
-    expect(first.deduplication.id).not.toBe(second.deduplication.id)
-    expect(first.deduplication.id).toContain('relation__topic__related__post')
+    const jobs = await voteAggregation.searchJobs({
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+      data: { electionId },
+    })
+    expect(jobs).toHaveLength(2)
+    const ids = jobs.map(job => job.opts.deduplication?.id)
+    expect(new Set(ids).size).toBe(2)
+    expect(ids).toContain(
+      `processUpdateElectionVoteStats__entity_relation__${tables[0]}__${electionId}`,
+    )
+    expect(ids).toContain(
+      `processUpdateElectionVoteStats__entity_relation__${tables[1]}__${electionId}`,
+    )
   })
 
   it('rejects entity-relation tables outside election metadata', () => {
@@ -95,18 +160,20 @@ describe('election enqueue call options', () => {
   })
 
   it('recomputes a post election at the requested priority', async () => {
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
     const electionId = randomUUID()
 
     await enqueueBulkUpdatePostElectionVoteStats([electionId], 41)
 
-    expect(addBulk).toHaveBeenCalledExactlyOnceWith([
-      expect.objectContaining({
-        name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
-        data: { electionId, orderingKey: 'post' },
-        opts: expect.objectContaining({ priority: 41 }),
-      }),
-    ])
+    const jobs = await voteAggregation.searchJobs({
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+      data: { electionId },
+    })
+    onTestFinished(async () => {
+      await Promise.all(jobs.map(job => job.remove()))
+    })
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]?.data).toEqual({ electionId, orderingKey: 'post' })
+    expect(jobs[0]?.opts.priority).toBe(41)
   })
 
   it('tags a rejected admission as critical with the election context', async () => {

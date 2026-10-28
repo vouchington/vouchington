@@ -26,7 +26,6 @@ import {
 import { processRecoverRssFeedHardDeletes } from '@services/rss-feeds/hard-delete-recovery'
 import { postPublicationWorkConfig } from '../../../services/post-publication/work-limits.mts'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
-import { rssFeedHardDeletePageJobId } from '@queues/rss-feed-maintenance/enqueues/hard-delete'
 import {
   workerQueueConnection,
   workerQueuePrefix,
@@ -104,7 +103,7 @@ describe('canonical hard-delete recovery pages', () => {
         pageCursor: first.cursor,
         ...(phase === 'crawls' ? { phase } : {}),
       }
-      const rootId = rssFeedHardDeletePageJobId(initial, phase)
+      const rootId = `hard-delete-rss-feed__${feed.id}__${phase}__${initial.pageCursor}`
       const root = await rssFeedMaintenance.getJob(rootId)
       if (!root) throw new Error('Expected canonical initial delivery')
       const release = Promise.withResolvers<void>()
@@ -135,7 +134,7 @@ describe('canonical hard-delete recovery pages', () => {
         pageCursor: second.cursor,
         ...(phase === 'crawls' ? { phase } : {}),
       }
-      const nextId = rssFeedHardDeletePageJobId(nextData, phase)
+      const nextId = `hard-delete-rss-feed__${feed.id}__${phase}__${nextData.pageCursor}`
       expect(nextId).not.toBe(rootId)
       const next = await rssFeedMaintenance.getJob(nextId)
       if (!next) throw new Error('Expected canonical continuation')
@@ -158,12 +157,9 @@ describe('canonical hard-delete recovery pages', () => {
       expect(await rssFeedMaintenance.getJob(rootId)).toBeNull()
       const [currentRecoveryPage] = await listHardDeleteRssFeedNextPages([feed.id])
       expect(currentRecoveryPage).toMatchObject({ phase, cursor: nextData.pageCursor })
-      expect(
-        rssFeedHardDeletePageJobId(
-          { rssFeedId: feed.id, pageCursor: currentRecoveryPage!.cursor },
-          phase,
-        ),
-      ).toBe(nativeNext.id)
+      expect(`hard-delete-rss-feed__${feed.id}__${phase}__${currentRecoveryPage!.cursor}`).toBe(
+        nativeNext.id,
+      )
       expect(await countRows()).toBe(2)
       expect((await rssFeedMaintenance.getJob(nextId))?.data).toEqual(nextData)
       release.resolve()

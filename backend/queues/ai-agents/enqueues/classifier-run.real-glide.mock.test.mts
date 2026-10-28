@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ai_agents } from '../queues.mts'
-import {
-  classifierRunJobExists,
-  classifierRunJobId,
-  enqueueBulkClassifierRuns,
-} from './classifier-run.mts'
+import { classifierRunJobExists, enqueueBulkClassifierRuns } from './classifier-run.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -26,7 +22,7 @@ describe('classifier run bulk enqueue (real GlideMQ)', () => {
   afterEach(async () => {
     await Promise.all(
       runIds.splice(0).map(async runId => {
-        await (await ai_agents.getJob(classifierRunJobId(runId)))?.remove()
+        await (await ai_agents.getJob(`classifier_run_${runId}`))?.remove()
       }),
     )
   })
@@ -49,7 +45,7 @@ describe('classifier run bulk enqueue (real GlideMQ)', () => {
     runIds.push(data.runId)
     await enqueueBulkClassifierRuns([data])
 
-    await (await ai_agents.getJob(classifierRunJobId(data.runId)))?.remove()
+    await (await ai_agents.getJob(`classifier_run_${data.runId}`))?.remove()
 
     await expect(classifierRunJobExists(data.runId)).resolves.toBe(false)
     await expect(enqueueBulkClassifierRuns([data])).resolves.toEqual([data.runId])

@@ -9,12 +9,7 @@ import {
   deleteTestPostRow,
   listExistingTestPostIds,
 } from '../../test-helpers/publication-test-queries.mts'
-import { postPublicationEffectJobId } from '../../queues/post-publication/enqueues.mts'
 import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
-import {
-  capturedPublicationKeys,
-  hashCapturedPublicationKeys,
-} from '@services/post-publication/captured-keys'
 import { recordPostPublicationChange } from '@services/post-publication/capture'
 import { retainHardDeletedPostPublication } from '@services/post-publication/capture-hard-delete'
 import type { PostPublicationChange } from '@services/post-publication/types'
@@ -108,21 +103,12 @@ describe('destructive publication capture', () => {
     await deleteTestPostRow(query, commentId)
     await query.commit()
 
-    const keys = capturedPublicationKeys(change)
-    const jobId = postPublicationEffectJobId({
-      changeId,
-      postId: commentId,
-      scope: { type: 'post', id: commentId },
-      reason: change.reason,
-      keys,
-      keyHash: hashCapturedPublicationKeys(keys),
-      chunkIndex: 0,
-      scopeStart: true,
-      scopeTopicKeysCaptured: keys.some(key => key.kind === 'impact_topic'),
-      keyOffset: 0,
+    const [job] = await postPublicationQueue.searchJobs({
+      name: 'post-publication.apply-effects',
+      data: { changeId },
     })
-    onTestFinished(async () => (await postPublicationQueue.getJob(jobId))?.remove())
-    const job = await postPublicationQueue.getJob(jobId)
+    if (!job) throw new Error('Expected captured destructive-cleanup effect')
+    onTestFinished(async () => job.remove())
     expect((job?.data as PostPublicationEffectsJobData | undefined)?.keys).toEqual(
       expect.arrayContaining([
         { kind: 'impact_post', uuidValue: commentId },
