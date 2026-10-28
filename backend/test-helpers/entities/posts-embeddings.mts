@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
 import sql from 'sql-template-strings'
@@ -19,22 +18,22 @@ export async function updatePostEmbeddingData(data: {
     },
   ])
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* updatePostEmbeddingData */
     UPDATE posts
     SET bedrock_nova_multimodal_v1_input_sha256 = ${data.inputSha256},
       bedrock_nova_multimodal_v1_embedding = ${pgvector.toSql(data.embedding)},
       bedrock_nova_multimodal_v1_embedding_created_at = ${createdAt}
     WHERE id = ${data.postId}
-  `),
+  `,
   )
 }
 export async function updatePostUpdatedAt(postId: string, updatedAt: Date): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* updatePostUpdatedAt */
     UPDATE posts
     SET updated_at = ${updatedAt}
     WHERE id = ${postId}
-  `),
+  `,
   )
 }
 export async function getPostEmbeddingData(postId: string): Promise<{
@@ -47,14 +46,14 @@ export async function getPostEmbeddingData(postId: string): Promise<{
     created_at: Date | null
     ban_evasion_post_embedding_input_sha: Buffer | null
   }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getPostEmbeddingData */
     SELECT
       bedrock_nova_multimodal_v1_input_sha256 AS input_sha,
       bedrock_nova_multimodal_v1_embedding_created_at AS created_at,
       ban_evasion_post_embedding_input_sha256 AS ban_evasion_post_embedding_input_sha
     FROM posts
     WHERE id = ${postId}
-  `),
+  `,
   )
   return rows[0] || null
 }
