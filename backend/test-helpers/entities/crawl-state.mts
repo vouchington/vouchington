@@ -1,17 +1,16 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function markCrawlAsCompletedForSearch(urlId: string, crawlId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* markCrawlAsCompletedForSearch */
     UPDATE crawls
     SET response_status_code = 200,
         completed_at = NOW(),
         network_error = NULL
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
-  `),
+  `,
   )
 }
 
@@ -21,14 +20,14 @@ export async function setCrawlNetworkError(
   error: 'timeout' | 'dns' | 'ssrf',
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setCrawlNetworkError */
     UPDATE crawls
     SET response_status_code = 200,
         completed_at = NOW(),
         network_error = ${error}::crawl_network_errors
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
-  `),
+  `,
   )
 }
 
@@ -38,50 +37,50 @@ export async function setCrawlStatusCode(
   statusCode: number,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setCrawlStatusCode */
     UPDATE crawls
     SET response_status_code = ${statusCode},
         completed_at = NOW(),
         network_error = NULL
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
-  `),
+  `,
   )
 }
 
 export async function clearCrawlCompletedAt(urlId: string, crawlId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* clearCrawlCompletedAt */
     UPDATE crawls
     SET response_status_code = 200,
         completed_at = NULL,
         network_error = NULL
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
-  `),
+  `,
   )
 }
 
 export async function getLatestCrawlNetworkError(urlId: string): Promise<string | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestCrawlNetworkError */
     SELECT network_error FROM crawls
     WHERE url_id = ${urlId}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   return rows[0]?.network_error ?? null
 }
 
 export async function getLatestCrawlStatusCode(urlId: string): Promise<number | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestCrawlStatusCode */
     SELECT response_status_code FROM crawls
     WHERE url_id = ${urlId}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   return rows[0]?.response_status_code ?? null
 }
@@ -94,13 +93,13 @@ export async function getLatestCrawlCompletionForUrl(
     completed: boolean
     response_status_code: number | null
   }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestCrawlCompletionForUrl */
     SELECT completed_at IS NOT NULL AS completed, response_status_code
     FROM crawls
     WHERE url_id = ${urlId}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   const row = rows[0]
   return row ? { completed: row.completed, responseStatusCode: row.response_status_code } : null
@@ -116,13 +115,13 @@ export async function getLatestCrawlRedirectStatus(
   urlId: string,
 ): Promise<LatestCrawlRedirectStatus | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestCrawlRedirectStatus */
     SELECT response_status_code, redirect_url_id, network_error
     FROM crawls
     WHERE url_id = ${urlId}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   if (!rows[0]) return null
 
@@ -138,7 +137,7 @@ export async function clearCrawlEmbeddingsGeneratedAt(
   crawlId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* clearCrawlEmbeddingsGeneratedAt */
     UPDATE crawls
     SET response_status_code = 200,
         completed_at = NOW(),
@@ -146,6 +145,6 @@ export async function clearCrawlEmbeddingsGeneratedAt(
         embeddings_generated_at = NULL
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
-  `),
+  `,
   )
 }
