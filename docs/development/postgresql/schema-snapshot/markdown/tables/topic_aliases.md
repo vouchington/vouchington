@@ -6,16 +6,18 @@ Topic aliases and standalone hashtags. Linked aliases are synced to topics.alias
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                       | Nullable | Default                                                                   | Identity | Generated | Collation | Comment                                                           |
-| --------------- | -------------------------- | -------- | ------------------------------------------------------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
-| `id`            | `uuid`                     | no       | `uuidv7()`                                                                |          |           |           |                                                                   |
-| `topic_id`      | `uuid`                     | yes      |                                                                           |          |           |           | The linked topic. NULL identifies a standalone hashtag.           |
-| `alias`         | `text`                     | no       |                                                                           |          |           |           | Lowercase canonical alias or hashtag lookup key. Unique globally. |
-| `search_vector` | `tsvector`                 | yes      | `setweight(to_tsvector('voucha_english'::regconfig, alias), 'A'::"char")` |          | stored    |           |                                                                   |
-| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                                              |          | virtual   |           |                                                                   |
-| `created_by_id` | `uuid`                     | yes      |                                                                           |          |           |           |                                                                   |
-| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                                       |          |           |           |                                                                   |
-| `updated_by_id` | `uuid`                     | yes      |                                                                           |          |           |           |                                                                   |
+| Column                | Type                       | Nullable | Default                                                                   | Identity | Generated | Collation | Comment                                                                                            |
+| --------------------- | -------------------------- | -------- | ------------------------------------------------------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                                                                |          |           |           |                                                                                                    |
+| `topic_id`            | `uuid`                     | yes      |                                                                           |          |           |           | The linked topic. NULL identifies a standalone hashtag or an alias whose unlink has been accepted. |
+| `unlink_requested_at` | `timestamp with time zone` | yes      |                                                                           |          |           |           | When an administrator accepted unlinking. NULL means the alias is not waiting on bounded deletion. |
+| `unlink_topic_id`     | `uuid`                     | yes      |                                                                           |          |           |           | Topic detached by the accepted unlink. NULL exactly when unlink_requested_at is NULL.              |
+| `alias`               | `text`                     | no       |                                                                           |          |           |           | Lowercase canonical alias or hashtag lookup key. Unique globally.                                  |
+| `search_vector`       | `tsvector`                 | yes      | `setweight(to_tsvector('voucha_english'::regconfig, alias), 'A'::"char")` |          | stored    |           |                                                                                                    |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                                              |          | virtual   |           |                                                                                                    |
+| `created_by_id`       | `uuid`                     | yes      |                                                                           |          |           |           |                                                                                                    |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                                                       |          |           |           |                                                                                                    |
+| `updated_by_id`       | `uuid`                     | yes      |                                                                           |          |           |           |                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -28,11 +30,13 @@ Not partitioned — growth: unbounded.
 - `topic_aliases_alias_check`: `CHECK ((char_length(alias) <= 255))`
 - `topic_aliases_alias_check1`: `CHECK ((alias = lower(alias)))`
 - `topic_aliases_alias_check2`: `CHECK ((alias = TRIM(BOTH FROM alias)))`
+- `topic_aliases_check`: `CHECK (((unlink_requested_at IS NULL) = (unlink_topic_id IS NULL)))`
 
 **Foreign keys:**
 
 - `topic_aliases_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `topic_aliases_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
+- `topic_aliases_unlink_topic_id_fkey`: `FOREIGN KEY (unlink_topic_id) REFERENCES topics(id) ON DELETE RESTRICT`
 - `topic_aliases_updated_by_id_fkey`: `FOREIGN KEY (updated_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -41,6 +45,8 @@ Not partitioned — growth: unbounded.
 - `idx_topic_aliases__created_by_id`: `CREATE INDEX idx_topic_aliases__created_by_id ON public.topic_aliases USING btree (created_by_id)`
 - `idx_topic_aliases__search_vector`: `CREATE INDEX idx_topic_aliases__search_vector ON public.topic_aliases USING gin (search_vector)`
 - `idx_topic_aliases__topic_id`: `CREATE INDEX idx_topic_aliases__topic_id ON public.topic_aliases USING btree (topic_id, alias) WHERE (topic_id IS NOT NULL)`
+- `idx_topic_aliases__unlink_requested`: `CREATE INDEX idx_topic_aliases__unlink_requested ON public.topic_aliases USING btree (id) WHERE (unlink_requested_at IS NOT NULL)`
+- `idx_topic_aliases__unlink_topic_id`: `CREATE INDEX idx_topic_aliases__unlink_topic_id ON public.topic_aliases USING btree (unlink_topic_id) WHERE (unlink_topic_id IS NOT NULL)`
 - `idx_topic_aliases__updated_at_id`: `CREATE INDEX idx_topic_aliases__updated_at_id ON public.topic_aliases USING btree (updated_at, ((id)::text))`
 - `idx_topic_aliases__updated_by_id`: `CREATE INDEX idx_topic_aliases__updated_by_id ON public.topic_aliases USING btree (updated_by_id)`
 - `topic_aliases_alias_key`: `CREATE UNIQUE INDEX topic_aliases_alias_key ON public.topic_aliases USING btree (alias)`
@@ -48,7 +54,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id', 'unlink_topic_id')`
 - `trigger_topic_aliases_mark_category_mapping_dirty`: `CREATE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty AFTER INSERT OR DELETE OR UPDATE OF topic_id ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()`
 - `trigger_topic_aliases_project_delete`: `CREATE TRIGGER trigger_topic_aliases_project_delete AFTER DELETE ON public.topic_aliases REFERENCING OLD TABLE AS old_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()`
 - `trigger_topic_aliases_project_insert`: `CREATE TRIGGER trigger_topic_aliases_project_insert AFTER INSERT ON public.topic_aliases REFERENCING NEW TABLE AS new_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()`

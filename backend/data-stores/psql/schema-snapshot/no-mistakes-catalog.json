@@ -125667,6 +125667,10 @@
         "topic_aliases_alias_check2": {
           "definition": "CHECK ((alias = TRIM(BOTH FROM alias)))",
           "validated": true
+        },
+        "topic_aliases_check": {
+          "definition": "CHECK (((unlink_requested_at IS NULL) = (unlink_topic_id IS NULL)))",
+          "validated": true
         }
       },
       "columns": {
@@ -125678,7 +125682,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 5
         },
         "created_at": {
           "comment": null,
@@ -125688,7 +125692,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 7
         },
         "created_by_id": {
           "comment": null,
@@ -125698,7 +125702,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 8
         },
         "id": {
           "comment": null,
@@ -125718,10 +125722,10 @@
           "generatedExpression": "setweight(to_tsvector('voucha_english'::regconfig, alias), 'A'::\"char\")",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 6
         },
         "topic_id": {
-          "comment": "The linked topic. NULL identifies a standalone hashtag.",
+          "comment": "The linked topic. NULL identifies a standalone hashtag or an alias whose unlink has been accepted.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -125729,6 +125733,26 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 2
+        },
+        "unlink_requested_at": {
+          "comment": "When an administrator accepted unlinking. NULL means the alias is not waiting on bounded deletion.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "unlink_topic_id": {
+          "comment": "Topic detached by the accepted unlink. NULL exactly when unlink_requested_at is NULL.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "updated_at": {
           "comment": null,
@@ -125738,7 +125762,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "updated_by_id": {
           "comment": null,
@@ -125748,7 +125772,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 10
         }
       },
       "comment": "Topic aliases and standalone hashtags. Linked aliases are synced to topics.aliases.",
@@ -125763,6 +125787,14 @@
         },
         "topic_aliases_topic_id_fkey": {
           "columns": ["topic_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "topics",
+          "validated": true
+        },
+        "topic_aliases_unlink_topic_id_fkey": {
+          "columns": ["unlink_topic_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -125880,6 +125912,52 @@
           "unique": false,
           "valid": true
         },
+        "idx_topic_aliases__unlink_requested": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_aliases__unlink_requested ON public.topic_aliases USING btree (id) WHERE (unlink_requested_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(unlink_requested_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_aliases__unlink_topic_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_aliases__unlink_topic_id ON public.topic_aliases USING btree (unlink_topic_id) WHERE (unlink_topic_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "unlink_topic_id",
+              "descending": false,
+              "expression": "unlink_topic_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(unlink_topic_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_aliases__updated_at_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -125989,7 +126067,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_active_topic_references": {
-          "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+          "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id', 'unlink_topic_id')"
         },
         "trigger_topic_aliases_mark_category_mapping_dirty": {
           "definition": "CREATE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty AFTER INSERT OR DELETE OR UPDATE OF topic_id ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()"
