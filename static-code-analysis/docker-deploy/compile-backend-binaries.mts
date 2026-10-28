@@ -7,7 +7,12 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 import { copySharedLibraries, stageRuntimeFiles } from './compile-runtime-files.mts'
-import { EMBEDDED_ROOT_NAME, REPO_ROOT, sourceRewritePlugin } from './compile-source-rewrites.mts'
+import {
+  EMBEDDED_ROOT_NAME,
+  REPO_ROOT,
+  sourceRewritePlugin,
+  type BunPlugin,
+} from './compile-source-rewrites.mts'
 
 const BACKEND = join(REPO_ROOT, 'backend')
 
@@ -37,15 +42,6 @@ const DUCKDB_PLATFORM_PACKAGES = [
   'win32-x64',
 ]
 
-export type BunPlugin = {
-  name: string
-  setup(build: {
-    onLoad(
-      options: { filter: RegExp },
-      callback: (args: { path: string }) => { contents: string; loader: 'js' | 'ts' } | undefined,
-    ): void
-  }): void
-}
 type BunBuildResult = { success: boolean; logs: unknown[]; outputs: { path: string }[] }
 type BunBuild = (config: {
   entrypoints: string[]
