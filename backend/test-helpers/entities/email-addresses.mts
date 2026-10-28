@@ -1,5 +1,4 @@
 import type { EmailAuthenticationScope } from '../../services/users/email-authentication-scope.mts'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Email address entity helpers
  */
@@ -17,11 +16,11 @@ import { upsertTestEmailDomainHostnameId, upsertTestHostnameId } from './email-d
 export async function addVerifiedEmailForUser(userId: string, email: string): Promise<void> {
   const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(email)
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addVerifiedEmailForUser */
     INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
     VALUES (${userId}, ${email}, ${emailDomainHostnameId}, false)
     ON CONFLICT (user_id, email_address) DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -84,31 +83,31 @@ export async function addDisposableEmailForUser(
   domain: string,
 ): Promise<void> {
   const { rows: sourceRows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addDisposableEmailForUser:source */
     INSERT INTO domain_blocklist_sources (type, name, url)
     VALUES ('email'::domain_blocklist_types, 'test-disposable-email', 'https://example.com/list.txt')
     ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, url = EXCLUDED.url
     RETURNING id
-  `),
+  `,
   )
   const sourceId = sourceRows[0].id
   const blockedHostnameId = await upsertTestHostnameId(domain, {}, 'private_email')
 
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addDisposableEmailForUser:domain */
     INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
     VALUES (${sourceId}, ${domain}, ${blockedHostnameId})
     ON CONFLICT (domain, source_id) DO NOTHING
-  `),
+  `,
   )
 
   const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(email)
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addDisposableEmailForUser:email */
     INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
     VALUES (${userId}, ${email}, ${emailDomainHostnameId}, false)
     ON CONFLICT (user_id, email_address) DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -117,22 +116,22 @@ export async function addDisposableEmailForUser(
  */
 export async function addDisposableDomain(domain: string): Promise<void> {
   const { rows: sourceRows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addDisposableDomain:source */
     INSERT INTO domain_blocklist_sources (type, name, url)
     VALUES ('email'::domain_blocklist_types, 'test-disposable-email', 'https://example.com/list.txt')
     ON CONFLICT (name) DO UPDATE SET type = EXCLUDED.type, url = EXCLUDED.url
     RETURNING id
-  `),
+  `,
   )
   const sourceId = sourceRows[0].id
   const blockedHostnameId = await upsertTestHostnameId(domain, {}, 'private_email')
 
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addDisposableDomain:domain */
     INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
     VALUES (${sourceId}, ${domain}, ${blockedHostnameId})
     ON CONFLICT (domain, source_id) DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -155,11 +154,11 @@ export async function insertEmailAddressLoginToken(
     token.toUpperCase(),
   )
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertEmailAddressLoginToken */
     INSERT INTO email_address_login_tokens (email_address, token, consumed_at, purpose, user_id, reauthentication_session_id)
     VALUES (${emailAddress}, ${hashed}, CASE WHEN ${consumed} THEN CURRENT_TIMESTAMP ELSE NULL END,
       ${scope.purpose}, ${currentUserId}, ${sessionId})
-  `),
+  `,
   )
 }
 
@@ -167,13 +166,13 @@ export async function getLatestEmailAddressLoginTokenHash(
   emailAddress: string,
 ): Promise<string | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestEmailAddressLoginTokenHash */
     SELECT token
     FROM email_address_login_tokens
     WHERE email_address = ${emailAddress}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   return (rows[0]?.token as string | null) ?? null
 }
