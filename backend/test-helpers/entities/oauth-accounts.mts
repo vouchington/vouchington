@@ -1,10 +1,9 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { upsertTestEmailDomainHostnameId } from './email-domain-hostname.mts'
 import {
   getOAuthTokenPurpose,
-  providerTableConfigs,
+  getOAuthTableConfig,
   type OAuthProvider,
   type OAuthAccount,
 } from './_oauth-config-support.mts'
@@ -15,7 +14,7 @@ export async function insertTestOAuthAccount(
   providerUserEmailAddress: string | null = null,
   accountId?: string,
 ): Promise<OAuthAccount> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   if (accountId !== undefined && !config.accountIdColumn) {
     throw new Error(`insertTestOAuthAccount: ${provider} has no account ID column`)
   }
@@ -27,7 +26,7 @@ export async function insertTestOAuthAccount(
       : null
   const emailDomainColumn = provider === 'x' ? '' : 'email_domain_hostname_id,'
   const emailDomainValue = provider === 'x' ? '' : '$3,'
-  const query = `
+  const query = `/* insertTestOAuthAccount */
     INSERT INTO ${config.table} (
       ${idColumn}
       ${config.providerUserIdColumn},
@@ -48,7 +47,7 @@ export async function insertTestOAuthAccount(
       ? [providerUserId, providerUserEmailAddress]
       : [providerUserId, providerUserEmailAddress, emailDomainHostnameId]
   if (accountId !== undefined) values.push(accountId)
-  const { rows } = await write<OAuthAccount>(allowUnannotatedQuery(query), values)
+  const { rows } = await write<OAuthAccount>(query, values)
   return rows[0]
 }
 
@@ -56,13 +55,11 @@ export async function getTestOAuthAccountEmailDomainHostnameId(
   provider: Exclude<OAuthProvider, 'x'>,
   providerUserId: string,
 ): Promise<string | null> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   const result = await read<{ email_domain_hostname_id: string | null }>(
-    allowUnannotatedQuery(
-      `/* getTestOAuthAccountEmailDomainHostnameId */
+    `/* getTestOAuthAccountEmailDomainHostnameId */
        SELECT email_domain_hostname_id FROM ${config.table}
        WHERE ${config.providerUserIdColumn} = $1`,
-    ),
     [providerUserId],
   )
   return result.rows[0]?.email_domain_hostname_id ?? null
@@ -73,11 +70,9 @@ export async function connectTestOAuthAccount(
   userId: string,
   providerUserId: string,
 ): Promise<void> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   const { rowCount } = await write(
-    allowUnannotatedQuery(
-      `UPDATE ${config.table} SET user_id = $1 WHERE ${config.providerUserIdColumn} = $2`,
-    ),
+    `/* connectTestOAuthAccount */ UPDATE ${config.table} SET user_id = $1 WHERE ${config.providerUserIdColumn} = $2`,
     [userId, providerUserId],
   )
   if (!rowCount) {
@@ -90,11 +85,9 @@ export async function setTestOAuthAccountData(
   providerUserId: string,
   data: Record<string, unknown>,
 ): Promise<void> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   const { rowCount } = await write(
-    allowUnannotatedQuery(
-      `UPDATE ${config.table} SET ${config.dataColumn} = $1 WHERE ${config.providerUserIdColumn} = $2`,
-    ),
+    `/* setTestOAuthAccountData */ UPDATE ${config.table} SET ${config.dataColumn} = $1 WHERE ${config.providerUserIdColumn} = $2`,
     [JSON.stringify(data), providerUserId],
   )
   if (!rowCount) {
@@ -107,7 +100,7 @@ export async function setTestOAuthAccountTokens(
   providerUserId: string,
   tokens: { accessToken?: string | null; refreshToken?: string | null },
 ): Promise<void> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   const sets: string[] = []
   const values: unknown[] = []
   let paramIndex = 1
@@ -136,9 +129,7 @@ export async function setTestOAuthAccountTokens(
   if (sets.length === 0) return
   values.push(providerUserId)
   await write(
-    allowUnannotatedQuery(
-      `UPDATE ${config.table} SET ${sets.join(', ')} WHERE ${config.providerUserIdColumn} = $${paramIndex}`,
-    ),
+    `/* setTestOAuthAccountTokens */ UPDATE ${config.table} SET ${sets.join(', ')} WHERE ${config.providerUserIdColumn} = $${paramIndex}`,
     values,
   )
 }
@@ -148,13 +139,11 @@ export async function setTestOAuthAccountFriendsSyncedAt(
   providerUserId: string,
   syncedAt: 'now' | 'expired' | null,
 ): Promise<void> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   const value =
     syncedAt === 'now' ? 'NOW()' : syncedAt === 'expired' ? "NOW() - INTERVAL '1 hour'" : 'NULL'
   await write(
-    allowUnannotatedQuery(
-      `UPDATE ${config.table} SET friends_synced_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
-    ),
+    `/* setTestOAuthAccountFriendsSyncedAt */ UPDATE ${config.table} SET friends_synced_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
     [providerUserId],
   )
 }
@@ -164,12 +153,10 @@ export async function setTestOAuthAccountTokenExpiry(
   providerUserId: string,
   expired: boolean,
 ): Promise<void> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   const value = expired ? "NOW() - INTERVAL '1 hour'" : "NOW() + INTERVAL '1 hour'"
   await write(
-    allowUnannotatedQuery(
-      `UPDATE ${config.table} SET access_token_expires_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
-    ),
+    `/* setTestOAuthAccountTokenExpiry */ UPDATE ${config.table} SET access_token_expires_at = ${value} WHERE ${config.providerUserIdColumn} = $1`,
     [providerUserId],
   )
 }
@@ -178,9 +165,9 @@ export async function deleteTestOAuthAccount(
   provider: OAuthProvider,
   providerUserId: string,
 ): Promise<void> {
-  const config = providerTableConfigs[provider]
+  const config = getOAuthTableConfig(provider)
   await write(
-    allowUnannotatedQuery(`DELETE FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`),
+    `/* deleteTestOAuthAccount */ DELETE FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
     [providerUserId],
   )
 }

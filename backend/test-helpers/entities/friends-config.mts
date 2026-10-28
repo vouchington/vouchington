@@ -1,33 +1,35 @@
 import type { OAuthProvider } from './_oauth-config-support.mts'
 
-export type FriendsTableConfig = {
+export type FriendsTableConfig = Readonly<{
   table: string
   userIdColumn: string
   friendIdColumn: string
-}
+}>
 
-const FRIENDS_TABLE_CONFIGS: Partial<Record<OAuthProvider, FriendsTableConfig>> = {
-  facebook: {
+const FRIENDS_TABLE_CONFIGS = Object.freeze({
+  facebook: Object.freeze({
     table: 'facebook_friends',
     userIdColumn: 'facebook_account_id',
     friendIdColumn: 'facebook_friend_id',
-  },
-  x: {
+  }),
+  x: Object.freeze({
     table: 'x_friends',
     userIdColumn: 'x_account_id',
     friendIdColumn: 'x_friend_id',
-  },
-  github: {
+  }),
+  github: Object.freeze({
     table: 'github_friends',
     userIdColumn: 'github_account_id',
     friendIdColumn: 'github_friend_id',
-  },
-}
+  }),
+} satisfies Partial<Record<OAuthProvider, FriendsTableConfig>>)
 
 export function getFriendsTableConfig(provider: OAuthProvider): FriendsTableConfig {
-  const config = FRIENDS_TABLE_CONFIGS[provider]
-  if (!config) throw new Error(`No friends table config for provider: ${provider}`)
-  return config
+  if (typeof provider !== 'string') throw new Error('Invalid friends provider')
+  if (!Object.hasOwn(FRIENDS_TABLE_CONFIGS, provider)) {
+    throw new Error(`No friends table config for provider: ${provider}`)
+  }
+  return FRIENDS_TABLE_CONFIGS[provider as keyof typeof FRIENDS_TABLE_CONFIGS]
 }
 
 export function sourceAccountId(provider: OAuthProvider): string {
