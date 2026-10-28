@@ -20,7 +20,7 @@ export type DataRetentionLimits = {
   maxBatches: number
 }
 
-export const DATA_RETENTION_CONFIG_KEY = 'data-retention-config'
+const DATA_RETENTION_CONFIG_KEY = 'data-retention-config'
 
 export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   batch_size: 500,
