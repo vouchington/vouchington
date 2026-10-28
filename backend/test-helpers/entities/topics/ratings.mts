@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { setTestPostClearanceStatus } from '../post-clearance.mts'
 import sql from 'sql-template-strings'
@@ -6,7 +5,7 @@ import { v7 as uuidv7 } from 'uuid'
 
 export async function getTopicRatingStats(topicId: string) {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getTopicRatingStats */
     SELECT
       COALESCE(ratings__count__1, 0)::INT AS ratings__count__1,
       COALESCE(ratings__count__2, 0)::INT AS ratings__count__2,
@@ -20,7 +19,7 @@ export async function getTopicRatingStats(topicId: string) {
       COALESCE(ratings__score__5, 0)::DOUBLE PRECISION AS ratings__score__5
     FROM topic_metrics
     WHERE topic_id = ${topicId}
-  `),
+  `,
   )
   const row = rows[0]
   if (!row) return null
@@ -48,7 +47,7 @@ export async function insertTestReview(data: {
   const sha256 = `\\x${'0'.repeat(64)}`
   const id = data.createdAt ? uuidv7({ msecs: data.createdAt.getTime() }) : null
   const { rows: postRows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestReviewPost */
     INSERT INTO posts (
       id, post_type, title, markdown, created_by_id,
       bedrock_nova_multimodal_v1_content_sha256,
@@ -57,12 +56,12 @@ export async function insertTestReview(data: {
     )
     VALUES (COALESCE(${id}::uuid, uuidv7()), 'review', ${data.title || 'Test Review'}, ${data.markdown || ''}, ${data.userId}, ${sha256}, ${sha256}, 'system')
     RETURNING id
-  `),
+  `,
   )
   const postId = postRows[0].id
   await setTestPostClearanceStatus(postId, 'approved', data.userId)
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestReviewTopicRatings */
     INSERT INTO post_review_topic_ratings (post_id, topic_id, rating, order_index)
     SELECT ${postId}, topic_id, rating, order_index
     FROM UNNEST(
@@ -70,18 +69,18 @@ export async function insertTestReview(data: {
       ${data.topicRatings.map(r => r.rating)}::smallint[],
       ${data.topicRatings.map((_, i) => i)}::int[]
     ) AS t(topic_id, rating, order_index)
-  `),
+  `,
   )
   return postId
 }
 
 export async function getTopicRatingsUpdatedAt(topicId: string): Promise<Date | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getTopicRatingsUpdatedAt */
     SELECT ratings__updated_at
     FROM topic_metrics
     WHERE topic_id = ${topicId}
-  `),
+  `,
   )
   const ratingsUpdatedAt = rows[0]?.ratings__updated_at
   if (!ratingsUpdatedAt) return null
@@ -93,10 +92,10 @@ export async function setTestTopicRatingsUpdatedAt(
   ratingsUpdatedAt: Date,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setTestTopicRatingsUpdatedAt */
     UPDATE topic_metrics
     SET ratings__updated_at = ${ratingsUpdatedAt}
     WHERE topic_id = ${topicId}
-  `),
+  `,
   )
 }
