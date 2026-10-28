@@ -26,7 +26,7 @@ interface HnAlgoliaSearchResponse {
 
 const inflightByNormalizedUrl = new Map<string, Promise<HnDiscussionThread[]>>()
 
-export function buildHnAlgoliaSearchUrl(pageUrl: string): string {
+function buildHnAlgoliaSearchUrl(pageUrl: string): string {
   const params = new URLSearchParams({
     query: pageUrl,
     restrictSearchableAttributes: 'url',
@@ -36,7 +36,7 @@ export function buildHnAlgoliaSearchUrl(pageUrl: string): string {
   return `${HN_ALGOLIA_SEARCH_ORIGIN}/api/v1/search?${params}`
 }
 
-export function mapHnAlgoliaHits(
+function mapHnAlgoliaHits(
   hits: HnAlgoliaHit[] | undefined,
   sourceUrl: string,
 ): HnDiscussionThread[] {

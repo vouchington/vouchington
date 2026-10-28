@@ -3,7 +3,7 @@ import { createMessagesCache } from '@vouchington/localization/react'
 import { loadClientMessages } from './load-client-messages'
 
 /** The route selector batch is cached independently for each locale and pathname. */
-export function createRouteMessagesCache(
+function createRouteMessagesCache(
   loadMessages: (locale: string, pathname: string) => Promise<EnCatalog>,
 ) {
   const cache = createMessagesCache((key: string) => {

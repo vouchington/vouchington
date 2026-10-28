@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useViewerHasCommunity, resetViewerHasCommunityCache } from '../use-viewer-has-community'
+import { useViewerHasCommunity } from '../use-viewer-has-community'
 
 const { mockLoadMyCommunities } = vi.hoisted(() => ({
   mockLoadMyCommunities: vi.fn<VitestLooseMock>(),
@@ -12,7 +12,7 @@ vi.mock(import('@/lib/api/client/communities'), () => ({
 
 describe('useViewerHasCommunity', () => {
   beforeEach(() => {
-    resetViewerHasCommunityCache()
+    renderHook(() => useViewerHasCommunity(false))
     mockLoadMyCommunities.mockReset()
   })
 
@@ -59,14 +59,14 @@ describe('useViewerHasCommunity', () => {
     expect(r2.current).toBe(true)
   })
 
-  it('resets cache with resetViewerHasCommunityCache', async () => {
+  it('clears cached membership when the hook is disabled', async () => {
     mockLoadMyCommunities.mockResolvedValue([])
     renderHook(() => useViewerHasCommunity(true))
     await act(async () => {
       await Promise.resolve()
     })
     expect(mockLoadMyCommunities).toHaveBeenCalledTimes(1)
-    resetViewerHasCommunityCache()
+    renderHook(() => useViewerHasCommunity(false))
     renderHook(() => useViewerHasCommunity(true))
     await act(async () => {
       await Promise.resolve()

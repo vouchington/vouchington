@@ -19,7 +19,7 @@ const featureFlagCookieCodec: FeatureFlagCookieCodec = {
   decodeBase64: value => Buffer.from(value, 'base64').toString('utf8'),
 }
 
-export async function getServerFeatureFlagOverrides(): Promise<FeatureFlags> {
+async function getServerFeatureFlagOverrides(): Promise<FeatureFlags> {
   const cookieStore = await cookies()
   const raw = cookieStore.get(FF_COOKIE)?.value
   if (!raw) return {}
@@ -29,7 +29,7 @@ export async function getServerFeatureFlagOverrides(): Promise<FeatureFlags> {
   })
 }
 
-export async function getEffectiveServerFeatureFlags(): Promise<FeatureFlags> {
+async function getEffectiveServerFeatureFlags(): Promise<FeatureFlags> {
   const overrides = await getServerFeatureFlagOverrides()
   return mergeFeatureFlagOverrides(await getGlobalServerFeatureFlags(), overrides)
 }
@@ -44,7 +44,7 @@ interface GlobalFeatureFlagsFetchFailure {
   error: unknown
 }
 
-export type GlobalFeatureFlagsFetchResult =
+type GlobalFeatureFlagsFetchResult =
   | GlobalFeatureFlagsFetchSuccess
   | GlobalFeatureFlagsFetchFailure
 
@@ -55,7 +55,7 @@ export type GlobalFeatureFlagsFetchResult =
  * returned zero enabled flags", so callers are forced to name which case they are in rather than
  * silently treating "unreadable" as "off".
  */
-export async function fetchGlobalServerFeatureFlags(): Promise<GlobalFeatureFlagsFetchResult> {
+async function fetchGlobalServerFeatureFlags(): Promise<GlobalFeatureFlagsFetchResult> {
   try {
     const response = await getFeatureFlags({
       headers: { Cookie: '', 'x-voucha-request-kind': GLOBAL_FEATURE_FLAGS_REQUEST_KIND },

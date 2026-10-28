@@ -4,9 +4,7 @@ import { loadMyCommunities } from '@/lib/api/client/communities'
 import { createCommunityPost } from '@/lib/api/client/posts'
 import onError from '@/lib/on-error'
 import {
-  buildDiscussionMarkdown,
   createLinkedCommunityDiscussion,
-  linkRelatedUrls,
   loadAvailableCommunities,
 } from '../news-community-discussion-helpers'
 import { makeCommunity } from '@/test-helpers/api-responses/communities'
@@ -84,56 +82,6 @@ describe('news community discussion helpers', () => {
     ])
   })
 
-  it('builds markdown with unique source URLs', () => {
-    expect(
-      buildDiscussionMarkdown([
-        { id: 'url-1', url: 'https://example.com/a' },
-        { id: 'url-1', url: 'https://example.com/a' },
-        { id: 'url-2', url: 'https://example.com/b' },
-      ]),
-    ).toBe(
-      'Source article:\n\n- [https://example.com/a](https://example.com/a)\n- [https://example.com/b](https://example.com/b)',
-    )
-    expect(buildDiscussionMarkdown([])).toBe('')
-  })
-
-  it('links unique related URLs and reports partial failures', async () => {
-    mockCreateEntityRelation
-      .mockResolvedValueOnce({
-        id: 'relation-1',
-        created_at: '2026-01-01T00:00:00Z',
-        created_by_id: 'user-1',
-        object_data: {},
-      })
-      .mockRejectedValueOnce(new Error('relation failed'))
-
-    await linkRelatedUrls('post-1', [
-      { id: 'url-1', url: 'https://example.com/a' },
-      { id: 'url-1', url: 'https://example.com/a' },
-      { id: 'url-2', url: 'https://example.com/b' },
-    ])
-
-    expect(mockCreateEntityRelation).toHaveBeenCalledTimes(2)
-    expect(mockCreateEntityRelation).toHaveBeenNthCalledWith(
-      1,
-      'post',
-      'post-1',
-      'related',
-      'url',
-      'url-1',
-    )
-    expect(mockOnError).toHaveBeenCalledWith(null, {
-      fallback: 'Discussion created, but some article links failed to attach.',
-      skipSentry: true,
-    })
-  })
-
-  it('does not link when no related URLs are provided', async () => {
-    await linkRelatedUrls('post-1', [])
-
-    expect(mockCreateEntityRelation).not.toHaveBeenCalled()
-  })
-
   it('createLinkedCommunityDiscussion builds and posts a discussion then links related URLs', async () => {
     const post = {
       id: 'post-1',
@@ -144,16 +92,22 @@ describe('news community discussion helpers', () => {
       post,
       community_post_review: null,
     } as unknown as Awaited<ReturnType<typeof createCommunityPost>>)
-    mockCreateEntityRelation.mockResolvedValue({
-      id: 'relation-1',
-      created_at: '2026-01-01T00:00:00Z',
-      created_by_id: 'user-1',
-      object_data: {},
-    })
+    mockCreateEntityRelation
+      .mockResolvedValueOnce({
+        id: 'relation-1',
+        created_at: '2026-01-01T00:00:00Z',
+        created_by_id: 'user-1',
+        object_data: {},
+      })
+      .mockRejectedValueOnce(new Error('relation failed'))
 
     const result = await createLinkedCommunityDiscussion(
       { id: 'community-1', name: 'Rewards', slug: 'rewards', visibility: 'public' },
-      [{ id: 'url-1', url: 'https://example.com/article' }],
+      [
+        { id: 'url-1', url: 'https://example.com/article' },
+        { id: 'url-1', url: 'https://example.com/article' },
+        { id: 'url-2', url: 'https://example.com/other' },
+      ],
       {
         isPrivateCommunity: false,
         itemTitle: 'My Article',
@@ -166,20 +120,66 @@ describe('news community discussion helpers', () => {
       community_id: 'community-1',
       post_type: 'discussion',
       title: 'Discuss: My Article',
-      markdown: 'Source article:\n\n- [https://example.com/article](https://example.com/article)',
+      markdown:
+        'Source article:\n\n- [https://example.com/article](https://example.com/article)\n- [https://example.com/other](https://example.com/other)',
       broadcast: 'everyone',
       privacy: 'public',
       cf_turnstile_response: 'turnstile',
       recaptcha_token: 'recaptcha',
     })
-    expect(mockCreateEntityRelation).toHaveBeenCalledWith(
+    expect(mockCreateEntityRelation).toHaveBeenCalledTimes(2)
+    expect(mockCreateEntityRelation).toHaveBeenNthCalledWith(
+      1,
       'post',
       'post-1',
       'related',
       'url',
       'url-1',
     )
+    expect(mockCreateEntityRelation).toHaveBeenNthCalledWith(
+      2,
+      'post',
+      'post-1',
+      'related',
+      'url',
+      'url-2',
+    )
+    expect(mockOnError).toHaveBeenCalledWith(null, {
+      fallback: 'Discussion created, but some article links failed to attach.',
+      skipSentry: true,
+    })
     expect(result).toEqual({ post, communityPostReview: null })
+  })
+
+  it('links a source successfully without reporting a partial failure', async () => {
+    const post = { id: 'post-linked', post_type: 'discussion' as const, slug: 'linked' }
+    mockCreateCommunityPost.mockResolvedValue({
+      post,
+      community_post_review: null,
+    } as unknown as Awaited<ReturnType<typeof createCommunityPost>>)
+    mockCreateEntityRelation.mockResolvedValue({
+      id: 'relation-linked',
+      created_at: '2026-01-01T00:00:00Z',
+      created_by_id: 'user-1',
+      object_data: {},
+    })
+
+    await expect(
+      createLinkedCommunityDiscussion(
+        { id: 'community-1', name: 'Rewards', slug: 'rewards', visibility: 'public' },
+        [{ id: 'url-linked', url: 'https://example.com/linked' }],
+        { isPrivateCommunity: false },
+      ),
+    ).resolves.toEqual({ post, communityPostReview: null })
+
+    expect(mockCreateEntityRelation).toHaveBeenCalledExactlyOnceWith(
+      'post',
+      'post-linked',
+      'related',
+      'url',
+      'url-linked',
+    )
+    expect(mockOnError).not.toHaveBeenCalled()
   })
 
   it('createLinkedCommunityDiscussion uses private broadcast/privacy for private communities', async () => {
@@ -211,7 +211,9 @@ describe('news community discussion helpers', () => {
         broadcast: 'users',
         privacy: 'private',
         title: 'Community discussion',
+        markdown: '',
       }),
     )
+    expect(mockCreateEntityRelation).not.toHaveBeenCalled()
   })
 })

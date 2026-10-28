@@ -1,41 +1,59 @@
-import type { EnCatalog } from '@ts-shared/ui-messages'
-import { describe, expect, it, vi } from 'vitest'
-import { createRouteMessagesCache } from '../route-messages-cache'
+import { getWebLocalizationBatchClient } from '@/lib/api/client/localization'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getRouteMessagesPromise, seedRouteMessages } from '../route-messages-cache'
 
-describe('createRouteMessagesCache', () => {
+const mockLoadMessages = vi.mocked(getWebLocalizationBatchClient)
+
+describe('route message cache behavior', () => {
+  beforeEach(() => {
+    mockLoadMessages.mockReset()
+  })
+
   it('keeps destination route loads separate within one locale', async () => {
-    const loadMessages = vi.fn<(locale: string, pathname: string) => Promise<EnCatalog>>()
-    loadMessages.mockResolvedValueOnce({ nav: { home: 'Home' } })
-    loadMessages.mockResolvedValueOnce({
-      extracted: { my: { notifications: { heading: 'Notifications' } } },
+    mockLoadMessages.mockResolvedValueOnce({
+      contract: 'v1',
+      revision: 'home',
+      ttlSeconds: 60,
+      messages: { 'nav.home': 'Home' },
     })
-    const cache = createRouteMessagesCache(loadMessages)
+    mockLoadMessages.mockResolvedValueOnce({
+      contract: 'v1',
+      revision: 'notifications',
+      ttlSeconds: 60,
+      messages: { 'extracted.my.notifications.heading': 'Notifications' },
+    })
 
-    await expect(cache.getMessagesPromise('en', '/')).resolves.toEqual({ nav: { home: 'Home' } })
-    await expect(cache.getMessagesPromise('en', '/my/notifications')).resolves.toEqual({
+    await expect(getRouteMessagesPromise('en', '/')).resolves.toEqual({
+      nav: { home: 'Home' },
+    })
+    await expect(getRouteMessagesPromise('en', '/my/notifications')).resolves.toEqual({
       extracted: { my: { notifications: { heading: 'Notifications' } } },
     })
-    expect(loadMessages).toHaveBeenNthCalledWith(1, 'en', '/')
-    expect(loadMessages).toHaveBeenNthCalledWith(2, 'en', '/my/notifications')
+    expect(mockLoadMessages).toHaveBeenNthCalledWith(1, 'en', expect.any(Array))
+    expect(mockLoadMessages).toHaveBeenNthCalledWith(2, 'en', expect.any(Array))
   })
 
   it('seeds only the selected locale and pathname', async () => {
-    const loadMessages = vi.fn<(locale: string, pathname: string) => Promise<EnCatalog>>()
-    loadMessages.mockResolvedValue({ nav: { home: 'Other route' } })
-    const cache = createRouteMessagesCache(loadMessages)
-    cache.seedMessages('en', '/seeded', { nav: { home: 'Seeded' } })
-    await expect(cache.getMessagesPromise('en', '/seeded')).resolves.toEqual({
+    mockLoadMessages.mockResolvedValue({
+      contract: 'v1',
+      revision: 'other',
+      ttlSeconds: 60,
+      messages: { 'nav.home': 'Other route' },
+    })
+    seedRouteMessages('en', '/my/settings', { nav: { home: 'Seeded' } })
+
+    await expect(getRouteMessagesPromise('en', '/my/settings')).resolves.toEqual({
       nav: { home: 'Seeded' },
     })
-    await expect(cache.getMessagesPromise('en', '/other')).resolves.toEqual({
+    await expect(getRouteMessagesPromise('en', '/my/profile')).resolves.toEqual({
       nav: { home: 'Other route' },
     })
-    await expect(cache.getMessagesPromise('es', '/seeded')).resolves.toEqual({
+    await expect(getRouteMessagesPromise('es', '/my/settings')).resolves.toEqual({
       nav: { home: 'Other route' },
     })
-    expect(loadMessages.mock.calls).toEqual([
-      ['en', '/other'],
-      ['es', '/seeded'],
+    expect(mockLoadMessages.mock.calls).toEqual([
+      ['en', expect.any(Array)],
+      ['es', expect.any(Array)],
     ])
   })
 })
