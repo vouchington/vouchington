@@ -1,11 +1,20 @@
 import { getWebLocalizationBatchClient } from '@/lib/api/client/localization'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getRouteMessagesPromise, seedRouteMessages } from '../route-messages-cache'
+
+type RouteMessagesCache = typeof import('../route-messages-cache')
+let getRouteMessagesPromise: RouteMessagesCache['getRouteMessagesPromise']
+let seedRouteMessages: RouteMessagesCache['seedRouteMessages']
 
 const mockLoadMessages = vi.mocked(getWebLocalizationBatchClient)
 
 describe('route message cache behavior', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Bootstrap legitimately warms the shared cache. Re-evaluate the real module
+    // so each cold-load case gets its own cache without altering bootstrap behavior.
+    vi.resetModules()
+    const cache = await vi.importActual<RouteMessagesCache>('../route-messages-cache')
+    getRouteMessagesPromise = cache.getRouteMessagesPromise
+    seedRouteMessages = cache.seedRouteMessages
     mockLoadMessages.mockReset()
   })
 
