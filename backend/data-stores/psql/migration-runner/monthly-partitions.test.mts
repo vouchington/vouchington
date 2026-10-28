@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createPartitionRetirementFailureFixture } from '@voucha/test-helpers/partition-retirement-failure'
 import { write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
@@ -50,10 +51,9 @@ describe('monthly partition retirement', () => {
     expect(outcomes.every(outcome => outcome.reason === 'inside-retention')).toBe(true)
   })
 
-  it('refuses a child removed after discovery when its lock can no longer be acquired', async () => {
+  it('refuses retirement and rolls back owned writes when acquiring its lock fails', async () => {
     const partition = 'rss_feed_crawls__p_1800_01'
-    const discovered = await listMonthlyDropCandidates(write)
-    expect(discovered.some(candidate => candidate.partition === partition)).toBe(false)
+    const fixture = await createPartitionRetirementFailureFixture()
 
     await expect(
       retireMonthlyPartitionCandidate(
@@ -63,6 +63,7 @@ describe('monthly partition retirement', () => {
           upperBound: new Date('1800-02-01T00:00:00.000Z'),
         },
         now,
+        fixture.begin,
       ),
     ).resolves.toEqual({
       table: 'rss_feed_crawls',
@@ -70,6 +71,10 @@ describe('monthly partition retirement', () => {
       outcome: 'refused',
       reason: 'retirement-error',
     })
+    expect(fixture.statements).toEqual([
+      '/* cleanupPartitions:lockParent */ LOCK TABLE rss_feed_crawls IN ACCESS EXCLUSIVE MODE',
+    ])
+    await expect(fixture.readMarkdown()).resolves.toBe(fixture.originalMarkdown)
   })
 })
 
