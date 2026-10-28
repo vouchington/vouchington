@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
 import { v7 } from 'uuid'
 import type { StagingRssFeed } from '../../../data-stores/psql/config-driven/utils/staging-rss-feeds.mts'
@@ -79,42 +78,42 @@ export async function insertActiveFeedUnderOtherTopic(
   const topicName = `Seed fixture ${label}`
   const topicSlug = `seed-fixture-${label}`
   await tx(
-    allowUnannotatedQuery(sql`
+    sql`/* insertActiveFeedUnderOtherTopic:mediaType */
     INSERT INTO media_types (mime_type)
     SELECT 'application/rss+xml'
     WHERE NOT EXISTS (SELECT 1 FROM media_types WHERE mime_type = 'application/rss+xml')
-    ON CONFLICT DO NOTHING`),
+    ON CONFLICT DO NOTHING`,
   )
   await tx(
-    allowUnannotatedQuery(sql`
+    sql`/* insertActiveFeedUnderOtherTopic:hostname */
     INSERT INTO url_hostnames (hostname, is_crawlable, publicly_introduced_at)
     SELECT ${feed.hostname}, TRUE, CURRENT_TIMESTAMP
     ON CONFLICT (hostname) DO UPDATE SET
-      publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)`),
+      publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)`,
   )
   await tx(
-    allowUnannotatedQuery(sql`
+    sql`/* insertActiveFeedUnderOtherTopic:url */
     INSERT INTO urls (url, hostname_id, pathname, search_params, media_type_id)
     SELECT ${feed.url}, h.id, ${feed.pathname}, '{}'::jsonb, ct.id
     FROM url_hostnames h JOIN media_types ct ON ct.mime_type = 'application/rss+xml'
     WHERE h.hostname = ${feed.hostname} AND NOT EXISTS (SELECT 1 FROM urls WHERE url = ${feed.url})
-    ON CONFLICT DO NOTHING`),
+    ON CONFLICT DO NOTHING`,
   )
   await tx(
-    allowUnannotatedQuery(sql`
+    sql`/* insertActiveFeedUnderOtherTopic:topic */
     INSERT INTO topics (
       name, slug, topic_type, hostname_id, created_via, bedrock_nova_multimodal_v1_content_sha256
     )
     SELECT ${topicName}, ${topicSlug}, 'rss_feed', h.id, 'system',
       sha256(convert_to(${topicName}, 'UTF8'))
-    FROM url_hostnames h WHERE h.hostname = ${feed.hostname}`),
+    FROM url_hostnames h WHERE h.hostname = ${feed.hostname}`,
   )
   await tx(
-    allowUnannotatedQuery(sql`
+    sql`/* insertActiveFeedUnderOtherTopic:rssFeed */
     INSERT INTO rss_feeds (rss_feed_url_id, topic_id, title, feed_type, created_via)
     SELECT u.id, t.id, ${topicName}, 'article', 'system'
     FROM urls u JOIN topics t ON t.slug = ${topicSlug}
-    WHERE u.url = ${feed.url}`),
+    WHERE u.url = ${feed.url}`,
   )
   return { topicSlug }
 }
@@ -125,13 +124,13 @@ export async function readPublisherTypeSlugs(
   topicSlug: string,
 ): Promise<string[]> {
   const { rows } = await tx<{ slug: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* readPublisherTypeSlugs */
     SELECT p.slug
     FROM topics t
     JOIN relation__topic__publisher_type__topic r ON r.subject_id = t.id AND r.deleted_at IS NULL
     JOIN topics p ON p.id = r.object_id
     WHERE t.slug = ${topicSlug}
-    ORDER BY p.slug`),
+    ORDER BY p.slug`,
   )
   return rows.map(row => row.slug)
 }
@@ -140,7 +139,7 @@ export async function readSeededFeeds(
   urls: readonly string[],
 ): Promise<SeededFeedRow[]> {
   const { rows } = await tx<SeededFeedRow>(
-    allowUnannotatedQuery(sql`
+    sql`/* readSeededFeeds */
     SELECT u.url, f.title, t.name AS topic_name, t.slug, t.aliases, t.topic_type, th.hostname AS topic_hostname,
       h.hostname AS url_hostname, h.topic_id AS hostname_topic_id, ct.mime_type, u.search_params,
       f.is_enabled, f.is_discoverable, f.created_via, f.created_by_id, f.feed_type,
@@ -154,7 +153,7 @@ export async function readSeededFeeds(
     JOIN topics t ON t.id = f.topic_id
     LEFT JOIN url_hostnames th ON th.id = t.hostname_id
     WHERE u.url = ANY(${urls})
-    ORDER BY u.url`),
+    ORDER BY u.url`,
   )
   return rows
 }
@@ -166,7 +165,7 @@ export async function countSeededRows(
   const hostnames = feeds.map(feed => feed.hostname)
   const slugs = feeds.map(feed => feed.slug)
   const { rows } = await tx<SeededRowCounts>(
-    allowUnannotatedQuery(sql`
+    sql`/* countSeededRows */
     SELECT
       (SELECT count(*)::int FROM url_hostnames WHERE hostname = ANY(${hostnames})) AS "hostnames",
       (SELECT count(*)::int FROM urls WHERE url = ANY(${urls})) AS "urls",
@@ -179,7 +178,7 @@ export async function countSeededRows(
         WHERE c.change_type = 'enablement' AND u.url = ANY(${urls})) AS "enablementChanges",
       (SELECT count(*)::int FROM rss_feed_setting_changes c
         JOIN rss_feeds f ON f.id = c.rss_feed_id JOIN urls u ON u.id = f.rss_feed_url_id
-        WHERE c.change_type = 'discoverability' AND u.url = ANY(${urls})) AS "discoverabilityChanges"`),
+        WHERE c.change_type = 'discoverability' AND u.url = ANY(${urls})) AS "discoverabilityChanges"`,
   )
   return rows[0]!
 }
@@ -191,10 +190,10 @@ export async function appendEnablementChange(
   enabled: boolean,
 ): Promise<void> {
   await tx(
-    allowUnannotatedQuery(sql`
+    sql`/* appendEnablementChange */
     INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
     SELECT 'enablement'::rss_feed_setting_change_types, f.id, ${enabled}, 'test'
     FROM rss_feeds f JOIN urls u ON u.id = f.rss_feed_url_id
-    WHERE u.url = ${url}`),
+    WHERE u.url = ${url}`,
   )
 }
