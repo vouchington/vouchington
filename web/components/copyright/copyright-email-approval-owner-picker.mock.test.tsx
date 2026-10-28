@@ -1,13 +1,22 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { useState } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import {
+  makeCommunitiesSearchResponse,
+  makeCommunity,
+} from '@/test-helpers/api-responses/communities'
 import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
 import { CopyrightEmailApprovalManualTargetFields } from './copyright-email-approval-manual-target-fields'
 
 const resolvedTargets = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const fetchTopic = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const fetchUser = vi.hoisted(() => vi.fn<VitestLooseMock>())
+const fetchCommunities = vi.hoisted(() => vi.fn<VitestLooseMock>())
+vi.mock(
+  import('@/lib/api/client/communities'),
+  () => ({ fetchCommunities }) as unknown as typeof import('@/lib/api/client/communities'),
+)
 vi.mock(
   import('@/lib/api/client/topics'),
   () => ({ fetchTopic }) as unknown as typeof import('@/lib/api/client/topics'),
@@ -48,33 +57,6 @@ vi.mock(
       ),
     }) as unknown as typeof import('@/components/users/user-autocomplete'),
 )
-vi.mock(
-  import('@/components/shared/entity-autocomplete'),
-  () =>
-    ({
-      EntityAutocomplete: ({
-        onSelect,
-      }: {
-        onSelect: (
-          item: { id: string; slug: string; name: string },
-          helpers: { setQuery: (query: string) => void },
-        ) => void
-      }) => (
-        <button
-          type='button'
-          onClick={() =>
-            onSelect(
-              { id: 'community-2', slug: 'harbour', name: 'Harbour' },
-              { setQuery: () => {} },
-            )
-          }
-        >
-          Choose community
-        </button>
-      ),
-    }) as unknown as typeof import('@/components/shared/entity-autocomplete'),
-)
-
 const target: CopyrightEmailApprovalDraft['targets'][number] = {
   id: 'first',
   group_id: 'group-1',
@@ -119,6 +101,12 @@ describe('copyright approval manual owner paths', () => {
         })
       if (surface === 'user-profile-image')
         fetchUser.mockResolvedValue({ user: { id, username: 'harbouruser' } })
+      if (surface === 'community-banner-image')
+        fetchCommunities.mockResolvedValue(
+          makeCommunitiesSearchResponse({
+            communities: [makeCommunity({ id, name: 'Harbour', slug: 'harbour' })],
+          }),
+        )
       const ownerUrl = new URL(path, window.location.origin).href
       resolvedTargets.mockResolvedValue([
         {
@@ -167,7 +155,12 @@ describe('copyright approval manual owner paths', () => {
         )
       }
       render(<Harness />)
-      fireEvent.click(screen.getByRole('button', { name: button }))
+      if (surface === 'community-banner-image') {
+        fireEvent.change(screen.getByPlaceholderText('Search communities'), {
+          target: { value: 'Harbour' },
+        })
+        fireEvent.click(await screen.findByRole('option', { name: 'Harbour' }))
+      } else fireEvent.click(screen.getByRole('button', { name: button }))
       const find = await screen.findByRole('button', { name: 'Find hosted material' })
       fireEvent.click(find)
       await waitFor(() => expect(resolvedTargets).toHaveBeenCalledWith(ownerUrl))
@@ -204,5 +197,72 @@ describe('copyright approval manual owner paths', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
     await waitFor(() => expect(fetchUser).toHaveBeenCalledWith('user-2'))
     expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
+  })
+
+  it('lets staff choose another topic when the selected topic is unavailable', async () => {
+    let finishUnavailable!: (value: unknown) => void
+    fetchTopic.mockReturnValueOnce(
+      new Promise(resolve => {
+        finishUnavailable = resolve
+      }),
+    )
+    fetchTopic.mockResolvedValueOnce({
+      id: 'topic-2',
+      name: 'Harbour topic',
+      topic_type: 'topic',
+      slug: 'harbour',
+    })
+    const initial: CopyrightEmailApprovalDraft = {
+      ...draft,
+      targets: [{ ...target, surface: 'topic-logo-image' }],
+    }
+    render(
+      <CopyrightEmailApprovalManualTargetFields
+        target={initial.targets[0]!}
+        index={0}
+        draft={initial}
+        onChange={vi.fn<(next: CopyrightEmailApprovalDraft) => void>()}
+        error={undefined}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Choose topic' }))
+    await act(async () => finishUnavailable(null))
+    expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Choose different owner' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Choose topic' }))
+    expect(await screen.findByRole('button', { name: 'Find hosted material' })).toBeEnabled()
+    expect(screen.getByText(/Hosted use: .*\/topic\/harbour/)).toBeInTheDocument()
+    expect(fetchTopic).toHaveBeenCalledTimes(2)
+  })
+
+  it('recovers from a failed account lookup without using an account ID as the URL', async () => {
+    let failLookup!: (error: Error) => void
+    fetchUser.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        failLookup = reject
+      }),
+    )
+    fetchUser.mockResolvedValueOnce({
+      user: { id: 'user-2', username: 'harbouruser' },
+    })
+    const initial: CopyrightEmailApprovalDraft = {
+      ...draft,
+      targets: [{ ...target, surface: 'user-profile-image' }],
+    }
+    render(
+      <CopyrightEmailApprovalManualTargetFields
+        target={initial.targets[0]!}
+        index={0}
+        draft={initial}
+        onChange={vi.fn<(next: CopyrightEmailApprovalDraft) => void>()}
+        error={undefined}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
+    await act(async () => failLookup(new Error('Account lookup failed')))
+    expect(screen.queryByRole('button', { name: 'Find hosted material' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Choose user' }))
+    expect(await screen.findByRole('button', { name: 'Find hosted material' })).toBeEnabled()
+    expect(screen.getByText(/Hosted use: .*\/user\/harbouruser/)).toBeInTheDocument()
   })
 })
