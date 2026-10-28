@@ -355,14 +355,48 @@ checks:
       command: [pnpm, exec, tsc, --noEmit, --incremental, --project, tsconfig.json]
       fileArgs: none
       always: true
-    # Scheduler sources feed the operator API fixture projection.
-    - name: api-fixtures-scheduled-jobs
-      command: [pnpm, run, api-fixtures:check]
+    # Generated-artifact freshness (#4024): each entry runs the check CI runs for that artifact so a
+    # stale one shows up before pushing. Inputs are the sources that regenerate it.
+    - name: api-fixtures
+      command: [bash, -c, 'pnpm run backend-row-contracts:check && pnpm run api-fixtures:check']
       fileArgs: none
       include:
+        - 'api-fixtures/**'
+        - 'backend/test-helpers/api-fixtures/**'
+        - 'backend/modules/scheduled-job-manifest/**'
         - 'backend/queues/**/enqueues/schedules.mts'
         - 'backend/services/queue-monitoring/scheduled-jobs-registry.mts'
         - 'backend/services/queue-monitoring/scheduled-job-manifests.mts'
+    # Needs the worktree backend env (`./dev/initialize backend`): the registry loads data stores.
+    - name: mcp-catalog
+      command: [bash, -c, 'if [ -f .env ]; then source .env; fi; pnpm run mcp:catalog -- --check']
+      fileArgs: none
+      include:
+        - 'backend/mcp/**'
+        - 'backend/services/mcp-tools/**'
+        - 'backend/scripts/*mcp*'
+        - 'backend/test-helpers/**/*mcp*'
+        - 'api-fixtures/v1/mcp*.json'
+        - docs/overview/architecture/mcp/catalog.md
+    - name: web-route-selector-map
+      command:
+        [node, static-code-analysis/i18n-extract/route-selector-map.mts, --check, --diagnostics]
+      fileArgs: none
+      include:
+        - 'web/**/*.ts'
+        - 'web/**/*.tsx'
+        - 'web/**/*.mts'
+        - 'localization/catalog/**'
+        - 'static-code-analysis/i18n-extract/**'
+    # Compares the live schema with the committed snapshot; migrate the worktree database first.
+    - name: postgresql-schema-snapshot
+      command: [pnpm, run, db:snapshot:check]
+      fileArgs: none
+      include:
+        - 'backend/data-stores/psql/migrations/**'
+        - 'backend/data-stores/psql/config-driven/**'
+        - 'backend/data-stores/psql/views/**'
+        - 'backend/data-stores/psql/schema-snapshot/**'
     - name: typecheck-ts-shared
       command: [pnpm, exec, tsc, --noEmit, --incremental, --project, ts-shared/tsconfig.json]
       fileArgs: none

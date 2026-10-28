@@ -24,6 +24,7 @@ Before the first push, run these cheap local steps (also covered in [agent-workf
 2. `pnpm exec vitest run <directly changed test files> --bail=3`
 3. `git diff --name-only origin/main...HEAD` — scope check before rebasing
 4. `pnpm exec oxfmt --check <changed supported files>`
+5. Run the generated-artifact checks that `pnpm exec no-mistakes impacted-checks` selects for the diff. Stale artifacts otherwise surface only in CI, and each miss costs a push.
 
 Optional broader check (not a push requirement): run the full suites of the areas you touched —
 `pnpm exec vitest run --project <project-a> --project <project-b>` for each owning project in
