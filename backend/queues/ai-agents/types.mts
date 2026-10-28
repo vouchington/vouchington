@@ -77,6 +77,19 @@ export type SpendCapDelayedData = {
   spendCapDelayedDay?: string
 }
 
+/** Unsettled direct OpenAI responses owned by an AI worker job. */
+export type JobBackgroundResponse = {
+  responseId: string
+  agentSlug: string
+  communityId: string | null
+  postId: string | null
+  createdAt: string
+}
+
+export type BackgroundResponseJobData = {
+  backgroundResponses?: JobBackgroundResponse[]
+}
+
 export type SpendCapRecheckJobData = {
   day: string
   generation: string
@@ -100,6 +113,7 @@ export type AIAgentJobData = (
   | ReconcileClassifierRunsJobData
   | AutoDispatchJudgementJobData
 ) &
-  SpendCapDelayedData
+  SpendCapDelayedData &
+  BackgroundResponseJobData
 
 export type CopyrightAgentSweepData = { after?: string }

@@ -7,7 +7,6 @@ import * as owner2 from '@services/crawl-embeds/work-limits'
 import * as owner3 from '@services/language-detection/work-limits'
 import * as owner4 from '@services/report-integrity/work-limits'
 import * as owner5 from '@services/images/work-limits'
-import * as owner6 from '@services/openai-background-responses/work-limits'
 import * as owner7 from '@services/openai-moderation/work-limits'
 import * as owner8 from '@services/entity-cache/work-limits'
 import * as owner9 from '@services/hostname-blocking/work-limits'
@@ -60,14 +59,6 @@ const owners = [
     maxima: owner5.imagesWorkMaxValues,
     read: (field: string) =>
       owner5.getImagesWorkLimit(field as keyof typeof owner5.imagesWorkMaxValues),
-  },
-  {
-    config: owner6.openaiBackgroundResponsesWorkConfig,
-    maxima: owner6.openaiBackgroundResponsesWorkMaxValues,
-    read: (field: string) =>
-      owner6.getOpenaiBackgroundResponsesWorkLimit(
-        field as keyof typeof owner6.openaiBackgroundResponsesWorkMaxValues,
-      ),
   },
   {
     config: owner7.openaiModerationWorkConfig,

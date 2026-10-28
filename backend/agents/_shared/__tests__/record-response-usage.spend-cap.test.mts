@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { findAiUsageRecordForAgent } from '@voucha/test-helpers'
-import type { OwnedBackgroundResponseLease } from '@services/openai-background-responses'
 import type { evaluateSpendCapBreach } from '@services/ai-usage'
 import { makeDirectOpenAIResult } from '@voucha/test-helpers/agents/model-call-result'
 import { callRecordingModelUsage } from '../call-recording-model-usage.mts'
@@ -20,10 +19,10 @@ function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 10)
 }
 
-async function notifyResponseCreated(responseId: string): Promise<OwnedBackgroundResponseLease> {
-  const lease = await getBackgroundResponseHooks()?.onResponseCreated(responseId)
-  if (!lease || !('leaseToken' in lease)) throw new Error('background response lease unavailable')
-  return lease as OwnedBackgroundResponseLease
+async function notifyResponseCreated(responseId: string): Promise<void> {
+  const hooks = getBackgroundResponseHooks()
+  if (!hooks) throw new Error('background response registration unavailable')
+  await hooks.onResponseCreated(responseId)
 }
 
 describe('callRecordingModelUsage spend-cap recheck', () => {
@@ -36,8 +35,7 @@ describe('callRecordingModelUsage spend-cap recheck', () => {
 
     const response = await callRecordingModelUsage(
       async () => {
-        const lease = await notifyResponseCreated(responseId)
-        await lease.stopAndSettle()
+        await notifyResponseCreated(responseId)
         return makeDirectOpenAIResult(responseId, usage)
       },
       callParams(agentSlug),

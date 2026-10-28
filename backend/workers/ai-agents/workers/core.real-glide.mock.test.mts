@@ -81,7 +81,7 @@ describe('ai_agents provider rate limits with real GlideMQ', () => {
         expect(await stored?.getState()).toBe('delayed')
         expect(stored?.attemptsMade).toBe(0)
 
-        await queue.add('reconcile-background-responses', {} as AIAgentJobData, JOB_OPTIONS)
+        await queue.add('reconcile-auto-dispatch-judgements', {} as AIAgentJobData, JOB_OPTIONS)
         await reconciled.promise
       } finally {
         await Promise.all([worker.close(true), events.close()])

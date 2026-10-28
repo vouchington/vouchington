@@ -1,4 +1,26 @@
+import { DynamicConfig } from '@data-stores/valkey-core/dynamic-config'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
+
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
+export const aiAgentsQueueMaxValues = { background_response_recovery_concurrency: 8 }
+const aiAgentsQueueDefaults = { background_response_recovery_concurrency: 2 }
+export const aiAgentsQueueConfig = new DynamicConfig({
+  key: 'ai-agents-queue-config',
+  fieldTypes: { background_response_recovery_concurrency: 'number' },
+  defaultFields: aiAgentsQueueDefaults,
+})
+
+export function getBackgroundResponseRecoveryConcurrency(): number {
+  return getBoundedPositiveIntegerField(
+    aiAgentsQueueConfig,
+    'background_response_recovery_concurrency',
+    {
+      defaultValue: aiAgentsQueueDefaults.background_response_recovery_concurrency,
+      maxValue: aiAgentsQueueMaxValues.background_response_recovery_concurrency,
+    },
+  )
+}
+
 export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
@@ -42,7 +64,7 @@ export type AIAgentJobName =
   | 'backfill_report_judgements'
   | 'auto-dispatch-judgement'
   | 'reconcile-auto-dispatch-judgements'
-  | 'reconcile-background-responses'
+  | 'recover-background-response'
   | 'reconcile-copyright-agent-dispatches'
 
 export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
@@ -61,18 +83,18 @@ export const AGENT_PRIORITY: Record<AIAgentJobName, number> = {
   backfill_report_judgements: 100,
   'auto-dispatch-judgement': 10,
   'reconcile-auto-dispatch-judgements': 100,
-  'reconcile-background-responses': 100,
+  'recover-background-response': 100,
   'reconcile-copyright-agent-dispatches': 100,
 }
 
 // Which job types can incur billed provider generation spend, and are therefore subject to the
 // daily spend-ceiling check (#8773, `backend/workers/ai-agents/workers/core.mts`). The three
-// `reconcile-*` job types only sweep/cancel/re-enqueue existing work -- none call OpenAI to
-// generate new content -- so they must keep running through a cap breach. In particular,
-// `reconcile-background-responses` cancels orphaned leases that are still billing OpenAI;
-// blocking it on the spend cap would increase spend, not bound it. `auto-dispatch-judgement` is
-// exempt for the same reason: it only applies an already-computed judgement (remove content, warn
-// a user, escalate, resolve a report) -- it never calls a model itself, and blocking it on the cap
+// `reconcile-*` job types only sweep/re-enqueue existing work -- none call OpenAI to generate new
+// content -- so they must keep running through a cap breach. `recover-background-response` only
+// retrieves a response that is already billing OpenAI, so blocking it would not bound spend.
+// `auto-dispatch-judgement` is exempt for the same reason: it only applies an already-computed
+// judgement (remove content, warn a
+// user, escalate, resolve a report) -- it never calls a model itself, and blocking it on the cap
 // would leave harmful content live and reports unactioned.
 // `autotagger-rss-feed-item` only runs the collaborative-follower pass, which reads follow and vote
 // relations and never calls a model, so it is spend-free. C6's model call is the shared
@@ -103,6 +125,6 @@ export const AI_AGENT_JOB_PRODUCES_SPEND: Record<AIAgentJobName, boolean> = {
   backfill_report_judgements: true,
   'auto-dispatch-judgement': false,
   'reconcile-auto-dispatch-judgements': false,
-  'reconcile-background-responses': false,
+  'recover-background-response': false,
   'reconcile-copyright-agent-dispatches': false,
 }

@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { APIError } from 'openai'
+import { Responses } from 'openai/resources/responses/responses'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { recordAgentResponseUsage } from '@agents/_shared'
 import { ModelProviderError } from '@vouchington/ai/providers'
@@ -211,6 +213,80 @@ describe('processAIAgentWorkerJob model provider failures', () => {
     ).rejects.toBeInstanceOf(UnrecoverableError)
 
     expect(handleOpenAIRateLimit).not.toHaveBeenCalled()
+  })
+})
+
+describe('processAIAgentWorkerJob response recovery', () => {
+  beforeEach(() => vi.stubEnv('OPENAI_API_KEY', 'recovery-rate-limit-fixture'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('defers a provider rate limit before replay and preserves the response id', async () => {
+    const job = jobFor()
+    job.data.backgroundResponses = [
+      {
+        responseId: `resp_${randomUUID()}`,
+        agentSlug: 'story-post',
+        communityId: null,
+        postId: null,
+        createdAt: new Date().toISOString(),
+      },
+    ]
+    const rateLimit = APIError.generate(
+      429,
+      { error: { code: 'rate_limit_exceeded' } },
+      '',
+      new Headers(),
+    )
+    const retrieve = vi.spyOn(Responses.prototype, 'retrieve').mockRejectedValue(rateLimit)
+    const handleOpenAIRateLimit = vi
+      .fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
+      .mockResolvedValue('deferred')
+    const processAIAgent = vi.fn<() => Promise<unknown>>()
+    try {
+      await expect(
+        processAIAgentWorkerJob(job, {
+          ...spendCapDisabled,
+          handleOpenAIRateLimit,
+          processAIAgent,
+        }),
+      ).resolves.toBe('deferred')
+      expect(handleOpenAIRateLimit).toHaveBeenCalledExactlyOnceWith(rateLimit, job)
+      expect(processAIAgent).not.toHaveBeenCalled()
+      expect(job.data.backgroundResponses).toHaveLength(1)
+    } finally {
+      retrieve.mockRestore()
+    }
+  })
+
+  it('rethrows a non-rate-limit recovery error without dispatching the model', async () => {
+    const job = jobFor()
+    job.data.backgroundResponses = [
+      {
+        responseId: `resp_${randomUUID()}`,
+        agentSlug: 'story-post',
+        communityId: null,
+        postId: null,
+        createdAt: new Date().toISOString(),
+      },
+    ]
+    const failure = new Error('provider unavailable')
+    const retrieve = vi.spyOn(Responses.prototype, 'retrieve').mockRejectedValue(failure)
+    const handleOpenAIRateLimit =
+      vi.fn<(error: unknown, job: Job<AIAgentJobData>) => Promise<unknown>>()
+    const processAIAgent = vi.fn<() => Promise<unknown>>()
+    try {
+      await expect(
+        processAIAgentWorkerJob(job, {
+          ...spendCapDisabled,
+          handleOpenAIRateLimit,
+          processAIAgent,
+        }),
+      ).rejects.toBe(failure)
+      expect(handleOpenAIRateLimit).not.toHaveBeenCalled()
+      expect(processAIAgent).not.toHaveBeenCalled()
+    } finally {
+      retrieve.mockRestore()
+    }
   })
 })
 

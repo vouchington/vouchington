@@ -2,9 +2,11 @@ import type { Job, Worker } from 'glide-mq'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError, { recordSpendCapBreach } from '@modules/on-error'
 import { isModelProviderError } from '@vouchington/ai/providers'
+import { isOpenAIRateLimitError } from '@vouchington/ai/openai'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { runWithJobTokenAccumulator } from '@agents/_shared'
+import { runWithBackgroundResponseJob } from '@agents/_shared/background-response-job-context'
 import { wouldStoryPostCallOpenAI } from '../processors/process-story-post.mts'
 import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
 import {
@@ -26,6 +28,10 @@ import { handleModelProviderError } from '../processors/provider-failure.mts'
 import { classifierRunBackoffMs } from '../processors/classifier-run-backoff.mts'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { registerSpendCapRecheck } from '../processors/spend-cap-recheck.mts'
+import {
+  createBackgroundResponseJobContext,
+  recoverJobBackgroundResponses,
+} from '../processors/background-response-job.mts'
 
 type AIAgentsWorkerDeps = {
   createWorker: typeof createWorker
@@ -66,6 +72,13 @@ export async function processAIAgentWorkerJob(
   deps: Partial<AIAgentsWorkerDeps> = {},
 ): Promise<unknown> {
   const dependencies = { ...defaultDeps, ...deps }
+  const responseContext = createBackgroundResponseJobContext(job)
+  try {
+    if (await recoverJobBackgroundResponses(job, responseContext)) return undefined
+  } catch (err: unknown) {
+    if (isOpenAIRateLimitError(err)) return dependencies.handleOpenAIRateLimit(err, job)
+    throw err
+  }
 
   // Daily spend ceiling (#8773) before the OpenAI-error catch. reconcile-* jobs stay exempt so they
   // can still cancel orphaned billed responses. A breach parks only this job until the queried day
@@ -98,9 +111,11 @@ export async function processAIAgentWorkerJob(
 
   try {
     // recordAgentResponseUsage feeds every billed call into this job's tokenLimiter total.
-    return await runWithJobTokenAccumulator(
-      () => dependencies.processAIAgent(job),
-      totalTokens => job.reportTokens(totalTokens),
+    return await runWithBackgroundResponseJob(responseContext, () =>
+      runWithJobTokenAccumulator(
+        () => dependencies.processAIAgent(job),
+        totalTokens => job.reportTokens(totalTokens),
+      ),
     )
   } catch (err: unknown) {
     if (err instanceof SpendCapBreachError) {

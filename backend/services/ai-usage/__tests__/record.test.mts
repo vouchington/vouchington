@@ -13,7 +13,7 @@ import {
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import type { PrivateUser } from '@services/users/types'
 import { type ModelUsage, openAIUsageToModelUsage } from '@vouchington/ai/providers'
-import { hasRecordedAiUsageResponseId, recordAiUsage } from '../record.mts'
+import { recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
 
 function usage(
@@ -262,23 +262,5 @@ describe('recordAiUsage', () => {
 
     await expect(recordAiUsage({ ...options, usage: usage(13, 9) })).resolves.toBe('recorded')
     await expect(countAiUsageRecordsForResponseId(responseId)).resolves.toBe(1)
-  })
-
-  it('reports whether the response-id ledger fence exists', async () => {
-    const responseId = `resp_${randomUUID()}`
-
-    await expect(hasRecordedAiUsageResponseId(responseId)).resolves.toBe(false)
-    await expect(
-      recordAiUsage({
-        responseId,
-        agentSlug: 'test-response-id-fence',
-        provider: 'openai' as const,
-        transport: 'direct' as const,
-        model: 'gpt-6-luna',
-        serviceTier: 'flex',
-        usage: usage(13, 4),
-      }),
-    ).resolves.toBe('recorded')
-    await expect(hasRecordedAiUsageResponseId(responseId)).resolves.toBe(true)
   })
 })

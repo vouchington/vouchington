@@ -210,6 +210,13 @@ deletion from cascading into communities or requiring a worker to hold the whole
 - **Spend admission is single-sourced.** Every call that can incur billed model spend goes through
   one spend-cap decision point, and capped jobs park until the daily rollover instead of failing.
   The coordinator that releases them is deliberately not behind the provider limiter.
+- **Background OpenAI responses are owned by the job that created them.** AI worker calls save
+  each provider response id in their GlideMQ job, and a retry checks it before it can pay for
+  another call. Conversation titles generated inline from an API request admit a delayed recovery
+  job instead. Usage recording is best effort and a retry may call the provider again; the daily
+  spend cap reads whatever usage rows exist. A terminal failure or stall can discard the only
+  saved response id, leaving a provider generation running and its usage unrecorded; this is
+  accepted loss for best-effort recovery.
 - **Embedding cache deletion leaves safe Bloom false positives.** Writes add membership; operator
   actions and detected failures own full rebuilds. Retention does not schedule a full rebuild.
 - **Deletion and money paths recover from durable rows.** Account deletion, membership refunds and

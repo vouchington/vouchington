@@ -104,38 +104,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Cancel/retrieve/record orphaned OpenAI background responses (crash recovery)",
-        "id": "reconcileBackgroundResponses",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "ai_agents",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "reconcileBackgroundResponses",
-    "template": {
-      "name": "reconcile-background-responses",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Recover copyright intake emails still present in S3",
         "id": "ses-inbound-reconciliation",
         "kind": "scheduled-jobs",
@@ -3799,14 +3767,6 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "ai_agents",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueReconcileClassifierRuns",
-  },
-  {
-    "description": "Cancel/retrieve/record orphaned OpenAI background responses (crash recovery)",
-    "id": "reconcileBackgroundResponses",
-    "job_name": "reconcile-background-responses",
-    "queue_name": "ai_agents",
-    "schedule": "*/5 * * * *",
-    "triggerName": "enqueueReconcileBackgroundResponses",
   },
   {
     "description": "Poll Bedrock batch embeddings status",

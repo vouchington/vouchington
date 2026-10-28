@@ -148,8 +148,8 @@ export async function findAiUsageRecordForAgent(
 
 /**
  * Counts ai_usage_records rows for an agent + exact token usage. findAiUsageRecordForAgent's
- * LIMIT 1 can't distinguish "recorded once" from "recorded twice" -- idempotency tests (e.g. the
- * openai_background_responses compare-and-set, #8836) need the exact count.
+ * LIMIT 1 can't distinguish "recorded once" from "recorded twice" -- idempotency tests (e.g. delayed
+ * background-response recovery, #8836) need the exact count.
  */
 export async function countAiUsageRecordsForAgent(
   agentSlug: string,

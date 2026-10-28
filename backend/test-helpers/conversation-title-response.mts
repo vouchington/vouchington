@@ -1,4 +1,6 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
+import { ai_agents } from '../queues/ai-agents/queues.mts'
+import { backgroundResponseRecoveryJobId } from '../queues/ai-agents/enqueues/recover-background-response.mts'
 import sql from 'sql-template-strings'
 import { Stream } from 'openai/core/streaming'
 import type { Response, ResponseStreamEvent } from 'openai/resources/responses/responses'
@@ -9,22 +11,19 @@ const TITLE_AGENT_SLUG = 'chat-generate-title'
 type TitleResponseRegistration = {
   response_id: string
   agent_slug: string
-  lease_token: string
 }
 
-/** Reads the committed primary registration for this fixture's unique response id. */
+/** Reads this fixture's admitted delayed recovery job after the created event. */
 export async function readTitleResponseRegistration(
   responseId: string,
 ): Promise<TitleResponseRegistration | null> {
-  const { rows } = await write<TitleResponseRegistration>(sql`/* readTitleResponseRegistration */
-    SELECT response_id, agent_slug, lease_token
-    FROM openai_background_responses
-    WHERE response_id = ${responseId} AND agent_slug = ${TITLE_AGENT_SLUG}
-  `)
-  return rows[0] ?? null
+  const job = await ai_agents.getJob(backgroundResponseRecoveryJobId(responseId))
+  const response = job?.data.backgroundResponses?.find(item => item.responseId === responseId)
+  if (!response || response.agentSlug !== TITLE_AGENT_SLUG) return null
+  return { response_id: response.responseId, agent_slug: response.agentSlug }
 }
 
-/** A real SDK stream that observes the production lease after its created event is consumed. */
+/** A real SDK stream that observes the production registration after its created event is consumed. */
 export function createTitleResponseStream(response: Response) {
   let registration: TitleResponseRegistration | null | undefined
   const controller = new AbortController()
@@ -55,7 +54,7 @@ export function createTitleResponseStream(response: Response) {
   }
 }
 
-/** Call only after all fixture provider/title operations and their owned leases have settled. */
+/** Call only after all fixture provider/title operations and their owned registrations have settled. */
 export async function deleteTitleResponseFixture(responseId: string): Promise<void> {
   await using query = await beginTransaction()
   // The response-key FK cascades from the exact ledger row; unrelated provider keys are retained.
@@ -66,9 +65,7 @@ export async function deleteTitleResponseFixture(responseId: string): Promise<vo
       AND key.response_id = ${responseId}
       AND record.agent_slug = ${TITLE_AGENT_SLUG}
   `)
-  await query(sql`/* deleteTitleResponseFixture.registration */
-    DELETE FROM openai_background_responses
-    WHERE response_id = ${responseId} AND agent_slug = ${TITLE_AGENT_SLUG}
-  `)
   await query.commit()
+  const job = await ai_agents.getJob(backgroundResponseRecoveryJobId(responseId))
+  if (job) await job.remove()
 }

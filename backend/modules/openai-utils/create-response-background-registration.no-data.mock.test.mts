@@ -29,14 +29,14 @@ vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
   } as unknown as typeof import('openai').default,
 }))
 
-describe('background OpenAI response lease integration', () => {
+describe('background OpenAI response registration integration', () => {
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-key'
     openAIMocks.create.mockReset()
     openAIMocks.cancel.mockReset()
   })
 
-  it('settles the lease after notifying hooks with the created response id', async () => {
+  it('notifies hooks with the created response id', async () => {
     const response = makeSdkTextResponse('hello', { id: 'resp-hooked' })
     openAIMocks.create.mockResolvedValueOnce(
       makeResponseStream([
@@ -48,20 +48,18 @@ describe('background OpenAI response lease integration', () => {
         makeStreamEvent({ type: 'response.completed', sequence_number: 2, response }),
       ]),
     )
-    const stopAndSettle = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const onResponseCreated = vi
-      .fn<(responseId: string) => Promise<{ stopAndSettle: () => Promise<void> }>>()
-      .mockResolvedValue({ stopAndSettle })
+      .fn<(responseId: string) => Promise<boolean>>()
+      .mockResolvedValue(true)
 
     await runWithBackgroundResponseHooks({ onResponseCreated }, () =>
       createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
     )
 
     expect(onResponseCreated).toHaveBeenCalledExactlyOnceWith('resp-hooked')
-    expect(stopAndSettle).toHaveBeenCalledTimes(1)
   })
 
-  it('awaits lease acquisition before an interrupted drain can cancel', async () => {
+  it('awaits registration before an interrupted drain can cancel', async () => {
     let releaseRegistration: (() => void) | undefined
     const registrationGate = new Promise<void>(resolve => {
       releaseRegistration = resolve
@@ -81,14 +79,11 @@ describe('background OpenAI response lease integration', () => {
     openAIMocks.cancel.mockResolvedValueOnce(
       makeSdkResponse({ status: 'cancelled', id: 'resp-barrier' }),
     )
-    const stopAndSettle = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
     const responseCreated = Promise.withResolvers<void>()
-    const onResponseCreated = vi.fn<
-      (responseId: string) => Promise<{ stopAndSettle: () => Promise<void> }>
-    >(async () => {
+    const onResponseCreated = vi.fn<(responseId: string) => Promise<boolean>>(async () => {
       responseCreated.resolve()
       await registrationGate
-      return { stopAndSettle }
+      return true
     })
 
     const response = runWithBackgroundResponseHooks({ onResponseCreated }, () =>
@@ -105,6 +100,5 @@ describe('background OpenAI response lease integration', () => {
       maxRetries: 0,
       timeout: 10_000,
     })
-    expect(stopAndSettle).toHaveBeenCalledTimes(1)
   })
 })

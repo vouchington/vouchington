@@ -65,7 +65,6 @@ export const SCHEDULED_JOB_API_ORDER = [
   'reconcileAutoDispatchJudgements',
   'reconcileCopyrightAgentDispatches',
   'reconcileClassifierRuns',
-  'reconcileBackgroundResponses',
   'bedrock-embeddings:poll-dispatcher',
   'bedrock-embeddings:creation-dispatcher',
   'bedrock-embeddings:backlog-dispatcher',

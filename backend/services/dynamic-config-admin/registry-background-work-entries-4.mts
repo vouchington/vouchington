@@ -1,4 +1,5 @@
 import { backgroundQueueConfig, backgroundQueueMaxValues } from '@queues/background/config'
+import { aiAgentsQueueConfig, aiAgentsQueueMaxValues } from '@queues/ai-agents/config'
 import { BACKGROUND_ORDERING_CAPS } from '@queues/background/enqueues/ordering-caps'
 import { BACKGROUNDCPU_ORDERING_CAPS } from '@queues/background-cpu/enqueues/ordering-caps'
 import { orderingConfigFields } from '@data-stores/valkey-glide-mq/shared-queue-ordering'
@@ -25,6 +26,16 @@ import {
 } from '@queues/psql/enqueues/ordering-config'
 
 export const backgroundWorkEntries4 = [
+  defineBoundedWorkNamespace({
+    namespace: 'ai-agents-queue-config',
+    config: aiAgentsQueueConfig,
+    label: 'AI agents queue',
+    maxValues: aiAgentsQueueMaxValues,
+    descriptions: {
+      background_response_recovery_concurrency:
+        'Maximum concurrent inline background response recovery jobs across all workers.',
+    },
+  }),
   defineBoundedWorkNamespace({
     namespace: 'psql-queue-config',
     config: psqlQueueConfig,

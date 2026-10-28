@@ -28,8 +28,8 @@ vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
   } as unknown as typeof import('openai').default,
 }))
 
-describe('background response drain without a durable lease', () => {
-  it('awaits accounting uncertainty after response.created when lease acquisition returns undefined', async () => {
+describe('background response drain without durable registration', () => {
+  it('awaits accounting uncertainty after response.created when registration returns false', async () => {
     process.env.OPENAI_API_KEY = 'test-key'
     const cause = new Error('socket closed')
     const stream: AsyncIterable<ReturnType<typeof makeStreamEvent>> = {
@@ -37,7 +37,7 @@ describe('background response drain without a durable lease', () => {
         yield makeStreamEvent({
           type: 'response.created',
           sequence_number: 1,
-          response: makeSdkResponse({ status: 'in_progress', id: 'resp-no-lease' }),
+          response: makeSdkResponse({ status: 'in_progress', id: 'resp-no-registration' }),
         })
         throw cause
       },
@@ -54,9 +54,8 @@ describe('background response drain without a durable lease', () => {
       runWithOpenAIResponseAttemptHooks(
         { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
         async () =>
-          runWithBackgroundResponseHooks(
-            { onResponseCreated: () => Promise.resolve(undefined) },
-            () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
+          runWithBackgroundResponseHooks({ onResponseCreated: () => Promise.resolve(false) }, () =>
+            createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
           ),
       ),
     ).rejects.toMatchObject({ cause })
@@ -68,7 +67,7 @@ describe('background response drain without a durable lease', () => {
     expect(openAIMocks.cancel).toHaveBeenCalledTimes(1)
   })
 
-  it('latches a lease-less terminal failed response that omitted usage', async () => {
+  it('latches an unregistered terminal failed response that omitted usage', async () => {
     process.env.OPENAI_API_KEY = 'test-key'
     openAIMocks.create.mockResolvedValueOnce({
       async *[Symbol.asyncIterator]() {

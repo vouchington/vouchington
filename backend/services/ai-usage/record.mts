@@ -28,12 +28,10 @@ export interface RecordAiUsageOptions {
   /** The service tier the provider actually served, not the requested tier. */
   serviceTier: string
   usage: ModelUsage
-  /** Runs inside the caller's transaction instead of a fresh connection -- e.g. the
-   *  openai-background-responses sweeper (#8836), which must delete its registry row and write
-   *  this ledger row atomically so a failure between the two never silently drops the row. */
+  /** Runs inside the caller's transaction instead of a fresh connection. */
   query?: QueryExecutor
   /**
-   * The response's true creation time (openai_background_responses.created_at), for a background
+   * The response's true creation time (the request's start time), for a background
    * response recorded after its request day. daily-total.mts buckets spend by id-range, and
    * ai_usage_records.id's UUIDv7 timestamp otherwise defaults to "now" -- the moment this INSERT
    * runs, not the moment the request started -- so a response created before UTC midnight but
@@ -183,18 +181,4 @@ export async function recordAiUsage(options: RecordAiUsageOptions): Promise<Reco
     FROM registered_tier
   `)
   return 'recorded'
-}
-
-/** True when `ai_usage_provider_response_keys` already reserves this provider response id. */
-export async function hasRecordedAiUsageResponseId(responseId: string): Promise<boolean> {
-  const { rows } = await write<{ exists: boolean }>(sql`/* hasRecordedAiUsageResponseId */
-    SELECT EXISTS (
-      SELECT 1
-      FROM ai_usage_provider_response_keys
-      WHERE response_id = ${responseId}
-    ) AS exists
-  `)
-  const result = rows[0]
-  if (!result) throw new Error('hasRecordedAiUsageResponseId query returned no result row')
-  return result.exists
 }

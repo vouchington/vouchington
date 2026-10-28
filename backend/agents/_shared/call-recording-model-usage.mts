@@ -87,7 +87,12 @@ export async function callRecordingModelUsage<T>(
   const requestStartedAt = new Date()
   const background =
     selection.provider === 'openai' && openaiTransport === 'direct'
-      ? createBackgroundResponseRegistrationHooks({ agentSlug, communityId, postId })
+      ? createBackgroundResponseRegistrationHooks({
+          agentSlug,
+          communityId,
+          postId,
+          createdAt: requestStartedAt,
+        })
       : undefined
   const attemptHooks = createOpenAIResponseAttemptHooks(agentSlug, deps)
   const record = (billed: BilledModelResponse) =>

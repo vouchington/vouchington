@@ -116,10 +116,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Audit snapshot intentionally survives user deletion.',
   ],
   [
-    'openai_background_responses.lease_token',
-    'Opaque fencing token rotated on ownership transfer; it intentionally identifies no durable relation.',
-  ],
-  [
     'classifier_runs.lease_token',
     'Opaque fencing token rotated for the current exclusive claimant; it intentionally identifies no durable relation.',
   ],

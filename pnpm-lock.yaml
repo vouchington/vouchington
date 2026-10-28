@@ -202,12 +202,12 @@ importers:
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../../modules/structured-decisions
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../../services/ai-usage
-      '@services/openai-background-responses':
-        specifier: workspace:^
-        version: link:../../services/openai-background-responses
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -218,9 +218,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-      openai:
-        specifier: ^7.43.0
-        version: 7.43.0(@aws-sdk/credential-provider-node@3.972.88)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
 
   backend/agents/appeal-resolution:
     dependencies:
@@ -2819,6 +2816,9 @@ importers:
 
   backend/queues/ai-agents:
     dependencies:
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-core
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
@@ -2837,10 +2837,10 @@ importers:
       glide-mq:
         specifier: ^0.20.0
         version: 0.20.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.13.0
+        version: 0.13.0
     devDependencies:
-      '@data-stores/valkey-core':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-core
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -6196,6 +6196,9 @@ importers:
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
+      '@queues/ai-agents':
+        specifier: workspace:^
+        version: link:../../queues/ai-agents
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
@@ -6361,9 +6364,6 @@ importers:
       '@services/oauth-x':
         specifier: workspace:^
         version: link:../oauth-x
-      '@services/openai-background-responses':
-        specifier: workspace:^
-        version: link:../openai-background-responses
       '@services/openai-moderation':
         specifier: workspace:^
         version: link:../openai-moderation
@@ -9214,12 +9214,6 @@ importers:
 
   backend/services/openai-background-responses:
     dependencies:
-      '@data-stores/psql':
-        specifier: workspace:^
-        version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -9229,21 +9223,12 @@ importers:
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../ai-usage
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
       '@vouchington/ai':
         specifier: ^0.3.0
         version: 0.3.0(@anthropic-ai/sdk@0.137.0(zod@4.6.5))(openai@7.43.0(@aws-sdk/credential-provider-node@3.972.88)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5))
       openai:
         specifier: ^7.43.0
         version: 7.43.0(@aws-sdk/credential-provider-node@3.972.88)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.22.0)(zod@4.6.5)
-      sql-template-strings:
-        specifier: ^2.2.2
-        version: 2.2.2
-      valkyries:
-        specifier: ^0.13.0
-        version: 0.13.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
