@@ -7,10 +7,7 @@ import {
   getTestPrivateUserById,
   insertTestTotpAuthenticator,
 } from '@voucha/test-helpers'
-import {
-  createEmailVerificationToken,
-  verifyEmailVerificationToken,
-} from '../my/email-address-verification.mts'
+import { addVerifiedEmailForUser } from '@voucha/test-helpers/entities/email-addresses'
 import { getPrimaryEmailAddress, setPrimaryEmailAddress } from '../my/email-addresses.mts'
 import { isSessionRevoked } from '@services/jwt-session'
 import { addUserRole } from '../users/roles-permissions.mts'
@@ -30,8 +27,7 @@ describe('account settings changes', () => {
     const actor = await createTestAccountChangeActor(user.id)
     const other = await createTestAccountChangeActor(user.id)
     const address = `tests+fresh-${v7()}@voucha.ai`
-    const verification = await createEmailVerificationToken(user.id, address)
-    await verifyEmailVerificationToken(user.id, address, verification.token)
+    await addVerifiedEmailForUser(user.id, address)
     const token = await createTestAccountChangeProof(user.id, actor.session)
     const notification = await captureTestAccountSecurityEmail(user.email_address!, () =>
       withReauthenticatedAccountChange(user.id, actor.session, token, query =>
@@ -75,8 +71,7 @@ describe('account settings changes', () => {
     const actor = await createTestAccountChangeActor(user.id)
     const other = await createTestAccountChangeActor(user.id)
     const address = `tests+rollback-${v7()}@voucha.ai`
-    const verification = await createEmailVerificationToken(user.id, address)
-    await verifyEmailVerificationToken(user.id, address, verification.token)
+    await addVerifiedEmailForUser(user.id, address)
     const token = await createTestAccountChangeProof(user.id, actor.session)
     const failure = new Error('owned change rejected before commit')
     await expect(

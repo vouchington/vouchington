@@ -100,10 +100,7 @@ export async function listOAuthClientsForVerification(options: {
 }
 
 /** What an administrator reviewed. An owner change to either field clears verification. */
-export type OAuthClientVerificationReview = Pick<
-  AdminOAuthClientView,
-  'client_name' | 'redirect_uris'
->
+type OAuthClientVerificationReview = Pick<AdminOAuthClientView, 'client_name' | 'redirect_uris'>
 
 /**
  * Verifies the exact name and redirect URIs the administrator reviewed. A rename or re-pointing

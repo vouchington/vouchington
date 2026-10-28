@@ -15,7 +15,7 @@ import {
 } from '@voucha/test-helpers/account-change'
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { withActiveAccountSession } from './active-account-session.mts'
-import { verifyAndDeleteReAuthToken } from './re-auth.mts'
+import { assertFreshReAuth } from './re-auth.mts'
 
 describe('session-scoped account-change proofs', () => {
   it('replaces only the issuing session proof and consumes it exactly once', async () => {
@@ -47,8 +47,8 @@ describe('session-scoped account-change proofs', () => {
         actor.session,
         async owned => {
           await expect(
-            verifyAndDeleteReAuthToken(user.id, actor.session, token, owned),
-          ).resolves.toBe(true)
+            assertFreshReAuth(user.id, actor.session, token, owned),
+          ).resolves.toBeUndefined()
         },
         { query },
       ),

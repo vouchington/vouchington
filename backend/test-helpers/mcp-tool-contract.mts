@@ -1,13 +1,12 @@
-import {
-  runWithCredentialRequestContext,
-  type CredentialRequestOrigin,
-} from '../modules/request-client-info/index.mts'
+import { runWithCredentialRequestContext } from '../modules/request-client-info/index.mts'
 import { expect } from 'vitest'
 import type { ApiScope } from '../modules/scopes/index.mts'
 import { callMcpTool } from '../services/mcp-tools/call-tool.mts'
 import { ALL_MCP_SERVER_CONFIGS } from '../services/mcp-tools/config.mts'
 import type { BasicUser } from '../services/users/types.mts'
 import { getRegisteredToolByName } from '../mcp/registry/index.mts'
+
+type CredentialRequestOrigin = Parameters<typeof runWithCredentialRequestContext>[0]
 
 export type McpContractCaller = BasicUser & {
   membership_plan: 'plus' | 'pro' | null

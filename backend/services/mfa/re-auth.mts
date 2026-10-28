@@ -28,7 +28,7 @@ export async function createReAuthToken(
 }
 
 /** Clearing the proof participates in the actual account mutation's transaction and rollback. */
-export async function verifyAndDeleteReAuthToken(
+async function verifyAndDeleteReAuthToken(
   currentUserId: string,
   session: AccountChangeSession,
   token: string,

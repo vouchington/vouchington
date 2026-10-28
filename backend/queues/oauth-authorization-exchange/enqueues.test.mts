@@ -6,7 +6,6 @@ import {
   OAUTH_AUTHORIZATION_EXCHANGE_JOB,
 } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import {
-  enqueueBulkOAuthAuthorizationExchanges,
   enqueueOrReactivateBulkOAuthAuthorizationExchanges,
   enqueueOAuthAuthorizationExchange,
   enqueueOAuthAuthorizationExchangeDispatcher,
@@ -65,9 +64,11 @@ describe('OAuth authorization exchange enqueues', () => {
   it('applies the same durable IDs and retry policy to bulk exchange jobs', async () => {
     const authorizationIds = [randomUUID(), randomUUID()]
 
-    await enqueueBulkOAuthAuthorizationExchanges(
-      authorizationIds.map(authorizationId => ({ authorizationId })),
-    )
+    await expect(
+      enqueueOrReactivateBulkOAuthAuthorizationExchanges(
+        authorizationIds.map(authorizationId => ({ authorizationId })),
+      ),
+    ).resolves.toBe(0)
 
     for (const authorizationId of authorizationIds) {
       const job = await oauthAuthorizationExchangeQueue.getJob(authorizationId)
@@ -138,7 +139,11 @@ describe('OAuth authorization exchange enqueues', () => {
 
   it('does not inspect queue state for an empty durable recovery page', async () => {
     const getCompletedJobs = vi.fn<() => Promise<never[]>>(async () => [])
-    const enqueueBulk = vi.fn<typeof enqueueBulkOAuthAuthorizationExchanges>(async () => [])
+    const enqueueBulk = vi.fn<
+      NonNullable<
+        Parameters<typeof enqueueOrReactivateBulkOAuthAuthorizationExchanges>[1]
+      >['enqueueBulk']
+    >(async () => [])
     const getFailedJobs = vi.fn<() => Promise<never[]>>(async () => [])
 
     await expect(
@@ -182,7 +187,11 @@ describe('OAuth authorization exchange enqueues', () => {
 
   it('aborts recovery enqueue when completed-job removal fails', async () => {
     const authorizationId = randomUUID()
-    const enqueueBulk = vi.fn<typeof enqueueBulkOAuthAuthorizationExchanges>(async () => [])
+    const enqueueBulk = vi.fn<
+      NonNullable<
+        Parameters<typeof enqueueOrReactivateBulkOAuthAuthorizationExchanges>[1]
+      >['enqueueBulk']
+    >(async () => [])
 
     await expect(
       enqueueOrReactivateBulkOAuthAuthorizationExchanges([{ authorizationId }], {

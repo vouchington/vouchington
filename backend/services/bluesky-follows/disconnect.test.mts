@@ -19,8 +19,9 @@ import {
 import {
   requestBlueskyDisconnect,
   listPendingBlueskyDisconnectPage,
-  type BlueskyDisconnectRequest,
 } from './disconnect-request.mts'
+type BlueskyDisconnectRequest = Awaited<ReturnType<typeof requestBlueskyDisconnect>>
+
 import { enqueueDisconnectRequested } from '@queues/bluesky-follow-propagation/enqueues'
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
 

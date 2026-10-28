@@ -1,9 +1,6 @@
 import { expect } from 'vitest'
 import { SCOPE_DEFINITIONS, type ApiScope } from '../modules/scopes/index.mts'
-import {
-  runWithCredentialRequestContext,
-  type CredentialRequestOrigin,
-} from '../modules/request-client-info/index.mts'
+import { runWithCredentialRequestContext } from '../modules/request-client-info/index.mts'
 import { findSchemaViolation } from '@vouchington/mcp-server/schema'
 import {
   ADMIN_MCP_SERVER_CONFIG,
@@ -19,6 +16,8 @@ import {
   registerTestMetadataClient,
 } from './services/oauth-authorization-server/test-support.mts'
 import { getOAuthClient } from '../services/oauth-authorization-server/index.mts'
+
+type CredentialRequestOrigin = Parameters<typeof runWithCredentialRequestContext>[0]
 
 const preModerationScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
   scope => scope !== 'community-moderation:read' && scope !== 'community-moderation:write',

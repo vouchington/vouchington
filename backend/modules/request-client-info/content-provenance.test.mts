@@ -4,9 +4,10 @@ import { getRequestContentProvenance } from './content-provenance.mts'
 import {
   runWithCredentialRequestContext,
   runWithSessionRequestContext,
-  type CredentialRequestOrigin,
   type RequestClientInfo,
 } from './index.mts'
+
+type CredentialRequestOrigin = Parameters<typeof runWithCredentialRequestContext>[0]
 
 describe('getRequestContentProvenance origin mapping', () => {
   it.each<[string, RequestClientInfo['client'], ContentProvenance]>([

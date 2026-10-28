@@ -7,7 +7,9 @@ import {
   getTestOAuthClientPublicId,
   renameTestOAuthClient,
 } from '@voucha/test-helpers/entities/oauth-client-management'
-import type { CredentialRequestOrigin } from '@modules/request-client-info'
+import { runWithCredentialRequestContext } from '@modules/request-client-info'
+
+type CredentialRequestOrigin = Parameters<typeof runWithCredentialRequestContext>[0]
 
 const SCOPES = ['posts:read', 'posts:write'] as const
 const APP_NAME = `Write Agent ${randomBytes(6).toString('hex')}`

@@ -8,7 +8,7 @@ import {
   withCapturedTestQueries,
 } from '@voucha/test-helpers/query-capture'
 import { runSessionActionWithRolledBackQuery } from '../../test-helpers/session-user-agent-rollback.mts'
-import { registerAuthenticatedSession, upsertAuthenticatedSession } from './user-sessions.mts'
+import { registerAuthenticatedSession } from './user-sessions.mts'
 
 const expiresAt = new Date('2030-01-01T00:00:00.000Z')
 
@@ -91,9 +91,14 @@ describe('request-local session user-agent memo', () => {
         const { queries } = await withCapturedTestQueries(() =>
           runSessionActionWithRolledBackQuery(
             queryOptions =>
-              upsertAuthenticatedSession(
-                user.id,
-                { sid, deviceId: v7(), expiresAt, userAgent },
+              registerAuthenticatedSession(
+                {
+                  sid,
+                  uid: user.id,
+                  did: v7(),
+                  expiresAt,
+                  deviceContext: { user_agent: userAgent },
+                },
                 queryOptions,
               ),
             useClient,
@@ -118,9 +123,14 @@ describe('request-local session user-agent memo', () => {
       await runWithRequestContext(async () => {
         await runSessionActionWithRolledBackQuery(
           queryOptions =>
-            upsertAuthenticatedSession(
-              user.id,
-              { sid: directSessionId, deviceId: v7(), expiresAt, userAgent },
+            registerAuthenticatedSession(
+              {
+                sid: directSessionId,
+                uid: user.id,
+                did: v7(),
+                expiresAt,
+                deviceContext: { user_agent: userAgent },
+              },
               queryOptions,
             ),
           useClient,

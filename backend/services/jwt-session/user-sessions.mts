@@ -12,7 +12,7 @@ import type { DeviceClass, DeviceContext } from './types.mts'
 import { normalizeDeviceName, normalizeIpAddress, normalizeText } from './session-device-name.mts'
 import type { UserSessionRow } from './user-session-types.mts'
 
-export async function upsertAuthenticatedSession(
+async function upsertAuthenticatedSession(
   currentUserId: string,
   options: AuthenticatedSessionOptions,
   queryOptions?: QueryOptions,
@@ -107,7 +107,8 @@ export async function registerAuthenticatedSession(
 ): Promise<void> {
   if (uid === null) return
 
-  if (!queryOptions?.query && hasRequestContext()) {
+  // Caller-owned SQL must resolve its own user-agent lookup outside the request memo.
+  if (!queryOptions?.query && !queryOptions?.client && hasRequestContext()) {
     const options: AuthenticatedSessionOptions = {
       sid,
       deviceId: did,

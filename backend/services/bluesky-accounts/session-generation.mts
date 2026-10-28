@@ -3,7 +3,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { BlueskySessionAuthorizationContext } from './session-lifecycle-context.mts'
 
-export class BlueskySessionLifecycleConflictError extends Error {
+class BlueskySessionLifecycleConflictError extends Error {
   readonly did: string
 
   constructor(did: string) {

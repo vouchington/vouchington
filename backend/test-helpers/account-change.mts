@@ -4,7 +4,7 @@ import {
   withActiveAccountSession,
   type AccountChangeSession,
 } from '../services/mfa/active-account-session.mts'
-import { createReAuthToken, verifyAndDeleteReAuthToken } from '../services/mfa/re-auth.mts'
+import { createReAuthToken, assertFreshReAuth } from '../services/mfa/re-auth.mts'
 
 /** Mint a real current authority, including the browser binding used by account mutations. */
 export async function createTestAccountChangeActor(currentUserId: string) {
@@ -32,7 +32,13 @@ export function consumeTestAccountChangeProof(
   session: AccountChangeSession,
   token: string,
 ) {
-  return withActiveAccountSession(currentUserId, session, query =>
-    verifyAndDeleteReAuthToken(currentUserId, session, token, query),
-  )
+  return withActiveAccountSession(currentUserId, session, async query => {
+    try {
+      await assertFreshReAuth(currentUserId, session, token, query)
+      return true
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'MFA_REAUTH_REQUIRED') return false
+      throw err
+    }
+  })
 }

@@ -3,6 +3,7 @@ import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 import { startRealGlideJobLifecycle } from '@voucha/test-helpers/real-glide-job-lifecycle'
 import {
   OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
@@ -11,8 +12,9 @@ import {
 } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import {
   enqueueOrReactivateBulkOAuthAuthorizationExchanges,
-  getOAuthAuthorizationExchangeDispatcherJobOptions,
+  enqueueOAuthAuthorizationExchangeDispatcher,
 } from './enqueues.mts'
+import { oauthAuthorizationExchangeQueue } from './queues.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -163,9 +165,17 @@ describe('OAuth exchange dispatcher enqueue through real GlideMQ', () => {
   // The throttle window is wall-clock time: dropping its ttl lets the replay isolate the job-id
   // claim, which is the part that used to outlive the job. Zero priority skips the scheduler's ~5s
   // promotion of prioritized jobs, and one attempt avoids waiting out a retry backoff.
-  const productionOptions = (deduplicationId: string) => {
-    const { deduplication, ...options } =
-      getOAuthAuthorizationExchangeDispatcherJobOptions(deduplicationId)
+  const productionOptions = async (deduplicationId: string) => {
+    await enqueueOAuthAuthorizationExchangeDispatcher({ deduplicationId })
+    const jobs = await readAllQueueJobs(oauthAuthorizationExchangeQueue)
+    const observed = jobs.find(
+      job =>
+        job.name === OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name &&
+        job.opts.deduplication?.id === deduplicationId,
+    )
+    if (!observed?.opts.deduplication) throw new Error('Expected public dispatcher enqueue')
+    const { deduplication, ...options } = observed.opts
+    await observed.remove()
     return {
       ...ENQUEUE_BASE_DEFAULTS,
       ...options,
@@ -182,7 +192,9 @@ describe('OAuth exchange dispatcher enqueue through real GlideMQ', () => {
         'oauth_dispatcher',
         { connection: workerQueueConnection, prefix: workerQueuePrefix },
       )
-      const options = productionOptions('backfill:oauth-authorization-exchange-dispatch')
+      const options = await productionOptions(
+        `backfill:oauth-authorization-exchange-dispatch:${randomUUID()}`,
+      )
       try {
         lifecycle.setOutcome(outcome)
         const first = await lifecycle.queue.add(

@@ -6,10 +6,9 @@ import {
   DBSC_TEST_REGISTRATION_URL,
 } from '@voucha/test-helpers/dbsc-session'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
-import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { refreshSessionState } from './flows.mts'
 import { readSessionDeviceAuthority } from './device-authority.mts'
-import { getDbscChallengeKey } from './dbsc-state.mts'
+import { evictTestDbscChallenge } from '../../test-helpers/dbsc-challenge-eviction.mts'
 import {
   expireTestPreviousDeviceTokenGrace,
   shiftTestDeviceAuthorityIssuedAt,
@@ -88,7 +87,7 @@ describe('durable browser device-bound session authority', () => {
     const fixture = await createDbscTestSession()
     const registered = await fixture.register()
     const nonce = await fixture.challenge(registered.dt)
-    await sessionValkeyClient.unlink([getDbscChallengeKey(nonce)])
+    await evictTestDbscChallenge(nonce)
     await expect(fixture.authorizeRefresh(registered.dt, nonce)).rejects.toMatchObject({
       status: 403,
       code: 'DBSC_PROOF_REQUIRED',
@@ -105,7 +104,7 @@ describe('durable browser device-bound session authority', () => {
 
   it('renews an unbound session without a Valkey authority document', async () => {
     const fixture = await createDbscTestSession()
-    await sessionValkeyClient.unlink([getDbscChallengeKey(fixture.nonce)])
+    await evictTestDbscChallenge(fixture.nonce)
     const refreshed = await refreshSessionState(fixture.base)
     expect(refreshed.uid).toBe(fixture.user.id)
     expect(

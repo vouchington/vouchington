@@ -9,7 +9,6 @@ import type { NodeSavedSession } from '@modules/bluesky-oauth'
 import { v7 } from 'uuid'
 import { connectBlueskyAccountToUser } from './connect.mts'
 import { BlueskySessionStore } from './session-store.mts'
-import { BlueskySessionLifecycleConflictError } from './session-generation.mts'
 import {
   runWithAttachedBlueskySession,
   runWithBlueskySessionAuthorization,
@@ -28,7 +27,11 @@ describe('BlueskySessionStore generations', () => {
         setup.staleAuthorizationId,
         fakeSession(),
       ),
-    ).rejects.toThrow(BlueskySessionLifecycleConflictError)
+    ).rejects.toMatchObject({
+      name: 'BlueskySessionLifecycleConflictError',
+      message: `Bluesky session lifecycle ownership changed for ${setup.did}`,
+      did: setup.did,
+    })
     expect(await setup.store.get(setup.did)).toEqual(currentSession)
   })
 
@@ -42,7 +45,11 @@ describe('BlueskySessionStore generations', () => {
         setup.did,
         setup.staleAuthorizationId,
       ),
-    ).rejects.toThrow(BlueskySessionLifecycleConflictError)
+    ).rejects.toMatchObject({
+      name: 'BlueskySessionLifecycleConflictError',
+      message: `Bluesky session lifecycle ownership changed for ${setup.did}`,
+      did: setup.did,
+    })
     expect(await getTestBlueskyLinkedAccountRow(setup.did)).toMatchObject({
       user_id: setup.currentOwnerId,
       link_authorization_id: setup.currentAuthorizationId,
