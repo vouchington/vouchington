@@ -2,6 +2,19 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import AdminModlogPage from './page'
+const notFoundMock = vi.hoisted(() =>
+  vi.fn<() => never>(() => {
+    throw new Error('NEXT_HTTP_ERROR_FALLBACK;404')
+  }),
+)
+vi.mock(
+  import('next/navigation'),
+  async () =>
+    ({
+      ...(await import('vouchington-tooling/next-navigation-mock')).navMockModule,
+      notFound: notFoundMock,
+    }) as unknown as typeof import('next/navigation'),
+)
 
 const requireAdminMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const serverApiGetMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -71,6 +84,7 @@ const dataWithAction = {
 
 describe('AdminModlogPage', () => {
   beforeEach(() => {
+    notFoundMock.mockClear()
     requireAdminMock.mockReset()
     requireAdminMock.mockResolvedValue(undefined)
     serverApiGetMock.mockReset()
@@ -121,9 +135,14 @@ describe('AdminModlogPage', () => {
     )
   })
 
-  it('calls serverApi with community_id filter when provided', async () => {
+  it('resolves a community slug before filtering the modlog', async () => {
+    serverApiGetMock.mockImplementation((path: string) =>
+      path.startsWith('/api/v1/communities/')
+        ? Promise.resolve({ community: { id: 'community-uuid', slug: 'test-community' } })
+        : Promise.resolve(emptyData),
+    )
     await AdminModlogPage({
-      searchParams: Promise.resolve({ community_id: 'community-uuid' }),
+      searchParams: Promise.resolve({ community: 'test-community' }),
     })
     expect(serverApiGetMock).toHaveBeenCalledWith(
       '/api/v1/admin/modlog',
@@ -131,6 +150,24 @@ describe('AdminModlogPage', () => {
         searchParams: expect.objectContaining({ community_id: 'community-uuid' }),
       }),
     )
+  })
+
+  it('rejects a community ID in the natural-key URL', async () => {
+    serverApiGetMock.mockResolvedValue({
+      community: { id: 'community-uuid', slug: 'test-community' },
+    })
+    await expect(
+      AdminModlogPage({ searchParams: Promise.resolve({ community: 'community-uuid' }) }),
+    ).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404')
+    expect(notFoundMock).toHaveBeenCalledOnce()
+  })
+
+  it('rejects a user ID in the natural-key URL', async () => {
+    serverApiGetMock.mockResolvedValue({ user: { id: 'user-uuid', username: 'moderator' } })
+    await expect(
+      AdminModlogPage({ searchParams: Promise.resolve({ actor: 'user-uuid' }) }),
+    ).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404')
+    expect(notFoundMock).toHaveBeenCalledOnce()
   })
 
   it('renders pagination', async () => {

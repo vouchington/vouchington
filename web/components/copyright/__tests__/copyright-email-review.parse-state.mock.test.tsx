@@ -13,6 +13,7 @@ import {
   copyrightNoticeTargetsClientMock as targetsClient,
 } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
   makeCopyrightEmailQueueItem as makeQueueItem,
@@ -35,7 +36,7 @@ async function reviewIntake(overrides: Partial<CopyrightEmailIntake>) {
     copyright_email_intake: makeIntake(intakeId, overrides),
   })
   render(<CopyrightEmailReview data={makeQueuePage()} />)
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+  fireEvent.click(getCopyrightEmailQueueButton(intakeId)!)
   await waitFor(() => {
     expect(screen.getByRole('heading', { name: 'Staff-private evidence' })).toBeInTheDocument()
   })

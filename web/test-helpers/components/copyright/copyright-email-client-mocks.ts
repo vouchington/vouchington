@@ -12,7 +12,7 @@ import type {
   requestCopyrightEmailIntakeInformation,
 } from '@/lib/api/client/copyright-email-intakes'
 import type { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
-import type { getCopyrightNoticeAssociationTarget } from '@/lib/api/client/copyright-notice-association-target'
+import type { searchCopyrightNoticeAssociationTargets } from '@/lib/api/client/copyright-notice-association-search'
 
 // Return these from `vi.mock` factories for the copyright email review client modules. Import this
 // module before the component under test so the factories can read them.
@@ -34,5 +34,5 @@ export const copyrightNoticeTargetsClientMock = {
 }
 
 export const copyrightNoticePickerClientMock = {
-  getCopyrightNoticeAssociationTarget: vi.fn<typeof getCopyrightNoticeAssociationTarget>(),
+  searchCopyrightNoticeAssociationTargets: vi.fn<typeof searchCopyrightNoticeAssociationTargets>(),
 }

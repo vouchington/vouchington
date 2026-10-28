@@ -28,7 +28,9 @@ export function RepeatInfringerAccount({
   return (
     <section className='space-y-2'>
       <h3 className='font-medium'>Repeat-infringer review</h3>
-      <p className='text-sm text-muted-foreground'>Account {account.account_user_id}</p>
+      <p className='text-sm text-muted-foreground'>
+        Account {account.account_username ? `@${account.account_username}` : 'Deleted user'}
+      </p>
       {account.is_operative ? (
         <div className='flex flex-wrap gap-2'>
           <DecisionButton

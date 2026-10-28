@@ -6,6 +6,14 @@ import type {
 
 export const copyrightEmailIntakeId = '019f0000-0000-7000-8000-000000000001'
 
+export function getCopyrightEmailQueueButton(intakeId: string): HTMLButtonElement | null {
+  return (
+    [
+      ...document.querySelectorAll<HTMLButtonElement>('[data-pw="copyright-email-queue-select"]'),
+    ].find(button => button.dataset.intakeId === intakeId) ?? null
+  )
+}
+
 export function makeCopyrightEmailQueueItem(
   id = copyrightEmailIntakeId,
 ): CopyrightEmailIntakeQueueItem {

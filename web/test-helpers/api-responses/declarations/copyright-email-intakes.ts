@@ -4,7 +4,7 @@ import webCopyrightEmailIntakeNoticeAssociation from '../../../../api-fixtures/v
 import webCopyrightEmailIntakeRejectionNoReply from '../../../../api-fixtures/v1/responses/web.copyright.email-intake-rejection.no-reply.json'
 import webCopyrightEmailIntakeRejectionReplyQueued from '../../../../api-fixtures/v1/responses/web.copyright.email-intake-rejection.reply-queued.json'
 import webCopyrightEmailIntakeQueueDefault from '../../../../api-fixtures/v1/responses/web.copyright.email-intake-queue.default.json'
-import webCopyrightEmailNoticeAssociationTarget from '../../../../api-fixtures/v1/responses/web.copyright.email-notice-association-target.json'
+import webCopyrightEmailNoticeAssociationSearch from '../../../../api-fixtures/v1/responses/web.copyright.email-notice-association-search.json'
 import type { CopyrightEmailIntakeQueuePage } from '@/types/copyright-notices'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
@@ -24,13 +24,20 @@ export const COPYRIGHT_EMAIL_INTAKE_DECLARATIONS = [
     [context => context.client.copyrightEmailIntakes.listCopyrightEmailIntakes()],
   ),
   defineWebApiFixture<{
-    copyright_notice: { id: string; jurisdiction: string; received_at: string }
+    copyright_notices: Array<{
+      id: string
+      jurisdiction: string
+      received_at: string
+      claimant_display_name: string | null
+      work_description: string
+    }>
+    page_info: { has_next_page: boolean; start_cursor: string | null; end_cursor: string | null }
   }>()(
-    'web.copyright.email-notice-association-target',
-    webCopyrightEmailNoticeAssociationTarget,
+    'web.copyright.email-notice-association-search',
+    webCopyrightEmailNoticeAssociationSearch,
     context =>
-      context.client.copyrightNoticeAssociationTarget.getCopyrightNoticeAssociationTarget(
-        '00000000-0000-7000-8000-000000000841',
+      context.client.copyrightNoticeAssociationSearch.searchCopyrightNoticeAssociationTargets(
+        'Claimant',
       ),
   ),
   defineWebApiFixture<{

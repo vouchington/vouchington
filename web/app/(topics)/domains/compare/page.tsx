@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { DomainTrustBadge } from '@/components/domains/domain-trust-badge'
+import { DomainComparePicker } from '@/components/domains/domain-compare-picker'
 import { getHostnamesCompare } from '@/lib/api/server/hostnames'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { createPageMetadata } from '@/lib/seo/metadata'
@@ -26,16 +27,25 @@ export const metadata: Metadata = createPageMetadata({
 export default async function DomainsComparePage({ searchParams }: PageProps) {
   const t = await getTranslations()
   const params = await searchParams
-  const idsParam = typeof params.ids === 'string' ? params.ids : ''
-  const ids = idsParam
-    ? [...new Set(idsParam.split(',').flatMap(id => (id.trim() ? [id.trim()] : [])))].slice(0, 10)
+  const hostnamesParam = typeof params.hostnames === 'string' ? params.hostnames : ''
+  const hostnames = hostnamesParam
+    ? [
+        ...new Set(
+          hostnamesParam.split(',').flatMap(hostname => (hostname.trim() ? [hostname.trim()] : [])),
+        ),
+      ].slice(0, 10)
     : []
 
   const [currentUser, compareData] = await Promise.all([
     getCurrentUser(),
-    ids.length > 0 ? getHostnamesCompare(ids) : Promise.resolve(null),
+    hostnames.length > 0 ? getHostnamesCompare(hostnames) : Promise.resolve(null),
   ])
-  const validDomains = compareData ? Object.values(compareData.hostnames) : []
+  const requestedHostnames = new Set(hostnames.map(hostname => hostname.toLowerCase()))
+  const validDomains = compareData
+    ? Object.values(compareData.hostnames).filter(hostname =>
+        requestedHostnames.has(hostname.hostname.toLowerCase()),
+      )
+    : []
 
   const breadcrumbItems = buildBreadcrumbsForPath('/domains/compare', {
     isAuthenticated: !!currentUser,
@@ -65,19 +75,15 @@ export default async function DomainsComparePage({ searchParams }: PageProps) {
           </p>
         </div>
 
+        <DomainComparePicker initialHostnames={validDomains.map(hostname => hostname.hostname)} />
+
         {validDomains.length === 0 ? (
           <div
             className='rounded-md border bg-card p-6 text-center text-muted-foreground'
             data-pw='domains-compare-empty'
           >
             <p>{t('extracted.compare.page.noDomainsToCompare_07c4cc55')}</p>
-            <p className='mt-2 text-sm'>
-              {t('extracted.compare.page.addDomainIdsOrHostnamesTo_cfa82924')}{' '}
-              <code className='rounded bg-muted px-1'>
-                {t('extracted.compare.page.idsId1Id2_8043911f')}
-              </code>
-              .
-            </p>
+            <p className='mt-2 text-sm'>Search for hostnames above to start a comparison.</p>
             <Link
               href='/domains'
               prefetch={false}

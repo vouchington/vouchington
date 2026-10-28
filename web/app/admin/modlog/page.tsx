@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { Breadcrumbs } from '@/components/ui/breadcrumb'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
@@ -9,25 +10,43 @@ import { AdminPagination } from '@/components/admin/admin-pagination'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { serverApi } from '@/lib/api/server'
-import type { ModlogResponseBody } from '@/types/api-responses'
+import type {
+  CommunityResponseBody,
+  ModlogResponseBody,
+  UserResponseBody,
+} from '@/types/api-responses'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { ModlogFilters } from '@/components/admin/modlog-filters'
 
 export const metadata: Metadata = createNoIndexMetadata('Mod Log | Admin')
 
 export default async function AdminModlogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ after?: string; community_id?: string; actor_user_id?: string }>
+  searchParams: Promise<{ after?: string; community?: string; actor?: string }>
 }) {
   const t = await getTranslations()
   await requireAdmin()
   const params = await searchParams
+  const [community, actor] = await Promise.all([
+    params.community
+      ? serverApi.get<CommunityResponseBody>(
+          `/api/v1/communities/${encodeURIComponent(params.community)}`,
+        )
+      : null,
+    params.actor
+      ? serverApi.get<UserResponseBody>(`/api/v1/users/${encodeURIComponent(params.actor)}`)
+      : null,
+  ])
+  if (params.community && community?.community.slug !== params.community) notFound()
+  if (params.actor && actor?.user.username !== params.actor) notFound()
+  const filters = { community: community?.community.slug, actor: actor?.user.username }
 
   const data = await serverApi.get<ModlogResponseBody>('/api/v1/admin/modlog', {
     searchParams: {
       after: params.after,
-      community_id: params.community_id,
-      actor_user_id: params.actor_user_id,
+      community_id: community?.community.id,
+      actor_user_id: actor?.user.id,
       limit: 25,
     },
   })
@@ -47,6 +66,10 @@ export default async function AdminModlogPage({
       <AdminPageHeader
         title={t('extracted.modlog.page.modLog_7d4b507b')}
         description={t('extracted.modlog.page.unifiedAuditLogOfModerator_2c8e5a91')}
+      />
+      <ModlogFilters
+        community={filters.community}
+        actor={filters.actor}
       />
       <AdminTableShell aria-label={t('extracted.modlog.page.modLog_7d4b507b')}>
         <table className='min-w-full divide-y divide-border'>
@@ -107,7 +130,9 @@ export default async function AdminModlogPage({
                   <td className='px-4 py-3 text-sm'>
                     {actor?.username
                       ? `@${actor.username}`
-                      : (action.actor_user_id ?? t('extracted.modlog.page.system_7a4d2e63'))}
+                      : action.actor_user_id
+                        ? 'Deleted user'
+                        : t('extracted.modlog.page.system_7a4d2e63')}
                   </td>
                   <td className='px-4 py-3 text-sm font-mono text-xs'>{action.action_type}</td>
                   <td className='px-4 py-3 text-sm text-muted-foreground'>
@@ -120,10 +145,10 @@ export default async function AdminModlogPage({
         </table>
       </AdminTableShell>
       <AdminPagination
-        previousHref={params.after ? buildPageUrl(params, undefined) : null}
+        previousHref={params.after ? buildPageUrl(filters, undefined) : null}
         nextHref={
           data.page_info.has_next_page && data.page_info.end_cursor
-            ? buildPageUrl(params, data.page_info.end_cursor)
+            ? buildPageUrl(filters, data.page_info.end_cursor)
             : null
         }
       />
@@ -132,12 +157,12 @@ export default async function AdminModlogPage({
 }
 
 function buildPageUrl(
-  params: { community_id?: string; actor_user_id?: string },
+  params: { community?: string; actor?: string },
   after: string | undefined,
 ): string {
   const searchParams = new URLSearchParams()
-  if (params.community_id) searchParams.set('community_id', params.community_id)
-  if (params.actor_user_id) searchParams.set('actor_user_id', params.actor_user_id)
+  if (params.community) searchParams.set('community', params.community)
+  if (params.actor) searchParams.set('actor', params.actor)
   if (after) searchParams.set('after', after)
   const qs = searchParams.toString()
   return qs ? `/admin/modlog?${qs}` : '/admin/modlog'

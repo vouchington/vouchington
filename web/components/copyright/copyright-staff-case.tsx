@@ -22,6 +22,7 @@ import {
   type SubmitRecovery,
   type SubmitReview,
 } from './copyright-staff-review-buttons'
+import { copyrightCaseLabel } from './copyright-case-label'
 
 export function CopyrightStaffCase({
   notice,
@@ -43,7 +44,7 @@ export function CopyrightStaffCase({
   return (
     <article className='space-y-4 rounded border p-4'>
       <header>
-        <h2 className='font-semibold'>Case {notice.id}</h2>
+        <h2 className='font-semibold'>{copyrightCaseLabel(notice)}</h2>
         <p className='text-sm text-muted-foreground'>
           {notice.jurisdiction} · received {new Date(notice.received_at).toLocaleString()}
         </p>
@@ -131,7 +132,7 @@ function CopyrightStaffRestrictionReviews({
         approve={() => reviewCopyrightRestriction(notice.id, restriction.id, 'confirm', rationale)}
         reject={() => reviewCopyrightRestriction(notice.id, restriction.id, 'reverse', rationale)}
         heading='Pending restriction review'
-        description={`Target ${restriction.target_id}`}
+        description='Affected hosted material'
         approveLabel='Confirm restriction'
         rejectLabel='Reverse restriction'
       />

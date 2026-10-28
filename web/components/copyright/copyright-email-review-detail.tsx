@@ -72,9 +72,14 @@ export function CopyrightEmailReviewDetail({
     <section className='space-y-3'>
       <h2 className='text-xl font-semibold'>Staff-private evidence</h2>
       <h3 className='font-medium'>Raw email metadata</h3>
-      <pre className='overflow-auto rounded border p-3 text-xs'>
-        {JSON.stringify(detail.raw_email, null, 2)}
-      </pre>
+      <dl className='rounded border p-3 text-sm'>
+        <dt>MIME type</dt>
+        <dd>{detail.raw_email.mime_type}</dd>
+        <dt>Size in bytes</dt>
+        <dd>{detail.raw_email.byte_size}</dd>
+        <dt>SHA-256</dt>
+        <dd className='break-all font-mono text-xs'>{detail.raw_email.sha256}</dd>
+      </dl>
       <CopyrightEmailSesVerdicts verdicts={detail.ses_verdicts} />
       <CopyrightEmailOriginalDownload
         downloadUrl={detail.raw_email.download_url}

@@ -64,6 +64,15 @@ describe('compare-hostnames', () => {
       expect(response.body.hostname_elections[hostnameId]).toBeDefined()
     })
 
+    it('compares a hostname without a UUID in the request', async () => {
+      const hostname = `compare-natural-${Math.random().toString(36).slice(2, 8)}.example.com`
+      const hostnameId = await insertTestUrlHostname({ hostname })
+      const response = await createRequest()
+        .get(`/api/v1/hostnames/compare?ids=${hostname}`)
+        .expect(200)
+      expect(response.body.hostnames[hostnameId].hostname).toBe(hostname)
+    })
+
     it('returns cache-control header for anonymous users', async () => {
       const request = createRequest()
       const response = await request.get(`/api/v1/hostnames/compare?ids=${hostnameId1}`).expect(200)

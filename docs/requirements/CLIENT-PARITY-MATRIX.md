@@ -101,6 +101,14 @@ header. Staff copyright queues expose a bounded first page of possible staydown 
 refresh. Native copyright filing and staff review remain tracked by the existing parity rows in
 `client-feature-parity.json`; this change does not claim new native UI evidence.
 
+Staff associate email replies with an existing case by claimant, work, or received date. REST and
+legal MCP share a bounded candidate search with opaque continuation; an empty result page can
+still have a continuation because the cursor advances over scanned candidates. The selected case
+ID remains an API fact used for association. Repeat-infringer account reads include a nullable
+username so staff presentation does not use a user ID as its label. Swift and .NET contract
+fixtures cover these response facts; native adoption and UI evidence are dependent work under
+[clients #527](https://github.com/vouchington/vouchington-clients/issues/527).
+
 ## Classifier partition operations
 
 The staff engineering `POST /api/v1/psql/jobs` contract accepts an optional

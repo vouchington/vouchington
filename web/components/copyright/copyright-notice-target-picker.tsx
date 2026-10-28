@@ -26,6 +26,8 @@ export function CopyrightNoticeTargetPicker({
   legend = 'Hosted material',
   hint,
   postImagesOnly = false,
+  lockUrl = false,
+  surface,
 }: {
   targets: CopyrightNoticeResolvedTarget[]
   onChange: (targets: CopyrightNoticeResolvedTarget[]) => void
@@ -33,6 +35,8 @@ export function CopyrightNoticeTargetPicker({
   legend?: string
   hint?: ReactNode
   postImagesOnly?: boolean
+  lockUrl?: boolean
+  surface?: CopyrightNoticeResolvedTarget['surface']
 }) {
   const [targetUrl, setTargetUrl] = useState(initialUrl)
   const [resolvedTargets, setResolvedTargets] = useState<CopyrightNoticeResolvedTarget[]>([])
@@ -49,7 +53,9 @@ export function CopyrightNoticeTargetPicker({
     try {
       const resolved = await resolveCopyrightNoticeTargets(requestedUrl)
       if (request !== resolutionRequest.current) return
-      const choices = postImagesOnly ? copyrightStaffPostImageChoices(resolved) : resolved
+      const choices = (postImagesOnly ? copyrightStaffPostImageChoices(resolved) : resolved).filter(
+        item => !surface || item.surface === surface,
+      )
       setResolvedTargets(choices)
       setLookupFailed(choices.length === 0)
       onChange([])
@@ -97,14 +103,18 @@ export function CopyrightNoticeTargetPicker({
       </p>
       <div className='flex gap-2'>
         <div className='flex-1'>
-          <LabeledInput
-            id='copyright-target-url'
-            label='Hosted use URL'
-            type='url'
-            value={targetUrl}
-            onChange={event => updateUrl(event.target.value)}
-            required
-          />
+          {lockUrl ? (
+            <p className='text-sm text-muted-foreground'>Hosted use: {targetUrl}</p>
+          ) : (
+            <LabeledInput
+              id='copyright-target-url'
+              label='Hosted use URL'
+              type='url'
+              value={targetUrl}
+              onChange={event => updateUrl(event.target.value)}
+              required
+            />
+          )}
         </div>
         <Button
           data-pw='copyright-notice-target-picker-resolve'

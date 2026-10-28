@@ -45251,6 +45251,119 @@
         },
         {
           "tool": {
+            "name": "search_copyright_notices_for_association",
+            "title": "Search copyright notices for association",
+            "description": "Find eligible copyright cases by claimant, work, or received date for email association.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "q": {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 200
+                },
+                "after": {
+                  "type": "string"
+                }
+              },
+              "required": ["q"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_notices": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "claimant_display_name": {
+                        "type": ["string", "null"]
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "jurisdiction": {
+                        "enum": ["us_dmca", "eu_dsa"],
+                        "type": "string"
+                      },
+                      "received_at": {
+                        "type": "string"
+                      },
+                      "work_description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "claimant_display_name",
+                      "id",
+                      "jurisdiction",
+                      "received_at",
+                      "work_description"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "page_info": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
+                }
+              },
+              "required": ["copyright_notices", "page_info"],
+              "type": "object"
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/copyright-notices/association-targets"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "list_repeat_infringer_accounts",
             "title": "List repeat infringer accounts",
             "description": "List repeat-infringer accounts attached to one copyright notice.",
@@ -45275,6 +45388,16 @@
                       "account_user_id": {
                         "type": "string"
                       },
+                      "account_username": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
                       "incident_id": {
                         "type": "string"
                       },
@@ -45297,6 +45420,7 @@
                     },
                     "required": [
                       "account_user_id",
+                      "account_username",
                       "incident_id",
                       "is_operative",
                       "open_review_id",

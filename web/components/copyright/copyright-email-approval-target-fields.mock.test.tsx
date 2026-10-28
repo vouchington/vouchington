@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightNoticeResolvedTarget } from '@/lib/api/client/copyright-notice-targets'
 import {
@@ -7,6 +7,7 @@ import {
   copyrightNoticeTargetsClientMock as targetsClient,
 } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   makeCopyrightEmailIntake,
   makeCopyrightEmailQueuePage,
 } from '@/test-helpers/components/copyright/copyright-email-review'
@@ -75,27 +76,23 @@ describe('CopyrightEmailApprovalTargetFields', () => {
     expect(screen.getByLabelText('Hosted image 2: Image 2')).toBeDisabled()
   })
 
-  it('keeps approval disabled after resolver failure until staff supplies manual verified IDs', async () => {
+  it('keeps approval disabled after resolver failure without requesting IDs', async () => {
     mockGet.mockResolvedValue({ copyright_email_intake: makeCopyrightEmailIntake() })
     mockList.mockResolvedValue(makeCopyrightEmailQueuePage())
     mockResolveTargets.mockRejectedValue(new Error('The hosted post is unavailable.'))
     render(<CopyrightEmailReview data={makeCopyrightEmailQueuePage()} />)
-    fireEvent.click(screen.getByRole('button', { name: /019f0000-0000-7000-8000-000000000001/ }))
+    fireEvent.click(getCopyrightEmailQueueButton('019f0000-0000-7000-8000-000000000001')!)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('hosted post is unavailable')
     const approve = screen.getByRole('button', { name: 'Approve structured intake' })
     expect(approve).toBeDisabled()
-    fireEvent.change(screen.getByLabelText('Post ID 1'), {
-      target: { value: '019f0000-0000-7000-8000-000000000003' },
-    })
-    fireEvent.change(screen.getByLabelText('Image ID 1'), {
-      target: { value: '019f0000-0000-7000-8000-000000000004' },
-    })
+    expect(screen.queryByLabelText('Post ID 1')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Image ID 1')).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Review rationale'), {
       target: { value: 'Verified the hosted placement manually.' },
     })
 
-    await waitFor(() => expect(approve).toBeEnabled())
+    expect(approve).toBeDisabled()
   })
 })
 

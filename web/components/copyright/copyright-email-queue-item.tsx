@@ -32,11 +32,13 @@ export function CopyrightEmailQueueItem({
     <li>
       <Button
         data-pw='copyright-email-queue-item-select'
+        data-intake-id={item.id}
         disabled={disabled}
         onClick={() => onSelect(item.id)}
         variant='link'
       >
-        {copyrightEmailReviewPathLabels[item.review_path]} {item.id}
+        {copyrightEmailReviewPathLabels[item.review_path]} · received{' '}
+        {new Date(item.received_at).toLocaleString()}
       </Button>
       <p className='text-xs text-muted-foreground'>
         Received <TimeAgo date={item.received_at} />

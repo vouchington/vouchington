@@ -7,16 +7,18 @@ import sql from 'sql-template-strings'
 export async function createCopyrightNoticeForManualAssociation(
   accepted = true,
   jurisdiction: 'us_dmca' | 'eu_dsa' | 'uk' | 'other' = 'us_dmca',
+  workDescription = `work-${randomUUID()}`,
+  noticeId?: string,
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`
     /* createCopyrightNoticeForManualAssociation */
     INSERT INTO copyright_notices (
-      jurisdiction, legal_basis, received_at, accepted_at,
+      id, jurisdiction, legal_basis, received_at, accepted_at,
       claimant_contact_ciphertext, work_description, policy_version
     ) VALUES (
-      ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP,
+      COALESCE(${noticeId ?? null}::uuid, uuidv7()), ${jurisdiction}, 'copyright', CURRENT_TIMESTAMP,
       CASE WHEN ${accepted} THEN CURRENT_TIMESTAMP ELSE NULL END,
-      ${`cipher-${randomUUID()}`}, ${`work-${randomUUID()}`}, 'test-v1'
+      ${`cipher-${randomUUID()}`}, ${workDescription}, 'test-v1'
     ) RETURNING id
   `)
   return rows[0]!.id

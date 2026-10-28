@@ -124,8 +124,8 @@ describe('CopyrightStaffQueue recovery actions', () => {
         }}
       />,
     )
-    const euCase = screen.getByText('Case eu-case').closest('article')!
-    const usCase = screen.getByText('Case us-case').closest('article')!
+    const euCase = screen.getByRole('heading', { name: /eu_dsa ·/ }).closest('article')!
+    const usCase = screen.getByRole('heading', { name: /us_dmca ·/ }).closest('article')!
     expect(within(euCase).getByText('EU/UK notice details')).toBeVisible()
     expect(within(euCase).getByText('Territorial notice review')).toBeVisible()
     expect(within(euCase).queryByText('Guest access')).toBeNull()

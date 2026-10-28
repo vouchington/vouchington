@@ -51,19 +51,6 @@ export function CopyrightEmailApprovalTargetFields({
     })
   }
 
-  function updateTarget(
-    id: string,
-    key: 'post_id' | 'user_id' | 'user_profile_link_id' | 'topic_id' | 'community_id' | 'image_id',
-    value: string,
-  ) {
-    onChange({
-      ...draft,
-      targets: draft.targets.map(target =>
-        target.id === id ? { ...target, [key]: value } : target,
-      ),
-    })
-  }
-
   function toggle(
     target: CopyrightEmailApprovalTarget,
     choice: CopyrightNoticeResolvedTarget,
@@ -164,7 +151,6 @@ export function CopyrightEmailApprovalTargetFields({
           index={index}
           draft={draft}
           onChange={onChange}
-          updateTarget={updateTarget}
           error={errors[target.id]}
         />
       )}

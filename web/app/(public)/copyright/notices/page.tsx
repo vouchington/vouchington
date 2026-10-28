@@ -2,6 +2,7 @@ import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { getCopyrightNotices } from '@/lib/api/server/copyright-notices'
 import { userHref } from '@/lib/links/entity-href'
 import Link from 'next/link'
+import { copyrightCaseLabel } from '@/components/copyright/copyright-case-label'
 export const dynamic = 'force-dynamic'
 export default async function CopyrightNoticesPage({
   searchParams,
@@ -30,7 +31,7 @@ export default async function CopyrightNoticesPage({
               className='font-medium underline'
               href={`/copyright/notices/${notice.id}`}
             >
-              Case {notice.id}
+              {copyrightCaseLabel(notice)}
             </Link>
             <p className='text-sm text-muted-foreground'>
               {notice.target_count} affected placement{notice.target_count === 1 ? '' : 's'}.

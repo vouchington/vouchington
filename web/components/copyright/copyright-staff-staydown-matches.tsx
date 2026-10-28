@@ -9,7 +9,7 @@ import type { SubmitRecovery } from './copyright-staff-review-buttons'
 type Match = CopyrightStaffQueueItem['staydown_matches'][number]
 
 function describeMatch(match: Match): string {
-  const registered = `image ${match.registered_image_id} that this case confirmed`
+  const registered = 'an image this case confirmed'
   return match.match_kind === 'exact'
     ? `Identical re-upload of ${registered}.`
     : `Near-duplicate (${match.hamming_distance} of 64 bits differ) of ${registered}.`
@@ -39,8 +39,7 @@ export function CopyrightStaffStaydownMatches({
           key={match.id}
         >
           <span>
-            {describeMatch(match)} Upload {match.image_id} by user {match.uploaded_by_id},{' '}
-            <TimeAgo date={match.matched_at} />.
+            {describeMatch(match)} A member uploaded this image <TimeAgo date={match.matched_at} />.
           </span>
           <Button
             data-pw='copyright-staff-staydown-matches-mark-reviewed'

@@ -17,10 +17,8 @@ import {
 import { describe, expect, it } from 'vitest'
 import { runWithCapturedQueries } from '../../data-stores/psql/query-capture.mts'
 import { installSharedDbScopeObserver } from '../../../test-helpers/vitest-shared-db-scope-observer.mts'
-import {
-  associateCopyrightEmailIntakeWithNotice,
-  getCopyrightNoticeAssociationTarget,
-} from './email-manual-association.mts'
+import { associateCopyrightEmailIntakeWithNotice } from './email-manual-association.mts'
+import { searchCopyrightNoticeAssociationTargets } from './association-search.mts'
 import { copyrightConfig } from './config.mts'
 import { promoteCopyrightEmailIntake } from './email-promotion.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
@@ -39,7 +37,11 @@ describe('manual copyright email association', () => {
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation(true, 'uk')
 
-    expect(await getCopyrightNoticeAssociationTarget(moderator, noticeId)).toBeUndefined()
+    expect(
+      (await searchCopyrightNoticeAssociationTargets(moderator, 'Claimant')).copyright_notices.some(
+        notice => notice.id === noticeId,
+      ),
+    ).toBe(false)
     await expect(
       associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId),
     ).rejects.toMatchObject({ status: 422 })
@@ -53,7 +55,11 @@ describe('manual copyright email association', () => {
     const intake = await createManualReply()
     const noticeId = await createCopyrightNoticeForManualAssociation(true, 'other')
 
-    expect(await getCopyrightNoticeAssociationTarget(moderator, noticeId)).toBeUndefined()
+    expect(
+      (await searchCopyrightNoticeAssociationTargets(moderator, 'Claimant')).copyright_notices.some(
+        notice => notice.id === noticeId,
+      ),
+    ).toBe(false)
     await expect(
       associateCopyrightEmailIntakeWithNotice(moderator, intake.id, noticeId),
     ).rejects.toMatchObject({ status: 422 })

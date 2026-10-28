@@ -91,12 +91,12 @@ export function CopyrightStaffComplaint({ notice }: { notice: CopyrightStaffQueu
         <ul className='text-sm'>
           {notice.targets.map(target => (
             <li key={target.id}>
-              {copyrightImageSurfaceLabel(target.surface)} · {target.hosted_use_url} · placement{' '}
-              {target.placement_key} rev. {target.placement_revision}
+              {copyrightImageSurfaceLabel(target.surface)} · {target.hosted_use_url} · placement
+              revision {target.placement_revision}
               {target.surface !== 'post-image' && (
                 <p className='text-muted-foreground'>
                   {target.provenance
-                    ? `Set by ${target.provenance.set_by_id}${target.provenance.set_by_administrator === true ? ' (administrator; no setter notice)' : ''}; uploaded by ${target.provenance.uploaded_by_id ?? 'unknown'}`
+                    ? `Set by ${target.provenance.set_by_administrator === true ? 'an administrator (no setter notice)' : 'a member'}; uploaded by a member`
                     : 'Setter unknown; no setter notice'}
                 </p>
               )}

@@ -2,6 +2,7 @@ import { act, configure, fireEvent, render, screen, waitFor } from '@testing-lib
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { copyrightEmailIntakesClientMock as intakesClient } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
   makeCopyrightEmailQueuePage as makeQueuePage,
@@ -24,7 +25,7 @@ describe('CopyrightEmailReview pending detail', () => {
     })
     render(<CopyrightEmailReview data={makeQueuePage()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    fireEvent.click(getCopyrightEmailQueueButton(intakeId)!)
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2))
     await act(async () => {
       await Promise.resolve()
@@ -44,7 +45,7 @@ describe('CopyrightEmailReview pending detail', () => {
       .mockResolvedValue({ copyright_email_intake: makeIntake(intakeId) })
     render(<CopyrightEmailReview data={makeQueuePage()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    fireEvent.click(getCopyrightEmailQueueButton(intakeId)!)
     await waitFor(() => expect(get).toHaveBeenCalledTimes(2))
     await waitFor(() =>
       expect(screen.getByLabelText('Claimant email')).toHaveValue(

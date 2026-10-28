@@ -23,6 +23,34 @@ export const nativeCopyrightApiFixtureCases: ApiFixtureCase[] = [
   ...nativeCopyrightClaimantApiFixtureCases,
   ...webCopyrightTerritorialStaffApiFixtureCases,
   {
+    id: 'native.copyright.repeat-infringer-accounts',
+    method: 'GET',
+    path: `/api/v1/copyright-notices/${noticeId}/repeat-infringer-accounts`,
+    route: {
+      routeTemplate: '/api/v1/copyright-notices/:id/repeat-infringer-accounts',
+      pathParams: { id: noticeId },
+    },
+    auth: 'fixture-admin',
+    status: 200,
+    body: {
+      copyright_repeat_infringer_accounts: [
+        {
+          account_user_id: '00000000-0000-7000-8000-000000000808',
+          account_username: 'photo-author',
+          incident_id: '00000000-0000-7000-8000-000000000809',
+          is_operative: true,
+          open_review_id: null,
+          termination_in_effect: false,
+        },
+      ],
+    },
+    consumers: ['web', 'swift-core', 'dotnet-core'],
+    migratedFrom: [
+      'backend/api/v1/copyright-notices/repeat-infringer-routes.mts',
+      'web/lib/api/client/copyright-repeat-infringer.ts',
+    ],
+  },
+  {
     id: 'web.copyright.staff-queue.default',
     method: 'GET',
     path: '/api/v1/copyright-notices/review-queue',

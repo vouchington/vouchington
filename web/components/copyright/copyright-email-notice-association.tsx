@@ -1,12 +1,16 @@
-import { useState } from 'react'
+'use client'
+
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { EntityAutocomplete } from '@/components/shared/entity-autocomplete'
-import { getCopyrightNoticeAssociationTarget } from '@/lib/api/client/copyright-notice-association-target'
-import { isUUID } from '@ts-shared/utils/validation-core'
+import {
+  searchCopyrightNoticeAssociationTargets,
+  type CopyrightNoticeAssociationChoice,
+} from '@/lib/api/client/copyright-notice-association-search'
 
-type NoticeTarget = Awaited<
-  ReturnType<typeof getCopyrightNoticeAssociationTarget>
->['copyright_notice']
+function label(notice: CopyrightNoticeAssociationChoice) {
+  return `${notice.jurisdiction} · ${notice.received_at.slice(0, 10)} · ${notice.claimant_display_name?.trim() || 'Claimant unavailable'} · ${notice.work_description.trim() || 'Work unavailable'}`
+}
 
 export function CopyrightEmailNoticeAssociation({
   loading,
@@ -16,39 +20,80 @@ export function CopyrightEmailNoticeAssociation({
   onAssociateWithNotice: (noticeId: string) => void
 }) {
   const [noticeId, setNoticeId] = useState('')
+  const [results, setResults] = useState<CopyrightNoticeAssociationChoice[]>([])
+  const [after, setAfter] = useState<string | null>(null)
   const [searchFailed, setSearchFailed] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const queryRef = useRef('')
+
+  async function loadMore() {
+    if (!after || loadingMore) return
+    const query = queryRef.current
+    setLoadingMore(true)
+    try {
+      const page = await searchCopyrightNoticeAssociationTargets(query, after)
+      if (queryRef.current !== query) return
+      setResults(previous => [...previous, ...page.copyright_notices])
+      setAfter(page.page_info.has_next_page ? page.page_info.end_cursor : null)
+    } catch {
+      if (queryRef.current === query) setSearchFailed(true)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   return (
     <div className='flex flex-wrap gap-2'>
-      <EntityAutocomplete<NoticeTarget>
+      <EntityAutocomplete<CopyrightNoticeAssociationChoice>
         ariaLabel='Find existing copyright notice'
         emptyText='No matching notice'
-        getItemValue={notice => notice.id}
         getKey={notice => notice.id}
-        minQueryLength={36}
-        onQueryChange={() => {
+        minQueryLength={2}
+        onQueryChange={query => {
+          queryRef.current = query.trim()
           setNoticeId('')
+          setResults([])
+          setAfter(null)
           setSearchFailed(false)
         }}
         onSearchError={() => setSearchFailed(true)}
         onSelect={(notice, { setQuery }) => {
           setNoticeId(notice.id)
-          setQuery(`${notice.jurisdiction} notice · ${notice.received_at.slice(0, 10)}`)
+          setQuery(label(notice))
         }}
-        placeholder='Find existing copyright notice'
-        renderItem={notice => (
-          <span>{`${notice.jurisdiction} notice · ${notice.received_at.slice(0, 10)} · ${notice.id}`}</span>
-        )}
+        placeholder='Search claimant, work or received date'
+        renderItem={notice => <span>{label(notice)}</span>}
+        results={results}
+        footer={
+          after ? (
+            <Button
+              disabled={loadingMore}
+              onClick={loadMore}
+              type='button'
+              variant='ghost'
+            >
+              Load more notices
+            </Button>
+          ) : null
+        }
         search={async (query, signal) => {
-          if (!isUUID(query.trim())) return []
-          const result = await getCopyrightNoticeAssociationTarget(query.trim(), signal)
-          return [result.copyright_notice]
+          const page = await searchCopyrightNoticeAssociationTargets(
+            query.trim(),
+            undefined,
+            signal,
+          )
+          if (!signal.aborted) {
+            setResults(page.copyright_notices)
+            setAfter(page.page_info.has_next_page ? page.page_info.end_cursor : null)
+          }
+          return page.copyright_notices
         }}
       />
-      {searchFailed && <p role='alert'>We could not find that notice.</p>}
+      {searchFailed && <p role='alert'>We could not search notices.</p>}
       <Button
         data-pw='copyright-email-notice-association-associate-notice'
-        disabled={loading || !noticeId.trim()}
-        onClick={() => onAssociateWithNotice(noticeId.trim())}
+        disabled={loading || !noticeId}
+        onClick={() => onAssociateWithNotice(noticeId)}
         variant='outline'
       >
         Associate with existing notice

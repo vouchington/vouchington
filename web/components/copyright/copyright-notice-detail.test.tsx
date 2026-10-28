@@ -39,7 +39,7 @@ describe('CopyrightNoticeDetailView', () => {
       />,
     )
 
-    expect(screen.getByText('Case case-123')).toBeInTheDocument()
+    expect(screen.getByText(/us_dmca · .* · Current claimant/)).toBeInTheDocument()
     expect(screen.getByText('Notice received', { exact: false })).toBeInTheDocument()
     expect(screen.getByText('Material withheld', { exact: false })).toBeInTheDocument()
     expect(screen.queryByText(/notice_received/)).not.toBeInTheDocument()

@@ -3,6 +3,7 @@ import type { CopyrightParticipantNoticeDetail } from '@/types/copyright-notices
 import { CopyrightEuDisputeSettlements } from './copyright-eu-dispute-settlements'
 import { CopyrightNoticeStatements } from './copyright-notice-statements'
 import { TextLink } from '@/components/ui/text-link'
+import { copyrightCaseLabel } from './copyright-case-label'
 
 export function CopyrightEuNoticeDetail({
   notice,
@@ -16,7 +17,7 @@ export function CopyrightEuNoticeDetail({
       data-pw='copyright-eu-notice-detail'
     >
       <div>
-        <p className='text-sm text-muted-foreground'>Case {notice.id}</p>
+        <p className='text-sm text-muted-foreground'>{copyrightCaseLabel(notice)}</p>
         <h1 className='text-3xl font-bold'>EU copyright notice</h1>
         <p>Received {new Date(notice.received_at).toLocaleDateString()}</p>
       </div>

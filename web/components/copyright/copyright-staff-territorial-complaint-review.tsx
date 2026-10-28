@@ -50,7 +50,7 @@ export function CopyrightStaffTerritorialComplaintReview({
           <fieldset className='space-y-2'>
             <legend className='text-sm font-medium'>Complaint decision</legend>
             <RadioGroup
-              aria-label={`Decision for complaint ${complaint.id}`}
+              aria-label={`Decision for complaint received ${formatDate(complaint.received_at)}`}
               onValueChange={value => setDisposition(value as 'maintain' | 'revoke')}
               value={disposition}
             >

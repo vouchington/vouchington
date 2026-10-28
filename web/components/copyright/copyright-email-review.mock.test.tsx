@@ -5,6 +5,7 @@ import {
   copyrightNoticeTargetsClientMock as targetsClient,
 } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   copyrightEmailIntakeId as intakeId,
   makeCopyrightEmailIntake as makeIntake,
   makeCopyrightEmailQueueItem as makeQueueItem,
@@ -61,7 +62,7 @@ describe('CopyrightEmailReview', () => {
       .getByRole('heading', { name: 'Staff-private evidence' })
       .closest('section')
     expect(detail).not.toBeNull()
-    expect(detail).toHaveTextContent('Raw email metadata')
+    expect(detail?.querySelector('dl')).not.toHaveTextContent(intakeId)
     expect(screen.getByRole('link', { name: /Download original email/ })).toHaveAttribute(
       'href',
       `/api/v1/copyright-email-intakes/${intakeId}/raw`,
@@ -165,7 +166,7 @@ describe('CopyrightEmailReview', () => {
     mockGet.mockRejectedValue(new Error('The intake detail is unavailable'))
     render(<CopyrightEmailReview data={makeQueuePage()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    fireEvent.click(getCopyrightEmailQueueButton(intakeId)!)
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('The intake detail is unavailable')
@@ -288,7 +289,7 @@ describe('CopyrightEmailReview', () => {
 })
 
 async function selectEmailIntake(id = intakeId) {
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(id) }))
+  fireEvent.click(getCopyrightEmailQueueButton(id)!)
   await waitFor(() => {
     expect(screen.getByRole('heading', { name: 'Staff-private evidence' })).toBeInTheDocument()
   })

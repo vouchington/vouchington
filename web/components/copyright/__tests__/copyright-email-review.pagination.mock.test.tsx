@@ -5,6 +5,7 @@ import {
   copyrightNoticeTargetsClientMock as targetsClient,
 } from '@/test-helpers/components/copyright/copyright-email-client-mocks'
 import {
+  getCopyrightEmailQueueButton,
   copyrightEmailIntakeId as firstId,
   makeCopyrightEmailIntake as makeIntake,
   makeCopyrightEmailQueueItem as makeQueueItem,
@@ -67,7 +68,7 @@ describe('CopyrightEmailReview pagination', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     await waitFor(() => expect(queueIntakeIds()).toEqual([firstId, secondId]))
 
-    fireEvent.click(screen.getByRole('button', { name: new RegExp(firstId) }))
+    fireEvent.click(getCopyrightEmailQueueButton(firstId)!)
     fireEvent.change(await screen.findByLabelText('Review rationale'), {
       target: { value: 'Not a copyright notice.' },
     })
@@ -86,7 +87,7 @@ function firstPage() {
 }
 
 function queueIntakeIds() {
-  return screen
-    .getAllByRole('button', { name: /^Initial intake / })
-    .map(button => button.textContent?.replace('Initial intake ', ''))
+  return [...document.querySelectorAll('[data-pw="copyright-email-queue-select"]')].map(button =>
+    button.getAttribute('data-intake-id'),
+  )
 }

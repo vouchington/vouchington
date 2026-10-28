@@ -38,7 +38,9 @@ describe('CopyrightStaffQueue possible re-uploads', () => {
     )
 
     expect(screen.getByText('Possible re-upload')).toBeInTheDocument()
-    expect(screen.getByText(/Identical re-upload of image registered-1/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Identical re-upload of an image this case confirmed/),
+    ).toBeInTheDocument()
     expect(screen.getByText(/Near-duplicate \(5 of 64 bits differ\)/)).toBeInTheDocument()
     expect(screen.getByText(/More matches are waiting/)).toBeInTheDocument()
     const buttons = screen.getAllByRole('button', { name: 'Mark reviewed' })
