@@ -15,6 +15,12 @@ type VoteIntegrityPenaltyReviewDue = VoteIntegrityPenaltyReviewsDueResponse['res
 const duePenalty: ReportIntegrityPenaltyReviewDue = {
   id: '018f6763-0a71-752d-b657-a06cf00dd401',
   user_id: '018f6763-0a71-752d-b657-a06cf00dd402',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   user_username: 'penalty-recipient',
   reason: 'mass_report_campaign',
   source_flag_id: null,

@@ -9,19 +9,11 @@ import { mergePageResultsById } from '@ts-shared/utils/collections'
 import type { PageInfo } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { isRevokedIntegrityPenalty } from './integrity-reconciliation'
+import type { IntegrityPenaltyRecord } from './integrity-penalty-record'
+
+export type { IntegrityPenaltyRecord } from './integrity-penalty-record'
 
 export type IntegrityPenaltyStatus = 'active' | 'revoked' | 'all'
-
-export interface IntegrityPenaltyRecord {
-  id: string
-  user_id: string
-  reason: string
-  source_flag_id: string | null
-  created_by_id: string | null
-  revoked_at: string | null
-  revoked_by_id: string | null
-  created_at: string
-}
 
 interface IntegrityPenaltyPage<P extends IntegrityPenaltyRecord> {
   results: P[]

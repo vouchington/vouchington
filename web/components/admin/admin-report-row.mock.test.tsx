@@ -68,6 +68,7 @@ const baseReport: AdminModerationReport = {
   created_at: '2026-05-31T00:00:00.000Z',
   reviewed_at: null,
   reporter_username: 'reporter',
+  reporter_display_name: null,
   reporter_user_id: 'reporter-id',
   entity_type: 'post',
   entity_id: 'post-1',
@@ -83,6 +84,8 @@ const baseReport: AdminModerationReport = {
   status: 'pending',
   report_count: 1,
   resolved_by_id: null,
+  resolver_username: null,
+  resolver_display_name: null,
   is_system_generated: false,
   automatic_judgement_enabled: true,
   judgement: null,
@@ -158,7 +161,6 @@ describe('AdminReportRow', () => {
     )
     expect(container.querySelector('[data-pw="report-row-warn-button"]')).toBeNull()
   })
-
   it('renders the report row with basic content', () => {
     render(
       <table>
@@ -176,15 +178,14 @@ describe('AdminReportRow', () => {
         </tbody>
       </table>,
     )
-
     expect(screen.getByText('Test post')).toBeInTheDocument()
     expect(screen.getByText('spam')).toBeInTheDocument()
   })
-
   const banEvasionReport: AdminModerationReport = {
     ...baseReport,
     reporter_user_id: 'ban-evasion-user-id',
     reporter_username: 'ban-evasion',
+    reporter_display_name: null,
     entity_type: 'user',
     entity_id: 'user-suspect',
     is_system_generated: true,
@@ -194,11 +195,11 @@ describe('AdminReportRow', () => {
       community_slug: 'test-community',
       source_user_id: 'source-user-1',
       source_username: 'banned-user',
+      source_display_name: null,
       score: 0.82,
       flagged_at: '2026-05-31T06:30:00.000Z',
     },
   }
-
   function renderBanEvasionRow(props?: Partial<Parameters<typeof AdminReportRow>[0]>) {
     return render(
       <table>
@@ -218,16 +219,13 @@ describe('AdminReportRow', () => {
       </table>,
     )
   }
-
   it('renders ban-evasion badge and actions for system-generated report with ban_evasion context', () => {
     const { container } = renderBanEvasionRow()
-
     expect(container.querySelector('[data-pw="ban-evasion-badge"]')).not.toBeNull()
     expect(container.querySelector('[data-pw="ban-evasion-confirm"]')).not.toBeNull()
     expect(container.querySelector('[data-pw="ban-evasion-dismiss"]')).not.toBeNull()
     expect(screen.getByText('System')).toBeInTheDocument()
   })
-
   it('calls confirm/dismiss API and onBanEvasionAction when ban-evasion buttons are clicked', async () => {
     const onBanEvasionAction = vi.fn<VitestLooseMock>()
     const { container: confirmContainer } = renderBanEvasionRow({ onBanEvasionAction })
@@ -263,12 +261,13 @@ describe('AdminReportRow', () => {
     })
   })
 
-  it('renders source_user_id span in popover when source_username is null', () => {
+  it('labels a deleted source user without exposing their ID', () => {
     const report: AdminModerationReport = {
       ...banEvasionReportFixture,
       community_ban_evasion: {
         ...banEvasionReportFixture.community_ban_evasion!,
         source_username: null,
+        source_display_name: null,
       },
     }
     render(
@@ -287,9 +286,8 @@ describe('AdminReportRow', () => {
         </tbody>
       </table>,
     )
-    const sourceUserId = banEvasionReportFixture.community_ban_evasion!.source_user_id
-    expect(sourceUserId).toBeDefined()
-    expect(screen.getByText(sourceUserId!)).toBeInTheDocument()
+    expect(screen.getByText('Deleted user')).toBeInTheDocument()
+    expect(screen.queryByText('source-user-1')).not.toBeInTheDocument()
   })
 })
 async function settleClick(target: Element): Promise<void> {

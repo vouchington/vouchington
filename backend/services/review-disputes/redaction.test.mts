@@ -6,6 +6,7 @@ function makeDispute(overrides: Partial<ReviewDisputeResponse> = {}): ReviewDisp
   return {
     id: crypto.randomUUID(),
     post_id: crypto.randomUUID(),
+    post_label: 'A review',
     post_content: null,
     topic_id: crypto.randomUUID(),
     disputant_user_id: crypto.randomUUID(),

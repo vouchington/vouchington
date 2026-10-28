@@ -4,6 +4,7 @@ import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/paginat
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { VoteWeightPenalty } from './revoke-penalty.mts'
+import { attachVoteIntegrityPenaltyLabels, type IntegrityPenaltyLabels } from './penalty-labels.mts'
 
 export type GetVoteWeightPenaltiesOptions = {
   status?: 'active' | 'revoked'
@@ -15,7 +16,7 @@ export type GetVoteWeightPenaltiesOptions = {
 }
 
 export type GetVoteWeightPenaltiesResult = {
-  results: VoteWeightPenalty[]
+  results: Array<VoteWeightPenalty & IntegrityPenaltyLabels>
   page_info: PageInfo
   filter_scope?: {
     source: 'flag'
@@ -25,7 +26,7 @@ export type GetVoteWeightPenaltiesResult = {
 
 export async function getVoteWeightPenaltyByIdFromPrimary(
   penaltyId: string,
-): Promise<VoteWeightPenalty | null> {
+): Promise<(VoteWeightPenalty & IntegrityPenaltyLabels) | null> {
   const { rows } = await write(sql`/* getVoteWeightPenaltyByIdFromPrimary */
     SELECT
       id,
@@ -43,7 +44,8 @@ export async function getVoteWeightPenaltyByIdFromPrimary(
     FROM vote_weight_penalties
     WHERE id = ${penaltyId}
   `)
-  return (rows[0] as VoteWeightPenalty | undefined) ?? null
+  const labelled = await attachVoteIntegrityPenaltyLabels(rows as VoteWeightPenalty[], write)
+  return labelled[0] ?? null
 }
 
 export async function getVoteWeightPenalties(
@@ -111,7 +113,10 @@ async function getVoteWeightPenaltiesWithDatabaseRead(
   )
   const penalties = rows as VoteWeightPenalty[]
   const hasNextPage = penalties.length > clampedLimit
-  const results = hasNextPage ? penalties.slice(0, clampedLimit) : penalties
+  const results = await attachVoteIntegrityPenaltyLabels(
+    hasNextPage ? penalties.slice(0, clampedLimit) : penalties,
+    databaseRead,
+  )
   const lastNode = results.at(-1)
 
   return {

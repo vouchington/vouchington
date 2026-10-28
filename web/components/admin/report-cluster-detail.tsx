@@ -44,10 +44,10 @@ export function ReportDetail({
               className='underline'
               prefetch={false}
             >
-              {report.reporter_username}
+              {report.reporter_display_name ?? report.reporter_username}
             </Link>
-          ) : report.reporter_user_id ? (
-            <span className='font-mono text-xs'>{report.reporter_user_id}</span>
+          ) : report.reporter_display_name ? (
+            <span className='text-xs'>{report.reporter_display_name}</span>
           ) : null}
         </div>
         {report.note ? <p className='whitespace-pre-wrap break-words'>{report.note}</p> : null}

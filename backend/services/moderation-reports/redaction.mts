@@ -4,6 +4,7 @@ import {
   type RedactedModerationReport,
 } from './get.mts'
 import { toPublicPostModerationContext } from './post-moderation-context-attach.mts'
+import { applyDeletedTargetLabel } from './deleted-target-label.mts'
 
 export { applyDeletedTargetLabel } from './deleted-target-label.mts'
 
@@ -28,14 +29,18 @@ export async function listRedactedModerationReports(
   // (no extra DB queries — listModerationReports already loaded the staff context).
   // System-generated reports (ban-evasion detector) are staff-only — exclude them to avoid
   // leaking pending ban-evasion flag presence to non-staff viewers.
-  const redacted = reports.flatMap(report => {
+  const redacted = reports.flatMap(rawReport => {
     // Defense-in-depth for callers of this redaction layer if the SQL filter changes.
-    if (report.is_system_generated) return []
+    if (rawReport.is_system_generated) return []
+    const report = applyDeletedTargetLabel(rawReport)
     const {
       reporter_user_id: _r,
       reporter_username: _u,
+      reporter_display_name: _ud,
       note: _n,
       resolved_by_id: _rid,
+      resolver_username: _ru,
+      resolver_display_name: _rd,
       admin_action_path: _a,
       target_user_id: _tuid,
       post_moderation_context,
@@ -54,9 +59,12 @@ export async function listRedactedModerationReports(
     return [
       {
         ...rest,
-        target_label: target_is_restricted ? '[Private content]' : target_label,
+        target_label:
+          target_is_restricted && rest.target_available !== false
+            ? '[Private content]'
+            : target_label,
         target_content: hidden ? null : target_content,
-        target_path: target_is_restricted ? null : target_path,
+        target_path: hidden ? null : target_path,
         post_moderation_context: hidden
           ? null
           : toPublicPostModerationContext(post_moderation_context),

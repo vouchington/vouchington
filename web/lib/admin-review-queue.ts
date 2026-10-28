@@ -19,8 +19,8 @@ function reviewQueuePostSlug(postType: string): string {
   }
 }
 
-function topicRecommendationReviewQueueHref(post: Pick<AdminReviewQueuePost, 'id' | 'title'>) {
-  return `/topic-recommendations?q=${encodeURIComponent(post.title || post.id)}`
+function topicRecommendationReviewQueueHref(post: Pick<AdminReviewQueuePost, 'post_label'>) {
+  return `/topic-recommendations?q=${encodeURIComponent(post.post_label)}`
 }
 
 export function getAdminReviewQueuePostHref(post: AdminReviewQueuePost) {

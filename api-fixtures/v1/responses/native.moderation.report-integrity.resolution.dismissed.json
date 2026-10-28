@@ -5,16 +5,20 @@
       "reporter_user_ids": ["reporter-1", "reporter-2"],
       "window_minutes": 30
     },
+    "entity_label": "Reported post",
     "flag_type": "mass_report_suspected",
     "hostname_id": null,
     "id": "report-flag-1",
     "new_account_reporter_percent": 0.6,
     "post_id": "post-1",
     "reported_user_id": null,
+    "reported_username": null,
     "reporter_count": 5,
     "resolution": "dismissed",
     "resolved_at": "2026-06-01T13:00:00.000Z",
     "resolved_by_id": "admin-1",
+    "resolver_display_name": null,
+    "resolver_username": null,
     "rss_feed_item_id": null
   }
 }

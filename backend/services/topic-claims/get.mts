@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createHash } from 'node:crypto'
 import assert from 'http-assert'
@@ -13,13 +13,33 @@ import { isUUID } from '@modules/utils'
 import type { TopicClaim } from './config.mts'
 
 const CLAIM_SELECT = sql`
-  id, topic_id, claimant_user_id, verification_method,
-  claimed_role, evidence, submitted_at,
-  verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
-  revoked_at, revoked_by_id, revocation_reason,
-  verification_hostname_id, verification_token_issued_at,
-  domain_verified_at, created_at, updated_at
+  tc.id, tc.topic_id, tc.claimant_user_id, tc.verification_method, tc.claimed_role, tc.evidence, tc.submitted_at, tc.verified_at, tc.verified_by_id, tc.rejected_at, tc.rejected_by_id, tc.rejection_reason, tc.revoked_at, tc.revoked_by_id, tc.revocation_reason, tc.verification_hostname_id, tc.verification_token_issued_at, tc.domain_verified_at, tc.created_at, tc.updated_at,
+  COALESCE(t.name, t.slug, 'topic') AS topic_name,
+  claimant_profile.username AS claimant_username,
+  claimant_profile.verified_display_name AS claimant_display_name
 `
+
+const CLAIM_FROM = sql`
+  FROM topic_claims tc
+  LEFT JOIN topics t ON t.id = tc.topic_id
+  LEFT JOIN view_users_public claimant_profile ON claimant_profile.id = tc.claimant_user_id
+`
+
+export async function getTopicClaimById(
+  id: string,
+  query: QueryExecutor = read,
+): Promise<TopicClaim | null> {
+  const { rows } = await query<TopicClaim>(
+    sql`/* getTopicClaimById */
+    SELECT `
+      .append(CLAIM_SELECT)
+      .append(CLAIM_FROM).append(sql`
+    WHERE tc.id = ${id}
+    LIMIT 1
+  `),
+  )
+  return rows[0] ?? null
+}
 
 export async function getVerifiedTopicClaim(
   topicId: string,
@@ -27,12 +47,13 @@ export async function getVerifiedTopicClaim(
 ): Promise<TopicClaim | null> {
   const { rows } = await read(
     sql`/* getVerifiedTopicClaim */
-    SELECT `.append(CLAIM_SELECT).append(sql`
-    FROM topic_claims
-    WHERE topic_id = ${topicId}
-      AND claimant_user_id = ${userId}
-      AND verified_at IS NOT NULL
-      AND revoked_at IS NULL
+    SELECT `
+      .append(CLAIM_SELECT)
+      .append(CLAIM_FROM).append(sql`
+    WHERE tc.topic_id = ${topicId}
+      AND tc.claimant_user_id = ${userId}
+      AND tc.verified_at IS NOT NULL
+      AND tc.revoked_at IS NULL
     LIMIT 1
   `),
   )
@@ -52,13 +73,15 @@ export async function listTopicClaimsForTopic(
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid claim cursor').id
     : undefined
   const query = sql`/* listTopicClaimsForTopic */
-    SELECT `.append(CLAIM_SELECT).append(sql`
-    FROM topic_claims WHERE topic_id = ${topicId}
+    SELECT `
+    .append(CLAIM_SELECT)
+    .append(CLAIM_FROM).append(sql` WHERE tc.topic_id = ${topicId}
   `)
-  if (options.claimantUserId) query.append(sql` AND claimant_user_id = ${options.claimantUserId}`)
-  if (options.activeOnly) query.append(sql` AND rejected_at IS NULL AND revoked_at IS NULL`)
-  if (afterId) query.append(sql` AND id < ${afterId}`)
-  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+  if (options.claimantUserId)
+    query.append(sql` AND tc.claimant_user_id = ${options.claimantUserId}`)
+  if (options.activeOnly) query.append(sql` AND tc.rejected_at IS NULL AND tc.revoked_at IS NULL`)
+  if (afterId) query.append(sql` AND tc.id < ${afterId}`)
+  query.append(sql` ORDER BY tc.id DESC LIMIT ${limit + 1}`)
   const { rows } = await read(query)
   return buildClaimPage(rows as TopicClaim[], limit, scope)
 }
@@ -79,13 +102,15 @@ export async function listTopicClaimsForUser(
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid claim cursor').id
     : undefined
   const query = sql`/* listTopicClaimsForUser */
-    SELECT `.append(CLAIM_SELECT).append(sql`
-    FROM topic_claims WHERE claimant_user_id = ${userId}
+    SELECT `
+    .append(CLAIM_SELECT)
+    .append(CLAIM_FROM).append(sql` WHERE tc.claimant_user_id = ${userId}
   `)
-  if (topicIds) query.append(sql` AND topic_id = ANY(${topicIds}::uuid[])`)
-  if (options.verifiedOnly) query.append(sql` AND verified_at IS NOT NULL AND revoked_at IS NULL`)
-  if (afterId) query.append(sql` AND id < ${afterId}`)
-  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
+  if (topicIds) query.append(sql` AND tc.topic_id = ANY(${topicIds}::uuid[])`)
+  if (options.verifiedOnly)
+    query.append(sql` AND tc.verified_at IS NOT NULL AND tc.revoked_at IS NULL`)
+  if (afterId) query.append(sql` AND tc.id < ${afterId}`)
+  query.append(sql` ORDER BY tc.id DESC LIMIT ${limit + 1}`)
   const { rows } = await read(query)
   return buildClaimPage(rows as TopicClaim[], limit, scope)
 }
@@ -105,12 +130,13 @@ function buildClaimPage(rows: TopicClaim[], limit: number, scope: string): Topic
 export async function listPendingTopicClaims(): Promise<TopicClaim[]> {
   const { rows } = await read(
     sql`/* listPendingTopicClaims */
-    SELECT `.append(CLAIM_SELECT).append(sql`
-    FROM topic_claims
-    WHERE submitted_at IS NOT NULL
-      AND verified_at IS NULL
-      AND rejected_at IS NULL
-    ORDER BY submitted_at DESC
+    SELECT `
+      .append(CLAIM_SELECT)
+      .append(CLAIM_FROM).append(sql`
+    WHERE tc.submitted_at IS NOT NULL
+      AND tc.verified_at IS NULL
+      AND tc.rejected_at IS NULL
+    ORDER BY tc.submitted_at DESC
   `),
   )
   return rows as TopicClaim[]

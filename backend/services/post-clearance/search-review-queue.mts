@@ -6,6 +6,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 export type ReviewQueuePost = {
   id: string
   title: string
+  post_label: string
   declared_language: string | null
   lingua_rs_detected_language: string | null
   slug: string | null
@@ -65,6 +66,7 @@ export async function searchPostsForAdminReview(
     SELECT
       p.id,
       p.title,
+      COALESCE(NULLIF(BTRIM(p.title), ''), NULLIF(BTRIM(LEFT(p.markdown, 80)), ''), p.post_type::text) AS post_label,
       p.declared_language,
       p.lingua_rs_detected_language,
       (

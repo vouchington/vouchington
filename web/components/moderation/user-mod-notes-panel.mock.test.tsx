@@ -51,7 +51,10 @@ const makeNote = (overrides: Partial<UserModNote> = {}): UserModNote => ({
   created_at: '2026-01-01T00:00:00.000Z',
   target_user_id: 'user-abc',
   author_user_id: 'admin-00000001',
+  author_username: 'moderator',
+  author_display_name: null,
   community_id: null,
+  community_name: null,
   body: 'Test moderator note',
   deleted_at: null,
   ...overrides,
@@ -92,10 +95,19 @@ describe('UserModNotesPanel', () => {
 
   it('shows a note item when notes are present', async () => {
     mockGetUserModerationContext.mockResolvedValueOnce(
-      makeContextResponse([makeNote({ body: 'This is a mod note' })]),
+      makeContextResponse([
+        makeNote({
+          body: 'This is a mod note',
+          community_id: 'community-1',
+          community_name: 'Cardholders',
+        }),
+      ]),
     )
     render(<UserModNotesPanel targetUserId='user-abc' />)
     expect(await screen.findByText('This is a mod note')).toBeInTheDocument()
+    expect(screen.getByText('moderator')).toBeInTheDocument()
+    expect(screen.getByText('Cardholders')).toBeInTheDocument()
+    expect(screen.queryByText(/admin-00000001|community-1/)).not.toBeInTheDocument()
   })
 
   it('shows account age from context', async () => {

@@ -4,7 +4,10 @@ type TopicClaimState = 'pending' | 'verified' | 'rejected' | 'revoked'
 export interface TopicClaim {
   id: string
   topic_id: string
+  topic_name: string
   claimant_user_id: string
+  claimant_username: string | null
+  claimant_display_name: string | null
   verification_method: TopicClaimVerificationMethod | null
   claimed_role: string
   evidence: string

@@ -62,6 +62,9 @@ const flag: VoteIntegrityFlag = {
   entity_relation_id: null,
   agent_moderation_id: null,
   flag_type: 'velocity_spike',
+  entity_label: 'Target',
+  resolver_username: null,
+  resolver_display_name: null,
   details: {},
   resolved_at: null,
   resolved_by_id: null,
@@ -90,6 +93,8 @@ describe('VoteIntegrityFlagActions', () => {
           ...flag,
           resolved_at: '2026-02-02T12:00:00Z',
           resolved_by_id: 'admin-1',
+          resolver_username: 'staff-account',
+          resolver_display_name: 'Case reviewer',
           resolution: 'suspended',
         }}
         state={state()}
@@ -97,8 +102,11 @@ describe('VoteIntegrityFlagActions', () => {
     )
 
     expect(screen.getByRole('time')).toHaveAttribute('datetime', '2026-02-02T12:00:00Z')
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/user/admin-1')
-    expect(screen.getByText('by admin-1')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'by Case reviewer' })).toHaveAttribute(
+      'href',
+      '/user/staff-account',
+    )
+    expect(screen.queryByText('admin-1')).not.toBeInTheDocument()
   })
 
   it('shows the resolved time when no actor is recorded', () => {

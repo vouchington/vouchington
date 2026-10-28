@@ -7,6 +7,7 @@ function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
   return {
     id: 'dispute-1',
     post_id: 'post-1',
+    post_label: 'A review',
     topic_id: 'topic-1',
     reason: 'factually_inaccurate',
     status: 'pending',
@@ -63,6 +64,7 @@ describe('DisputesTable', () => {
     const memberDispute: ReviewDispute = {
       id: 'dispute-m1',
       post_id: 'post-m1',
+      post_label: 'A review',
       topic_id: 'topic-m1',
       reason: 'privacy_violation',
       status: 'pending',

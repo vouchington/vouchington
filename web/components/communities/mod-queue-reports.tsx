@@ -216,7 +216,7 @@ export function ModQueueReports({
                 aria-label={t(
                   'extracted.communities.modQueueReports.selectReportForLabel_a4d72044',
                   {
-                    label: report.target_label ?? report.entity_id,
+                    label: report.target_label,
                   },
                 )}
                 checked={selectedIds.has(report.id)}
@@ -232,14 +232,14 @@ export function ModQueueReports({
                     prefetch={false}
                   >
                     <ReportTargetContent
-                      fallback={report.target_label ?? report.entity_id}
+                      fallback={report.target_label}
                       targetContent={report.target_content}
                     />
                   </Link>
                 ) : (
                   <p className='font-semibold'>
                     <ReportTargetContent
-                      fallback={report.target_label ?? report.entity_id}
+                      fallback={report.target_label}
                       targetContent={report.target_content}
                     />
                   </p>

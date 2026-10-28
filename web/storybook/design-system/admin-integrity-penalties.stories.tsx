@@ -22,6 +22,13 @@ const reconcilePenalty = fn(async () => true)
 const penalty: IntegrityPenaltyRecord = {
   id: 'penalty-001',
   user_id: 'user-sanora',
+  user_username: 'recipient',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   reason: 'voting_ring',
   source_flag_id: 'vote-flag-001',
   created_by_id: 'admin-morgan',

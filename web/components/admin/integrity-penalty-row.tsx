@@ -5,7 +5,7 @@ import { AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { userHref } from '@/lib/links/entity-href'
+import { createUserPathname } from '@/lib/links/entity-href'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import type {
   IntegrityPenaltiesState,
@@ -48,35 +48,41 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
       data-integrity-penalty-id={penalty.id}
     >
       <td className='px-4 py-4 text-sm'>
-        <Link
-          href={userHref({ id: penalty.user_id })}
-          prefetch={false}
-          className='font-mono text-link hover:underline'
-        >
-          {penalty.user_id}
-        </Link>
+        {penalty.user_username ? (
+          <Link
+            href={createUserPathname(penalty.user_username)}
+            prefetch={false}
+            className='text-link hover:underline'
+          >
+            {penalty.user_display_name ?? penalty.user_username}
+          </Link>
+        ) : (
+          <span>{penalty.user_display_name ?? 'Deleted user'}</span>
+        )}
       </td>
       <td className='px-4 py-4 text-sm text-foreground'>{knownReason}</td>
       {domain === 'vote' ? (
         <td className='px-4 py-4 text-sm text-foreground'>{multiplier}</td>
       ) : null}
-      <td className='px-4 py-4 font-mono text-sm text-muted-foreground'>
-        {penalty.source_flag_id ?? t('extracted.flags.integrityPenalties.notAvailable_89f46cc0')}
+      <td className='px-4 py-4 text-sm text-muted-foreground'>
+        {penalty.source_flag_type ?? t('extracted.flags.integrityPenalties.notAvailable_89f46cc0')}
       </td>
       <td className='px-4 py-4 text-sm text-muted-foreground'>
         <time dateTime={penalty.created_at}>{formatUtcDate(penalty.created_at, uiLocale)}</time>
-        {penalty.created_by_id ? (
+        {penalty.created_by_id && penalty.creator_username ? (
           <div>
             <Link
-              href={userHref({ id: penalty.created_by_id })}
+              href={createUserPathname(penalty.creator_username)}
               prefetch={false}
-              className='font-mono text-link hover:underline'
+              className='text-link hover:underline'
             >
               {t('extracted.flags.integrityPenalties.byActor_3cba3612', {
-                actor: penalty.created_by_id,
+                actor: penalty.creator_display_name ?? penalty.creator_username,
               })}
             </Link>
           </div>
+        ) : penalty.created_by_id ? (
+          <div>{penalty.creator_display_name ?? 'Deleted user'}</div>
         ) : null}
       </td>
       <td className='px-4 py-4 text-sm'>
@@ -88,18 +94,20 @@ export function IntegrityPenaltyRow<P extends IntegrityPenaltyRecord>({
         {penalty.revoked_at ? (
           <div className='text-xs text-muted-foreground'>
             <time dateTime={penalty.revoked_at}>{formatUtcDate(penalty.revoked_at, uiLocale)}</time>
-            {penalty.revoked_by_id ? (
+            {penalty.revoked_by_id && penalty.revoker_username ? (
               <div>
                 <Link
-                  href={userHref({ id: penalty.revoked_by_id })}
+                  href={createUserPathname(penalty.revoker_username)}
                   prefetch={false}
-                  className='font-mono text-link hover:underline'
+                  className='text-link hover:underline'
                 >
                   {t('extracted.flags.integrityPenalties.byActor_3cba3612', {
-                    actor: penalty.revoked_by_id,
+                    actor: penalty.revoker_display_name ?? penalty.revoker_username,
                   })}
                 </Link>
               </div>
+            ) : penalty.revoked_by_id ? (
+              <div>{penalty.revoker_display_name ?? 'Deleted user'}</div>
             ) : null}
           </div>
         ) : null}

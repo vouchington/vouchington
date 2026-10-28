@@ -9,6 +9,7 @@ import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { FLAG_COLUMNS_WITH_HOSTNAME } from './flag-columns.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
+import { attachReportFlagEntityLabels } from './flag-entity-labels.mts'
 
 export type AppliedReportAbusePenalty = {
   id: string
@@ -16,7 +17,13 @@ export type AppliedReportAbusePenalty = {
 }
 
 export type ApplyReportAbusePenaltyResult = {
-  flag: ReportIntegrityFlag & { hostname: string | null }
+  flag: ReportIntegrityFlag & {
+    hostname: string | null
+    entity_label: string
+    reported_username: string | null
+    resolver_username: string | null
+    resolver_display_name: string | null
+  }
   penalized_user_count: number
   /** Created penalty rows, so callers can surface revocable penalty IDs. */
   penalties: AppliedReportAbusePenalty[]
@@ -56,7 +63,7 @@ export async function applyReportAbusePenalty(
     }
 
     return {
-      flag: result.flag,
+      flag: (await attachReportFlagEntityLabels([result.flag], query))[0]!,
       penalized_user_count: result.penalties.length,
       penalties: result.penalties,
     }

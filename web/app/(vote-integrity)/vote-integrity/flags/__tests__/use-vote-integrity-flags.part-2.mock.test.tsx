@@ -49,6 +49,9 @@ const flag = {
   entity_relation_id: null,
   agent_moderation_id: null,
   flag_type: 'velocity_spike' as const,
+  entity_label: 'Target',
+  resolver_username: null,
+  resolver_display_name: null,
   details: {},
   resolved_at: null,
   resolved_by_id: null,
@@ -62,6 +65,13 @@ const initialData = {
 const committedPenalty: VoteIntegrityPenalty = {
   id: 'penalty-1',
   user_id: 'user-1',
+  user_username: 'recipient',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   penalty_multiplier: 0.5,
   reason: 'voting_ring',
   source_flag_id: flag.id,
@@ -125,7 +135,6 @@ describe('vote integrity penalty reconciliation', () => {
     mockGetFlag.mockResolvedValue({ flag })
     mockGetPenalties.mockResolvedValue(makePenaltyResponse([]))
   })
-
   it.each([
     ['server failure', new ApiError('server', 503)],
     ['response decode failure', new SyntaxError('invalid JSON')],
@@ -135,16 +144,13 @@ describe('vote integrity penalty reconciliation', () => {
       .mockResolvedValueOnce(makePenaltyResponse([]))
       .mockResolvedValueOnce(makePenaltyResponse([committedPenalty]))
     const { result } = renderVoteHook()
-
     confirmPenalty(result)
     await waitFor(() => expect(mockGetFlag).toHaveBeenCalledWith(flag.id))
     confirmPenalty(result)
-
     expect(mockApplyPenalty).toHaveBeenCalledTimes(1)
     expect(result.current.reconciliationRequired[flag.id]).toBe(false)
     expect(result.current.penaltyApplied[flag.id]).toBe(true)
   })
-
   it('allows a retry when an old revoked penalty exists and the request never arrived', async () => {
     mockApplyPenalty.mockRejectedValueOnce(new Error('connection closed')).mockResolvedValueOnce({
       flag: {
@@ -167,12 +173,10 @@ describe('vote integrity penalty reconciliation', () => {
       .mockResolvedValueOnce(makePenaltyResponse([oldRevokedPenalty]))
       .mockResolvedValueOnce(makePenaltyResponse([oldRevokedPenalty]))
     const { result } = renderVoteHook()
-
     confirmPenalty(result)
     await waitFor(() => expect(result.current.actionLoading[flag.id]).toBe(false))
     confirmPenalty(result)
     await waitFor(() => expect(mockApplyPenalty).toHaveBeenCalledTimes(2))
-
     expect(mockGetPenalties).toHaveBeenCalledTimes(4)
     expect(mockGetPenalties).toHaveBeenNthCalledWith(2, {
       sourceFlagId: flag.id,
@@ -181,21 +185,17 @@ describe('vote integrity penalty reconciliation', () => {
     expect(result.current.penaltyApplied[flag.id]).toBeUndefined()
     await waitFor(() => expect(result.current.penaltyResults[flag.id]).toBe(2))
   })
-
   it.each([
     ['missing', null],
     ['mismatched', { source: 'flag', source_flag_id: 'flag-2' }],
   ])('prevents the POST when the baseline scope is %s', async (_label, filterScope) => {
     mockGetPenalties.mockResolvedValueOnce(makePenaltyResponse([], filterScope))
     const { result } = renderVoteHook()
-
     confirmPenalty(result)
     await waitFor(() => expect(result.current.actionLoading[flag.id]).toBe(false))
-
     expect(mockApplyPenalty).not.toHaveBeenCalled()
     expect(result.current.reconciliationRequired[flag.id]).toBeUndefined()
   })
-
   it('prevents the POST when baseline pagination has no continuation cursor', async () => {
     mockGetPenalties.mockResolvedValueOnce(
       makePenaltyResponse([], undefined, {
@@ -205,7 +205,6 @@ describe('vote integrity penalty reconciliation', () => {
       }),
     )
     const { result } = renderVoteHook()
-
     confirmPenalty(result)
     await waitFor(() => expect(result.current.actionLoading[flag.id]).toBe(false))
 

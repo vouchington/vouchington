@@ -24,7 +24,10 @@ function makeClaim(overrides: Partial<TopicClaim> = {}): TopicClaim {
   return {
     id: 'claim-1',
     topic_id: 'topic-1',
+    topic_name: 'Example topic',
     claimant_user_id: 'user-1',
+    claimant_username: 'claimant',
+    claimant_display_name: null,
     verification_method: null,
     claimed_role: 'Card issuer',
     evidence: '',

@@ -4,7 +4,6 @@ import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import type { VoteIntegrityFlag } from '@/types/vote-integrity'
 import { VoteIntegrityFlagStatus } from './vote-integrity-flag-status'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { getEntityLabel } from './vote-integrity-entity-label'
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { formatUtcDate } from '@ts-shared/utils/format'
 import { VoteIntegrityFlagActions } from './vote-integrity-flag-row-actions'
@@ -103,9 +102,7 @@ function VoteIntegrityFlagRow({
         <span>{reason}</span>
       </td>
       <td className='max-w-72 px-4 py-4 text-xs text-muted-foreground'>{evidence}</td>
-      <td className='px-4 py-4 font-mono text-sm text-muted-foreground'>
-        {getEntityLabel(flag, t)}
-      </td>
+      <td className='px-4 py-4 font-mono text-sm text-muted-foreground'>{flag.entity_label}</td>
       <td
         className='whitespace-nowrap px-4 py-4 text-sm text-muted-foreground'
         suppressHydrationWarning

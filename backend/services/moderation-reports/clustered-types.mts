@@ -27,7 +27,7 @@ export type ModerationReportEntityCluster = {
   reason_breakdown: ModerationReportReasonBreakdown
   first_reported_at: Date
   last_reported_at: Date
-  target_label: string | null
+  target_label: string
   target_content: ModerationReportTargetContent | null
   target_path: string | null
   admin_action_path: string | null
@@ -85,7 +85,7 @@ export type ClusterRow = {
   last_reported_at: Date
   cursor_created_at: string
   admin_action_path: string | null
-  target_label: string | null
+  target_label: string
   target_content: ModerationReportTargetContent | null
   target_path: string | null
   target_user_id: string | null

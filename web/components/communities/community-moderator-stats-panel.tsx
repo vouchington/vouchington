@@ -160,7 +160,7 @@ interface RowProps {
 }
 
 function ModeratorStatsRow({ stat, user }: RowProps) {
-  const username = user?.username ?? stat.actor_user_id.slice(0, 8)
+  const username = user?.verified_display_name || user?.username || 'Deleted user'
   const displayedSum = DISPLAYED_ACTION_TYPES.reduce(
     (sum, { key }) => sum + (stat.counts[key] ?? 0),
     0,

@@ -9,10 +9,11 @@ import type { PageInfo } from '@voucha/types/pagination'
 import type { VoteIntegrityFlag } from './create-flag.mts'
 import type { IntegrityFlagStatus } from '@ts-shared/utils/moderation-catalogs'
 import { VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME } from './flag-projection.mts'
+import { attachVoteFlagEntityLabels } from './flag-entity-labels.mts'
 
 export async function getVoteIntegrityFlagByIdFromPrimary(
   id: string,
-): Promise<(VoteIntegrityFlag & { hostname: string | null }) | null> {
+): Promise<GetVoteIntegrityFlagsResult['results'][number] | null> {
   const query = sql`/* getVoteIntegrityFlagByIdFromPrimary */
     SELECT `
   query.append(VOTE_INTEGRITY_FLAG_PROJECTION_WITH_HOSTNAME)
@@ -21,7 +22,11 @@ export async function getVoteIntegrityFlagByIdFromPrimary(
     WHERE id = ${id}
   `)
   const { rows } = await write(query)
-  return (rows[0] as VoteIntegrityFlag & { hostname: string | null }) ?? null
+  const flags = await attachVoteFlagEntityLabels(
+    rows as Array<VoteIntegrityFlag & { hostname: string | null }>,
+    write,
+  )
+  return flags[0] ?? null
 }
 
 export type GetVoteIntegrityFlagsOptions = {
@@ -32,7 +37,14 @@ export type GetVoteIntegrityFlagsOptions = {
 }
 
 export type GetVoteIntegrityFlagsResult = {
-  results: Array<VoteIntegrityFlag & { hostname: string | null }>
+  results: Array<
+    VoteIntegrityFlag & {
+      hostname: string | null
+      entity_label: string
+      resolver_username: string | null
+      resolver_display_name: string | null
+    }
+  >
   page_info: PageInfo
 }
 
@@ -71,7 +83,9 @@ export async function getVoteIntegrityFlags(
   const { rows } = await read(query)
   const flags = rows as Array<VoteIntegrityFlag & { hostname: string | null }>
   const hasNextPage = flags.length > clampedLimit
-  const results = hasNextPage ? flags.slice(0, clampedLimit) : flags
+  const results = await attachVoteFlagEntityLabels(
+    hasNextPage ? flags.slice(0, clampedLimit) : flags,
+  )
   return {
     results,
     page_info: buildPageInfo(results, {

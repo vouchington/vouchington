@@ -33,7 +33,7 @@ export interface CommunityModerationReport {
   entity_type: 'post' | 'comment' | 'user'
   entity_id: string
   admin_action_path: string | null
-  target_label: string | null
+  target_label: string
   target_content: ModerationReportTargetContent | null
   target_path: string | null
   target_pending_community_review?: boolean

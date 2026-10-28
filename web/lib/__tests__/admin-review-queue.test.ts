@@ -6,6 +6,7 @@ function makePost(overrides: Partial<AdminReviewQueuePost> = {}): AdminReviewQue
   return {
     id: 'post-1',
     title: 'Review queue post',
+    post_label: 'Review queue post',
     declared_language: null,
     lingua_rs_detected_language: null,
     slug: null,
@@ -49,6 +50,7 @@ describe('getAdminReviewQueuePostHref', () => {
         makePost({
           id: 'comment-1',
           title: 'Recommended topic',
+          post_label: 'Recommended topic',
           post_type: 'comment',
           root_post_id: 'root-1',
           root_post_type: 'topic_recommendation',

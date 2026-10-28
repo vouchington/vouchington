@@ -7,6 +7,7 @@ function makeDispute(overrides: Partial<ReviewDispute> = {}): ReviewDispute {
   return {
     id: 'dispute-1',
     post_id: 'post-1',
+    post_label: 'A review',
     topic_id: 'topic-1',
     reason: 'factually_inaccurate',
     status: 'pending',
@@ -30,7 +31,7 @@ describe('MemberDisputeRow', () => {
     expect(link).toHaveAttribute('href', '/review/post-1')
   })
 
-  it('shows the post identifier when post content is unavailable', () => {
+  it('shows the factual post label when post content is unavailable', () => {
     render(
       <table>
         <tbody>
@@ -38,7 +39,8 @@ describe('MemberDisputeRow', () => {
         </tbody>
       </table>,
     )
-    expect(screen.getByText('post-1')).toBeInTheDocument()
+    expect(screen.getByText('A review')).toBeInTheDocument()
+    expect(screen.queryByText('post-1')).not.toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 

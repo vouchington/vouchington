@@ -44,6 +44,13 @@ import { ReportIntegrityPenaltiesClient } from './report-integrity-penalties-cli
 const penalty: ReportIntegrityPenalty = {
   id: 'penalty-1',
   user_id: 'user-1',
+  user_username: 'recipient',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   reason: 'mass_report_campaign',
   source_flag_id: 'flag-1',
   created_by_id: 'admin-1',

@@ -14,6 +14,9 @@ export interface VoteIntegrityFlag {
   topic_id: string | null
   hostname_id: string | null
   hostname: string | null
+  entity_label: string
+  resolver_username: string | null
+  resolver_display_name: string | null
   rss_feed_item_id: string | null
   entity_relation_id: string | null
   agent_moderation_id: string | null
@@ -39,6 +42,13 @@ export type IntegrityPenaltyStatusFilter = 'active' | 'revoked' | 'all'
 export interface VoteIntegrityPenalty {
   id: string
   user_id: string
+  user_username: string | null
+  user_display_name: string | null
+  creator_username: string | null
+  creator_display_name: string | null
+  revoker_username: string | null
+  revoker_display_name: string | null
+  source_flag_type: string | null
   penalty_multiplier: number
   reason: string
   source_flag_id: string | null

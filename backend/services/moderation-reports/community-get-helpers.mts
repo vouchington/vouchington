@@ -48,7 +48,7 @@ export async function fetchBanEvasionReports(
       NULL::text AS reporter_username,
       'user'::moderation_report_entity_types AS entity_type,
       r.reported_user_id AS entity_id,
-      COALESCE('@' || tu.username, 'User ' || r.reported_user_id::text) AS target_label,
+      COALESCE(NULLIF(BTRIM(tu_profile.verified_display_name), ''), tu.username, 'user') AS target_label,
       NULL::jsonb AS target_content,
       '/user/' || COALESCE(tu.username, r.reported_user_id::text) AS target_path,
       '/user/' || COALESCE(tu.username, r.reported_user_id::text) || '/admin' AS admin_action_path,
@@ -78,6 +78,7 @@ export async function fetchBanEvasionReports(
       AND cm.suspected_ban_evader_dismissed_at IS NULL
       AND cm.removed_at IS NULL
     LEFT JOIN users tu ON tu.id = r.reported_user_id
+    LEFT JOIN view_users_public tu_profile ON tu_profile.id = r.reported_user_id
     WHERE r.reviewed_at IS NULL
       AND r.reported_user_id IS NOT NULL
       AND r.community_id = ${communityId}

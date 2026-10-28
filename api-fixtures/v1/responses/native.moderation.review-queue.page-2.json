@@ -26,6 +26,7 @@
         },
         "reason_codes": ["spam_signal"]
       },
+      "post_label": "Older rejected review post",
       "post_type": "article",
       "root_post_id": null,
       "root_post_type": null,

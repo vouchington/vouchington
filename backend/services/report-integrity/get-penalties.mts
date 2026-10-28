@@ -3,6 +3,10 @@ import { read, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
+import {
+  attachReportIntegrityPenaltyLabels,
+  type IntegrityPenaltyLabels,
+} from './penalty-labels.mts'
 
 export type ReportAbusePenalty = {
   id: string
@@ -28,13 +32,13 @@ export type GetReportAbusePenaltiesOptions = {
 }
 
 export type GetReportAbusePenaltiesResult = {
-  results: ReportAbusePenalty[]
+  results: Array<ReportAbusePenalty & IntegrityPenaltyLabels>
   page_info: PageInfo
 }
 
 export async function getReportAbusePenaltyByIdFromPrimary(
   penaltyId: string,
-): Promise<ReportAbusePenalty | null> {
+): Promise<(ReportAbusePenalty & IntegrityPenaltyLabels) | null> {
   const { rows } = await write(sql`/* getReportAbusePenaltyByIdFromPrimary */
     SELECT
       id,
@@ -52,7 +56,8 @@ export async function getReportAbusePenaltyByIdFromPrimary(
     FROM report_abuse_penalties
     WHERE id = ${penaltyId}
   `)
-  return (rows[0] as ReportAbusePenalty | undefined) ?? null
+  const labelled = await attachReportIntegrityPenaltyLabels(rows as ReportAbusePenalty[], write)
+  return labelled[0] ?? null
 }
 
 export async function getReportAbusePenalties(
@@ -104,7 +109,9 @@ export async function getReportAbusePenalties(
   const { rows } = await read(query)
   const penalties = rows as ReportAbusePenalty[]
   const hasNextPage = penalties.length > clampedLimit
-  const results = hasNextPage ? penalties.slice(0, clampedLimit) : penalties
+  const results = await attachReportIntegrityPenaltyLabels(
+    hasNextPage ? penalties.slice(0, clampedLimit) : penalties,
+  )
 
   return {
     results,

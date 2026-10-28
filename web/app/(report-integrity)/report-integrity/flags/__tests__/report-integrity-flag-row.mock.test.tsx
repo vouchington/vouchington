@@ -66,6 +66,10 @@ const flag: ReportIntegrityFlag = {
   hostname: null,
   rss_feed_item_id: null,
   flag_type: 'mass_report_suspected',
+  entity_label: 'Target',
+  resolver_username: null,
+  resolver_display_name: null,
+  reported_username: null,
   reporter_count: 4,
   new_account_reporter_percent: 0.5,
   details: { campaign: 'burst' },
@@ -149,12 +153,14 @@ describe('ReportIntegrityFlagRow', () => {
       resolution: 'dismissed',
       resolved_at: '2026-02-02T12:00:00Z',
       resolved_by_id: 'admin-1',
+      resolver_username: 'staff-moderator',
+      resolver_display_name: 'Case reviewer',
     })
 
     expect(screen.getByRole('time')).toHaveAttribute('datetime', '2026-02-02T12:00:00Z')
-    expect(screen.getByRole('link', { name: 'by admin-1' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'by Case reviewer' })).toHaveAttribute(
       'href',
-      '/user/admin-1',
+      '/user/staff-moderator',
     )
     expect(document.querySelector('[aria-label="Resolution"]')).not.toBeInTheDocument()
   })

@@ -52,7 +52,7 @@ export function AdminReportRow({
   selected,
 }: AdminReportRowProps) {
   const t = useTranslations()
-  const targetLabel = report.target_label ?? report.entity_id
+  const targetLabel = report.target_label
   const judgementAction = report.judgement
     ? judgementLabel(report.judgement.recommended_action)
     : null
@@ -111,10 +111,10 @@ export function AdminReportRow({
             className='underline'
             prefetch={false}
           >
-            {report.reporter_username}
+            {report.reporter_display_name ?? report.reporter_username}
           </Link>
-        ) : report.reporter_user_id ? (
-          <span className='font-mono text-xs'>{report.reporter_user_id}</span>
+        ) : report.reporter_display_name ? (
+          <span className='text-xs'>{report.reporter_display_name}</span>
         ) : (
           <span className='text-xs text-muted-foreground'>
             {t('extracted.admin.adminReportRow.text_bda05058')}
@@ -196,12 +196,11 @@ export function AdminReportRow({
                       className='underline'
                       prefetch={false}
                     >
-                      {report.community_ban_evasion.source_username}
+                      {report.community_ban_evasion.source_display_name ??
+                        report.community_ban_evasion.source_username}
                     </Link>
                   ) : report.community_ban_evasion.source_user_id ? (
-                    <span className='font-mono text-xs'>
-                      {report.community_ban_evasion.source_user_id}
-                    </span>
+                    <span className='text-xs'>Deleted user</span>
                   ) : (
                     <span className='text-muted-foreground'>Hidden</span>
                   )}
@@ -282,7 +281,11 @@ export function AdminReportRow({
       <td className='max-w-sm whitespace-pre-wrap break-words px-6 py-4 text-sm'>
         {report.note ?? '-'}
       </td>
-      <td className='px-6 py-4 text-sm font-mono text-xs'>{report.resolved_by_id ?? '-'}</td>
+      <td className='px-6 py-4 text-sm text-xs'>
+        {report.resolved_by_id
+          ? (report.resolver_display_name ?? report.resolver_username ?? 'Deleted user')
+          : '-'}
+      </td>
       <UserModNotesCell targetUserId={report.entity_type === 'user' ? report.entity_id : null} />
       <td className='px-6 py-4'>
         <div className='flex flex-wrap gap-2'>

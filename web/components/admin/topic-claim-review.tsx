@@ -97,15 +97,9 @@ export function TopicClaimReview({ claim }: TopicClaimReviewProps) {
     >
       <div className='flex items-start justify-between'>
         <div>
-          <p className='text-sm font-medium'>
-            {t('extracted.admin.topicClaimReview.claimClaimid_c2bbbef2', {
-              claimId: claim.id.slice(0, 8),
-            })}
-          </p>
+          <p className='text-sm font-medium'>{claim.topic_name}</p>
           <p className='text-xs text-muted-foreground'>
-            {t('extracted.admin.topicClaimReview.topicTopicid_0b0c4258', {
-              topicId: claim.topic_id.slice(0, 8),
-            })}{' '}
+            {claim.claimant_display_name ?? claim.claimant_username ?? 'Deleted user'}{' '}
             <TimeAgo date={claim.created_at} />
           </p>
           <p className='mt-1 text-xs'>

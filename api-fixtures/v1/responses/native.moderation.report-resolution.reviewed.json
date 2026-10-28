@@ -7,8 +7,11 @@
     "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
     "note": "Repeated contact.",
     "reason": "harassment",
+    "reporter_display_name": null,
     "reporter_user_id": "user-1",
     "resolved_by_id": "admin-1",
+    "resolver_display_name": null,
+    "resolver_username": "moderator",
     "reviewed_at": "2026-06-01T12:30:00.000Z",
     "status": "reviewed"
   }

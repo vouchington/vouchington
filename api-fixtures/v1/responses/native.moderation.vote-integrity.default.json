@@ -11,6 +11,7 @@
       "details": {
         "vote_count": 20
       },
+      "entity_label": "Reported post",
       "entity_relation_id": null,
       "flag_type": "velocity_spike",
       "hostname_id": null,
@@ -19,6 +20,8 @@
       "resolution": null,
       "resolved_at": null,
       "resolved_by_id": null,
+      "resolver_display_name": null,
+      "resolver_username": null,
       "rss_feed_item_id": null,
       "topic_id": null
     },
@@ -28,6 +31,7 @@
       "details": {
         "shared_ip_count": 8
       },
+      "entity_label": "Reported post",
       "entity_relation_id": null,
       "flag_type": "ip_correlation",
       "hostname_id": null,
@@ -36,6 +40,8 @@
       "resolution": "dismissed",
       "resolved_at": "2026-06-01T13:00:00.000Z",
       "resolved_by_id": "admin-1",
+      "resolver_display_name": null,
+      "resolver_username": null,
       "rss_feed_item_id": null,
       "topic_id": "topic-1"
     }

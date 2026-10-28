@@ -77,7 +77,10 @@ export interface ModerationAnalytics {
       counts: Record<string, number>
       weekly_counts: DailyTypedCountDataPoint[]
     }[]
-    users: Record<string, { username?: string | null } | null>
+    users: Record<
+      string,
+      { username?: string | null; verified_display_name?: string | null } | null
+    >
   }
   appeals: {
     total_closed: number

@@ -54,6 +54,9 @@ function makeFlag(overrides: Record<string, unknown> = {}) {
     entity_relation_id: null,
     agent_moderation_id: null,
     flag_type: 'velocity_spike' as const,
+    entity_label: 'Target',
+    resolver_username: null,
+    resolver_display_name: null,
     details: {},
     resolved_at: null,
     resolved_by_id: null,
@@ -144,21 +147,18 @@ describe('useVoteIntegrityFlags', () => {
       penalized_user_count: 4,
     })
     const { result } = renderHook(() => useVoteIntegrityFlags(makeInitialData(), 'pending'))
-
     act(() => {
       result.current.applyPenaltyWithConfirmation('flag-1')
     })
     act(() => {
       result.current.applyPenaltyWithConfirmation('flag-1')
     })
-
     await waitFor(() => {
       expect(result.current.penaltyResults['flag-1']).toBe(4)
     })
     expect(result.current.flags).toEqual([])
     expect(mockGetFlag).not.toHaveBeenCalled()
   })
-
   it('serializes resolution and penalty mutations for the same flag', async () => {
     let resolveAction: (value: unknown) => void
     mockResolveFlag.mockReturnValueOnce(
@@ -167,7 +167,6 @@ describe('useVoteIntegrityFlags', () => {
       }),
     )
     const { result } = renderHook(() => useVoteIntegrityFlags(makeInitialData(), 'pending'))
-
     act(() => {
       result.current.updateResolution('flag-1', 'dismissed')
     })

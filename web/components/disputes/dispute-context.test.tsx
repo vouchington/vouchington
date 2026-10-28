@@ -58,7 +58,7 @@ describe('DisputeContext', () => {
     expect(screen.getByText('The published terms are inaccurate.')).toBeInTheDocument()
   })
 
-  it('falls back to target and disputant identifiers when optional context is absent', () => {
+  it('shows factual review label and deleted-user text when optional context is absent', () => {
     render(
       <DisputeContext
         dispute={makeDispute({
@@ -89,7 +89,9 @@ describe('DisputeContext', () => {
       />,
     )
 
-    expect(screen.getByText('post-1')).toBeInTheDocument()
-    expect(screen.getByText('claimant-fallback')).toBeInTheDocument()
+    expect(screen.getByText('A review')).toBeInTheDocument()
+    expect(screen.getByText('Deleted user')).toBeInTheDocument()
+    expect(screen.queryByText('post-1')).not.toBeInTheDocument()
+    expect(screen.queryByText('claimant-fallback')).not.toBeInTheDocument()
   })
 })

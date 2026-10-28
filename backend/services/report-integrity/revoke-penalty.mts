@@ -8,9 +8,13 @@ import { markJwtStale } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { ReportAbusePenalty } from './get-penalties.mts'
+import {
+  attachReportIntegrityPenaltyLabels,
+  type IntegrityPenaltyLabels,
+} from './penalty-labels.mts'
 
 export type RevokeReportAbusePenaltyResult = {
-  penalty: ReportAbusePenalty
+  penalty: ReportAbusePenalty & IntegrityPenaltyLabels
   penaltyId: string
   userId: string
 }
@@ -87,6 +91,7 @@ export async function revokeReportAbusePenalty(
       })
     }
 
-    return { penalty, penaltyId: penalty.id, userId: penalty.user_id }
+    const [labelledPenalty] = await attachReportIntegrityPenaltyLabels([penalty], query)
+    return { penalty: labelledPenalty!, penaltyId: penalty.id, userId: penalty.user_id }
   })
 }

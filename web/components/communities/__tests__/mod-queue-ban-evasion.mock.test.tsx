@@ -26,6 +26,7 @@ const banEvasion: CommunityBanEvasionContext = {
   community_slug: 'test-community',
   source_user_id: 'source-user-1',
   source_username: 'banned-user',
+  source_display_name: null,
   score: 0.82,
   flagged_at: '2026-05-31T06:30:00.000Z',
 }
@@ -48,6 +49,7 @@ function renderRedactedActions() {
       banEvasion={{
         community_id: 'community-1',
         community_slug: 'test-community',
+        source_display_name: null,
         flagged_at: '2026-05-31T06:30:00.000Z',
       }}
       entityId='user-suspect'

@@ -30,6 +30,8 @@ export const ResolvedActor: Story = {
       <IntegrityFlagResolvedActor
         resolvedAt='2026-02-02T12:00:00.000Z'
         resolvedById='admin-1'
+        resolverUsername='moderator'
+        resolverDisplayName={null}
       />
     </Frame>
   ),

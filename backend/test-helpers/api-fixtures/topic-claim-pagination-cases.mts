@@ -3,7 +3,10 @@ import type { ApiFixtureCase } from './types.mts'
 const claim = {
   id: '00000000-0000-7000-8000-000000000401',
   topic_id: '00000000-0000-7000-8000-000000000301',
+  topic_name: 'Example topic',
   claimant_user_id: '00000000-0000-7000-8000-000000000001',
+  claimant_username: 'claimant',
+  claimant_display_name: null,
   verification_method: null,
   claimed_role: 'Issuer',
   evidence: 'Public registry entry',

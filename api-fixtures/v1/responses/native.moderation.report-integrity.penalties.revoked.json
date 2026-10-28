@@ -8,6 +8,8 @@
     {
       "created_at": "2026-06-01T12:00:00.000Z",
       "created_by_id": null,
+      "creator_display_name": null,
+      "creator_username": "moderator",
       "id": "019f7000-0000-7000-8000-000000000102",
       "reason": "mass_report_campaign",
       "review_due_at": "2026-10-01T12:00:00.000Z",
@@ -15,9 +17,14 @@
       "reviewed_by_id": null,
       "revoked_at": "2026-06-02T12:00:00.000Z",
       "revoked_by_id": "019f7000-0000-7000-8000-000000000001",
+      "revoker_display_name": null,
+      "revoker_username": "moderator",
       "source_flag_id": "019f7000-0000-7000-8000-000000000010",
+      "source_flag_type": "mass_report_suspected",
       "updated_at": "2026-06-02T12:00:00.000Z",
-      "user_id": "019f7000-0000-7000-8000-000000000002"
+      "user_display_name": null,
+      "user_id": "019f7000-0000-7000-8000-000000000002",
+      "user_username": "penalty-recipient"
     }
   ]
 }

@@ -9,6 +9,7 @@ describe('dispute AI draft reads', () => {
     const before: ReviewDispute = {
       id: 'dispute-1',
       post_id: 'post-1',
+      post_label: 'A review',
       topic_id: 'topic-1',
       reason: 'privacy_violation',
       status: 'pending',

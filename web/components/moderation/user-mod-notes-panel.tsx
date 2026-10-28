@@ -119,11 +119,13 @@ export function UserModNotesPanel({ targetUserId, communityId }: UserModNotesPan
                 >
                   <p className='whitespace-pre-wrap break-words'>{note.body}</p>
                   <div className='flex items-center justify-between text-muted-foreground'>
-                    <span className='font-mono'>{note.author_user_id.slice(0, 8)}</span>
+                    <span>
+                      {note.author_display_name ?? note.author_username ?? 'Deleted user'}
+                    </span>
                     <div className='flex items-center gap-2'>
                       <span>
                         {note.community_id
-                          ? note.community_id.slice(0, 8)
+                          ? (note.community_name ?? 'Deleted community')
                           : t('extracted.moderation.userModNotesPanel.global_8001c274')}
                       </span>
                       <TimeAgo date={note.created_at} />

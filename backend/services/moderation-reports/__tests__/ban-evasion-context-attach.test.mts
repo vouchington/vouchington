@@ -28,7 +28,7 @@ function makeUserReport(overrides: Partial<PendingModerationReport> = {}): Pendi
     automatic_judgement_enabled: true,
     cursor_created_at: '2026-01-01T00:00:00.000000Z',
     admin_action_path: null,
-    target_label: null,
+    target_label: 'Deleted user',
     target_content: null,
     target_path: null,
     target_user_id: null,

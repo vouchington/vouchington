@@ -7,6 +7,7 @@ import {
 import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
+import { attachVoteIntegrityPenaltyLabels, type IntegrityPenaltyLabels } from './penalty-labels.mts'
 
 export type VoteWeightPenalty = {
   id: string
@@ -27,7 +28,7 @@ export async function revokeVoteWeightPenalty(
   penaltyId: string,
   revokedById: string,
   options: { query?: TransactionQuery } = {},
-): Promise<VoteWeightPenalty> {
+): Promise<VoteWeightPenalty & IntegrityPenaltyLabels> {
   return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     const { rows } = await transaction(sql`/* revokeVoteWeightPenalty */
     UPDATE vote_weight_penalties
@@ -68,6 +69,7 @@ export async function revokeVoteWeightPenalty(
       await enqueueRecalculateUserVoteWeightBestEffort(penalty.user_id, true)
     })
 
-    return penalty
+    const [labelledPenalty] = await attachVoteIntegrityPenaltyLabels([penalty], transaction)
+    return labelledPenalty!
   })
 }

@@ -63,6 +63,9 @@ describe('moderation-reports/target-metadata — communityPostNotApprovedSql', (
         declared_language: 'ar',
         lingua_rs_detected_language: null,
       })
+      const report = reports.find(row => row.entity_id === commentId)
+      expect(report?.target_label).toBe(`Root title ${suffix}`)
+      expect(report?.reporter_username).toBe(reporter.username)
     })
 
     it('treats whitespace-only titles as absent at the projection boundary', () => {

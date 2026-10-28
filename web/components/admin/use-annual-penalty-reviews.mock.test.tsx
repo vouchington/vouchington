@@ -8,8 +8,15 @@ import { useIntegrityPenalties } from './use-integrity-penalties'
 
 vi.mock(import('next/navigation'), () => navMockModule)
 const penalty = {
+  user_username: 'recipient',
   id: 'penalty-1',
   user_id: 'user-1',
+  user_display_name: null,
+  creator_username: null,
+  creator_display_name: null,
+  revoker_username: null,
+  revoker_display_name: null,
+  source_flag_type: null,
   reason: 'voting_ring',
   source_flag_id: null,
   created_by_id: null,
@@ -89,6 +96,12 @@ describe('annual review reconciliation with the active table', () => {
       ...penalty,
       id: '019f7000-0000-7000-8000-000000000101',
       user_id: '019f7000-0000-7000-8000-000000000102',
+      user_display_name: null,
+      creator_username: null,
+      creator_display_name: null,
+      revoker_username: null,
+      revoker_display_name: null,
+      source_flag_type: null,
       review_due_at: '2025-01-01T00:00:00Z',
       user_username: 'uncertain-recipient',
     }
@@ -144,7 +157,8 @@ describe('annual review reconciliation with the active table', () => {
       )
     }
     render(<Harness />)
-    const queueRow = (await screen.findByText('uncertain-recipient')).closest('li')!
+    const queueRow = await screen.findByRole('listitem')
+    expect(within(queueRow).getByText('uncertain-recipient')).toBeInTheDocument()
     fireEvent.click(within(queueRow).getByRole('button', { name: 'Revoke' }))
     fireEvent.click(within(queueRow).getByRole('button', { name: 'Confirm revoke' }))
     const retry = await screen.findByRole('button', { name: 'Reload result' })
@@ -202,6 +216,12 @@ describe('annual review reconciliation with the active table', () => {
         ...penalty,
         id: '019f7000-0000-7000-8000-000000000181',
         user_id: '019f7000-0000-7000-8000-000000000182',
+        user_display_name: null,
+        creator_username: null,
+        creator_display_name: null,
+        revoker_username: null,
+        revoker_display_name: null,
+        source_flag_type: null,
         review_due_at: '2025-01-01T00:00:00Z',
         user_username: 'table-revoke-recipient',
       }
@@ -229,7 +249,10 @@ describe('annual review reconciliation with the active table', () => {
           annualReviews={{ initialDuePage, getDue, review: revoke }}
         />,
       )
-      const queue = screen.getByRole('link', { name: 'table-revoke-recipient' }).closest('section')!
+      const queue = screen.getByRole('listitem').closest('section')!
+      expect(
+        within(queue).getByRole('link', { name: 'table-revoke-recipient' }),
+      ).toBeInTheDocument()
       const table = screen.getByRole('table')
       fireEvent.click(within(table).getByRole('button', { name: 'Revoke' }))
       fireEvent.click(within(table).getByRole('button', { name: 'Confirm revoke' }))

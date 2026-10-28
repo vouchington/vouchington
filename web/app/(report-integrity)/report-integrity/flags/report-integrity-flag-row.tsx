@@ -69,6 +69,8 @@ function ReportIntegrityFlagActions({ flag, state }: FlagRowProps) {
       <IntegrityFlagResolvedActor
         resolvedAt={flag.resolved_at}
         resolvedById={flag.resolved_by_id}
+        resolverUsername={flag.resolver_username}
+        resolverDisplayName={flag.resolver_display_name}
       />
     )
   }

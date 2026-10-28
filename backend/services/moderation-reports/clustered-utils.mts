@@ -104,7 +104,7 @@ export function emptyIndicators(): ModerationReportClusterIndicators {
 }
 
 export function applyDeletedClusterLabel(row: ClusterRow): {
-  target_label: string | null
+  target_label: string
   target_content: ModerationReportTargetContent | null
   target_path: string | null
   admin_action_path: string | null

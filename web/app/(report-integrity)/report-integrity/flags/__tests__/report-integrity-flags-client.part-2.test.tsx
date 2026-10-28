@@ -79,20 +79,26 @@ describe('ReportIntegrityFlagsClient — rendering', () => {
     expect(screen.getByText('resolved')).toBeInTheDocument()
   })
 
-  it('shows resolver id in actions for resolved flags', () => {
+  it('shows resolver account facts in actions for resolved flags', () => {
     render(
       <ReportIntegrityFlagsClient
         initialData={makeInitialData([
           makeFlag({
             resolved_at: '2024-01-02T00:00:00Z',
             resolved_by_id: 'admin-abcdefgh-xyz',
+            resolver_username: 'reviewer-account',
+            resolver_display_name: 'Case reviewer',
             resolution: null,
           }),
         ])}
         initialStatus='resolved'
       />,
     )
-    expect(screen.getByText(/by admin-abcdefgh-xyz/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'by Case reviewer' })).toHaveAttribute(
+      'href',
+      '/user/reviewer-account',
+    )
+    expect(screen.queryByText(/admin-abcdefgh-xyz/)).not.toBeInTheDocument()
   })
 
   it('shows the resolved timestamp when no resolver id is available', () => {

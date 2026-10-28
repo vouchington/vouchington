@@ -15,6 +15,7 @@ import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { ENTITY_VOTE_TABLES, FLAG_ENTITY_FK_COLUMNS } from './config.mts'
 import type { VoteIntegrityFlag } from './create-flag.mts'
+import { attachVoteFlagEntityLabels } from './flag-entity-labels.mts'
 import { insertVoteWeightPenalty } from './insert-vote-weight-penalty.mts'
 import {
   VOTE_INTEGRITY_FLAG_PROJECTION,
@@ -23,7 +24,12 @@ import {
 } from './flag-projection.mts'
 
 type ApplyRingPenaltyResult = {
-  flag: VoteIntegrityFlag & { hostname: string | null }
+  flag: VoteIntegrityFlag & {
+    hostname: string | null
+    entity_label: string
+    resolver_username: string | null
+    resolver_display_name: string | null
+  }
   penalized_user_count: number
 }
 
@@ -144,6 +150,7 @@ export async function applyVoteRingPenalty(
       })
     }
 
-    return { flag: resolvedFlag, penalized_user_count: userIds.length }
+    const [labelledFlag] = await attachVoteFlagEntityLabels([resolvedFlag], query)
+    return { flag: labelledFlag!, penalized_user_count: userIds.length }
   })
 }

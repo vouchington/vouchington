@@ -5,13 +5,22 @@ import sql from 'sql-template-strings'
 import { FLAG_COLUMNS_WITH_HOSTNAME } from './flag-columns.mts'
 import type { ReportIntegrityFlag } from './create-flag.mts'
 import type { ReportIntegrityPatchResolution } from '@ts-shared/utils/moderation-catalogs'
+import { attachReportFlagEntityLabels } from './flag-entity-labels.mts'
 
 export async function resolveReportIntegrityFlag(
   flagId: string,
   resolvedById: string,
   resolution: ReportIntegrityPatchResolution,
   options: { query?: TransactionQuery } = {},
-): Promise<ReportIntegrityFlag & { hostname: string | null }> {
+): Promise<
+  ReportIntegrityFlag & {
+    hostname: string | null
+    entity_label: string
+    reported_username: string | null
+    resolver_username: string | null
+    resolver_display_name: string | null
+  }
+> {
   return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     const query = sql`/* resolveReportIntegrityFlag */
     UPDATE report_integrity_flags
@@ -36,6 +45,7 @@ export async function resolveReportIntegrityFlag(
       },
       { query: transaction },
     )
-    return flag
+    const [labelledFlag] = await attachReportFlagEntityLabels([flag], transaction)
+    return labelledFlag!
   })
 }

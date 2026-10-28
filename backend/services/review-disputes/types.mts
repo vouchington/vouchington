@@ -14,6 +14,7 @@ export type ReviewDisputePostContent = {
 }
 
 export type ReviewDisputeResponse = ReviewDispute & {
+  post_label: string
   ai_draft_run_id?: string | null
   ai_draft_requested_run_id: string
   post_content: ReviewDisputePostContent | null

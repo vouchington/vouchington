@@ -3,6 +3,7 @@ export interface CommunityBanEvasionContext {
   community_slug: string
   source_user_id?: string
   source_username?: string | null
+  source_display_name: string | null
   score?: number
   flagged_at?: string
 }

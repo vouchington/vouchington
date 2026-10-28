@@ -100,7 +100,7 @@ function AnnualPenaltyReviewsInner<P extends DuePenalty>({
                     href={userHref({ id: penalty.user_id, username: penalty.user_username })}
                     className='text-link hover:underline'
                   >
-                    {penalty.user_username}
+                    {penalty.user_display_name ?? penalty.user_username}
                   </Link>
                 ) : (
                   <span>{t('extracted.communities.communityMemberRow.unknownUser_0bca6947')}</span>

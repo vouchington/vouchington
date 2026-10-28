@@ -51,11 +51,11 @@ export function ModQueueBanEvasionInfo({ banEvasion }: { banEvasion: CommunityBa
               prefetch={false}
             >
               {t('extracted.communities.modQueueBanEvasion.username_6da31ba5', {
-                username: banEvasion.source_username,
+                username: banEvasion.source_display_name ?? banEvasion.source_username,
               })}
             </Link>
           ) : (
-            <span className='font-mono'>{banEvasion.source_user_id}</span>
+            <span>{banEvasion.source_display_name ?? 'Deleted user'}</span>
           )}
         </span>
       ) : null}

@@ -315,7 +315,7 @@ export default function ModerationAnalyticsDashboard({
                   return (
                     <tr key={moderator.actor_user_id}>
                       <td className='py-3 pr-4 font-medium'>
-                        {user?.username ? `@${user.username}` : moderator.actor_user_id}
+                        {user?.verified_display_name || user?.username || 'Deleted user'}
                       </td>
                       <td className='py-3 pr-4'>{formatNumber(moderator.total, uiLocale)}</td>
                       <td className='py-3 pr-4 text-muted-foreground'>

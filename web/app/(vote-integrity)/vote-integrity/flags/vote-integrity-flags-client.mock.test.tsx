@@ -63,6 +63,9 @@ const initialData = {
       entity_relation_id: null,
       agent_moderation_id: null,
       flag_type: 'velocity_spike',
+      entity_label: 'Target',
+      resolver_username: null,
+      resolver_display_name: null,
       details: {},
       resolved_at: null,
       resolved_by_id: null,
@@ -88,13 +91,14 @@ describe('VoteIntegrityFlagsClient', () => {
               ...initialData.results[0]!,
               hostname_id: 'hostname-uuid',
               hostname: 'votes.example.com',
+              entity_label: 'votes.example.com',
             },
           ],
         }}
         initialStatus='pending'
       />,
     )
-    expect(screen.getByText('Hostname: votes.example.com')).toBeInTheDocument()
+    expect(screen.getByText('votes.example.com')).toBeInTheDocument()
     expect(screen.queryByText(/hostname-uuid/)).not.toBeInTheDocument()
   })
 

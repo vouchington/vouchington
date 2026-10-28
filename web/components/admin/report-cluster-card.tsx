@@ -50,7 +50,7 @@ export function ReportClusterCard({
   uiLocale: string
 }) {
   const t = useTranslations()
-  const targetLabel = cluster.target_label ?? cluster.entity_id
+  const targetLabel = cluster.target_label
   const hasPendingReports = selectOrdinaryPendingReports(cluster).length > 0
   const isPartialReportSet = cluster.reports.length < cluster.report_count
   const canRemoveTarget =

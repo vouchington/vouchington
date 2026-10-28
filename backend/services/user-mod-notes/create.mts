@@ -35,10 +35,18 @@ export async function createUserModNote(
           AND deleted_at IS NULL
         LIMIT 1
       )
-      INSERT INTO user_moderator_notes (target_user_id, author_user_id, community_id, body)
-      SELECT ${input.targetUserId}, ${currentUser.id}, ${input.communityId}, ${input.body}
-      FROM target_check
-      RETURNING id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
+      , inserted AS (
+        INSERT INTO user_moderator_notes (target_user_id, author_user_id, community_id, body)
+        SELECT ${input.targetUserId}, ${currentUser.id}, ${input.communityId}, ${input.body}
+        FROM target_check
+        RETURNING id, created_at, target_user_id, author_user_id, community_id, body, deleted_at
+      )
+      SELECT n.*, author_profile.username AS author_username,
+        author_profile.verified_display_name AS author_display_name,
+        community.name AS community_name
+      FROM inserted n
+        LEFT JOIN view_users_public author_profile ON author_profile.id = n.author_user_id
+      LEFT JOIN communities community ON community.id = n.community_id
     `)
 
     const note = rows[0] as UserModNote | undefined

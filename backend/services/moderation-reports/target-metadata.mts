@@ -33,6 +33,7 @@ export function appendReportTargetColumns(query: SQLStatement, { includeAvailabl
 export function reportTargetJoinsSql() {
   return sql`
     LEFT JOIN users target_user ON r.reported_user_id IS NOT NULL AND target_user.id = r.reported_user_id
+    LEFT JOIN view_users_public target_user_profile ON target_user_profile.id = r.reported_user_id
     LEFT JOIN posts target_post ON r.post_id IS NOT NULL AND target_post.id = r.post_id
     LEFT JOIN LATERAL (
       SELECT slug

@@ -32,14 +32,14 @@ export function MemberReportRow({ report }: MemberReportRowProps) {
               prefetch={false}
             >
               <ReportTargetContent
-                fallback={report.target_label ?? report.entity_id}
+                fallback={report.target_label}
                 targetContent={report.target_content}
               />
             </Link>
           ) : (
             <span>
               <ReportTargetContent
-                fallback={report.target_label ?? report.entity_id}
+                fallback={report.target_label}
                 targetContent={report.target_content}
               />
             </span>

@@ -6,7 +6,7 @@ import { reviewHref } from '@/lib/links/entity-href'
 import type { ReviewDispute, ReviewDisputeActorSummary } from '@/types/review-disputes'
 
 function actorLabel(actor: ReviewDisputeActorSummary): string {
-  return actor.verified_display_name ?? actor.username ?? actor.id
+  return actor.verified_display_name ?? actor.username ?? 'Deleted user'
 }
 
 export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
@@ -20,7 +20,7 @@ export function DisputeContext({ dispute }: { dispute: ReviewDispute }) {
       content={dispute.post_content}
     />
   ) : (
-    <p className='font-medium'>{dispute.post_id}</p>
+    <p className='font-medium'>{dispute.post_label}</p>
   )
 
   return (

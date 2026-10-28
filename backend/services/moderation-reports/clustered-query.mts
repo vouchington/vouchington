@@ -99,11 +99,8 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
   query.append(sql`,
       `)
   query.append(reportTargetIsRestrictedSql())
-  query.append(sql` AS target_is_restricted
-    FROM entity_groups g
-    JOIN LATERAL (
-      SELECT *
-      FROM `)
+  query.append(sql` AS target_is_restricted FROM entity_groups g
+    JOIN LATERAL (SELECT * FROM `)
   query.append(moderationReportsWithEntitySql())
   query.append(sql` r
       WHERE r.entity_type = g.entity_type
@@ -116,8 +113,7 @@ export function selectEntityClusterRows(options: SelectClusterRowsOptions): Prom
     ) r ON true
   `)
   query.append(reportTargetJoinsSql())
-  query.append(sql` WHERE true`)
-  query.append(sql` ORDER BY `)
+  query.append(sql` WHERE true ORDER BY `)
   query.append(sortAsc ? sql`g.first_reported_at` : sql`g.last_reported_at`)
   query.append(querySortAsc ? sql` ASC, ` : sql` DESC, `)
   query.append(
@@ -158,7 +154,8 @@ export async function selectReportsByCluster(
       to_char(r.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_created_at,
       r.reviewed_at,
       r.reporter_user_id,
-      u.username AS reporter_username,
+      reporter_profile.username AS reporter_username,
+      reporter_profile.verified_display_name AS reporter_display_name,
       r.entity_type,
       r.entity_id,
   `)
@@ -168,6 +165,8 @@ export async function selectReportsByCluster(
       r.note,
       r.status,
       r.resolved_by_id,
+      resolver_profile.username AS resolver_username,
+      resolver_profile.verified_display_name AS resolver_display_name,
       report_counts.report_count,
       report_counts.report_count AS cursor_report_count,
       COALESCE(u.username = ${BAN_EVASION_SYSTEM_USERNAME}, false) AS is_system_generated,
@@ -177,6 +176,8 @@ export async function selectReportsByCluster(
   query.append(sql` AS target_is_restricted
     FROM ranked_reports r
     LEFT JOIN users u ON u.id = r.reporter_user_id
+    LEFT JOIN view_users_public reporter_profile ON reporter_profile.id = r.reporter_user_id
+    LEFT JOIN view_users_public resolver_profile ON resolver_profile.id = r.resolved_by_id
   `)
   query.append(reportTargetJoinsSql())
   query.append(sql`
@@ -195,6 +196,5 @@ export async function selectReportsByCluster(
     ORDER BY r.entity_type, r.entity_id, r.id `)
   query.append(sortAsc ? sql`ASC` : sql`DESC`)
   const { rows } = await read<PendingModerationReport>(query)
-  const reports = await enrichClusteredReports(rows)
-  return groupReportsByCluster(reports)
+  return groupReportsByCluster(await enrichClusteredReports(rows))
 }

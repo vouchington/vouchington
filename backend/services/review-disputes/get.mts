@@ -19,6 +19,9 @@ const DISPUTE_SELECT = sql`
   rd.approved_at, rd.approved_by_id, rd.sent_at, rd.resolved_at, rd.resolved_by_id,
   rd.resolution_action, rd.latest_lifecycle_change_id, rd.updated_at,
   uuid_extract_timestamp(rd.id) AS created_at,
+  CASE WHEN p.deleted_at IS NULL THEN
+    COALESCE(NULLIF(BTRIM(p.title), ''), post_slug.slug, NULLIF(BTRIM(LEFT(p.markdown, 80)), ''), p.post_type::text)
+  ELSE p.post_type::text END AS post_label,
   CASE WHEN p.deleted_at IS NULL AND NULLIF(BTRIM(p.title), '') IS NOT NULL THEN jsonb_build_object(
     'text', p.title,
     'declared_language', p.declared_language,

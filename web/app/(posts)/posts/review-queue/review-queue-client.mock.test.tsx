@@ -212,6 +212,7 @@ function makeResponse(): AdminReviewQueueResponse {
       {
         id: 'post-1',
         title: 'Flagged post',
+        post_label: 'Flagged post',
         declared_language: 'ar',
         lingua_rs_detected_language: null,
         slug: 'flagged-post',
@@ -245,6 +246,7 @@ function makeResponse(): AdminReviewQueueResponse {
       {
         id: 'comment-1',
         title: 'Flagged comment',
+        post_label: 'Flagged comment',
         declared_language: null,
         lingua_rs_detected_language: null,
         slug: null,
@@ -267,6 +269,7 @@ function makeResponse(): AdminReviewQueueResponse {
       {
         id: 'topic-recommendation-1',
         title: 'Flagged topic',
+        post_label: 'Flagged topic',
         declared_language: null,
         lingua_rs_detected_language: null,
         slug: null,

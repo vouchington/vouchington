@@ -6,7 +6,7 @@ import type { ModerationReportTargetContent } from './target-metadata.mts'
 export type PendingModerationReport = ModerationReport & {
   cursor_created_at: string
   admin_action_path: string | null
-  target_label: string | null
+  target_label: string
   target_content: ModerationReportTargetContent | null
   target_path: string | null
   target_user_id: string | null

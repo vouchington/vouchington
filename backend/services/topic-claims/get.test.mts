@@ -82,6 +82,10 @@ describe('listTopicClaimsForTopic', () => {
     }
     const first = await listTopicClaimsForTopic(topicId, { limit: 1 })
     expect(first.results).toHaveLength(1)
+    expect(first.results[0]?.topic_name).toMatch(/^Claim page /)
+    expect(first.results[0]?.claimant_username).toEqual(
+      claimants.find(user => user.id === first.results[0]?.claimant_user_id)?.username ?? null,
+    )
     expect(first.page_info.has_next_page).toBe(true)
     const second = await listTopicClaimsForTopic(topicId, {
       limit: 1,
