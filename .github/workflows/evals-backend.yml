@@ -1,8 +1,8 @@
 name: Backend Evals
 
 # Model-quality regression sets that call live providers once per fixture. They run only when
-# dispatched by hand: the credentialed smoke tests in `tests-backend-credentialed.yml` prove the
-# provider calls work on every run, and an eval would spend a call per fixture on each of them.
+# dispatched by hand: the live-provider smoke tests in `tests-backend-live-providers.yml` prove the
+# provider calls work nightly, and an eval would spend a call per fixture on each of them.
 on:
   workflow_dispatch:
 

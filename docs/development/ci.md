@@ -122,7 +122,7 @@ Dedicated native migration-control scenarios still execute migrations as the beh
 Snapshot validation runs on fresh migration output because PostgreSQL can re-parenthesize equivalent
 conditions during dump/restore.
 
-<a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job and the Web
+<a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job (real AWS S3 only) and the Web
 area's `test-playwright-credentialed` job call live providers as informational smoke checks: their
 gates do not wait on them, they publish no LCOV, and `.pr-shepherdrc.yml` lists them under
 `checks.ignore`. A provider failure is not by itself a regression in this repository, so it must not
@@ -131,7 +131,10 @@ reruns them because a rerun of a non-gating job gains nothing. The failed job st
 check, the Nightly run, and the Nightly alert still report it. Recorded provider responses replayed
 through `createProviderReplay` gate the
 same request handling deterministically; see [live-provider smoke checks](tests.md#live-provider-smoke-checks)
-for the conversion rules. The credentialed jobs run live-provider tests, which only prove each call
+for the conversion rules. The paid providers (Bedrock, OpenAI, OpenRouter, Anthropic, Lightpanda) are out of per-PR CI because they
+cost money and rate-limit: `tests-backend-live-providers.yml` runs one job per provider from the
+Nightly run (`backend-live-providers`, after `backend` publishes the prepared database) and from
+`workflow_dispatch` with a `provider` input, never on a pull request or merge group. The credentialed jobs run live-provider tests, which only prove each call
 works; the model-quality evals spend a call per fixture, so `evals-backend.yml` runs them only on
 `workflow_dispatch` and no area DAG calls it. To add such a job, see
 [Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md).

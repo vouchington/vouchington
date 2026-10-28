@@ -99,12 +99,8 @@ describe('secret-backed workflow context gates (permissions and security)', () =
       "trusted_secret_context: ${{ needs.changes.outputs.trusted-secret-context == 'true' }}",
     )
     expect(backendIntegration).toContain('secrets:')
-    expect(backendIntegration).toContain(
-      "OPENAI_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}",
-    )
-    expect(backendIntegration).toContain(
-      "OPENROUTER_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}",
-    )
+    expect(backendIntegration).not.toContain('OPENAI_API_KEY')
+    expect(backendIntegration).not.toContain('LIGHTPANDA_TOKEN')
     expect(backendIntegration).not.toContain('secrets: inherit')
     expect(workflow).not.toContain('test-backend-trusted')
     expect(workflow).not.toContain('test-backend-untrusted')
@@ -221,10 +217,9 @@ describe('secret-backed workflow context gates (permissions and security)', () =
     const credentialedWorkflow = read('.github/workflows/tests-backend-credentialed.yml')
     const unitWorkflow = read('.github/workflows/tests-backend-unit.yml')
 
-    expect(credentialedWorkflow).toContain('OPENAI_API_KEY:\n        required: false')
     expect(credentialedWorkflow).toContain('backend-credentialed-tests:')
     expect(credentialedWorkflow).toContain('AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}')
-    expect(credentialedWorkflow).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
+    expect(credentialedWorkflow).not.toContain('OPENAI_API_KEY')
     expect(credentialedWorkflow).not.toContain('backend-aws-tests:')
     expect(credentialedWorkflow).not.toContain('backend-openai-tests:')
     expect(credentialedWorkflow).not.toContain('backend-bedrock-tests:')

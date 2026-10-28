@@ -39,11 +39,14 @@ const preparations: Record<string, string[]> = {
 const readWorkflow = (path: string): Workflow => load(readFileSync(path, 'utf8')) as Workflow
 const needsOf = (job: Job): string[] => [job.needs ?? []].flat()
 const nightly = readWorkflow(`${workflowsDir}/nightly.yml`)
-const areas = Object.entries(nightly.jobs ?? {}).map(([id, job]) => ({
-  area: id,
-  caller: job,
-  workflow: readWorkflow(job.uses!.slice(2)),
-}))
+// `backend-live-providers` is a nightly-only suite, not an area: it never runs on a pull request.
+const areas = Object.entries(nightly.jobs ?? {})
+  .filter(([id]) => id !== 'backend-live-providers')
+  .map(([id, job]) => ({
+    area: id,
+    caller: job,
+    workflow: readWorkflow(job.uses!.slice(2)),
+  }))
 // Every area but static selects itself from the changed files.
 const selectedAreas = areas.filter(({ area }) => area !== 'static')
 

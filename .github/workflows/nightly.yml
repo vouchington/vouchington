@@ -25,9 +25,6 @@ jobs:
     uses: ./.github/workflows/backend.yml
     secrets:
       AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      LIGHTPANDA_TOKEN: ${{ secrets.LIGHTPANDA_TOKEN }}
     permissions:
       actions: read
       attestations: write
@@ -35,6 +32,26 @@ jobs:
       id-token: write
       packages: write
       pull-requests: read
+
+  # Paid live-provider checks (never on a pull request or merge group). Not an area: it needs the
+  # prepared database artifact `backend` publishes in this run, so it waits for `backend` and runs
+  # whatever its result.
+  backend-live-providers:
+    needs: [backend]
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/tests-backend-live-providers.yml
+    with:
+      provider: all
+      prepared_database: true
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      LIGHTPANDA_TOKEN: ${{ secrets.LIGHTPANDA_TOKEN }}
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
 
   web:
     uses: ./.github/workflows/web.yml

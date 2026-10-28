@@ -1,7 +1,8 @@
 import type { TestProjectConfiguration } from 'vitest/config'
 
 // The credentialed Vitest projects: the ones that probe a real external provider with live
-// credentials, run by `.github/workflows/tests-backend-credentialed.yml`. `vitest.config.mts`
+// credentials, run by `.github/workflows/tests-backend-credentialed.yml` (real AWS) and
+// `.github/workflows/tests-backend-live-providers.yml` (the paid providers, dispatch and nightly only). `vitest.config.mts`
 // spreads them into its `projects`. `backend-credentialed-project-info.mts` reads their names for
 // the Node-run consumers: the project groups in `ci/run-vitest-project-group.mts` and the workflow
 // tests, so neither can drift from what Vitest actually runs. Those scripts must not import

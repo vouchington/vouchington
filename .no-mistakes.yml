@@ -4245,6 +4245,17 @@ rules:
         # allowed 4m each after the shared backend setup.
         - job: '.github/workflows/evals-backend.yml#backend-evals'
           maxMinutes: 20
+        # Nightly and dispatch-only paid live providers, one job each. Each cap is below its step
+        # sum: the database-backed jobs sum to 22-23m (cap 15m) and Bedrock to 15m (cap 12m).
+        # Lightpanda sums to 13m with a 10m cap, within the default allowance.
+        - job: '.github/workflows/tests-backend-live-providers.yml#backend-anthropic'
+          maxMinutes: 15
+        - job: '.github/workflows/tests-backend-live-providers.yml#backend-bedrock'
+          maxMinutes: 12
+        - job: '.github/workflows/tests-backend-live-providers.yml#backend-openai'
+          maxMinutes: 15
+        - job: '.github/workflows/tests-backend-live-providers.yml#backend-openrouter'
+          maxMinutes: 15
 
   - name: tracked TypeScript files belong to a tsconfig program
     rule: tsconfig-file-coverage
@@ -4382,7 +4393,8 @@ rules:
           [detect-image-publication, publish-web-images, web-deploy-intent]
         .github/workflows/merge-queue-ejection.yml:
           [comment-session, dispatch, escalate, render-prompt]
-        .github/workflows/nightly.yml: [backend, cloudflare-worker, lambdas, static, tooling, web]
+        .github/workflows/nightly.yml:
+          [backend, backend-live-providers, cloudflare-worker, lambdas, static, tooling, web]
         .github/workflows/plan-completion.yml: [audit]
         .github/workflows/plan.yml: [comment-session, dispatch, escalate, gate, render-prompt]
         .github/workflows/pnpm-dedupe.yml: [dedupe]
@@ -4399,6 +4411,15 @@ rules:
         .github/workflows/sync-articles.yml: [publish]
         .github/workflows/tests-backend-credentialed.yml:
           [backend-credentialed-tests, prepare-postgres]
+        .github/workflows/tests-backend-live-providers.yml:
+          [
+            backend-anthropic,
+            backend-bedrock,
+            backend-lightpanda,
+            backend-openai,
+            backend-openrouter,
+            prepare-postgres,
+          ]
         .github/workflows/tests-backend-modules.yml: [backend-modules]
         .github/workflows/tests-backend-unit.yml: [backend-tests, prep, prepare-postgres]
         .github/workflows/tests-cloudflare-worker.yml: [cloudflare-worker-tests]
@@ -4453,6 +4474,12 @@ rules:
           - '.github/workflows/explain-analyze.yml#explain-analyze'
         - - '.github/workflows/evals-backend.yml#prepare-postgres'
           - '.github/workflows/evals-backend.yml#backend-evals'
+        - - '.github/workflows/tests-backend-live-providers.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-live-providers.yml#backend-anthropic'
+        - - '.github/workflows/tests-backend-live-providers.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-live-providers.yml#backend-openai'
+        - - '.github/workflows/tests-backend-live-providers.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-live-providers.yml#backend-openrouter'
         - - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
           - '.github/workflows/checks-backend-smoke.yml#smoke'
         - - '.github/workflows/tests-postgres-schema.yml#prepare-postgres'
@@ -4494,6 +4521,7 @@ rules:
           - '.github/workflows/checks-backend-smoke.yml#prepare-postgres'
           - '.github/workflows/explain-analyze.yml#prepare-postgres'
           - '.github/workflows/evals-backend.yml#prepare-postgres'
+          - '.github/workflows/tests-backend-live-providers.yml#prepare-postgres'
         .github/workflows/checks-backend-smoke.yml:
           - '.github/workflows/backend.yml#backend-smoke'
         .github/workflows/checks-static.yml:
@@ -4543,6 +4571,8 @@ rules:
           - '.github/workflows/web.yml#storybook'
         .github/workflows/tests-backend-credentialed.yml:
           - '.github/workflows/backend.yml#test-backend-credentialed'
+        .github/workflows/tests-backend-live-providers.yml:
+          - '.github/workflows/nightly.yml#backend-live-providers'
         .github/workflows/tests-backend-modules.yml:
           - '.github/workflows/backend.yml#test-backend-modules'
         .github/workflows/tests-backend-unit.yml:
@@ -4592,6 +4622,7 @@ rules:
         .github/workflows/publish-web-images.yml: "runs under its area or main caller's concurrency"
         .github/workflows/static-code-analysis.yml: "runs under its caller's concurrency"
         .github/workflows/tests-backend-credentialed.yml: 'parallel-safe idempotent manual tests'
+        .github/workflows/tests-backend-live-providers.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/tests-backend-modules.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/tests-backend-unit.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/tests-cloudflare-worker.yml: 'parallel-safe idempotent manual tests'
