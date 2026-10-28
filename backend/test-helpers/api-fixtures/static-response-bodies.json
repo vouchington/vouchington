@@ -2377,6 +2377,7 @@
         "id": "00000000-0000-7000-8000-000000000201",
         "is_overdue": false,
         "post_id": "post-1",
+        "post_label": "A disputed review",
         "post_content": {
           "text": "A disputed review",
           "declared_language": null,
@@ -2405,6 +2406,7 @@
       "id": "00000000-0000-7000-8000-000000000201",
       "is_overdue": false,
       "post_id": "post-1",
+      "post_label": "A disputed review",
       "post_content": {
         "text": "A disputed review",
         "declared_language": null,

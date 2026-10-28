@@ -20370,6 +20370,12 @@
                   "type": "string"
                 }
               },
+              "post_label": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "public_response": {
                 "required": true,
                 "schema": {
@@ -21423,6 +21429,12 @@
                 }
               },
               "post_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "post_label": {
                 "required": true,
                 "schema": {
                   "type": "string"
@@ -105167,7 +105179,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "48fce60bad67cdc041d33bd4c6b29f5c915af03141ce2f480e8c0c78f28277c0",
+        "hash": "40b28c00ba622cd049eed323099d71d4a1584a7c684ff316f898437a78a14985",
         "key": "native.moderation.disputes.member.default"
       },
       "route": {
@@ -105188,7 +105200,7 @@
       "migratedFrom": ["backend/api/v1/disputes/disputes.mts"],
       "path": "/api/v1/disputes/00000000-0000-7000-8000-000000000201",
       "responseSchema": {
-        "hash": "1356bfa4b91aa268fa6aebda1f3bbdfecdc7587ecebe4a0fc31b96d083dea97b",
+        "hash": "1e7be6459e0708f4c12bd0d470f577654dba47bf8bdfc41525dac47556f5e905",
         "key": "native.moderation.disputes.detail.member.default"
       },
       "route": {
