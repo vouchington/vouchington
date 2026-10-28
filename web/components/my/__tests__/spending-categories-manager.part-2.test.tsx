@@ -11,11 +11,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { SpendingCategoriesManager } from '../spending-categories-manager'
 
 describe('SpendingCategoriesManager Integration Flow', () => {
-  seedMessages('es', esMessages)
+  mergeMessages('es', esMessages)
 
   beforeEach(() => {
     vi.clearAllMocks()

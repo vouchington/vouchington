@@ -27,7 +27,7 @@ vi.mock(import('@/lib/api/client/disputes'), () => ({
 vi.mock(import('@/lib/on-error/on-error'), () => ({ default: h.mockOnError }))
 
 import { DisputesClient } from './disputes-client'
-import { makeDispute, makeDisputesData } from './fixtures/disputes-client-fixtures'
+import { makeDispute, makeDisputesData } from '@/test-helpers/disputes-client-fixtures'
 
 describe('DisputesClient — rendering and staff actions', () => {
   afterEach(() => {

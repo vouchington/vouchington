@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { createTranslator } from '@ts-shared/ui-messages'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import GlobalError from './global-error'
 
 const { invalidateMessages, invalidateRouteMessages } = vi.hoisted(() => ({
@@ -88,7 +88,8 @@ describe('GlobalError', () => {
     expect(screen.getByText('429')).toBeInTheDocument()
   })
 
-  it('renders generic copy when no digest is present', () => {
+  it('renders default-locale generic copy when no bootstrap or digest is present', () => {
+    Reflect.deleteProperty(window, UI_MESSAGES_KEY)
     const reset = vi.fn<VitestLooseMock>()
     render(
       <GlobalError
@@ -97,6 +98,7 @@ describe('GlobalError', () => {
       />,
     )
 
+    expect(document.documentElement).toHaveAttribute('lang', 'en')
     expect(screen.getByRole('heading', { name: 'Something went wrong' })).toBeInTheDocument()
     expect(screen.getByText(/something went sideways on our end/i)).toBeInTheDocument()
     expect(screen.getByText('500')).toBeInTheDocument()
@@ -105,7 +107,7 @@ describe('GlobalError', () => {
   it('renders Portuguese bootstrap copy in that language and invalidates its current route before reset', async () => {
     const reset = vi.fn<VitestLooseMock>()
     const catalog = await loadJsonMessages('pt')
-    seedMessages('pt', catalog)
+    mergeMessages('pt', catalog)
     Reflect.set(window, UI_MESSAGES_KEY, { locale: 'pt', catalog: {} })
     window.history.pushState({}, '', '/my/notifications?tab=unread')
     render(

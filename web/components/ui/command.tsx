@@ -1,4 +1,3 @@
-// oxlint-disable eslint/max-lines -- CommandInput requires forwardRef for callback-ref merging (see web/AGENTS.md React Compiler exception)
 'use client'
 import * as React from 'react'
 import type { DialogProps } from '@radix-ui/react-dialog'
@@ -118,14 +117,6 @@ function CommandItem({
 }
 CommandItem.displayName = CommandPrimitive.Item.displayName
 
-const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
-  <span
-    className={cn('ml-auto text-xs tracking-widest text-muted-foreground', className)}
-    {...props}
-  />
-)
-CommandShortcut.displayName = 'CommandShortcut'
-
 // CommandInput uses a callback ref to merge forwardedRef with a local inputRef — this is an intentional
 // React Compiler exception per web/AGENTS.md (callback refs need useCallback when they capture state).
 const CommandInput = React.forwardRef<
@@ -205,5 +196,4 @@ export {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-  CommandShortcut,
 }

@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { PasskeyList } from '@/components/my/passkey-manager/passkey-list'
 import { AuthenticatorList } from '@/components/my/totp-manager/authenticator-list'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import type { Passkey, TotpAuthenticator } from '@/types/user'
 
@@ -41,7 +41,7 @@ describe('identity credential dates', () => {
     for (const locale of uiLocales) {
       const messages = await loadJsonMessages(locale)
       catalogs.set(locale, messages)
-      seedMessages(locale, messages)
+      mergeMessages(locale, messages)
     }
   })
 

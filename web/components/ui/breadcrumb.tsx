@@ -4,7 +4,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { Slot } from '@radix-ui/react-slot'
-import { ChevronRight, MoreHorizontal } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   resolveBreadcrumbName,
@@ -117,23 +117,6 @@ const BreadcrumbSeparator = ({ children, className, ...props }: React.ComponentP
 )
 BreadcrumbSeparator.displayName = 'BreadcrumbSeparator'
 
-const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<'span'>) => {
-  const t = useTranslations()
-
-  return (
-    <span
-      role='presentation'
-      aria-hidden='true'
-      className={cn('flex h-9 w-9 items-center justify-center', className)}
-      {...props}
-    >
-      <MoreHorizontal className='h-4 w-4' />
-      <span className='sr-only'>{t('extracted.ui.breadcrumb.more_d47d7cb0')}</span>
-    </span>
-  )
-}
-BreadcrumbEllipsis.displayName = 'BreadcrumbEllipsis'
-
 interface BreadcrumbsProps {
   items: BreadcrumbNavItem[]
 }
@@ -188,13 +171,4 @@ function Breadcrumbs({ items }: BreadcrumbsProps) {
   )
 }
 
-export {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  BreadcrumbEllipsis,
-  Breadcrumbs,
-}
+export { Breadcrumbs }

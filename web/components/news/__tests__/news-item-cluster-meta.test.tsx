@@ -4,7 +4,7 @@ import { formatUtcDate } from '@ts-shared/utils/format'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { StoryMeta } from '@/components/news/news-item-cluster-meta'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { LocaleProvider } from '@/lib/i18n/ui-locale-context'
 import type { Story } from '@/types/rss-feed-items'
 
@@ -27,7 +27,7 @@ describe('StoryMeta event date', () => {
     for (const locale of uiLocales) {
       const messages = await loadJsonMessages(locale)
       catalogs.set(locale, messages)
-      seedMessages(locale, messages)
+      mergeMessages(locale, messages)
     }
   })
 

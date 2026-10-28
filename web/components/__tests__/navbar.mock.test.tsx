@@ -10,7 +10,7 @@ import {
 import { fireEvent, render, screen } from '@testing-library/react'
 
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
@@ -110,7 +110,7 @@ describe('Navbar layout', () => {
 
   it('renders topbar chrome from the resolved non-English UI locale catalog', () => {
     setNavbarUser(testUser)
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
 
     render(<UiLocaleProvider uiLocale='es'>{navbarUnderTest(NavbarComponent)}</UiLocaleProvider>)
 

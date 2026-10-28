@@ -1,8 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-import { ManageSourceClient } from '../manage-source-client'
-import { updateTopic } from '@/lib/api/client/topics'
+import { SourceClient } from './source-client'
 import { updateRssFeed } from '@/lib/api/client'
 
 vi.mock(
@@ -54,7 +52,6 @@ vi.mock(
     }) as unknown as typeof import('sonner'),
 )
 
-const mockUpdateTopic = vi.mocked(updateTopic)
 const mockUpdateRssFeed = vi.mocked(updateRssFeed)
 
 const mockRssFeed = {
@@ -78,14 +75,14 @@ const baseInitialData = {
   topicName: 'Topic',
 }
 
-describe('ManageSourceClient — load error', () => {
+describe('SourceClient — load error', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('renders the error banner when loadError is set', () => {
     render(
-      <ManageSourceClient
+      <SourceClient
         id='topic-1'
         initialData={{ loadError: 'Failed to load source data', loading: false }}
       />,
@@ -96,38 +93,7 @@ describe('ManageSourceClient — load error', () => {
   })
 })
 
-describe('ManageSourceClient — keyboard submit', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockUpdateTopic.mockResolvedValue({
-      topic: { hostname_id: 'hn-1', hostname: { id: 'hn-1', hostname: 'example.com' } },
-    } as unknown as Awaited<ReturnType<typeof updateTopic>>)
-  })
-
-  it('Enter on the primary hostname input submits via updateTopic', async () => {
-    render(
-      <ManageSourceClient
-        id='topic-1'
-        initialData={baseInitialData}
-      />,
-    )
-    await screen.findByRole('heading', { level: 2, name: 'Domains' })
-
-    const input = screen.getByLabelText('Primary domain') as HTMLInputElement
-    fireEvent.change(input, { target: { value: 'example.com' } })
-
-    void expectInputEnterSubmits({ input, onSubmit: mockUpdateTopic })
-
-    await waitFor(() => {
-      expect(mockUpdateTopic).toHaveBeenCalledWith(
-        'topic-1',
-        expect.objectContaining({ hostname: 'example.com' }),
-      )
-    })
-  })
-})
-
-describe('ManageSourceClient — feed actions', () => {
+describe('SourceClient — feed actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUpdateRssFeed.mockResolvedValue({
@@ -137,60 +103,60 @@ describe('ManageSourceClient — feed actions', () => {
 
   it('submitting the Update Source form calls updateRssFeed and dispatches result', async () => {
     render(
-      <ManageSourceClient
+      <SourceClient
         id='topic-1'
         initialData={{ ...baseInitialData, rssFeed: mockRssFeed }}
       />,
     )
-    await screen.findByRole('button', { name: 'Update Source' })
+    expect(screen.getByRole('button', { name: 'Update Source' })).toBeInTheDocument()
 
     const urlInput = screen.getByLabelText('Source URL') as HTMLInputElement
     fireEvent.change(urlInput, { target: { value: 'https://example.com/feed.xml' } })
-    fireEvent.submit(urlInput.closest('form')!)
-
-    await waitFor(() => {
-      expect(mockUpdateRssFeed).toHaveBeenCalledWith(
-        'feed-1',
-        expect.objectContaining({ rss_feed_url: 'https://example.com/feed.xml' }),
-      )
+    await act(async () => {
+      fireEvent.submit(urlInput.closest('form')!)
     })
+
+    expect(mockUpdateRssFeed).toHaveBeenCalledWith(
+      'feed-1',
+      expect.objectContaining({ rss_feed_url: 'https://example.com/feed.xml' }),
+    )
   })
 
   it('clicking Disable calls updateRssFeed with is_enabled: false and dispatches result', async () => {
     render(
-      <ManageSourceClient
+      <SourceClient
         id='topic-1'
         initialData={{ ...baseInitialData, rssFeed: mockRssFeed }}
       />,
     )
-    await screen.findByRole('button', { name: 'Disable' })
+    expect(screen.getByRole('button', { name: 'Disable' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Disable' }))
-
-    await waitFor(() => {
-      expect(mockUpdateRssFeed).toHaveBeenCalledWith(
-        'feed-1',
-        expect.objectContaining({ is_enabled: false }),
-      )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Disable' }))
     })
+
+    expect(mockUpdateRssFeed).toHaveBeenCalledWith(
+      'feed-1',
+      expect.objectContaining({ is_enabled: false }),
+    )
   })
 
   it('clicking Hide from Discovery calls updateRssFeed with discoverable: false and dispatches result', async () => {
     render(
-      <ManageSourceClient
+      <SourceClient
         id='topic-1'
         initialData={{ ...baseInitialData, rssFeed: mockRssFeed }}
       />,
     )
-    await screen.findByRole('button', { name: 'Hide from Discovery' })
+    expect(screen.getByRole('button', { name: 'Hide from Discovery' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hide from Discovery' }))
-
-    await waitFor(() => {
-      expect(mockUpdateRssFeed).toHaveBeenCalledWith(
-        'feed-1',
-        expect.objectContaining({ discoverable: false }),
-      )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Hide from Discovery' }))
     })
+
+    expect(mockUpdateRssFeed).toHaveBeenCalledWith(
+      'feed-1',
+      expect.objectContaining({ discoverable: false }),
+    )
   })
 })

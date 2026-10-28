@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { makeHouseholdInvitation } from '@/test-helpers/api-responses/household-invitations'
 import { HouseholdInvitationsView } from '../household-invitations-view'
 
 describe('localized household invitation messages', () => {
   it('links translated usernames and localizes the identity fallback without showing ids', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
     const linkedInvitation = makeHouseholdInvitation({
       invited_by_id: '00000000-0000-7000-8000-000000000203',
       invited_by: { id: '00000000-0000-7000-8000-000000000203', username: 'helper' },

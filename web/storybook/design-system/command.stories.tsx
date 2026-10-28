@@ -8,7 +8,6 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandShortcut,
 } from '@/components/ui/command'
 
 const meta = {
@@ -43,17 +42,17 @@ export const CommandPalette: Story = {
           <CommandItem>
             <User className='mr-2 h-4 w-4' />
             <span>Profile</span>
-            <CommandShortcut>⌘P</CommandShortcut>
+            <span className='ml-auto text-xs tracking-widest text-muted-foreground'>⌘P</span>
           </CommandItem>
           <CommandItem>
             <CreditCard className='mr-2 h-4 w-4' />
             <span>Billing</span>
-            <CommandShortcut>⌘B</CommandShortcut>
+            <span className='ml-auto text-xs tracking-widest text-muted-foreground'>⌘B</span>
           </CommandItem>
           <CommandItem>
             <Settings className='mr-2 h-4 w-4' />
             <span>Settings</span>
-            <CommandShortcut>⌘S</CommandShortcut>
+            <span className='ml-auto text-xs tracking-widest text-muted-foreground'>⌘S</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

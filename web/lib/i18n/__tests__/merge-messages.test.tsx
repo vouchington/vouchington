@@ -1,25 +1,26 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { UiMessagesHydrator } from '../ui-messages-hydrator'
-import { getMessagesPromise } from '../use-translations'
+import { useTranslations } from '../use-translations'
+import { UiLocaleProvider } from '../ui-locale-provider'
+
+function HydratedCopy() {
+  const t = useTranslations()
+  return <p>{t('nav.home')}</p>
+}
 
 describe('UiMessagesHydrator', () => {
-  afterEach(() => {
-    document.body.replaceChildren()
-  })
-
-  it('merges the catalog before rendering children', async () => {
+  it('merges the catalog before rendering translated children', () => {
     render(
-      <UiMessagesHydrator
-        locale='hydrator-test'
-        catalog={{ nav: { home: 'Hydrated' } }}
-      >
-        <div data-testid='child'>ok</div>
-      </UiMessagesHydrator>,
+      <UiLocaleProvider uiLocale='fr'>
+        <UiMessagesHydrator
+          locale='fr'
+          catalog={{ nav: { home: 'Accueil' } }}
+        >
+          <HydratedCopy />
+        </UiMessagesHydrator>
+      </UiLocaleProvider>,
     )
-    expect(screen.getByTestId('child')).toHaveTextContent('ok')
-    await expect(getMessagesPromise('hydrator-test')).resolves.toEqual({
-      nav: { home: 'Hydrated' },
-    })
+    expect(screen.getByText('Accueil')).toBeInTheDocument()
   })
 })

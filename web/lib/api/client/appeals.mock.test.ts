@@ -10,7 +10,7 @@ import {
   reconcileAppealAIDraft,
   AppealDraftReconciliationTimeoutError,
 } from './appeals'
-import { makeAppeal } from '@/components/appeals/fixtures/appeals-client-fixtures'
+import { makeAppeal } from '@/test-helpers/appeals-client-fixtures'
 
 const { mockGet, mockPost, mockPatch } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),

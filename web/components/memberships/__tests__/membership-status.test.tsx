@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import type { SubscriptionMembership } from '@/types/api-responses'
 import { MembershipStatus } from '../membership-status'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
@@ -36,7 +36,7 @@ const membership: SubscriptionMembership = {
 
 describe('MembershipStatus', () => {
   it('formats prices and dates with the active UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
 
     render(
       <UiLocaleProvider uiLocale='es'>

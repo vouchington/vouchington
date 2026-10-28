@@ -2,7 +2,7 @@ import type { Preview } from '@storybook/nextjs-vite'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 
 import '../app/globals.css'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { StorybookProviders } from '../storybook/entities/storybook-providers'
 
 // Pre-seeds the client-side translation cache before any story renders, so `useTranslations()`
@@ -15,7 +15,7 @@ import { StorybookProviders } from '../storybook/entities/storybook-providers'
 // the Storybook graph. 'en' is hardcoded (not `DEFAULT_UI_LOCALE`)
 // because `@ts-shared/languages/ui-locales` is aliased to a storybook-only mock in the browser
 // Vitest project; every story here already renders English.
-seedMessages('en', await loadJsonMessages('en'))
+mergeMessages('en', await loadJsonMessages('en'))
 
 const preview: Preview = {
   decorators: [

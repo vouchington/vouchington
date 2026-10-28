@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { RefundableCharge } from '@/types/api-responses'
 import { UiLocaleProvider } from '@/lib/i18n/ui-locale-provider'
-import { seedMessages } from '@/lib/i18n/use-translations'
+import { mergeMessages } from '@/lib/i18n/use-translations'
 import { MembershipRefundChargeList } from '../membership-refund-charge-list'
 import { esMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
@@ -18,7 +18,7 @@ const partiallyRefundedCharge: RefundableCharge = {
 
 describe('MembershipRefundChargeList', () => {
   it('formats refundable charges with the active UI locale', () => {
-    seedMessages('es', esMessages)
+    mergeMessages('es', esMessages)
 
     render(
       <UiLocaleProvider uiLocale='es'>
