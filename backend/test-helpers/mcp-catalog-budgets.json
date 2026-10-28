@@ -269,16 +269,16 @@
     "legal": {
       "all": {
         "on": {
-          "count": 22,
-          "list": 52000,
-          "core": 15000,
-          "output": 47000
+          "count": 23,
+          "list": 53000,
+          "core": 16000,
+          "output": 48000
         },
         "off": {
-          "count": 7,
-          "list": 28000,
-          "core": 2000,
-          "output": 27000
+          "count": 8,
+          "list": 30000,
+          "core": 3000,
+          "output": 28000
         }
       },
       "Reader": {
@@ -323,24 +323,24 @@
       },
       "LegalRead": {
         "on": {
-          "count": 7,
-          "list": 28000,
-          "core": 2000,
-          "output": 27000
+          "count": 8,
+          "list": 30000,
+          "core": 3000,
+          "output": 28000
         }
       },
       "LegalWrite": {
         "on": {
-          "count": 22,
-          "list": 52000,
-          "core": 15000,
-          "output": 47000
+          "count": 23,
+          "list": 53000,
+          "core": 16000,
+          "output": 48000
         },
         "off": {
-          "count": 7,
-          "list": 28000,
-          "core": 2000,
-          "output": 27000
+          "count": 8,
+          "list": 30000,
+          "core": 3000,
+          "output": 28000
         }
       }
     }
