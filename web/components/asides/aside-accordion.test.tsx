@@ -3,20 +3,15 @@ import { render, screen } from '@testing-library/react'
 import { AsideAccordion } from './aside-accordion'
 
 describe('AsideAccordion', () => {
-  it('renders the title', () => {
-    render(<AsideAccordion title='My Section'>Content here</AsideAccordion>)
-    expect(screen.getByText('My Section')).toBeDefined()
-  })
-
-  it('renders children when defaultOpen is true', () => {
-    render(<AsideAccordion title='Section'>Child content</AsideAccordion>)
-    expect(screen.getByText('Child content')).toBeDefined()
-  })
-
-  it('opens by default', () => {
-    render(<AsideAccordion title='Section'>Content</AsideAccordion>)
-    const trigger = screen.getByRole('button', { name: 'Section' })
+  it('renders its title and children expanded by default', () => {
+    render(
+      <AsideAccordion title='My Section'>
+        <p>Paragraph content</p>
+      </AsideAccordion>,
+    )
+    const trigger = screen.getByRole('button', { name: 'My Section' })
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByText('Paragraph content')).toBeVisible()
   })
 
   it('starts collapsed when defaultOpen is false', () => {
@@ -30,14 +25,5 @@ describe('AsideAccordion', () => {
     )
     const trigger = screen.getByRole('button', { name: 'Section' })
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
-  })
-
-  it('renders children with correct content', () => {
-    render(
-      <AsideAccordion title='Section'>
-        <p>Paragraph content</p>
-      </AsideAccordion>,
-    )
-    expect(screen.getByText('Paragraph content')).toBeDefined()
   })
 })
