@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { useLoadingIds } from './use-loading-ids'
 
@@ -22,7 +22,7 @@ describe('useLoadingIds', () => {
     act(() => {
       runningTask = result.current.runWithLoadingId('save', () => task)
     })
-    await waitFor(() => expect(result.current.loadingIds.has('save')).toBe(true))
+    expect(result.current.loadingIds.has('save')).toBe(true)
     await act(async () => {
       resolveTask()
       await runningTask
@@ -63,7 +63,7 @@ describe('useLoadingIds', () => {
       secondTask = result.current.runWithLoadingId('add', () => second)
     })
 
-    await waitFor(() => expect(result.current.loadingIds.has('add')).toBe(true))
+    expect(result.current.loadingIds.has('add')).toBe(true)
 
     await act(async () => {
       resolveFirst()

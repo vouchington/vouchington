@@ -1,5 +1,5 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useTopicRecommendationNavigation } from '../use-topic-recommendation-navigation'
 import type { TopicRecommendationDialogProps } from '../topic-recommendation-dialog-types'
 
@@ -10,7 +10,10 @@ function makeSelected(id: string): Selected {
 }
 
 describe('useTopicRecommendationNavigation', () => {
+  afterEach(() => vi.useRealTimers())
+
   it('focuses only when the selected id changes after pending navigation', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame'] })
     const navigateToId = vi.fn<(id: string) => void>()
     const props = {
       isAdmin: true,
@@ -35,6 +38,7 @@ describe('useTopicRecommendationNavigation', () => {
     expect(focus).not.toHaveBeenCalled()
 
     rerender({ selected: makeSelected('post-3') })
-    await waitFor(() => expect(focus).toHaveBeenCalledOnce())
+    await act(() => vi.advanceTimersToNextFrame())
+    expect(focus).toHaveBeenCalledOnce()
   })
 })

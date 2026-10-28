@@ -1,12 +1,15 @@
 import { renderToString } from 'react-dom/server'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { useLoginHref } from './use-login-href'
 
-const mockPathname = vi.hoisted(() => vi.fn<VitestLooseMock>(() => '/news'))
-vi.mock(import('next/navigation'), () => ({
-  usePathname: mockPathname,
-}))
+vi.mock(
+  import('next/navigation'),
+  () => navMockModule as unknown as typeof import('next/navigation'),
+)
+
+const mockNav = createNavMock()
 
 function LoginHrefProbe({ intent }: { intent?: string }) {
   const href = useLoginHref(intent)
@@ -15,7 +18,8 @@ function LoginHrefProbe({ intent }: { intent?: string }) {
 
 describe('useLoginHref', () => {
   beforeEach(() => {
-    mockPathname.mockReturnValue('/news')
+    mockNav.reset()
+    mockNav.setPathname('/news')
     window.history.replaceState(null, '', '/news?topics=initial')
   })
 
@@ -27,31 +31,27 @@ describe('useLoginHref', () => {
       '/login?next=%2Fnews%3Ftopics%3Dinitial&intent=vote',
     )
 
-    act(() => {
+    await act(async () => {
       window.history.pushState(null, '', '/news?topics=updated')
     })
 
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute(
-        'href',
-        '/login?next=%2Fnews%3Ftopics%3Dupdated&intent=vote',
-      )
-    })
+    expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute(
+      'href',
+      '/login?next=%2Fnews%3Ftopics%3Dupdated&intent=vote',
+    )
   })
 
   it('updates the return query after client-side replaceState navigation', async () => {
     render(<LoginHrefProbe />)
 
-    act(() => {
+    await act(async () => {
       window.history.replaceState(null, '', '/news?topics=replaced')
     })
 
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute(
-        'href',
-        '/login?next=%2Fnews%3Ftopics%3Dreplaced',
-      )
-    })
+    expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute(
+      'href',
+      '/login?next=%2Fnews%3Ftopics%3Dreplaced',
+    )
   })
 
   it('uses getServerSnapshot during server-side rendering', () => {
