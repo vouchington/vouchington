@@ -1,6 +1,6 @@
 import type { Topic } from './types.mts'
 
-export type TopicRedirect = {
+type TopicRedirect = {
   source_topic_id: string
   source_topic_slug: string
   source_topic_type: Topic['topic_type']

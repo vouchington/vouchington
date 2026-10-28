@@ -48,7 +48,7 @@ export async function lockTopicMergeLifecycles(
 }
 
 /** updateTopic does not take the merge fence; validate the current locked rows as well. */
-export function assertLockedTopicMergeTypes(
+function assertLockedTopicMergeTypes(
   source: Pick<Topic, 'id' | 'topic_type'>,
   destination: Pick<Topic, 'id' | 'topic_type'>,
 ): void {

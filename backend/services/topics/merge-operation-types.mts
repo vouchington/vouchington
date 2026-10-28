@@ -1,6 +1,6 @@
 import type { TopicMergeMetricStats } from './merge-metrics-stats.mts'
 
-export const topicMergeStages = [
+const topicMergeStages = [
   'preflight',
   'aliases',
   'subtype_create',
