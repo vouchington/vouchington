@@ -1,3 +1,4 @@
+import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect, onTestFinished } from 'vitest'
 import { advisoryLockPool, read } from '@data-stores/psql'
@@ -146,14 +147,12 @@ export async function acquireEmbeddingQuotaFixture() {
     if (acquired)
       await attempt(async () => {
         const { rows } = await client!.query<{ unlocked: boolean }>(
-          '/* acquireEmbeddingQuotaFixture:advisoryUnlock */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
+          allowUnannotatedQuery('SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked'),
           [key],
         )
         if (!rows[0]?.unlocked) throw new Error('Global quota fixture lock was not released')
       })
-    await attempt(() =>
-      client?.query('/* acquireEmbeddingQuotaFixture:resetTimeout */ RESET statement_timeout'),
-    )
+    await attempt(() => client?.query(allowUnannotatedQuery('RESET statement_timeout')))
     await attempt(() =>
       client?.release(
         errors.length
