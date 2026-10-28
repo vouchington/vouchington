@@ -107,7 +107,9 @@ export async function resolveHashtagTopicSearch(
 
 function findSearchHashtags(rawQuery: string): RegExpMatchArray[] {
   const searchable = maskHashtagBearingUrls(rawQuery)
-  return [...searchable.matchAll(/(^|[^A-Za-z0-9_-])(#[A-Za-z0-9._-]+)(?=$|[^\p{L}\p{N}_-])/gu)]
+  return [
+    ...searchable.matchAll(/(^|[^A-Za-z0-9_-])(#[A-Za-z0-9._-]+)(?=$|[^\p{L}\p{M}\p{N}_-])/gu),
+  ]
 }
 
 function removeSearchHashtags(rawQuery: string, matches: RegExpMatchArray[]): string | undefined {

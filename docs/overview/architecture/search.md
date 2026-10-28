@@ -124,6 +124,8 @@ Frontend guards prevent the API call before the minimum is met:
 List-filter search supports either linked-topic or standalone `#hashtag` tokens via
 `backend/services/search-params/hashtag-topic-search.mts`. Canonical hashtag keys use ASCII
 alphanumeric segments separated by `-`; `.` and `_` are normalized to `-` for mobile-friendly input.
+Malformed Unicode hashtag tokens remain text, including decomposed accents, so search never
+silently applies a filter for only the ASCII prefix of the token.
 Each parser maps linked topics and exact unlinked aliases to the appropriate SQL filter for its
 surface:
 
