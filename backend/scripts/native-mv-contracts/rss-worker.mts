@@ -63,8 +63,8 @@ export async function checkRssWorkerContracts(): Promise<void> {
       row =>
         row.name === RSS_FEEDS_FETCH_JOB.name &&
         ownedFeedIds.includes((row.data as { rssFeedId: string }).rssFeedId),
+      row => admitted.push(row),
     )
-    admitted.push(...admission.jobs)
     assert.equal((admission.result as { count: number }).count, 1)
     const due = admission.jobs.filter(
       row =>

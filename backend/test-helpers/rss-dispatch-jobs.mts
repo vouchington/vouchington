@@ -8,6 +8,7 @@ export async function captureRssJobs<T>(
   action: () => T | Promise<T>,
   expectedAdded: number,
   matches: (job: Job) => boolean,
+  onCaptured: (job: NonNullable<Awaited<ReturnType<typeof background.getJob>>>) => void,
 ): Promise<{ result: T; jobs: NonNullable<Awaited<ReturnType<typeof background.getJob>>>[] }> {
   const events = new QueueEvents(background.name, {
     ...realGlideConnection,
@@ -26,6 +27,7 @@ export async function captureRssJobs<T>(
       .getJob(event.jobId)
       .then(job => {
         if (job && matches(job)) {
+          onCaptured(job)
           jobs.push(job)
           if (jobs.length >= expectedAdded) resolveAdded()
         }

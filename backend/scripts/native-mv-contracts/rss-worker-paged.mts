@@ -62,9 +62,9 @@ export async function checkRssWorkerPagedContracts(): Promise<void> {
           feedIds.includes((row.data as { rssFeedId: string }).rssFeedId)) ||
         (row.name === RSS_FEEDS_DISPATCH_JOB.name &&
           (row.data as RssFeedsDispatchData).cursor?.afterId === feedIds[0]),
+      row => admitted.push(row),
     )
     const firstPage = firstAdmission.result as { count: number }
-    admitted.push(...firstAdmission.jobs)
     assert.equal(firstPage.count, 1, 'the first raw page must select its owned due feed')
     const firstPageRows = firstAdmission.jobs.filter(
       row =>
@@ -97,8 +97,8 @@ export async function checkRssWorkerPagedContracts(): Promise<void> {
       row =>
         row.name === RSS_FEEDS_FETCH_JOB.name &&
         feedIds.includes((row.data as { rssFeedId: string }).rssFeedId),
+      row => admitted.push(row),
     )
-    admitted.push(...secondAdmission.jobs)
     assert.equal((secondAdmission.result as { count: number }).count, 1)
     const secondPageRows = secondAdmission.jobs.filter(
       row =>

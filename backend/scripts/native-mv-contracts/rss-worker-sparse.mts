@@ -78,8 +78,8 @@ export async function checkRssWorkerSparseLane(): Promise<void> {
               (row.data as RssFeedsDispatchData).cursor?.afterId === expectedAfterId
             : row.name === RSS_FEEDS_FETCH_JOB.name &&
               ids.includes((row.data as { rssFeedId: string }).rssFeedId),
+        row => jobs.push(row),
       )
-      jobs.push(...admission.jobs)
       const next: NonNullable<Awaited<ReturnType<typeof background.getJob>>> | undefined =
         admission.jobs[0]
       assert.ok(next)
@@ -117,9 +117,9 @@ export async function checkRssWorkerSparseLane(): Promise<void> {
         row.name === RSS_FEEDS_DISPATCH_JOB.name &&
         (row.data as RssFeedsDispatchData).asOf === asOf.toISOString() &&
         (row.data as RssFeedsDispatchData).cursor?.lane === 6,
+      row => jobs.push(row),
     )
     assert.equal((tail.result as { count: number }).count, 0)
-    jobs.push(...tail.jobs)
     const laneSix = tail.jobs[0]
     assert.ok(laneSix, 'exhausted lane must continue to backfill with capacity retained')
     assert.equal(laneSix.name, RSS_FEEDS_DISPATCH_JOB.name)
