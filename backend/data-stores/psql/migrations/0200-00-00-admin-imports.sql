@@ -53,6 +53,10 @@ CREATE INDEX IF NOT EXISTS idx_admin_import_batches__unfinished_updated_at
   ON admin_import_batches (updated_at)
   WHERE completed_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_admin_import_batches__completed_at__id
+  ON admin_import_batches (completed_at, id)
+  WHERE completed_at IS NOT NULL;
+
 COMMENT ON TABLE admin_import_batches IS 'Tracks bulk import operations initiated by admins, with progress counters.';
 COMMENT ON COLUMN admin_import_batches.import_type IS 'The type of entities being imported: topic or RSS feed.';
 COMMENT ON COLUMN admin_import_batches.total_rows IS 'Total number of rows in this import batch (max 50000).';
@@ -88,6 +92,27 @@ CREATE TRIGGER trigger_admin_import_rows_updated_at
   BEFORE UPDATE ON admin_import_rows
   FOR EACH ROW
   EXECUTE FUNCTION fn_update_updated_at();
+
+CREATE FUNCTION fn_reject_completed_import_batch_child() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  batch_completed_at TIMESTAMPTZ;
+BEGIN
+  IF TG_ARGV[0] NOT IN ('admin_import_batches', 'user_rss_feed_import_batches') THEN
+    RAISE EXCEPTION 'Unsupported import batch parent' USING ERRCODE = 'check_violation';
+  END IF;
+  EXECUTE format('SELECT completed_at FROM %I WHERE id = $1 FOR SHARE', TG_ARGV[0])
+    INTO batch_completed_at USING NEW.batch_id;
+  IF batch_completed_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Completed import batches cannot acquire new children'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_admin_import_rows_guard_completed_batch
+BEFORE INSERT OR UPDATE OF batch_id ON admin_import_rows FOR EACH ROW
+EXECUTE FUNCTION fn_reject_completed_import_batch_child('admin_import_batches');
 
 CREATE TRIGGER trigger_admin_import_rows_guard_terminal_lifecycle
   BEFORE UPDATE ON admin_import_rows
@@ -150,7 +175,7 @@ CREATE TRIGGER trigger_admin_import_rows_guard_deleted_rss_feed
   EXECUTE FUNCTION fn_reject_admin_import_deleted_rss_feed();
 
 CREATE INDEX IF NOT EXISTS idx_admin_import_rows__batch_id
-  ON admin_import_rows (batch_id);
+  ON admin_import_rows (batch_id, id);
 
 -- RI-usable indexes for the created-entity FKs
 CREATE INDEX IF NOT EXISTS idx_admin_import_rows__topic_id
@@ -167,3 +192,38 @@ COMMENT ON COLUMN admin_import_rows.rss_feed_id IS 'RSS feed created or updated 
 COMMENT ON COLUMN admin_import_rows.completed_at IS 'When this row was successfully imported.';
 COMMENT ON COLUMN admin_import_rows.failed_at IS 'When this row failed to import.';
 COMMENT ON COLUMN admin_import_rows.error_message IS 'Error message if the row failed to import.';
+
+CREATE TYPE import_retention_families AS ENUM ('admin', 'rss');
+CREATE TYPE import_retention_phases AS ENUM ('discoveries', 'rows', 'batch');
+
+CREATE TABLE import_retention_cursors (
+  family import_retention_families PRIMARY KEY,
+  admin_batch_id UUID REFERENCES admin_import_batches(id) ON DELETE SET NULL,
+  rss_batch_id UUID,
+  phase import_retention_phases NOT NULL DEFAULT 'rows',
+  row_id UUID,
+  discovery_url_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chk_import_retention_cursors__discovery_position CHECK (
+    (discovery_url_id IS NULL) = (phase <> 'discoveries' OR row_id IS NULL)
+  ),
+  CONSTRAINT chk_import_retention_cursors__batch_family CHECK (
+    (family = 'admin' AND rss_batch_id IS NULL)
+    OR (family = 'rss' AND admin_batch_id IS NULL)
+  )
+);
+CREATE TRIGGER trigger_import_retention_cursors_updated_at
+  BEFORE UPDATE ON import_retention_cursors
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE INDEX idx_import_retention_cursors__admin_batch_id
+  ON import_retention_cursors (admin_batch_id) WHERE admin_batch_id IS NOT NULL;
+CREATE INDEX idx_import_retention_cursors__rss_batch_id
+  ON import_retention_cursors (rss_batch_id) WHERE rss_batch_id IS NOT NULL;
+COMMENT ON TABLE import_retention_cursors IS 'Transactional UUIDv7 child positions for bounded completed-import cleanup.';
+COMMENT ON COLUMN import_retention_cursors.family IS 'Independent admin or RSS import cleanup pass.';
+COMMENT ON COLUMN import_retention_cursors.admin_batch_id IS 'Current completed admin batch, if one is being drained.';
+COMMENT ON COLUMN import_retention_cursors.rss_batch_id IS 'Current completed RSS batch, if one is being drained.';
+COMMENT ON COLUMN import_retention_cursors.phase IS 'Child-first stage currently being drained.';
+COMMENT ON COLUMN import_retention_cursors.row_id IS 'Last UUIDv7 import row or discovery parent visited.';
+COMMENT ON COLUMN import_retention_cursors.discovery_url_id IS 'Last UUIDv7 discovery URL visited within the row.';
+COMMENT ON COLUMN import_retention_cursors.updated_at IS 'Last successful transactional cursor update.';

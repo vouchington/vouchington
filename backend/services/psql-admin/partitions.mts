@@ -7,6 +7,7 @@ import {
 } from '@services/data-retention/config'
 import {
   CLASSIFIER_RESULT_PARTITION_TABLES,
+  USER_DATA_REQUEST_PARTITION_TABLES,
   PARTITION_DROP_POLICIES,
 } from '@data-stores/psql/config-driven/utils/partition-config'
 import { classifierRangeFromChild } from '@data-stores/psql/migration-runner/classifier-partition-range'
@@ -59,16 +60,18 @@ export async function getPartitionStatus(): Promise<PartitionStatus> {
   }
 
   const classifierTables = new Set(CLASSIFIER_RESULT_PARTITION_TABLES)
+  const requestTables = new Set<string>(USER_DATA_REQUEST_PARTITION_TABLES)
   const candidates = rows.map(row => {
     const table = row.parent_table as string
     const partition = row.partition_name as string
-    const classifierRange = classifierTables.has(table)
-      ? classifierRangeFromChild(table, partition, row.partition_bound as string)
-      : null
+    const operatorRange =
+      classifierTables.has(table) || requestTables.has(table)
+        ? classifierRangeFromChild(table, partition, row.partition_bound as string)
+        : null
     return {
       table,
       partition,
-      upperBound: classifierRange?.toDate ?? getMonthlyPartitionUpperBound(table, partition),
+      upperBound: operatorRange?.toDate ?? getMonthlyPartitionUpperBound(table, partition),
     }
   })
   const policies = { ...PARTITION_DROP_POLICIES }
@@ -85,7 +88,10 @@ export async function getPartitionStatus(): Promise<PartitionStatus> {
   // A catalog age check cannot prove batch and run completion. The operator transaction rechecks
   // under locks, so the status remains check-pending even after the retention window passes.
   for (const candidate of candidates) {
-    if (classifierTables.has(candidate.table) && refusals.get(candidate.partition) === null) {
+    if (
+      (classifierTables.has(candidate.table) || requestTables.has(candidate.table)) &&
+      refusals.get(candidate.partition) === null
+    ) {
       refusals.set(candidate.partition, 'check-pending')
     }
   }

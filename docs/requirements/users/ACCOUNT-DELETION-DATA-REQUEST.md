@@ -86,8 +86,9 @@ payment/support audit without retaining either deleted account identifier.
    retained identity families and an exact-one typed impact. Recompute, publication, and effect
    work use that full key; if a relation cascade removed the vote first, no impact is recorded.
 5. Email addresses, phone numbers, passkeys, social links, OAuth PII, Bluesky data, referral
-   attribution, data-export rows, and [OAuth credentials](../security/OAUTH-AUTHORIZATION-SERVER.md#account-deletion)
-   are drained idempotently. Claimed exports first record their
+   attribution, export attempt keys, and [OAuth credentials](../security/OAUTH-AUTHORIZATION-SERVER.md#account-deletion)
+   are drained idempotently. Export request history remains with its user references cleared.
+   Claimed exports first record their
    deterministic S3 key as durable deletion work, so an in-flight worker cannot leave an orphaned
    archive after its request is expired.
 6. Stripe customers and ready export objects are sanitized/deleted from durable work records, and

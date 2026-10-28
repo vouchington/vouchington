@@ -31,12 +31,14 @@ export default function PostgreSQLPage() {
         onAction={state.handleAction}
         setPendingAction={state.choosePartitionAction}
         setPendingClassifierAction={state.chooseClassifierPartitionAction}
+        setPendingRequestAction={state.chooseRequestPartitionAction}
       />
       <SyncArticlesCard />
       <PartitionConfirmDialog
         confirmPartitionAction={state.confirmPartitionAction}
         pendingAction={state.pendingAction}
         pendingClassifierRange={state.pendingClassifierRange}
+        pendingRequestRange={state.pendingRequestRange}
         setPendingAction={state.choosePartitionAction}
       />
     </div>

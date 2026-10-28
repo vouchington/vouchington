@@ -60,9 +60,9 @@ export async function discoverFeedUrlFromHtml(
   await getOrCreateCrawlerForHostname(null, hostnameId)
   const requested = await write<{ generation: string }>(sql`/* requestRssFeedImportPageDiscovery */
     INSERT INTO user_rss_feed_import_row_discoveries (
-      import_row_id, discovery_url_id, generation
+      import_row_id, batch_id, discovery_url_id, generation
     )
-    SELECT ${importRowId}::uuid, ${url.id}::uuid, ${randomUUID()}::uuid
+    SELECT import_row.id, import_row.batch_id, ${url.id}::uuid, ${randomUUID()}::uuid
     FROM user_rss_feed_import_rows import_row
     WHERE import_row.id = ${importRowId} AND import_row.completed_at IS NULL
       AND import_row.failed_at IS NULL

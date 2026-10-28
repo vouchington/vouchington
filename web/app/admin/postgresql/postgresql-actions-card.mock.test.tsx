@@ -21,6 +21,9 @@ describe('PostgreSQLActionsCard classifier ranges', () => {
             Parameters<typeof PostgreSQLActionsCard>[0]['setPendingAction']
           >()}
           setPendingClassifierAction={setPendingClassifierAction}
+          setPendingRequestAction={vi.fn<
+            Parameters<typeof PostgreSQLActionsCard>[0]['setPendingRequestAction']
+          >()}
         />
       </TooltipProvider>,
     )

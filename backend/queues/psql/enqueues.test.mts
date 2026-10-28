@@ -17,13 +17,33 @@ describe('classifier partition admissions', () => {
       await Promise.all([createId, retireId].map(async id => (await psql.getJob(id))?.remove()))
     })
 
-    await enqueueCreatePartitions(range)
-    await enqueueCreatePartitions(range)
-    await enqueueCleanupPartitions(range)
+    await enqueueCreatePartitions({ classifierRange: range })
+    await enqueueCreatePartitions({ classifierRange: range })
+    await enqueueCleanupPartitions({ classifierRange: range })
     const [create, retire] = await Promise.all([psql.getJob(createId), psql.getJob(retireId)])
     expect(create).toMatchObject({ id: createId, data: { classifierRange: range } })
     expect(retire).toMatchObject({ id: retireId, data: { classifierRange: range } })
-    expect(create?.opts.ordering).toEqual({ key: 'classifier_partitions', concurrency: 1 })
-    expect(retire?.opts.ordering).toEqual({ key: 'classifier_partitions', concurrency: 1 })
+    expect(create?.opts.ordering).toEqual({ key: 'operator_partitions', concurrency: 1 })
+    expect(retire?.opts.ordering).toEqual({ key: 'operator_partitions', concurrency: 1 })
+  })
+
+  it('keeps request ranges distinct from classifier ranges in the operator lane', async () => {
+    const range = { fromDate: '2020-02-01', toDate: '2020-02-02' }
+    const requestId = `request-range__create__${range.fromDate}_${range.toDate}`
+    const classifierId = `classifier-range__create__${range.fromDate}_${range.toDate}`
+    onTestFinished(async () => {
+      await Promise.all(
+        [requestId, classifierId].map(async id => (await psql.getJob(id))?.remove()),
+      )
+    })
+    await enqueueCreatePartitions({ requestRange: range })
+    await enqueueCreatePartitions({ classifierRange: range })
+    const [request, classifier] = await Promise.all([
+      psql.getJob(requestId),
+      psql.getJob(classifierId),
+    ])
+    expect(request).toMatchObject({ id: requestId, data: { requestRange: range } })
+    expect(classifier).toMatchObject({ id: classifierId, data: { classifierRange: range } })
+    expect(request?.opts.ordering).toEqual({ key: 'operator_partitions', concurrency: 1 })
   })
 })

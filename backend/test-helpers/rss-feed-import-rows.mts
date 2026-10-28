@@ -174,12 +174,12 @@ export async function createPendingRssFeedImportDiscoveryForTest(
       INSERT INTO user_rss_feed_import_rows (batch_id, row_index, input_url)
       SELECT import_batch.id, 0, ${inputUrl}
       FROM import_batch
-      RETURNING id
+      RETURNING id, batch_id
     ), discovery AS (
       INSERT INTO user_rss_feed_import_row_discoveries (
-        import_row_id, discovery_url_id, generation
+        import_row_id, batch_id, discovery_url_id, generation
       )
-      SELECT import_row.id, ${discoveryUrlId}::uuid, ${generation}::uuid
+      SELECT import_row.id, import_row.batch_id, ${discoveryUrlId}::uuid, ${generation}::uuid
       FROM import_row
       RETURNING generation
     )

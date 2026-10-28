@@ -4742,7 +4742,6 @@ rules:
       # implicit unique/PK composites. Do not drop them in this consume PR.
       allowedIndexes:
         - referral_program_topic_link_validation_rule_sets.idx_referral_program_topic_link_validation_rule_sets__topic_id
-        - admin_import_rows.idx_admin_import_rows__batch_id
 
   - name: enforce PostgreSQL column names and foreign-key semantics
     rule: postgres-column-naming

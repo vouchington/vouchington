@@ -31,7 +31,7 @@ describe('createDataRequestOrConflict', () => {
       .mockResolvedValueOnce(existing)
     const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce({
       code: '23505',
-      constraint: 'idx_user_data_requests__active_per_requester',
+      constraint: 'active_user_data_request_claims_pkey',
     })
 
     const result = await createDataRequestOrConflict(existing.user_id!, existing.requested_by_id!, {
@@ -63,7 +63,7 @@ describe('createDataRequestOrConflict', () => {
       .mockResolvedValueOnce(latest)
     const createDataRequest = vi.fn<VitestLooseMock>().mockRejectedValueOnce({
       code: '23505',
-      constraint: 'idx_user_data_requests__active_per_requester',
+      constraint: 'active_user_data_request_claims_pkey',
     })
 
     const result = await createDataRequestOrConflict(latest.user_id!, latest.requested_by_id!, {

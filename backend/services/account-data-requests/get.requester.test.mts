@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, safeUsername } from '@voucha/test-helpers'
 import { createDataRequest } from './create.mts'
 import { createDataRequestOrConflict } from './create-or-conflict.mts'
+import { markDataRequestFailed } from './update.mts'
 import { getDataRequestById, getLatestDataRequest, wasDataRequestMadeBySubject } from './get.mts'
 
 async function createSubjectAndAdmin(label: string) {
@@ -63,6 +64,21 @@ describe('data requests are scoped to the requester', () => {
     expect(repeatedAdmin).toMatchObject({ type: 'conflict', existing: { id: adminRequest.id } })
     const repeatedOwn = await createDataRequestOrConflict(subject.id, subject.id)
     expect(repeatedOwn).toMatchObject({ type: 'conflict' })
+  })
+
+  it('keeps one active claim under concurrent creation and releases it on failure', async () => {
+    const { subject } = await createSubjectAndAdmin('claim-race')
+    const results = await Promise.all([
+      createDataRequestOrConflict(subject.id, subject.id),
+      createDataRequestOrConflict(subject.id, subject.id),
+    ])
+    expect(results.map(result => result.type).toSorted()).toEqual(['conflict', 'created'])
+    const created = results.find(result => result.type === 'created')
+    expect(created?.type).toBe('created')
+    if (created?.type !== 'created') throw new Error('Expected a created request')
+    expect(await markDataRequestFailed(created.request.id)).toBe(true)
+    const next = await createDataRequestOrConflict(subject.id, subject.id)
+    expect(next).toMatchObject({ type: 'created' })
   })
 
   it('refuses a requester that does not exist', async () => {

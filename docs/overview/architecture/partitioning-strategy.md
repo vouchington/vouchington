@@ -72,6 +72,12 @@ entries follow their run payload's lifetime. Deleting a real subject also makes 
 expendable. A live run retains its identity through the report window. Request settlement and billed
 cost survive cache eviction without allowing the deleted subject to be replayed or authorized.
 
+Export requests and their S3 attempt ledger use aligned UUIDv7 request ranges. The operator creates
+ranges on demand; the scheduled monthly job does not touch them. The splitter caps the entire DEFAULT
+child before moving rows in one transaction, including the attempt ledger and active-request claims.
+Retirement checks each request's terminal age and refuses any remaining download object or attempt
+key. This keeps a delayed upload from losing its only cleanup record when a range is dropped.
+
 ## Related
 
 - [Partition Pruning Hints](partition-pruning-hints.md)

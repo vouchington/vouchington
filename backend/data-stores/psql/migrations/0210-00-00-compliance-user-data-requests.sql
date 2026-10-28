@@ -45,7 +45,10 @@ CREATE TABLE IF NOT EXISTS user_data_requests (
     (processing_started_at IS NOT NULL OR completed_at IS NULL)
     AND (completed_at IS NULL OR failed_at IS NULL)
   )
-);
+) PARTITION BY RANGE (id);
+
+CREATE TABLE IF NOT EXISTS user_data_requests__default
+PARTITION OF user_data_requests DEFAULT;
 
 CREATE OR REPLACE TRIGGER trigger_user_data_requests_updated_at
 BEFORE UPDATE ON user_data_requests
@@ -64,17 +67,52 @@ ON user_data_requests (user_id, requested_by_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_user_data_requests__requested_by_id
 ON user_data_requests (requested_by_id);
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_data_requests__processing_attempt_id
-ON user_data_requests (processing_attempt_id);
-
 CREATE INDEX IF NOT EXISTS idx_user_data_requests__download_expiry
 ON user_data_requests (expires_at, id) WHERE s3_key IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__nonterminal_id
+ON user_data_requests (id) WHERE completed_at IS NULL AND failed_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__terminal_at__id
+ON user_data_requests (COALESCE(completed_at, failed_at), id)
+WHERE completed_at IS NOT NULL OR failed_at IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__stored_export_id
+ON user_data_requests (id) WHERE s3_key IS NOT NULL;
 
 -- Enforce at most one active (pending or processing) request per subject and requester. The
 -- requester is part of the key so an administrator-run export never blocks, or is revealed by a
 -- conflict on, the account holder's own request.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_data_requests__active_per_requester
-ON user_data_requests (user_id, requested_by_id) WHERE completed_at IS NULL AND failed_at IS NULL;
+CREATE TABLE IF NOT EXISTS active_user_data_request_claims (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  requested_by_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  request_id UUID NOT NULL UNIQUE REFERENCES user_data_requests(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, requested_by_id)
+);
+CREATE INDEX idx_active_user_data_request_claims__requested_by_id
+ON active_user_data_request_claims (requested_by_id);
+
+CREATE FUNCTION fn_sync_active_user_data_request_claim() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    DELETE FROM active_user_data_request_claims WHERE request_id = OLD.id;
+  END IF;
+  IF NEW.completed_at IS NULL AND NEW.failed_at IS NULL
+     AND NEW.user_id IS NOT NULL AND NEW.requested_by_id IS NOT NULL THEN
+    INSERT INTO active_user_data_request_claims (user_id, requested_by_id, request_id)
+    VALUES (NEW.user_id, NEW.requested_by_id, NEW.id);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_user_data_requests_sync_active_claim
+AFTER INSERT OR UPDATE OF user_id, requested_by_id, completed_at, failed_at
+ON user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_sync_active_user_data_request_claim();
+
+COMMENT ON TABLE active_user_data_request_claims IS 'One global active export claim per subject and requester across request partitions.';
+COMMENT ON COLUMN active_user_data_request_claims.user_id IS 'Subject of the active export.';
+COMMENT ON COLUMN active_user_data_request_claims.requested_by_id IS 'Requester whose concurrent export is claimed.';
+COMMENT ON COLUMN active_user_data_request_claims.request_id IS 'Active export request holding this claim.';
 
 COMMENT ON TABLE user_data_requests IS 'Tracks user data export requests with lifecycle from queued through download or expiration. Status is derived from timestamp columns.';
 COMMENT ON COLUMN user_data_requests.user_id IS 'The subject: the user whose data is exported.';

@@ -5,6 +5,8 @@ import {
   createMonthlyPartitions,
   createClassifierResultRange,
   retireClassifierResultRange,
+  createUserDataRequestRange,
+  retireUserDataRequestRange,
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
@@ -98,14 +100,15 @@ export default async function processPsql(
     case 'runConfigDriven':
       return (dependencies?.runConfigDriven ?? runConfigDriven)()
     case 'createPartitions':
-      return data?.classifierRange
-        ? createClassifierResultRange(data.classifierRange)
-        : (dependencies?.createPartitions ?? createMonthlyPartitions)()
+      if (data?.classifierRange) return createClassifierResultRange(data.classifierRange)
+      if (data?.requestRange) return createUserDataRequestRange(data.requestRange)
+      return (dependencies?.createPartitions ?? createMonthlyPartitions)()
     case 'cleanupPartitions':
       if (data?.classifierRange) {
         await dataRetentionConfig.waitForInitialization()
         return retireClassifierResultRange(data.classifierRange, getClassifierRetentionDays())
       }
+      if (data?.requestRange) return retireUserDataRequestRange(data.requestRange)
       return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup': {
       await dataRetentionConfig.waitForInitialization()

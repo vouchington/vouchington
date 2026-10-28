@@ -95,6 +95,11 @@ their engineering parity can include classifier ranges. No member-facing route
 or MCP tool changes. Native adoption is tracked in
 [vouchington-clients#497](https://github.com/vouchington/vouchington-clients/issues/497).
 
+The same engineering action now accepts `requestRange` for export-request history. Web exposes
+creation and guarded retirement of aligned request and attempt ranges. Native engineering clients
+need the matching request input and confirmation before this addition has parity; the existing
+engineering follow-up tracks the client work.
+
 ## Annual integrity penalty review
 
 Staff can inspect bounded queues of active report-abuse and vote-weight penalties due for

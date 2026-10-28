@@ -34,6 +34,7 @@ import { runClassifierHumanVoteComparisonScenarios } from './run-scenarios/class
 import { runCopyrightDeliveryBatchScenarios } from './run-scenarios/copyright-delivery-batches.mts'
 import { runCopyrightStatementFactsScenarios } from './run-scenarios/copyright-statement-facts.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
+import { runImportRequestRetentionScenarios } from './run-scenarios/import-request-retention.mts'
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
 import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-client-verification.mts'
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
@@ -77,6 +78,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runEntityAndCommunityScenarios,
   runViewDrivenReadScenarios,
   runTopicImportAttemptScenarios,
+  runImportRequestRetentionScenarios,
   runHotPathLoaderScenarios,
   runSharedLoaderScenarios,
   runMembershipRefundScenarios,

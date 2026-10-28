@@ -64,4 +64,34 @@ describe('PostgreSQLPage classifier operator', () => {
       classifierRange: { fromDate: '2020-02-01', toDate: '2020-02-02', maxDefaultRows: 100 },
     })
   })
+
+  it('confirms the export request range as its own partition action', async () => {
+    vi.stubGlobal('EventSource', MockEventSource)
+    const { get: mockGet, post: mockPost } = spyOnPsqlRequestClient()
+    mockGet.mockResolvedValue({ applied: [], pending: [], total: 0 })
+    mockPost.mockResolvedValue({ success: true })
+
+    render(
+      <TooltipProvider>
+        <PostgreSQLPage />
+      </TooltipProvider>,
+    )
+    const create = await screen.findByRole('button', { name: 'Create Export Request Range' })
+    expect(create).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('From (inclusive)'), {
+      target: { value: '2020-02-01' },
+    })
+    fireEvent.change(screen.getByLabelText('To (exclusive)'), {
+      target: { value: '2020-02-02' },
+    })
+    fireEvent.click(create)
+    expect(screen.getByText(/Split the export request and attempt ranges/)).toBeVisible()
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    })
+    expect(mockPost).toHaveBeenCalledWith('/api/v1/psql/jobs', {
+      type: 'createPartitions',
+      requestRange: { fromDate: '2020-02-01', toDate: '2020-02-02', maxDefaultRows: 5000 },
+    })
+  })
 })

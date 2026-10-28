@@ -70,6 +70,7 @@ export type ClassifierPartitionRange = {
 
 export type PsqlPartitionJobData = {
   classifierRange?: ClassifierPartitionRange
+  requestRange?: ClassifierPartitionRange
 }
 
 export type PsqlRetentionJobData = {

@@ -52,6 +52,8 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['post_topic_recommendations', defaultRange('post_id')],
   ['agent_moderations', defaultRange('post_id')],
   ['topic_classifier_results', operatorRetentionRange('batch_id')],
+  ['user_data_requests', operatorRetentionRange('id')],
+  ['user_data_request_attempts', operatorRetentionRange('request_id')],
   ['classifier_decision_batch_candidates', operatorRetentionRange('batch_id')],
   ['story_classifier_results', operatorRetentionRange('batch_id')],
   ['community_prompt_classifier_results', operatorRetentionRange('batch_id')],
