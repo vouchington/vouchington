@@ -421,6 +421,15 @@ checks:
         - 'ts-shared/**'
         - package.json
         - pnpm-lock.yaml
+    # Mirrors the vouchington-tooling actionlint workflow's zizmor step (#4018); .mise.toml pins it.
+    - name: zizmor
+      command: [zizmor, --offline, --min-severity, high, --min-confidence, high, .]
+      fileArgs: none
+      include:
+        - '.github/workflows/**'
+        - '.github/actions/**'
+        - .github/zizmor.yml
+        - .mise.toml
     - name: ast-grep-rules
       command: [pnpm, run, ast-grep]
       fileArgs: none
