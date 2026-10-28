@@ -14,7 +14,7 @@ CREATE OR REPLACE VIEW view_topic_metrics AS
       FROM (
         SELECT rel.subject_id AS post_id
         FROM relation__post__category__topic rel
-        WHERE rel.object_id = topic_metrics.topic_id
+        WHERE (CASE WHEN rel.deleted_at IS NULL AND rel.votes_score_net > 0 THEN rel.object_id END) = topic_metrics.topic_id
           AND rel.deleted_at IS NULL
           AND rel.votes_score_net > 0
 
@@ -25,7 +25,7 @@ CREATE OR REPLACE VIEW view_topic_metrics AS
         SELECT alias_relation.subject_id AS post_id
         FROM topic_aliases alias
         JOIN relation__post__category__topic_alias alias_relation
-          ON alias_relation.object_id = alias.id
+          ON (CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id
          AND alias_relation.deleted_at IS NULL
          AND alias_relation.votes_score_net > 0
         WHERE alias.topic_id = topic_metrics.topic_id

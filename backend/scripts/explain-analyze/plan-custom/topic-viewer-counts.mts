@@ -6,7 +6,7 @@ import {
 } from '@voucha/types/entities/entity-relation-tables'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
-const TOPIC_VIEWER_COUNTS_SCENARIOS = new Set(['topic-viewer-counts'])
+const TOPIC_VIEWER_COUNTS_SCENARIOS = new Set(['topic-viewer-counts', 'topic-viewer-counts-dense'])
 const TOPIC_CANDIDATE_RELATIONS = new Set([
   POST_TOPIC_CATEGORY_RELATION_TABLE,
   POST_TOPIC_ALIAS_CATEGORY_RELATION_TABLE,

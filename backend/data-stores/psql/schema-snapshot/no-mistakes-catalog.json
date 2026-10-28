@@ -90909,6 +90909,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__category__topic__positive_object": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__positive_object ON ONLY public.relation__post__category__topic USING btree ((\nCASE\n    WHEN ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision)) THEN object_id\n    ELSE NULL::uuid\nEND), subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": null,
+              "descending": false,
+              "expression": "(\nCASE\n    WHEN deleted_at IS NULL AND votes_score_net > 0::double precision THEN object_id\n    ELSE NULL::uuid\nEND)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic__positive_score__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -91810,6 +91842,38 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__category__topic_alias__positive_object": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__positive_object ON ONLY public.relation__post__category__topic_alias USING btree ((\nCASE\n    WHEN ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision)) THEN object_id\n    ELSE NULL::uuid\nEND), subject_id) WHERE ((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": null,
+              "descending": false,
+              "expression": "(\nCASE\n    WHEN deleted_at IS NULL AND votes_score_net > 0::double precision THEN object_id\n    ELSE NULL::uuid\nEND)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "subject_id",
+              "descending": false,
+              "expression": "subject_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((deleted_at IS NULL) AND (votes_score_net > (0)::double precision))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -154846,7 +154910,7 @@
     },
     "view_topic_metrics": {
       "comment": "Topic activity metrics for current topic reads.",
-      "definition": " SELECT 'topic_metrics'::text AS __entity_type,\n    topic_id AS id,\n    ( SELECT count(DISTINCT posts.id) AS count\n           FROM ( SELECT rel.subject_id AS post_id\n                   FROM relation__post__category__topic rel\n                  WHERE rel.object_id = topic_metrics.topic_id AND rel.deleted_at IS NULL AND rel.votes_score_net > 0::double precision\n                UNION ALL\n                 SELECT alias_relation.subject_id AS post_id\n                   FROM topic_aliases alias\n                     JOIN relation__post__category__topic_alias alias_relation ON alias_relation.object_id = alias.id AND alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0::double precision\n                  WHERE alias.topic_id = topic_metrics.topic_id) candidate\n             JOIN posts ON posts.id = candidate.post_id\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id\n          WHERE posts.post_type = 'discussion'::post_types) AS count__discussions,\n    ( SELECT count(DISTINCT posts.id) AS count\n           FROM posts\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id\n             JOIN post_review_topic_ratings prtr ON prtr.post_id = posts.id AND prtr.topic_id = topic_metrics.topic_id\n          WHERE posts.post_type = 'review'::post_types) AS count__reviews,\n    ( SELECT count(DISTINCT posts.id) AS count\n           FROM posts\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id\n             JOIN post_data_point_topics pdpt ON pdpt.post_id = posts.id AND pdpt.topic_id = topic_metrics.topic_id\n          WHERE posts.post_type = 'data_point'::post_types) AS count__data_points,\n    ( SELECT count(DISTINCT rfic.rss_feed_item_id) AS count\n           FROM rss_feed_item_categories rfic\n             JOIN rss_feed_items rfi ON rfi.id = rfic.rss_feed_item_id\n             JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = rfi.id\n             JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id\n             JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rf.id\n          WHERE rfic.topic_id = topic_metrics.topic_id AND rfi.deleted_at IS NULL AND rf.deleted_at IS NULL AND current_state.is_enabled = true AND current_state.is_discoverable = true) AS count__news,\n    ( SELECT count(DISTINCT rss_feed_items.id) AS count\n           FROM rss_feed_items\n             JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = rss_feed_items.id\n             JOIN rss_feeds ON rss_feeds.id = rfis.rss_feed_id\n             JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rss_feeds.id\n          WHERE rss_feeds.topic_id = topic_metrics.topic_id AND rss_feeds.deleted_at IS NULL AND current_state.is_enabled = true AND current_state.is_discoverable = true AND rss_feed_items.deleted_at IS NULL) AS count__latest,\n    ratings__count__1,\n    ratings__count__2,\n    ratings__count__3,\n    ratings__count__4,\n    ratings__count__5,\n    ratings__updated_at,\n    bookmarks__follow_count,\n    bookmarks__updated_at\n   FROM topic_metrics;",
+      "definition": " SELECT 'topic_metrics'::text AS __entity_type,\n    topic_id AS id,\n    ( SELECT count(DISTINCT posts.id) AS count\n           FROM ( SELECT rel.subject_id AS post_id\n                   FROM relation__post__category__topic rel\n                  WHERE\n                        CASE\n                            WHEN rel.deleted_at IS NULL AND rel.votes_score_net > 0::double precision THEN rel.object_id\n                            ELSE NULL::uuid\n                        END = topic_metrics.topic_id AND rel.deleted_at IS NULL AND rel.votes_score_net > 0::double precision\n                UNION ALL\n                 SELECT alias_relation.subject_id AS post_id\n                   FROM topic_aliases alias\n                     JOIN relation__post__category__topic_alias alias_relation ON\n                        CASE\n                            WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0::double precision THEN alias_relation.object_id\n                            ELSE NULL::uuid\n                        END = alias.id AND alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0::double precision\n                  WHERE alias.topic_id = topic_metrics.topic_id) candidate\n             JOIN posts ON posts.id = candidate.post_id\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id\n          WHERE posts.post_type = 'discussion'::post_types) AS count__discussions,\n    ( SELECT count(DISTINCT posts.id) AS count\n           FROM posts\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id\n             JOIN post_review_topic_ratings prtr ON prtr.post_id = posts.id AND prtr.topic_id = topic_metrics.topic_id\n          WHERE posts.post_type = 'review'::post_types) AS count__reviews,\n    ( SELECT count(DISTINCT posts.id) AS count\n           FROM posts\n             JOIN view_public_post_eligibility eligibility ON eligibility.post_id = posts.id\n             JOIN post_data_point_topics pdpt ON pdpt.post_id = posts.id AND pdpt.topic_id = topic_metrics.topic_id\n          WHERE posts.post_type = 'data_point'::post_types) AS count__data_points,\n    ( SELECT count(DISTINCT rfic.rss_feed_item_id) AS count\n           FROM rss_feed_item_categories rfic\n             JOIN rss_feed_items rfi ON rfi.id = rfic.rss_feed_item_id\n             JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = rfi.id\n             JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id\n             JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rf.id\n          WHERE rfic.topic_id = topic_metrics.topic_id AND rfi.deleted_at IS NULL AND rf.deleted_at IS NULL AND current_state.is_enabled = true AND current_state.is_discoverable = true) AS count__news,\n    ( SELECT count(DISTINCT rss_feed_items.id) AS count\n           FROM rss_feed_items\n             JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = rss_feed_items.id\n             JOIN rss_feeds ON rss_feeds.id = rfis.rss_feed_id\n             JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rss_feeds.id\n          WHERE rss_feeds.topic_id = topic_metrics.topic_id AND rss_feeds.deleted_at IS NULL AND current_state.is_enabled = true AND current_state.is_discoverable = true AND rss_feed_items.deleted_at IS NULL) AS count__latest,\n    ratings__count__1,\n    ratings__count__2,\n    ratings__count__3,\n    ratings__count__4,\n    ratings__count__5,\n    ratings__updated_at,\n    bookmarks__follow_count,\n    bookmarks__updated_at\n   FROM topic_metrics;",
       "materialized": false
     },
     "view_topics": {

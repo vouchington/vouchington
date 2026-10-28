@@ -56,6 +56,7 @@ import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
+import { runDenseTopicViewerCountsScenario } from './run-scenarios/topic-viewer-counts-dense.mts'
 
 // A failing step is recorded and the run continues, so one run reports every failure.
 const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
@@ -106,6 +107,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   // Hot publication fixtures live only after all ordinary corpus plans and clean up on failure.
   runNotificationVisibilityScenarios,
   runPublicationScopePageScenarios,
+  runDenseTopicViewerCountsScenario,
 ]
 
 async function main() {

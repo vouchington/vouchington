@@ -150,7 +150,7 @@ describe('query-builder (basic)', () => {
     expect(query.values).toContain(topicId2)
   })
 
-  it('buildPostSearchQuery derives universal-topic membership from reverse-indexed candidates', () => {
+  it('buildPostSearchQuery derives universal-topic membership from topic-side candidates', () => {
     const topicId1 = '123e4567-e89b-12d3-a456-426614174001'
     const topicId2 = '123e4567-e89b-12d3-a456-426614174002'
     const query = buildPostSearchQuery(undefined, {
@@ -158,10 +158,14 @@ describe('query-builder (basic)', () => {
     })
 
     expect(query.sql).toContain('posts.id IN')
-    expect(query.sql).toContain('object_id = ANY')
+    expect(query.sql).toContain(
+      '(CASE WHEN deleted_at IS NULL AND votes_score_net > 0 THEN object_id END) = ANY',
+    )
     expect(query.sql).not.toContain('post_topic_alias_sources')
     expect(query.sql).toContain('FROM relation__post__category__topic_alias relation')
-    expect(query.sql).toContain('JOIN topic_aliases alias ON alias.id = relation.object_id')
+    expect(query.sql).toContain(
+      'JOIN topic_aliases alias ON alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)',
+    )
     expect(query.sql).toContain('alias.topic_id = ANY')
     expect(query.sql).toContain('AND deleted_at IS NULL')
     expect(query.sql).toContain('AND votes_score_net > 0')

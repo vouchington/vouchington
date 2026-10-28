@@ -20,7 +20,9 @@ describe('appendUniversalTopicFilters', () => {
 
     expect(query.text).toContain('relation__post__category__topic')
     expect(query.text).toContain('FROM relation__post__category__topic_alias relation')
-    expect(query.text).toContain('JOIN topic_aliases alias ON alias.id = relation.object_id')
+    expect(query.text).toContain(
+      'JOIN topic_aliases alias ON alias.id = (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END)',
+    )
     expect(query.text).not.toContain('post_topic_alias_sources')
     expect(query.text).toContain('alias.topic_id = ANY')
     expect(query.text).toContain('deleted_at IS NULL')
