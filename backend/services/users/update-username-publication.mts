@@ -1,40 +1,34 @@
 import { beginTransaction, write } from '@data-stores/psql'
+import type { SQLStatement } from 'sql-template-strings'
 import {
   lockAuthorPublicationLifecycle,
   recordPostPublicationChange,
 } from '@services/post-publication'
 
-export type UserUpdateBody = {
-  readonly text: string
-  readonly values: readonly unknown[]
-}
-
-type UserUpdateOperation =
-  | {
-      readonly kind: 'fields'
-      readonly body: UserUpdateBody
-      readonly username: string | undefined
-    }
-  | { readonly kind: 'identity'; readonly body: UserUpdateBody; readonly username: string }
-
-export async function commitUserUpdateOperation(userId: string, operation: UserUpdateOperation) {
-  const { body, username } = operation
-  if (operation.kind === 'fields' && username === undefined)
-    return write(`/* updateUserFields */ ${body.text}`, body.values).then(() => undefined)
+export async function commitUserUpdateOperation(
+  userId: string,
+  kind: 'fields' | 'identity',
+  input: SQLStatement,
+  username: string | undefined,
+) {
+  const text = input.text
+  const values = [...input.values]
+  if (kind === 'fields' && username === undefined)
+    return write(`/* updateUserFields */ ${text}`, values).then(() => undefined)
   await using query = await beginTransaction()
   await lockAuthorPublicationLifecycle(query, userId)
   let result: { rows: { previous_username: string | null }[] }
-  switch (operation.kind) {
+  switch (kind) {
     case 'fields':
       result = await query<{ previous_username: string | null }>(
-        `/* updateUserFields */ ${body.text}`,
-        body.values,
+        `/* updateUserFields */ ${text}`,
+        values,
       )
       break
     case 'identity':
       result = await query<{ previous_username: string | null }>(
-        `/* updateUsername */ ${body.text}`,
-        body.values,
+        `/* updateUsername */ ${text}`,
+        values,
       )
       break
   }

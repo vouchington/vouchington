@@ -12,7 +12,7 @@ import sql from 'sql-template-strings'
 import { appendSet, appendVisibilityFields } from './update-fields-visibility.mts'
 import { appendCountryField, appendUiLocaleField } from './update-fields-locale.mts'
 import { appendUserPreferenceFields, hasUserFieldUpdates } from './update-fields-preferences.mts'
-import { commitUserUpdateOperation, type UserUpdateBody } from './update-username-publication.mts'
+import { commitUserUpdateOperation } from './update-username-publication.mts'
 
 const userMetricsVisibilityFields = [
   'community_memberships_visibility',
@@ -136,11 +136,7 @@ export async function updateUserFields(
     RETURNING WITH (OLD AS prior) prior.username AS previous_username, id
   `)
   // An authenticated row can predate another rename; invalidate the version this UPDATE replaced.
-  const previousUsername = await commitUsernameAwareUpdate(
-    userId,
-    { text: update.text, values: [...update.values] },
-    validatedUsername,
-  )
+  const previousUsername = await commitUsernameAwareUpdate(userId, update, validatedUsername)
   const updatedUser = await getPrivateUserByAny(userId, { readOnly: false })
   assert(updatedUser, 404, 'User not found')
   if (getRequestCurrentUser<PrivateUser>()?.id === updatedUser.id)
@@ -157,15 +153,16 @@ export async function updateUserFields(
 
 async function commitUsernameAwareUpdate(
   userId: string,
-  body: UserUpdateBody,
+  statement: ReturnType<typeof sql>,
   validatedUsername: string | undefined,
 ): Promise<string | null | undefined> {
   try {
-    const previousUsername = await commitUserUpdateOperation(userId, {
-      kind: 'fields',
-      body,
-      username: validatedUsername,
-    })
+    const previousUsername = await commitUserUpdateOperation(
+      userId,
+      'fields',
+      statement,
+      validatedUsername,
+    )
     return typeof validatedUsername === 'string' ? previousUsername : undefined
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }

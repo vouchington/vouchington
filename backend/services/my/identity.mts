@@ -18,11 +18,7 @@ export async function updateUsername(userId: string, username: string): Promise<
   const input = sql`UPDATE users SET username = ${validated}`
   input.append(sql` WHERE id = ${userId} AND deleted_at IS NULL`)
   input.append(sql` RETURNING WITH (OLD AS prior) prior.username AS previous_username`)
-  await commitUserUpdateOperation(userId, {
-    kind: 'identity',
-    body: { text: input.text, values: [...input.values] },
-    username: validated,
-  })
+  await commitUserUpdateOperation(userId, 'identity', input, validated)
   clearRequestCurrentUser(userId)
   void enqueueOnUserUpdated(userId)
   ensureDefaultLandingPage(userId, validated).catch(onError)
