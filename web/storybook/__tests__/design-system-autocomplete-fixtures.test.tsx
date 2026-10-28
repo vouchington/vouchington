@@ -103,10 +103,10 @@ describe('design system autocomplete fixtures', () => {
 
     expect(screen.getByText('Selected: alice (user-1)')).toBeDefined()
 
-    fireEvent.change(screen.getAllByLabelText('Search posts')[1]!, { target: { value: 'first' } })
+    fireEvent.change(screen.getByLabelText('Search posts'), { target: { value: 'first' } })
     fireEvent.click(await screen.findByText('My First Post'))
 
-    expect(screen.getByText('Selected: My First Post (post-1)')).toBeDefined()
+    expect(screen.getByText('Selected tags: topic-2, post-1')).toBeDefined()
 
     fireEvent.change(screen.getByLabelText('Search urls'), { target: { value: 'ex' } })
     expect(await screen.findByText('Type at least 3 characters to search.')).toBeDefined()
@@ -114,6 +114,6 @@ describe('design system autocomplete fixtures', () => {
     fireEvent.change(screen.getByLabelText('Search urls'), { target: { value: 'example' } })
     fireEvent.click(await screen.findByText('example.com/card-guide'))
 
-    await waitFor(() => expect(screen.getByText('Selected tags: topic-2, url-1')).toBeDefined())
+    await waitFor(() => expect(screen.getByText('Selected tags: topic-2, post-1, url-1')).toBeDefined())
   })
 })
