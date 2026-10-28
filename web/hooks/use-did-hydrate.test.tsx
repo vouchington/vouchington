@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { useDidHydrate } from './use-did-hydrate'
@@ -21,12 +21,14 @@ describe('useDidHydrate', () => {
     ssrRoot.textContent = 'false'
     container.append(ssrRoot)
 
-    render(<TestComponent />, {
-      container,
-      hydrate: true,
+    await act(async () => {
+      render(<TestComponent />, {
+        container,
+        hydrate: true,
+      })
     })
 
-    await waitFor(() => expect(container.textContent).toBe('true'))
+    expect(container.textContent).toBe('true')
     expect(values).toEqual([false, true])
   })
 })

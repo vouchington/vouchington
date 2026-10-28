@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const { mockCheckAvailability } = vi.hoisted(() => ({
@@ -10,6 +10,7 @@ vi.mock(import('@/lib/api/client/availability'), () => ({
 }))
 
 import { useAvailabilityCheck } from './use-availability-check'
+import type { AvailabilityResult } from '@/lib/api/client/availability'
 
 describe('useAvailabilityCheck', () => {
   afterEach(() => {
@@ -26,47 +27,73 @@ describe('useAvailabilityCheck', () => {
   })
 
   it('sets status to available when the value is free', async () => {
-    mockCheckAvailability.mockResolvedValue({ available: true, conflict: null })
+    const request = Promise.withResolvers<AvailabilityResult>()
+    mockCheckAvailability.mockReturnValue(request.promise)
     const { result } = renderHook(() => useAvailabilityCheck('topic-slug'))
 
     act(() => result.current.onBlur('my-slug'))
+    await act(async () => {
+      request.resolve({ available: true, conflict: null })
+      await request.promise
+    })
 
-    await waitFor(() => expect(result.current.state.status).toBe('available'))
+    expect(result.current.state.status).toBe('available')
     expect(result.current.state.conflict).toBeNull()
     expect(mockCheckAvailability).toHaveBeenCalledWith('topic-slug', 'my-slug', expect.any(Object))
   })
 
   it('sets status to taken with the conflict when the value is used', async () => {
-    const conflict = { kind: 'topic', id: 't1', slug: 's', name: 'n', topic_type: 'topic' }
-    mockCheckAvailability.mockResolvedValue({ available: false, conflict })
+    const conflict: NonNullable<AvailabilityResult['conflict']> = {
+      kind: 'topic',
+      id: 't1',
+      slug: 's',
+      name: 'n',
+      topic_type: 'topic',
+    }
+    const request = Promise.withResolvers<AvailabilityResult>()
+    mockCheckAvailability.mockReturnValue(request.promise)
     const { result } = renderHook(() => useAvailabilityCheck('topic-slug'))
 
     act(() => result.current.onBlur('taken-slug'))
+    await act(async () => {
+      request.resolve({ available: false, conflict })
+      await request.promise
+    })
 
-    await waitFor(() => expect(result.current.state.status).toBe('taken'))
+    expect(result.current.state.status).toBe('taken')
     expect(result.current.state.conflict).toEqual(conflict)
   })
 
   it('sets status to error on a non-abort rejection', async () => {
-    mockCheckAvailability.mockRejectedValue(new Error('boom'))
+    const request = Promise.withResolvers<AvailabilityResult>()
+    mockCheckAvailability.mockReturnValue(request.promise)
     const { result } = renderHook(() => useAvailabilityCheck('username'))
 
     act(() => result.current.onBlur('bob'))
+    await act(async () => {
+      request.reject(new Error('boom'))
+      await request.promise.catch(() => {})
+    })
 
-    await waitFor(() => expect(result.current.state.status).toBe('error'))
+    expect(result.current.state.status).toBe('error')
     expect(result.current.state.conflict).toBeNull()
   })
 
   it('ignores AbortError rejections (no state change)', async () => {
     const abortErr = Object.assign(new Error('aborted'), { name: 'AbortError' })
-    mockCheckAvailability.mockRejectedValue(abortErr)
+    const request = Promise.withResolvers<AvailabilityResult>()
+    mockCheckAvailability.mockReturnValue(request.promise)
     const { result } = renderHook(() => useAvailabilityCheck('username'))
 
     act(() => result.current.onBlur('bob'))
 
-    await waitFor(() => expect(mockCheckAvailability).toHaveBeenCalled())
+    expect(mockCheckAvailability).toHaveBeenCalled()
+    await act(async () => {
+      request.reject(abortErr)
+      await request.promise.catch(() => {})
+    })
     // It transitions to 'checking' and never moves to 'error' for an abort.
-    await waitFor(() => expect(result.current.state.status).toBe('checking'))
+    expect(result.current.state.status).toBe('checking')
   })
 
   it('reset() returns to idle and aborts in-flight checks', async () => {
@@ -79,7 +106,7 @@ describe('useAvailabilityCheck', () => {
     const { result } = renderHook(() => useAvailabilityCheck('topic-slug'))
 
     act(() => result.current.onBlur('pending-slug'))
-    await waitFor(() => expect(result.current.state.status).toBe('checking'))
+    expect(result.current.state.status).toBe('checking')
 
     act(() => result.current.reset())
     expect(result.current.state).toEqual({ status: 'idle', conflict: null })
@@ -93,20 +120,25 @@ describe('useAvailabilityCheck', () => {
 
   it('a second onBlur aborts the first so its result is dropped', async () => {
     let resolveFirst!: (value: { available: boolean; conflict: null }) => void
+    const secondRequest = Promise.withResolvers<AvailabilityResult>()
     mockCheckAvailability
       .mockReturnValueOnce(
         new Promise(resolve => {
           resolveFirst = resolve
         }),
       )
-      .mockResolvedValueOnce({ available: false, conflict: null })
+      .mockReturnValueOnce(secondRequest.promise)
 
     const { result } = renderHook(() => useAvailabilityCheck('topic-slug'))
 
     act(() => result.current.onBlur('first-slug'))
     act(() => result.current.onBlur('second-slug'))
 
-    await waitFor(() => expect(result.current.state.status).toBe('taken'))
+    await act(async () => {
+      secondRequest.resolve({ available: false, conflict: null })
+      await secondRequest.promise
+    })
+    expect(result.current.state.status).toBe('taken')
 
     // The first (aborted) request resolving must not overwrite the second result.
     await act(async () => {
