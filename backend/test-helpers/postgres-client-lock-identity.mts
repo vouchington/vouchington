@@ -70,16 +70,38 @@ export async function assertTestOwnedPostgresWait(
   holderProcessId: number,
   queryMarker: string,
 ): Promise<void> {
-  const { rows } = await observer.query<{ waiting: boolean }>(
+  const { rows } = await observer.query<{
+    database_matches: boolean
+    state: string | null
+    wait_event_type: string | null
+    wait_event: string | null
+    query_matches: boolean
+    lock_queued: boolean
+    blocking_process_ids: number[]
+  }>(
     `/* assertTestOwnedPostgresWait */
-      SELECT EXISTS (
-        SELECT 1 FROM pg_stat_activity
-        WHERE pid = $1 AND datname = current_database()
-          AND state = 'active' AND wait_event_type = 'Lock'
-          AND position($3 IN query) > 0 AND $2 = ANY(pg_blocking_pids(pid))
-      ) AS waiting`,
-    [waiterProcessId, holderProcessId, queryMarker],
+      SELECT datname = current_database() AS database_matches,
+        state, wait_event_type, wait_event,
+        position($2 IN query) > 0 AS query_matches,
+        EXISTS (SELECT 1 FROM pg_locks WHERE pid = $1 AND NOT granted) AS lock_queued,
+        pg_blocking_pids(pid) AS blocking_process_ids
+      FROM pg_stat_activity WHERE pid = $1`,
+    [waiterProcessId, queryMarker],
   )
-  if (!rows[0]?.waiting)
-    throw new Error('Native lock notice did not match the owned holder and real query')
+  const observed = rows[0]
+  // ProcSleep emits the native notice between WaitLatch calls. Its wait-event telemetry can
+  // be empty while the lock request is still queued; pg_locks and pg_blocking_pids prove that wait.
+  if (
+    !observed?.database_matches ||
+    observed.state !== 'active' ||
+    !observed.query_matches ||
+    !observed.lock_queued ||
+    !observed.blocking_process_ids.includes(holderProcessId)
+  )
+    throw new Error('Native lock notice did not match the owned holder and real query', {
+      cause: {
+        expected: { waiterProcessId, holderProcessId, queryMarker },
+        observed: observed ?? null,
+      },
+    })
 }
