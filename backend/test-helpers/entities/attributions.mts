@@ -1,23 +1,22 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 
 export async function setUserReferrerId(userId: string, referrerId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setUserReferrerId */
     UPDATE users SET referrer_user_id = ${referrerId} WHERE id = ${userId}
-  `),
+  `,
   )
 }
 
 export async function getUserReferrerId(userId: string): Promise<string | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getUserReferrerId */
     SELECT referrer_user_id
     FROM users
     WHERE id = ${userId}
-  `),
+  `,
   )
   return rows[0]?.referrer_user_id ?? null
 }
@@ -29,10 +28,10 @@ export async function insertSessionReferralAttribution(
   userId: string | null = null,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertSessionReferralAttribution */
     INSERT INTO session_referral_attributions (session_id, referrer_user_id, landing_url, user_id)
     VALUES (${sessionId}, ${referrerId}, ${landingUrl}, ${userId})
-  `),
+  `,
   )
 }
 
@@ -56,11 +55,11 @@ export async function insertReferralAttributionAt(
 ): Promise<string> {
   const id = fixtureId ?? uuidv7({ msecs: createdAt.getTime() })
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertReferralAttributionAt */
     INSERT INTO session_referral_attributions
       (id, session_id, referrer_user_id, landing_url, user_id, signed_up_at)
     VALUES (${id}, ${uuidv7()}, ${referrerId}, ${'https://example.com/'}, ${userId}, ${signedUpAt})
-  `),
+  `,
   )
   return id
 }
@@ -74,39 +73,39 @@ export async function insertAnonymousReferralAttributionForSessionAt(
 ): Promise<string> {
   const id = uuidv7({ msecs: createdAt.getTime() })
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertAnonymousReferralAttributionForSessionAt */
     INSERT INTO session_referral_attributions (id, session_id, referrer_user_id, landing_url)
     VALUES (${id}, ${sessionId}, ${referrerId}, ${'https://example.com/'})
-  `),
+  `,
   )
   return id
 }
 
 export async function clearReferralAttributionUserId(id: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* clearReferralAttributionUserId */
     UPDATE session_referral_attributions SET user_id = NULL WHERE id = ${id}
-  `),
+  `,
   )
 }
 
 export async function referralAttributionExistsById(id: string): Promise<boolean> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* referralAttributionExistsById */
     SELECT id FROM session_referral_attributions WHERE id = ${id}
-  `),
+  `,
   )
   return rows.length > 0
 }
 
 export async function getSessionReferralAttributions(sessionId: string) {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getSessionReferralAttributions */
     SELECT id, session_id, referrer_user_id, landing_url, user_id, signed_up_at
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}
     ORDER BY id ASC
-  `),
+  `,
   )
   return rows as Array<{
     id: string
@@ -120,12 +119,12 @@ export async function getSessionReferralAttributions(sessionId: string) {
 
 export async function getSessionReferralAttributionsWithUtm(sessionId: string) {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getSessionReferralAttributionsWithUtm */
     SELECT session_id, referrer_user_id, landing_url, user_id, utm_source, utm_medium, utm_campaign, utm_content
     FROM session_referral_attributions
     WHERE session_id = ${sessionId}
     ORDER BY id ASC
-  `),
+  `,
   )
   return rows as Array<{
     session_id: string
