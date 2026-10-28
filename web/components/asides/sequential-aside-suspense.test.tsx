@@ -1,42 +1,33 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { use } from 'react'
+import { describe, expect, it } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
 import { SequentialAsideSuspense } from './sequential-aside-suspense'
 
 describe('SequentialAsideSuspense', () => {
-  it('returns null for empty children', () => {
-    const { container } = render(<SequentialAsideSuspense>{[]}</SequentialAsideSuspense>)
-    expect(container).toBeEmptyDOMElement()
-  })
+  it('shows an aside skeleton until the first aside resolves', async () => {
+    const { promise, resolve } = Promise.withResolvers<void>()
+    function PendingAside() {
+      use(promise)
+      return <div>Resolved aside</div>
+    }
 
-  it('renders synchronous children immediately', () => {
-    render(
-      <SequentialAsideSuspense>
-        <div data-testid='aside-1'>First</div>
-        <div data-testid='aside-2'>Second</div>
-      </SequentialAsideSuspense>,
+    const { container } = await act(async () =>
+      render(
+        <SequentialAsideSuspense>
+          <PendingAside />
+        </SequentialAsideSuspense>,
+      ),
     )
-    expect(screen.getByTestId('aside-1')).toBeDefined()
-    expect(screen.getByTestId('aside-2')).toBeDefined()
-  })
 
-  it('renders a single child without error', () => {
-    render(
-      <SequentialAsideSuspense>
-        <div data-testid='single'>Only child</div>
-      </SequentialAsideSuspense>,
-    )
-    expect(screen.getByTestId('single')).toBeDefined()
-  })
+    expect(container.querySelector('[data-pw="skeleton"]')).not.toBeNull()
+    expect(screen.queryByText('Resolved aside')).toBeNull()
 
-  it('filters out falsy children', () => {
-    const showHidden = false as boolean
-    render(
-      <SequentialAsideSuspense>
-        <div data-testid='visible'>Visible</div>
-        {showHidden && <div data-testid='hidden'>Hidden</div>}
-      </SequentialAsideSuspense>,
-    )
-    expect(screen.getByTestId('visible')).toBeDefined()
-    expect(screen.queryByTestId('hidden')).toBeNull()
+    await act(async () => {
+      resolve()
+      await promise
+    })
+
+    expect(screen.getByText('Resolved aside')).toBeInTheDocument()
+    expect(container.querySelector('[data-pw="skeleton"]')).toBeNull()
   })
 })
