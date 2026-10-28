@@ -19,7 +19,6 @@ let disputedReviewId = ''
 let claimFormTopicSlug = ''
 let manualClaimTopicId = ''
 let manualClaimTopicSlug = ''
-let verificationTopicId = ''
 let verificationTopicSlug = ''
 let verificationClaimId = ''
 const verificationClaimEvidence = `Deterministic Playwright topic claim ${randomSuffix()}`
@@ -57,16 +56,14 @@ test.beforeAll(async () => {
     submittedAt: null,
   })
   verificationTopicSlug = `claim-verification-test-${suffix}`
-  verificationTopicId = (
-    await createTestTopic({
-      user: reviewer,
-      name: `Claim verification test topic ${suffix}`,
-      slug: verificationTopicSlug,
-      hostname: `claim-verification-${suffix}.voucha.ai`,
-    })
-  ).id
+  const verificationTopic = await createTestTopic({
+    user: reviewer,
+    name: `Claim verification test topic ${suffix}`,
+    slug: verificationTopicSlug,
+    hostname: `claim-verification-${suffix}.voucha.ai`,
+  })
   verificationClaimId = await insertTestTopicClaim({
-    topicId: verificationTopicId,
+    topicId: verificationTopic.id,
     claimantUserId: reviewer.id,
     claimedRole: 'Owner',
     evidence: verificationClaimEvidence,
@@ -180,7 +177,7 @@ test.describe('Topic claim form states', () => {
   test('domain verification exposes its backend failure', async ({ page }) => {
     await loginAsUser(page, reviewerId)
     await page.route(
-      `**/api/v1/topics/${verificationTopicId}/claims/${verificationClaimId}/domain-verification`,
+      `**/api/v1/topics/${verificationTopicSlug}/claims/${verificationClaimId}/domain-verification`,
       route =>
         route.fulfill({
           status: 422,
