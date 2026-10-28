@@ -73,7 +73,9 @@ describe('next.config', () => {
             default: { versions: { sharp: version } },
           }) as unknown as typeof import('sharp'),
       )
-      await expect(import('../next.config')).rejects.toThrow('requires sharp >=0.35.0')
+      await expect(
+        vi.importActual<typeof import('../next.config')>('../next.config'),
+      ).rejects.toThrow('requires sharp >=0.35.0')
     },
   )
 
@@ -89,7 +91,7 @@ describe('next.config', () => {
     await withSentryConfig.withImplementation(
       nextConfig => nextConfig,
       async () => {
-        const loaded = await import('../next.config')
+        const loaded = await vi.importActual<typeof import('../next.config')>('../next.config')
         expect(loaded.default(PHASE_PRODUCTION_SERVER)).toMatchObject({
           experimental: { useTypeScriptCli: false },
         })
