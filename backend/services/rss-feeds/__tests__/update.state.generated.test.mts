@@ -13,7 +13,7 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createHash, randomUUID } from 'node:crypto'
-import { insertRssFeedCrawl } from '../crawls.mts'
+import { persistRssFeedCrawlAndMetadata, searchRssFeedCrawls } from '../crawls.mts'
 import * as publicationLock from '@services/post-publication/lock'
 describe('update.generated (state)', () => {
   let sharedUser: PrivateUser
@@ -154,7 +154,7 @@ describe('update.generated (state)', () => {
     const updated = await getRssFeedById(feed.id)
     expect(updated!.is_discoverable).toBe(true)
   })
-  it('insertRssFeedCrawl records crawl with response_code and feed_data', async () => {
+  it('persists crawl response and feed data with metadata', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       user: sharedUser,
@@ -169,13 +169,14 @@ describe('update.generated (state)', () => {
     })
     const feedData = { title: 'Parsed Feed', items: [{ link: 'https://e.com/1', guid: 'g1' }] }
     const feedDataSha256 = createHash('sha256').update(JSON.stringify(feedData), 'utf8').digest()
-    const crawlId = await insertRssFeedCrawl({
-      rss_feed_id: feed.id,
-      response_code: 200,
-      feed_data: feedData,
-      feed_data_sha256: feedDataSha256,
+    await persistRssFeedCrawlAndMetadata({
+      rssFeedId: feed.id,
+      responseCode: 200,
+      feedData: feedData,
+      feedDataSha256: feedDataSha256,
+      headers: { etag: null, lastModified: null },
     })
-    expect(crawlId).toBeDefined()
+    const crawlId = (await searchRssFeedCrawls(feed.id, { limit: 1 })).results[0]!.id
     const crawl = await getRssFeedCrawlById(crawlId)
     expect(crawl).toBeDefined()
     expect(crawl!.response_code).toBe(200)

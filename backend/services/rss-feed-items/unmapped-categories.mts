@@ -12,7 +12,7 @@ import { registerRssCategoryIdentities } from './category-identities.mts'
 
 export type UnmappedCategoryStatus = 'pending' | 'rejected' | 'all'
 
-export type UnmappedCategory = {
+type UnmappedCategory = {
   category_text: string
   item_count: number
   rejected: boolean

@@ -13,7 +13,7 @@ const CHAPTERS_CONTENT_TYPES = 'application/json, application/*+json;q=0.9, */*;
 
 export { type PodcastChapter } from './chapters-normalize.mts'
 
-export type ChaptersSafeFetch = (
+type ChaptersSafeFetch = (
   initialUrl: Parameters<typeof safeFetch>[0],
   options?: Parameters<typeof safeFetch>[1],
 ) => Promise<Pick<Awaited<ReturnType<typeof safeFetch>>, 'body' | 'ok' | 'url'>>

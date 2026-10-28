@@ -29,9 +29,15 @@ async function insertRssFeedCrawl(params: {
 export async function insertTestRssFeedCrawl(params: {
   rssFeedId: string
   responseCode?: number
+  feedData?: Record<string, unknown> | null
+  feedDataSha256?: Buffer | null
+  redirectUrlId?: string | null
 }): Promise<string> {
   return insertRssFeedCrawl({
     rss_feed_id: params.rssFeedId,
     response_code: params.responseCode ?? 200,
+    feed_data: params.feedData,
+    feed_data_sha256: params.feedDataSha256,
+    redirect_url_id: params.redirectUrlId,
   })
 }

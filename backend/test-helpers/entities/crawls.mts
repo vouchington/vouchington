@@ -105,6 +105,7 @@ export async function insertTestCrawl(data: {
   markdown: string
   title?: string
   metaTags?: CrawlerHtmlStructuredObject
+  links?: CrawlerHtmlStructuredObject
   completedAt?: Date
   htmlSha256?: Buffer
   htmlSnapshotUploadedAt?: Date
@@ -131,6 +132,9 @@ export async function insertTestCrawl(data: {
   }
   if (data.metaTags !== undefined) {
     query.append(sql`, meta_tags`)
+  }
+  if (data.links !== undefined) {
+    query.append(sql`, links`)
   }
   if (data.htmlSha256 !== undefined) {
     query.append(sql`, html_sha256`)
@@ -165,6 +169,7 @@ export async function insertTestCrawl(data: {
   if (data.metaTags !== undefined) {
     query.append(sql`, ${JSON.stringify(data.metaTags)}`)
   }
+  if (data.links !== undefined) query.append(sql`, ${JSON.stringify(data.links)}`)
   if (data.htmlSha256 !== undefined) {
     query.append(sql`, ${data.htmlSha256}`)
   }

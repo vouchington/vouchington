@@ -42,7 +42,7 @@ export async function enqueueRssFeedItemCategorySnapshotReconciliationBestEffort
 }
 
 /** Exposes admission of the detached language jobs without delaying the row-returning caller. */
-export const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
+const enqueueRssFeedItemPostUpsertJobsWithCompletion = async (
   itemsToUpsert: RssFeedItemWithHash[],
   existingRows: RssFeedItemEnqueueRow[],
   upsertedRows: UpsertedRssFeedItemRow[],

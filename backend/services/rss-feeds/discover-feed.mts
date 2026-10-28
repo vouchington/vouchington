@@ -25,7 +25,7 @@ const FEED_TYPE_ORDER = [
   'application/json',
 ] as const
 
-export function extractFeedLinkFromCrawlLinks(
+function extractFeedLinkFromCrawlLinks(
   links: CrawlerHtmlStructuredObject | null | undefined,
   baseUrl: string,
 ): string | null {

@@ -6,7 +6,8 @@ import type { checkRssFeedCrawlable } from '../fetch-robots-check.mts'
 import { fetchRssFeed } from '../fetch.mts'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
-import { getLatestRssFeedCrawlForFeedWithOptions, insertRssFeedCrawl } from '../crawls.mts'
+import { getLatestRssFeedCrawlForFeedWithOptions } from '../crawls.mts'
+import { insertTestRssFeedCrawl } from '@voucha/test-helpers/entities/rss-feed-crawls'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
 
@@ -51,10 +52,10 @@ describe('fetch.conditional-get', () => {
       title: `Feed sha256-only ${random}`,
     })
     const [, fixtureContentSha256] = createMockFeedFixture(`sha256-only-${random}`)
-    await insertRssFeedCrawl({
-      rss_feed_id: feed.id,
-      response_code: 200,
-      feed_data_sha256: fixtureContentSha256,
+    await insertTestRssFeedCrawl({
+      rssFeedId: feed.id,
+      responseCode: 200,
+      feedDataSha256: fixtureContentSha256,
     })
 
     await expect(
@@ -131,11 +132,11 @@ describe('fetch.conditional-get', () => {
       last_fetched_at: new Date('2020-01-01T00:00:00.000Z'),
     })
     const [fixtureFeed, fixtureContentSha256] = createMockFeedFixture(`replay-304-${random}`)
-    await insertRssFeedCrawl({
-      rss_feed_id: feed.id,
-      response_code: 200,
-      feed_data: fixtureFeed,
-      feed_data_sha256: fixtureContentSha256,
+    await insertTestRssFeedCrawl({
+      rssFeedId: feed.id,
+      responseCode: 200,
+      feedData: fixtureFeed,
+      feedDataSha256: fixtureContentSha256,
     })
     mockCrawlerRss.mockResolvedValueOnce({
       responseCode: 304,

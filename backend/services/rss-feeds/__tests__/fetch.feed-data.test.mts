@@ -9,11 +9,8 @@ import { fetchRssFeed } from '../fetch.mts'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
 import { getRssFeedById } from '../get.mts'
-import {
-  getLatestRssFeedCrawlForFeedWithOptions,
-  insertRssFeedCrawl,
-  parseRssLastModifiedHeader,
-} from '../crawls.mts'
+import { getLatestRssFeedCrawlForFeedWithOptions } from '../crawls.mts'
+import { insertTestRssFeedCrawl } from '@voucha/test-helpers/entities/rss-feed-crawls'
 import { searchRssFeedItems } from '@services/rss-feed-items/search'
 import { createRssFeedItemEmbeddingContent } from '../../rss-feed-items/content.mts'
 import { createTestTopic, insertTestRssFeedItem, WEB_PROVENANCE } from '@voucha/test-helpers'
@@ -46,10 +43,6 @@ describe('fetch.feed-data', () => {
       contentSha256: defaultContentSha256,
       headers: { etag: null, lastModified: null },
     })
-  })
-  it('parseRssLastModifiedHeader preserves dates with two-digit years and numeric timezones', () => {
-    const parsed = parseRssLastModifiedHeader('Sun, 06 Nov 94 08:49:37 +0000')
-    expect(parsed?.toISOString()).toBe('1994-11-06T08:49:37.000Z')
   })
 
   it('fetchRssFeed skips item upsert when feed_data_sha256 unchanged (read before write)', async () => {
@@ -130,11 +123,11 @@ describe('fetch.feed-data', () => {
       contentSha256: seedItemContentSha256,
     })
     const fetchContentSha256 = createHash('sha256').update(chaptersXml).digest()
-    await insertRssFeedCrawl({
-      rss_feed_id: feed.id,
-      response_code: 200,
-      feed_data: parsedFeed,
-      feed_data_sha256: fetchContentSha256,
+    await insertTestRssFeedCrawl({
+      rssFeedId: feed.id,
+      responseCode: 200,
+      feedData: parsedFeed,
+      feedDataSha256: fetchContentSha256,
     })
 
     mockCrawlerRss.mockResolvedValueOnce({

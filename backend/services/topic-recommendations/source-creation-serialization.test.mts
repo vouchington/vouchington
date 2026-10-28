@@ -13,7 +13,7 @@ import {
 import { addUrl } from '@services/urls/upsert'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { getTopicByAny } from '@services/topics/get'
-import { createSourceInTransaction } from '../rss-feeds/create-source-helpers.mts'
+import { createRssFeedSource } from '../rss-feeds/create-source-helpers.mts'
 import { createInstanceInTransaction } from '../fediverse-instances/create-instance-helpers.mts'
 import { createTopicRecommendation } from './create-topic-recommendation.mts'
 import { approveTopicRecommendationInTransaction } from './approve-topic-recommendation.mts'
@@ -56,16 +56,16 @@ describe('source creation serializes hostname ownership before aliases', () => {
         async waitForLock => {
           const creating =
             kind === 'rss'
-              ? createSourceInTransaction(
-                  WEB_PROVENANCE,
-                  admin.id,
-                  url!.id,
+              ? createRssFeedSource({
+                  provenance: WEB_PROVENANCE,
+                  createdById: admin.id,
+                  rssFeedUrlId: url!.id,
                   hostnameId,
-                  `Source ${suffix}`,
-                  `source-${suffix}`,
-                  null,
-                  'article',
-                )
+                  topicName: `Source ${suffix}`,
+                  slug: `source-${suffix}`,
+                  feedTitle: null,
+                  feedType: 'article',
+                })
               : createInstanceInTransaction(
                   WEB_PROVENANCE,
                   admin.id,

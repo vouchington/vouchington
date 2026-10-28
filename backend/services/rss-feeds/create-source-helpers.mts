@@ -48,7 +48,7 @@ type CreateSourceWithRetryArgs = {
 }
 
 /** Creates a topic (type=rss_feed) and rss_feeds row in a transaction; returns null on unique violation. */
-export async function createSourceInTransaction(
+async function createSourceInTransaction(
   provenance: ContentProvenance,
   createdById: string | null,
   rssFeedUrlId: string,
