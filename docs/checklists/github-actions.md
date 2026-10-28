@@ -8,7 +8,7 @@ Enforced rules name their check; the check owns the detail. Judgment calls stay 
 
 ### Enforced
 
-- **Runner labels** — a closed label set keeps hosted-runner demand and architecture deliberate. `runner-policy.test.mts` (allowlist in `runner-policy-classify.mts`) and `build-web-targets-runner-parity.test.mts`.
+- **Runner labels** — a closed label set keeps hosted-runner demand and architecture deliberate. `.github/runner-policy.json` is checked by the released `vouchington runner-policy` command in static CI; `build-web-targets-runner-parity.test.mts` separately protects shared web build architecture.
 - **Pinned actions** — a commit SHA stops a re-pointed tag from silently changing what runs. no-mistakes `github-actions-pinned-hash`.
 - **Script expressions** — free-form event text interpolated into a script is code injection, so it travels through `env:`. `workflow-script-expressions.test.mts`.
 - **Checkout credentials** — a write-capable token must not stay in `.git` for later steps. `checkout-credentials.test.mts`.
@@ -28,7 +28,7 @@ Delete `docker-hub-mirror.test.mts`, `draft-event-triggers.test.mts`, or `local-
 
 ### Judgment
 
-- **Runner demand** — name the hosted label a new or changed job draws from, prefer the smallest that fits, and justify extra fan-out. Choose `ubuntu-slim` for `gh api`, prompt rendering, and aggregator jobs (no Docker, no `services:`, no Node/pnpm/backend setup); `ubuntu-latest` for Docker, `services:`, or Node/pnpm/backend setup; `ubuntu-24.04-arm` for native ARM64 work matching production (image builds, native-binary smoke tests) and every job sharing a restored web build. `runner-policy.test.mts` pins which jobs. Run `node ci/check-live-workflow-topology.mts` after runner or timeout changes; `pnpm run no-mistakes` alone does not check it.
+- **Runner demand** — name the hosted label a new or changed job draws from, prefer the smallest that fits, and justify extra fan-out. Choose `ubuntu-slim` for `gh api`, prompt rendering, and aggregator jobs (no Docker, no `services:`, no Node/pnpm/backend setup); `ubuntu-latest` for Docker, `services:`, or Node/pnpm/backend setup; `ubuntu-24.04-arm` for native ARM64 work matching production (image builds, native-binary smoke tests) and every job sharing a restored web build. Update `.github/runner-policy.json` when runner placement changes. Run `node ci/check-live-workflow-topology.mts` after runner or timeout changes; `pnpm run no-mistakes` alone does not check it.
 - **Host ports** — let Docker allocate a host port unless a workflow must coordinate one. In that case use the published vouchington-tooling allocator immediately before binding; a caller that can choose a new port may reallocate once on `EADDRINUSE`.
 - **Deploys stay decoupled** — no cross-workflow deploy-order wait or poll; only api and workers share a deploy unit. Application-owned schema follows [One current contract](../../AGENTS.md), not expand/contract. See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
 - **Auto Harness admission** — Harness workflows keep only per-target concurrency, which prevents duplicate sessions for one target. The scheduler, not GitHub, bounds running sessions; a global GitHub concurrency group would serialize short jobs without limiting them. See [`harness-dispatch.yml`](https://github.com/vouchington/vouchington-tooling/blob/main/.github/workflows/harness-dispatch.yml).

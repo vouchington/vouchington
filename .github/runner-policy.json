@@ -1,0 +1,46 @@
+{
+  "allowedLabels": ["ubuntu-slim", "ubuntu-latest", "ubuntu-24.04-arm"],
+  "requiredJobs": [
+    { "workflow": "static.yml", "job": "static", "runsOn": "ubuntu-latest" },
+    { "workflow": "backend.yml", "job": "backend", "runsOn": "ubuntu-latest" },
+    { "workflow": "web.yml", "job": "web", "runsOn": "ubuntu-latest" },
+    {
+      "workflow": "cloudflare-worker.yml",
+      "job": "cloudflare-worker",
+      "runsOn": "ubuntu-latest"
+    },
+    { "workflow": "lambdas.yml", "job": "lambdas", "runsOn": "ubuntu-latest" },
+    { "workflow": "tooling.yml", "job": "tooling", "runsOn": "ubuntu-latest" }
+  ],
+  "exactLabelJobs": [
+    {
+      "label": "ubuntu-24.04-arm",
+      "jobs": [
+        "checks-static.yml#static-lambdas",
+        "checks-static.yml#static-web",
+        "publish-backend-images.yml#build",
+        "publish-web-images.yml#build",
+        "tests-playwright-credentialed.yml#playwright-credentialed-tests",
+        "tests-playwright.yml#playwright-tests",
+        "tests-playwright.yml#shards",
+        "tests-web-api.yml#prep",
+        "tests-web-api.yml#web-api-tests",
+        "tests-web-integration.yml#prep",
+        "tests-web-integration.yml#web-integration-tests",
+        "tests-web.yml#prep",
+        "tests-web.yml#web-tests"
+      ]
+    }
+  ],
+  "restrictedLabels": [
+    {
+      "label": "ubuntu-slim",
+      "forbidServices": true,
+      "forbiddenActions": {
+        "prefixes": ["docker/", "vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@"],
+        "contains": ["/docker/"],
+        "exact": ["./.github/actions/setup-backend"]
+      }
+    }
+  ]
+}

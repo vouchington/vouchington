@@ -380,6 +380,24 @@ checks:
         [pnpm, exec, tsc, --noEmit, --incremental, --project, integration-tests/tsconfig.json]
       fileArgs: none
       always: true
+    - name: workflow-runner-policy
+      command:
+        [
+          pnpm,
+          exec,
+          vouchington,
+          runner-policy,
+          --config,
+          .github/runner-policy.json,
+          --root,
+          .github/workflows,
+        ]
+      fileArgs: none
+      include:
+        - .github/runner-policy.json
+        - '.github/workflows/**'
+        - package.json
+        - pnpm-lock.yaml
     # CI-only static gates (#3015): `check` runs the repository rules, but impacted-checks would
     # otherwise list only typechecks and tests. Each command mirrors its owning workflow step.
     - name: dependency-cruise-web

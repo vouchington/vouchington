@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { ALLOWED_LABELS } from './runner-policy-classify.mts'
+import runnerPolicy from '../runner-policy.json' with { type: 'json' }
 
-// The runner allowlist owns the versioned ARM label; read it instead of pinning a second literal.
-const armLabel = ALLOWED_LABELS.find(label => label.endsWith('-arm'))
+// Read the configured ARM label instead of pinning a second literal.
+const armLabel = runnerPolicy.exactLabelJobs.find(({ label }) => label.endsWith('-arm'))?.label
 const workflow = readFileSync('.github/workflows/tests-web-api.yml', 'utf8')
 const parsedWorkflow = load(workflow) as { jobs?: Record<string, { 'runs-on'?: string }> }
 
