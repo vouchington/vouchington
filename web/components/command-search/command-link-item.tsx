@@ -10,7 +10,7 @@ import { ExternalLink } from '@/components/ui/external-link'
 
 type InteractionKind = 'keyboard' | 'plain' | 'modified'
 
-export type CommandItemLabel =
+type CommandItemLabel =
   | { kind: 'ui-text'; text: string }
   | { kind: 'post-content'; content: PostContentTextValue; fallback: string }
   | {

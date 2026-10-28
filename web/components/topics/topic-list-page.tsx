@@ -34,7 +34,7 @@ export interface TopicListLoadResult {
   nextPageParams?: Record<string, string | number | boolean | undefined>
 }
 
-export type TopicListLoader = (
+type TopicListLoader = (
   options: TopicListLoadOptions,
 ) => Promise<TopicsResponseBody | TopicListLoadResult>
 

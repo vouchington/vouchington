@@ -18,8 +18,6 @@ import type { CommunityModerationReportsResponseBody } from '@/types/api-respons
 export type {
   MemberFlatModerationReportsResponse,
   MemberModerationReport,
-  ModerationReportClusterIndicators,
-  ModerationReportsPageInfo,
   ModerationReportResolutionResponse,
   ModerationReportStatus,
   ReportJudgementRunResponse,

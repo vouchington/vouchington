@@ -1,7 +1,7 @@
+import type { StaffFlatModerationReportsResponse } from '@/lib/api/client/reports'
 import type {
   AdminClusteredModerationReportsResponse,
   AdminModerationReport,
-  AdminModerationReportsResponse,
 } from '@/components/admin/reports-client'
 export const report: AdminModerationReport = {
   id: 'report-1',
@@ -74,7 +74,7 @@ export const banEvasionReport: AdminModerationReport = {
   },
 }
 
-export const data: AdminModerationReportsResponse = {
+export const data: StaffFlatModerationReportsResponse = {
   results: [
     report,
     {

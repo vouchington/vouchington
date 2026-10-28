@@ -4,22 +4,39 @@ import type {
   MemberFlatModerationReportsResponse,
   StaffClusteredModerationReportsResponse,
   StaffFlatModerationReportsResponse,
+  StaffModerationReport,
 } from '../client/reports-contracts'
-import type {
-  CommunityModerationReportsResponse,
-  ServerClusteredModerationReportsResponse,
-  ServerGetModerationReportsOptions,
-  ServerModerationReportsResponse,
-} from '../../moderation-report-types'
-export type {
-  CommunityModerationReport,
-  CommunityModerationReportsResponse,
-  ModerationReport,
-  ModerationReportCluster,
-  ModerationReportDuplicateCluster,
-  ServerModerationReportClusterIndicators,
-  ServerModerationReportReasonBreakdown,
-} from '../../moderation-report-types'
+import type { CommunityBanEvasionContext } from '@/types/api-responses'
+
+type CommunityModerationReport = Omit<
+  StaffModerationReport,
+  'entity_type' | 'reporter_user_id' | 'reporter_username'
+> & {
+  entity_type: 'post' | 'comment' | 'user'
+  community_ban_evasion?: CommunityBanEvasionContext | null
+}
+
+interface CommunityModerationReportsResponse {
+  reports: CommunityModerationReport[]
+  page_info?: import('@/types/api-responses').PageInfo
+}
+
+type ServerModerationReportsResponse =
+  | StaffFlatModerationReportsResponse
+  | MemberFlatModerationReportsResponse
+type ServerClusteredModerationReportsResponse = StaffClusteredModerationReportsResponse
+
+interface ServerGetModerationReportsOptions {
+  searchParams?: {
+    limit?: number
+    after?: string
+    before?: string
+    status?: string
+    sort?: 'severity' | 'most_reported' | 'created_at_asc' | 'created_at_desc'
+    cluster?: 'entity'
+  }
+  headers?: Record<string, string>
+}
 
 const getPendingModerationReportsCached = cache(
   async <

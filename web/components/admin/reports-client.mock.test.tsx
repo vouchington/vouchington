@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
+import type { StaffFlatModerationReportsResponse } from '@/lib/api/client/reports'
 
 const mockNav = createNavMock()
 const {
@@ -57,11 +58,7 @@ vi.mock(
     }) as unknown as typeof import('@/components/ui/select'),
 )
 
-import {
-  ReportsClient,
-  type AdminModerationReport,
-  type AdminModerationReportsResponse,
-} from './reports-client'
+import { ReportsClient, type AdminModerationReport } from './reports-client'
 
 describe('ReportsClient', () => {
   beforeEach(() => {
@@ -221,7 +218,7 @@ function makeReportsResponse(
     status?: 'pending' | 'reviewed' | 'actioned' | 'dismissed'
     judgement?: AdminModerationReport['judgement']
   } & Partial<AdminModerationReport> = {},
-): AdminModerationReportsResponse {
+): StaffFlatModerationReportsResponse {
   return {
     results: [makeReport(overrides)],
     page_info: {

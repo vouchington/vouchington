@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 
-export interface OnSuccessOptions {
+interface OnSuccessOptions {
   description?: string
 }
 

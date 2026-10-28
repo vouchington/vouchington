@@ -2,7 +2,7 @@ import { fireEvent, render, screen, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { type ViewModeDropdownOption, ViewModeDropdown } from './view-mode-dropdown'
+import { ViewModeDropdown } from './view-mode-dropdown'
 
 vi.mock(
   import('@/components/ui/dropdown-menu'),
@@ -42,6 +42,7 @@ vi.mock(
 describe('ViewModeDropdown', () => {
   it('keeps its trigger disabled until hydration enables it', async () => {
     type View = 'card' | 'compact'
+    type ViewModeOptions = Parameters<typeof ViewModeDropdown<View>>[0]['options']
     const props = {
       value: 'card' as View,
       onValueChange: vi.fn<(value: View) => void>(),
@@ -58,7 +59,7 @@ describe('ViewModeDropdown', () => {
           icon: 'compact',
           dataPw: 'post-view-toggle-compact',
         },
-      ] as [ViewModeDropdownOption<View>, ViewModeDropdownOption<View>],
+      ] as ViewModeOptions,
     }
     const html = renderToString(<ViewModeDropdown {...props} />)
 

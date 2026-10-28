@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Post } from '@/types/posts'
 import type { Topic } from '@/types/topics'
 import { EMPTY_RESULTS } from '../../command-search-data'
-import type { CommandItemLabel } from '../command-link-item'
+import type { CommandLinkItem } from '../command-link-item'
+type CommandItemLabel = Parameters<typeof CommandLinkItem>[0]['label']
 import { ResultGroups } from '../result-groups'
 
 vi.mock(

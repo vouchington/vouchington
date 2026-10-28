@@ -15,7 +15,7 @@ import { FILTER_CONTROL_HEIGHT } from './filter-control-height'
 import { useDidHydrate } from '@/hooks/use-did-hydrate'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-export interface ViewModeDropdownOption<T extends string> {
+interface ViewModeDropdownOption<T extends string> {
   label: string
   value: T
   icon: 'card' | 'compact'
