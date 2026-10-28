@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import { getPostClearanceWorkLimit } from './work-limits.mts'
 import {
+  AUTOMATED_POST_MODERATION_SOURCES,
   POST_MODERATION_POLICY_REVISION,
   type AutomatedPostModerationSource,
 } from './moderation-ledger-types.mts'
@@ -12,7 +13,11 @@ export type PostModerationReconciliationCursor = {
 }
 
 export type PostModerationReconciliation = {
-  due: Array<{ post_id: string; source: AutomatedPostModerationSource }>
+  due: Array<{
+    post_id: string
+    version_id: string
+    source: AutomatedPostModerationSource
+  }>
   exhausted_post_ids: string[]
   hasMore: boolean
   nextCursor?: PostModerationReconciliationCursor
@@ -38,45 +43,49 @@ export async function reconcilePostModerationWork(
   }>(
     `/* reconcilePostModerationWork */
       WITH candidates AS MATERIALIZED (
-        SELECT work.version_id, work.source, version.post_id, version.deadline_at,
+        SELECT version.id AS version_id, source.source::post_moderation_sources AS source,
+          version.post_id, version.deadline_at,
           COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond')) AS through_id
-        FROM post_moderation_work_items work
-        JOIN post_moderation_versions version ON version.id = work.version_id
+        FROM post_moderation_versions version
         JOIN posts post ON post.id = version.post_id
           AND post.llm_moderation_content_sha256 = version.content_sha256
+          AND post.deleted_at IS NULL
+        CROSS JOIN unnest($7::text[]) AS source(source)
         WHERE version.policy_revision = $2
           AND version.id < COALESCE($6::uuid, fn_min_uuidv7(CURRENT_TIMESTAMP + INTERVAL '1 millisecond'))
-          AND ($4::uuid IS NULL OR (work.version_id, work.source) > ($4::uuid, $5::post_moderation_sources))
+          AND ($4::uuid IS NULL OR (version.id, source.source::post_moderation_sources)
+            > ($4::uuid, $5::post_moderation_sources))
           AND ($3::uuid[] IS NULL OR post.id = ANY($3::uuid[]))
-          AND work.completed_at IS NULL
-          AND (version.deadline_at <= CURRENT_TIMESTAMP OR (
-            post.deleted_at IS NULL AND work.available_at <= CURRENT_TIMESTAMP
-            AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= CURRENT_TIMESTAMP)
-          ))
-        ORDER BY work.version_id, work.source
+          AND NOT EXISTS (
+            SELECT 1 FROM post_moderation_dispositions disposition
+            WHERE disposition.version_id = version.id
+              AND disposition.source = source.source::post_moderation_sources
+          )
+        ORDER BY version.id, source.source::post_moderation_sources
         LIMIT $1 + 1
-        FOR UPDATE OF work SKIP LOCKED
       ), selected AS MATERIALIZED (
         SELECT * FROM candidates ORDER BY version_id, source LIMIT $1
-      ), expired_work AS (
-        UPDATE post_moderation_work_items work
-        SET completed_at = CURRENT_TIMESTAMP, leased_at = NULL,
-          lease_token = NULL, lease_expires_at = NULL
-        FROM selected
-        WHERE work.version_id = selected.version_id AND work.source = selected.source
-          AND selected.deadline_at <= CURRENT_TIMESTAMP
-        RETURNING work.version_id, work.source, selected.post_id, selected.through_id
       ), exhausted_dispositions AS (
         INSERT INTO post_moderation_dispositions (
-          version_id, source, disposition, reason_code, evidence
+          version_id, source, attempt_id, disposition, reason_code, evidence
         )
-        SELECT version_id, source, 'incomplete', 'automation_unavailable', '{}'::jsonb
-        FROM expired_work RETURNING version_id
+        SELECT selected.version_id, selected.source, attempt.id, 'incomplete',
+          'automation_unavailable', '{}'::jsonb
+        FROM selected
+        JOIN post_moderation_attempts attempt
+          ON attempt.version_id = selected.version_id AND attempt.source = selected.source
+        WHERE selected.deadline_at <= CURRENT_TIMESTAMP
+        ORDER BY attempt.id ASC NULLS LAST
+        ON CONFLICT (attempt_id) DO NOTHING
+        RETURNING version_id, source
       ), continuation AS (
         SELECT * FROM selected WHERE (SELECT count(*) FROM candidates) > $1
         ORDER BY version_id DESC, source DESC LIMIT 1
       )
-      SELECT 'exhausted'::text AS row_kind, post_id, version_id, source, through_id FROM expired_work
+      SELECT 'exhausted'::text AS row_kind, selected.post_id, selected.version_id, selected.source,
+        selected.through_id
+      FROM selected
+      JOIN exhausted_dispositions USING (version_id, source)
       UNION ALL
       SELECT 'due'::text, post_id, version_id, source, through_id FROM selected
         WHERE deadline_at > CURRENT_TIMESTAMP
@@ -89,14 +98,16 @@ export async function reconcilePostModerationWork(
       cursor?.afterVersionId ?? null,
       cursor?.afterSource ?? null,
       throughId,
+      [...AUTOMATED_POST_MODERATION_SOURCES],
     ],
   )
   const due: PostModerationReconciliation['due'] = []
   const exhaustedPostIds = new Set<string>()
   let nextCursor: PostModerationReconciliationCursor | undefined
   for (const row of rows) {
-    if (row.row_kind === 'due') due.push({ post_id: row.post_id, source: row.source })
-    else if (row.row_kind === 'exhausted') exhaustedPostIds.add(row.post_id)
+    if (row.row_kind === 'due') {
+      due.push({ post_id: row.post_id, version_id: row.version_id, source: row.source })
+    } else if (row.row_kind === 'exhausted') exhaustedPostIds.add(row.post_id)
     else
       nextCursor = {
         afterVersionId: row.version_id,

@@ -24,32 +24,27 @@ describe('enqueueCreatePostModeration', () => {
     await openAiModerationQueue.obliterate({ force: true })
   })
 
-  it('enqueues one attempt with the replacement key in the moderation deduplication id', async () => {
-    const postId = randomUUID()
-    const deduplicationKey = `${'a'.repeat(64)}_123`
+  it('enqueues one job whose id is the version and source', async () => {
+    const versionId = randomUUID()
+    const enqueued = await enqueueCreatePostModeration(versionId)
+    const job = await readEnqueuedJob(openAiModerationQueue, enqueued)
 
-    await enqueueCreatePostModeration(postId, { deduplicationKey })
-
-    const waiting = await readAllQueueJobs(openAiModerationQueue)
-    const job = waiting.find(
-      item =>
-        item.name === OPENAI_MODERATION_POST_JOB.name &&
-        (item.data as { id?: string }).id === postId,
-    )
-    expect(job).toBeDefined()
-    expect(job!.opts).toMatchObject({
-      attempts: 1,
-      priority: 10,
-      ordering: {
-        key: 'openai-moderation',
-        concurrency: 5,
-        rateLimit: { max: 10, duration: 1000 },
-      },
-      deduplication: {
-        id: `post_moderation_${postId}_${deduplicationKey}`,
-        mode: 'debounce',
+    expect(job).toMatchObject({
+      id: `${versionId}__openai_omni`,
+      name: OPENAI_MODERATION_POST_JOB.name,
+      data: { versionId },
+      opts: {
+        attempts: 3,
+        priority: 10,
+        backoff: { type: 'exponential', delay: 60_000, jitter: 0.2 },
+        ordering: {
+          key: 'openai-moderation',
+          concurrency: 5,
+          rateLimit: { max: 10, duration: 1000 },
+        },
       },
     })
+    await expect(enqueueCreatePostModeration(versionId)).resolves.toBeNull()
   })
 })
 

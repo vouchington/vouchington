@@ -1,9 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { enqueueCreatePostEmbedding } from '@queues/bedrock-embeddings/enqueues'
-import { enqueueCreatePostModeration } from '@queues/openai-moderation/enqueues'
-import { enqueueSpamDetection } from '@queues/moderation-signals/enqueues'
-import { resetPostClearance } from '@services/post-clearance'
+import { admitAutomatedPostModeration, resetPostClearance } from '@services/post-clearance'
 import sql from 'sql-template-strings'
 import { createPostTextEmbeddingContent, createPostModerationContent } from './content.mts'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
@@ -14,28 +12,16 @@ export async function updateStoryPostAgentResult(
   aiSummaryMarkdown: string,
 ): Promise<void> {
   await using query = await beginTransaction()
-  const moderationUpdate = await updatePostInTransaction()
+  const updated = await updatePostInTransaction()
   await query.commit()
-  if (!moderationUpdate) return
+  if (!updated) return
 
   // Re-enqueue downstream workers so they pick up the new ai_summary_markdown content.
-  await Promise.all([
-    enqueueCreatePostEmbedding(postId),
-    enqueueCreatePostModeration(postId, {
-      deduplicationKey: moderationUpdate.moderationDeduplicationKey,
-    }),
-    enqueueSpamDetection(postId, {
-      contentSha256: moderationUpdate.moderationContentSha,
-      deduplicationKey: moderationUpdate.moderationDeduplicationKey,
-    }),
-  ])
+  await Promise.all([enqueueCreatePostEmbedding(postId), admitAutomatedPostModeration(postId)])
 
   await invalidate.posts(postId)
 
-  async function updatePostInTransaction(): Promise<{
-    moderationContentSha: Buffer
-    moderationDeduplicationKey: string
-  } | null> {
+  async function updatePostInTransaction(): Promise<boolean> {
     await lockPostPublication(query, postId)
     const { rows: postRows } = await query<{
       title: string | null
@@ -68,7 +54,7 @@ export async function updateStoryPostAgentResult(
       FOR UPDATE
     `)
     const post = postRows[0]
-    if (!post) return null
+    if (!post) return false
     const currentTitle = post.title ?? ''
     const currentMarkdown = post.markdown ?? ''
     const embeddingContentSha = createPostTextEmbeddingContent({
@@ -84,23 +70,19 @@ export async function updateStoryPostAgentResult(
       ai_summary_markdown: aiSummaryMarkdown,
       images: post.images ?? [],
     }).content_sha256
-    const { rows } = await query<{ updated_at: Date }>(sql`/* updateStoryPostAgentResult */
+    const { rows } = await query<{ id: string }>(sql`/* updateStoryPostAgentResult */
     UPDATE posts
     SET ai_summary_markdown = ${aiSummaryMarkdown},
         bedrock_nova_multimodal_v1_content_sha256 = ${embeddingContentSha},
         llm_moderation_content_sha256 = ${moderationContentSha}
     WHERE id = ${postId} AND post_type = 'story'
-    RETURNING updated_at`)
-    const updatedPost = rows[0]
-    if (!updatedPost) return null
+    RETURNING id`)
+    if (!rows[0]) return false
     await resetPostClearance(postId, null, { query })
     await recordPostPublicationChange(query, {
       scope: { type: 'post', postId },
       reason: 'post_content_reset',
     })
-    return {
-      moderationContentSha,
-      moderationDeduplicationKey: `${moderationContentSha.toString('hex')}_${updatedPost.updated_at.getTime()}`,
-    }
+    return true
   }
 }

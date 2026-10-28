@@ -20,10 +20,6 @@ export async function recordTestPostModerationDisposition(input: {
       SELECT id, llm_moderation_content_sha256, '2026-09-09.1' FROM current_post
       ON CONFLICT (post_id, content_sha256, policy_revision) DO UPDATE SET post_id = EXCLUDED.post_id
       RETURNING id
-    ), work AS (
-      INSERT INTO post_moderation_work_items (version_id, source)
-      SELECT version.id, ${input.source}::post_moderation_sources FROM version
-      ON CONFLICT (version_id, source) DO NOTHING
     )
     INSERT INTO post_moderation_dispositions (version_id, source, disposition, reason_code, evidence)
     SELECT version.id, ${input.source}::post_moderation_sources,
@@ -240,32 +236,6 @@ export async function setPostOpenAIModerationResultsNoCategoryKey(
     disposition: flagged ? 'review' : 'pass',
     reasonCode: flagged ? 'provider_flagged' : 'provider_pass',
   })
-}
-
-export async function getTestPostModerationRetryDelayMinutes(
-  postId: string,
-  source: TestModerationSource,
-): Promise<number | null> {
-  const { rows } = await read<{
-    retry_minutes: string
-  }>(sql`/* getTestPostModerationRetryDelayMinutes */
-    SELECT EXTRACT(EPOCH FROM (work.available_at - version.created_at)) / 60 AS retry_minutes
-    FROM post_moderation_work_items work
-    JOIN post_moderation_versions version ON version.id = work.version_id
-    WHERE version.post_id = ${postId} AND work.source = ${source}::post_moderation_sources
-  `)
-  return rows[0] ? Number(rows[0].retry_minutes) : null
-}
-
-export async function makeTestPostModerationWorkAvailable(
-  versionId: string,
-  source: TestModerationSource,
-): Promise<void> {
-  await write(sql`/* makeTestPostModerationWorkAvailable */
-    UPDATE post_moderation_work_items
-    SET available_at = CURRENT_TIMESTAMP
-    WHERE version_id = ${versionId} AND source = ${source}::post_moderation_sources
-  `)
 }
 
 export async function expireTestPostModerationVersion(versionId: string): Promise<void> {

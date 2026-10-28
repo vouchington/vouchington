@@ -54,11 +54,7 @@ export const backgroundWorkRegistryEntries9 = {
     label: 'Post clearance',
     maxValues: postClearanceWorkMaxValues,
     descriptions: {
-      reconciliation_batch_size:
-        'Maximum due and expired moderation work items per reconciliation run.',
-      attempt_lease_minutes: 'Attempt lease minutes for background processing.',
-      first_retry_minutes: 'First retry minutes for background processing.',
-      later_retry_minutes: 'Later retry minutes for background processing.',
+      reconciliation_batch_size: 'Maximum current moderation versions per reconciliation page.',
     },
   }),
   'vote-weight-work-config': defineBoundedWorkNamespace({

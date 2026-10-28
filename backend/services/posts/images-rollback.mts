@@ -4,6 +4,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
 import {
+  admitAutomatedPostModeration,
   ensureCurrentPostModerationVersion,
   restorePostClearanceStatus,
   type ClearanceStatus,
@@ -30,6 +31,7 @@ export async function rollbackPostImages(
   ].toSorted()
   await using query = await beginTransaction()
   await lockImageAssetAdmission(deliveryImageIds, query)
+  let ensuredCurrentVersion = false
   async function rollbackImagesInTransaction(query: TransactionQuery) {
     const imageIds = [
       ...new Set([...rollback.currentImages, ...rollback.images].map(image => image.image_id)),
@@ -74,7 +76,10 @@ export async function rollbackPostImages(
       ) ||
       post.latest_clearance_change_id !== rollback.currentLatestClearanceChangeId
     ) {
-      if (post) await ensureCurrentPostModerationVersion(postId, { query })
+      if (post) {
+        await ensureCurrentPostModerationVersion(postId, { query })
+        ensuredCurrentVersion = true
+      }
       return false
     }
 
@@ -88,6 +93,7 @@ export async function rollbackPostImages(
     )
     if (!postImagesEqual(currentImages, rollback.currentImages)) {
       await ensureCurrentPostModerationVersion(postId, { query })
+      ensuredCurrentVersion = true
       return false
     }
 
@@ -155,6 +161,7 @@ export async function rollbackPostImages(
   }
   const result = await rollbackImagesInTransaction(query)
   await query.commit()
+  if (ensuredCurrentVersion) await admitAutomatedPostModeration(postId)
   if (result) {
     await repairFailedImageDeliveryMutation({ postIds: [postId], imageIds: deliveryImageIds })
   }

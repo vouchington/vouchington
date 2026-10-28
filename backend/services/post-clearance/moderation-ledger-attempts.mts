@@ -1,13 +1,18 @@
-import { getPostClearanceWorkLimit } from './work-limits.mts'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import type {
-  AutomatedPostModerationSource,
-  PostModerationDisposition,
+import onError from '@modules/on-error'
+import { enqueueCreatePostModeration } from '@queues/openai-moderation/enqueues'
+import { enqueueSpamDetection } from '@queues/moderation-signals/enqueues'
+import {
+  type AutomatedPostModerationSource,
+  AUTOMATED_POST_MODERATION_SOURCES,
+  type PostModerationDisposition,
+  POST_MODERATION_POLICY_REVISION,
 } from './moderation-ledger-types.mts'
 import {
   ensureCurrentPostModerationVersion,
   recordPostModerationDisposition,
+  type PostModerationVersion,
 } from './moderation-ledger-versions.mts'
 
 export type PostModerationAttempt = {
@@ -16,7 +21,6 @@ export type PostModerationAttempt = {
   post_id: string
   source: AutomatedPostModerationSource
   attempt_number: number
-  lease_token: string
   deadline_at: Date
   content_sha256: Buffer
 }
@@ -25,54 +29,58 @@ export async function beginPostModerationAttempt(
   postId: string,
   source: AutomatedPostModerationSource,
 ): Promise<PostModerationAttempt | null> {
-  const leaseMinutes = getPostClearanceWorkLimit('attempt_lease_minutes')
-  await using transaction = await beginTransaction()
-  const version = await ensureCurrentPostModerationVersion(postId, { query: transaction })
-  const { rows } = await transaction<PostModerationAttempt>(
-    `/* beginPostModerationAttempt */
-      WITH claimed_work AS (
-        UPDATE post_moderation_work_items work
-        SET leased_at = CURRENT_TIMESTAMP,
-          lease_token = uuidv7(),
-          lease_expires_at = LEAST($3, CURRENT_TIMESTAMP + $4::integer * INTERVAL '1 minute'),
-          generation = generation + 1,
-          attempt_count = attempt_count + 1
-        WHERE work.version_id = $1
-          AND work.source = $2::post_moderation_sources
-          AND work.completed_at IS NULL
-          AND work.available_at <= CURRENT_TIMESTAMP
-          AND (work.lease_expires_at IS NULL OR work.lease_expires_at <= CURRENT_TIMESTAMP)
-          AND CURRENT_TIMESTAMP < $3
-          AND (
-            SELECT count(*)
-            FROM post_moderation_attempts attempt
-            WHERE attempt.version_id = work.version_id
-              AND attempt.source = work.source
-          ) < 3
-        RETURNING work.version_id, work.source, work.lease_token
-      ),
-      inserted_attempt AS (
-        INSERT INTO post_moderation_attempts (
-          version_id, source, attempt_number, lease_token
-        )
-        SELECT claimed_work.version_id, claimed_work.source,
-          1 + (
-            SELECT count(*)
-            FROM post_moderation_attempts prior
-            WHERE prior.version_id = claimed_work.version_id
-              AND prior.source = claimed_work.source
-          ),
-          claimed_work.lease_token
-        FROM claimed_work
-        RETURNING id, version_id, source, attempt_number, lease_token
-      )
-      SELECT attempt.id, attempt.version_id, version.post_id, attempt.source,
-        attempt.attempt_number, attempt.lease_token, version.deadline_at, version.content_sha256
-      FROM inserted_attempt attempt
-      JOIN post_moderation_versions version ON version.id = attempt.version_id`,
-    [version.id, source, version.deadline_at, leaseMinutes],
+  const attempt = await loadCommittedPostModerationAttempt(postId, source)
+  if (!attempt) return null
+  await enqueueCommittedPostModerationAttempt(attempt.version_id, source)
+  return attempt
+}
+
+/** Commits the current version and both automated attempts, then enqueues one job per source. */
+export async function admitAutomatedPostModeration(postId: string): Promise<void> {
+  const version = await commitCurrentPostModerationVersion(postId)
+  await Promise.all(
+    AUTOMATED_POST_MODERATION_SOURCES.map(source =>
+      enqueueCommittedPostModerationAttempt(version.id, source),
+    ),
   )
-  await transaction.commit()
+}
+
+/** Re-enqueues a committed version. The sweep uses this after a lost enqueue; failures retry the sweep. */
+export function enqueuePostModerationRecovery(
+  versionId: string,
+  source: AutomatedPostModerationSource,
+): Promise<unknown> {
+  if (source === 'openai_omni') return enqueueCreatePostModeration(versionId)
+  return enqueueSpamDetection(versionId)
+}
+
+/**
+ * Primary read for a job start. Returns nothing when the version is gone, no longer current,
+ * or that source already has a disposition, so the provider is not called again.
+ */
+export async function readCurrentAutomatedPostModerationAttempt(
+  versionId: string,
+  source: AutomatedPostModerationSource,
+): Promise<PostModerationAttempt | null> {
+  const { rows } = await write<PostModerationAttempt>(
+    `/* readCurrentAutomatedPostModerationAttempt */
+      SELECT attempt.id, attempt.version_id, version.post_id, attempt.source,
+        attempt.attempt_number, version.deadline_at, version.content_sha256
+      FROM post_moderation_attempts attempt
+      JOIN post_moderation_versions version ON version.id = attempt.version_id
+      JOIN posts post ON post.id = version.post_id
+        AND post.deleted_at IS NULL
+        AND post.llm_moderation_content_sha256 = version.content_sha256
+      WHERE attempt.version_id = $1
+        AND attempt.source = $2::post_moderation_sources
+        AND version.policy_revision = $3
+        AND NOT EXISTS (
+          SELECT 1 FROM post_moderation_dispositions disposition
+          WHERE disposition.version_id = attempt.version_id
+            AND disposition.source = attempt.source
+        )`,
+    [versionId, source, POST_MODERATION_POLICY_REVISION],
+  )
   return rows[0] ?? null
 }
 
@@ -85,9 +93,39 @@ export async function completePostModerationAttempt(
   },
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  const fenced = await completeAttemptRow(transaction, attempt)
-  if (!fenced) return false
-  const recorded = await recordPostModerationDisposition(
+  const recorded = await completeAndRecord(transaction, attempt, result)
+  if (!recorded) return false
+  await transaction.commit()
+  return true
+}
+
+async function loadCommittedPostModerationAttempt(
+  postId: string,
+  source: AutomatedPostModerationSource,
+): Promise<PostModerationAttempt | null> {
+  const version = await commitCurrentPostModerationVersion(postId)
+  return readCurrentAutomatedPostModerationAttempt(version.id, source)
+}
+
+async function commitCurrentPostModerationVersion(postId: string): Promise<PostModerationVersion> {
+  await using transaction = await beginTransaction()
+  const version = await ensureCurrentPostModerationVersion(postId, { query: transaction })
+  await transaction.commit()
+  return version
+}
+
+async function completeAndRecord(
+  transaction: TransactionQuery,
+  attempt: PostModerationAttempt,
+  result: {
+    disposition: Exclude<PostModerationDisposition, 'incomplete'>
+    reasonCode: string
+    evidence?: Readonly<Record<string, unknown>>
+  },
+): Promise<boolean> {
+  const completed = await completeAttemptRow(transaction, attempt)
+  if (!completed) return false
+  return recordPostModerationDisposition(
     {
       versionId: attempt.version_id,
       source: attempt.source,
@@ -98,99 +136,35 @@ export async function completePostModerationAttempt(
     },
     { query: transaction },
   )
-  await transaction.commit()
-  return recorded
-}
-
-export async function failPostModerationAttempt(
-  attempt: PostModerationAttempt,
-  errorCode: string,
-): Promise<{ recorded: boolean; exhausted: boolean }> {
-  const firstRetryMinutes = getPostClearanceWorkLimit('first_retry_minutes')
-  const laterRetryMinutes = getPostClearanceWorkLimit('later_retry_minutes')
-  await using transaction = await beginTransaction()
-  const { rows } = await transaction<{ exhausted: boolean }>(
-    `/* failPostModerationAttempt */
-      WITH failed_attempt AS (
-        UPDATE post_moderation_attempts attempt_row
-        SET failed_at = CURRENT_TIMESTAMP,
-          error_code = $5
-        FROM post_moderation_work_items work
-        WHERE attempt_row.id = $1
-          AND attempt_row.version_id = $2
-          AND attempt_row.source = $3::post_moderation_sources
-          AND attempt_row.lease_token = $4
-          AND attempt_row.completed_at IS NULL
-          AND attempt_row.failed_at IS NULL
-          AND work.version_id = attempt_row.version_id
-          AND work.source = attempt_row.source
-          AND work.lease_token = attempt_row.lease_token
-        RETURNING attempt_row.version_id, attempt_row.source, attempt_row.attempt_number
-      ),
-      released_work AS (
-        UPDATE post_moderation_work_items work
-        SET available_at = CASE failed_attempt.attempt_number
-              WHEN 1 THEN version.created_at + $6::integer * INTERVAL '1 minute'
-              ELSE version.created_at + $7::integer * INTERVAL '1 minute'
-            END,
-          completed_at = CASE WHEN failed_attempt.attempt_number >= 3
-            THEN CURRENT_TIMESTAMP ELSE NULL END,
-          leased_at = NULL,
-          lease_token = NULL,
-          lease_expires_at = NULL
-        FROM failed_attempt
-        JOIN post_moderation_versions version ON version.id = failed_attempt.version_id
-        WHERE work.version_id = failed_attempt.version_id
-          AND work.source = failed_attempt.source
-        RETURNING work.version_id, work.source, work.completed_at IS NOT NULL AS exhausted
-      ),
-      inserted_disposition AS (
-        INSERT INTO post_moderation_dispositions (
-          version_id, source, attempt_id, disposition, reason_code, evidence
-        )
-        SELECT released_work.version_id, released_work.source, $1,
-          'incomplete'::post_moderation_disposition_types, 'automation_unavailable',
-          jsonb_build_object('error_code', $5)
-        FROM released_work
-        WHERE released_work.exhausted
-        ON CONFLICT (attempt_id) DO NOTHING
-      )
-      SELECT exhausted FROM released_work`,
-    [
-      attempt.id,
-      attempt.version_id,
-      attempt.source,
-      attempt.lease_token,
-      errorCode,
-      firstRetryMinutes,
-      laterRetryMinutes,
-    ],
-  )
-  await transaction.commit()
-  return { recorded: rows.length > 0, exhausted: rows[0]?.exhausted ?? false }
 }
 
 async function completeAttemptRow(
   query: TransactionQuery,
   attempt: PostModerationAttempt,
 ): Promise<boolean> {
-  const { rows } = await query(
+  const { rows } = await query<{ id: string }>(
     `/* completeAttemptRow */
       UPDATE post_moderation_attempts attempt_row
       SET completed_at = CURRENT_TIMESTAMP
-      FROM post_moderation_work_items work
       WHERE attempt_row.id = $1
         AND attempt_row.version_id = $2
         AND attempt_row.source = $3::post_moderation_sources
-        AND attempt_row.lease_token = $4
         AND attempt_row.completed_at IS NULL
-        AND attempt_row.failed_at IS NULL
-        AND work.version_id = attempt_row.version_id
-        AND work.source = attempt_row.source
-        AND work.lease_token = attempt_row.lease_token
-        AND work.lease_expires_at > CURRENT_TIMESTAMP
       RETURNING attempt_row.id`,
-    [attempt.id, attempt.version_id, attempt.source, attempt.lease_token],
+    [attempt.id, attempt.version_id, attempt.source],
   )
   return rows.length > 0
+}
+
+async function enqueueCommittedPostModerationAttempt(
+  versionId: string,
+  source: AutomatedPostModerationSource,
+): Promise<void> {
+  try {
+    await enqueuePostModerationRecovery(versionId, source)
+  } catch (err) {
+    onError(
+      err instanceof Error ? err : new Error('Post moderation enqueue failed', { cause: err }),
+    )
+  }
 }

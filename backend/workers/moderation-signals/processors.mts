@@ -3,48 +3,26 @@ import { createPostModerationContent } from '@services/posts/content'
 import { analyzePostForSpam, applyPostSpamDetectionResults } from '@services/spam-detection'
 import { penalizeReferralLinkInPost } from '@services/vote-integrity'
 import {
-  beginPostModerationAttempt,
   checkPostClearance,
-  failPostModerationAttempt,
+  readCurrentAutomatedPostModerationAttempt,
 } from '@services/post-clearance'
 
-export async function processSpamDetection(
-  postId: string,
-  expectedContentSha256?: string,
-): Promise<boolean> {
-  const post = await getPostByAny(postId, { readOnly: false })
+export async function processSpamDetection(versionId: string): Promise<boolean> {
+  const attempt = await readCurrentAutomatedPostModerationAttempt(versionId, 'spam_detection')
+  if (!attempt) return false
+  const post = await getPostByAny(attempt.post_id, { readOnly: false })
   if (!post) return false
-
   const { content_sha256 } = createPostModerationContent(post)
-  if (expectedContentSha256 && expectedContentSha256 !== content_sha256.toString('hex')) {
-    return false
+  if (!attempt.content_sha256.equals(content_sha256)) return false
+
+  const result = await analyzePostForSpam(post)
+  const applied = await applyPostSpamDetectionResults(post.id, content_sha256, result, attempt)
+  if (!applied) return false
+
+  const referralSignal = result.signals.find(signal => signal.signal === 'referral_link_in_post')
+  if (referralSignal?.flagged && post.created_by_id) {
+    await penalizeReferralLinkInPost(post.created_by_id, post.id)
   }
-  const attempt = await beginPostModerationAttempt(postId, 'spam_detection')
-  if (!attempt || !attempt.content_sha256.equals(content_sha256)) return false
-
-  try {
-    const result = await analyzePostForSpam(post)
-    const applied = await applyPostSpamDetectionResults(postId, content_sha256, result, attempt)
-    if (!applied) return false
-
-    // Apply vote penalty for referral links (immediate, idempotent per post)
-    const referralSignal = result.signals.find(s => s.signal === 'referral_link_in_post')
-    if (referralSignal?.flagged && post.created_by_id) {
-      await penalizeReferralLinkInPost(post.created_by_id, postId)
-    }
-
-    await checkPostClearance(postId)
-    return true
-  } catch (err) {
-    const failure = await failPostModerationAttempt(attempt, classifyModerationError(err))
-    if (failure.exhausted) await checkPostClearance(postId)
-    throw err
-  }
-}
-
-function classifyModerationError(error: unknown): string {
-  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
-    return error.code.slice(0, 100)
-  }
-  return error instanceof Error ? error.name.slice(0, 100) : 'unknown_error'
+  await checkPostClearance(post.id)
+  return true
 }

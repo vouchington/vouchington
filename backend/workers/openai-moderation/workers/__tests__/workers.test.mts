@@ -6,7 +6,6 @@ import {
   expireTestPostModerationVersion,
   getPostClearanceStatus,
   getPostModerationData,
-  getTestPostModerationRetryDelayMinutes,
   insertPendingTestImage,
   insertTestImage,
   insertTestPost,
@@ -20,7 +19,15 @@ import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { notifications } from '@queues/notifications/queues'
 import { background } from '@queues/background/queues'
 import { createPostModerationContent } from '@services/posts/content'
-import { ensureCurrentPostModerationVersion } from '@services/post-clearance'
+import { getPostByAny } from '@services/posts/get'
+import {
+  beginPostModerationAttempt,
+  ensureCurrentPostModerationVersion,
+} from '@services/post-clearance'
+import {
+  getTestPostModerationAttemptStateForPost,
+  getTestPostModerationVersionOwners,
+} from '@voucha/test-helpers/post-moderation-attempt-state'
 import { postClearanceWorkConfig } from '@services/post-clearance/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { handleOpenAIModerationOmniSingleJob } from '../../processors/openai-moderation-omni-single.mts'
@@ -30,7 +37,7 @@ describe('openai moderation single worker', () => {
     vi.unstubAllEnvs()
   })
 
-  it('uses current persisted moderation and enqueues notification reconciliation without calling OpenAI', async () => {
+  it('exits when the current version already has an OpenAI disposition', async () => {
     const creator = await createTestUser()
     expect(creator).toBeTruthy()
     const title = `OpenAI current moderation worker ${randomUUID()}`
@@ -45,17 +52,17 @@ describe('openai moderation single worker', () => {
     const { content_sha256 } = createPostModerationContent({ title, markdown })
     await setPostModerationContentSha256(postId, content_sha256)
     await updatePostModerationData(postId, content_sha256, [{ flagged: false }], false)
+    const version = await ensureCurrentPostModerationVersion(postId)
 
-    await expect(handleOpenAIModerationOmniSingleJob(makeJob('post', postId))).resolves.toEqual({
+    await expect(handleOpenAIModerationOmniSingleJob(makePostJob(version.id))).resolves.toEqual({
       success: true,
+      applied: false,
     })
 
-    const moderation = (await getPostModerationData(postId)) as {
-      openai_omni_moderation_created_at: Date | null
-      is_flagged_by_openai_omni_moderation: boolean | null
-    }
-    expect(moderation.openai_omni_moderation_created_at).toBeInstanceOf(Date)
-    expect(moderation.is_flagged_by_openai_omni_moderation).toBe(false)
+    await expect(getPostModerationData(postId)).resolves.toMatchObject({
+      openai_omni_moderation_created_at: expect.any(Date),
+      is_flagged_by_openai_omni_moderation: false,
+    })
 
     const notificationJobs = await readAllQueueJobs(notifications)
     expect(
@@ -64,13 +71,14 @@ describe('openai moderation single worker', () => {
           job.name === 'notifications.processReconcilePostNotifications' &&
           (job.data as { postId?: string }).postId === postId,
       ),
-    ).toBe(true)
+    ).toBe(false)
   })
 
-  it('returns null for post jobs whose row no longer exists', async () => {
-    await expect(
-      handleOpenAIModerationOmniSingleJob(makeJob('post', randomUUID())),
-    ).resolves.toBeNull()
+  it('exits when the version no longer exists', async () => {
+    await expect(handleOpenAIModerationOmniSingleJob(makePostJob(randomUUID()))).resolves.toEqual({
+      success: true,
+      applied: false,
+    })
   })
 
   it('returns current image moderation state for already-moderated images', async () => {
@@ -101,8 +109,7 @@ describe('openai moderation single worker', () => {
     const imageId = await insertPendingTestImage(creator!.id)
     await updateImageStatus(imageId, 'complete')
 
-    // The page starts just before these rows, so a database with older unmoderated rows still
-    // enqueues them on the first page.
+    // Start just before these rows so older unmoderated rows still enqueue on the first page.
     const postResult = (await handleOpenAIModerationOmniSingleJob(
       makeBackfillJob('backfill_posts', uuidBefore(postId)),
     )) as { enqueued: number }
@@ -114,11 +121,12 @@ describe('openai moderation single worker', () => {
     expect(imageResult.enqueued).toBeGreaterThanOrEqual(1)
 
     const waitingJobs = await readAllQueueJobs(background)
-    expect(
-      waitingJobs.some(
-        job => job.name === 'openai-moderation.post' && (job.data as { id?: string }).id === postId,
-      ),
-    ).toBe(true)
+    const postVersionIds = waitingJobs
+      .filter(job => job.name === 'openai-moderation.post')
+      .map(job => (job.data as { versionId?: string }).versionId)
+      .filter((versionId): versionId is string => typeof versionId === 'string')
+    const owners = await getTestPostModerationVersionOwners(postVersionIds)
+    expect(owners.some(owner => owner.post_id === postId)).toBe(true)
     expect(
       waitingJobs.some(
         job =>
@@ -151,7 +159,7 @@ describe('openai moderation single worker', () => {
       markdown: 'Foreign reconciliation work stays pending.',
       clearanceStatus: 'pending',
     })
-    await ensureCurrentPostModerationVersion(duePostId)
+    const dueVersion = await ensureCurrentPostModerationVersion(duePostId)
     const expiredVersion = await ensureCurrentPostModerationVersion(expiredPostId)
     await expireTestPostModerationVersion(expiredVersion.id)
     const foreignVersion = await ensureCurrentPostModerationVersion(foreignPostId)
@@ -162,25 +170,14 @@ describe('openai moderation single worker', () => {
       { postIds: [duePostId, expiredPostId] },
     )) as { enqueued: number; moved_to_review: number }
 
-    expect(result.enqueued).toBeGreaterThanOrEqual(1)
-    expect(result.moved_to_review).toBeGreaterThanOrEqual(1)
+    expect(result.enqueued).toBe(2)
+    expect(result.moved_to_review).toBe(1)
     await expect(getPostClearanceStatus(expiredPostId)).resolves.toBe('in_review')
     await expect(getPostClearanceStatus(foreignPostId)).resolves.toBe('pending')
 
     const openaiJobs = await readAllQueueJobs(background)
-    expect(
-      openaiJobs.some(
-        job =>
-          job.name === 'openai-moderation.post' && (job.data as { id?: string }).id === duePostId,
-      ),
-    ).toBe(true)
-    expect(
-      openaiJobs.some(
-        job =>
-          job.name === 'openai-moderation.post' &&
-          (job.data as { id?: string }).id === foreignPostId,
-      ),
-    ).toBe(false)
+    expect(openaiJobs.some(job => job.id === `${dueVersion.id}__openai_omni`)).toBe(true)
+    expect(openaiJobs.some(job => job.id === `${foreignVersion.id}__openai_omni`)).toBe(false)
   })
 
   it('keeps a scoped reconciliation confined to its posts on continuation pages', async () => {
@@ -237,24 +234,33 @@ describe('openai moderation single worker', () => {
       markdown: 'Provider unavailable worker fixture.',
       clearanceStatus: 'pending',
     })
+    const post = await getPostByAny(postId)
+    if (!post) throw new Error('missing provider fixture')
+    await setPostModerationContentSha256(postId, createPostModerationContent(post).content_sha256)
+    const attempt = await beginPostModerationAttempt(postId, 'openai_omni')
     vi.stubEnv('OPENAI_API_KEY', '')
 
-    await expect(handleOpenAIModerationOmniSingleJob(makeJob('post', postId))).rejects.toThrow(
-      'OPENAI_API_KEY is not set',
-    )
-    await expect(getTestPostModerationRetryDelayMinutes(postId, 'openai_omni')).resolves.toBe(5)
+    await expect(
+      handleOpenAIModerationOmniSingleJob(makePostJob(attempt!.version_id)),
+    ).rejects.toThrow('OPENAI_API_KEY is not set')
+    await expect(getTestPostModerationAttemptStateForPost(postId, 'openai_omni')).resolves.toEqual({
+      completed_at: null,
+      attempt_number: 1,
+    })
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       is_flagged_by_openai_omni_moderation: null,
     })
   })
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {
-    await expect(
-      handleOpenAIModerationOmniSingleJob({ data: {}, name: 'openai-moderation.image' } as Job<{
-        id: string
-      }>),
-    ).rejects.toThrow('Image job requires id in job.data')
-
+    const malformedPost = { data: {}, name: 'openai-moderation.post' } as Job<{ versionId: string }>
+    const malformedImage = { data: {}, name: 'openai-moderation.image' } as Job<{ id: string }>
+    await expect(handleOpenAIModerationOmniSingleJob(malformedPost)).rejects.toThrow(
+      'Post job requires versionId in job.data',
+    )
+    await expect(handleOpenAIModerationOmniSingleJob(malformedImage)).rejects.toThrow(
+      'Image job requires id in job.data',
+    )
     await expect(
       handleOpenAIModerationOmniSingleJob(makeJob('unexpected', randomUUID())),
     ).rejects.toThrow('Unknown job type: openai-moderation.unexpected')
@@ -263,6 +269,10 @@ describe('openai moderation single worker', () => {
 
 function makeBackfillJob(name: string, afterId: string): Job<{ afterId: string }> {
   return { data: { afterId }, name: `openai-moderation.${name}` } as Job<{ afterId: string }>
+}
+
+function makePostJob(versionId: string): Job<{ versionId: string }> {
+  return { data: { versionId }, name: 'openai-moderation.post' } as Job<{ versionId: string }>
 }
 
 function makeJob(name: string, id: string): Job<{ id: string }> {

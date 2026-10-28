@@ -28,6 +28,8 @@
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@queues/ai-agents": "workspace:^",
+    "@queues/moderation-signals": "workspace:^",
+    "@queues/openai-moderation": "workspace:^",
     "@queues/psql": "workspace:^",
     "@services/classifier-run-revival": "workspace:^",
     "@services/classifier-runs": "workspace:^",

@@ -31,16 +31,14 @@ describe('moderation-signals handlers', () => {
     expect(banEvasionHandler!.job).toBe(MODERATION_SIGNALS_BAN_EVASION_JOB)
   })
 
-  it('rejects a spam-detection job without a post id', async () => {
-    await expect(spamHandler!.handle(asJob({ id: '' }))).rejects.toThrow(
-      'Spam detection job requires id in job.data',
+  it('rejects a spam-detection job without a version id', async () => {
+    await expect(spamHandler!.handle(asJob({ versionId: '' }))).rejects.toThrow(
+      'Spam detection job requires versionId in job.data',
     )
   })
 
-  it('skips a missing or stale post without applying a result', async () => {
-    const result = await spamHandler!.handle(
-      asJob({ id: randomUUID(), contentSha256: Buffer.alloc(32, 4).toString('hex') }),
-    )
+  it('skips a missing version without applying a result', async () => {
+    const result = await spamHandler!.handle(asJob({ versionId: randomUUID() }))
 
     expect(result).toEqual({ success: true, applied: false })
   })

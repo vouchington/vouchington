@@ -31,7 +31,9 @@ describe('a worker that serves only SES inbound', () => {
           new Map([...handlers].filter(([, handler]) => handler.job.domain === 'ses-inbound')),
         ),
     })
-    const unserved = await harness.add(OPENAI_MODERATION_POST_JOB, { id: crypto.randomUUID() })
+    const unserved = await harness.add(OPENAI_MODERATION_POST_JOB, {
+      versionId: crypto.randomUUID(),
+    })
     await harness.activated(unserved, 1)
     const sentinel = await harness.add(SES_INBOUND_PROCESS_JOB, {
       sesMessageId: 'sentinel',

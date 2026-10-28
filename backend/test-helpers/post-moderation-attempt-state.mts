@@ -1,86 +1,100 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-/** Lets the next `beginPostModerationAttempt` reclaim the work as if its worker had gone silent. */
-export async function expireTestPostModerationWorkLease(
-  versionId: string,
-  source: 'openai_omni' | 'spam_detection',
-): Promise<void> {
-  await write(sql`/* expireTestPostModerationWorkLease */
-    UPDATE post_moderation_work_items
-    SET lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second'
-    WHERE version_id = ${versionId} AND source = ${source}::post_moderation_sources
-  `)
-}
-
-export async function getTestPostModerationWorkAttemptCount(
-  postId: string,
-  source: 'openai_omni' | 'spam_detection',
-): Promise<number | null> {
-  const { rows } = await read<{
-    attempt_count: number
-  }>(sql`/* getTestPostModerationWorkAttemptCount */
-    SELECT work.attempt_count
-    FROM post_moderation_work_items work
-    JOIN post_moderation_versions version ON version.id = work.version_id
-    WHERE version.post_id = ${postId} AND work.source = ${source}::post_moderation_sources
-  `)
-  return rows[0]?.attempt_count ?? null
-}
+type TestModerationSource = 'openai_omni' | 'spam_detection'
 
 export async function getTestPostModerationAttemptStateForPost(
   postId: string,
-  source: 'openai_omni' | 'spam_detection',
-): Promise<{
-  failed_at: Date | null
-  error_code: string | null
-  completed_at: Date | null
-  work_completed_at: Date | null
-  work_lease_token: string | null
-  work_leased_at: Date | null
-  work_lease_expires_at: Date | null
-} | null> {
-  const { rows } = await read<{
-    failed_at: Date | null
-    error_code: string | null
-    completed_at: Date | null
-    work_completed_at: Date | null
-    work_lease_token: string | null
-    work_leased_at: Date | null
-    work_lease_expires_at: Date | null
-  }>(sql`/* getTestPostModerationAttemptState */
-    SELECT attempt.failed_at, attempt.error_code, attempt.completed_at,
-      work.completed_at AS work_completed_at, work.lease_token AS work_lease_token,
-      work.leased_at AS work_leased_at, work.lease_expires_at AS work_lease_expires_at
-    FROM post_moderation_attempts attempt
-    JOIN post_moderation_work_items work USING (version_id, source)
-    JOIN post_moderation_versions version ON version.id = attempt.version_id
-    WHERE version.post_id = ${postId} AND attempt.source = ${source}::post_moderation_sources
-    ORDER BY attempt.id DESC LIMIT 1
-  `)
+  source: TestModerationSource,
+): Promise<{ completed_at: Date | null; attempt_number: number } | null> {
+  const { rows } = await read<{ completed_at: Date | null; attempt_number: number }>(
+    sql`/* getTestPostModerationAttemptStateForPost */
+      SELECT attempt.completed_at, attempt.attempt_number
+      FROM post_moderation_attempts attempt
+      JOIN post_moderation_versions version ON version.id = attempt.version_id
+      WHERE version.post_id = ${postId} AND attempt.source = ${source}::post_moderation_sources
+      ORDER BY attempt.id DESC LIMIT 1
+    `,
+  )
   return rows[0] ?? null
 }
 
-/** Milliseconds until the source work becomes claimable; zero or negative once it is due. */
-export async function getTestPostModerationWorkHoldMs(
-  postId: string,
-  source: 'openai_omni' | 'spam_detection',
-): Promise<number | null> {
-  const { rows } = await read<{ hold_ms: string }>(sql`/* getTestPostModerationWorkHoldMs */
-    SELECT EXTRACT(EPOCH FROM (work.available_at - CURRENT_TIMESTAMP)) * 1000 AS hold_ms
-    FROM post_moderation_work_items work
-    JOIN post_moderation_versions version ON version.id = work.version_id
-    WHERE version.post_id = ${postId} AND work.source = ${source}::post_moderation_sources
-  `)
-  return rows[0] ? Number(rows[0].hold_ms) : null
-}
-
-/** Counts only this fixture's current work so a bounded expiry assertion is dirty-DB safe. */
+/** Counts this post's attempts that still have no disposition for their version and source. */
 export async function countTestPostModerationIncompleteWork(postId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`/* countTestPostModerationIncompleteWork */
-    SELECT count(*)::int AS count FROM post_moderation_work_items work
-    JOIN post_moderation_versions version ON version.id = work.version_id
-    WHERE version.post_id = ${postId} AND work.completed_at IS NULL
+    SELECT count(*)::int AS count
+    FROM post_moderation_attempts attempt
+    JOIN post_moderation_versions version ON version.id = attempt.version_id
+    WHERE version.post_id = ${postId}
+      AND NOT EXISTS (
+        SELECT 1 FROM post_moderation_dispositions disposition
+        WHERE disposition.version_id = attempt.version_id
+          AND disposition.source = attempt.source
+      )
   `)
   return rows[0]!.count
+}
+
+export async function countTestPostModerationAttempts(
+  postId: string,
+  source?: TestModerationSource,
+): Promise<number> {
+  const { rows } = await read<{ count: number }>(sql`/* countTestPostModerationAttempts */
+    SELECT count(*)::int AS count
+    FROM post_moderation_attempts attempt
+    JOIN post_moderation_versions version ON version.id = attempt.version_id
+    WHERE version.post_id = ${postId}
+      AND (
+        ${source ?? null}::post_moderation_sources IS NULL
+        OR attempt.source = ${source ?? null}::post_moderation_sources
+      )
+  `)
+  return rows[0]!.count
+}
+
+export async function getTestPostModerationVersionOwner(versionId: string): Promise<{
+  id: string
+  post_id: string
+  content_sha256: Buffer
+} | null> {
+  const owners = await getTestPostModerationVersionOwners([versionId])
+  return owners[0] ?? null
+}
+
+export async function getTestPostModerationVersionOwners(versionIds: readonly string[]): Promise<
+  Array<{
+    id: string
+    post_id: string
+    content_sha256: Buffer
+  }>
+> {
+  if (versionIds.length === 0) return []
+  const { rows } = await read<{ id: string; post_id: string; content_sha256: Buffer }>(
+    sql`/* getTestPostModerationVersionOwners */
+      SELECT id, post_id, content_sha256
+      FROM post_moderation_versions
+      WHERE id = ANY(${[...versionIds]}::uuid[])
+    `,
+  )
+  return rows
+}
+
+/** The version that matches the post's stored moderation hash. */
+export async function getTestCurrentPostModerationVersion(postId: string): Promise<{
+  id: string
+  content_sha256: Buffer
+} | null> {
+  const { rows } = await read<{ id: string; content_sha256: Buffer }>(
+    sql`/* getTestCurrentPostModerationVersion */
+      SELECT version.id, version.content_sha256
+      FROM post_moderation_versions version
+      JOIN posts post ON post.id = version.post_id
+        AND post.llm_moderation_content_sha256 = version.content_sha256
+      WHERE post.id = ${postId}
+        AND version.policy_revision = '2026-09-09.1'
+      ORDER BY version.id DESC
+      LIMIT 1
+    `,
+  )
+  return rows[0] ?? null
 }

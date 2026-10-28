@@ -18,28 +18,15 @@ import {
 
 const ONE_MINUTE_MS = 60_000
 
-type EnqueuePostModerationOptions = {
-  deduplicationKey?: string
-  priority?: number
-}
-
 const enqueueCreatePostModerationJob = createBackgroundEnqueue(OPENAI_MODERATION_POST_JOB)
 const enqueueCreateImageModerationJob = createBackgroundEnqueue(OPENAI_MODERATION_IMAGE_JOB)
 
-export const enqueueCreatePostModeration = (
-  postId: string,
-  options: EnqueuePostModerationOptions = {},
-) => {
-  const deduplicationId = options.deduplicationKey
-    ? `post_moderation_${postId}_${options.deduplicationKey}`
-    : `post_moderation_${postId}`
-  return enqueueCreatePostModerationJob({ id: postId }, {
-    priority: options.priority ?? PRIORITY_TASK,
-    deduplication: {
-      id: deduplicationId,
-      mode: 'debounce',
-    },
-  } satisfies Partial<JobOptions>)
+/** One durable job per moderation version. A repeated add with this id is a no-op. */
+export const enqueueCreatePostModeration = (versionId: string) => {
+  return enqueueCreatePostModerationJob(
+    { versionId },
+    { jobId: `${versionId}__openai_omni`, priority: PRIORITY_TASK },
+  )
 }
 
 export const enqueueCreateImageModeration = (imageId: string, priority?: number) => {
@@ -51,20 +38,6 @@ export const enqueueCreateImageModeration = (imageId: string, priority?: number)
     },
   } satisfies Partial<JobOptions>)
 }
-
-// Bulk variants used by the backfill dispatcher: one addBulk call per batch of IDs
-// streamed from the source-of-truth, instead of one round-trip per ID. Each job keeps
-// the same per-ID debounce dedup as the single enqueue so re-running a backfill does
-// not double-enqueue.
-export const enqueueCreatePostModerationBatch = createBackgroundBulkEnqueue(
-  OPENAI_MODERATION_POST_JOB,
-  (postId: string) => ({
-    data: { id: postId },
-    opts: {
-      deduplication: { id: `post_moderation_${postId}`, mode: 'debounce' },
-    } satisfies Partial<JobOptions>,
-  }),
-)
 
 export const enqueueCreateImageModerationBatch = createBackgroundBulkEnqueue(
   OPENAI_MODERATION_IMAGE_JOB,

@@ -11,12 +11,8 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'At most one runtime-bounded pending post page per unfinished image deletion; acknowledged admissions delete receipts, so cardinality tracks active work rather than retained deletion history.',
   ],
   [
-    'post_moderation_work_items',
-    'One source work item per live moderation version; parent deletion cascades it.',
-  ],
-  [
     'post_moderation_attempts',
-    'Provider attempts cascade when their owning moderation work is deleted.',
+    'One attempt per live moderation version and source; parent deletion cascades it.',
   ],
   [
     'media_delivery_registry_changes',

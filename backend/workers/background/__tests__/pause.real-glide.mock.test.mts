@@ -58,7 +58,7 @@ describe('domain pause through real GlideMQ and PostgreSQL', () => {
       invalidateQueueDomainPause(PAUSED_DOMAIN)
       const parked = await harness.add(
         OPENAI_MODERATION_POST_JOB,
-        { id: randomUUID() },
+        { versionId: randomUUID() },
         { attempts: 3, ...groupOptions },
       )
       const other = await harness.add(SES_INBOUND_PROCESS_JOB, {

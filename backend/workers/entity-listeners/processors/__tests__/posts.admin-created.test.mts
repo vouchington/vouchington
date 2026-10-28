@@ -18,8 +18,11 @@ import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { POST_MENTIONS_PROCESS_JOB } from '@queues/background/enqueues/post-mentions-jobs'
 import { postMentionsQueue } from '@queues/post-mentions/queues'
-import { MODERATION_SIGNALS_SPAM_DETECTION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
+import {
+  countTestPostModerationAttempts,
+  getTestCurrentPostModerationVersion,
+} from '@voucha/test-helpers/post-moderation-attempt-state'
 import '@services/referral-program-link-validations'
 import { createPostModerationContent } from '@services/posts/content'
 import { createPost, getPostByAny } from '@services/posts'
@@ -42,8 +45,7 @@ describe('post entity listener creation dispatch', () => {
 
     await processPostCreated({ id: postId })
 
-    const spamJobs = await readSpamDetectionJobs()
-    expect(spamJobs.some(job => (job.data as { id?: string }).id === postId)).toBe(false)
+    expect(await countTestPostModerationAttempts(postId)).toBe(0)
   })
 
   it('completes core dispatch before propagating a recovery failure for retry', async () => {
@@ -88,15 +90,11 @@ describe('post entity listener creation dispatch', () => {
 
     await processPostCreated({ id: postId })
 
-    const post = (await getPostByAny(postId)) as Post
-    const { content_sha256 } = createPostModerationContent(post)
-    const spamJobs = await readSpamDetectionJobs()
-    const spamJob = spamJobs.find(job => (job.data as { id?: string }).id === postId)
-    expect(spamJob).toBeDefined()
-    expect(spamJob!.data).toMatchObject({
-      id: postId,
-      contentSha256: content_sha256.toString('hex'),
-    })
+    const version = await getTestCurrentPostModerationVersion(postId)
+    expect(version).not.toBeNull()
+    await expect(
+      moderationSignalsQueue.getJob(`${version!.id}__spam_detection`),
+    ).resolves.toMatchObject({ data: { versionId: version!.id } })
   })
 
   it('recovers canonical and immutable source URL effects after the source relation is removed', async () => {
@@ -233,19 +231,15 @@ describe('post entity listener creation dispatch', () => {
 
     await processPostUpdated({ id: postId, contentChanged: true })
 
-    const spamJobs = await readSpamDetectionJobs()
-    const spamJob = spamJobs.find(job => (job.data as { id?: string }).id === postId)
-    expect(spamJob).toBeDefined()
-    expect(spamJob!.data).toMatchObject({
-      id: postId,
-      contentSha256: content_sha256.toString('hex'),
-    })
+    await expectCurrentSpamJob(postId, content_sha256)
   })
 })
 
-async function readSpamDetectionJobs() {
-  const jobs = await readAllQueueJobs(moderationSignalsQueue)
-  return jobs.filter(job => job.name === MODERATION_SIGNALS_SPAM_DETECTION_JOB.name)
+async function expectCurrentSpamJob(postId: string, contentSha256: Buffer): Promise<void> {
+  const version = await getTestCurrentPostModerationVersion(postId)
+  expect(version?.content_sha256.equals(contentSha256)).toBe(true)
+  const job = await moderationSignalsQueue.getJob(`${version!.id}__spam_detection`)
+  expect(job?.data).toEqual({ versionId: version!.id })
 }
 
 async function crawlJobs(urlIds: string[]) {
