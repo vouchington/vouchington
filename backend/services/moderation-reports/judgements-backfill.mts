@@ -2,7 +2,7 @@ import { getModerationReportsWorkLimit } from './work-limits.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-export type MissingJudgementEntity = {
+type MissingJudgementEntity = {
   entityType: string
   entityId: string
   triggeringReportId: string

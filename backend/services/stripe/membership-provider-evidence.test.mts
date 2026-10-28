@@ -2,10 +2,7 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type Stripe from 'stripe'
 import { decryptSecret } from '@modules/token-secrets'
-import {
-  encryptStripeMembershipEvidence,
-  type StripeMembershipEvidenceEnvelope,
-} from './membership-provider-evidence.mts'
+import { encryptStripeMembershipEvidence } from './membership-provider-evidence.mts'
 
 describe('Stripe membership provider evidence', () => {
   it('keeps the complete original JSON for a bounded Stripe payload', () => {
@@ -24,10 +21,10 @@ describe('Stripe membership provider evidence', () => {
     const encrypted = encryptStripeMembershipEvidence(subscription, eventId)
     const envelope = JSON.parse(
       decryptSecret(encrypted.toString(), `membership-provider-evidence:stripe:${eventId}`),
-    ) as StripeMembershipEvidenceEnvelope
+    ) as unknown
 
     expect(encrypted.byteLength).toBeLessThanOrEqual(65_536)
-    expect(envelope.original).toEqual({
+    expect(envelope).toHaveProperty('original', {
       byte_length: Buffer.byteLength(JSON.stringify(subscription)),
       sha256: createHash('sha256').update(JSON.stringify(subscription)).digest('hex'),
     })

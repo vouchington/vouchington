@@ -51,7 +51,7 @@ export type ResolvedPostMention = {
   displayTitle: string
 }
 
-export type UnresolvedMention = {
+type UnresolvedMention = {
   type: 'unresolved'
   raw: string
   reason: 'not_found' | 'error'

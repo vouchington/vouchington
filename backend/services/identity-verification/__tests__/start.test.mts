@@ -3,7 +3,11 @@ import { makePrivateUser } from '../../../test-helpers/services/identity-verific
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { beginTransaction } from '@voucha/test-helpers'
 import type { assertEligibleForIdentityVerification } from '../eligibility.mts'
-import { startIdentityVerification, type StartIdentityVerificationDependencies } from '../start.mts'
+import { startIdentityVerification } from '../start.mts'
+
+type StartIdentityVerificationDependencies = Required<
+  NonNullable<Parameters<typeof startIdentityVerification>[2]>
+>
 
 const mockBeginTransaction = vi.fn<typeof beginTransaction>()
 const mockInvalidateUsers = vi.fn<(userId: string) => Promise<void>>()

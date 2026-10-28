@@ -8,7 +8,7 @@ import { processRetainedSweep } from './retained-sweep.mts'
 import { getPagedDispatchLimit, type PagedDispatcher } from './paged-dispatcher-config.mts'
 
 /** Reviewed immutable unique keysets; a timestamp alone or updated_at is never a cursor. */
-export type DispatchCursorKey = 'id' | 'feedUrl' | 'lane,id' | 'remoteActorId' | 'userId'
+type DispatchCursorKey = 'id' | 'feedUrl' | 'lane,id' | 'remoteActorId' | 'userId'
 const CURSOR_KEYS: readonly string[] = ['id', 'feedUrl', 'lane,id', 'remoteActorId', 'userId']
 
 export const PAGED_DISPATCH_OPTIONS = {

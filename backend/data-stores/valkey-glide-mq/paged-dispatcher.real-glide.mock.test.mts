@@ -3,14 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createBulkEnqueueFunction } from './index.mts'
-import {
-  processPagedDispatcher,
-  pagedDispatchBackoffStrategies,
-  type DispatchCursorKey,
-} from './paged-dispatcher.mts'
+import { processPagedDispatcher, pagedDispatchBackoffStrategies } from './paged-dispatcher.mts'
 import { pagedDispatchConfig } from './paged-dispatcher-config.mts'
 import { createPagedDispatchFences } from './paged-dispatch-fences.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+
+type DispatchCursorKey = Parameters<typeof processPagedDispatcher>[1]['cursorKey']
 
 describe('paged dispatcher', () => {
   it('retires a durable receipt while the target remains above its depth limit', async () => {

@@ -18,7 +18,7 @@ export type ProcessDsaStatementSubmissionResult =
       deadLettered: boolean
     }
 
-export type ProcessDsaStatementSubmissionDependencies = {
+type ProcessDsaStatementSubmissionDependencies = {
   isEnabled: typeof isCopyrightDsaSorDatabaseEnabled
   getFrom: typeof getCopyrightDsaSorDatabaseFrom
   requestFetch?: ReturnType<typeof getExternalFetch>

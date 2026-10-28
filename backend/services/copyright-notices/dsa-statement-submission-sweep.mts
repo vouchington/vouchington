@@ -20,7 +20,7 @@ const RECONCILE_JOB_NAME = 'processReconcileDsaStatementSubmissions'
 const DATABASE_CREDENTIAL_NAMES =
   'DSA_TRANSPARENCY_DATABASE_URL and DSA_TRANSPARENCY_DATABASE_TOKEN'
 
-export type DsaStatementSweepDependencies = {
+type DsaStatementSweepDependencies = {
   isEnabled: typeof isCopyrightDsaSorDatabaseEnabled
   getFrom: typeof getCopyrightDsaSorDatabaseFrom
   recordConfigMissing: typeof recordScheduledJobConfigMissing
