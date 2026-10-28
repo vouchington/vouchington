@@ -1323,6 +1323,33 @@
     "user_session_authentication_origins": {
       "values": ["web", "native"]
     },
+    "vote_ballot_cleanup_families": {
+      "values": [
+        "post_votes",
+        "topic_votes",
+        "hostname_votes",
+        "rss_feed_item_votes",
+        "agent_moderation_votes",
+        "user_vouch_votes",
+        "relation__user__category__topic__votes",
+        "relation__post__category__topic__votes",
+        "relation__post__category__topic_alias__votes",
+        "relation__post__related__post__votes",
+        "relation__post__related__url__votes",
+        "relation__topic__related__topic__votes",
+        "relation__topic__category__topic__votes",
+        "relation__topic__publisher_type__topic__votes",
+        "relation__topic__faq__post__votes",
+        "relation__topic__related__post__votes",
+        "relation__topic__related__url__votes",
+        "relation__topic__faq__url__votes",
+        "relation__topic__guide__url__votes",
+        "relation__topic__landing_page__url__votes",
+        "relation__topic__terms_of_service__url__votes",
+        "relation__rss_feed_item__category__topic__votes",
+        "relation__rss_feed_item__category__topic_alias__votes"
+      ]
+    },
     "vote_integrity_flag_types": {
       "values": ["velocity_spike", "ip_correlation"]
     },
@@ -1545,11 +1572,17 @@
     "fn_project_user_profile_link_image_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_register_new_user_agent_string_cleanup_candidate()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_new_user_agent_string_cleanup_candidate()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)\n  VALUES (NEW.id) ON CONFLICT DO NOTHING;\n  RETURN NEW;\nEND $function$\n"
+    },
     "fn_register_oauth_client_grant_marker()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_oauth_client_grant_marker()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO oauth_client_grant_markers (client_id)\n  VALUES (NEW.client_id) ON CONFLICT (client_id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_oauth_grant_retention_anchor()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_oauth_grant_retention_anchor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO oauth_grant_retention_anchors (id, user_id) VALUES (NEW.id, NEW.user_id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_register_released_user_agent_string_cleanup_candidate()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_released_user_agent_string_cleanup_candidate()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.user_agent_string_id IS NULL THEN\n    RETURN NULL;\n  ELSIF TG_OP = 'DELETE' THEN\n    INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)\n    VALUES (OLD.user_agent_string_id) ON CONFLICT DO NOTHING;\n  ELSIF OLD.user_agent_string_id IS DISTINCT FROM NEW.user_agent_string_id THEN\n    INSERT INTO user_agent_string_cleanup_candidates (user_agent_string_id)\n    VALUES (OLD.user_agent_string_id) ON CONFLICT DO NOTHING;\n  END IF;\n  RETURN NULL;\nEND $function$\n"
     },
     "fn_register_retained_identity()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_identity(TG_ARGV[0]::retained_identity_families, NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
@@ -4454,6 +4487,52 @@
           "unique": false,
           "valid": true
         },
+        "idx_agent_moderation_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderation_votes__cleanup__id ON ONLY public.agent_moderation_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agent_moderation_votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderation_votes__user_agent__id ON ONLY public.agent_moderation_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_agent_moderation_votes__user_id__agent_moderation_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -4503,7 +4582,11 @@
         "columns": ["agent_moderation_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_agent_moderation_votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_agent_moderation_votes__ua_release AFTER DELETE ON public.agent_moderation_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "agent_moderations": {
@@ -50278,6 +50361,29 @@
           "unique": true,
           "valid": true
         },
+        "idx_hostname_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_hostname_votes__cleanup__id ON ONLY public.hostname_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_hostname_votes__hostname_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -50351,6 +50457,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_hostname_votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_hostname_votes__user_agent__id ON ONLY public.hostname_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_hostname_votes__user_id__hostname_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -50400,7 +50529,11 @@
         "columns": ["hostname_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_hostname_votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_hostname_votes__ua_release AFTER DELETE ON public.hostname_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "household_invitations": {
@@ -87077,6 +87210,117 @@
       },
       "uniqueConstraints": {}
     },
+    "post_vote_retained_daily_counts": {
+      "checkConstraints": {
+        "post_vote_retained_daily_counts_count_check": {
+          "definition": "CHECK ((count >= 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "count": {
+          "comment": "Number of qualifying removed post vote events on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "created_at": {
+          "comment": "When this aggregate row was created, derived from its UUIDv7 ID.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "day": {
+          "comment": "UTC day of the removed ballot event.",
+          "dataType": "date",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": "Identity of this anonymous daily aggregate row.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.",
+      "foreignKeys": {},
+      "indexes": {
+        "post_vote_retained_daily_counts_day_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_day_key ON public.post_vote_retained_daily_counts USING btree (day)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.date_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_vote_retained_daily_counts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "post_vote_retained_daily_counts_day_key": {
+          "columns": ["day"]
+        }
+      }
+    },
     "post_votes": {
       "checkConstraints": {
         "chk_post_votes_score_domain": {
@@ -87298,6 +87542,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_post_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__cleanup__id ON ONLY public.post_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_votes__post_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -87366,6 +87633,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__user_agent__id ON ONLY public.post_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -87452,7 +87742,11 @@
         "columns": ["post_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_post_votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_post_votes__ua_release AFTER DELETE ON public.post_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "posts": {
@@ -91262,6 +91556,29 @@
         }
       },
       "indexes": {
+        "idx_relation__post__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__votes__cleanup__id ON ONLY public.relation__post__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -91408,6 +91725,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__category__topic__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__votes__user_agent__id ON ONLY public.relation__post__category__topic__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__post__category__topic__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -91449,6 +91789,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__post__category__topic__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__post__category__topic__votes__ua_release AFTER DELETE ON public.relation__post__category__topic__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__post__category__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__post__category__topic', 'subject_id', 'entity_relation_id', 'object_id')"
         }
@@ -92278,6 +92621,52 @@
           "unique": false,
           "valid": true
         },
+        "idx_relatio__post__category__topic_alias__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__post__category__topic_alias__votes__user_agent__id ON ONLY public.relation__post__category__topic_alias__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__category__topic_alias__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__votes__cleanup__id ON ONLY public.relation__post__category__topic_alias__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic_alias__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92382,7 +92771,11 @@
         "columns": ["entity_relation_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_relatio__post__category__topic_alias__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relatio__post__category__topic_alias__votes__ua_release AFTER DELETE ON public.relation__post__category__topic_alias__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "relation__post__mentioned__post": {
@@ -93746,6 +94139,29 @@
         }
       },
       "indexes": {
+        "idx_relation__post__related__post__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__post__votes__cleanup__id ON ONLY public.relation__post__related__post__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__post__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -93892,6 +94308,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__related__post__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__post__votes__user_agent__id ON ONLY public.relation__post__related__post__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__post__related__post__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -93932,7 +94371,11 @@
         "columns": ["entity_relation_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_relation__post__related__post__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__post__related__post__votes__ua_release AFTER DELETE ON public.relation__post__related__post__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "relation__post__related__url": {
@@ -94680,6 +95123,29 @@
         }
       },
       "indexes": {
+        "idx_relation__post__related__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__votes__cleanup__id ON ONLY public.relation__post__related__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -94826,6 +95292,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__related__url__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__votes__user_agent__id ON ONLY public.relation__post__related__url__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__post__related__url__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -94866,7 +95355,11 @@
         "columns": ["entity_relation_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_relation__post__related__url__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__post__related__url__votes__ua_release AFTER DELETE ON public.relation__post__related__url__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "relation__remote_actor__follow__user": {
@@ -95926,6 +96419,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relati__rss_feed_item__catego__topic__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relati__rss_feed_item__catego__topic__votes__user_agent__id ON ONLY public.relation__rss_feed_item__category__topic__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relatio__rss_feed_item__categor__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -95941,6 +96457,29 @@
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relatio__rss_feed_item__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__rss_feed_item__category__topic__votes__cleanup__id ON ONLY public.relation__rss_feed_item__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
             {
               "collation": null,
               "column": "id",
@@ -96031,6 +96570,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relati__rss_feed_item__catego__topic__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relati__rss_feed_item__catego__topic__votes__ua_release AFTER DELETE ON public.relation__rss_feed_item__category__topic__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__rss_feed_item__category__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__rss_feed_item__category__topic', 'subject_id', 'entity_relation_id', 'object_id')"
         }
@@ -96826,6 +97368,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_rela__rss_feed_item__cate__topi_alia__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rela__rss_feed_item__cate__topi_alia__votes__user_agent__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rela__rss_feed_item__cate__topic_alias__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -96841,6 +97406,29 @@
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rela__rss_feed_item__categ__topic_alias__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rela__rss_feed_item__categ__topic_alias__votes__cleanup__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
             {
               "collation": null,
               "column": "id",
@@ -96930,7 +97518,11 @@
         "columns": ["entity_relation_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_rela__rss_feed_item__cate__topi_alia__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_rela__rss_feed_item__cate__topi_alia__votes__ua_release AFTER DELETE ON public.relation__rss_feed_item__category__topic_alias__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "relation__topic__category__topic": {
@@ -97644,6 +98236,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__category__topic__votes__cleanup__id ON ONLY public.relation__topic__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__category__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97790,6 +98405,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__category__topic__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__category__topic__votes__user_agent__id ON ONLY public.relation__topic__category__topic__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__category__topic__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -97831,6 +98469,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__category__topic__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__category__topic__votes__ua_release AFTER DELETE ON public.relation__topic__category__topic__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__category__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__category__topic', 'subject_id', 'entity_relation_id', 'object_id, subject_id')"
         }
@@ -98548,6 +99189,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__faq__post__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__post__votes__cleanup__id ON ONLY public.relation__topic__faq__post__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__post__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -98694,6 +99358,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__faq__post__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__post__votes__user_agent__id ON ONLY public.relation__topic__faq__post__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__faq__post__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -98735,6 +99422,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__faq__post__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__faq__post__votes__ua_release AFTER DELETE ON public.relation__topic__faq__post__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__post__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__faq__post', 'subject_id', 'entity_relation_id', 'subject_id')"
         }
@@ -99484,6 +100174,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__faq__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__url__votes__cleanup__id ON ONLY public.relation__topic__faq__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -99630,6 +100343,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__faq__url__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__url__votes__user_agent__id ON ONLY public.relation__topic__faq__url__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__faq__url__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -99671,6 +100407,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__faq__url__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__faq__url__votes__ua_release AFTER DELETE ON public.relation__topic__faq__url__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__faq__url__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__faq__url', 'subject_id', 'entity_relation_id', 'subject_id')"
         }
@@ -100420,6 +101159,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__guide__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__guide__url__votes__cleanup__id ON ONLY public.relation__topic__guide__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__guide__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -100566,6 +101328,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__guide__url__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__guide__url__votes__user_agent__id ON ONLY public.relation__topic__guide__url__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__guide__url__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -100607,6 +101392,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__guide__url__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__guide__url__votes__ua_release AFTER DELETE ON public.relation__topic__guide__url__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__guide__url__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__guide__url', 'subject_id', 'entity_relation_id', 'subject_id')"
         }
@@ -101438,6 +102226,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__landing_page__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__votes__cleanup__id ON ONLY public.relation__topic__landing_page__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__landing_page__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -101502,6 +102313,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__landing_page__url__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__votes__user_agent__id ON ONLY public.relation__topic__landing_page__url__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__landing_page__url__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -101543,6 +102377,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__landing_page__url__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__landing_page__url__votes__ua_release AFTER DELETE ON public.relation__topic__landing_page__url__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__landing_page__url__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__landing_page__url', 'subject_id', 'entity_relation_id', 'subject_id')"
         }
@@ -102778,6 +103615,52 @@
           "unique": false,
           "valid": true
         },
+        "idx_relatio__topic__publishe_type__topic__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__topic__publishe_type__topic__votes__user_agent__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__publisher_type__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__publisher_type__topic__votes__cleanup__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__publisher_type__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -102883,6 +103766,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relatio__topic__publishe_type__topic__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relatio__topic__publishe_type__topic__votes__ua_release AFTER DELETE ON public.relation__topic__publisher_type__topic__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__publisher_type__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__publisher_type__topic', 'subject_id', 'entity_relation_id', 'object_id, subject_id')"
         }
@@ -103600,6 +104486,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__related__post__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__post__votes__cleanup__id ON ONLY public.relation__topic__related__post__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__post__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -103746,6 +104655,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__related__post__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__post__votes__user_agent__id ON ONLY public.relation__topic__related__post__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__related__post__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -103787,6 +104719,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__related__post__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__related__post__votes__ua_release AFTER DELETE ON public.relation__topic__related__post__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__post__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__related__post', 'subject_id', 'entity_relation_id', 'subject_id')"
         }
@@ -104504,6 +105439,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__related__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__topic__votes__cleanup__id ON ONLY public.relation__topic__related__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -104650,6 +105608,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__related__topic__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__topic__votes__user_agent__id ON ONLY public.relation__topic__related__topic__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__related__topic__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -104691,6 +105672,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__related__topic__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__related__topic__votes__ua_release AFTER DELETE ON public.relation__topic__related__topic__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__related__topic', 'subject_id', 'entity_relation_id', 'object_id, subject_id')"
         }
@@ -105440,6 +106424,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__related__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__url__votes__cleanup__id ON ONLY public.relation__topic__related__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -105586,6 +106593,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__related__url__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__url__votes__user_agent__id ON ONLY public.relation__topic__related__url__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__related__url__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -105627,6 +106657,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__topic__related__url__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__topic__related__url__votes__ua_release AFTER DELETE ON public.relation__topic__related__url__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__related__url__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__related__url', 'subject_id', 'entity_relation_id', 'subject_id')"
         }
@@ -106458,6 +107491,52 @@
           "unique": false,
           "valid": true
         },
+        "idx_relati__topic__terms_of_service__url__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relati__topic__terms_of_service__url__votes__user_agent__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__terms_of_service__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__votes__cleanup__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__terms_of_service__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -106563,6 +107642,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relati__topic__terms_of_service__url__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relati__topic__terms_of_service__url__votes__ua_release AFTER DELETE ON public.relation__topic__terms_of_service__url__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__topic__terms_of_service__url__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__topic__terms_of_service__url', 'subject_id', 'entity_relation_id', 'subject_id')"
         }
@@ -107926,6 +109008,29 @@
         }
       },
       "indexes": {
+        "idx_relation__user__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__category__topic__votes__cleanup__id ON ONLY public.relation__user__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__category__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -108072,6 +109177,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__user__category__topic__votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__category__topic__votes__user_agent__id ON ONLY public.relation__user__category__topic__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__user__category__topic__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -108113,6 +109241,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_relation__user__category__topic__votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_relation__user__category__topic__votes__ua_release AFTER DELETE ON public.relation__user__category__topic__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_topic_merge_relation_vote_reservation": {
           "definition": "CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__category__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__user__category__topic', 'subject_id', 'entity_relation_id', 'object_id')"
         }
@@ -120554,6 +121685,29 @@
         }
       },
       "indexes": {
+        "idx_rss_feed_item_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_item_votes__cleanup__id ON ONLY public.rss_feed_item_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rss_feed_item_votes__rss_feed_item_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -120622,6 +121776,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feed_item_votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_item_votes__user_agent__id ON ONLY public.rss_feed_item_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -120708,7 +121885,11 @@
         "columns": ["rss_feed_item_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_rss_feed_item_votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_rss_feed_item_votes__ua_release AFTER DELETE ON public.rss_feed_item_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "rss_feed_items": {
@@ -134024,6 +135205,29 @@
         }
       },
       "indexes": {
+        "idx_topic_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_votes__cleanup__id ON ONLY public.topic_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_votes__topic_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -134092,6 +135296,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_topic_votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_votes__user_agent__id ON ONLY public.topic_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -134181,6 +135408,9 @@
       "triggers": {
         "trigger_active_topic_references": {
           "definition": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR DELETE OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+        },
+        "trigger_topic_votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_topic_votes__ua_release AFTER DELETE ON public.topic_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
         }
       },
       "uniqueConstraints": {}
@@ -137727,6 +138957,64 @@
         }
       }
     },
+    "user_agent_string_cleanup_candidates": {
+      "checkConstraints": {},
+      "columns": {
+        "user_agent_string_id": {
+          "comment": "User-agent lookup row awaiting an orphan check; removed after a completed check.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Indexed bounded orphan checks for new user-agent strings and strings released by sessions or deleted ballots.",
+      "foreignKeys": {
+        "user_agent_string_cleanup_candidates_user_agent_string_id_fkey": {
+          "columns": ["user_agent_string_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_agent_strings",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "user_agent_string_cleanup_candidates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_agent_string_cleanup_candidates_pkey ON public.user_agent_string_cleanup_candidates USING btree (user_agent_string_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["user_agent_string_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "user_agent_strings": {
       "checkConstraints": {
         "user_agent_strings_user_agent_check": {
@@ -137770,7 +139058,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Insert-only deduplicated lookup table for browser user-agent strings shared by sessions and votes. Empty string represents an unknown session user agent.",
+      "comment": "Deduplicated lookup table for browser user-agent strings shared by sessions and votes; rows referenced by neither are removed by bounded cleanup. Empty string represents an unknown session user agent.",
       "foreignKeys": {},
       "indexes": {
         "uq_user_agent_strings__user_agent": {
@@ -137825,7 +139113,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_user_agent_strings_queue_cleanup_candidate": {
+          "definition": "CREATE TRIGGER trigger_user_agent_strings_queue_cleanup_candidate AFTER INSERT ON public.user_agent_strings FOR EACH ROW EXECUTE FUNCTION fn_register_new_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {
         "uq_user_agent_strings__user_agent": {
           "columns": ["user_agent"]
@@ -147679,6 +148971,9 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_user_sessions_queue_released_user_agent_string": {
+          "definition": "CREATE TRIGGER trigger_user_sessions_queue_released_user_agent_string AFTER DELETE OR UPDATE OF user_agent_string_id ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        },
         "trigger_user_sessions_updated_at": {
           "definition": "CREATE TRIGGER trigger_user_sessions_updated_at BEFORE UPDATE ON public.user_sessions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
@@ -148421,6 +149716,29 @@
         }
       },
       "indexes": {
+        "idx_user_vouch_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_vouch_votes__cleanup__id ON ONLY public.user_vouch_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_vouch_votes__target_user_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -148489,6 +149807,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_vouch_votes__user_agent__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_vouch_votes__user_agent__id ON ONLY public.user_vouch_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_agent_string_id",
+              "descending": false,
+              "expression": "user_agent_string_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_agent_string_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -148575,7 +149916,11 @@
         "columns": ["target_user_id", "id"]
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_user_vouch_votes__ua_release": {
+          "definition": "CREATE TRIGGER trigger_user_vouch_votes__ua_release AFTER DELETE ON public.user_vouch_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "user_warnings": {
@@ -150263,6 +151608,177 @@
         }
       }
     },
+    "vote_ballot_cleanup_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cursor_vote_id": {
+          "comment": "Last fully processed superseding ballot ID; not a durable relationship to a ballot.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "family": {
+          "comment": "Concrete ballot family selected by the cleanup worker.",
+          "dataType": "vote_ballot_cleanup_families",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "sweep_cutoff_id": {
+          "comment": "Frozen exclusive UUIDv7 upper bound for the current sweep.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Last committed ballot sweep progress.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "One monotonic aged-superseder frontier and frozen sweep end per ballot table.",
+      "foreignKeys": {},
+      "indexes": {
+        "vote_ballot_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX vote_ballot_cleanup_cursors_pkey ON public.vote_ballot_cleanup_cursors USING btree (family)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "family",
+              "descending": false,
+              "expression": "family",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["family"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_vote_ballot_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_vote_ballot_cleanup_cursors_updated_at BEFORE UPDATE ON public.vote_ballot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "vote_integrity_flag_detail_cleanup_cursors": {
+      "checkConstraints": {
+        "vote_integrity_flag_detail_cleanup_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_flag_id": {
+          "comment": "Last examined flag ID; not a relationship to the flag.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Checked singleton key serializes the sweep.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "sweep_cutoff_id": {
+          "comment": "Frozen exclusive UUIDv7 upper bound for the current sweep.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Last committed flag-detail sweep progress.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Bounded cyclic UUIDv7 sweep that strips aged identifying details while retaining moderation flags.",
+      "foreignKeys": {},
+      "indexes": {
+        "vote_integrity_flag_detail_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX vote_integrity_flag_detail_cleanup_cursors_pkey ON public.vote_integrity_flag_detail_cleanup_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_vote_integrity_flag_detail_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_vote_integrity_flag_detail_cleanup_cursors_updated_at BEFORE UPDATE ON public.vote_integrity_flag_detail_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "vote_integrity_flags": {
       "checkConstraints": {
         "chk_vote_integrity_flags__one_target": {
@@ -151362,6 +152878,29 @@
           ],
           "live": true,
           "predicate": "(hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_integrity_flags__identifying_details__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_integrity_flags__identifying_details__id ON public.vote_integrity_flags USING btree (id) WHERE (details ?| ARRAY['correlated_ips'::text, 'ip_address'::text, 'ipAddress'::text, 'device_id'::text, 'deviceId'::text, 'session_id'::text, 'sessionId'::text, 'user_agent'::text, 'userAgent'::text, 'user_agent_string_id'::text])",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(details ?| ARRAY['correlated_ips'::text, 'ip_address'::text, 'ipAddress'::text, 'device_id'::text, 'deviceId'::text, 'session_id'::text, 'sessionId'::text, 'user_agent'::text, 'userAgent'::text, 'user_agent_string_id'::text])",
           "primary": false,
           "ready": true,
           "unique": false,

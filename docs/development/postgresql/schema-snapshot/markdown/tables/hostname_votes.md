@@ -41,9 +41,12 @@ _none_
 **Indexes:**
 
 - `hostname_votes_pkey`: `CREATE UNIQUE INDEX hostname_votes_pkey ON ONLY public.hostname_votes USING btree (hostname_id, id)`
+- `idx_hostname_votes__cleanup__id`: `CREATE INDEX idx_hostname_votes__cleanup__id ON ONLY public.hostname_votes USING btree (id)`
 - `idx_hostname_votes__hostname_id__id`: `CREATE INDEX idx_hostname_votes__hostname_id__id ON ONLY public.hostname_votes USING btree (hostname_id, id)`
 - `idx_hostname_votes__hostname_id__user_id__id`: `CREATE INDEX idx_hostname_votes__hostname_id__user_id__id ON ONLY public.hostname_votes USING btree (hostname_id, user_id, id DESC)`
+- `idx_hostname_votes__user_agent__id`: `CREATE INDEX idx_hostname_votes__user_agent__id ON ONLY public.hostname_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_hostname_votes__user_id__hostname_id__id`: `CREATE INDEX idx_hostname_votes__user_id__hostname_id__id ON ONLY public.hostname_votes USING btree (user_id, hostname_id, id DESC)`
 
 **Triggers:**
-_none_
+
+- `trigger_hostname_votes__ua_release`: `CREATE TRIGGER trigger_hostname_votes__ua_release AFTER DELETE ON public.hostname_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`

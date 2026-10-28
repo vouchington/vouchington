@@ -40,12 +40,15 @@ _none_
 
 **Indexes:**
 
+- `idx_relation__user__category__topic__votes__cleanup__id`: `CREATE INDEX idx_relation__user__category__topic__votes__cleanup__id ON ONLY public.relation__user__category__topic__votes USING btree (id)`
 - `idx_relation__user__category__topic__votes__relation__id`: `CREATE INDEX idx_relation__user__category__topic__votes__relation__id ON ONLY public.relation__user__category__topic__votes USING btree (entity_relation_id, id)`
 - `idx_relation__user__category__topic__votes__relation__user__id`: `CREATE INDEX idx_relation__user__category__topic__votes__relation__user__id ON ONLY public.relation__user__category__topic__votes USING btree (entity_relation_id, user_id, id DESC)`
 - `idx_relation__user__category__topic__votes__user__id`: `CREATE INDEX idx_relation__user__category__topic__votes__user__id ON ONLY public.relation__user__category__topic__votes USING btree (user_id, id)`
 - `idx_relation__user__category__topic__votes__user__relation__id`: `CREATE INDEX idx_relation__user__category__topic__votes__user__relation__id ON ONLY public.relation__user__category__topic__votes USING btree (user_id, entity_relation_id, id DESC)`
+- `idx_relation__user__category__topic__votes__user_agent__id`: `CREATE INDEX idx_relation__user__category__topic__votes__user_agent__id ON ONLY public.relation__user__category__topic__votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `relation__user__category__topic__votes_pkey`: `CREATE UNIQUE INDEX relation__user__category__topic__votes_pkey ON ONLY public.relation__user__category__topic__votes USING btree (entity_relation_id, id)`
 
 **Triggers:**
 
+- `trigger_relation__user__category__topic__votes__ua_release`: `CREATE TRIGGER trigger_relation__user__category__topic__votes__ua_release AFTER DELETE ON public.relation__user__category__topic__votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`
 - `trigger_topic_merge_relation_vote_reservation`: `CREATE TRIGGER trigger_topic_merge_relation_vote_reservation BEFORE INSERT OR DELETE OR UPDATE ON public.relation__user__category__topic__votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_topic_merge_relation_child_not_reserved('relation__user__category__topic', 'subject_id', 'entity_relation_id', 'object_id')`

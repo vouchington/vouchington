@@ -40,7 +40,10 @@ _none_
 - `agent_moderation_votes_pkey`: `CREATE UNIQUE INDEX agent_moderation_votes_pkey ON ONLY public.agent_moderation_votes USING btree (agent_moderation_id, id)`
 - `idx_agent_moderation_votes__agent_moderation_id__id`: `CREATE INDEX idx_agent_moderation_votes__agent_moderation_id__id ON ONLY public.agent_moderation_votes USING btree (agent_moderation_id, id)`
 - `idx_agent_moderation_votes__agent_moderation_id__user_id__id`: `CREATE INDEX idx_agent_moderation_votes__agent_moderation_id__user_id__id ON ONLY public.agent_moderation_votes USING btree (agent_moderation_id, user_id, id DESC)`
+- `idx_agent_moderation_votes__cleanup__id`: `CREATE INDEX idx_agent_moderation_votes__cleanup__id ON ONLY public.agent_moderation_votes USING btree (id)`
+- `idx_agent_moderation_votes__user_agent__id`: `CREATE INDEX idx_agent_moderation_votes__user_agent__id ON ONLY public.agent_moderation_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_agent_moderation_votes__user_id__agent_moderation_id__id`: `CREATE INDEX idx_agent_moderation_votes__user_id__agent_moderation_id__id ON ONLY public.agent_moderation_votes USING btree (user_id, agent_moderation_id, id DESC)`
 
 **Triggers:**
-_none_
+
+- `trigger_agent_moderation_votes__ua_release`: `CREATE TRIGGER trigger_agent_moderation_votes__ua_release AFTER DELETE ON public.agent_moderation_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`

@@ -44,10 +44,13 @@ _none_
 **Indexes:**
 
 - `idx_post_votes__activitypub_pending`: `CREATE INDEX idx_post_votes__activitypub_pending ON ONLY public.post_votes USING btree (post_id, id) WHERE ((outbound_activitypub_distributed_at IS NULL) AND ((outbound_activitypub_like_activity_id = id) OR (outbound_activitypub_original_like_activity_id IS NOT NULL)))`
+- `idx_post_votes__cleanup__id`: `CREATE INDEX idx_post_votes__cleanup__id ON ONLY public.post_votes USING btree (id)`
 - `idx_post_votes__post_id__id`: `CREATE INDEX idx_post_votes__post_id__id ON ONLY public.post_votes USING btree (post_id, id)`
 - `idx_post_votes__post_id__user_id__id`: `CREATE INDEX idx_post_votes__post_id__user_id__id ON ONLY public.post_votes USING btree (post_id, user_id, id DESC)`
+- `idx_post_votes__user_agent__id`: `CREATE INDEX idx_post_votes__user_agent__id ON ONLY public.post_votes USING btree (user_agent_string_id) WHERE (user_agent_string_id IS NOT NULL)`
 - `idx_post_votes__user_id__post_id__id`: `CREATE INDEX idx_post_votes__user_id__post_id__id ON ONLY public.post_votes USING btree (user_id, post_id, id DESC)`
 - `post_votes_pkey`: `CREATE UNIQUE INDEX post_votes_pkey ON ONLY public.post_votes USING btree (post_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_post_votes__ua_release`: `CREATE TRIGGER trigger_post_votes__ua_release AFTER DELETE ON public.post_votes FOR EACH ROW WHEN ((old.user_agent_string_id IS NOT NULL)) EXECUTE FUNCTION fn_register_released_user_agent_string_cleanup_candidate()`

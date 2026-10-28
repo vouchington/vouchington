@@ -581,6 +581,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
  LANGUAGE plpgsql
 ```
 
+## `fn_register_new_user_agent_string_cleanup_candidate`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_new_user_agent_string_cleanup_candidate()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_register_oauth_client_grant_marker`
 
 ```sql
@@ -593,6 +601,14 @@ CREATE OR REPLACE FUNCTION public.fn_register_oauth_client_grant_marker()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_register_oauth_grant_retention_anchor()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_released_user_agent_string_cleanup_candidate`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_released_user_agent_string_cleanup_candidate()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
