@@ -23,7 +23,6 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
       .send({ flow_id: uuidv7(), completion_token: 'token' })
       .expect(401)
   })
-
   it('persists only a purpose-bound token hash', async () => {
     const user = await createTestUser()
     const { flowId, token } = await createCompletion(user.id)
@@ -31,7 +30,6 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
     expect(storedHash).toMatch(/^[A-F0-9]{64}$/)
     expect(storedHash).not.toContain(token)
   })
-
   it('rejects a malformed flow id before querying PostgreSQL', async () => {
     const request = createRequest()
     await request.authenticateAs(await createTestUser())
@@ -40,7 +38,6 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
       .send({ flow_id: 'not-a-uuid', completion_token: 'token' })
       .expect(400)
   })
-
   it('atomically attaches the DID, consumes the completion, and rejects replay', async () => {
     const user = await createTestUser()
     const request = await createAuthenticatedRequest(user)
@@ -60,7 +57,6 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
       .send({ flow_id: flowId, completion_token: token, completion_proof_verifier: verifier })
       .expect(404)
   })
-
   it('allows only one concurrent consumer to attach and consume a completion', async () => {
     const user = await createTestUser()
     const request = await createAuthenticatedRequest(user)
@@ -74,11 +70,17 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
       ),
     )
 
-    expect(responses.map(response => response.status).toSorted()).toEqual([204, 404])
+    // A pre-commit loser hits the attached-session fence; a post-commit loser sees 404.
+    const outcomes = responses
+      .map(({ status, body }) => (status === 401 ? `401:${body.code}` : String(status)))
+      .toSorted()
+    expect([
+      ['204', '404'],
+      ['204', '401:SESSION_RELOGIN_REQUIRED'],
+    ]).toContainEqual(outcomes)
     expect((await getTestBlueskyLinkedAccountRow(did))?.user_id).toBe(user.id)
     expect(await testBlueskyLinkCompletionExists(flowId)).toBe(false)
   })
-
   it('rejects a same-user session that did not initiate the completion', async () => {
     const user = await createTestUser()
     const initiatingRequest = await createAuthenticatedRequest(user)
@@ -99,7 +101,6 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
     await expect(isSessionRevoked(completion.session.sid, { userId: user.id })).resolves.toBe(false)
     await expect(isSessionRevoked(other.sid, { userId: user.id })).resolves.toBe(false)
   })
-
   it('rejects a different device for the initiating session without consuming the completion', async () => {
     const user = await createTestUser()
     const completion = await createCompletion(user.id)
@@ -115,7 +116,6 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
     expect(await testBlueskyLinkCompletionExists(completion.flowId)).toBe(true)
     await expect(isSessionRevoked(completion.session.sid, { userId: user.id })).resolves.toBe(false)
   })
-
   it('rechecks deletion on the writer before consuming a completion', async () => {
     const user = await createTestUser()
     const completion = await createCompletion(user.id)
