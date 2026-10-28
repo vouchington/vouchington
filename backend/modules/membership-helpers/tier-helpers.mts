@@ -8,7 +8,7 @@ type MembershipTierFields = Pick<Membership, 'plan' | 'status' | 'expires_at'> &
   Partial<Pick<Membership, 'stripe_subscription_id'>>
 type ExpiringMembershipTierFields = MembershipTierFields
 
-export function isActiveMembership(m: MembershipTierFields | null): m is MembershipTierFields {
+function isActiveMembership(m: MembershipTierFields | null): m is MembershipTierFields {
   if (!m) return false
   return m.status === 'active' || m.status === 'past_due'
 }

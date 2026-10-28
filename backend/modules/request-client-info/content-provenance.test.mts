@@ -1,25 +1,36 @@
 import { describe, expect, it } from 'vitest'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import { getRequestContentProvenance, resolveContentProvenance } from './content-provenance.mts'
+import { getRequestContentProvenance } from './content-provenance.mts'
 import {
   runWithCredentialRequestContext,
   runWithSessionRequestContext,
-  type RequestOrigin,
+  type CredentialRequestOrigin,
+  type RequestClientInfo,
 } from './index.mts'
 
-const session = (client: 'web' | 'swift' | 'dotnet' | null): RequestOrigin => ({
-  interface: 'rest',
-  credential: 'session',
-  client,
-  oauthClientId: null,
-})
+describe('getRequestContentProvenance origin mapping', () => {
+  it.each<[string, RequestClientInfo['client'], ContentProvenance]>([
+    ['web session', 'web', { createdVia: 'web', oauthClientId: null }],
+    ['swift session', 'swift', { createdVia: 'swift', oauthClientId: null }],
+    ['dotnet session', 'dotnet', { createdVia: 'dotnet', oauthClientId: null }],
+  ])('maps a %s origin', (_name, client, expected) => {
+    const clientInfo: RequestClientInfo = {
+      client,
+      platform: client === 'dotnet' ? 'windows' : client === 'swift' ? 'ios' : 'web',
+      appVersion: 'test',
+      deviceId: 'test',
+      ipAddress: '::1',
+    }
+    expect(runWithSessionRequestContext(clientInfo, getRequestContentProvenance)).toEqual(expected)
+  })
 
-describe('resolveContentProvenance', () => {
-  it.each<[string, RequestOrigin, ContentProvenance | null]>([
-    ['web session', session('web'), { createdVia: 'web', oauthClientId: null }],
-    ['swift session', session('swift'), { createdVia: 'swift', oauthClientId: null }],
-    ['dotnet session', session('dotnet'), { createdVia: 'dotnet', oauthClientId: null }],
-    ['session without client information', session(null), null],
+  it('rejects a session without client information', () => {
+    expect(() => runWithSessionRequestContext(null, getRequestContentProvenance)).toThrow(
+      expect.objectContaining({ status: 400, code: 'INVALID_CLIENT_INFO' }),
+    )
+  })
+
+  it.each<[string, CredentialRequestOrigin, ContentProvenance]>([
     [
       'MCP API key',
       { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null },
@@ -41,7 +52,7 @@ describe('resolveContentProvenance', () => {
       { createdVia: 'api', oauthClientId: 'client-id' },
     ],
   ])('maps a %s origin', (_name, origin, expected) => {
-    expect(resolveContentProvenance(origin)).toEqual(expected)
+    expect(runWithCredentialRequestContext(origin, getRequestContentProvenance)).toEqual(expected)
   })
 })
 

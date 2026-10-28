@@ -1,5 +1,5 @@
-export const MIN_LIMIT = 1
-export const MAX_LIMIT = 100
+const MIN_LIMIT = 1
+const MAX_LIMIT = 100
 export const DEFAULT_LIMIT = 25
 export const ANON_MAX_LIMIT = 25
 export const TRENDING_TOPICS_DEFAULT_LIMIT = 20

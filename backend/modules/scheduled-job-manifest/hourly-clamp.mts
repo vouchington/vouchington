@@ -9,8 +9,8 @@ import type { ScheduledJobRepeat } from '@vouchington/worker-runtime/schedule-ma
  * onto different minutes, and a single-minute cron such as `17 * * * *` pins its own minute. Both
  * are rewritten to a cron pattern whose minute field is `0`.
  */
-export const HOURLY_FLOOR_MS = 3_600_000
-export const HOURLY_FLOOR_PATTERN = '0 * * * *'
+const HOURLY_FLOOR_MS = 3_600_000
+const HOURLY_FLOOR_PATTERN = '0 * * * *'
 const HOURLY_FLOOR_SCHEDULE_TEXT = 'every 1h'
 
 const WAKE_MINUTE_FIELD = '0'

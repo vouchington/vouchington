@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import {
-  HOURLY_FLOOR_MS,
-  HOURLY_FLOOR_PATTERN,
-  alignedScheduleText,
-  clampScheduledJobRepeatToHourlyFloor,
-} from './hourly-clamp.mts'
+import { alignedScheduleText, clampScheduledJobRepeatToHourlyFloor } from './hourly-clamp.mts'
 
-const HOUR = HOURLY_FLOOR_MS
+const HOUR = 60 * 60_000
+const HOURLY_PATTERN = '0 * * * *'
 const DAY = 24 * HOUR
 
 describe('clampScheduledJobRepeatToHourlyFloor', () => {
@@ -19,7 +15,7 @@ describe('clampScheduledJobRepeatToHourlyFloor', () => {
       ['exactly 1 hour', HOUR],
     ])('aligns every %s to the top of the hour', (_label, every) => {
       expect(clampScheduledJobRepeatToHourlyFloor({ every })).toEqual({
-        repeat: { pattern: HOURLY_FLOOR_PATTERN },
+        repeat: { pattern: HOURLY_PATTERN },
         clamped: true,
       })
     })
@@ -113,7 +109,7 @@ describe('clampScheduledJobRepeatToHourlyFloor', () => {
       'accepts the valid minute field of %s',
       pattern => {
         expect(clampScheduledJobRepeatToHourlyFloor({ pattern }).repeat).toEqual({
-          pattern: HOURLY_FLOOR_PATTERN,
+          pattern: HOURLY_PATTERN,
         })
       },
     )

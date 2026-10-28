@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  getMarketingPostalAddress,
-  MARKETING_POSTAL_ADDRESS_PLACEHOLDER,
-} from './marketing-address.mts'
+import { getMarketingPostalAddress } from './marketing-address.mts'
 
 describe('getMarketingPostalAddress', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -16,6 +13,6 @@ describe('getMarketingPostalAddress', () => {
   it('uses the deployment placeholder until an address is configured', () => {
     vi.stubEnv('MARKETING_POSTAL_ADDRESS', undefined)
 
-    expect(getMarketingPostalAddress()).toBe(MARKETING_POSTAL_ADDRESS_PLACEHOLDER)
+    expect(getMarketingPostalAddress()).toBe('[Voucha mailing address — pending; see #7113]')
   })
 })

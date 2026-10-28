@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Membership } from '@voucha/types/entities/membership'
-import { isActiveMembership, hasPlusTier, hasUnexpiredPlusTier } from './tier-helpers.mts'
+import { hasPlusTier, hasUnexpiredPlusTier } from './tier-helpers.mts'
 
 const fixedNow = new Date('2026-10-05T23:59:40.000Z')
 
@@ -36,40 +36,41 @@ function makeMembership(overrides: Partial<Membership> = {}): Membership {
   }
 }
 
-describe('isActiveMembership', () => {
+describe('hasPlusTier status cases', () => {
   it('returns false for null', () => {
-    expect(isActiveMembership(null)).toBe(false)
+    expect(hasPlusTier(null, fixedNow)).toBe(false)
   })
 
   it('returns true for active status', () => {
-    expect(isActiveMembership(makeMembership({ status: 'active' }))).toBe(true)
+    expect(hasPlusTier(makeMembership({ status: 'active' }), fixedNow)).toBe(true)
   })
 
   it('returns true for past_due status', () => {
-    expect(isActiveMembership(makeMembership({ status: 'past_due' }))).toBe(true)
+    expect(hasPlusTier(makeMembership({ status: 'past_due' }), fixedNow)).toBe(true)
   })
 
   it('keeps a Stripe subscription active after its period end', () => {
     expect(
-      isActiveMembership(
+      hasPlusTier(
         makeMembership({
           stripe_subscription_id: 'sub_lapsed',
           expires_at: new Date(fixedNow.getTime() - 1_000),
         }),
+        fixedNow,
       ),
     ).toBe(true)
   })
 
   it('returns false for cancelled status', () => {
-    expect(isActiveMembership(makeMembership({ status: 'cancelled' }))).toBe(false)
+    expect(hasPlusTier(makeMembership({ status: 'cancelled' }), fixedNow)).toBe(false)
   })
 
   it('returns false for expired status', () => {
-    expect(isActiveMembership(makeMembership({ status: 'expired' }))).toBe(false)
+    expect(hasPlusTier(makeMembership({ status: 'expired' }), fixedNow)).toBe(false)
   })
 
   it('returns false for paused status', () => {
-    expect(isActiveMembership(makeMembership({ status: 'paused' }))).toBe(false)
+    expect(hasPlusTier(makeMembership({ status: 'paused' }), fixedNow)).toBe(false)
   })
 })
 
