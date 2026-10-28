@@ -17,6 +17,12 @@ keeps the reconnect path warm. New SSE endpoints default to a short cap unless a
 exemption applies. Routine cycle expiry emits no named error event, so native retry treats it
 like any dropped connection. API routes cycle through `startSSE`.
 
+Image upload tracking probes durable status when its stream drops. When the browser permanently
+closes the stream, a transient status-probe failure must schedule another
+probe: no later transport event can restart recovery. These retries retain the existing probe error
+budget and cancellation cleanup; a successful nonterminal probe reattaches the stream. Connection
+loss alone never marks the image ready or failed.
+
 The GlideMQ dashboard event stream is an Express route in the API process, so the entrypoint ends
 that response on the same cycle and still writes no named error event. The dashboard page
 reconnects. Queue rows stay in the queue; event lines that existed only on the dropped connection
