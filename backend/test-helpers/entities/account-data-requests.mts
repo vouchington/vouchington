@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
@@ -8,21 +7,21 @@ import {
 
 export async function expireUserDataRequestForTest(requestId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* expireUserDataRequestForTest */
     UPDATE user_data_requests
     SET expires_at = NOW() - INTERVAL '1 second'
     WHERE id = ${requestId}
-  `),
+  `,
   )
 }
 
 export async function clearUserDataRequestExpiryForTest(requestId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* clearUserDataRequestExpiryForTest */
     UPDATE user_data_requests
     SET expires_at = NULL
     WHERE id = ${requestId}
-  `),
+  `,
   )
 }
 
@@ -30,11 +29,11 @@ export async function getUserDataRequestStatusAndS3KeyForTest(
   requestId: string,
 ): Promise<{ status: DataRequestStatus; s3_key: string | null } | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getUserDataRequestStatusAndS3KeyForTest */
     SELECT processing_started_at, completed_at, failed_at, s3_key, expires_at
     FROM user_data_requests
     WHERE id = ${requestId}
-  `),
+  `,
   )
   const row = rows[0] as
     | {
@@ -71,11 +70,11 @@ export async function getTestDataRequestAttemptFence(
   const { rows } = await write<{
     upload_lease_expires_at: Date | null
   }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestDataRequestAttemptFence */
     SELECT upload_lease_expires_at
     FROM user_data_request_attempts
     WHERE request_id = ${requestId}
-  `),
+  `,
   )
   return rows[0] ?? null
 }
