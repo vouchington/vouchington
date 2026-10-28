@@ -1,14 +1,14 @@
+import {
+  createLockedEntityId,
+  writeBatchFixtureFile as writeTempFile,
+} from '@voucha/test-helpers/bedrock-batch-creation-fixtures'
 import type { ReadStream } from 'node:fs'
-import { rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { StopModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils/ids'
-import { createCrawlChunkEntityId } from '@services/bedrock-embeddings-batch/entities/crawl-chunk-entity-id'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import {
   getTestBatchEntities,
@@ -21,12 +21,6 @@ import {
   createTestBatch,
   createTestUserDirect,
   insertTestCrawl,
-  insertTestCrawlChunk,
-  insertTestImage,
-  insertTestPost,
-  insertTestRssFeed,
-  insertTestRssFeedItem,
-  insertTestTopic,
 } from '@voucha/test-helpers'
 import { createBatch as submitBatch } from './create.mts'
 
@@ -67,7 +61,6 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
     } as unknown as typeof import('@modules/aws/bedrock-control').BedrockControlClient,
   }),
 )
-const tempFiles: string[] = []
 describe('createBatch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -78,9 +71,8 @@ describe('createBatch', () => {
       jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`,
     } as never)
   })
-  afterEach(async () => {
+  afterEach(() => {
     vi.unstubAllEnvs()
-    await Promise.all(tempFiles.splice(0).map(path => rm(path, { force: true })))
   })
   it.each([['topics'], ['posts'], ['rss_feed_items'], ['crawl_chunks'], ['images']] as const)(
     'inserts typed FK lock rows for %s batches',
@@ -188,26 +180,31 @@ describe('createBatch', () => {
     expect(BedrockControlClient.send).not.toHaveBeenCalled()
   })
 
-  it('fails instead of partially acquiring locks when another batch already locked an entity', async () => {
-    const user = await createTestUserDirect()
-    const entityId = await createLockedEntityId('topics', user.id)
-    const { batchId: existingBatchId } = await createTestBatch({
-      entityIds: [entityId],
-      jobType: 'topics',
-    })
-    const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
-    const entityIdsFile = await writeTempFile('entity-ids.csv', `${entityId}\n`)
+  it.each(['topics', 'posts', 'rss_feed_items', 'crawl_chunks', 'images'] as const)(
+    'fails before submission when a fixture batch already holds multiple %s locks',
+    async jobType => {
+      const user = await createTestUserDirect()
+      const entityIds = [
+        await createLockedEntityId(jobType, user.id, 12),
+        await createLockedEntityId(jobType, user.id, 3),
+      ]
+      const { batchId: existingBatchId } = await createTestBatch({ entityIds, jobType, records: 0 })
+      const inputFile = await writeTempFile('input.jsonl', 'irrelevant for this test')
+      const entityIdsFile = await writeTempFile(
+        'entity-ids.csv',
+        entityIds.map(id => `${id}\n`).join(''),
+      )
 
-    await expect(createBatch(inputFile, 'topics', 1, entityIdsFile)).rejects.toThrow(
-      'duplicate key value violates unique constraint',
-    )
-
-    expect(await getTestBatchEntities(existingBatchId)).toEqual([
-      { entity_type: 'topics', entity_id: entityId },
-    ])
-    expect(S3BedrockBatchClient.send).not.toHaveBeenCalled()
-    expect(BedrockControlClient.send).not.toHaveBeenCalled()
-  })
+      await expect(
+        createBatch(inputFile, jobType, entityIds.length, entityIdsFile),
+      ).rejects.toThrow('duplicate key value violates unique constraint')
+      expect(await getTestBatchEntities(existingBatchId)).toEqual(
+        entityIds.toSorted().map(entityId => ({ entity_type: jobType, entity_id: entityId })),
+      )
+      expect(S3BedrockBatchClient.send).not.toHaveBeenCalled()
+      expect(BedrockControlClient.send).not.toHaveBeenCalled()
+    },
+  )
 
   it('keeps the persisted batch when stopping the submitted job also fails', async () => {
     const user = await createTestUserDirect()
@@ -241,59 +238,3 @@ describe('createBatch', () => {
     expect(BedrockControlClient.send).toHaveBeenCalledTimes(2)
   })
 })
-
-async function createLockedEntityId(jobType: BatchJobType, userId: string): Promise<string> {
-  const suffix = randomUUID().slice(0, 8)
-  switch (jobType) {
-    case 'topics':
-      return insertTestTopic({
-        name: `Batch Lock ${suffix}`,
-        slug: `batch-lock-${suffix}`,
-        createdById: userId,
-      })
-    case 'posts':
-      return insertTestPost({
-        title: `Batch Lock ${suffix}`,
-        slug: `batch-lock-post-${suffix}`,
-        markdown: 'Post body',
-        createdById: userId,
-      })
-    case 'rss_feed_items': {
-      const topicId = await createLockedEntityId('topics', userId)
-      const feedId = await insertTestRssFeed({ topicId, title: `Batch Lock Feed ${suffix}` })
-      const urlId = await createTestUrlWithHostname()
-      return insertTestRssFeedItem({
-        rssFeedId: feedId,
-        urlId,
-        guid: `batch-lock-${suffix}`,
-        itemData: { title: 'RSS item' },
-        contentSha256: Buffer.from('1'.repeat(64), 'hex'),
-      })
-    }
-    case 'crawl_chunks': {
-      const urlId = await createTestUrlWithHostname()
-      const crawl = await insertTestCrawl({
-        urlId,
-        statusCode: 200,
-        markdown: 'Crawl markdown',
-      })
-      await insertTestCrawlChunk({
-        urlId,
-        crawlId: crawl.id,
-        orderIndex: 0,
-        markdown: 'Chunk markdown',
-        contentSha256: Buffer.from('2'.repeat(64), 'hex'),
-      })
-      return createCrawlChunkEntityId(crawl.id, 0)
-    }
-    case 'images':
-      return insertTestImage(userId)
-  }
-}
-
-async function writeTempFile(name: string, contents: string): Promise<string> {
-  const filePath = join(tmpdir(), `bedrock-create-test-${randomUUID()}-${name}`)
-  await writeFile(filePath, contents)
-  tempFiles.push(filePath)
-  return filePath
-}

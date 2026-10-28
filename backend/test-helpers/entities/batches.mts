@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import { mintUUIDv7 } from '@modules/utils/ids'
 
@@ -20,10 +19,10 @@ export const createTestBatch = async (
 
   // Create the batch first
   await write(
-    allowUnannotatedQuery(`
+    `/* createTestBatch */
     INSERT INTO bedrock_embedding_batches (id, model_id, job_type, data, records, submitted_at)
     VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-  `),
+  `,
     [
       batchId,
       'amazon.nova-2-multimodal-embeddings-v1:0',
@@ -35,15 +34,13 @@ export const createTestBatch = async (
 
   // Insert batch entities if provided
   if (entityIds.length > 0) {
-    const values: unknown[] = []
-    const rows: string[] = []
-    for (const entityId of entityIds) {
-      rows.push(`($${values.push(batchId)}, $${values.push(jobType)}, $${values.push(entityId)})`)
-    }
+    // Materialize IDs after the batch write, before the entity query waits for a connection.
+    const values = [...entityIds]
     await write(
-      allowUnannotatedQuery(`
-      WITH entity_ids (batch_id, entity_type, entity_id) AS (
-        VALUES ${rows.join(', ')}
+      `/* createTestBatch:entities */
+      WITH entity_ids (batch_id, entity_type, entity_id, input_order) AS (
+        SELECT $1::uuid, $2::text, entity_id, input_order
+        FROM UNNEST($3::text[]) WITH ORDINALITY AS input(entity_id, input_order)
       )
       INSERT INTO bedrock_embedding_batch_entities (
         batch_id,
@@ -65,8 +62,9 @@ export const createTestBatch = async (
         CASE WHEN entity_type = 'crawl_chunks' THEN substring(entity_id from '-([0-9]+)$')::int ELSE NULL END,
         CASE WHEN entity_type = 'images' THEN entity_id::uuid ELSE NULL END
       FROM entity_ids
-    `),
-      values,
+      ORDER BY input_order
+    `,
+      [batchId, jobType, values],
     )
   }
 
@@ -78,11 +76,11 @@ export const createTestBatch = async (
  */
 export const countBatchEntities = async (batchId: string): Promise<number> => {
   const { rows } = await read(
-    allowUnannotatedQuery(`
+    `/* countBatchEntities */
     SELECT COUNT(*)::int as count
     FROM bedrock_embedding_batch_entities
     WHERE batch_id = $1
-  `),
+  `,
     [batchId],
   )
   return rows[0].count
