@@ -93,13 +93,21 @@ export async function createTestGroupConversation(options: CreateTestGroupConver
   `)
   const conversationId = convRows[0].id as string
 
-  const insertSql = sql`/* createTestGroupConversation:participants */
+  const ownerUserId = options.createdById
+  const memberUserIds = [...options.memberUserIds]
+  // UNION ALL keeps duplicate inputs so the active-participant unique index rejects them.
+  await write(sql`/* createTestGroupConversation:participants */
     INSERT INTO conversation_participants (conversation_id, user_id, role)
-    VALUES (${conversationId}, ${options.createdById}, 'owner')`
-  for (const memberId of options.memberUserIds) {
-    insertSql.append(sql`, (${conversationId}, ${memberId}, 'member')`)
-  }
-  await write(insertSql)
+    SELECT ${conversationId}::uuid, participant.user_id, participant.role
+    FROM (
+      SELECT ${ownerUserId}::uuid AS user_id,
+        'owner'::conversation_participant_roles AS role, 0::bigint AS ordinal
+      UNION ALL
+      SELECT member.user_id, 'member'::conversation_participant_roles, member.ordinal
+      FROM UNNEST(${memberUserIds}::uuid[]) WITH ORDINALITY AS member(user_id, ordinal)
+    ) AS participant
+    ORDER BY participant.ordinal
+  `)
 
   return { id: conversationId }
 }
