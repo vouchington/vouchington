@@ -11,7 +11,7 @@ import {
   type PostHashtagIntent,
 } from './update/hashtag-intent.mts'
 
-export function postUpdateMayAffectCategories(
+function postUpdateMayAffectCategories(
   changes: UpdatePostChanges,
   hasHashtagIntent: boolean,
 ): boolean {
@@ -25,7 +25,7 @@ export function postUpdateMayAffectCategories(
 }
 
 /** Locks the editor and owner fences in stable order; only the editor must still be active. */
-export async function lockPostCategoryMutationUsers(
+async function lockPostCategoryMutationUsers(
   query: TransactionQuery,
   postId: string,
   editorId: string,

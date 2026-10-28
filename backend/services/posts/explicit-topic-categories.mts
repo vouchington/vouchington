@@ -28,7 +28,7 @@ export async function syncPostExplicitTopicCategoriesInTransaction(
   })
 }
 
-export function getExplicitTopicCategoryIds(
+function getExplicitTopicCategoryIds(
   categories: NonNullable<CreatePostUpdates['categories']>,
 ): string[] {
   return [

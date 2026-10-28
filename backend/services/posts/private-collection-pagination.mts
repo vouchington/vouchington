@@ -17,7 +17,7 @@ interface PrivatePostCollectionPaginationDescriptor {
   terms: readonly PrivatePostCollectionOrderTerm[]
 }
 
-export const PRIVATE_POST_COLLECTION_PAGINATION = definePaginationDescriptor('DESC', [
+const PRIVATE_POST_COLLECTION_PAGINATION = definePaginationDescriptor('DESC', [
   {
     sqlExpression: 'relation.created_at',
     cursorScopeField: 'created-at',
@@ -30,7 +30,7 @@ export const PRIVATE_POST_COLLECTION_PAGINATION = definePaginationDescriptor('DE
   },
 ])
 
-export const PRIVATE_POST_COLLECTION_ORDER = PRIVATE_POST_COLLECTION_PAGINATION.terms
+const PRIVATE_POST_COLLECTION_ORDER = PRIVATE_POST_COLLECTION_PAGINATION.terms
 
 export const PRIVATE_POST_COLLECTION_CURSOR_ORDER_SCOPE = PRIVATE_POST_COLLECTION_ORDER.map(
   term => `${term.cursorScopeField}-${PRIVATE_POST_COLLECTION_PAGINATION.direction.toLowerCase()}`,

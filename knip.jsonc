@@ -188,6 +188,10 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
     },
+    "backend/services/posts": {
+      "entry": ["**/*.mts"],
+      "ignoreExportsUsedInFile": false,
+    },
     "backend/services/mcp-tools": {
       // Keep Knip's package.json-derived entry and default source/test project patterns so API
       // route imports reach authenticate/challenge internals in production analysis.

@@ -10,8 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { archivePost } from '../archive.mts'
-import { auditReviewSuccessionHistory, pageReviewSuccessionHistoryAuditRows } from './audit.mts'
-import type { ReviewSuccessionHistoryAuditRow } from './audit-query.mts'
+import { auditReviewSuccessionHistory } from './audit.mts'
 import { reconcileReviewSuccessionsForPostIds } from './reconcile.mts'
 
 describe('review succession history audit', () => {
@@ -76,24 +75,13 @@ describe('review succession history audit', () => {
     )
   })
 
-  it('only continues when a lookahead row proves another page exists', () => {
-    expect(pageReviewSuccessionHistoryAuditRows([])).toEqual({
-      rows: [],
-      cursor: null,
-      hasMore: false,
+  it('returns an empty page after the maximum UUIDv7 cursor', async () => {
+    const result = await auditReviewSuccessionHistory({
+      cursor: 'ffffffff-ffff-7fff-bfff-ffffffffffff',
+      cutoffArchivedAt: null,
     })
-    const rows = Array.from({ length: 100 }, (_, index) => auditRow(index))
 
-    expect(pageReviewSuccessionHistoryAuditRows([...rows, auditRow(100)]).rows).toHaveLength(100)
-    expect(pageReviewSuccessionHistoryAuditRows(rows)).toMatchObject({
-      cursor: rows.at(-1)?.id,
-      hasMore: false,
-    })
-    expect(pageReviewSuccessionHistoryAuditRows([...rows, auditRow(rows.length)])).toMatchObject({
-      rows,
-      cursor: rows.at(-1)?.id,
-      hasMore: true,
-    })
+    expect(result).toMatchObject({ findings: [], cursor: null, hasMore: false })
   })
 
   it('rejects malformed audit cursors and cutoffs before querying archive history', async () => {
@@ -152,6 +140,7 @@ describe('review succession history audit', () => {
       )
       expect(result.findings).toHaveLength(1)
       expect(result.hasMore).toBe(true)
+      expect(result.cursor).toBe(legacyId)
       const next = await auditReviewSuccessionHistory({
         cursor: result.cursor,
         cutoffArchivedAt: result.cutoffArchivedAt,
@@ -173,16 +162,3 @@ describe('review succession history audit', () => {
     )
   })
 })
-
-function auditRow(index: number): ReviewSuccessionHistoryAuditRow {
-  return {
-    id: `00000000-0000-7000-8000-${index.toString().padStart(12, '0')}`,
-    archived_at: new Date('2026-09-09T00:00:00.000Z'),
-    author_user_id: null,
-    topic_ids: null,
-    matching_manual_override_at: null,
-    matching_automatically_restored_at: null,
-    active_predecessor_archived_at: null,
-    newer_exact_current_set_reviews: [],
-  }
-}

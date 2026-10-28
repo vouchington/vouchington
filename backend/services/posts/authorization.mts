@@ -174,7 +174,7 @@ export async function assertDelegatedPostActorActive(
   assertNotSuspended(user)
 }
 
-export function assertDelegatedCommunityWritable(community: { archived_at: unknown }): void {
+function assertDelegatedCommunityWritable(community: { archived_at: unknown }): void {
   assert(!community.archived_at, 403, 'Community is archived')
 }
 

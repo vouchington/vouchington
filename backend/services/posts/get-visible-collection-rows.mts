@@ -21,7 +21,7 @@ const POST_RELATION_TABLE_NAMES: ReadonlySet<PostRelationTableName> = new Set(
   Object.values(POST_LIST_TABLES),
 )
 
-export function assertPostRelationTableName(tableName: string): PostRelationTableName {
+function assertPostRelationTableName(tableName: string): PostRelationTableName {
   return assertWhitelistedSqlIdentifier(
     tableName,
     POST_RELATION_TABLE_NAMES,

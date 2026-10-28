@@ -6,13 +6,13 @@ import {
   type ReviewSuccessionHistoryAuditRow,
 } from './audit-query.mts'
 
-export type ReviewSuccessionHistoryAuditClassification =
+type ReviewSuccessionHistoryAuditClassification =
   | 'active_automatic'
   | 'terminal_manual'
   | 'ambiguous_missing_epoch'
   | 'incoherent'
 
-export type ReviewSuccessionHistoryAuditFinding = {
+type ReviewSuccessionHistoryAuditFinding = {
   postId: string
   classification: ReviewSuccessionHistoryAuditClassification
   currentAuthorUserId: string | null
@@ -56,7 +56,7 @@ export async function auditReviewSuccessionHistory(options: {
   }
 }
 
-export function pageReviewSuccessionHistoryAuditRows(
+function pageReviewSuccessionHistoryAuditRows(
   rows: readonly ReviewSuccessionHistoryAuditRow[],
   pageSize = getPostsWorkLimit('review_succession_history_audit_page_size'),
 ): { rows: readonly ReviewSuccessionHistoryAuditRow[]; cursor: string | null; hasMore: boolean } {

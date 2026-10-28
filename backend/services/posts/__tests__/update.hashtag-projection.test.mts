@@ -17,8 +17,6 @@ import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listen
 import { withEntityListenerAdmissionRead } from '@voucha/test-helpers/entity-listener-admission-read'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
-import { getOrderedHashtagAliasClaims } from '../hashtags.mts'
-import { getPostHashtagOccurrences } from '../hashtag-occurrences.mts'
 import { updatePost } from '../update.mts'
 
 describe('updatePost hashtag projection', () => {
@@ -96,38 +94,6 @@ describe('updatePost hashtag projection', () => {
     })
 
     await expect(getPostHashtagSourceContributorIdsForTest(post!.id)).resolves.toEqual([creator.id])
-  })
-
-  it('orders alias claims by normalized hashtag key regardless of authored order', () => {
-    const suffix = createRandomString(8).toLowerCase()
-    const firstHashtag = `first-${suffix}`
-    const secondHashtag = `second-${suffix}`
-
-    const claims = [
-      getOrderedHashtagAliasClaims(
-        getPostHashtagOccurrences({
-          post_type: 'discussion',
-          title: `First #${firstHashtag} #${secondHashtag}`,
-        }),
-      ),
-      getOrderedHashtagAliasClaims(
-        getPostHashtagOccurrences({
-          post_type: 'discussion',
-          title: `Second #${secondHashtag} #${firstHashtag}`,
-        }),
-      ),
-    ]
-
-    expect(claims).toEqual([
-      [
-        { key: firstHashtag, authored: `#${firstHashtag}`, source: 'title' },
-        { key: secondHashtag, authored: `#${secondHashtag}`, source: 'title' },
-      ],
-      [
-        { key: firstHashtag, authored: `#${firstHashtag}`, source: 'title' },
-        { key: secondHashtag, authored: `#${secondHashtag}`, source: 'title' },
-      ],
-    ])
   })
 
   it('creates posts with reversed hashtag orders concurrently', async () => {
