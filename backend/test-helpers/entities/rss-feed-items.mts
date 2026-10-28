@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import { insertTestCentralizedEmbeddingsBulk } from './_bedrock-embeddings-support.mts'
 import sql from 'sql-template-strings'
@@ -51,19 +50,19 @@ export async function insertTestRssFeedItem(data: {
 
   await using transaction = await beginTransaction()
   const { rows: identityRows } = await transaction(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestRssFeedItem:guid */
         INSERT INTO rss_feed_item_guids (id, url_hostname_id, guid)
         VALUES (COALESCE(${id}::uuid, uuidv7()), ${urlHostnameId}, ${data.guid})
         ON CONFLICT (url_hostname_id, guid) DO UPDATE
           SET guid = EXCLUDED.guid
         RETURNING id
-      `),
+      `,
   )
   const itemId = identityRows[0].id as string
 
   if (data.embedding && data.tokens !== undefined) {
     await transaction(
-      allowUnannotatedQuery(sql`
+      sql`/* insertTestRssFeedItem:withEmbedding */
           INSERT INTO rss_feed_items (
             id,
             url_id,
@@ -83,11 +82,11 @@ export async function insertTestRssFeedItem(data: {
           )
           ON CONFLICT (id) DO UPDATE
             SET data = EXCLUDED.data
-        `),
+        `,
     )
   } else {
     await transaction(
-      allowUnannotatedQuery(sql`
+      sql`/* insertTestRssFeedItem:withoutEmbedding */
           INSERT INTO rss_feed_items (
             id,
             url_id,
@@ -101,12 +100,12 @@ export async function insertTestRssFeedItem(data: {
           )
           ON CONFLICT (id) DO UPDATE
             SET data = EXCLUDED.data
-        `),
+        `,
     )
   }
 
   await transaction(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestRssFeedItem:source */
     INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
     VALUES (
       ${data.rssFeedId},
@@ -114,7 +113,7 @@ export async function insertTestRssFeedItem(data: {
       (SELECT published_at FROM rss_feed_items WHERE id = ${itemId})
     )
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 
   await transaction.commit()
@@ -128,12 +127,12 @@ export async function addDummyEmbeddingToRssFeedItem(
   const vector = options?.embedding ?? makeRandomEmbedding()
   const dummyEmbedding = `[${vector.join(',')}]`
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addDummyEmbeddingToRssFeedItem */
     UPDATE rss_feed_items
     SET bedrock_nova_multimodal_v1_embedding = ${dummyEmbedding}::vector,
         bedrock_nova_multimodal_v1_embedding_created_at = CURRENT_TIMESTAMP
     WHERE id = ${rssFeedItemId}
-  `),
+  `,
   )
 }
 
@@ -142,9 +141,9 @@ export async function setRssFeedItemMediaType(
   mediaType: 'article' | 'audio' | 'video',
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setRssFeedItemMediaType */
     UPDATE rss_feed_items SET media_type = ${mediaType}::rss_feed_item_media_types WHERE id = ${itemId}
-  `),
+  `,
   )
 }
 
@@ -153,16 +152,14 @@ export async function setRssFeedItemVideoMetadata(
   options: { videoId: string; videoPlatform: string },
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(
-      sql`UPDATE rss_feed_items SET media_type = 'video', video_id = ${options.videoId}, video_platform = ${options.videoPlatform} WHERE id = ${itemId}`,
-    ),
+    sql`/* setRssFeedItemVideoMetadata */ UPDATE rss_feed_items SET media_type = 'video', video_id = ${options.videoId}, video_platform = ${options.videoPlatform} WHERE id = ${itemId}`,
   )
 }
 
 /** Add a second (or additional) source feed for an existing RSS feed item. */
 export async function addRssFeedItemSource(feedId: string, itemId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* addRssFeedItemSource */
     INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
     VALUES (
       ${feedId},
@@ -170,7 +167,7 @@ export async function addRssFeedItemSource(feedId: string, itemId: string): Prom
       (SELECT published_at FROM rss_feed_items WHERE id = ${itemId})
     )
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -179,12 +176,12 @@ export async function getRssFeedItemCategoryTopicRelationDeletedAt(
   topicId: string,
 ): Promise<Date | null | undefined> {
   const { rows } = await read<{ deleted_at: Date | null }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getRssFeedItemCategoryTopicRelationDeletedAt */
     SELECT deleted_at
     FROM relation__rss_feed_item__category__topic
     WHERE subject_id = ${rssFeedItemId}
       AND object_id = ${topicId}
-  `),
+  `,
   )
   return rows[0]?.deleted_at
 }
