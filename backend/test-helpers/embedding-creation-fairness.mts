@@ -37,7 +37,9 @@ export async function createEmbeddingFairnessSnapshot(
   try {
     transaction = await beginTransaction()
     quota.assertOpen()
-    await transaction(allowUnannotatedQuery('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ'))
+    await transaction(
+      '/* createEmbeddingFairnessSnapshot:isolation */ SET TRANSACTION ISOLATION LEVEL REPEATABLE READ',
+    )
     quota.assertOpen()
     const before = await getActiveBatchStats({ query: transaction })
     const localGiB = Math.ceil((before.inputSizeMB + remainingMB) / 1024)
@@ -132,7 +134,7 @@ export async function createEmbeddingFairnessSnapshot(
     await Promise.allSettled(operations)
     await transaction?.[Symbol.asyncDispose]()
     const { rows } = await read(
-      allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
+      '/* createEmbeddingFairnessSnapshot:verifyDisposed */ SELECT id FROM bedrock_embedding_batches WHERE id = $1',
       [id],
     )
     expect(rows).toEqual([])

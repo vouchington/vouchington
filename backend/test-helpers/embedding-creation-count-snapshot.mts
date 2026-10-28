@@ -93,7 +93,7 @@ export async function createEmbeddingCountSnapshot(
     await Promise.allSettled(operations)
     await transaction?.[Symbol.asyncDispose]()
     const { rows } = await read(
-      allowUnannotatedQuery('SELECT id FROM bedrock_embedding_batches WHERE id = $1'),
+      '/* createEmbeddingCountSnapshot:verifyDisposed */ SELECT id FROM bedrock_embedding_batches WHERE id = $1',
       [id],
     )
     expect(rows).toEqual([])
