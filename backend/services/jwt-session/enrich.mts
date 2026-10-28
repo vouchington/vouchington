@@ -22,10 +22,11 @@ export async function getEnrichedSessionClaims(
   assurance: { mfaVerifiedAt?: number } = {},
 ): Promise<EnrichedSessionClaims> {
   const context = await getUserRateLimitContext(user.id)
-  const trustTier = computeTrustTier(user, context)
+  const roles = filterSessionRoles(user.roles, assurance.mfaVerifiedAt)
+  const trustTier = computeTrustTier({ ...user, roles }, context)
 
   return {
-    roles: filterSessionRoles(user.roles, assurance.mfaVerifiedAt),
+    roles,
     membershipPlan: context.membershipPlan,
     membershipExpiresAt: context.membershipExpiresAt ?? null,
     trustTier,
