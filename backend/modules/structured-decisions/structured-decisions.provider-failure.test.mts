@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   bakeryStructuredDecisionRequest,
   makeStructuredDecisionResponse,
-} from './structured-decisions-fixtures.mts'
+} from '@voucha/test-helpers/structured-decisions-fixtures'
 import {
   createStructuredDecisionClient,
   type StructuredDecisionAttemptHooks,

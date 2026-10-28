@@ -3,7 +3,7 @@ import { isPrivateIp } from 'ssrf-guard'
 import net from 'node:net'
 import createHttpError from 'http-errors'
 
-export const isFQDN = _validator.isFQDN
+const isFQDN = _validator.isFQDN
 
 export const isPublicHostname = (rawHostname: string): boolean => {
   const hostname = rawHostname.replace(/\.+$/, '').replace(/^\[(.+)\]$/, '$1')
@@ -24,7 +24,7 @@ export const validateHttpUrl = (url: string) =>
     validate_length: true,
   })
 
-export const validateHttpUrlWithoutFragment = (url: string) =>
+const validateHttpUrlWithoutFragment = (url: string) =>
   _validator.isURL(url, {
     require_protocol: true,
     require_valid_protocol: true,

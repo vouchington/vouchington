@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  MIN_LIMIT,
-  MAX_LIMIT,
   DEFAULT_LIMIT,
   ANON_MAX_LIMIT,
   TRENDING_TOPICS_DEFAULT_LIMIT,
@@ -12,8 +10,6 @@ import {
 
 describe('search limit constants', () => {
   it('exports expected limit bounds and defaults', () => {
-    expect(MIN_LIMIT).toBe(1)
-    expect(MAX_LIMIT).toBe(100)
     expect(DEFAULT_LIMIT).toBe(25)
     expect(ANON_MAX_LIMIT).toBe(25)
     expect(TRENDING_TOPICS_DEFAULT_LIMIT).toBe(20)

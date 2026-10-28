@@ -14,9 +14,7 @@ const CREDENTIAL_CHANNEL_BY_INTERFACE = {
 // self-asserted client (telemetry-grade), while credentialed requests record the credential's
 // interface and, for OAuth, the client the token was issued to. Returns null when a session request
 // has no validated client, so the caller cannot silently record an unknown client.
-export function resolveContentProvenance(
-  origin: Readonly<RequestOrigin>,
-): ContentProvenance | null {
+function resolveContentProvenance(origin: Readonly<RequestOrigin>): ContentProvenance | null {
   if (origin.credential === 'session') {
     if (!origin.client) return null
     return { createdVia: origin.client, oauthClientId: null }

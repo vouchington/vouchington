@@ -3,7 +3,7 @@ import {
   bakeryStructuredDecisionRequest as request,
   makeOpenRouterStructuredDecisionBody as makeOpenRouterBody,
   makeStructuredDecisionResponse as makeResponse,
-} from './structured-decisions-fixtures.mts'
+} from '@voucha/test-helpers/structured-decisions-fixtures'
 import {
   createStructuredDecisionClient,
   type StructuredDecisionAttemptHooks,

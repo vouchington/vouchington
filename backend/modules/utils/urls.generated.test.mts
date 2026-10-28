@@ -1,24 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
-  isFQDN,
   isHttpUrlWithoutFragment,
   isPublicHostname,
   normalizeUrlForUrlTable,
   validateHttpUrl,
-  validateHttpUrlWithoutFragment,
 } from './urls.mts'
 
 const scriptUrl = `javascript:alert(1)`
 
-describe('isFQDN', () => {
+describe('isPublicHostname FQDN cases', () => {
   it('should validate fully qualified domain names', () => {
-    expect(isFQDN('example.com')).toBe(true)
-    expect(isFQDN('sub.example.com')).toBe(true)
+    expect(isPublicHostname('example.com')).toBe(true)
+    expect(isPublicHostname('sub.example.com')).toBe(true)
   })
 
   it('should reject invalid FQDNs', () => {
-    expect(isFQDN('example')).toBe(false)
-    expect(isFQDN('')).toBe(false)
+    expect(isPublicHostname('example')).toBe(false)
+    expect(isPublicHostname('')).toBe(false)
   })
 })
 
@@ -44,18 +42,18 @@ describe('isHttpUrlWithoutFragment', () => {
   })
 })
 
-describe('validateHttpUrlWithoutFragment', () => {
+describe('isHttpUrlWithoutFragment fragment policy', () => {
   it('should validate HTTPS URLs', () => {
-    expect(validateHttpUrlWithoutFragment('https://example.com')).toBe(true)
-    expect(validateHttpUrlWithoutFragment('https://example.com/path')).toBe(true)
+    expect(isHttpUrlWithoutFragment('https://example.com')).toBe(true)
+    expect(isHttpUrlWithoutFragment('https://example.com/path')).toBe(true)
   })
 
   it('should validate HTTP URLs', () => {
-    expect(validateHttpUrlWithoutFragment('http://example.com')).toBe(true)
+    expect(isHttpUrlWithoutFragment('http://example.com')).toBe(true)
   })
 
   it('should reject URLs with fragments', () => {
-    expect(validateHttpUrlWithoutFragment('https://example.com#fragment')).toBe(false)
+    expect(isHttpUrlWithoutFragment('https://example.com#fragment')).toBe(false)
   })
 })
 
