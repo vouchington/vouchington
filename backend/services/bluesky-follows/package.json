@@ -23,7 +23,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@atproto/api": "^0.28.0",
+    "@atproto/api": "^0.29.4",
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/bluesky-oauth": "workspace:^",
