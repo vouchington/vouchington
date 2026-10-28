@@ -99,7 +99,7 @@ describe('design system autocomplete fixtures', () => {
     expect(screen.getByText('Selected tags: topic-2')).toBeDefined()
 
     fireEvent.change(screen.getByLabelText('Search users'), { target: { value: 'alice' } })
-    fireEvent.click(await screen.findByText('alice'))
+    fireEvent.click(await screen.findByText('Alice Chen'))
 
     expect(screen.getByText('Selected: alice (user-1)')).toBeDefined()
 
