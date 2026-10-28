@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '../services/users/types.mts'
@@ -96,10 +95,10 @@ export async function getTestCopyrightRepeatInfringerReview(reviewId: string) {
 
 export async function readTestRepeatInfringerOpenReviewIds(accountId: string): Promise<string[]> {
   const { rows } = await read<{ id: string }>(
-    allowUnannotatedQuery(sql`
+    sql`/* readTestRepeatInfringerOpenReviewIds */
     SELECT id FROM copyright_repeat_infringer_reviews
     WHERE account_user_id = ${accountId} AND outcome IS NULL
-  `),
+  `,
   )
   return rows.map(row => row.id)
 }
