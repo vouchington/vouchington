@@ -169,5 +169,3 @@ export const getRssFeedCrawlTool: MergedToolSource<DetailArgs, DetailResult> = {
       }
     },
 }
-
-export const rssFeedCrawlReadTools = [listRssFeedCrawlsTool, getRssFeedCrawlTool]

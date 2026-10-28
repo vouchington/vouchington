@@ -120,5 +120,3 @@ export const getRecommendedRssFeedsTool: MergedToolSource<
     return { success: true, results: page.results, page_info: page.page_info }
   },
 }
-
-export const rssFeedDiscoveryTools = [getTrendingRssFeedsTool, getRecommendedRssFeedsTool]

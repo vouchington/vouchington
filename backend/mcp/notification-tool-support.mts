@@ -1,4 +1,4 @@
-export const NOTIFICATION_ID_PARAMETER = {
+const NOTIFICATION_ID_PARAMETER = {
   type: 'string',
   format: 'uuid',
 }

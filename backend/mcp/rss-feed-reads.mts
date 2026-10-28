@@ -153,5 +153,3 @@ export const getRssFeedTool: MergedToolSource<DetailArgs, DetailResult> = {
       return { success: true, rss_feed: rssFeed! }
     },
 }
-
-export const rssFeedReadTools = [searchRssFeedsTool, getRssFeedTool]
