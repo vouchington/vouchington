@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { onTestFinished } from 'vitest'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { computeActivityPubInboxRequestDigest } from '../../services/ap-inbox-activities/durable-delivery-transition-intake.mts'
