@@ -13,7 +13,7 @@ import {
 } from './privacy-form/visibility-sections'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-export type PrivacyFormInitialUser = Pick<
+type PrivacyFormInitialUser = Pick<
   User,
   | 'id'
   | 'cards_visibility'

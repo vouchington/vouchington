@@ -4,7 +4,7 @@ import {
   clearStoryMutationFixture,
   setStoryMutationFixture,
 } from '@/storybook/mocks/story-mutation-fixture'
-import type { MembershipSku, SubscriptionMembership } from '@/types/api-responses'
+import type { SubscriptionMembership } from '@/types/api-responses'
 import { storyCurrentUser } from '@/storybook/entities/fixtures/users'
 import { StoryFrame } from '@/storybook/story-frame'
 
@@ -20,7 +20,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const plusSku: MembershipSku = {
+const plusSku: SubscriptionMembership['sku'] = {
   id: 'plus-monthly',
   plan: 'plus',
   price: { amount: 500, currency: 'usd' },

@@ -1,11 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PaidPlanCard } from '@/components/memberships/paid-plan-card'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type {
-  MembershipPlanSku,
-  MembershipSku,
-  SubscriptionMembership,
-} from '@/types/api-responses'
+import type { MembershipPlanSku, SubscriptionMembership } from '@/types/api-responses'
 
 const plusMonthlySku: MembershipPlanSku = {
   id: 'plus-monthly',
@@ -15,7 +11,7 @@ const plusMonthlySku: MembershipPlanSku = {
   stripe_price_id: 'price_plus_monthly',
 }
 
-const membershipSku: MembershipSku = {
+const membershipSku: SubscriptionMembership['sku'] = {
   ...plusMonthlySku,
   retired_at: null,
 }

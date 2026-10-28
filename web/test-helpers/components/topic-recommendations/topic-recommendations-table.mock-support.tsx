@@ -1,6 +1,6 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import type { PostsResponseBody } from '@/types/api-responses'
-import type { Post, TopicRecommendationStatus } from '@/types/posts'
+import type { Post } from '@/types/posts'
 import type { User } from '@/types/user'
 import { vi } from 'vitest'
 import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
@@ -141,7 +141,11 @@ export function makeRecommendationTableFixture(): {
 export function cloneRecommendationPost(
   basePost: Post,
   id: string,
-  overrides: { topic_title: string; topic_slug: string; status?: TopicRecommendationStatus },
+  overrides: {
+    topic_title: string
+    topic_slug: string
+    status?: NonNullable<Post['topic_recommendation']>['status']
+  },
 ): Post {
   const recommendation = basePost.topic_recommendation
   if (recommendation == null) {

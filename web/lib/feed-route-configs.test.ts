@@ -3,9 +3,9 @@ import {
   feedRouteConfigs,
   getFeedSubFilters,
   type FeedCategory,
-  type PostFeedType,
+  type PostFeedRouteConfig,
   type NewsFeedType,
-  type ReferralLinksFeedType,
+  type ReferralLinksFeedRouteConfig,
 } from './feed-route-configs'
 import { VALID_POST_FEED_TYPES, VALID_RSS_FEED_ITEM_FEED_TYPES } from '@ts-shared/feed-capabilities'
 
@@ -129,8 +129,8 @@ describe('feedRouteConfigs', () => {
   })
 
   it('posts feedType values are valid PostFeedType', () => {
-    const validTypes: PostFeedType[] = VALID_POST_FEED_TYPES.filter(
-      (type): type is PostFeedType => type !== 'all',
+    const validTypes: PostFeedRouteConfig['feedType'][] = VALID_POST_FEED_TYPES.filter(
+      (type): type is PostFeedRouteConfig['feedType'] => type !== 'all',
     )
     const postConfigs = Object.values(feedRouteConfigs).filter(c => c.category === 'posts')
     for (const config of postConfigs) {
@@ -171,7 +171,10 @@ describe('feedRouteConfigs', () => {
   })
 
   it('referral-links feedType values are valid ReferralLinksFeedType', () => {
-    const validTypes: ReferralLinksFeedType[] = ['follow_users', 'mutual_follows']
+    const validTypes: ReferralLinksFeedRouteConfig['feedType'][] = [
+      'follow_users',
+      'mutual_follows',
+    ]
     const configs = Object.values(feedRouteConfigs).filter(c => c.category === 'referral-links')
     expect(configs.length).toBe(2)
     for (const config of configs) {

@@ -1,11 +1,11 @@
 import myTopicClaimsPage from '../../../../api-fixtures/v1/responses/native.my-topic-claims.page.json'
 import topicClaimsPage from '../../../../api-fixtures/v1/responses/native.topic-claims.page.json'
 import type { PageInfo } from '@voucha/types/pagination'
-import type { TopicClaim, TopicClaimState } from '@/types/topic-claims'
+import type { TopicClaim, getTopicClaimState } from '@/types/topic-claims'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 type TopicClaimPage = {
-  results: (TopicClaim & { state?: TopicClaimState })[]
+  results: (TopicClaim & { state?: ReturnType<typeof getTopicClaimState> })[]
   page_info: PageInfo
 }
 

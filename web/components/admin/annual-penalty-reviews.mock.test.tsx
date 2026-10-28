@@ -1,13 +1,16 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { ReportIntegrityPenaltyReviewDue } from '@/types/report-integrity'
-import type { VoteIntegrityPenaltyReviewDue } from '@/types/vote-integrity'
+import type { ReportIntegrityPenaltyReviewsDueResponse } from '@/types/report-integrity'
+import type { VoteIntegrityPenaltyReviewsDueResponse } from '@/types/vote-integrity'
 
 vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => (key: string) => key,
 }))
 
 import { AnnualPenaltyReviews, type AnnualPenaltyReviewsProps } from './annual-penalty-reviews'
+
+type ReportIntegrityPenaltyReviewDue = ReportIntegrityPenaltyReviewsDueResponse['results'][number]
+type VoteIntegrityPenaltyReviewDue = VoteIntegrityPenaltyReviewsDueResponse['results'][number]
 
 const duePenalty: ReportIntegrityPenaltyReviewDue = {
   id: '018f6763-0a71-752d-b657-a06cf00dd401',

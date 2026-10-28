@@ -1,8 +1,9 @@
 // guardrails-disable-file unique-exports
+import type { ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CookieConsentBanner } from '@/components/cookie-consent-banner'
 import { AudienceSelect } from '@/components/my/audience-select'
-import { PrivacyForm, type PrivacyFormInitialUser } from '@/components/my/privacy-form'
+import { PrivacyForm } from '@/components/my/privacy-form'
 import { PostDefaultSelect } from '@/components/my/privacy-form/post-default-select'
 import { PostDefaultsSection } from '@/components/my/privacy-form/post-defaults-section'
 import { PrivacyToggles } from '@/components/my/privacy-form/privacy-toggles'
@@ -61,7 +62,7 @@ const privacyFormInitialUser = {
   id: 'storybook-privacy-user',
   processing_restricted_at: null,
   should_receive_third_party_marketing: false,
-} satisfies PrivacyFormInitialUser
+} satisfies ComponentProps<typeof PrivacyForm>['initialUser']
 
 export const PrivacySettings: Story = {
   render: () => (

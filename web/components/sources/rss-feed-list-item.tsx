@@ -5,7 +5,7 @@ import { ArticleListItem } from './article-list-item'
 import { VideoListItem } from './video-list-item'
 import { PodcastListItem } from '@/components/podcasts/podcast-list-item'
 
-export interface RssFeedListItemProps {
+interface RssFeedListItemProps {
   feed: ViewRssFeed
   action?: RssFeedListItemAction
   isFollowing?: boolean

@@ -7,10 +7,7 @@ import {
   scopeResourceGroups,
   toggleScope,
 } from '@/components/my/api-keys-manager/scope-selection'
-import type {
-  ApiKeyScopeSelection,
-  ApiKeyType,
-} from '@/components/my/api-keys-manager/use-api-key-scope-selection'
+import type { ApiKeyScopeSelection } from '@/components/my/api-keys-manager/use-api-key-scope-selection'
 import { StoryFrame } from '@/storybook/story-frame'
 import { storybookScopeCatalog } from '../fixtures/scope-catalog'
 
@@ -27,7 +24,7 @@ function StatefulForm({
   submitting,
 }: {
   initialLabel: string
-  initialKeyType: ApiKeyType
+  initialKeyType: ApiKeyScopeSelection['keyType']
   initialScopes: string[]
   initialAudience?: NonNullable<ApiKeyScopeSelection['audience']>
   submitting: boolean
