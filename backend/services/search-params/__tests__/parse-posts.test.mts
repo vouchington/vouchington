@@ -90,16 +90,22 @@ describe('parse-posts', () => {
     })
   })
 
-  it('keeps a malformed Unicode hashtag in the text query instead of truncating it', async () => {
-    const query = 'Read #caf\u00e9 before subscribing'
+  it.each([
+    'Read #caf\u00e9 before subscribing',
+    'Read #cafe\u0301 before subscribing',
+    'Read #cafe\u093e before subscribing',
+    'Read #cafe\u20dd before subscribing',
+  ])(
+    'keeps a malformed Unicode hashtag in the text query instead of truncating it: %s',
+    async query => {
+      const { shouldReturnEmpty, searchOptions } = await parsePostsSearchParams({ q: query })
 
-    const { shouldReturnEmpty, searchOptions } = await parsePostsSearchParams({ q: query })
-
-    expect(shouldReturnEmpty).toBe(false)
-    expect(searchOptions.text_search_query).toBe(query)
-    expect(searchOptions.hashtag_topic_ids).toBeUndefined()
-    expect(searchOptions.hashtag_alias_ids).toBeUndefined()
-  })
+      expect(shouldReturnEmpty).toBe(false)
+      expect(searchOptions.text_search_query).toBe(query)
+      expect(searchOptions.hashtag_topic_ids).toBeUndefined()
+      expect(searchOptions.hashtag_alias_ids).toBeUndefined()
+    },
+  )
 
   it.each([
     'Read https://example.test/#pricing before subscribing',
