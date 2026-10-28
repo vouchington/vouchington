@@ -1,10 +1,7 @@
 import { assertNever } from '@modules/utils/assert-never'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { beginTransaction, read, write, type QueryOptions } from '@data-stores/psql'
-import {
-  entityRelationMetadatum,
-  getEntityRelationIntegrityTargetColumn,
-} from '@voucha/types/entities/entity-relations-metadata'
+import { getRetainedRelationConfig } from './retained-relation-config.mts'
 
 type RetainedIdentityFamily =
   | 'user'
@@ -36,34 +33,20 @@ function retainedRootTable(family: RetainedIdentityFamily): string {
   }
 }
 
-function retainedRelationTable(relationTable: string): string {
-  if (
-    !entityRelationMetadatum.some(
-      metadata => metadata.election && metadata.table_name === relationTable,
-    )
-  ) {
-    throw new Error(`Unknown elected relation table: ${relationTable}`)
-  }
-  return `retained_${relationTable}`
-}
-
 export async function insertTestRetainedRelationImpact(options: {
   requestId: string
   relationTable: string
   subjectId: string
   relationId: string
 }): Promise<string> {
-  const metadata = entityRelationMetadatum.find(
-    entry => entry.election && entry.table_name === options.relationTable,
-  )
-  if (!metadata) throw new Error(`Unknown elected relation table: ${options.relationTable}`)
+  const config = getRetainedRelationConfig(options.relationTable)
   await using query = await beginTransaction()
   await query(
-    `/* insertTestRetainedRelationOwner */ INSERT INTO ${retainedRelationTable(options.relationTable)} (subject_id, id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    `/* insertTestRetainedRelationOwner */ INSERT INTO ${config.retainedTable} (subject_id, id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [options.subjectId, options.relationId],
   )
   const { rows } = await query<{ id: string }>(
-    `/* insertTestRetainedRelationImpact */ INSERT INTO user_deletion_relation_impacts (request_id, subject_id, ${getEntityRelationIntegrityTargetColumn(metadata)}) VALUES ($1, $2, $3) RETURNING id`,
+    `/* insertTestRetainedRelationImpact */ INSERT INTO user_deletion_relation_impacts (request_id, subject_id, ${config.integrityTargetColumn}) VALUES ($1, $2, $3) RETURNING id`,
     [options.requestId, options.subjectId, options.relationId],
   )
   await query.commit()
@@ -83,8 +66,9 @@ export async function insertTestRetainedRelationIdentity(
   relationId: string,
   options: QueryOptions = {},
 ): Promise<void> {
+  const config = getRetainedRelationConfig(relationTable)
   await write(
-    `/* insertTestRetainedRelationIdentity */ INSERT INTO ${retainedRelationTable(relationTable)} (subject_id, id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    `/* insertTestRetainedRelationIdentity */ INSERT INTO ${config.retainedTable} (subject_id, id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [subjectId, relationId],
     options,
   )
@@ -96,8 +80,9 @@ export async function hasTestRetainedRelationIdentity(
   relationId: string,
   options: QueryOptions = {},
 ): Promise<boolean> {
+  const config = getRetainedRelationConfig(relationTable)
   const { rowCount } = await read(
-    `/* hasTestRetainedRelationIdentity */ SELECT 1 FROM ${retainedRelationTable(relationTable)} WHERE subject_id = $1 AND id = $2`,
+    `/* hasTestRetainedRelationIdentity */ SELECT 1 FROM ${config.retainedTable} WHERE subject_id = $1 AND id = $2`,
     [subjectId, relationId],
     options,
   )
@@ -108,8 +93,9 @@ export async function readTestRetainedRelationTraversalBound(
   relationTable: string,
   pageSize: number,
 ): Promise<number> {
+  const config = getRetainedRelationConfig(relationTable)
   const { rows } = await read<{ count: string }>(
-    `/* readTestRetainedRelationTraversalBound */ SELECT COUNT(*)::text AS count FROM ${retainedRelationTable(relationTable)}`,
+    `/* readTestRetainedRelationTraversalBound */ SELECT COUNT(*)::text AS count FROM ${config.retainedTable}`,
   )
   return Math.ceil(Number(rows[0]!.count) / pageSize) + 2
 }
