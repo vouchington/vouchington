@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -10,11 +9,11 @@ export async function insertTestLocalFollow(
   followingId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestLocalFollow */
     INSERT INTO relation__user__follow__user (subject_id, object_id)
     VALUES (${followerId}, ${followingId})
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -23,7 +22,7 @@ export async function insertTestLegacyLocalFollow(
   followingId: string,
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestLegacyLocalFollow */
     INSERT INTO relation__user__follow__user (
       subject_id,
       object_id,
@@ -31,7 +30,7 @@ export async function insertTestLegacyLocalFollow(
     )
     VALUES (${followerId}, ${followingId}, NULL)
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -40,11 +39,11 @@ export async function insertTestLegacyLocalFollow(
  */
 export async function insertTestMute(subjectId: string, objectId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestMute */
     INSERT INTO relation__user__mute__user (subject_id, object_id)
     VALUES (${subjectId}, ${objectId})
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -53,11 +52,11 @@ export async function insertTestMute(subjectId: string, objectId: string): Promi
  */
 export async function insertTestBlock(subjectId: string, objectId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestBlock */
     INSERT INTO relation__user__block__user (subject_id, object_id)
     VALUES (${subjectId}, ${objectId})
     ON CONFLICT DO NOTHING
-  `),
+  `,
   )
 }
 
@@ -66,14 +65,14 @@ export async function insertTestBlock(subjectId: string, objectId: string): Prom
  */
 export async function getFollowExists(followerId: string, followingId: string): Promise<boolean> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getFollowExists */
     SELECT 1
     FROM relation__user__follow__user
     WHERE subject_id = ${followerId}::uuid
       AND object_id = ${followingId}::uuid
       AND deleted_at IS NULL
     LIMIT 1
-  `),
+  `,
   )
   return rows.length > 0
 }
