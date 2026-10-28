@@ -10,6 +10,15 @@ interface Props {
 }
 
 export function DataRequestSection({ userId }: Props) {
+  return (
+    <AccountDataRequestSection
+      key={userId}
+      userId={userId}
+    />
+  )
+}
+
+function AccountDataRequestSection({ userId }: Props) {
   const t = useTranslations()
   const now = useNow()
   const { request, loading, requesting, error, handleRequest } = useDataRequest(userId)
