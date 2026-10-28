@@ -4,7 +4,7 @@ export function topicPostCountCtes(): string {
       SELECT 'discussion'::post_types AS wanted_type, requested.id AS topic_id, relation.subject_id AS post_id
       FROM requested_topic_ids requested
       JOIN relation__post__category__topic relation
-        ON (CASE WHEN relation.deleted_at IS NULL AND relation.votes_score_net > 0 THEN relation.object_id END) = requested.id
+        ON relation.object_id = requested.id
        AND relation.deleted_at IS NULL
        AND relation.votes_score_net > 0
       UNION ALL
@@ -12,7 +12,7 @@ export function topicPostCountCtes(): string {
       FROM requested_topic_ids requested
       JOIN topic_aliases alias ON alias.topic_id = requested.id
       JOIN relation__post__category__topic_alias alias_relation
-        ON (CASE WHEN alias_relation.deleted_at IS NULL AND alias_relation.votes_score_net > 0 THEN alias_relation.object_id END) = alias.id
+        ON alias_relation.object_id = alias.id
        AND alias_relation.deleted_at IS NULL
        AND alias_relation.votes_score_net > 0
       UNION ALL
