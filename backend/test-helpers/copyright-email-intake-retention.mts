@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { COPYRIGHT_ERASED_CIPHERTEXT } from '../services/copyright-notices/erased-ciphertext.mts'
@@ -16,17 +15,19 @@ export async function eraseTestCopyrightEmailIntakeSender(
   eraseOriginal: boolean,
 ) {
   await using transaction = await beginTransaction()
-  await transaction(allowUnannotatedQuery(sql`SET LOCAL app.copyright_retention_erasure = 'on'`))
   await transaction(
-    allowUnannotatedQuery(sql`
+    sql`/* eraseTestCopyrightEmailIntakeSender:permit */ SET LOCAL app.copyright_retention_erasure = 'on'`,
+  )
+  await transaction(
+    sql`/* eraseTestCopyrightEmailIntakeSender:eraseSender */
     UPDATE copyright_notice_email_intake_parses SET sender_email_ciphertext = ${COPYRIGHT_ERASED_CIPHERTEXT}
-    WHERE copyright_notice_email_intake_id = ${intakeId}`),
+    WHERE copyright_notice_email_intake_id = ${intakeId}`,
   )
   if (eraseOriginal) {
     await transaction(
-      allowUnannotatedQuery(sql`
+      sql`/* eraseTestCopyrightEmailIntakeSender:eraseOriginal */
       UPDATE copyright_notice_email_intakes SET raw_storage_object_id = NULL
-      WHERE id = ${intakeId}`),
+      WHERE id = ${intakeId}`,
     )
   }
   await transaction.commit()
