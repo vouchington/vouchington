@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { it, expect, describe, afterEach, vi } from 'vitest'
+import { it, expect, describe, afterEach, onTestFinished, vi } from 'vitest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   enqueueBulkUpdateAgentModerationElectionVoteStats,
@@ -58,7 +58,6 @@ describe('election enqueue options', () => {
   })
 
   it.each(ELECTION_LANES)('leaves the %s lane to the domain-wide group', async orderingKey => {
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
     const electionId = randomUUID()
     switch (orderingKey) {
       case 'post':
@@ -88,15 +87,16 @@ describe('election enqueue options', () => {
         ])
         break
     }
-    expect(addBulk).toHaveBeenCalledExactlyOnceWith([
-      expect.objectContaining({
-        data: expect.objectContaining({ electionId, orderingKey }),
-        opts: expect.objectContaining({
-          ordering: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.options.ordering,
-        }),
-      }),
-    ])
-    addBulk.mockRestore()
+    const jobs = await voteAggregation.searchJobs({
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+      data: { electionId },
+    })
+    onTestFinished(async () => {
+      await Promise.all(jobs.map(job => job.remove()))
+    })
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]?.data).toMatchObject({ electionId, orderingKey })
+    expect(jobs[0]?.opts.ordering).toEqual(VOTE_AGGREGATION_UPDATE_ELECTION_JOB.options.ordering)
   })
 
   it('includes the relation table in entity-relation deduplication identity', async () => {
@@ -160,18 +160,20 @@ describe('election enqueue call options', () => {
   })
 
   it('recomputes a post election at the requested priority', async () => {
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
     const electionId = randomUUID()
 
     await enqueueBulkUpdatePostElectionVoteStats([electionId], 41)
 
-    expect(addBulk).toHaveBeenCalledExactlyOnceWith([
-      expect.objectContaining({
-        name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
-        data: { electionId, orderingKey: 'post' },
-        opts: expect.objectContaining({ priority: 41 }),
-      }),
-    ])
+    const jobs = await voteAggregation.searchJobs({
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+      data: { electionId },
+    })
+    onTestFinished(async () => {
+      await Promise.all(jobs.map(job => job.remove()))
+    })
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]?.data).toEqual({ electionId, orderingKey: 'post' })
+    expect(jobs[0]?.opts.priority).toBe(41)
   })
 
   it('tags a rejected admission as critical with the election context', async () => {
