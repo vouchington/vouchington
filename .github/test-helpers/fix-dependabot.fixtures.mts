@@ -37,12 +37,14 @@ export const promptText = read('docs/prompts/automation/fix-dependabot.md')
 export const parsedDependabot = load(workflowText) as Workflow
 
 const nightly = load(read('.github/workflows/nightly.yml')) as Workflow
-export const nightlyAreaWorkflowNames = Object.values(nightly.jobs ?? {}).map(job => {
+// `backend-live-providers` is a nightly-only suite, not an area: it never runs on a pull request.
+export const nightlyAreaWorkflowNames = Object.entries(nightly.jobs ?? {}).flatMap(([id, job]) => {
+  if (id === 'backend-live-providers') return []
   const workflowPath = job.uses
   if (!workflowPath) throw new Error('Nightly area jobs must call a reusable workflow')
   const name = (load(read(workflowPath)) as Workflow).name
   if (typeof name !== 'string' || !name.trim()) {
     throw new Error(`Nightly area workflow ${workflowPath} must have a name`)
   }
-  return name
+  return [name]
 })

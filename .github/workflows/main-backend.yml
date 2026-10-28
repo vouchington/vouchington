@@ -14,6 +14,7 @@ on:
       - '.github/workflows/checks-backend-smoke.yml'
       - '.github/workflows/tests-backend-modules.yml'
       - '.github/workflows/tests-backend-credentialed.yml'
+      - '.github/workflows/tests-backend-live-providers.yml'
       - '.github/workflows/tests-postgres-schema.yml'
       - '.github/worker-io-automation.env'
       - '.github/workflows/checks-static.yml'

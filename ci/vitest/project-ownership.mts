@@ -92,8 +92,16 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     workflow: 'tests-backend-credentialed.yml',
     jobLabel: 'backend-credentialed-tests',
     invocation: 'literal',
+    projects: [{ project: 'backend-aws', credential: 'AWS tests role' }],
+  },
+  {
+    // Paid live providers, one job each inside the workflow: run only from the Nightly run and a
+    // manual dispatch, never on a pull request or merge group.
+    orchestratorJob: 'backend-live-providers',
+    workflow: 'tests-backend-live-providers.yml',
+    jobLabel: 'backend-live-providers',
+    invocation: 'literal',
     projects: [
-      { project: 'backend-aws', credential: 'AWS tests role' },
       { project: 'backend-bedrock', credential: 'AWS tests role + Bedrock' },
       { project: 'backend-openai', credential: 'OPENAI_API_KEY' },
       { project: 'backend-openrouter', credential: 'OPENROUTER_API_KEY' },

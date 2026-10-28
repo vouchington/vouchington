@@ -11,6 +11,7 @@
   run broader local checks when the change or a failure requires them. List the static gates CI
   will run for the diff with `pnpm exec no-mistakes impacted-checks --generic-only --changed-files
   <manifest>` ([planning § Static gate planning](../planning/references/impact-discovery.md#static-gate-planning)).
+- A change to paid live-provider code (`backend/agents/**` model files, `backend/modules/` provider clients, `backend/services/browser-crawl/**`) dispatches the matching provider and cites the run in the PR: `gh workflow run tests-backend-live-providers.yml --ref <branch> -f provider=<x>`. PR CI no longer runs those checks ([why](../../../docs/development/tests.md#live-provider-smoke-checks)).
 - Changes to manifests also follow [package metadata](../package-json-checklist/SKILL.md).
   Changes to guards follow [static analysis](../static-analysis-checklist/SKILL.md).
 - Verify claimed commands, paths, external references, and CI behavior against their actual owners.

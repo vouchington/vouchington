@@ -88,9 +88,7 @@ export function hasBackendCredentialedVitestFailure(log: string): boolean {
 export function hasBackendCredentialedVitestStarted(log: string): boolean {
   return (
     log.includes('Run backend credentialed tests') ||
-    log.includes(
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-lightpanda',
-    )
+    log.includes('pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws')
   )
 }
 

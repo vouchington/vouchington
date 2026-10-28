@@ -284,7 +284,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
   ),
   group('vouchington-infra', 'secret', ['ecs-worker-rollout-secret'], ['LIGHTPANDA_TOKEN']),
   // The Anthropic client uses ANTHROPIC_API_KEY when set, else this short-lived federated token that
-  // `tests-backend-credentialed.yml` mints per job. Never stored as a repository secret.
+  // `tests-backend-live-providers.yml` and `evals-backend.yml` mint per job. Never stored as a repository secret.
   group('github-actions', 'secret', ['local-worktree'], ['ANTHROPIC_AUTH_TOKEN']),
   group(
     'vouchington-infra',

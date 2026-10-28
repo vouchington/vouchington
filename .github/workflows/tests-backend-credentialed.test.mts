@@ -24,119 +24,29 @@ function stepSection(job: string, stepName: string): string {
 }
 
 describe('backend credentialed test workflow', () => {
-  it('combines the credentialed projects in one job', () => {
-    const credentialedJob = jobSection('backend-credentialed-tests')
-    expect(credentialedJob).toContain('AWS_REGION: us-west-2')
-    expect(credentialedJob).toContain('AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}')
-
-    expect(credentialedJob).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
-    expect(credentialedJob).toContain('OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}')
-    expect(credentialedJob).toContain('LIGHTPANDA_TOKEN: ${{ secrets.LIGHTPANDA_TOKEN }}')
-    expect(credentialedJob).toContain('.github/actions/setup-aws')
-    expect(credentialedJob).toContain(
-      'VITEST_JUNIT_OUTPUT_FILE: backend-credentialed-test-report.junit.xml',
-    )
-    for (const project of backendCredentialedProjectNames) {
-      expect(workflow).not.toContain(`${project}-tests:`)
-    }
-  })
-
-  // The Anthropic project needs the federated token, which only branch runs mint, so it has its own
-  // step that pull-request runs skip; the two steps together run every credentialed project.
-  it('runs exactly the shared credentialed Vitest projects, in any order', () => {
+  it('runs only the real-AWS project; paid providers live in tests-backend-live-providers.yml', () => {
     const job = jobSection('backend-credentialed-tests')
-    const runText = [
-      stepSection(job, 'Run backend credentialed tests'),
-      stepSection(job, 'Run Anthropic credentialed tests'),
-    ].join('\n')
+    const runText = stepSection(job, 'Run backend credentialed tests')
     const projectFlags = [...runText.matchAll(/--project\s+(\S+)/g)].map(([, name]) => name)
 
-    expect(projectFlags.toSorted()).toEqual([...backendCredentialedProjectNames].toSorted())
+    expect(projectFlags).toEqual(['backend-aws'])
+    expect(backendCredentialedProjectNames).toContain('backend-aws')
+    expect(workflow).not.toMatch(/OPENAI_API_KEY|OPENROUTER_API_KEY|LIGHTPANDA_TOKEN|ANTHROPIC/)
   })
 
-  it('retains separate best-effort JUnit reports after each provider batch', () => {
+  it('retains a best-effort JUnit report after the run', () => {
     const parsed = load(workflow) as {
-      jobs: Record<
-        string,
-        {
-          steps: Array<{
-            name?: string
-            if?: string
-            env?: Record<string, string>
-            uses?: string
-            with?: Record<string, unknown>
-            'continue-on-error'?: boolean
-          }>
-        }
-      >
+      jobs: Record<string, { steps: Array<Record<string, unknown>> }>
     }
     const steps = parsed.jobs['backend-credentialed-tests']!.steps
-    const reports = [
-      {
-        run: 'Run backend credentialed tests',
-        upload: 'Upload backend credentialed JUnit report',
-        artifact: 'backend-credentialed-junit',
-        path: 'backend-credentialed-test-report.junit.xml',
-        condition: '${{ !cancelled() }}',
-      },
-      {
-        run: 'Run Anthropic credentialed tests',
-        upload: 'Upload Anthropic credentialed JUnit report',
-        artifact: 'backend-credentialed-anthropic-junit',
-        path: 'backend-credentialed-anthropic-test-report.junit.xml',
-        condition: "${{ !cancelled() && steps.anthropic-tests.outcome != 'skipped' }}",
-      },
-    ]
+    const runIndex = steps.findIndex(step => step.name === 'Run backend credentialed tests')
 
-    for (const { run, upload, artifact, path, condition } of reports) {
-      const runIndex = steps.findIndex(step => step.name === run)
-      const uploadIndex = steps.findIndex(step => step.name === upload)
-      expect(runIndex).toBeGreaterThanOrEqual(0)
-      expect(uploadIndex).toBe(runIndex + 1)
-      expect(steps[runIndex]?.env?.VITEST_JUNIT_OUTPUT_FILE).toBe(path)
-      expect(steps[uploadIndex]).toMatchObject({
-        if: condition,
-        'continue-on-error': true,
-        with: {
-          overwrite: true,
-          name: artifact,
-          path,
-          'retention-days': 1,
-          'if-no-files-found': 'warn',
-        },
-      })
-      expect(steps[uploadIndex]?.uses).toMatch(/^actions\/upload-artifact@[0-9a-f]{40}$/u)
-    }
-  })
-
-  it('passes the repository diagnostics opt-in to both credentialed test steps', () => {
-    const parsed = load(workflow) as {
-      jobs: Record<
-        string,
-        {
-          env?: Record<string, string>
-          steps: Array<{ name?: string; env?: Record<string, string> }>
-        }
-      >
-    }
-    const job = parsed.jobs['backend-credentialed-tests']!
-    expect(job.env?.VITEST_DIAGNOSTICS).toBe("${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}")
-    for (const name of ['Run backend credentialed tests', 'Run Anthropic credentialed tests']) {
-      const step = job.steps.find(candidate => candidate.name === name)
-      expect(step).toBeDefined()
-      expect(step?.env).not.toHaveProperty('VITEST_DIAGNOSTICS')
-    }
-  })
-
-  it('does not shard the credentialed job', () => {
-    expect(workflow).not.toContain('--shard')
-  })
-
-  it('gates the job on trusted_secret_context', () => {
-    expect(workflow).toContain('inputs.trusted_secret_context')
-    expect(workflow).toContain('OPENAI_API_KEY:\n        required: false')
-    expect(workflow).toContain('OPENROUTER_API_KEY:\n        required: false')
-    expect(workflow).toContain('LIGHTPANDA_TOKEN:\n        required: false')
+    expect(runIndex).toBeGreaterThanOrEqual(0)
+    expect(steps[runIndex + 1]).toMatchObject({
+      if: '${{ !cancelled() }}',
+      'continue-on-error': true,
+      with: { path: 'backend-credentialed-test-report.junit.xml' },
+    })
   })
 
   // Live provider calls are smoke checks, not a gate. Recorded-response fixtures in the unit suites
@@ -144,9 +54,7 @@ describe('backend credentialed test workflow', () => {
   it('publishes no coverage, so the area coverage gate never depends on live providers', () => {
     expect(workflow).not.toContain('publish_coverage')
     expect(workflow).not.toContain('upload-full-lcov')
-    expect(workflow).not.toContain('coverage-full')
     expect(workflow.match(/VITEST_COVERAGE_ENABLED: .*/g)).toEqual([
-      "VITEST_COVERAGE_ENABLED: 'false'",
       "VITEST_COVERAGE_ENABLED: 'false'",
     ])
   })
@@ -158,35 +66,11 @@ describe('backend credentialed test workflow', () => {
     // `failure()` is required: without a status function the condition adds an implicit `success()`
     // and the step would be skipped on exactly the failure it reports.
     expect(report).toContain('if: ${{ failure() && (')
-    expect(report).toContain("steps.credentialed-tests.outcome == 'failure'")
-    expect(report).toContain("steps.credentials.outcome == 'failure'")
-    expect(report).toContain("steps.anthropic-token.outcome == 'failure'")
-    expect(report).toContain("steps.anthropic-tests.outcome == 'failure'")
     expect(report).toContain('::warning title=Live provider smoke check failed::')
     expect(report).toContain('>> "$GITHUB_STEP_SUMMARY"')
-    // The test steps stay hard failures: a red job keeps the Nightly alert and the check visible.
+    // The test step stays a hard failure: a red job keeps the Nightly alert and the check visible.
     expect(stepSection(credentialedJob, 'Run backend credentialed tests')).not.toContain(
       'continue-on-error',
-    )
-    expect(stepSection(credentialedJob, 'Run Anthropic credentialed tests')).not.toContain(
-      'continue-on-error',
-    )
-  })
-
-  // One provider's failure must not hide another's signal. Each later provider step carries a status
-  // function, so it runs after an earlier failure, and an explicit outcome check, so it runs only
-  // when what it needs exists. The federation exchange sits after the other providers' tests, so a
-  // failed exchange cannot skip them either.
-  it('runs the Anthropic steps whether or not the other providers passed', () => {
-    const credentialedJob = jobSection('backend-credentialed-tests')
-    const anthropic = stepSection(credentialedJob, 'Run Anthropic credentialed tests')
-
-    expect(anthropic).toContain(
-      "if: ${{ !cancelled() && github.event_name != 'pull_request' && steps.anthropic-token.outcome == 'success' }}",
-    )
-    expect(stepSection(credentialedJob, 'Run backend credentialed tests')).not.toContain('if:')
-    expect(credentialedJob.indexOf('id: credentialed-tests')).toBeLessThan(
-      credentialedJob.indexOf('id: anthropic-token'),
     )
   })
 })

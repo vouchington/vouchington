@@ -15,31 +15,31 @@ const shutdownOnlyMarkers = [
 ].join('\n')
 
 const backendCredentialedCleanShutdownLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-lightpanda',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws',
   '  CI_PROJECT: backend-credentialed',
   ' RUN  v0.0.0 /home/runner/actions-runner/4/_work/filaments/filaments',
   '##[error]The runner has received a shutdown signal. This can happen when the runner service is stopped, or a manually started runner is canceled.',
   'undefined',
-  "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGKILL (Forced termination): ./ci/with-node-test-options vitest run '--bail=3' --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-lightpanda",
+  "ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL Command was killed with SIGKILL (Forced termination): ./ci/with-node-test-options vitest run '--bail=3' --project backend-aws",
   '##[error]The operation was canceled.',
 ].join('\n')
 
 const backendCredentialedVitestFailLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-lightpanda',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws',
   'FAIL backend-openai provider.test.mts > case',
   'AssertionError: expected 500 to be 200',
   shutdownOnlyMarkers,
 ].join('\n')
 
 const backendCredentialedNonAssertionFailLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-lightpanda',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws',
   'FAIL backend-openrouter provider.test.mts > case',
   'TypeError: Cannot read properties of undefined (reading "id")',
   shutdownOnlyMarkers,
 ].join('\n')
 
 const backendCredentialedUnhandledErrorLog = [
-  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws --project backend-bedrock --project backend-openai --project backend-openrouter --project backend-lightpanda',
+  'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend-aws',
   'Vitest caught 1 unhandled error during the test run.',
   'Errors  1 error',
   'Unhandled Errors',
