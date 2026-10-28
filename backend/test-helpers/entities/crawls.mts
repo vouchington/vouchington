@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Crawls test verification helpers
  */
@@ -22,11 +21,11 @@ export async function insertOldInvalidCrawlForTest(urlId: string): Promise<strin
  */
 export async function countCrawlsForUrl(urlId: string): Promise<number> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* countCrawlsForUrl */
     SELECT COUNT(*)::int as count
     FROM crawls
     WHERE url_id = ${urlId}
-  `),
+  `,
   )
   return rows[0].count
 }
