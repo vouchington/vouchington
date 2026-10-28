@@ -2,22 +2,6 @@
   "version": 1,
   "findings": [
     {
-      "category": "unused-export",
-      "path": "backend/types/entities/post-classifier.mts",
-      "parent": "",
-      "name": "PostClassifierLabel",
-      "symbolKind": "typeAlias",
-      "count": 1
-    },
-    {
-      "category": "unused-export",
-      "path": "backend/types/entities/post-classifier.mts",
-      "parent": "",
-      "name": "PostClassifierLogicalSlug",
-      "symbolKind": "typeAlias",
-      "count": 1
-    },
-    {
       "category": "unused-member",
       "path": "web/components/ui/error-boundary.tsx",
       "parent": "ErrorBoundary",
