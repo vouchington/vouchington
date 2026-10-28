@@ -51,7 +51,35 @@ export async function processTopicMergeAliasPage(
     await lockTopicAliasPublicationScopes(query, aliasIds)
     await captureAndMoveAliases(query, operationId, rows, destinationId, mergerId)
   }
-  return { phase, cursorAlias: rows.at(-1)?.alias ?? cursorAlias, hasMore: rows.length === limit }
+  const repointed = await repointPendingUnlinks(query, sourceId, destinationId, mergerId, limit)
+  return {
+    phase,
+    cursorAlias: rows.at(-1)?.alias ?? cursorAlias,
+    hasMore: rows.length === limit || repointed === limit,
+  }
+}
+
+/** Pending unlinks have no topic_id; their detached-topic pointer follows the merge. */
+async function repointPendingUnlinks(
+  query: TransactionQuery,
+  sourceId: string,
+  destinationId: string,
+  mergerId: string,
+  limit: number,
+): Promise<number> {
+  const { rows } = await query<{ id: string }>(
+    `/* processTopicMergeAliasPage repointPendingUnlinks */
+      WITH repointed_unlinks AS (
+        SELECT id FROM topic_aliases WHERE unlink_topic_id = $1::uuid ORDER BY id LIMIT $4::integer
+      )
+      UPDATE topic_aliases
+      SET unlink_topic_id = $2::uuid,
+        updated_by_id = (SELECT id FROM users WHERE id = $3::uuid AND deleted_at IS NULL)
+      WHERE id IN (SELECT id FROM repointed_unlinks)
+      RETURNING id`,
+    [sourceId, destinationId, mergerId, limit],
+  )
+  return rows.length
 }
 
 async function captureAndMoveAliases(
