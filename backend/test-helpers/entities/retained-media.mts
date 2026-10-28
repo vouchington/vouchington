@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import {
   beginTransaction,
   read,
@@ -38,9 +37,7 @@ async function seedRetainedMediaOrphan(
     [input.imageId, uploaders[0]!.id],
   )
   await query(
-    allowUnannotatedQuery(
-      'INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
-    ),
+    '/* seedTestRetainedMediaOrphan:binding */ INSERT INTO retained_image_placement_bindings (placement_id, image_id, binding_family) VALUES ($1, $2, $3)',
     [input.placementId, input.imageId, input.bindingFamily],
   )
 }

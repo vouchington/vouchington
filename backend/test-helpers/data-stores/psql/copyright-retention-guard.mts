@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { eraseCopyrightRetentionTableSql } from '../../../services/copyright-notices/retention-erasure-spec.mts'
@@ -92,9 +91,7 @@ export async function permitsCopyrightRetentionChange(options: {
   const after = { ...before, ...Object.fromEntries(options.changed.map(c => [c, 'new'])) }
   await using transaction = await beginTransaction()
   await transaction(
-    allowUnannotatedQuery(
-      sql`SELECT set_config('app.copyright_retention_erasure', ${options.permit ? 'on' : 'off'}, true)`,
-    ),
+    sql`/* permitsCopyrightRetentionChange:permit */ SELECT set_config('app.copyright_retention_erasure', ${options.permit ? 'on' : 'off'}, true)`,
   )
   const { rows } = await transaction<{ permitted: boolean }>(
     sql`/* permitsCopyrightRetentionChange */
