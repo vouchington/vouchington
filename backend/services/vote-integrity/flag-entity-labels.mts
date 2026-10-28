@@ -45,9 +45,11 @@ export async function attachVoteFlagEntityLabels<T extends VoteIntegrityFlag>(
       SELECT ps.slug FROM post_slugs ps WHERE ps.post_id = p.id ORDER BY ps.id DESC LIMIT 1
     ) slug ON true
     LEFT JOIN topics t ON t.id = f.topic_id
+      AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
     LEFT JOIN url_hostnames h ON h.id = f.hostname_id
     LEFT JOIN rss_feed_items rfi ON rfi.id = f.rss_feed_item_id
-    LEFT JOIN agent_moderations am ON am.id = f.agent_moderation_id
+    LEFT JOIN agent_moderations am ON am.post_id = f.agent_moderation_post_id
+      AND am.id = f.agent_moderation_id AND am.deleted_at IS NULL
     LEFT JOIN moderator_agents agent ON agent.agent_id = am.agent_id
     LEFT JOIN view_users_public resolver_profile ON resolver_profile.id = f.resolved_by_id
     WHERE f.id = ANY(${ids}::uuid[])

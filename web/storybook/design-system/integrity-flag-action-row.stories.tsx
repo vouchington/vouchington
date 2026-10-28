@@ -31,16 +31,16 @@ export const ResolvedActor: Story = {
         resolvedAt='2026-02-02T12:00:00.000Z'
         resolvedById='admin-1'
         resolverUsername='moderator'
-        resolverDisplayName={null}
+        resolverDisplayName='Case reviewer'
       />
     </Frame>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('time')).toHaveAttribute('datetime', '2026-02-02T12:00:00.000Z')
-    await expect(canvas.getByRole('link', { name: 'by admin-1' })).toHaveAttribute(
+    await expect(canvas.getByRole('link', { name: 'by Case reviewer' })).toHaveAttribute(
       'href',
-      '/user/admin-1',
+      '/user/moderator',
     )
   },
 }

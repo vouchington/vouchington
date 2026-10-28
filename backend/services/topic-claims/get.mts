@@ -22,6 +22,7 @@ const CLAIM_SELECT = sql`
 const CLAIM_FROM = sql`
   FROM topic_claims tc
   LEFT JOIN topics t ON t.id = tc.topic_id
+    AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
   LEFT JOIN view_users_public claimant_profile ON claimant_profile.id = tc.claimant_user_id
 `
 
