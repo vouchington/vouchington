@@ -4,7 +4,7 @@ import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
 import { setTopicHostnameLink } from '../../backend/services/topics/hostname-link.mts'
 import { registerRssCategoryIdentities } from '../../backend/services/rss-feed-items/category-identities.mts'
-import { PLAYWRIGHT_PODCAST_COVER_URL } from '../../lambdas/playwright-podcast-cover.mts'
+import { PLAYWRIGHT_PODCAST_COVER_URL } from '../../lambdas/test-helpers/playwright-image-urls.mts'
 
 // 32-byte zero buffer used as the bedrock_nova_multimodal_v1_content_sha256 placeholder.
 // Real crawled topics populate this from the Bedrock embedding pipeline; test fixtures use zeros.

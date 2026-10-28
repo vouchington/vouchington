@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import { PLAYWRIGHT_PODCAST_COVER_URL } from './test-helpers/playwright-image-urls.mts'
+
 import {
   isPlaywrightPodcastCoverRequest,
   PLAYWRIGHT_PODCAST_COVER,
 } from './playwright-podcast-cover.mts'
-
-const PLAYWRIGHT_PODCAST_COVER_URL = 'https://playwright.invalid/podcast-cover.png'
 
 describe('Playwright podcast cover fixture', () => {
   it('matches only the reserved sideload source URL', () => {
