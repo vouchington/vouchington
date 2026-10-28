@@ -1458,6 +1458,9 @@
     "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid, notification_household_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid, notification_household_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    WHEN notification_entity_type = 'household_invitation'\n      THEN jsonb_build_object('__entity_type', 'household', 'id', notification_household_id)\n    ELSE NULL\n  END\n$function$\n"
     },
+    "fn_project_active_user_data_request_claim": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_active_user_data_request_claim()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    DELETE FROM active_user_data_request_claims WHERE request_id = OLD.id;\n  END IF;\n  IF NEW.completed_at IS NULL AND NEW.failed_at IS NULL\n     AND NEW.user_id IS NOT NULL AND NEW.requested_by_id IS NOT NULL THEN\n    INSERT INTO active_user_data_request_claims (user_id, requested_by_id, request_id)\n    VALUES (NEW.user_id, NEW.requested_by_id, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_project_activitypub_inbox_delivery_retention": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  unverified_deadline TIMESTAMPTZ := NEW.received_at + INTERVAL '1 hour';\n  failure_deadline TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.failed_at IS NOT NULL THEN\n      NEW.first_failed_at := NEW.failed_at;\n    ELSE\n      NEW.first_failed_at := NULL;\n    END IF;\n  ELSIF OLD.first_failed_at IS NOT NULL THEN\n    NEW.first_failed_at := OLD.first_failed_at;\n  ELSIF NEW.failed_at IS NOT NULL THEN\n    NEW.first_failed_at := NEW.failed_at;\n  ELSE\n    NEW.first_failed_at := NULL;\n  END IF;\n\n  IF NEW.first_failed_at IS NOT NULL THEN\n    failure_deadline := NEW.first_failed_at + INTERVAL '7 days';\n  END IF;\n\n  IF NEW.verified_at IS NULL THEN\n    NEW.retention_expires_at := LEAST(\n      COALESCE(NEW.retention_expires_at, unverified_deadline),\n      unverified_deadline,\n      COALESCE(failure_deadline, unverified_deadline)\n    );\n  ELSIF NEW.first_failed_at IS NULL THEN\n    NEW.retention_expires_at := NULL;\n  ELSE\n    NEW.retention_expires_at := LEAST(\n      COALESCE(OLD.retention_expires_at, NEW.retention_expires_at, failure_deadline),\n      COALESCE(NEW.retention_expires_at, failure_deadline),\n      failure_deadline\n    );\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1838,9 +1841,6 @@
     },
     "fn_reverse_hostname_labels(p_hostname text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$\n  SELECT array_to_string(array_reverse(string_to_array(p_hostname, '.')), '.')\n$function$\n"
-    },
-    "fn_sync_active_user_data_request_claim": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_active_user_data_request_claim()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' THEN\n    DELETE FROM active_user_data_request_claims WHERE request_id = OLD.id;\n  END IF;\n  IF NEW.completed_at IS NULL AND NEW.failed_at IS NULL\n     AND NEW.user_id IS NOT NULL AND NEW.requested_by_id IS NOT NULL THEN\n    INSERT INTO active_user_data_request_claims (user_id, requested_by_id, request_id)\n    VALUES (NEW.user_id, NEW.requested_by_id, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_placement_id uuid;\n  v_revision integer;\nBEGIN\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT placement.id, placement.revision, surface.image_id, 'withheld'::media_delivery_desired_states\n  FROM media_placements placement\n  JOIN image_surface_placements surface ON surface.placement_id = placement.id\n  WHERE placement.retired_at IS NULL\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id\n  ORDER BY placement.id, placement.revision, surface.image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO UPDATE\n  SET desired_state = 'withheld',\n    generation = CASE WHEN media_delivery_registry_records.desired_state IS DISTINCT FROM 'withheld'\n      THEN media_delivery_registry_records.generation + 1 ELSE media_delivery_registry_records.generation END;\n\n  UPDATE media_placements placement\n  SET retired_at = COALESCE(placement.retired_at, CURRENT_TIMESTAMP),\n      retirement_reason = 'owner_removed',\n      revision = placement.revision + 1\n  FROM image_surface_placements surface\n  WHERE surface.placement_id = placement.id\n    AND placement.retirement_reason IS DISTINCT FROM 'owner_removed'\n    AND surface.surface_kind = p_surface_kind\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n    AND surface.image_id IS DISTINCT FROM p_image_id;\n\n  IF p_image_id IS NULL THEN RETURN; END IF;\n\n  SELECT placement.id, placement.revision INTO v_placement_id, v_revision\n  FROM image_surface_placements surface\n  JOIN media_placements placement ON placement.id = surface.placement_id\n  WHERE surface.surface_kind = p_surface_kind\n    AND surface.image_id = p_image_id\n    AND surface.user_id IS NOT DISTINCT FROM p_user_id\n    AND surface.topic_id IS NOT DISTINCT FROM p_topic_id\n    AND surface.community_id IS NOT DISTINCT FROM p_community_id\n    AND surface.user_profile_link_id IS NOT DISTINCT FROM p_user_profile_link_id\n  ORDER BY placement.id DESC LIMIT 1\n  FOR UPDATE OF placement;\n\n  IF v_placement_id IS NULL THEN\n    RAISE EXCEPTION 'image surface requires an independently reserved placement before owner update'\n      USING ERRCODE = 'check_violation';\n  ELSE\n    UPDATE media_placements\n    SET retired_at = NULL, retirement_reason = NULL, revision = revision + 1\n    WHERE id = v_placement_id AND retired_at IS NOT NULL\n    RETURNING revision INTO v_revision;\n    IF v_revision IS NULL THEN\n      SELECT revision INTO v_revision FROM media_placements WHERE id = v_placement_id;\n    END IF;\n  END IF;\n\n  INSERT INTO media_delivery_registry_records (\n    placement_id, placement_revision, image_id, desired_state\n  )\n  SELECT v_placement_id, v_revision, p_image_id,\n    CASE WHEN image.deleted_at IS NULL\n        AND image.quarantine_pending_at IS NULL\n        AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE\n      THEN 'allow'::media_delivery_desired_states ELSE 'withheld'::media_delivery_desired_states END\n  FROM images image WHERE image.id = p_image_id\n  ON CONFLICT (placement_id, placement_revision, image_id) DO NOTHING;\n\nEND;\n$function$\n"
@@ -50757,7 +50757,7 @@
     "import_retention_cursors": {
       "checkConstraints": {
         "chk_import_retention_cursors__batch_family": "CHECK ((((family = 'admin'::import_retention_families) AND (rss_batch_id IS NULL)) OR ((family = 'rss'::import_retention_families) AND (admin_batch_id IS NULL))))",
-        "chk_import_retention_cursors__discovery_position": "CHECK (((discovery_url_id IS NULL) = ((phase <> 'discoveries'::import_retention_phases) OR (row_id IS NULL))))"
+        "chk_import_retention_cursors__discovery_position": "CHECK (((cursor_discovery_url_id IS NULL) = ((phase <> 'discoveries'::import_retention_phases) OR (cursor_row_id IS NULL))))"
       },
       "columns": {
         "admin_batch_id": {
@@ -50771,7 +50771,7 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "discovery_url_id": {
+        "cursor_discovery_url_id": {
           "collation": null,
           "comment": "Last UUIDv7 discovery URL visited within the row.",
           "defaultExpression": null,
@@ -50780,6 +50780,17 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "cursor_row_id": {
+          "collation": null,
+          "comment": "Last UUIDv7 import row or discovery parent visited.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "family": {
@@ -50803,17 +50814,6 @@
           "nullable": false,
           "ordinalPosition": 4,
           "type": "import_retention_phases"
-        },
-        "row_id": {
-          "collation": null,
-          "comment": "Last UUIDv7 import row or discovery parent visited.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
         },
         "rss_batch_id": {
           "collation": null,
@@ -131628,7 +131628,7 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "sweep_cutoff_id": {
+        "cursor_upper_id": {
           "collation": null,
           "comment": "Exclusive fixed request UUIDv7 end of this pass.",
           "defaultExpression": null,
@@ -132195,7 +132195,7 @@
       "triggers": {
         "trigger_user_data_requests_guard_terminal_lifecycle": "CREATE TRIGGER trigger_user_data_requests_guard_terminal_lifecycle BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')",
         "trigger_user_data_requests_record_attempt": "CREATE TRIGGER trigger_user_data_requests_record_attempt AFTER INSERT OR UPDATE OF processing_started_at, processing_attempt_id ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_project_record_user_data_request_attempt()",
-        "trigger_user_data_requests_sync_active_claim": "CREATE TRIGGER trigger_user_data_requests_sync_active_claim AFTER INSERT OR UPDATE OF user_id, requested_by_id, completed_at, failed_at ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_sync_active_user_data_request_claim()",
+        "trigger_user_data_requests_sync_active_claim": "CREATE TRIGGER trigger_user_data_requests_sync_active_claim AFTER INSERT OR UPDATE OF user_id, requested_by_id, completed_at, failed_at ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_project_active_user_data_request_claim()",
         "trigger_user_data_requests_updated_at": "CREATE TRIGGER trigger_user_data_requests_updated_at BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}

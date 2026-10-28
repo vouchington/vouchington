@@ -6,15 +6,15 @@ Transactional UUIDv7 child positions for bounded completed-import cleanup.
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                        | Nullable | Default                           | Identity | Generated | Collation | Comment                                                 |
-| ------------------ | --------------------------- | -------- | --------------------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
-| `family`           | `import_retention_families` | no       |                                   |          |           |           | Independent admin or RSS import cleanup pass.           |
-| `admin_batch_id`   | `uuid`                      | yes      |                                   |          |           |           | Current completed admin batch, if one is being drained. |
-| `rss_batch_id`     | `uuid`                      | yes      |                                   |          |           |           | Current completed RSS batch, if one is being drained.   |
-| `phase`            | `import_retention_phases`   | no       | `'rows'::import_retention_phases` |          |           |           | Child-first stage currently being drained.              |
-| `row_id`           | `uuid`                      | yes      |                                   |          |           |           | Last UUIDv7 import row or discovery parent visited.     |
-| `discovery_url_id` | `uuid`                      | yes      |                                   |          |           |           | Last UUIDv7 discovery URL visited within the row.       |
-| `updated_at`       | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`               |          |           |           | Last successful transactional cursor update.            |
+| Column                    | Type                        | Nullable | Default                           | Identity | Generated | Collation | Comment                                                 |
+| ------------------------- | --------------------------- | -------- | --------------------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
+| `family`                  | `import_retention_families` | no       |                                   |          |           |           | Independent admin or RSS import cleanup pass.           |
+| `admin_batch_id`          | `uuid`                      | yes      |                                   |          |           |           | Current completed admin batch, if one is being drained. |
+| `rss_batch_id`            | `uuid`                      | yes      |                                   |          |           |           | Current completed RSS batch, if one is being drained.   |
+| `phase`                   | `import_retention_phases`   | no       | `'rows'::import_retention_phases` |          |           |           | Child-first stage currently being drained.              |
+| `cursor_row_id`           | `uuid`                      | yes      |                                   |          |           |           | Last UUIDv7 import row or discovery parent visited.     |
+| `cursor_discovery_url_id` | `uuid`                      | yes      |                                   |          |           |           | Last UUIDv7 discovery URL visited within the row.       |
+| `updated_at`              | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`               |          |           |           | Last successful transactional cursor update.            |
 
 **Primary key:** `PRIMARY KEY (family)`
 
@@ -24,7 +24,7 @@ _none_
 **Check constraints:**
 
 - `chk_import_retention_cursors__batch_family`: `CHECK ((((family = 'admin'::import_retention_families) AND (rss_batch_id IS NULL)) OR ((family = 'rss'::import_retention_families) AND (admin_batch_id IS NULL))))`
-- `chk_import_retention_cursors__discovery_position`: `CHECK (((discovery_url_id IS NULL) = ((phase <> 'discoveries'::import_retention_phases) OR (row_id IS NULL))))`
+- `chk_import_retention_cursors__discovery_position`: `CHECK (((cursor_discovery_url_id IS NULL) = ((phase <> 'discoveries'::import_retention_phases) OR (cursor_row_id IS NULL))))`
 
 **Foreign keys:**
 

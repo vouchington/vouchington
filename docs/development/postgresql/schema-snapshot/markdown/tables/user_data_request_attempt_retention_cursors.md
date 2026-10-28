@@ -11,7 +11,7 @@ Not partitioned — growth: bounded.
 | `cleanup_name`                 | `user_data_request_attempt_cleanup_names` | no       |                     |          |           |           | Fixed cleanup family owning this position.          |
 | `cursor_request_id`            | `uuid`                                    | yes      |                     |          |           |           | Last request UUIDv7 scanned in this pass.           |
 | `cursor_processing_attempt_id` | `uuid`                                    | yes      |                     |          |           |           | Last attempt token scanned for the current request. |
-| `sweep_cutoff_id`              | `uuid`                                    | yes      |                     |          |           |           | Exclusive fixed request UUIDv7 end of this pass.    |
+| `cursor_upper_id`              | `uuid`                                    | yes      |                     |          |           |           | Exclusive fixed request UUIDv7 end of this pass.    |
 | `updated_at`                   | `timestamp with time zone`                | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed scan checkpoint.                     |
 
 **Primary key:** `PRIMARY KEY (cleanup_name)`

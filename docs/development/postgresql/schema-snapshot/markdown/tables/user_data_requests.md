@@ -55,5 +55,5 @@ _none_
 
 - `trigger_user_data_requests_guard_terminal_lifecycle`: `CREATE TRIGGER trigger_user_data_requests_guard_terminal_lifecycle BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at')`
 - `trigger_user_data_requests_record_attempt`: `CREATE TRIGGER trigger_user_data_requests_record_attempt AFTER INSERT OR UPDATE OF processing_started_at, processing_attempt_id ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_project_record_user_data_request_attempt()`
-- `trigger_user_data_requests_sync_active_claim`: `CREATE TRIGGER trigger_user_data_requests_sync_active_claim AFTER INSERT OR UPDATE OF user_id, requested_by_id, completed_at, failed_at ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_sync_active_user_data_request_claim()`
+- `trigger_user_data_requests_sync_active_claim`: `CREATE TRIGGER trigger_user_data_requests_sync_active_claim AFTER INSERT OR UPDATE OF user_id, requested_by_id, completed_at, failed_at ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_project_active_user_data_request_claim()`
 - `trigger_user_data_requests_updated_at`: `CREATE TRIGGER trigger_user_data_requests_updated_at BEFORE UPDATE ON public.user_data_requests FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

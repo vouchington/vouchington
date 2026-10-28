@@ -301,6 +301,14 @@ CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_ent
  IMMUTABLE
 ```
 
+## `fn_project_active_user_data_request_claim`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_active_user_data_request_claim()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_activitypub_inbox_delivery_retention`
 
 ```sql
@@ -1316,14 +1324,6 @@ CREATE OR REPLACE FUNCTION public.fn_reverse_hostname_labels(p_hostname text)
  RETURNS text
  LANGUAGE sql
  IMMUTABLE STRICT
-```
-
-## `fn_sync_active_user_data_request_claim`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_sync_active_user_data_request_claim()
- RETURNS trigger
- LANGUAGE plpgsql
 ```
 
 ## `fn_sync_image_surface_placement(p_surface_kind image_surface_placement_surface_kinds, p_image_id uuid, p_user_id uuid, p_topic_id uuid, p_community_id uuid, p_user_profile_link_id uuid)`
