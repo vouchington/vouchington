@@ -12,7 +12,7 @@ import { enqueueOrRetryCopyrightFormScreening } from '@queues/ai-agents/enqueues
 import { enqueueOrRetryCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
 import { enqueueOrRetryCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 
-export type ReconcileCopyrightAgentDispatchesDeps = {
+type ReconcileCopyrightAgentDispatchesDeps = {
   enqueueContinuation: typeof enqueueReconcileCopyrightAgentDispatches
   getPending: typeof getPendingCopyrightAgentDispatches
   enqueueEmail: typeof enqueueOrRetryCopyrightEmailIntake

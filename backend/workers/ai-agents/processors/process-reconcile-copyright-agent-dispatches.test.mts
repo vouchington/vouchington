@@ -2,12 +2,15 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { copyrightSweepConfig } from '@services/copyright-notices/work-limits'
 import { describe, expect, it, vi } from 'vitest'
 import type { CopyrightAgentDispatch } from '@services/copyright-notices'
-import type { CopyrightAgentDispatchPage } from '@services/copyright-notices/reconcile-agent-dispatches'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
-import {
-  processReconcileCopyrightAgentDispatches,
-  type ReconcileCopyrightAgentDispatchesDeps,
-} from './process-reconcile-copyright-agent-dispatches.mts'
+import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
+
+type ReconcileCopyrightAgentDispatchesDeps = Required<
+  NonNullable<Parameters<typeof processReconcileCopyrightAgentDispatches>[0]>
+>
+type CopyrightAgentDispatchPage = Awaited<
+  ReturnType<ReconcileCopyrightAgentDispatchesDeps['getPending']>
+>
 
 function page(results: CopyrightAgentDispatch[], endCursor: string | null) {
   return {

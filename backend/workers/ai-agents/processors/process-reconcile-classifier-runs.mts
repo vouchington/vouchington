@@ -18,7 +18,7 @@ import type { ClassifierRunHandler } from './classifier-run-handler.mts'
 import { checkClassifierRunHealth, type ReadClassifierRunHealth } from './classifier-run-health.mts'
 import { getClassifierRunHandler, listClassifierRunHandlers } from './classifier-run-registry.mts'
 
-export interface ReconcileClassifierRunsDependencies {
+interface ReconcileClassifierRunsDependencies {
   /** Lets a test scope the sweep to its own runs in a database shared with parallel tests. */
   listIncomplete: typeof listIncompleteClassifierRuns
   handlers: () => readonly ClassifierRunHandler[]

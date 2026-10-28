@@ -5,8 +5,9 @@ import type { CopyrightSweepIdPage } from '@services/copyright-notices'
 import {
   processDeliverCopyrightNotice,
   processReconcileCopyrightDeliveryIntents,
-  type ReconcileCopyrightDeliveryIntentsDeps as Deps,
 } from './copyright-delivery.mts'
+
+type Deps = Required<NonNullable<Parameters<typeof processReconcileCopyrightDeliveryIntents>[0]>>
 
 function page(results: string[], endCursor: string | null): CopyrightSweepIdPage {
   return {

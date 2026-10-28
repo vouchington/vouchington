@@ -1,7 +1,7 @@
 import { recordCopyrightRetentionErasureFailure } from '@modules/on-error'
 import { sweepCopyrightEvidenceRetention } from '@services/copyright-notices'
 
-export type SweepCopyrightEvidenceRetentionDeps = {
+type SweepCopyrightEvidenceRetentionDeps = {
   sweep: typeof sweepCopyrightEvidenceRetention
   recordFailure: typeof recordCopyrightRetentionErasureFailure
 }

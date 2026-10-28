@@ -9,10 +9,12 @@ import type {
   loadSesInboundObjectAndHash,
   loadSesInboundObjectVersion,
 } from './s3.mts'
-import { SesInboundTerminalError, type ParsedSesInboundEmail } from './mime.mts'
+import { parseSesInboundMime, SesInboundTerminalError } from './mime.mts'
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { processSesInboundEmail, reconcileSesInboundEmails } from '../processors.mts'
+
+type ParsedSesInboundEmail = Awaited<ReturnType<typeof parseSesInboundMime>>
 
 vi.mock<typeof import('mailparser')>(import('mailparser'), async importOriginal => importOriginal())
 

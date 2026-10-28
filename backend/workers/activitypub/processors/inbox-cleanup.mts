@@ -4,7 +4,7 @@ import {
 } from '@services/ap-inbox-activities'
 import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/work-limits'
 
-export type CleanupExpiredDeliveriesDependencies = {
+type CleanupExpiredDeliveriesDependencies = {
   expire: (
     category: Parameters<typeof activityPubInboxDeliveryTransitions.expire>[0],
     limit?: number,

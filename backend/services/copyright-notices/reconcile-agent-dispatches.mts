@@ -14,7 +14,7 @@ export type CopyrightAgentDispatch =
   | { kind: 'appeal'; submissionId: string }
   | { kind: 'submission-guidance'; submissionId: string }
 
-export type CopyrightAgentDispatchPage = {
+type CopyrightAgentDispatchPage = {
   results: CopyrightAgentDispatch[]
   page_info: PageInfo
 }

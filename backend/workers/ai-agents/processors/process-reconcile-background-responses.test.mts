@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  processReconcileBackgroundResponses,
-  type ReconcileBackgroundResponsesDeps,
-} from './process-reconcile-background-responses.mts'
+import { processReconcileBackgroundResponses } from './process-reconcile-background-responses.mts'
 import type { ExpiredBackgroundResponse } from '@services/openai-background-responses'
+
+type ReconcileBackgroundResponsesDeps = Required<
+  NonNullable<Parameters<typeof processReconcileBackgroundResponses>[0]>
+>
 
 function makeExpiredRow(responseId: string): ExpiredBackgroundResponse {
   return {

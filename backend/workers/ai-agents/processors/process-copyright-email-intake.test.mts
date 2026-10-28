@@ -6,10 +6,11 @@ import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 import { readTestPendingCopyrightAgentDispatches } from '@voucha/test-helpers/services/copyright-notices/pending-agent-dispatches'
 import { processCopyrightEmailIntake } from './process-copyright-email-intake.mts'
-import {
-  processReconcileCopyrightAgentDispatches,
-  type ReconcileCopyrightAgentDispatchesDeps,
-} from './process-reconcile-copyright-agent-dispatches.mts'
+import { processReconcileCopyrightAgentDispatches } from './process-reconcile-copyright-agent-dispatches.mts'
+
+type ReconcileCopyrightAgentDispatchesDeps = Required<
+  NonNullable<Parameters<typeof processReconcileCopyrightAgentDispatches>[0]>
+>
 
 const jobFor = (intakeId: string) =>
   ({ data: { intake_id: intakeId } }) as Job<CopyrightEmailIntakeJobData>

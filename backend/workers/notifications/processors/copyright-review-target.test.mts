@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { CopyrightReviewTargetBreaches } from '@services/copyright-notices/review-target-breaches'
-import {
-  processCheckCopyrightReviewTarget,
-  type CheckCopyrightReviewTargetDeps as Deps,
-} from './copyright-review-target.mts'
+import { processCheckCopyrightReviewTarget } from './copyright-review-target.mts'
+
+type Deps = Required<NonNullable<Parameters<typeof processCheckCopyrightReviewTarget>[0]>>
+type CopyrightReviewTargetBreaches = Awaited<ReturnType<Deps['readBreaches']>>
 
 const NOW = new Date('2026-07-01T12:00:00.000Z')
 const none = { count: 0, noticeIds: [] }

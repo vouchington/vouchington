@@ -26,7 +26,7 @@ import {
   type CopyrightSweepTally,
 } from './copyright-sweep-walk.mts'
 
-export type ReconcileCopyrightActionIntentsDeps = {
+type ReconcileCopyrightActionIntentsDeps = {
   searchFormReviews: typeof searchRecoverableCopyrightFormReviewIntakeIds
   recoverFormReview: typeof recoverRejectedCopyrightFormReviewEffect
   recoverDecisionAssessments: typeof recoverMissingDecisionAssessments

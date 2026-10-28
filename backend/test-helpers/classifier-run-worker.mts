@@ -11,7 +11,7 @@ import {
   processClassifierRunDispatcher,
 } from '../workers/ai-agents/processors/process-classifier-run.mts'
 import type { ClassifierRunHandler } from '../workers/ai-agents/processors/classifier-run-handler.mts'
-import type { ReconcileClassifierRunsDependencies } from '../workers/ai-agents/processors/process-reconcile-classifier-runs.mts'
+import type { processReconcileClassifierRuns } from '../workers/ai-agents/processors/process-reconcile-classifier-runs.mts'
 import { getClassifierRunFacts } from './data-stores/psql/classifier-runs/run-facts.mts'
 import {
   createApprovedClassifierPost,
@@ -22,6 +22,9 @@ export { POST_CLASSIFIER_SLUG, requestPostClassifierRun }
 
 type DispatcherJob = Parameters<typeof processClassifierRunDispatcher>[0]
 type RunJob = Parameters<typeof processClassifierRun>[0]
+type ReconcileClassifierRunsDependencies = Required<
+  NonNullable<Parameters<typeof processReconcileClassifierRuns>[1]>
+>
 
 export function classifierRunDispatcherJobFor(postId: string, classifier = POST_CLASSIFIER_SLUG) {
   return {
