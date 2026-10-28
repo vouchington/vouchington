@@ -20,7 +20,10 @@ const noAIRetention = {
 const emptyCleanupResult = {
   ...noAIRetention,
   classifierRecords: { runs: { hasMore: false } },
-} as Awaited<ReturnType<typeof runDataRetentionCleanup>>
+  supersededVoteBallots: [],
+  orphanedUserAgentStrings: { hasMore: false },
+  voteIntegrityDetails: { hasMore: false },
+} as unknown as Awaited<ReturnType<typeof runDataRetentionCleanup>>
 const dataRetentionCleanup =
   vi.fn<(limits: DataRetentionLimits) => ReturnType<typeof runDataRetentionCleanup>>()
 const reconcileVoteDrift = vi.fn<() => Promise<void>>()
@@ -113,7 +116,7 @@ describe('processPsql', () => {
       await Promise.all(continuationIds.map(async id => (await psql.getJob(id))?.remove()))
     })
     const hasMore = {
-      ...noAIRetention,
+      ...emptyCleanupResult,
       classifierRecords: { runs: { hasMore: true } },
     } as Awaited<ReturnType<typeof runDataRetentionCleanup>>
     const cleanup = vi
@@ -154,7 +157,7 @@ describe('processPsql', () => {
     })
     const result = (topicResults: boolean, requests: boolean) =>
       ({
-        ...noAIRetention,
+        ...emptyCleanupResult,
         classifierRecords: {
           topicResults: { hasMore: topicResults },
           requests: { hasMore: requests },
@@ -204,6 +207,7 @@ describe('processPsql', () => {
     })
     const result = (effects: boolean, notices: boolean) =>
       ({
+        ...emptyCleanupResult,
         classifierRecords: {},
         softDeletedUsers: { deleted: 0, hasMore: false },
         textEmbeddingCache: { hasMore: false },

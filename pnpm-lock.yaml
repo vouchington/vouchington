@@ -6138,6 +6138,9 @@ importers:
       '@modules/activitypub-uris':
         specifier: workspace:^
         version: link:../../modules/activitypub-uris
+      '@services/growth-metrics':
+        specifier: workspace:^
+        version: link:../growth-metrics
       '@services/notifications':
         specifier: workspace:^
         version: link:../notifications

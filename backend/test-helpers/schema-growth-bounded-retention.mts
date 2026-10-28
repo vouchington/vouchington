@@ -26,6 +26,10 @@ export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
   ],
   ['user_sessions', 'Bounded cleanup deletes expired sessions after the audit retention window.'],
   [
+    'user_agent_string_cleanup_candidates',
+    'One candidate per lookup row is retired by the bounded age-gated orphan check; a later session or ballot release recreates it, so cardinality follows recent lookup traffic and pending cleanup work.',
+  ],
+  [
     'web_push_subscriptions',
     'Bounded cleanup deletes aged subscription tombstones after push receipts expire.',
   ],

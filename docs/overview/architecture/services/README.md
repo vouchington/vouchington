@@ -148,6 +148,16 @@ cursor, so a late commit cannot be lost. The referral check uses only rows that 
 campaign details; once cleared, a retained click does not consume future scrub pages. Histories
 whose eligibility can change when a newer same-key row arrives still revisit their raw range.
 
+Vote ballots keep their request metadata (IP address, device, session, user agent) as durable
+vote-integrity evidence. Daily retention deletes ballots superseded more than 90 days ago, always
+keeping the newest ballot per entity and user, and advances a durable frontier over aged superseding
+ballots with a fixed sweep end. An unfinished superseder is selected again from that bounded range
+until its older choices are drained. User-agent cleanup reads a
+bounded orphan-candidate set populated when a lookup row is created or when a session or deleted
+ballot releases it; a row still referenced by a session or ballot is retired and requeued if its final
+reference ends later. Continuation jobs carry only unfinished families. Integrity flags keep
+moderation findings while their identifying details are time-limited by the privacy policy.
+
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong
   there too. Branch on `error.name`, `code` or `status`, never `error.message`.

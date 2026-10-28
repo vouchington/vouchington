@@ -35,6 +35,9 @@ describe('runDataRetentionCleanup', () => {
     }
 
     const result = await runDataRetentionCleanup(limits, {
+      voteBallotIdsByTable: {},
+      userAgentStringIds: [],
+      voteIntegrityFlagIds: [],
       retainedIdentityRootIds: {},
       retainedRelationIdentityKeys: {},
       retainedMediaBindingIds: [],

@@ -28,6 +28,10 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
       'user_data_request_attempt_retention_cursors.cursor_request_id',
       'user_data_request_attempt_retention_cursors.cursor_processing_attempt_id',
       'user_data_request_attempt_retention_cursors.cursor_upper_id',
+      'vote_ballot_cleanup_cursors.cursor_vote_id',
+      'vote_ballot_cleanup_cursors.sweep_cutoff_id',
+      'vote_integrity_flag_detail_cleanup_cursors.cursor_flag_id',
+      'vote_integrity_flag_detail_cleanup_cursors.sweep_cutoff_id',
     ],
   ),
   ...reviewed(

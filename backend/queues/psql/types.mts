@@ -11,6 +11,7 @@ export type PsqlJobs =
   | 'cleanupTerminalActivityIdentities'
   | 'moderationRetentionCleanup'
   | 'aiRetentionContinuation'
+  | 'continueVoteRetentionCleanup'
   | 'refreshMaterializedView'
   | 'reconcileVoteDrift'
 
@@ -81,4 +82,10 @@ export type PsqlRetentionJobData = {
     /** Bounded final-purge cursor; the continuation job is sensitive because it names a user. */
     userPurge?: { userId: string; communityId: string; afterModeratorId: string }
   }
+}
+
+export type VoteRetentionContinuationData = {
+  voteTables: string[]
+  userAgentStrings: boolean
+  voteIntegrityDetails: boolean
 }

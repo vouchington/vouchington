@@ -4923,6 +4923,10 @@ rules:
                 reason: 'Device and session ids are issued in signed tokens, not stored in a table',
               }
       allow:
+        - object: column:vote_ballot_cleanup_cursors.sweep_cutoff_id
+          reason: 'Frozen exclusive UUIDv7 sweep end may outlive a ballot; it is a range checkpoint.'
+        - object: column:vote_integrity_flag_detail_cleanup_cursors.sweep_cutoff_id
+          reason: 'Frozen exclusive UUIDv7 sweep end may outlive a flag; it is a range checkpoint.'
         - object: column:history_retention_cursors.sweep_cutoff_id
           reason: 'Frozen UUIDv7 sweep end may outlive a deleted history row; it is an operational checkpoint, not a relationship.'
         - object: column:domain_blocklist_sources.url

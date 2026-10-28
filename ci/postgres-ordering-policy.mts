@@ -60,6 +60,7 @@ export const expectedDirectiveInventory = [
   // Replay cleanup locks the floor before an ordered ledger page and waits on older rows.
   'backend/services/data-retention/cleanup-activitypub-replay.mts:1',
   'backend/services/data-retention/cleanup-oauth-friend-edges.mts:2',
+  'backend/services/data-retention/cleanup-vote-ballots.mts:1',
   'backend/services/entity-cache/hostname-invalidation-drain.mts:2',
   'backend/services/identity-verification/attempts.mts:1',
   'backend/services/individuals-households/households/spending-categories.mts:1',

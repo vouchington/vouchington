@@ -18,9 +18,9 @@ async function upsertAuthenticatedSession(
   queryOptions?: QueryOptions,
 ): Promise<UserSessionRow | null> {
   if (queryOptions?.query)
-    return writeAuthenticatedSession(queryOptions.query, currentUserId, options)
+    return (await writeAuthenticatedSession(queryOptions.query, currentUserId, options)).session
   await using transaction = await beginTransaction()
-  const session = await writeAuthenticatedSession(transaction, currentUserId, options)
+  const { session } = await writeAuthenticatedSession(transaction, currentUserId, options)
   await transaction.commit()
   return session
 }
@@ -40,8 +40,8 @@ async function writeAuthenticatedSession(
   query: QueryExecutor,
   currentUserId: string,
   options: AuthenticatedSessionOptions,
-  resolvedUserAgentId?: string | null,
-): Promise<UserSessionRow | null> {
+  memoizedUserAgentId?: string,
+): Promise<{ session: UserSessionRow | null; userAgentId: string | null }> {
   await query(
     sql`/* upsertAuthenticatedSession */
         SELECT pg_advisory_xact_lock(hashtextextended(${currentUserId}, 0))`,
@@ -50,10 +50,15 @@ async function writeAuthenticatedSession(
   const userAgent = normalizeText(options.userAgent, 1024)
   const ipAddress = normalizeIpAddress(options.ipAddress)
   const refreshMetadata = options.refreshMetadata !== false
+  // Re-lock a request memo inside this transaction; orphan cleanup may have deleted its row.
+  const memoizedRow = memoizedUserAgentId
+    ? await query<{ id: string }>(sql`/* lockMemoizedUserAgentString */
+        SELECT id FROM user_agent_strings
+        WHERE id = ${memoizedUserAgentId} AND user_agent = ${userAgent}
+        FOR KEY SHARE`)
+    : null
   const userAgentId =
-    resolvedUserAgentId === undefined
-      ? await upsertUserAgentString(userAgent, { query })
-      : resolvedUserAgentId
+    memoizedRow?.rows[0]?.id ?? (await upsertUserAgentString(userAgent, { query }))
   const { rows } = await query(sql`/* upsertAuthenticatedSession */
       INSERT INTO user_sessions (
         id, user_id, device_id, authentication_origin, device_name, user_agent_string_id, ip_address, expires_at, last_seen_at
@@ -80,7 +85,7 @@ async function writeAuthenticatedSession(
           WHERE id = user_sessions.user_agent_string_id) AS user_agent,
         ip_address, created_at, last_seen_at, expires_at, revoked_at
     `)
-  return (rows[0] as UserSessionRow | undefined) ?? null
+  return { session: (rows[0] as UserSessionRow | undefined) ?? null, userAgentId }
 }
 
 export async function registerAuthenticatedSession(
@@ -119,16 +124,16 @@ export async function registerAuthenticatedSession(
       authOrigin,
     }
     const normalizedUserAgent = normalizeText(options.userAgent, 1024)
-    let userAgentId: string | null | undefined = getRequestUserAgentStringId(normalizedUserAgent)
-    if (userAgentId === undefined) {
-      const resolvedUserAgentId = await upsertUserAgentString(normalizedUserAgent)
-      userAgentId = resolvedUserAgentId
-      if (resolvedUserAgentId !== null)
-        setRequestUserAgentStringId(normalizedUserAgent, resolvedUserAgentId)
-    }
+    const memoizedUserAgentId = getRequestUserAgentStringId(normalizedUserAgent) ?? undefined
     await using transaction = await beginTransaction()
-    await writeAuthenticatedSession(transaction, uid, options, userAgentId)
+    const { session, userAgentId } = await writeAuthenticatedSession(
+      transaction,
+      uid,
+      options,
+      memoizedUserAgentId,
+    )
     await transaction.commit()
+    if (session && userAgentId) setRequestUserAgentStringId(normalizedUserAgent, userAgentId)
     return
   }
 

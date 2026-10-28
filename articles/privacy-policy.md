@@ -6,7 +6,7 @@ post_type: article
 
 # Privacy Policy
 
-**Effective Date:** April 27, 2026
+**Effective Date:** October 25, 2026
 **Company:** Voucha, Inc.
 **Contact:** team@voucha.ai
 
@@ -55,7 +55,7 @@ We collect information about how you use the platform:
 
 ### Vote Integrity Data
 
-To protect the integrity of the platform's trust scoring, we analyze voting patterns for anomalies. This analysis may involve correlating IP addresses across votes to detect coordinated or inauthentic behavior. Results are stored as integrity flags and are retained for the life of the account.
+To protect the integrity of the platform's trust scoring, we analyze voting patterns for anomalies. This analysis may involve correlating IP addresses across votes to detect coordinated or inauthentic behavior. Vote-integrity flags describe the voted item, not voters, and are removed with that item. Network and device details in those flags are removed after 180 days.
 
 ### Recently Viewed
 
@@ -202,7 +202,7 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
 - **Identity verification** — after verification ends or an account is deleted, we retain only a keyed hash of the identity document and verification lifecycle dates indefinitely to prevent the same document from verifying another account. The retained record has no account, name, image, document details, or provider payload.
-- **Vote integrity flags** — retained for the life of the account; anonymized upon account deletion
+- **Vote integrity flags** — describe the voted item, not voters, and are removed with that item; network and device details are removed after 180 days
 - **Copyright case records and evidence** — we keep US copyright notices, appeals, counter-notices,
   correspondence, evidence, and case decisions for three years after the case's last activity. This
   follows the general limit for civil copyright claims (17 U.S.C. §507(b)). The three years do not
