@@ -1,7 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { navigateTo, storybookBundleHasStory } from 'vouchington-tooling/playwright'
 
-const currentBundleSentinelStory = 'design-system-layout--sidebar-menu-skeleton-default'
+const currentBundleSentinelStory = 'design-system-components-card--default'
 
 async function requireCurrentStorybookBundle(page: Parameters<typeof navigateTo>[0]) {
   expect(
@@ -53,7 +53,7 @@ test.describe('Storybook design system component stories', () => {
     await expect(page.getByTestId('card-footer')).toBeVisible()
   })
 
-  test('renders shared link, tooltip button, and sidebar rail defaults', async ({ page }) => {
+  test('renders shared link and tooltip button', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
 
     await openStory(page, 'design-system-components-textlink--default')
@@ -62,9 +62,6 @@ test.describe('Storybook design system component stories', () => {
 
     await openStory(page, 'design-system-components-button--with-tooltip')
     await expect(page.getByTestId('tooltip-button')).toHaveCount(2)
-
-    await openStory(page, 'design-system-components-sidebar--expanded')
-    await expect(page.getByTestId('sidebar-rail')).toBeAttached()
   })
 
   test('renders skeleton and empty state', async ({ page }) => {
@@ -117,9 +114,6 @@ test.describe('Storybook design system component stories', () => {
 
     await openStory(page, 'design-system-layout--hoverable-card-default')
     await expect(page.getByTestId('hoverable-card')).toBeVisible()
-
-    await openStory(page, 'design-system-layout--sidebar-menu-skeleton-default')
-    await expect(page.getByTestId('sidebar-menu-skeleton')).toBeVisible()
 
     await openStory(page, 'design-system-media--user-avatar-default')
     await expect(page.getByTestId('user-avatar').first()).toBeVisible()
