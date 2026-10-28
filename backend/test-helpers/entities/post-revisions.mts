@@ -1,6 +1,8 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { PostRevision } from '../../services/post-revisions/index.mts'
+import type { createPostRevision } from '../../services/post-revisions/index.mts'
+
+type PostRevision = Awaited<ReturnType<typeof createPostRevision>>
 
 export async function countPostImageRevisions(postId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`/* countPostImageRevisions */

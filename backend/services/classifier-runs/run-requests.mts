@@ -86,7 +86,7 @@ export async function requestRssFeedItemClassifierRuns(
   `)
 }
 
-export type ClassifierRunRequestSettlement =
+type ClassifierRunRequestSettlement =
   | { kind: 'run'; runId: string; inputSha256: Buffer }
   | { kind: 'no-work'; inputSha256: Buffer }
   /** Settles every unsettled request of the subject, or only the one for `inputSha256` when given. */

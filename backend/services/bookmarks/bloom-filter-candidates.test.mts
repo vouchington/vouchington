@@ -12,8 +12,9 @@ import {
 import {
   checkBookmarkBloomCandidatesByRelations,
   invokeBookmarkBloomCandidateChunks,
-  type BookmarkBloomCandidateChunk,
 } from './bloom-filter-candidates.mts'
+
+type BookmarkBloomCandidateChunk = Parameters<typeof invokeBookmarkBloomCandidateChunks>[0][number]
 
 describe('bookmark bloom filter candidate chunks', () => {
   it('invokes chunks sequentially while preserving result order', async () => {

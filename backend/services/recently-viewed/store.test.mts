@@ -7,8 +7,9 @@ import {
   searchRecentlyViewed,
   searchRecentlyViewedPage,
   countRecentlyViewed,
-  type RecentlyViewedPageRow,
 } from './store.mts'
+
+type RecentlyViewedPageRow = Awaited<ReturnType<typeof searchRecentlyViewedPage>>[number]
 
 // Use randomized prefixes so tests are idempotent on a shared Redis.
 function randomEntityType(): string {

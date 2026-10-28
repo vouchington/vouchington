@@ -1,8 +1,9 @@
 import {
   claimCopyrightFormScreening,
   completeCopyrightFormScreening,
-  type CopyrightFormScreeningResultInput,
 } from '../services/copyright-notices/form-screening-executions.mts'
+
+type CopyrightFormScreeningResultInput = Parameters<typeof completeCopyrightFormScreening>[1]
 
 export async function appendTestCopyrightFormScreening(
   input: CopyrightFormScreeningResultInput,

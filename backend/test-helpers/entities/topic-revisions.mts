@@ -1,5 +1,7 @@
 import { read } from '@data-stores/psql'
-import type { TopicRevision } from '../../services/topic-revisions/index.mts'
+import type { createTopicRevision } from '../../services/topic-revisions/index.mts'
+
+type TopicRevision = Awaited<ReturnType<typeof createTopicRevision>>
 
 export async function getTopicRevisionsForTest(topicId: string): Promise<TopicRevision[]> {
   const { rows } = await read<TopicRevision>(

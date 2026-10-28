@@ -14,7 +14,7 @@ export type CopyrightFormScreeningAttempt = {
   attemptNumber: number
   leaseToken: string
 }
-export type CopyrightFormScreeningResultInput = {
+type CopyrightFormScreeningResultInput = {
   intakeId: string
   inputSha256: Buffer
   recommendation: 'not_obviously_invalid' | 'invalid_or_spam'

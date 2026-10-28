@@ -3,8 +3,12 @@ import manageMySpendingTool from './manage-my-spending.mts'
 import getMySpendingTool from './get-my-spending.mts'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestSpendingCategory } from '@voucha/test-helpers/entities/spending-categories'
-import type { HouseholdSpendingCategoryPage } from '@services/individuals-households'
+import type { getHouseholdSpendingCategoriesByUserId } from '@services/individuals-households'
 import type { PrivateUser } from '@services/users/types'
+
+type HouseholdSpendingCategoryPage = Awaited<
+  ReturnType<typeof getHouseholdSpendingCategoriesByUserId>
+>
 
 describe('manage_my_spending tool — real DB', () => {
   let user: PrivateUser

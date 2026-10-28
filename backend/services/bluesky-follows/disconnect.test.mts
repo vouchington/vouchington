@@ -26,6 +26,7 @@ import { enqueueDisconnectRequested } from '@queues/bluesky-follow-propagation/e
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
 
 const BLUESKY_DISCONNECT_LOCK_NAMESPACE = 0x4253
+type BlueskyDisconnectRequest = Awaited<ReturnType<typeof requestBlueskyDisconnect>>
 
 describe('durable Bluesky disconnect', () => {
   it('persists and queues the exact generation without synchronous cleanup', async () => {

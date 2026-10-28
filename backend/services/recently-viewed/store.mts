@@ -12,7 +12,7 @@ const searchRecentlyViewedPageScript = registerScript(
   loadScript('search-page.lua', import.meta.url),
 )
 
-export type RecentlyViewedPageRow = { id: string; score: number }
+type RecentlyViewedPageRow = { id: string; score: number }
 
 function getSessionKey(entityType: RecentlyViewedEntityType, sessionId: string): string {
   return `${NAMESPACE}:session:${entityType}:${sessionId}`

@@ -23,7 +23,7 @@ export type BookmarkBloomCandidates = {
   results: (boolean | null)[]
 }
 
-export type BookmarkBloomCandidateChunk = {
+type BookmarkBloomCandidateChunk = {
   itemCount: number
   lookupItems: string[]
 }

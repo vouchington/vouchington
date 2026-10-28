@@ -44,7 +44,7 @@ export type HouseholdSpendingCategory = {
   spending_category: { id: string; name: string; slug: string }
 }
 
-export type HouseholdSpendingCategoryPage = {
+type HouseholdSpendingCategoryPage = {
   results: HouseholdSpendingCategory[]
   page_info: PageInfo
 }

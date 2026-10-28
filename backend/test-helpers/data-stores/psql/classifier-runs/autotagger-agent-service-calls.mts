@@ -6,13 +6,14 @@ import {
   requestClassifierRuns,
   requestFollowOnClassifierRun,
   settleClassifierRunRequest,
-  type ClassifierRunRequestSettlement,
   type ClassifierRunSubject,
 } from '../../../../services/classifier-runs/index.mts'
 import {
   AUTOTAGGER_AGENT_SLUG,
   type claimAutotaggerAgentLease,
 } from './autotagger-agent-fixture.mts'
+
+type ClassifierRunRequestSettlement = Parameters<typeof settleClassifierRunRequest>[3]
 
 /** What the request helpers read from a post or feed item fixture. */
 type RequestFixture = { subject: ClassifierRunSubject; inputSha256: Buffer }
