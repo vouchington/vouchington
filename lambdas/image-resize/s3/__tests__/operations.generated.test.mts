@@ -1,31 +1,35 @@
 import { describe, it, expect } from 'vitest'
 import { Readable } from 'node:stream'
 import { readFile } from 'node:fs/promises'
-import { streamToTempFile } from '../operations.mts'
+import type { S3Client } from '@aws-sdk/client-s3'
+import { fetchImageFromS3 } from '../operations.mts'
 
-describe('streamToTempFile', () => {
+async function fetchBody(chunks: Buffer[]) {
+  const client = {
+    send: async () => ({ Body: Readable.from(chunks) }),
+  } as unknown as S3Client
+  return fetchImageFromS3(client, 'test-bucket', 'image-key')
+}
+
+describe('fetchImageFromS3 file body', () => {
   it('spools a stream to a private temporary file', async () => {
     const data = Buffer.from('test data')
-    const stream = Readable.from([data])
-
-    const result = await streamToTempFile(stream)
+    const result = await fetchBody([data])
     try {
-      expect(await readFile(result.path)).toEqual(data)
+      expect(await readFile(result.file!.path)).toEqual(data)
     } finally {
-      await result.cleanup()
+      await result.file!.cleanup()
     }
   })
 
-  it('should handle multiple chunks', async () => {
+  it('spools multiple chunks in order', async () => {
     const chunk1 = Buffer.from('hello ')
     const chunk2 = Buffer.from('world')
-    const stream = Readable.from([chunk1, chunk2])
-
-    const result = await streamToTempFile(stream)
+    const result = await fetchBody([chunk1, chunk2])
     try {
-      expect((await readFile(result.path)).toString()).toBe('hello world')
+      expect((await readFile(result.file!.path)).toString()).toBe('hello world')
     } finally {
-      await result.cleanup()
+      await result.file!.cleanup()
     }
   })
 })

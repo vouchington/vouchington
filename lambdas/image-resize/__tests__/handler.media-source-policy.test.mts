@@ -5,8 +5,10 @@ import { TRANSFORMED_SIDELOAD_CACHE_PREFIX } from '@ts-shared/url-signing'
 import { sha256 } from '../cache/index.mts'
 import type { EnvironmentConfig, SideloadConfig } from '../config.mts'
 import { S3OperationError } from '../errors.mts'
-import { createLambdaHandler, type LambdaHandlerDependencies } from '../handler.mts'
+import { createLambdaHandler } from '../handler.mts'
 import { toBase64Url } from '../../test-helpers/image-resize/index.mts'
+
+type LambdaHandlerDependencies = Required<NonNullable<Parameters<typeof createLambdaHandler>[1]>>
 
 const SOURCE = 'https://cdn.example/photo.jpg'
 const PLACEMENT = {

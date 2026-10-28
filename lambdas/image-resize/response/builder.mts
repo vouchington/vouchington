@@ -13,7 +13,7 @@ export const FORMAT_TO_CONTENT_TYPE: Record<OutputFormat, string> = {
 
 // API Gateway's non-streaming Lambda payload limit is 6 MiB. RESPONSE_STREAM in
 // vouchington-infra is required before this boundary can become fully streaming.
-export const MAX_LAMBDA_SYNC_RESPONSE_BYTES = 6 * 1024 * 1024
+const MAX_LAMBDA_SYNC_RESPONSE_BYTES = 6 * 1024 * 1024
 const MAX_IMAGE_RESPONSE_ENVELOPE_BYTES = Math.max(
   ...Object.keys(FORMAT_TO_CONTENT_TYPE).map(format =>
     Buffer.byteLength(
@@ -26,7 +26,7 @@ const MAX_IMAGE_RESPONSE_ENVELOPE_BYTES = Math.max(
     ),
   ),
 )
-export const MAX_API_GATEWAY_IMAGE_BYTES =
+const MAX_API_GATEWAY_IMAGE_BYTES =
   Math.floor((MAX_LAMBDA_SYNC_RESPONSE_BYTES - MAX_IMAGE_RESPONSE_ENVELOPE_BYTES) / 4) * 3
 
 export function buildResponse(

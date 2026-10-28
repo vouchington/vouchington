@@ -2,21 +2,25 @@ import { describe, it, expect } from 'vitest'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import {
-  buildResponse,
-  buildErrorResponse,
-  buildFileResponse,
-  MAX_API_GATEWAY_IMAGE_BYTES,
-  MAX_LAMBDA_SYNC_RESPONSE_BYTES,
-} from './builder.mts'
+import { buildResponse, buildErrorResponse, buildFileResponse } from './builder.mts'
+
+const MAX_RESPONSE_BYTES = 6 * 1024 * 1024
+const MAX_IMAGE_RESPONSE_BYTES =
+  Math.floor(
+    (MAX_RESPONSE_BYTES -
+      Buffer.byteLength(JSON.stringify(buildResponse(200, Buffer.alloc(0), 'jpeg')))) /
+      4,
+  ) * 3
 
 describe('buildResponse', () => {
   it('rejects an image that cannot fit through the non-streaming API Gateway boundary', () => {
-    const largestResponse = buildResponse(200, Buffer.alloc(MAX_API_GATEWAY_IMAGE_BYTES), 'jpeg')
-    const response = buildResponse(200, Buffer.alloc(MAX_API_GATEWAY_IMAGE_BYTES + 1), 'jpeg')
+    const largestResponse = buildResponse(200, Buffer.alloc(MAX_IMAGE_RESPONSE_BYTES), 'jpeg')
+    const response = buildResponse(200, Buffer.alloc(MAX_IMAGE_RESPONSE_BYTES + 1), 'jpeg')
 
+    expect(largestResponse.statusCode).toBe(200)
+    expect(largestResponse.isBase64Encoded).toBe(true)
     expect(Buffer.byteLength(JSON.stringify(largestResponse))).toBeLessThanOrEqual(
-      MAX_LAMBDA_SYNC_RESPONSE_BYTES,
+      MAX_RESPONSE_BYTES,
     )
     expect(response.statusCode).toBe(413)
     expect(response.isBase64Encoded).toBe(false)

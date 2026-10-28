@@ -22,7 +22,7 @@ import {
 
 const sideloadSigningKeysParameterEnv = 'VOUCHA_SIDELOAD_SIGNING_KEYS_PARAMETER'
 
-export interface LambdaHandlerDependencies extends ImageRequestDependencies {
+interface LambdaHandlerDependencies extends ImageRequestDependencies {
   fetchImageFromUrl: typeof defaultFetchImageFromUrl
   authorizeDependencies: (
     dependencies: readonly PlacementSourcePolicy[],

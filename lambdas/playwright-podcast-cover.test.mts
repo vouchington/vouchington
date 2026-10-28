@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   isPlaywrightPodcastCoverRequest,
   PLAYWRIGHT_PODCAST_COVER,
-  PLAYWRIGHT_PODCAST_COVER_URL,
 } from './playwright-podcast-cover.mts'
+
+const PLAYWRIGHT_PODCAST_COVER_URL = 'https://playwright.invalid/podcast-cover.png'
 
 describe('Playwright podcast cover fixture', () => {
   it('matches only the reserved sideload source URL', () => {

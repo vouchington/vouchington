@@ -11,11 +11,11 @@ vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), async () 
   stat: mockStat as unknown as typeof import('node:fs/promises').stat,
 }))
 
-const { buildFileResponse, MAX_API_GATEWAY_IMAGE_BYTES } = await import('./builder.mts')
+const { buildFileResponse } = await import('./builder.mts')
 
 describe('buildFileResponse size preflight', () => {
   it('rejects oversized files without reading them', async () => {
-    mockStat.mockResolvedValue({ size: MAX_API_GATEWAY_IMAGE_BYTES + 1 })
+    mockStat.mockResolvedValue({ size: 6 * 1024 * 1024 })
 
     await expect(
       buildFileResponse(200, { path: '/oversized', cleanup: async () => undefined }, 'jpeg'),

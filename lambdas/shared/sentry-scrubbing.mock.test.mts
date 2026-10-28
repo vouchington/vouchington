@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { getBeforeSend, type BeforeSend } from './sentry.mock-fixtures.mts'
+import type * as SentrySdk from '@sentry/aws-serverless'
+import { getBeforeSend } from '../test-helpers/sentry-mock-fixtures.mts'
 
 vi.mock<typeof import('@sentry/aws-serverless')>(import('@sentry/aws-serverless'), () => ({
   init: vi.fn<VitestLooseMock>(),
@@ -9,6 +10,8 @@ vi.mock<typeof import('@sentry/aws-serverless')>(import('@sentry/aws-serverless'
 const Sentry = await import('@sentry/aws-serverless')
 const { initSentry } = await import('./sentry.mts')
 
+type SentryInitOptions = NonNullable<Parameters<typeof SentrySdk.init>[0]>
+type BeforeSend = NonNullable<SentryInitOptions['beforeSend']>
 type SentryEvent = Parameters<BeforeSend>[0]
 type SentryEventHint = Parameters<BeforeSend>[1]
 
@@ -22,7 +25,7 @@ describe('initSentry event scrubbing', () => {
   it('scrubs sensitive fields and drops the request body by default', async () => {
     process.env.NODE_ENV = 'test'
     initSentry({ lambdaName: 'test-lambda' })
-    const result = await getBeforeSend(vi.mocked(Sentry.init))(
+    const result = await getBeforeSend<BeforeSend>(vi.mocked(Sentry.init))(
       {
         user: { id: 'user-1', email: 'tests+person@voucha.ai' },
         request: {
