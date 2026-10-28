@@ -12,6 +12,7 @@ import {
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { getApplicationQuestions } from '@services/communities'
+import { createRequest } from '@voucha/test-helpers/api/server'
 
 const scopes = ['community-moderation:read', 'community-moderation:write'] as const
 const readScopes = ['community-moderation:read'] as const
@@ -67,6 +68,17 @@ describe('community moderation MCP application updates — real PostgreSQL and V
       readScopes,
     )
     expect(before.results).toEqual([expect.objectContaining({ id: application.id })])
+    const request = createRequest()
+    await request.authenticateAs(moderator)
+    const rest = await request
+      .get(`/api/v1/communities/${community.slug}/applications?status=pending`)
+      .expect(200)
+    const mcpUsers = before.users as Record<string, { id: string; username?: string | null }>
+    expect(Object.keys(mcpUsers)).toEqual(Object.keys(rest.body.users))
+    expect(mcpUsers[applicant.id]).toMatchObject({
+      id: rest.body.users[applicant.id].id,
+      username: expect.any(String),
+    })
     expect(
       await callStructuredMcpTool(
         moderator,

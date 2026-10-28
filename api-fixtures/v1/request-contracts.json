@@ -23351,6 +23351,9 @@
         "entity_id": {
           "type": "string"
         },
+        "entity_label": {
+          "type": "string"
+        },
         "id": {
           "type": "string"
         },
@@ -23378,6 +23381,7 @@
         "__entity_type",
         "created_at",
         "entity_id",
+        "entity_label",
         "id",
         "item_type",
         "list_id",

@@ -13732,7 +13732,6 @@
 {"alias":"extracted.communities.communityAgentPromptItem.failedToDeletePrompt_daaf861e","consumer":"web","pattern":"/communities/[slug]/settings/moderation"},
 {"alias":"extracted.communities.communityAgentPromptItem.failedToUpdatePrompt_db9aad3c","consumer":"web","pattern":"/communities/[slug]/settings/moderation"},
 {"alias":"extracted.communities.communityAgentPromptItem.failedToUpdateSlotAllocation_11311ec6","consumer":"web","pattern":"/communities/[slug]/settings/moderation"},
-{"alias":"extracted.communities.communityAgentPromptItem.idId_12b0460b","consumer":"web","pattern":"/communities/[slug]/settings/moderation"},
 {"alias":"extracted.communities.communityAgentPromptItem.promptDeleted_8e7b89b8","consumer":"web","pattern":"/communities/[slug]/settings/moderation"},
 {"alias":"extracted.communities.communityAgentPromptItem.promptUpdated_8dc48c5d","consumer":"web","pattern":"/communities/[slug]/settings/moderation"},
 {"alias":"extracted.communities.communityAgentPromptItem.save_1509f561","consumer":"web","pattern":"/communities/[slug]/settings/moderation"},

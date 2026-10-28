@@ -77,6 +77,7 @@ describe('community application answer routes', () => {
       { __entity_type: 'community_application', id: created.body.community_application.id },
     ])
     expect(listed.body.page_info.has_next_page).toBe(false)
+    expect(listed.body.users[applicant!.id].username).toBe(applicant!.username)
     expect(
       listed.body.community_applications[created.body.community_application.id].answers,
     ).toEqual({ [questionId]: ['Beta', 'Alpha'] })

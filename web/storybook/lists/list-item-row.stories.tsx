@@ -22,6 +22,7 @@ const review: ListItem = {
   order_index: 0,
   created_at: posts[1]!.created_at,
   media_type: null,
+  entity_label: posts[1]!.title || posts[1]!.slug || 'Untitled post',
 }
 
 const episode: ListItem = {
@@ -33,6 +34,7 @@ const episode: ListItem = {
   order_index: 1,
   created_at: newsItems[1]!.published_at,
   media_type: 'audio',
+  entity_label: newsItems[1]!.data.title || 'Podcast episode',
 }
 
 export const Review: Story = {

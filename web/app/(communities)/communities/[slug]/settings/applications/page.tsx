@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { notFound, redirect } from 'next/navigation'
-import { getCommunity, getCommunityApplications, getCommunityMembers } from '@/lib/api/server'
+import { getCommunity, getCommunityApplications } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { ApplicationReview } from '@/components/communities/application-review'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
@@ -41,10 +41,7 @@ export default async function CommunityApplicationsPage({ params }: PageProps) {
     notFound()
   }
 
-  const [applicationsData, membersData] = await Promise.all([
-    getCommunityApplications(slug),
-    getCommunityMembers(slug),
-  ])
+  const applicationsData = await getCommunityApplications(slug)
 
   return (
     <div className='space-y-6'>
@@ -62,7 +59,6 @@ export default async function CommunityApplicationsPage({ params }: PageProps) {
       <ApplicationReview
         data={applicationsData}
         communitySlug={community.slug}
-        users={membersData.users}
       />
     </div>
   )

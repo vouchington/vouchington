@@ -2075,7 +2075,7 @@
     },
     "native.list-items.default": {
       "fixtureIds": ["native.list-items.default"],
-      "hash": "3141764b9a5587099c679576b05ea4d8c7b5f657203d17ca0eddb512b31be3b3"
+      "hash": "ea0b0a34b4e257eb648f2eb006898a7495b8d82eb10355eb7034fa8feb2d5250"
     },
     "native.lists-containing.default": {
       "fixtureIds": ["native.lists-containing.default"],
@@ -3047,7 +3047,7 @@
     },
     "web.communities.applications.default": {
       "fixtureIds": ["web.communities.applications.default"],
-      "hash": "2b893ae3523cb188c32149d798d9b9690baeb533dca0c374aef31e41e3fa2829"
+      "hash": "ab3cfd9e18866975e0c0b699e037408103a0fdb6022681590ae3d009defa8198"
     },
     "web.communities.archive.default": {
       "fixtureIds": ["web.communities.archive.default"],

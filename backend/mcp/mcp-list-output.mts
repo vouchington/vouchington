@@ -28,6 +28,7 @@ const LIST_ITEM_FIELDS = [
   'list_id',
   'item_type',
   'entity_id',
+  'entity_label',
   'order_index',
   'media_type',
   'created_at',
@@ -52,6 +53,7 @@ export type McpListItem = {
   list_id: string
   item_type: ListItem['item_type']
   entity_id: string
+  entity_label: string
   order_index: number
   media_type: string | null
   created_at: string
@@ -93,6 +95,7 @@ export function toMcpListItem(item: ListItem): McpListItem {
     list_id: item.list_id,
     item_type: item.item_type,
     entity_id: item.entity_id,
+    entity_label: item.entity_label,
     order_index: item.order_index,
     media_type: item.media_type,
     created_at: iso(item.created_at),

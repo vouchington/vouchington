@@ -38,20 +38,19 @@ const pending: CommunityApplicationsResponseBody = {
   results: [{ __entity_type: 'community_application', id: application.id }],
   page_info,
   community_applications: { [application.id]: application },
+  users: { [publicUsers[0]!.id]: publicUsers[0]! },
 }
 
 export const Pending: Story = {
   args: {
     communitySlug: communities[0]!.slug,
     data: pending,
-    users: { [publicUsers[0]!.id]: publicUsers[0]! },
   },
 }
 
 export const Empty: Story = {
   args: {
     communitySlug: communities[0]!.slug,
-    data: { results: [], page_info, community_applications: {} },
-    users: {},
+    data: { results: [], page_info, community_applications: {}, users: {} },
   },
 }

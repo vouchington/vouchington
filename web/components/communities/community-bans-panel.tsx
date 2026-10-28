@@ -112,7 +112,9 @@ export function CommunityBansPanel({ community, initialData }: Props) {
                 <div className='space-y-1'>
                   <div className='flex items-center gap-2'>
                     <span className='font-medium'>
-                      {user?.username ? `@${user.username}` : ban.user_id}
+                      {user?.display_account?.name ||
+                        (user?.username ? `@${user.username}` : null) ||
+                        t('shared.user.deletedUser')}
                     </span>
                     <Badge
                       variant={isActive ? 'destructive' : 'secondary'}

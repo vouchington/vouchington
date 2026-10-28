@@ -47,10 +47,12 @@ export const communityModerationReadLists: Record<string, CommunityModerationHan
       ...page(args),
       status: args.status as 'pending' | 'approved' | 'rejected' | undefined,
     })
+    const publicUsers = await getUserPublicByAnyCachedBatch(result.results.map(a => a.user_id))
     return {
       results: result.results.map(a => ({ __entity_type: 'community_application', id: a.id })),
       page_info: result.page_info,
       community_applications: indexById(result.results),
+      users: indexById(publicUsers.filter(user => user != null)),
     }
   },
 

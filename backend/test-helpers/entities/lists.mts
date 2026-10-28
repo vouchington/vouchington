@@ -66,6 +66,7 @@ export async function insertTestListRssFeedItem(
     order_index: (row.order_index as number) ?? 0,
     created_at: row.created_at as Date,
     media_type: null,
+    entity_label: 'Saved article',
   }
 }
 

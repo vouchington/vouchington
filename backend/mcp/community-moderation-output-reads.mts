@@ -133,6 +133,7 @@ export function communityModerationReadOutput(option: string): ToolOutputSchema 
         'community_application',
         'community_applications',
         changeComponent('CommunityApplication', {}, ['__entity_type']),
+        true,
       )
     case 'list_automod_actions':
       return automodActions()

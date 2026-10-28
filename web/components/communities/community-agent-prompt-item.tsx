@@ -109,9 +109,6 @@ export function CommunityAgentPromptItem({ prompt, communitySlug, onPromptUpdate
     >
       <div className='flex flex-wrap items-start justify-between gap-2'>
         <div className='min-w-0 space-y-1 text-sm'>
-          <p className='font-mono text-xs text-muted-foreground'>
-            {t('extracted.communities.communityAgentPromptItem.idId_12b0460b', { id: prompt.id })}
-          </p>
           {isEditing ? (
             <Textarea
               value={editText}

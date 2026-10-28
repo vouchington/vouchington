@@ -8194,7 +8194,7 @@
           "tool": {
             "name": "read_my_lists",
             "title": "Read My Lists",
-            "description": "containing: Find which of the current user's lists contain a post or RSS item; read their ids with read_my_lists (option get). Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Removed lists are omitted.\nitems: List a readable list's posts and RSS items, newest first. Read entity_id with read_posts (option details) or read_rss_feed_item (option details). Access follows read_my_lists (option get). Unreadable posts are omitted, so a short page can still have a next page. media_type filters RSS items only.\nget: Get a list by UUID, including name, owner and visibility. Anyone with the id can read public or unlisted lists. Private lists require ownership and post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Unknown, removed and inaccessible lists return List not found. Use read_my_lists (option items) for contents.\nlist: List the current user's lists, newest first. Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Use read_my_lists (option items) for contents.",
+            "description": "containing: Find which of the current user's lists contain a post or RSS item; read their ids with read_my_lists (option get). Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Removed lists are omitted.\nitems: List a readable list's posts and RSS items, newest first. entity_label identifies each item in presentation; read entity_id with read_posts (option details) or read_rss_feed_item (option details). Access follows read_my_lists (option get). Unreadable posts are omitted, so a short page can still have a next page. media_type filters RSS items only.\nget: Get a list by UUID, including name, owner and visibility. Anyone with the id can read public or unlisted lists. Private lists require ownership and post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Unknown, removed and inaccessible lists return List not found. Use read_my_lists (option items) for contents.\nlist: List the current user's lists, newest first. Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Use read_my_lists (option items) for contents.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -8364,6 +8364,9 @@
                               "entity_id": {
                                 "type": "string"
                               },
+                              "entity_label": {
+                                "type": "string"
+                              },
                               "order_index": {
                                 "type": "number"
                               },
@@ -8386,6 +8389,7 @@
                               "list_id",
                               "item_type",
                               "entity_id",
+                              "entity_label",
                               "order_index",
                               "media_type",
                               "created_at"
@@ -19988,9 +19992,12 @@
                         ],
                         "type": "object"
                       }
+                    },
+                    "users": {
+                      "$ref": "#/$defs/S1"
                     }
                   },
-                  "required": ["results", "page_info", "community_applications"],
+                  "required": ["results", "page_info", "community_applications", "users"],
                   "additionalProperties": false
                 },
                 {

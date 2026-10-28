@@ -13,6 +13,7 @@ function makeItem(overrides: Partial<ListItem> = {}): ListItem {
     order_index: 0,
     created_at: '2025-01-01T00:00:00Z',
     media_type: 'article',
+    entity_label: 'Saved article',
     ...overrides,
   }
 }
@@ -50,9 +51,12 @@ describe('ListItemRow', () => {
     expect(getByText('Article')).not.toBeNull()
   })
 
-  it('renders entity_id', () => {
-    const { getByText } = render(<ListItemRow item={makeItem({ entity_id: 'abc-123' })} />)
-    expect(getByText('abc-123')).not.toBeNull()
+  it('renders the entity label without exposing its ID', () => {
+    const { getByText, queryByText } = render(
+      <ListItemRow item={makeItem({ entity_id: 'abc-123', entity_label: 'Saved story' })} />,
+    )
+    expect(getByText('Saved story')).not.toBeNull()
+    expect(queryByText('abc-123')).toBeNull()
   })
 
   it('renders time element with dateTime attribute', () => {

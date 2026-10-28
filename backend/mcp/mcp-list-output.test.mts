@@ -69,6 +69,7 @@ describe('list read tool output schemas', () => {
       'list_id',
       'item_type',
       'entity_id',
+      'entity_label',
       'order_index',
       'media_type',
       'created_at',

@@ -85,6 +85,17 @@ describe('CommunityBansPanel', () => {
     expect(screen.getByTestId('community-ban-lift')).toBeInTheDocument()
   })
 
+  it('shows a deleted-user label when the banned profile is gone', () => {
+    render(
+      <CommunityBansPanel
+        community={makeCommunity()}
+        initialData={{ ...makeData([makeBan()]), users: {} }}
+      />,
+    )
+    expect(screen.getByText('Deleted user')).toBeInTheDocument()
+    expect(screen.queryByText('u-1')).not.toBeInTheDocument()
+  })
+
   it('lifts a ban and refreshes', async () => {
     mockLiftBan.mockResolvedValueOnce(undefined)
     render(

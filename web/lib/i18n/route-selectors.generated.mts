@@ -84,7 +84,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/communities/[slug]/settings", selectorId: "web.route.b8c121fa4ba695f7.dc660d966fb9c436", hasMembership: true },
   { pattern: "/communities/[slug]/settings/applications", selectorId: "web.route.1796d9f690929a1f.eab67b76057ca3b4", hasMembership: true },
   { pattern: "/communities/[slug]/settings/invites", selectorId: "web.route.71955e0e28ba3356.fe9064bf6df86b0d", hasMembership: true },
-  { pattern: "/communities/[slug]/settings/moderation", selectorId: "web.route.c9ccccbb2f80f7a0.5dc749b2deae76f0", hasMembership: true },
+  { pattern: "/communities/[slug]/settings/moderation", selectorId: "web.route.c9ccccbb2f80f7a0.d5fc720e6dae6332", hasMembership: true },
   { pattern: "/communities/[slug]/settings/moderation/analytics", selectorId: "web.route.0f270001abf34f53.a46e7cd80b57c0fd", hasMembership: true },
   { pattern: "/communities/[slug]/settings/moderation/modmail/[threadId]", selectorId: "web.route.a12c72704d119fae.b19ba8e90a0308d8", hasMembership: true },
   { pattern: "/communities/[slug]/settings/modlog", selectorId: "web.route.e2346a5c09eae9de.92a0c49b9fef871b", hasMembership: true },

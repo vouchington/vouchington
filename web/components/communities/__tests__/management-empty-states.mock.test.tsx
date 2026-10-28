@@ -36,6 +36,7 @@ const emptyApplicationsData: CommunityApplicationsResponseBody = {
   results: [],
   page_info: pageInfo,
   community_applications: {},
+  users: {},
 }
 
 const emptyMembersData: CommunityMembersResponseBody = {
