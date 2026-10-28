@@ -52,10 +52,6 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'MINIFLARE_CACHE_DIR',
     'Local runtime cache path; keep environment-scoped for developer machines.',
   ],
-  [
-    'NODE_PREWARM_PORT',
-    'Readiness port the published worker runtime binds during an image prewarm; backend images no longer prewarm, so only the worker serve-import test helper keeps it unset (#4247).',
-  ],
   ['OUTPUT_PATH', 'Tool output path; keep environment-scoped for command invocation.'],
   ['PROD_DIR', 'Build artifact path; keep environment-scoped for command invocation.'],
   ['PUBLIC_URL', 'Public deployment URL; keep environment-scoped with deployment wiring.'],
