@@ -36,6 +36,7 @@
         "docker-deploy/prune-deployed-runtime-deps.mts",
         "docker-deploy/prune-opentelemetry-alternate-builds.mts",
         "docker-deploy/restore-deployed-workspace-packages.mts",
+        "docker-deploy/compile-backend-binaries.mts",
       ],
       "project": ["**/*.mts"],
       "includeEntryExports": true,

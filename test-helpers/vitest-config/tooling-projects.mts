@@ -159,6 +159,7 @@ export const toolingProjects = [
         'static-code-analysis/docker-deploy/__tests__/prune-deployed-runtime-deps.test.mts',
         'static-code-analysis/docker-deploy/__tests__/prune-opentelemetry-alternate-builds.test.mts',
         'static-code-analysis/docker-deploy/__tests__/restore-deployed-workspace-packages*.test.mts',
+        'static-code-analysis/docker-deploy/compile-source-rewrites.test.mts',
         'backend/dependency-cruiser-rules/__tests__/*.test.mts',
       ],
       exclude: defaultExcludes,
