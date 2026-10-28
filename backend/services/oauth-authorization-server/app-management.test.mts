@@ -17,7 +17,6 @@ import {
   exchangeOAuthAuthorizationCode,
   exchangeOAuthRefreshToken,
   listOwnedOAuthApps,
-  MAX_OAUTH_APP_SCOPES,
   revokeOwnedOAuthApp,
   rotateOwnedOAuthAppSecret,
   updateOwnedOAuthApp,
@@ -84,7 +83,7 @@ describe('owned OAuth app management', () => {
     await expect(
       createOwnedOAuthApp(owner.id, appInput({ scopes: 'mcp.user:read' })),
     ).rejects.toMatchObject({ code: 'invalid_client_metadata' })
-    const tooMany = Array.from({ length: MAX_OAUTH_APP_SCOPES + 1 }, () => 'mcp.user:read')
+    const tooMany = Array.from({ length: 33 }, () => 'mcp.user:read')
     await expect(
       createOwnedOAuthApp(owner.id, appInput({ scopes: tooMany })),
     ).rejects.toMatchObject({ code: 'invalid_client_metadata' })

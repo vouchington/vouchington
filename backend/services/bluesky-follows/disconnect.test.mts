@@ -22,8 +22,9 @@ import {
   type BlueskyDisconnectRequest,
 } from './disconnect-request.mts'
 import { enqueueDisconnectRequested } from '@queues/bluesky-follow-propagation/enqueues'
-import { BLUESKY_DISCONNECT_LOCK_NAMESPACE } from './disconnect-lock.mts'
 import { blueskyFollowsWorkConfig } from './work-limits.mts'
+
+const BLUESKY_DISCONNECT_LOCK_NAMESPACE = 0x4253
 
 describe('durable Bluesky disconnect', () => {
   it('persists and queues the exact generation without synchronous cleanup', async () => {

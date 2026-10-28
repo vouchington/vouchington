@@ -1,9 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  CLIENT_ID_METADATA_REQUEST_TIMEOUT_MS,
-  resolveClientIdMetadataDocument,
-} from './client-id-metadata-document.mts'
+import { resolveClientIdMetadataDocument } from './client-id-metadata-document.mts'
 
 describe('Client ID Metadata Documents', () => {
   it('aborts a metadata request that exceeds the request timeout', async () => {
@@ -27,7 +24,7 @@ describe('Client ID Metadata Documents', () => {
           }),
       }).catch((err: unknown) => err)
       const signal = await requested.promise
-      await vi.advanceTimersByTimeAsync(CLIENT_ID_METADATA_REQUEST_TIMEOUT_MS - 1)
+      await vi.advanceTimersByTimeAsync(4_999)
       expect(signal.aborted).toBe(false)
       await vi.advanceTimersByTimeAsync(1)
       await expect(result).resolves.toMatchObject({ cause, code: 'unauthorized_client' })

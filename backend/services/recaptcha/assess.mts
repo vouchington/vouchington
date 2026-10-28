@@ -53,7 +53,7 @@ const resolveDependencies = (
 
 // Deliberately generic: when blocking is enabled we never reveal that a reCAPTCHA score caused the
 // rejection (the real reason is logged to Sentry instead, per #4445).
-export const RECAPTCHA_BLOCK_MESSAGE = 'Unable to submit your request right now. Please try again.'
+const RECAPTCHA_BLOCK_MESSAGE = 'Unable to submit your request right now. Please try again.'
 
 /**
  * Runs a reCAPTCHA Enterprise assessment as the **last** anti-abuse check on a content-creation

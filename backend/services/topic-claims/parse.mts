@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 
 /** Matches the create and manual-review request contracts. */
-export const TOPIC_CLAIM_EVIDENCE_MAX_LENGTH = 10_000
+const TOPIC_CLAIM_EVIDENCE_MAX_LENGTH = 10_000
 
 export interface CreateTopicClaimInput {
   topicId: string

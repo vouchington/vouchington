@@ -8,7 +8,7 @@ import {
   revokeOwnedOAuthApp,
   rotateOwnedOAuthAppSecret,
   updateOwnedOAuthApp,
-  type MAX_OAUTH_APP_SCOPES,
+  type OAuthAppScopeLimit,
   type OAuthClientAuthMethod,
 } from '@services/oauth-authorization-server'
 import { assertNotSuspended } from '@services/users'
@@ -31,7 +31,7 @@ type CreateOAuthAppRequest = {
   client_name: string
   redirect_uris: ApiArrayContract<string, 1, typeof MAX_REDIRECT_URIS, true>
   token_endpoint_auth_method?: OAuthClientAuthMethod
-  scopes: ApiArrayContract<string, 1, typeof MAX_OAUTH_APP_SCOPES, true>
+  scopes: ApiArrayContract<string, 1, OAuthAppScopeLimit, true>
 }
 
 type UpdateOAuthAppRequest = {

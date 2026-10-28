@@ -4,7 +4,7 @@ import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sent
 import type { PrivateUser } from '@services/users/types'
 import type { RecaptchaConfig } from './config.mts'
 import type { RecaptchaAssessment } from './fetch-assessment.mts'
-import { assessRecaptchaToken, RECAPTCHA_BLOCK_MESSAGE } from './assess.mts'
+import { assessRecaptchaToken } from './assess.mts'
 
 const captureException = sentryCaptureExceptionMock
 
@@ -159,7 +159,10 @@ describe('assessRecaptchaToken', () => {
     it('blocks a low score with a generic error when blocking is enabled', async () => {
       mockGetRecaptchaConfig.mockReturnValue(config({ blocking_enabled: true }))
       mockFetchAssessment.mockResolvedValue(assessment({ score: 0.1 }))
-      await expect(call()).rejects.toMatchObject({ status: 400, message: RECAPTCHA_BLOCK_MESSAGE })
+      await expect(call()).rejects.toMatchObject({
+        status: 400,
+        message: 'Unable to submit your request right now. Please try again.',
+      })
       expect(captureException).toHaveBeenCalledOnce()
     })
 

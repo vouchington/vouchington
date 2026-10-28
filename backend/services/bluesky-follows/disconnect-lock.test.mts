@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { SessionAdvisoryLockDualFailure } from '@services/session-advisory-lock'
 import { beginTransaction, injectTestBlueskyDisconnectUnlockFault } from '@voucha/test-helpers'
-import { BLUESKY_DISCONNECT_LOCK_NAMESPACE, withBlueskyDisconnectLock } from './disconnect-lock.mts'
+import { withBlueskyDisconnectLock } from './disconnect-lock.mts'
+
+const BLUESKY_DISCONNECT_LOCK_NAMESPACE = 0x4253
 
 async function probeBlueskyDisconnectLock(userId: string): Promise<void> {
   await using query = await beginTransaction()
