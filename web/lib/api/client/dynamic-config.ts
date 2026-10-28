@@ -2,7 +2,7 @@
 
 import { clientApi } from './instance'
 
-export type DynamicConfigFieldType = 'boolean' | 'number' | 'string'
+type DynamicConfigFieldType = 'boolean' | 'number' | 'string'
 export type DynamicConfigFieldValue = boolean | number | string
 
 export interface DynamicConfigField {

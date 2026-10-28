@@ -17,7 +17,7 @@ export const pollImageUntilTerminal = internalPollImageUntilTerminal
 export { pollImageUntilUploaded } from './image-upload-wait'
 const CROSS_USER_DEDUP_MESSAGE = 'Image upload matched an image that is not available to this user'
 
-export type UploadPhase = 'uploading' | 'processing'
+type UploadPhase = 'uploading' | 'processing'
 
 interface UploadOptions {
   onPhase?: (phase: UploadPhase) => void

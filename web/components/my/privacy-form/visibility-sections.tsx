@@ -4,7 +4,7 @@ import type { UserPrivacyAudience } from '@/types/user'
 import { AudienceSelect } from '../audience-select'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
-export interface PrivacySettings {
+interface PrivacySettings {
   cards_visibility: UserPrivacyAudience
   rewards_program_statuses_visibility: UserPrivacyAudience
   spending_categories_visibility: UserPrivacyAudience

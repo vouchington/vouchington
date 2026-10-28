@@ -147,12 +147,4 @@ function SelectItem({
 }
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
-export {
-  Select,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectScrollUpButton,
-  SelectScrollDownButton,
-}
+export { Select, SelectValue, SelectTrigger, SelectContent, SelectItem }
