@@ -7,7 +7,7 @@ import { beginTransaction } from '@voucha/test-helpers'
 import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getCrawlersForHostname } from '@services/crawlers'
 import { ENTITY_LISTENERS_URL_CREATED_JOB } from '../../queues/background/enqueues/entity-listeners-jobs.mts'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { sentryCaptureExceptionMock as captureException } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('upsert.generated', () => {

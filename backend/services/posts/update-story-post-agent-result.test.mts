@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
+import { backgroundQueue as moderationSignalsQueue } from '@voucha/test-helpers/shared-background-queue'
 import {
   countTestPostModerationAttempts,
   getTestCurrentPostModerationVersion,

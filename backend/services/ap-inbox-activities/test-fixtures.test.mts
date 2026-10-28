@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { readEnqueuedJob } from '@voucha/test-helpers'
 import { acceptJobsFor } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { enqueueDeliverAcceptActivity } from '@queues/activitypub/enqueues/delivery'
 
 describe('acceptJobsFor', () => {

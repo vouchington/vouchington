@@ -18,7 +18,7 @@ import { isFirstCommunityPost } from '../get.mts'
 import { enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts } from '../../../posts/ban-evasion-embedding-enqueues.mts'
 import { communitiesWorkConfig } from '@services/communities/work-limits'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
-import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
+import { backgroundQueue as moderationSignalsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('isFirstCommunityPost', () => {

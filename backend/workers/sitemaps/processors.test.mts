@@ -13,7 +13,7 @@ import {
   getSitemapPostDayData,
   getSitemapArchiveBackfillData,
 } from '@voucha/test-helpers/sitemap-queue-jobs'
-import { sitemapsQueue } from '@queues/sitemaps/queues'
+import { backgroundQueue as sitemapsQueue } from '@voucha/test-helpers/shared-background-queue'
 import {
   getSitemapFamilyProgress,
   putSitemapFamilyProgress,

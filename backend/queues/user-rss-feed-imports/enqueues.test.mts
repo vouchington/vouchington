@@ -11,7 +11,7 @@ import {
   enqueueUserRssFeedImportDispatchContinuation,
   enqueueUserRssFeedImportDispatches,
 } from './enqueues.mts'
-import { userRssFeedImports } from './queues.mts'
+import { backgroundQueue as userRssFeedImports } from '../../test-helpers/shared-background-queue.mts'
 
 describe('user RSS feed import dispatcher ids', () => {
   it('gives every page of an import its own job id, so a page can continue while it runs', async () => {

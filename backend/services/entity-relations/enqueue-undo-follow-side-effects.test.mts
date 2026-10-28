@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readAllQueueJobs, removeEnqueuedJobs } from '@voucha/test-helpers'
-import { activitypub } from '@queues/activitypub/queues'
+import {
+  backgroundQueue as activitypub,
+  backgroundQueue as blueskyFollowPropagation,
+} from '@voucha/test-helpers/shared-background-queue'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
-import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
 import {

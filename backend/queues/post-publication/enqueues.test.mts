@@ -13,7 +13,7 @@ import {
   enqueuePostPublicationEffects,
   postPublicationEffectJobId,
 } from './enqueues.mts'
-import { postPublicationQueue } from './queues.mts'
+import { backgroundQueue as postPublicationQueue } from '../../test-helpers/shared-background-queue.mts'
 
 describe('post-publication direct enqueues', () => {
   it('uses a stable per-change ID, sensitive retention, and the bounded effects lane', async () => {

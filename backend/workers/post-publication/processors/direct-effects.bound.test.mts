@@ -21,7 +21,7 @@ import {
   enqueuePostPublicationEffects,
   postPublicationEffectJobId,
 } from '@queues/post-publication/enqueues'
-import { postPublicationQueue } from '@queues/post-publication/queues'
+import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { hashCapturedPublicationKeys } from '@services/post-publication/captured-keys'
 import { postPublicationWorkConfig } from '@services/post-publication/work-limits'
 import { caches } from '@services/entity-cache/caches'

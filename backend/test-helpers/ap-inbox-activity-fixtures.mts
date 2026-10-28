@@ -9,7 +9,7 @@
 
 import { vi } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { activitypub } from '../queues/activitypub/queues.mts'
+import { backgroundQueue as activitypub } from './shared-background-queue.mts'
 import type { DeliverActivityData } from '../queues/activitypub/enqueues/delivery.mts'
 import type { FetchRemoteActorDocumentDeps } from '../services/remote-actors/fetch-remote-actor-document.mts'
 import {

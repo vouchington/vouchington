@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import * as cachePurgeEnqueues from '@queues/cache-purge/enqueues'
-import { cachePurge } from '@queues/cache-purge/queues'
+import { backgroundQueue as cachePurge } from '@voucha/test-helpers/shared-background-queue'
 import { createMyLandingPage } from './create.mts'
 
 describe('createMyLandingPage', () => {

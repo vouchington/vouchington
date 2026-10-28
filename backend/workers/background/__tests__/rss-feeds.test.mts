@@ -8,7 +8,7 @@ import {
 } from '@queues/background/enqueues/rss-feeds-jobs'
 import type { BackgroundHandler } from '@queues/background/types'
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import { rssFeedsQueue } from '@queues/rss-feeds/queues'
+import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { rssFeedCrawlConfig } from '@services/rss-feeds/crawl-config'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'

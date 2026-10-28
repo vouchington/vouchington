@@ -10,7 +10,7 @@ import {
   listExistingTestPostIds,
 } from '../../test-helpers/publication-test-queries.mts'
 import { postPublicationEffectJobId } from '../../queues/post-publication/enqueues.mts'
-import { postPublicationQueue } from '../../queues/post-publication/queues.mts'
+import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import {
   capturedPublicationKeys,
   hashCapturedPublicationKeys,

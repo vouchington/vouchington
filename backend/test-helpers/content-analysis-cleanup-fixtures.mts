@@ -15,7 +15,7 @@ import { markImageUploadFailed } from '../services/images/upload-state.mts'
 import { getImageByIdFromPrimary } from '../services/images/get.mts'
 import { imagesWorkMaxValues } from '../services/images/work-limits.mts'
 import { imageUploadsQueue } from '../queues/image-uploads/queues.mts'
-import { cachePurge } from '../queues/cache-purge/queues.mts'
+import { backgroundQueue as cachePurge } from './shared-background-queue.mts'
 
 /** Natural upload timestamps stay immutable; only the invocation clock advances. */
 export async function createContentAnalysisCleanupFixtures() {

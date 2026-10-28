@@ -7,7 +7,7 @@ import {
   insertPostElectionVote,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import type { PrivateUser } from '@services/users/types'
 import { upsertPostElectionVotes } from '@services/elections-votes/post'

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
-import { rssFeedsQueue } from '@queues/rss-feeds/queues'
+import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { createTestUser } from '@voucha/test-helpers'
 import { refreshRssFeedAsCurrentUser } from './refresh.mts'
 

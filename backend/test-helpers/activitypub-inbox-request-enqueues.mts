@@ -1,5 +1,5 @@
 import { onTestFinished } from 'vitest'
-import { activitypub } from '../queues/activitypub/queues.mts'
+import { backgroundQueue as activitypub } from './shared-background-queue.mts'
 import { getActivityPubInboxDeliveryIdentityForTest } from './entities/activitypub-inbox.mts'
 import { deleteActivityPubInboxDeliveriesForTest } from './entities/activitypub-inbox-storage.mts'
 import { removeActivityPubInboxJobsForDeliveryId } from './activitypub-inbox-test-jobs.mts'

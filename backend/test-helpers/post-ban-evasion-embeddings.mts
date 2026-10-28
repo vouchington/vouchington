@@ -1,5 +1,5 @@
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
-import { moderationSignalsQueue } from '../queues/moderation-signals/queues.mts'
+import { backgroundQueue as moderationSignalsQueue } from './shared-background-queue.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { beginTransaction, writePool, type TransactionQuery } from '@data-stores/psql'
 import { createTestUser } from './entities/users.mts'

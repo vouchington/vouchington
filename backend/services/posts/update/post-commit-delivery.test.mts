@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, onTestFinished } from 'vitest'
 import { finalizePostUpdateAndDeliver } from './post-commit-delivery.mts'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { caches } from '@services/entity-cache/caches'

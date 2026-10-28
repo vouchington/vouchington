@@ -11,7 +11,7 @@ import {
   enqueueHostnameCacheInvalidationSweep,
   enqueueSourceSync,
 } from './enqueues.mts'
-import { urlsDomainsBlacklist } from './queues.mts'
+import { backgroundQueue as urlsDomainsBlacklist } from '../../test-helpers/shared-background-queue.mts'
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 const findSyncJobs = (sourceId: string) =>

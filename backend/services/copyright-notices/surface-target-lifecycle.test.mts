@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
 import * as cachePurgeEnqueues from '../../queues/cache-purge/enqueues.mts'
-import { cachePurge } from '../../queues/cache-purge/queues.mts'
+import { backgroundQueue as cachePurge } from '@voucha/test-helpers/shared-background-queue'
 import { caches } from '@services/entity-cache/caches'
 import { getPostByAny } from '@services/posts/get'
 import { getPublicUserByAny } from '@services/users/get'

@@ -1,8 +1,10 @@
 import { WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createPost } from '../create-post.mts'
 import { describe, expect, it, vi, onTestFinished } from 'vitest'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
-import { cachePurge } from '@queues/cache-purge/queues'
+import {
+  backgroundQueue as entitiesListeners,
+  backgroundQueue as cachePurge,
+} from '@voucha/test-helpers/shared-background-queue'
 import { ENTITY_LISTENERS_POST_CREATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { entityCacheBloomFilters } from '@services/entity-cache/bloom-filter-instances'
 import { postTag } from '@ts-shared/cache'

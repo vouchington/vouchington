@@ -1,5 +1,5 @@
 import { POST_PUBLICATION_EFFECTS_JOB } from '@queues/background/enqueues/post-publication-jobs'
-import { postPublicationQueue } from '@queues/post-publication/queues'
+import { backgroundQueue as postPublicationQueue } from './shared-background-queue.mts'
 import type { PostPublicationEffectsJobData } from '@voucha/types/post-publication'
 
 /** Observe only this test entity's native TestQueue admission during a committed mutation. */

@@ -4,7 +4,7 @@ import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listen
 import { withEntityListenerAdmissionRead } from '@voucha/test-helpers/entity-listener-admission-read'
 import { observeEntityListenerTerminals } from '@voucha/test-helpers/entity-listener-admissions'
 import { createEnqueueFunction } from '../../../data-stores/valkey-glide-mq/glide-mq-enqueue.mts'
-import { entitiesListeners } from '../../../queues/entity-listeners/queues.mts'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { BACKGROUND_QUEUE_NAME } from '../../../queues/background/config.mts'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '../../../queues/background/enqueues/entity-listeners-jobs.mts'
 import { settlePostCommitEffects } from '../post-commit-completion.mts'

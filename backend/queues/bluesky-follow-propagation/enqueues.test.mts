@@ -9,7 +9,7 @@ import {
   enqueueBulkDisconnectRequested,
   enqueueBulkReconcileBlueskyFollow,
 } from './enqueues.mts'
-import { blueskyFollowPropagation } from './queues.mts'
+import { backgroundQueue as blueskyFollowPropagation } from '@voucha/test-helpers/shared-background-queue'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 // Real integration test: enqueue against the in-memory glide-mq test queue and assert the

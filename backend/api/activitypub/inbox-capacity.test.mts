@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { registerActivityPubInboxAdmission } from '@voucha/test-helpers/activitypub-inbox-transitions'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
   activityPubInboxDeliveryExistsOnPrimaryForTest,

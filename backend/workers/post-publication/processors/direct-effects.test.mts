@@ -7,7 +7,7 @@ import {
   insertTestRssFeedDirect,
   safeUsername,
 } from '@voucha/test-helpers'
-import { postPublicationQueue } from '@queues/post-publication/queues'
+import { backgroundQueue as postPublicationQueue } from '@voucha/test-helpers/shared-background-queue'
 import { SITEMAPS_POST_DAY_JOB } from '@queues/background/enqueues/sitemaps-jobs'
 import { caches } from '@services/entity-cache/caches'
 import { hashCapturedPublicationKeys } from '@services/post-publication/captured-keys'

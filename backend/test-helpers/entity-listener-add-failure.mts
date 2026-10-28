@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from './shared-background-queue.mts'
 
 type Add = typeof entitiesListeners.add
 

@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { buildSignatureHeaders } from '@modules/http-signatures'
 import { computeDigest } from '@vouchington/utils/http-signatures'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
   loadTestDelivery,

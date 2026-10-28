@@ -17,8 +17,10 @@ import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-r
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { POST_MENTIONS_PROCESS_JOB } from '@queues/background/enqueues/post-mentions-jobs'
-import { postMentionsQueue } from '@queues/post-mentions/queues'
-import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
+import {
+  backgroundQueue as postMentionsQueue,
+  backgroundQueue as moderationSignalsQueue,
+} from '@voucha/test-helpers/shared-background-queue'
 import {
   countTestPostModerationAttempts,
   getTestCurrentPostModerationVersion,

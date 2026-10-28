@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
-import { rssFeedsQueue } from '@queues/rss-feeds/queues'
+import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import {
   insertTestTopic,
   insertTestRssFeed,

@@ -3,8 +3,10 @@ import {
   ENTITY_LISTENERS_POST_CREATED_JOB,
   ENTITY_LISTENERS_POST_UPDATED_JOB,
 } from '@queues/background/enqueues/entity-listeners-jobs'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
-import { cachePurge } from '@queues/cache-purge/queues'
+import {
+  backgroundQueue as entitiesListeners,
+  backgroundQueue as cachePurge,
+} from '@voucha/test-helpers/shared-background-queue'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { caches } from '@services/entity-cache/caches'
 import { applyPostCommitSideEffects } from '../create/post-commit-side-effects.mts'

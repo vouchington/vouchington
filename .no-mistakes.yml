@@ -2892,7 +2892,8 @@ rules:
     rule: require-files-in-subdirs
     scope: repository
     # These seven producers and processors use the shared background-cpu queue/worker.
-    # Keep the singleton-file requirement on every other package.
+    # Other workers retain their own processor entrypoint. Queue producers need no
+    # singleton file; real dedicated queue modules are checked through their imports.
     exclude:
       - backend/queues/bedrock-embeddings/**
       - backend/queues/bedrock-embeddings-batch/**
@@ -2911,7 +2912,8 @@ rules:
     options:
       packages:
         - root: backend/queues
-          requiredFiles: [package.json, config.mts, queues.mts]
+          # Shared-queue producers do not own a queue singleton module.
+          requiredFiles: [package.json, config.mts]
           requireAnyOf:
             - [enqueues.mts, 'enqueues/*.mts']
         - root: backend/workers

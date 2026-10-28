@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import { activitypub } from '@queues/activitypub/queues'
+import { backgroundQueue as activitypub } from '@voucha/test-helpers/shared-background-queue'
 import { ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB } from '@queues/background/enqueues/activitypub-jobs'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'

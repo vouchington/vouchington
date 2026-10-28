@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ENTITY_LISTENERS_USER_UPDATED_JOB } from '../queues/background/enqueues/entity-listeners-jobs.mts'
 import { enqueueOnUserUpdated } from '../queues/entity-listeners/enqueues/users.mts'
-import { entitiesListeners } from '../queues/entity-listeners/queues.mts'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { createTestUserDirect } from '../test-helpers/entities/users-direct.mts'
 import { withTestEntityListenerCompletion } from '../test-helpers/entity-listener-transition.mts'
 import { readEnqueuedJob } from '../test-helpers/queue-jobs.mts'

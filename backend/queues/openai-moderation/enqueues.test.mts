@@ -15,7 +15,7 @@ import {
   OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB,
   OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB,
 } from '@queues/background/enqueues/openai-moderation-jobs'
-import { openAiModerationQueue } from './queues.mts'
+import { backgroundQueue as openAiModerationQueue } from '../../test-helpers/shared-background-queue.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { readEnqueuedJob } from '../../test-helpers/queue-jobs.mts'
 

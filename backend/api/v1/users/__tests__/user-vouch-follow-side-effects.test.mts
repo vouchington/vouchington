@@ -7,9 +7,11 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { upsertUserVouchElectionVotes } from '@services/elections-votes/user-vouch'
-import { activitypub } from '@queues/activitypub/queues'
+import {
+  backgroundQueue as activitypub,
+  backgroundQueue as blueskyFollowPropagation,
+} from '@voucha/test-helpers/shared-background-queue'
 import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
-import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import type { ReconcileFollowData } from '@queues/bluesky-follow-propagation/enqueues'
 
 describe('user vouch follow side effects', () => {

@@ -9,7 +9,7 @@ import {
   enqueuePostPublicationEffects,
   postPublicationEffectJobId,
 } from './enqueues.mts'
-import { postPublicationQueue } from './queues.mts'
+import { backgroundQueue as postPublicationQueue } from '../../test-helpers/shared-background-queue.mts'
 import { enqueueLiveScopePostEffects } from '../../workers/post-publication/processors/direct-scope-post-effects.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())

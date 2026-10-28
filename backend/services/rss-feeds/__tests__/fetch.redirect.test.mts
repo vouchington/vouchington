@@ -16,7 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
-import { rssFeedsQueue } from '@queues/rss-feeds/queues'
+import { backgroundQueue as rssFeedsQueue } from '@voucha/test-helpers/shared-background-queue'
 import { CrawlerHttpClientError } from '@modules/on-error/errors'
 
 const mockXml = Buffer.from(

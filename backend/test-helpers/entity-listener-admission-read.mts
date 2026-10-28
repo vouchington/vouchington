@@ -5,7 +5,7 @@ import {
   holdBackgroundDomain,
 } from '../../test-helpers/shared-background-worker.mts'
 import { ENTITY_LISTENERS_DOMAIN } from '../queues/background/enqueues/entity-listeners-jobs.mts'
-import { entitiesListeners as queue } from '../queues/entity-listeners/queues.mts'
+import { backgroundQueue as queue } from './shared-background-queue.mts'
 import {
   entityListenerInputId,
   entityListenerJobName,

@@ -14,7 +14,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import * as postPublication from '@services/post-publication'
 import { ENTITY_LISTENERS_POST_DELETED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { readEnqueuedJob, removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'

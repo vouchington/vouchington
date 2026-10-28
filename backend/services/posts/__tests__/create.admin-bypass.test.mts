@@ -14,7 +14,7 @@ import { classifierRunDispatcherJobId } from '../../../queues/ai-agents/enqueues
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import type { PrivateUser } from '@services/users/types'
 import { ENTITY_LISTENERS_POST_CREATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { backgroundQueue as entitiesListeners } from '@voucha/test-helpers/shared-background-queue'
 import type { ProcessPostCreatedJobData } from '@queues/background/enqueues/entity-listeners-payloads'
 
 import { createPost } from '../create.mts'
