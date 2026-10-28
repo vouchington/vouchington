@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Agent moderations entity helpers
  */
@@ -43,7 +42,7 @@ export async function insertTestAgentModeration(options: {
     ? uuidv7({ msecs: options.occurredAt.getTime(), seq: options.occurredAtSequence ?? 0 })
     : null
   const { rows } = await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestAgentModeration */
     INSERT INTO agent_moderations (id, post_id, input_sha256, prompt_id, agent_id, results, is_flagged, deleted_at)
     VALUES (
       COALESCE(${id}::uuid, uuidv7()),
@@ -56,7 +55,7 @@ export async function insertTestAgentModeration(options: {
       ${deletedAt}
     )
     RETURNING id
-  `),
+  `,
   )
   return rows[0].id
 }
@@ -83,11 +82,11 @@ export async function setTestAgentModerationDeletedAt(
 
 export async function touchTestAgentModeration(moderationId: string): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* touchTestAgentModeration */
     UPDATE agent_moderations
     SET is_flagged = is_flagged
     WHERE id = ${moderationId}::uuid
-  `),
+  `,
   )
 }
 
@@ -96,11 +95,11 @@ export async function setTestAgentModerationTransparencyCategory(
   category: 'agent_moderation' | 'community_ai',
 ): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* setTestAgentModerationTransparencyCategory */
     UPDATE agent_moderations
     SET moderation_transparency_category = ${category}
     WHERE id = ${moderationId}::uuid
-  `),
+  `,
   )
 }
 
@@ -108,12 +107,12 @@ export async function getTestAgentModerationTransparencyStamp(
   moderationId: string,
 ): Promise<{ category: string | null; communityId: string | null } | null> {
   const { rows } = await read<{ category: string | null; communityId: string | null }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestAgentModerationTransparencyStamp */
     SELECT moderation_transparency_category AS category,
       moderation_transparency_community_id AS "communityId"
     FROM agent_moderations
     WHERE id = ${moderationId}::uuid
-  `),
+  `,
   )
   return rows[0] ?? null
 }
@@ -129,7 +128,7 @@ export async function insertTestAgentModerationFalseyResults(options: {
 }): Promise<void> {
   const inputSha256 = crypto.randomBytes(32)
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestAgentModerationFalseyResults */
     INSERT INTO agent_moderations (post_id, input_sha256, prompt_id, agent_id, results, is_flagged)
     VALUES (
       ${options.postId},
@@ -139,17 +138,17 @@ export async function insertTestAgentModerationFalseyResults(options: {
       ${'false'}::jsonb,
       false
     )
-  `),
+  `,
   )
 }
 
 async function getPostLLMModerationInputSha256(postId: string): Promise<Buffer> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getPostLLMModerationInputSha256 */
     SELECT llm_moderation_content_sha256
     FROM posts
     WHERE id = ${postId}
-  `),
+  `,
   )
   return rows[0]?.llm_moderation_content_sha256 ?? crypto.randomBytes(32)
 }
@@ -159,7 +158,7 @@ async function getPostLLMModerationInputSha256(postId: string): Promise<Buffer> 
  */
 export async function getPostLLMModerations(postId: string): Promise<unknown[]> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getPostLLMModerations */
     SELECT
       id,
       input_sha256,
@@ -169,7 +168,7 @@ export async function getPostLLMModerations(postId: string): Promise<unknown[]> 
     FROM agent_moderations
     WHERE post_id = ${postId}
       AND deleted_at IS NULL
-  `),
+  `,
   )
   return rows
 }

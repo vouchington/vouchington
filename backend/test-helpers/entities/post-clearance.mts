@@ -1,5 +1,4 @@
 import { assertNever } from '@modules/utils/assert-never'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /* oxlint-disable max-lines -- Clearance fixtures include ledger-backed completion setup. */
 import { read, write } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
@@ -143,9 +142,9 @@ export async function appendTestPlatformRejectionNote(postId: string, note: stri
 
 export async function getPostClearanceStatus(postId: string): Promise<string | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getPostClearanceStatus */
     SELECT clearance_status FROM view_post_clearance_status WHERE post_id = ${postId}
-  `),
+  `,
   )
   return rows[0]?.clearance_status ?? null
 }
@@ -154,12 +153,12 @@ export async function getPostClearanceChanges(
   postId: string,
 ): Promise<Array<{ change_type: string; changed_by_id: string | null }>> {
   const { rows } = await read<{ change_type: string; changed_by_id: string | null }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getPostClearanceChanges */
     SELECT change_type, changed_by_id
     FROM post_clearance_changes
     WHERE post_id = ${postId}
     ORDER BY id
-  `),
+  `,
   )
   return rows
 }
@@ -168,13 +167,13 @@ export async function getLatestPostClearanceMetadata(
   postId: string,
 ): Promise<Record<string, unknown>> {
   const { rows } = await read<{ metadata: Record<string, unknown> }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestPostClearanceMetadata */
     SELECT metadata
     FROM post_clearance_changes
     WHERE post_id = ${postId}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   return rows[0]?.metadata ?? {}
 }
@@ -193,13 +192,13 @@ export async function getLatestPostClearanceDecision(postId: string): Promise<{
     private_note: string | null
     is_platform_override: boolean
   }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestPostClearanceDecision */
     SELECT id, changed_by_id, public_reason_code, private_note, is_platform_override
     FROM post_clearance_changes
     WHERE post_id = ${postId}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   return rows[0] ?? null
 }
@@ -208,13 +207,13 @@ export async function getLatestPostClearanceTransparencyCategories(
   postId: string,
 ): Promise<string[]> {
   const { rows } = await read<{ moderation_transparency_categories: string[] }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getLatestPostClearanceTransparencyCategories */
     SELECT moderation_transparency_categories::text[] AS moderation_transparency_categories
     FROM post_clearance_changes
     WHERE post_id = ${postId}
     ORDER BY id DESC
     LIMIT 1
-  `),
+  `,
   )
   return rows[0]?.moderation_transparency_categories ?? []
 }

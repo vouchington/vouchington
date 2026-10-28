@@ -1,14 +1,13 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function reviewTestModerationReports(reportIds: string[]): Promise<void> {
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* reviewTestModerationReports */
     UPDATE moderation_reports
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     WHERE id = ANY(${reportIds})
-  `),
+  `,
   )
 }
 
@@ -18,14 +17,14 @@ export async function reviewPendingTestModerationReportsByReporterUsernamePrefix
   if (prefixes.length === 0) return
 
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* reviewPendingTestModerationReportsByReporterUsernamePrefixes */
     UPDATE moderation_reports r
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     FROM users u
     WHERE r.reporter_user_id = u.id
       AND r.reviewed_at IS NULL
       AND u.username LIKE ANY(${prefixes.map(prefix => `${prefix}%`)})
-  `),
+  `,
   )
 }
 
@@ -35,12 +34,12 @@ export async function reviewPendingTestModerationReportsByNotePrefixes(
   if (prefixes.length === 0) return
 
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* reviewPendingTestModerationReportsByNotePrefixes */
     UPDATE moderation_reports
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     WHERE reviewed_at IS NULL
       AND note LIKE ANY(${prefixes.map(prefix => `${prefix}%`)})
-  `),
+  `,
   )
 }
 
@@ -50,7 +49,7 @@ export async function reviewPendingTestModerationReportsByPostSlugPrefixes(
   if (prefixes.length === 0) return
 
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* reviewPendingTestModerationReportsByPostSlugPrefixes */
     UPDATE moderation_reports r
     SET resolution_action = 'reviewed', reviewed_at = NOW()
     FROM post_slugs ps
@@ -58,6 +57,6 @@ export async function reviewPendingTestModerationReportsByPostSlugPrefixes(
       AND r.post_id = ps.post_id
       AND r.reviewed_at IS NULL
       AND ps.slug LIKE ANY(${prefixes.map(prefix => `${prefix}%`)})
-  `),
+  `,
   )
 }
