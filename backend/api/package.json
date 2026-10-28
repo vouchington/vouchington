@@ -251,7 +251,7 @@
     "@vouchington/sentry": "^0.4.0",
     "@vouchington/session-jwt": "^0.0.2",
     "@vouchington/utils": "^0.10.2",
-    "@vouchington/worker-runtime": "^0.2.1",
+    "@vouchington/worker-runtime": "^0.3.0",
     "glide-mq": "^0.20.0",
     "http-errors": "^2.0.1",
     "jose": "^6.2.13",

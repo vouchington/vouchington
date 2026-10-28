@@ -26,7 +26,7 @@
     "@queues/background": "workspace:^",
     "@queues/emails": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/worker-runtime": "^0.2.1",
+    "@vouchington/worker-runtime": "^0.3.0",
     "glide-mq": "^0.20.0"
   }
 }

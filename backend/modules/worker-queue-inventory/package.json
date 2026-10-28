@@ -24,6 +24,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@vouchington/worker-runtime": "^0.2.1"
+    "@vouchington/worker-runtime": "^0.3.0"
   }
 }
