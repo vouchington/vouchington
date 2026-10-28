@@ -1,4 +1,3 @@
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Bedrock embeddings batches entity helpers
  */
@@ -67,7 +66,7 @@ export async function insertTestEmbeddingsBatch(
   const job_arn = data.jobArn !== undefined ? data.jobArn : null
 
   await write(
-    allowUnannotatedQuery(sql`
+    sql`/* insertTestEmbeddingsBatch */
     INSERT INTO bedrock_embedding_batches
       (id, model_id, job_type, job_arn, data, url_id, crawl_id, records, submitted_at, in_progress_at, completed_at, failed_at, cancelled_at)
     VALUES (
@@ -85,7 +84,7 @@ export async function insertTestEmbeddingsBatch(
       ${failed_at},
       ${cancelled_at}
     )
-  `),
+  `,
     options,
   )
 }
@@ -104,7 +103,7 @@ export async function getTestBatchEntities(
   batchId: string,
 ): Promise<Array<{ entity_id: string; entity_type: string }>> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestBatchEntities */
     SELECT
       entity_type::text AS entity_type,
       CASE entity_type
@@ -117,7 +116,7 @@ export async function getTestBatchEntities(
     FROM bedrock_embedding_batch_entities
     WHERE batch_id = ${batchId}
     ORDER BY entity_id
-  `),
+  `,
   )
   return rows.map(row => ({
     entity_id: String(row.entity_id),
@@ -135,11 +134,11 @@ export async function getTestBatchSourceColumns(batchId: string): Promise<{
     crawl_id: string | null
     metadata: unknown
   }>(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestBatchSourceColumns */
     SELECT url_id, crawl_id, data -> 'metadata' AS metadata
     FROM bedrock_embedding_batches
     WHERE id = ${batchId}
-  `),
+  `,
   )
   return rows[0] ?? null
 }
@@ -148,7 +147,7 @@ export async function getTestBatchSummary(
   batchId: string,
 ): Promise<{ job_type: string; status: BedrockBatchStatus } | null> {
   const { rows } = await read(
-    allowUnannotatedQuery(sql`
+    sql`/* getTestBatchSummary */
     SELECT
       job_type::text AS job_type,
       submitted_at,
@@ -158,7 +157,7 @@ export async function getTestBatchSummary(
       cancelled_at
     FROM bedrock_embedding_batches
     WHERE id = ${batchId}
-  `),
+  `,
   )
   const row = rows[0]
   if (!row) return null
