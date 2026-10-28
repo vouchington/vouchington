@@ -40,6 +40,8 @@ describe('image publication intent', () => {
     ['backend/services/example.mts', true, false],
     ['localization/catalog/en.json', true, false],
     ['static-code-analysis/docker-deploy/compile-backend-binaries.mts', true, false],
+    ['static-code-analysis/docker-deploy/compile-runtime-files.mts', true, false],
+    ['static-code-analysis/docker-deploy/compile-source-rewrites.mts', true, false],
     ['web/app/page.tsx', false, true],
     ['.dockerignore', true, true],
     ['backend/services/example.test.mts', false, false],

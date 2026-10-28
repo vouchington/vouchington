@@ -311,6 +311,8 @@ build-backend:
   - 'localization/**'
   - 'dev/localization/**'
   - 'static-code-analysis/docker-deploy/compile-backend-binaries.mts'
+  - 'static-code-analysis/docker-deploy/compile-runtime-files.mts'
+  - 'static-code-analysis/docker-deploy/compile-source-rewrites.mts'
   - 'ci/prepare-trivy-db.sh'
   - 'ci/package.json'
   - 'package.json'
@@ -357,6 +359,8 @@ build-backend-infra:
   - 'email-templates/package.json'
   - 'ts-shared/*/package.json'
   - 'static-code-analysis/docker-deploy/compile-backend-binaries.mts'
+  - 'static-code-analysis/docker-deploy/compile-runtime-files.mts'
+  - 'static-code-analysis/docker-deploy/compile-source-rewrites.mts'
   - 'ci/curl-to.sh'
   - 'ci/prepare-trivy-db.sh'
 build-web-infra:
@@ -508,7 +512,7 @@ runtime-build-web:
   - '!web/**/*.stories.ts'
   - '!web/**/*.stories.tsx'
 runtime-build-backend:
-  - '{.github/ci-path-filters.yml,.github/worker-io-automation.env,.github/actions/build-backend-images/**,.github/workflows/publish-backend-images.yml,.trivyignore.yaml,ci/curl-to.sh,ci/resolve-published-images.sh,ci/prepare-trivy-db.sh,ci/package.json,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/**,email-templates/**,localization/**,dev/localization/**,static-code-analysis/docker-deploy/compile-backend-binaries.mts,ts-shared/**,backend/Dockerfile,.dockerignore,.hadolint.yaml}'
+  - '{.github/ci-path-filters.yml,.github/worker-io-automation.env,.github/actions/build-backend-images/**,.github/workflows/publish-backend-images.yml,.trivyignore.yaml,ci/curl-to.sh,ci/resolve-published-images.sh,ci/prepare-trivy-db.sh,ci/package.json,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/**,email-templates/**,localization/**,dev/localization/**,static-code-analysis/docker-deploy/compile-backend-binaries.mts,static-code-analysis/docker-deploy/compile-runtime-files.mts,static-code-analysis/docker-deploy/compile-source-rewrites.mts,ts-shared/**,backend/Dockerfile,.dockerignore,.hadolint.yaml}'
   - '!**/*.md'
   - '!**/*.mdx'
   - '!**/*.test.mts'

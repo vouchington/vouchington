@@ -139,7 +139,11 @@ describe('Area CI Docker triggers', () => {
   })
 
   it('tracks backend packaging helpers in broad and PR filters', () => {
-    const helpers = ['static-code-analysis/docker-deploy/compile-backend-binaries.mts']
+    const helpers = [
+      'static-code-analysis/docker-deploy/compile-backend-binaries.mts',
+      'static-code-analysis/docker-deploy/compile-runtime-files.mts',
+      'static-code-analysis/docker-deploy/compile-source-rewrites.mts',
+    ]
     const mainWorkflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
       on: { push: { paths: string[] } }
     }
