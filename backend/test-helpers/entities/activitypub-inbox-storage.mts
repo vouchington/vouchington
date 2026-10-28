@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { onTestFinished } from 'vitest'
-import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { computeActivityPubInboxRequestDigest } from '../../services/ap-inbox-activities/durable-delivery-transition-intake.mts'
@@ -176,7 +175,9 @@ export async function insertActivityPubInboxCapacityDeliveriesForTest(
 export async function explainActivityPubInboxCleanupForTest(query: SQLStatement): Promise<string> {
   {
     await using transaction = await beginTransaction()
-    await transaction(allowUnannotatedQuery(sql`SET LOCAL enable_seqscan = off`))
+    await transaction(
+      sql`/* explainActivityPubInboxCleanupForTest:enableSeqscan */ SET LOCAL enable_seqscan = off`,
+    )
     const { rows } = await transaction<{ 'QUERY PLAN': unknown }>(
       `/* explainActivityPubInboxCleanupForTest */ EXPLAIN (FORMAT JSON) ${query.text}`,
       query.values,
