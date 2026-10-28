@@ -91,11 +91,21 @@ export function rebuildBloomFilterJobOptions(
     ...BLOOM_FILTER_JOB_DEFAULTS,
     priority: priority ?? PRIORITY_DEFAULT,
     ordering: rebuildBloomFilterOrdering(data),
-    jobId: `bloomFilterRebuild__${data.filter}`,
+    jobId: bloomFilterRebuildJobId(data.filter),
     removeOnComplete: true,
     removeOnFail: true,
     ...(delay === undefined ? {} : { delay }),
   } satisfies Partial<JobOptions>
+}
+
+export function bloomFilterRebuildJobId(filter: RebuildBloomFilterData['filter']): string {
+  return `bloomFilterRebuild__${filter}`
+}
+
+export function blocklistBloomRebuildFollowUpJobId(
+  filter: Extract<RebuildBloomFilterData['filter'], 'url-blocklist' | 'email-blocklist'>,
+): string {
+  return `${bloomFilterRebuildJobId(filter)}__next`
 }
 
 function blocklistReplicaLagDelay(filter: RebuildBloomFilterData['filter']): number | undefined {
@@ -127,7 +137,7 @@ export function rebuildEmbeddingBloomFilterJobOptions(priority?: number): Partia
     ...BLOOM_FILTER_JOB_DEFAULTS,
     priority: priority ?? PRIORITY_DEFAULT,
     ordering: BLOOM_FILTER_ORDERING.rebuild_embedding,
-    jobId: 'bloomFilterRebuild__embedding',
+    jobId: bloomFilterRebuildJobId('embedding'),
     removeOnComplete: true,
     removeOnFail: true,
   } satisfies Partial<JobOptions>

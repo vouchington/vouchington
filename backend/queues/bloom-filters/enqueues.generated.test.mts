@@ -1,12 +1,20 @@
+import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  wrapBatchProcessor,
+  wrapSingleProcessor,
+} from '@data-stores/valkey-glide-mq/guarded-worker-processors'
 import {
   BLOOM_FILTER_DEFAULTS,
   backfillBloomFilterJobOptions,
   backfillUserBookmarkBloomFilterJobOptions,
+  blocklistBloomRebuildFollowUpJobId,
+  bloomFilterRebuildJobId,
+  QUEUE_NAME,
   rebuildBloomFilterJobOptions,
   rebuildEmbeddingBloomFilterJobOptions,
 } from './config.mts'
-import { enqueueRebuildEmbeddingBloomFilter } from './enqueues.mts'
+import { enqueueRebuildBloomFilter, enqueueRebuildEmbeddingBloomFilter } from './enqueues.mts'
 import { scheduledJobManifest } from './enqueues/schedules.mts'
 import { bloomFilters } from './queues.mts'
 
@@ -94,5 +102,50 @@ describe('enqueues.generated', () => {
 
   it('has no scheduled Bloom rebuilds', () => {
     expect(scheduledJobManifest.jobs).toEqual([])
+  })
+})
+
+const emailBlocklist = { filter: 'email-blocklist' } as const
+const emailPrimaryJobId = bloomFilterRebuildJobId(emailBlocklist.filter)
+const emailFollowUpJobId = blocklistBloomRebuildFollowUpJobId(emailBlocklist.filter)
+
+describe('blocklist rebuild admission', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('throws when the running rebuild and its follow-up are both already active', async () => {
+    const run = wrapBatchProcessor(
+      QUEUE_NAME,
+      async jobs => {
+        await enqueueRebuildBloomFilter(emailBlocklist)
+        return jobs.map(() => undefined)
+      },
+      {},
+    )
+
+    await expect(
+      run([
+        { id: emailPrimaryJobId, opts: {} } as Job,
+        { id: emailFollowUpJobId, opts: {} } as Job,
+      ]),
+    ).rejects.toThrow('Blocklist bloom rebuild for email-blocklist was not admitted')
+  })
+
+  it('skips the rebuild id that is already running and admits the follow-up', async () => {
+    const existing = await bloomFilters.getJob(emailFollowUpJobId)
+    const run = wrapSingleProcessor(
+      QUEUE_NAME,
+      async () => {
+        await enqueueRebuildBloomFilter(emailBlocklist)
+      },
+      {},
+    )
+    try {
+      await run({ id: emailPrimaryJobId, opts: {} } as Job)
+      expect(await bloomFilters.getJob(emailFollowUpJobId)).toBeTruthy()
+    } finally {
+      if (!existing) await (await bloomFilters.getJob(emailFollowUpJobId))?.remove()
+    }
   })
 })

@@ -99,7 +99,7 @@ describe('blocklist bloom add recovery', () => {
     })
   })
 
-  it('reports a rebuild enqueue failure without unlinking the ready marker', async () => {
+  it('reports a rebuild enqueue failure after unlinking the ready marker', async () => {
     const enqueueError = new Error('rebuild enqueue failed')
     vi.spyOn(bloomFilterEnqueues, 'enqueueRebuildBloomFilter').mockImplementation(() => {
       throw enqueueError
@@ -116,7 +116,7 @@ describe('blocklist bloom add recovery', () => {
         ).resolves.toBeUndefined()
 
         expect(captureException).toHaveBeenCalledWith(enqueueError, expect.anything())
-        expect(await bloomValkeyClient.get(readyKey)).toBe('stale-ready')
+        expect(await bloomValkeyClient.get(readyKey)).toBeNull()
       },
     )
   })

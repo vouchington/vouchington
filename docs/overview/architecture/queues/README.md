@@ -127,7 +127,12 @@ families, keeping the backlog draining between schedules.
   A response must not claim an action is queued while its admission is still pending.
 - **Blocklist membership rebuilds wait out replica lag.** URL and email blocklist rebuilds read the
   replica. The job that follows a committed sync is delayed by a lag safety margin so that commit
-  is visible, and the rebuild stays off the writer.
+  is visible, and the rebuild stays off the writer. A later commit leaves an already queued rebuild
+  on that delay; steady commits must not keep pushing it back. A rebuild that is already active
+  schedules one follow-up. The visibility check and the membership read share one read-only replica
+  transaction, so a reader that has not replayed the stored transaction cannot publish ready. The
+  ready marker is published only when no commit landed after that snapshot; otherwise that follow-up
+  rebuilds again. Invalidation removes the ready marker even when the generation bump fails.
 - **User-waiting jobs get their own queue.** Latency-critical mail a person is waiting on (login,
   verification) is isolated from bulk digest work, so it never waits behind a digest backlog.
 - **A `limiter` exists only for an external rate limit.** Database-only work is throttled with

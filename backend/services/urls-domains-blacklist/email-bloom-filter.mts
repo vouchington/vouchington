@@ -1,9 +1,11 @@
 import { getUrlsDomainsBlacklistWorkLimit } from './work-limits.mts'
 import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
-import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
+import { createAsyncGeneratorFromCursor, read, type PoolClient } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
-import { blocklistBloomReadyKey, newBloomReadyMarkerValue } from './ready-marker.mts'
+import { invalidateBlocklistReadyMarker } from './bloom-generation.mts'
+import { rebuildCurrentBlocklistBloomFilter } from './bloom-rebuild.mts'
+import { blocklistBloomReadyKey } from './ready-marker.mts'
 import {
   addDomainsToBlocklistBloomFilter,
   blocklistBloomAddTarget,
@@ -31,7 +33,7 @@ function getEmailBloomFilter() {
 const BLOOM_READY_KEY = blocklistBloomReadyKey('email-blocklist')
 
 export async function invalidateEmailBlocklistReadyMarker(): Promise<number> {
-  return bloomValkeyClient.unlink([BLOOM_READY_KEY])
+  return invalidateBlocklistReadyMarker('email-blocklist', BLOOM_READY_KEY)
 }
 
 async function repairStaleReadyMarkerIfFilterUnavailable(): Promise<void> {
@@ -98,7 +100,7 @@ export async function addDomainsToEmailBloomFilter(
   )
 }
 
-async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
+async function* emailBlocklistBatchesFromDb(client: PoolClient): AsyncGenerator<string[]> {
   const BATCH_SIZE = getUrlsDomainsBlacklistWorkLimit('email_bloom_batch_size')
   const batch: string[] = []
 
@@ -109,7 +111,7 @@ async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
       INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
       WHERE dbs.type = 'email'::domain_blocklist_types
     `,
-    { batchSize: BATCH_SIZE },
+    { batchSize: BATCH_SIZE, client },
   )) {
     batch.push(row.domain)
     if (batch.length >= BATCH_SIZE) {
@@ -124,8 +126,12 @@ async function* emailBlocklistBatchesFromDb(): AsyncGenerator<string[]> {
 
 export async function rebuildEmailBloomFilter(): Promise<void> {
   await withBlocklistBloomFilterLock('email-blocklist', async () => {
-    await getEmailBloomFilter().rebuildFromStream(emailBlocklistBatchesFromDb())
-    await bloomValkeyClient.set(BLOOM_READY_KEY, newBloomReadyMarkerValue())
+    await rebuildCurrentBlocklistBloomFilter({
+      filter: 'email-blocklist',
+      readyKey: BLOOM_READY_KEY,
+      stream: client =>
+        getEmailBloomFilter().rebuildFromStream(emailBlocklistBatchesFromDb(client)),
+    })
   })
 }
 

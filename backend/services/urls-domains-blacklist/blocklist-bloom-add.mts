@@ -2,6 +2,7 @@ import { bloomValkeyClient } from '@data-stores/valkey'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
 import type { RebuildBloomFilterData } from '@queues/bloom-filters/types'
 import onError from '@modules/on-error'
+import { bumpBlocklistBloomGeneration } from './bloom-generation.mts'
 import { normalizeDomain } from './normalize-domain.mts'
 import { unlinkReadyMarkerIfValue } from './ready-marker.mts'
 import { enqueueRebuildBloomFilterBestEffort } from './rebuild-enqueue.mts'
@@ -99,11 +100,24 @@ async function recoverBlocklistBloomFilterAfterAddFailure(
     const readyValue = await readReadyMarkerOrRepair(target)
     if (readyValue === null) return
 
+    await invalidateReadyMarkerForFailedAdd(target, readyValue)
     await enqueueRebuildBloomFilter({ filter: target.filter })
-    await unlinkReadyMarkerIfValue(target.readyKey, readyValue)
   } catch (err) {
     reportError(err)
   }
+}
+
+/**
+ * Drop the ready marker before admission. A failed enqueue must not leave readers
+ * treating the filter as ready while it is missing this add. The bump still lands
+ * first so the rebuild observes this failed add.
+ */
+async function invalidateReadyMarkerForFailedAdd(
+  target: BlocklistBloomAddTarget,
+  readyValue: ReadyMarkerValue,
+): Promise<void> {
+  await bumpBlocklistBloomGeneration(target.filter)
+  await unlinkReadyMarkerIfValue(target.readyKey, readyValue)
 }
 
 async function readReadyMarkerOrRepair(

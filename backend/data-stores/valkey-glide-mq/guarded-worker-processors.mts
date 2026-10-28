@@ -86,6 +86,12 @@ function activeJob(queue: string, job: Job): ActiveJob {
   return { queue, jobId: job.id, dedupId: job.opts.deduplication?.id }
 }
 
+/** True when this processor is already running `jobId` on `queue`. Re-adding that id is rejected. */
+export function isActiveProcessorJob(queue: string, jobId: string | undefined): boolean {
+  if (!jobId) return false
+  return activeJobs.getStore()?.some(job => job.queue === queue && job.jobId === jobId) ?? false
+}
+
 export function rejectSelfAdd(queue: string, jobName: string, opts?: JobOptions): boolean {
   const active = activeJobs
     .getStore()
