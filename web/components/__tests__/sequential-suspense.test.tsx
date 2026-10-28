@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { use } from 'react'
+import { describe, expect, it } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
 import { SequentialSuspense } from '../sequential-suspense'
 
 describe('SequentialSuspense', () => {
@@ -8,51 +9,75 @@ describe('SequentialSuspense', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('renders synchronous children immediately', () => {
-    render(
+  it('renders synchronous children in order', () => {
+    const { container } = render(
       <SequentialSuspense>
-        <div data-testid='child-1'>First</div>
-        <div data-testid='child-2'>Second</div>
+        <div>First</div>
+        <div>Second</div>
       </SequentialSuspense>,
     )
-    expect(screen.getByTestId('child-1')).toBeDefined()
-    expect(screen.getByTestId('child-2')).toBeDefined()
+    expect(container).toHaveTextContent('FirstSecond')
   })
 
-  it('renders a single child without error', () => {
-    render(
-      <SequentialSuspense>
-        <div data-testid='single'>Only child</div>
-      </SequentialSuspense>,
+  it('renders a single child after it resolves without a fallback', async () => {
+    const { promise, resolve } = Promise.withResolvers<void>()
+    function PendingChild() {
+      use(promise)
+      return <div>Only child</div>
+    }
+
+    const { container } = await act(async () =>
+      render(
+        <SequentialSuspense>
+          <PendingChild />
+        </SequentialSuspense>,
+      ),
     )
-    expect(screen.getByTestId('single')).toBeDefined()
+    expect(container).toBeEmptyDOMElement()
+
+    await act(async () => {
+      resolve()
+      await promise
+    })
+
+    expect(screen.getByText('Only child')).toBeInTheDocument()
   })
 
-  it('handles falsy/conditional children', () => {
+  it('filters out falsy children', () => {
     const showHidden = false as boolean
     render(
       <SequentialSuspense>
-        <div data-testid='visible'>Visible</div>
-        {showHidden && <div data-testid='hidden'>Hidden</div>}
+        <div>Visible</div>
+        {showHidden && <div>Hidden</div>}
       </SequentialSuspense>,
     )
-    expect(screen.getByTestId('visible')).toBeDefined()
-    expect(screen.queryByTestId('hidden')).toBeNull()
+    expect(screen.getByText('Visible')).toBeInTheDocument()
+    expect(screen.queryByText('Hidden')).toBeNull()
   })
 
-  it('uses default null fallback when fallback prop is omitted', () => {
-    const { container } = render(<SequentialSuspense>{[]}</SequentialSuspense>)
-    expect(container).toBeEmptyDOMElement()
-  })
+  it('shows a custom fallback while the first child is pending', async () => {
+    const { promise, resolve } = Promise.withResolvers<void>()
+    function PendingChild() {
+      use(promise)
+      return <div>Content</div>
+    }
 
-  it('uses custom fallback when provided', () => {
-    render(
-      <SequentialSuspense fallback={<div data-testid='custom-fallback'>Loading…</div>}>
-        <div data-testid='content'>Content</div>
-      </SequentialSuspense>,
+    await act(async () =>
+      render(
+        <SequentialSuspense fallback={<div>Loading…</div>}>
+          <PendingChild />
+        </SequentialSuspense>,
+      ),
     )
-    // When children are synchronous, content renders and fallback is not shown
-    expect(screen.getByTestId('content')).toBeDefined()
-    expect(screen.queryByTestId('custom-fallback')).toBeNull()
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    expect(screen.queryByText('Content')).toBeNull()
+
+    await act(async () => {
+      resolve()
+      await promise
+    })
+
+    expect(screen.getByText('Content')).toBeInTheDocument()
+    expect(screen.queryByText('Loading…')).toBeNull()
   })
 })
