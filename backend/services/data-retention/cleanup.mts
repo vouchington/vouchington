@@ -106,18 +106,8 @@ export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletio
 export { cleanupExpiredOAuthAuthorizations }
 export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
-export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
-export {
-  cleanupSesBounceEvents,
-  cleanupSystemPrunedNotifications,
-  cleanupUserDeletedNotifications,
-  cleanupModerationEmailSends,
-}
-export { cleanupTextEmbeddingCache, cleanupTerminalEmbeddingBatches }
-export { cleanupOldProviderResponseKeys }
-export { cleanupOldMediaDeliveryChanges }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -428,7 +418,7 @@ export async function runDataRetentionCleanup(
   }
 }
 
-export async function cleanupExpiredContributionAdmissions(
+async function cleanupExpiredContributionAdmissions(
   options: ExpiryCleanupOptions,
 ): Promise<CleanupResult> {
   return runBoundedBatches(options, async batchSize =>
@@ -436,7 +426,7 @@ export async function cleanupExpiredContributionAdmissions(
   )
 }
 
-export async function cleanupExpiredContributionQuotaConsumptions(
+async function cleanupExpiredContributionQuotaConsumptions(
   options: ExpiryCleanupOptions,
 ): Promise<CleanupResult> {
   return runBoundedBatches(options, async batchSize =>
@@ -444,7 +434,7 @@ export async function cleanupExpiredContributionQuotaConsumptions(
   )
 }
 
-export async function cleanupExpiredTopicImportAttempts(
+async function cleanupExpiredTopicImportAttempts(
   options: ExpiryCleanupOptions,
 ): Promise<CleanupResult> {
   return runBoundedBatches(
