@@ -79,5 +79,7 @@ export type PsqlRetentionJobData = {
     step: number
     activeClassifierSweeps: string[]
     activeMembershipFamilies: string[]
+    /** Bounded final-purge cursor; the continuation job is sensitive because it names a user. */
+    userPurge?: { userId: string; communityId: string; afterModeratorId: string }
   }
 }

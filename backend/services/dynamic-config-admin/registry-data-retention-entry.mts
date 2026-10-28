@@ -8,6 +8,19 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
   config: dataRetentionConfig,
   access: { update_roles: ['developer'] },
   fields: {
+    community_moderator_scan_page_size: {
+      description:
+        'Moderator memberships read before checking account eligibility in one purge page.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.community_moderator_scan_page_size,
+      integer: true,
+    },
+    community_purge_batch_size: {
+      description: 'Owned communities settled per final user purge page.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.community_purge_batch_size,
+      integer: true,
+    },
     topic_import_attempt_batch_size: {
       description: 'Topic import attempt rows per retention page.',
       minValue: 1,

@@ -1,3 +1,4 @@
+import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 /* oxlint-disable max-lines -- central retention orchestration keeps all bounded cleanup results together. */
 // Data retention necessarily accesses tables owned by other services. This cross-service SQL is intentional:
 // the retention job must hard-delete orphaned OAuth rows that have no owning service
@@ -89,8 +90,8 @@ import { pruneExpiredContributionAdmissionConsumptions } from '@services/contrib
 import { pruneExpiredTopicImportAttempts } from '@services/user-import-export/topic-import-attempts'
 import {
   cleanupRetainedIdentityRoots,
-  type RetainedIdentityFamily,
   type RetainedIdentityCleanupPage,
+  type RetainedIdentityFamily,
 } from './cleanup-retained-identities.mts'
 import {
   cleanupRetainedRelationIdentities,
@@ -123,6 +124,7 @@ type CleanupOptions = {
   maxBatches: number
   lowerBoundDate?: Date
   now?: Date
+  userPurge?: UserPurgeCursor
 }
 
 type CleanupResult = {
@@ -199,7 +201,7 @@ type DataRetentionCleanupResult = {
   retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
   retainedMediaBindings: RetainedMediaBindingCleanupPage
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
-  softDeletedUsers: CleanupResult
+  softDeletedUsers: UserPurgeResult
   oldReferralAttributions: CleanupResult
   histories: Record<HistoryKind, HistoryCleanupResult>
   orphanedOAuthAccounts: CleanupResult
@@ -469,7 +471,7 @@ async function cleanupExpiredTopicImportAttempts(
   )
 }
 
-export async function cleanupSoftDeletedUsers(options: CleanupOptions): Promise<CleanupResult> {
+export async function cleanupSoftDeletedUsers(options: CleanupOptions): Promise<UserPurgeResult> {
   const retentionDays = normalizeRetentionDays(options.retentionDays, 90)
   const cutoffDate = getRetentionCutoffDate(retentionDays, options.now)
   const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
@@ -478,9 +480,16 @@ export async function cleanupSoftDeletedUsers(options: CleanupOptions): Promise<
   let hasMore = false
   for (let batch = 0; batch < maxBatches; batch++) {
     // oxlint-disable-next-line no-await-in-loop -- a committed publication page may progress without purging its user.
-    const result = await cleanupSoftDeletedUserBatch(cutoffDate, batchSize, options.lowerBoundDate)
+    const result = await cleanupSoftDeletedUserBatch(
+      cutoffDate,
+      batchSize,
+      options.lowerBoundDate,
+      options.userPurge,
+    )
     deleted += result.deleted
     hasMore = result.hasMore
+    if (result.userPurge) return { deleted, hasMore, userPurge: result.userPurge }
+    if (options.userPurge) return { deleted, hasMore }
     if (!hasMore) break
   }
   return { deleted, hasMore }

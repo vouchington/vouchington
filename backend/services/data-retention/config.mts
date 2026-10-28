@@ -4,6 +4,8 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 export type DataRetentionConfig = {
   batch_size: number
   classifier_retention_days: number
+  community_moderator_scan_page_size: number
+  community_purge_batch_size: number
   topic_import_attempt_batch_size: number
   max_batches_per_run: number
   partition_status_probe_limit: number
@@ -25,6 +27,8 @@ const DATA_RETENTION_CONFIG_KEY = 'data-retention-config'
 export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   batch_size: 500,
   classifier_retention_days: 90,
+  community_moderator_scan_page_size: 50,
+  community_purge_batch_size: 25,
   topic_import_attempt_batch_size: 25,
   max_batches_per_run: 200,
   partition_status_probe_limit: 64,
@@ -38,6 +42,8 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   batch_size: 5_000,
   classifier_retention_days: 365,
+  community_moderator_scan_page_size: 250,
+  community_purge_batch_size: 250,
   topic_import_attempt_batch_size: 250,
   max_batches_per_run: 2_000,
   partition_status_probe_limit: 256,
@@ -54,6 +60,8 @@ export const dataRetentionConfig = new DynamicConfig({
     batch_size: 'number',
     classifier_retention_days: 'number',
     max_batches_per_run: 'number',
+    community_moderator_scan_page_size: 'number',
+    community_purge_batch_size: 'number',
     topic_import_attempt_batch_size: 'number',
     partition_status_probe_limit: 'number',
     moderation_batch_size: 'number',
@@ -107,4 +115,12 @@ export function getAIRetentionPageLimits(): DataRetentionLimits {
     batchSize: readField('ai_retention_page_size'),
     maxBatches: readField('ai_retention_max_pages_per_run'),
   }
+}
+
+export function getCommunityPurgeBatchSize(): number {
+  return readField('community_purge_batch_size')
+}
+
+export function getCommunityModeratorScanPageSize(): number {
+  return readField('community_moderator_scan_page_size')
 }

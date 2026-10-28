@@ -4,7 +4,7 @@ import assert from 'http-assert'
 import { getActiveCommunityMembersForUsers } from './batch.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import { enqueueSendCommunityRoleChangeEmail } from '@queues/emails/enqueues'
-import { lockCommunityUsers } from '../bans/lock.mts'
+import { lockCommunityRoleMutation } from '../bans/lock.mts'
 import type { Community, CommunityMemberRole } from '../types.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -35,7 +35,7 @@ export async function updateMemberRole(
 
   const options = { query }
 
-  await lockCommunityUsers(communityId, [currentUserId, targetUserId], options)
+  await lockCommunityRoleMutation(query, communityId, [currentUserId, targetUserId])
 
   const members = await getActiveCommunityMembersForUsers(
     communityId,

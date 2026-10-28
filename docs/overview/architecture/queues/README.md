@@ -129,6 +129,11 @@ An accepted topic-alias unlink is durable PostgreSQL state: the alias is already
 the queue only delivers bounded deletion pages. A lost page is resumed from the aliases that are
 still marked, so the queue is not a second source of truth and there is no dead-letter.
 
+Final user purge commits bounded ownership and child-row progress before admitting its continuation
+in the retention ordering lane. Moderator scans carry their position in the continuation job;
+the scheduled scan can rediscover unfinished durable rows after lost admission. This keeps account
+deletion from cascading into communities or requiring a worker to hold the whole purge backlog.
+
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing

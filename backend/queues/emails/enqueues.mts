@@ -81,6 +81,18 @@ export const enqueueSendCommunityOwnershipTransferEmail =
     'processSendCommunityOwnershipTransferEmail',
   )
 
+/** One batched add of ownership-transfer emails, one job per successor and community. */
+export const enqueueBulkSendCommunityOwnershipTransferEmails = createGlideMqBulkEnqueueFunction({
+  queue: emails,
+  queueName: QUEUE_NAME,
+  jobName: 'processSendCommunityOwnershipTransferEmail',
+  sensitive: true,
+  buildJob: (job: {
+    input: EmailJobInput
+    variables: ProcessSendCommunityOwnershipTransferEmailVariables
+  }) => ({ data: job }),
+})
+
 const enqueueSendCopyrightNoticeEmailJob = createGlideMqEnqueueFunction({
   queue: emails,
   queueName: QUEUE_NAME,

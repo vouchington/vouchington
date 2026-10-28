@@ -28,6 +28,9 @@ recovery follow [One current contract](../../AGENTS.md).
   each durable row has a retention owner, a window, and the requirement behind it. Indefinite
   retention requires a cited legal duty; retaining an identity does not extend the window of a row
   that references it.
+- Community creator provenance survives account deletion through a retained user identity. It is
+  separate from the active owner membership: deleting the owner transfers that authority to an
+  eligible moderator or archives the community, preserving the community and its members.
 - Model alternatives as per-entity FK columns with an exact-one-target constraint, or as typed
   child rows. Never use a UUID array, type/id pair, generic attribute/value table, or encoded string
   key as relationship storage.

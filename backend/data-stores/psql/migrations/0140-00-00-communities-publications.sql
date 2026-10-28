@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS communities (
   trusted_at TIMESTAMPTZ,
   profile_image_id UUID REFERENCES images ON DELETE SET NULL,
   banner_image_id UUID REFERENCES images ON DELETE SET NULL,
-  created_by_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  -- Creator provenance survives account purge; this retained identity never grants community ownership.
+  created_by_id UUID NOT NULL REFERENCES retained_user_identities (id) ON DELETE RESTRICT,
   search_vector TSVECTOR GENERATED ALWAYS AS (
     setweight(to_tsvector('voucha_english', COALESCE(name, '')), 'A') ||
     setweight(to_tsvector('voucha_english', COALESCE(slug, '')), 'A') ||
@@ -219,6 +220,14 @@ CREATE INDEX IF NOT EXISTS idx_community_members__user_id_id ON community_member
 CREATE INDEX IF NOT EXISTS idx_community_members__suspected_ban_evader_source_user_id
   ON community_members (suspected_ban_evader_source_user_id)
   WHERE suspected_ban_evader_source_user_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_community_members__owner_user_community
+  ON community_members (user_id, community_id) WHERE role = 'owner' AND removed_at IS NULL;
+-- Membership UUIDv7 order is join tenure, including a deterministic id tie-break within one instant.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_community_members__moderator_community_id
+  ON community_members (community_id, id) WHERE role = 'moderator' AND removed_at IS NULL;
 
 COMMENT ON TABLE community_members IS 'Tracks membership of users in communities with role-based access control.';
 COMMENT ON COLUMN community_members.community_id IS 'The community this membership belongs to.';

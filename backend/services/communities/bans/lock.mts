@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { assertNotBanned } from './get.mts'
 
@@ -42,6 +42,53 @@ export async function lockCommunityUsers(
     `,
     options,
   )
+}
+
+/** Fences many (community, user) pairs in one statement, ascending by user id then community id. */
+export async function lockCommunityUserPairs(
+  query: TransactionQuery,
+  pairs: readonly { communityId: string; userId: string }[],
+): Promise<void> {
+  if (pairs.length === 0) return
+  await query(
+    sql`/* lockCommunityUserPairs */
+      SELECT pg_advisory_xact_lock(hashtextextended(ordered.community_id::text || ':' || ordered.user_id::text, 0))
+      FROM (
+        SELECT DISTINCT community_id, user_id
+        FROM unnest(${pairs.map(pair => pair.communityId)}::uuid[], ${pairs.map(pair => pair.userId)}::uuid[])
+          AS input(community_id, user_id)
+        ORDER BY user_id, community_id
+      ) ordered
+    `,
+  )
+}
+
+/** Serializes membership role changes with purge succession decisions for each community. */
+export async function lockCommunityMembershipRoles(
+  query: TransactionQuery,
+  communityIds: readonly string[],
+): Promise<void> {
+  const sortedCommunityIds = [...new Set(communityIds)].toSorted()
+  if (sortedCommunityIds.length === 0) return
+  await query(
+    sql`/* lockCommunityMembershipRoles */
+      SELECT pg_advisory_xact_lock(hashtextextended('community-membership-role:' || ordered.community_id::text, 0))
+      FROM (
+        SELECT unnest(${sortedCommunityIds}::uuid[]) AS community_id
+        ORDER BY community_id
+      ) ordered
+    `,
+  )
+}
+
+/** Applies the common role-fence then sorted member-fence order for interactive role writers. */
+export async function lockCommunityRoleMutation(
+  query: TransactionQuery,
+  communityId: string,
+  userIds: readonly string[],
+): Promise<void> {
+  await lockCommunityMembershipRoles(query, [communityId])
+  await lockCommunityUsers(communityId, [...userIds], { query })
 }
 
 // Convenience: take the per-(community, user) lock and then assert the user is not banned, in one

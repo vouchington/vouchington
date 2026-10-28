@@ -1,36 +1,35 @@
+import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 import { assertWhitelistedSqlIdentifier, write } from '@data-stores/psql'
-import { providerTableConfigs } from '@services/oauth/providers'
 import { DELETED_USER_ID } from '@services/users/constants'
 import sql from 'sql-template-strings'
 import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
 import { DEFAULT_DATA_RETENTION_CONFIG } from './config.mts'
+import {
+  allowedOAuthAccountIdIdentifiers,
+  allowedOAuthCleanupIdentifiers,
+  oauthAccountIdColumnByTable,
+  oauthAuthorizationProviderUserIdColumnByAccountTable,
+  oauthProviderUserIdColumnByTable,
+} from './oauth-cleanup-identifiers.mts'
 export const DEFAULT_BATCH_SIZE = DEFAULT_DATA_RETENTION_CONFIG.batch_size
-const oauthProviderUserIdColumnByTable = new Map(
-  Object.values(providerTableConfigs).map(config => [config.table, config.providerUserIdColumn]),
-)
-const allowedOAuthCleanupIdentifiers = new Set([...oauthProviderUserIdColumnByTable].flat())
-const oauthAuthorizationProviderUserIdColumnByAccountTable = new Map([
-  ['facebook_accounts', 'facebook_account_id'],
-  ['github_accounts', 'github_account_id'],
-  ['linkedin_accounts', 'linkedin_account_id'],
-  ['x_accounts', 'x_account_id'],
-  ['microsoft_accounts', 'microsoft_account_id'],
-  ['google_accounts', 'google_account_id'],
-])
-const oauthAccountIdColumnByTable = new Map([
-  ['facebook_accounts', 'id'],
-  ['github_accounts', 'id'],
-  ['linkedin_accounts', 'id'],
-  ['x_accounts', 'id'],
-  ['microsoft_accounts', 'id'],
-  ['google_accounts', 'id'],
-])
-const allowedOAuthAccountIdIdentifiers = new Set([...allowedOAuthCleanupIdentifiers, 'id'])
 export async function cleanupSoftDeletedUserBatch(
   cutoffDate: Date,
   batchSize: number,
   lowerBoundDate?: Date,
-): Promise<{ deleted: number; hasMore: boolean }> {
+  cursor?: UserPurgeCursor,
+): Promise<UserPurgeResult> {
+  if (cursor) {
+    const result = await cleanupSoftDeletedUser(
+      cursor.userId,
+      cutoffDate,
+      lowerBoundDate,
+      batchSize,
+      { remainingRows: batchSize },
+      cursor,
+    )
+    // Completion or eligibility loss resumes global discovery on a fresh job.
+    return { ...result, hasMore: true }
+  }
   const targetQuery = sql`/* cleanupSoftDeletedUserBatch */
     SELECT id FROM users
     WHERE deleted_at IS NOT NULL
@@ -83,11 +82,11 @@ export async function cleanupSoftDeletedUserBatch(
     // An eligibility loss or empty attempt still consumes one bounded user attempt.
     if (before === budget.remainingRows) budget.remainingRows--
     deleted += result.deleted
+    if (result.userPurge) return { deleted, hasMore: true, userPurge: result.userPurge }
     hasMore ||= result.hasMore
   }
   return { deleted, hasMore }
 }
-
 export async function deleteOldReferralAttributionBatch(
   cutoffId: string,
   batchSize: number,
@@ -110,7 +109,6 @@ export async function deleteOldReferralAttributionBatch(
   const { rowCount } = await write(query)
   return rowCount ?? 0
 }
-
 export async function deleteOrphanedOAuthAccountBatch(
   table: string,
   providerUserIdColumn: string,
@@ -133,7 +131,6 @@ export async function deleteOrphanedOAuthAccountBatch(
       `Invalid OAuth cleanup identifier combination: ${validatedTable}.${validatedProviderUserIdColumn}`,
     )
   }
-
   const query = sql`/* deleteOrphanedOAuthAccountBatch */
     DELETE FROM `
     .append(validatedTable)

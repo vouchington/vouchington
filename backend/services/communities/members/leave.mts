@@ -1,9 +1,11 @@
-import { write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { LoadedCommunity } from '../load-with-viewer.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
+import { lockCommunityRoleMutation } from '../bans/lock.mts'
+import { getActiveCommunityMembersForUsers } from './batch.mts'
 
 export async function leaveCommunity(
   currentUserId: string,
@@ -18,15 +20,36 @@ export async function leaveCommunity(
     'Owners cannot leave a community. Transfer ownership first or delete the community.',
   )
 
-  await write(
+  await using query = await beginTransaction()
+  const options = { query }
+  await lockCommunityRoleMutation(query, communityId, [currentUserId])
+  const lockedMembership = (
+    await getActiveCommunityMembersForUsers(communityId, [currentUserId], options)
+  ).get(currentUserId)
+  assert(lockedMembership, 404, 'You are not a member of this community')
+  assert(
+    lockedMembership.role !== 'owner',
+    422,
+    'Owners cannot leave a community. Transfer ownership first or delete the community.',
+  )
+
+  const { rowCount } = await write(
     sql`/* leaveCommunity */
     UPDATE community_members
     SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${currentUserId}
     WHERE community_id = ${communityId}
       AND user_id = ${currentUserId}
       AND removed_at IS NULL
+      AND role <> 'owner'
     `,
+    options,
   )
+  assert(
+    rowCount === 1,
+    422,
+    'Owners cannot leave a community. Transfer ownership first or delete the community.',
+  )
+  await query.commit()
   await Promise.all([
     invalidate.communities(communityId),
     invalidateCommunityMemberUserMetrics(currentUserId),

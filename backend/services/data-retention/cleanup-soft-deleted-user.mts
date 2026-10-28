@@ -1,3 +1,4 @@
+import type { UserPurgeCursor, UserPurgeResult } from './user-purge-types.mts'
 import type { RetentionWorkBudget } from './work-budget.mts'
 import { getDataRetentionLimits } from './config.mts'
 import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
@@ -8,6 +9,7 @@ import {
 } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
+import onError from '@modules/on-error'
 
 export const FINAL_USER_PURGE_LOCK_KEY = 'data-retention:final-user-purge'
 
@@ -17,7 +19,8 @@ export async function cleanupSoftDeletedUser(
   lowerBoundDate?: Date,
   publicationBatchSize = getDataRetentionLimits().batchSize,
   budget: RetentionWorkBudget = { remainingRows: publicationBatchSize },
-): Promise<{ deleted: number; hasMore: boolean }> {
+  cursor?: UserPurgeCursor,
+): Promise<UserPurgeResult> {
   if (budget.remainingRows === 0) return { deleted: 0, hasMore: true }
   await using query = await beginTransaction()
   await lockFinalUserPurge(query, targetId)
@@ -41,20 +44,36 @@ export async function cleanupSoftDeletedUser(
     await query.commit()
     return { deleted: 0, hasMore: true }
   }
-  if (await cleanupUserPreservedRows(query, targetId, publicationBatchSize, budget)) {
+  const preserved = await cleanupUserPreservedRows(
+    query,
+    targetId,
+    publicationBatchSize,
+    budget,
+    cursor,
+  )
+  if (preserved.hasMore) {
     await query.commit()
-    return { deleted: 0, hasMore: true }
+    await Promise.all(preserved.afterCommit.map(effect => effect().catch(onError)))
+    return {
+      deleted: 0,
+      hasMore: true,
+      ...(preserved.userPurge ? { userPurge: preserved.userPurge } : {}),
+    }
   }
   const deleted = await deletePurgedUser(query, targetId)
   budget.remainingRows -= deleted
   await query.commit()
-  return { deleted, hasMore: false }
+  return { deleted, hasMore: deleted === 0 }
 }
 
 async function deletePurgedUser(query: TransactionQuery, targetId: string): Promise<number> {
   await retainUserCascadeHardDeletedPosts(query, targetId)
   const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch:delete */
-      DELETE FROM users WHERE id = ${targetId}`)
+      DELETE FROM users WHERE id = ${targetId}
+        AND NOT EXISTS (SELECT 1 FROM community_members WHERE user_id = ${targetId})
+        AND NOT EXISTS (SELECT 1 FROM notifications WHERE user_id = ${targetId})
+        AND NOT EXISTS (SELECT 1 FROM user_lists WHERE owner_user_id = ${targetId})
+        AND NOT EXISTS (SELECT 1 FROM memberships WHERE user_id = ${targetId})`)
   return rowCount ?? 0
 }
 

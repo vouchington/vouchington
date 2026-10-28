@@ -117,6 +117,9 @@ export default async function processPsql(
         ? await cleanup(getDataRetentionLimits(), {
             classifierRecords: { activeSweeps: data.continuation.activeClassifierSweeps },
             activeMembershipFamilies: data.continuation.activeMembershipFamilies,
+            ...(data.continuation.userPurge
+              ? { softDeletedUsers: { userPurge: data.continuation.userPurge } }
+              : {}),
           })
         : await cleanup(getDataRetentionLimits())
       const aiFamilies = AI_RETENTION_FAMILIES.filter(family => result[family].hasMore)
@@ -127,7 +130,14 @@ export default async function processPsql(
       }
       const activeClassifierSweeps = unfinishedClassifierSweeps(result.classifierRecords)
       const activeMembershipFamilies = unfinishedMembershipFamilies(result)
-      if (activeClassifierSweeps.length > 0 || activeMembershipFamilies.length > 0) {
+      const userPurge = result.softDeletedUsers.hasMore
+        ? result.softDeletedUsers.userPurge
+        : undefined
+      if (
+        activeClassifierSweeps.length > 0 ||
+        activeMembershipFamilies.length > 0 ||
+        result.softDeletedUsers.hasMore
+      ) {
         if (!jobId) throw new Error('Data retention continuation needs the current job ID')
         const runId = data?.continuation?.runId ?? createHash('sha256').update(jobId).digest('hex')
         await enqueueDataRetentionCleanupContinuation({
@@ -135,6 +145,7 @@ export default async function processPsql(
           step: (data?.continuation?.step ?? 0) + 1,
           activeClassifierSweeps,
           activeMembershipFamilies,
+          ...(userPurge ? { userPurge } : {}),
         })
       }
       return result

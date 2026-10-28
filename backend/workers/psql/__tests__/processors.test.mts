@@ -13,9 +13,10 @@ import type { cleanupPartitions as cleanupPartitionsService } from '@data-stores
 type PartitionDropOutcome = Awaited<ReturnType<typeof cleanupPartitionsService>>[number]
 const cleanupPartitions = vi.fn<() => Promise<PartitionDropOutcome[]>>()
 const createPartitions = vi.fn<() => Promise<void>>()
-const noAIRetention = Object.fromEntries(
-  AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }]),
-)
+const noAIRetention = {
+  softDeletedUsers: { deleted: 0, hasMore: false },
+  ...Object.fromEntries(AI_RETENTION_FAMILIES.map(family => [family, { hasMore: false }])),
+}
 const emptyCleanupResult = {
   ...noAIRetention,
   classifierRecords: { runs: { hasMore: false } },
@@ -46,7 +47,7 @@ describe('processPsql', () => {
     await processPsql(jobName, undefined, {
       cleanupPartitions,
       createPartitions,
-      dataRetentionCleanup: dataRetentionCleanup as never,
+      dataRetentionCleanup,
       reconcileVoteDrift: reconcileVoteDrift as never,
       runConfigDriven,
       runMigrations,
@@ -65,7 +66,7 @@ describe('processPsql', () => {
     })
 
     await processPsql('dataRetentionCleanup', undefined, {
-      dataRetentionCleanup: dataRetentionCleanup as never,
+      dataRetentionCleanup,
     })
 
     expect(dataRetentionCleanup).toHaveBeenCalledExactlyOnceWith({ batchSize: 7, maxBatches: 3 })
@@ -87,7 +88,7 @@ describe('processPsql', () => {
     dataRetentionCleanup.mockResolvedValue(emptyCleanupResult)
 
     const processing = processPsql('dataRetentionCleanup', undefined, {
-      dataRetentionCleanup: dataRetentionCleanup as never,
+      dataRetentionCleanup,
     })
     try {
       expect(dataRetentionCleanup).not.toHaveBeenCalled()
@@ -204,6 +205,7 @@ describe('processPsql', () => {
     const result = (effects: boolean, notices: boolean) =>
       ({
         classifierRecords: {},
+        softDeletedUsers: { deleted: 0, hasMore: false },
         textEmbeddingCache: { hasMore: false },
         terminalEmbeddingBatches: { hasMore: false },
         oldMediaDeliveryChanges: { hasMore: false },
