@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
 
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@c81f9b19a7fe0fb0f18ca9f6454e83325c6969c2 # v0.78.0
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
         timeout-minutes: 5
 
       - name: Select prompt file
