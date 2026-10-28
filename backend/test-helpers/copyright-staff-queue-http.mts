@@ -19,7 +19,7 @@ type QueuePage = {
   copyright_notices: QueueCase[]
   page_info: { has_next_page: boolean; end_cursor: string | null }
 }
-/** One stable native queue snapshot, optional rolled-back policy reservation, and actual HTTP. */
+/** Stable native queue snapshot, optional rolled-back policy reservation, real HTTP. The policy lock covers only snapshot + reservation. */
 export async function withCopyrightStaffQueueHttp<Result>(
   moderator: PrivateUser,
   policy: { approvalId: string; actor: PrivateUser } | undefined,
@@ -39,6 +39,15 @@ export async function withCopyrightStaffQueueHttp<Result>(
   const client = await writePool.connect()
   const lockKey = policy ? copyrightJurisdictionPolicyLockKey('eu_dsa') : undefined
   let locked = false
+  const releaseLock = async () => {
+    if (!locked || !lockKey) return
+    const { rows } = await client.query<{ unlocked: boolean }>(
+      '/* unlockCopyrightQueueSnapshot */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
+      [lockKey],
+    )
+    if (!rows[0]?.unlocked) throw new Error('Copyright snapshot session lock was not held')
+    locked = false // stays set on failure so final cleanup retries, then discards the client
+  }
   let discardClient = false
   let failed = false
   let primary: unknown
@@ -52,7 +61,6 @@ export async function withCopyrightStaffQueueHttp<Result>(
       )
       locked = true
     }
-    // Acquire the session lock BEFORE the snapshot, on the SAME borrowed client.
     await using transaction = await beginTransaction({ client })
     try {
       await transaction(
@@ -71,6 +79,7 @@ export async function withCopyrightStaffQueueHttp<Result>(
             WHERE withdrawal.copyright_jurisdiction_policy_approval_id = approval.id
           )`)
       }
+      await releaseLock()
       result = await withApiRequestQueryOptions({ query: transaction, now }, async request => {
         await request.authenticateAs(moderator)
         const snapshotKeys = createQueueSnapshotKeys(transaction, now)
@@ -157,7 +166,7 @@ export async function withCopyrightStaffQueueHttp<Result>(
       failed = true
       primary = err
     } finally {
-      // The listener closes/drains before rollback; preserve the lock through owned cleanup.
+      // The listener closes/drains before rollback; the lock is already released unless setup failed.
       try {
         await transaction.rollback()
       } catch (err) {
@@ -172,20 +181,11 @@ export async function withCopyrightStaffQueueHttp<Result>(
     } else failures.push(err)
     discardClient = true
   } finally {
-    if (locked && lockKey) {
-      try {
-        const { rows } = await client.query<{ unlocked: boolean }>(
-          '/* unlockCopyrightQueueSnapshot */ SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked',
-          [lockKey],
-        )
-        if (!rows[0]?.unlocked) {
-          failures.push(new Error('Copyright snapshot session lock was not held'))
-          discardClient = true
-        }
-      } catch (err) {
-        failures.push(err)
-        discardClient = true
-      }
+    try {
+      await releaseLock()
+    } catch (err) {
+      failures.push(err)
+      discardClient = true
     }
     try {
       client.release(discardClient)
