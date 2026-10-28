@@ -6,9 +6,9 @@ import type { MessageKey } from '@ts-shared/ui-messages'
 
 export type FeedCategory = 'posts' | 'news' | 'podcasts' | 'videos' | 'referral-links'
 
-export type PostFeedType = Exclude<CatalogPostFeedType, 'all'>
+type PostFeedType = Exclude<CatalogPostFeedType, 'all'>
 export type NewsFeedType = Exclude<RssFeedItemFeedType, 'all'>
-export type ReferralLinksFeedType = 'follow_users' | 'mutual_follows'
+type ReferralLinksFeedType = 'follow_users' | 'mutual_follows'
 
 export interface PostFeedRouteConfig {
   title: MessageKey

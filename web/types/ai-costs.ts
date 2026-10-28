@@ -1,4 +1,4 @@
-export type CommunityAiCostTotal = {
+type CommunityAiCostTotal = {
   community_id: string
   community_slug: string
   request_count: number

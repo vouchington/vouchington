@@ -79,7 +79,7 @@ export interface MembershipBenefitCatalog {
   groups: MembershipBenefitGroup[]
 }
 
-export interface MembershipSku {
+interface MembershipSku {
   id: string
   plan: string
   price: Money | null

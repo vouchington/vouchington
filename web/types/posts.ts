@@ -22,7 +22,7 @@ import type {
 } from '@voucha/types/entities/post'
 
 // Re-export enums and simple types from canonical backend definitions
-export type TopicRecommendationStatus = BackendRecommendationStatus
+type TopicRecommendationStatus = BackendRecommendationStatus
 export type PostType = BackendPostType
 export type PostBroadcast = BackendPostBroadcast
 export type PostPrivacy = BackendPostPrivacy

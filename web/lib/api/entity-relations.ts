@@ -31,7 +31,7 @@ interface EntityRelationElection {
   votes_count_down: number
 }
 
-export interface EntityRelationRef {
+interface EntityRelationRef {
   __entity_type: 'entity_relation'
   id: string
 }

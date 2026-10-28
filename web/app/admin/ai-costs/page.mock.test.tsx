@@ -2,7 +2,7 @@ import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminAiCostsPage from './page'
-import type { CommunityAiCostTotal } from '@/types/ai-costs'
+import type { AiCostsResponseBody } from '@/types/ai-costs'
 
 const { getAiCostTotalsMock, getResolvedUiLocaleMock, requireAdminMock } = vi.hoisted(() => ({
   getAiCostTotalsMock: vi.fn<VitestLooseMock>(),
@@ -147,7 +147,9 @@ describe('AdminAiCostsPage', () => {
   })
 })
 
-function makeTotal(overrides: Partial<CommunityAiCostTotal> = {}): CommunityAiCostTotal {
+function makeTotal(
+  overrides: Partial<AiCostsResponseBody['results'][number]> = {},
+): AiCostsResponseBody['results'][number] {
   return {
     community_id: 'community-1',
     community_slug: 'test-community',

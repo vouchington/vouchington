@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import {
   IntegrityFlagsHeader,
-  type IntegrityFlagsHeaderLabels,
+  type IntegrityFlagsHeaderProps,
 } from '@/components/admin/integrity-flags-header'
 
 const meta = {
@@ -25,13 +25,13 @@ const reportLabels = {
   resolved: 'Resolved',
   status: 'Filter flags by status',
   title: 'Report Integrity Flags',
-} satisfies IntegrityFlagsHeaderLabels
+} satisfies IntegrityFlagsHeaderProps['labels']
 
 const voteLabels = {
   ...reportLabels,
   description: 'Review and resolve suspicious voting patterns',
   title: 'Vote Integrity Flags',
-} satisfies IntegrityFlagsHeaderLabels
+} satisfies IntegrityFlagsHeaderProps['labels']
 
 export const Report: Story = {
   render: () => (

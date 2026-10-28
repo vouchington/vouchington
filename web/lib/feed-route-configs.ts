@@ -19,9 +19,7 @@ export type {
   NewsFeedType,
   PodcastFeedRouteConfig,
   PostFeedRouteConfig,
-  PostFeedType,
   ReferralLinksFeedRouteConfig,
-  ReferralLinksFeedType,
   VideoFeedRouteConfig,
   NewsFeedRouteConfig,
 } from './feed-route-config-types'

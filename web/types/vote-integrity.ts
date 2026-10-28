@@ -60,7 +60,7 @@ export interface VoteIntegrityPenaltiesResponse {
   }
 }
 
-export interface VoteIntegrityPenaltyReviewDue extends VoteIntegrityPenalty {
+interface VoteIntegrityPenaltyReviewDue extends VoteIntegrityPenalty {
   user_username: string | null
 }
 

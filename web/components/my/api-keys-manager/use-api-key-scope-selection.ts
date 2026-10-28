@@ -8,7 +8,7 @@ import {
   type ScopeResourceGroup,
 } from './scope-selection'
 
-export type ApiKeyType = 'mcp' | 'rss'
+type ApiKeyType = 'mcp' | 'rss'
 
 export interface ApiKeyScopeSelection {
   keyType: ApiKeyType

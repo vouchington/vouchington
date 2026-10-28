@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { TopicUrlTagAside } from '../topic-url-tag-aside'
 import type { Topic } from '@/types/topics'
-import type { EntityRelation, EntityRelationRef } from '@/lib/api/entity-relations'
+import type { EntityRelation, EntityRelationsResponse } from '@/lib/api/entity-relations'
 const { mockManageTagsDialog } = vi.hoisted(() => ({
   mockManageTagsDialog: vi.fn<VitestLooseMock>(),
 }))
@@ -57,7 +57,10 @@ const mockTopic: Topic = {
   updated_by: { id: 'user-1', username: 'testuser' } as Topic['updated_by'],
 }
 
-const mockRef: EntityRelationRef = { __entity_type: 'entity_relation', id: 'rel-1' }
+const mockRef: EntityRelationsResponse['results'][number] = {
+  __entity_type: 'entity_relation',
+  id: 'rel-1',
+}
 
 const mockRelation: EntityRelation = {
   id: 'rel-1',

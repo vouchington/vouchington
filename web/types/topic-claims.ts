@@ -1,5 +1,5 @@
 type TopicClaimVerificationMethod = 'dns_txt' | 'well_known_file' | 'manual_admin'
-export type TopicClaimState = 'pending' | 'verified' | 'rejected' | 'revoked'
+type TopicClaimState = 'pending' | 'verified' | 'rejected' | 'revoked'
 
 export interface TopicClaim {
   id: string

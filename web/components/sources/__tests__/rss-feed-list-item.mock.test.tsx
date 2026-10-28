@@ -14,9 +14,10 @@ vi.mock(import('@/components/sources/article-list-item'), () => ({
   ArticleListItem: () => <div data-testid='article-list-item' />,
 }))
 
-import { type RssFeedListItemProps, RssFeedListItem } from '../rss-feed-list-item'
+import type { ComponentProps } from 'react'
+import { RssFeedListItem } from '../rss-feed-list-item'
 
-type FeedProp = RssFeedListItemProps['feed']
+type FeedProp = ComponentProps<typeof RssFeedListItem>['feed']
 
 describe('RssFeedListItem routing', () => {
   it('renders PodcastListItem when feed_type is podcast', () => {

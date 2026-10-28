@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { AnnualPenaltyReviews } from '@/components/admin/annual-penalty-reviews'
-import type { VoteIntegrityPenaltyReviewDue } from '@/types/vote-integrity'
+import type { VoteIntegrityPenaltyReviewsDueResponse } from '@/types/vote-integrity'
+type VoteIntegrityPenaltyReviewDue = VoteIntegrityPenaltyReviewsDueResponse['results'][number]
 
 const meta = {
   title: 'Design System/Components/Admin Annual Penalty Reviews',

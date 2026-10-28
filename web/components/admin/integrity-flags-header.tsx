@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import type { IntegrityFlagStatusFilter } from '@ts-shared/utils/moderation-catalogs'
 
-export interface IntegrityFlagsHeaderLabels {
+interface IntegrityFlagsHeaderLabels {
   all: string
   description: string
   flags: string
