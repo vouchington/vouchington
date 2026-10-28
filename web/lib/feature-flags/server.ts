@@ -44,9 +44,7 @@ interface GlobalFeatureFlagsFetchFailure {
   error: unknown
 }
 
-type GlobalFeatureFlagsFetchResult =
-  | GlobalFeatureFlagsFetchSuccess
-  | GlobalFeatureFlagsFetchFailure
+type GlobalFeatureFlagsFetchResult = GlobalFeatureFlagsFetchSuccess | GlobalFeatureFlagsFetchFailure
 
 /**
  * Reads the cookie-less (global) flag set and reports success or failure as a discriminated
