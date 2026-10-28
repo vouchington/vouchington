@@ -6,7 +6,7 @@ description: >
 runs:
   using: composite
   steps:
-    - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
+    - uses: vouchington/vouchington-tooling/.github/actions/setup-node-pnpm@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
     - name: Build email-templates
       # Build explicitly so the backend can resolve @email-templates/core even
       # when generated output was absent before install.

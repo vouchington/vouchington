@@ -71,7 +71,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 6
-      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@804d6274d71329823f0416182debcdf681f350dd # v0.80.1
+      - uses: vouchington/vouchington-tooling/.github/actions/setup-aws@f7169f51576c21f4e640582fec4a70b77a717b78 # v0.80.2
         timeout-minutes: 2
         with:
           role-arn: ${{ secrets.AWS_TEST_ROLE_ARN }}
