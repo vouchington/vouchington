@@ -3,8 +3,6 @@
 import { clientApi } from './instance'
 import type {
   MembershipPurchaseIntentResponseBody,
-  MembershipVerificationResponseBody,
-  MicrosoftStoreServiceTicketsResponseBody,
   MembershipPurchaseProvider,
   BillingPortalSessionResponseBody,
   MembershipPlansResponseBody,
@@ -22,33 +20,6 @@ export function createMembershipPurchaseIntent(
   return clientApi.post<MembershipPurchaseIntentResponseBody>(
     '/api/v1/membership-purchase-intents',
     { provider, product_id: productId, idempotency_key: idempotencyKey },
-  )
-}
-
-export function createMembershipVerification(body: {
-  provider: Exclude<MembershipPurchaseProvider, 'stripe'>
-  evidence: unknown
-  purchase_intent_id?: string
-  idempotency_key: string
-}): Promise<MembershipVerificationResponseBody> {
-  return clientApi.post<MembershipVerificationResponseBody>(
-    '/api/v1/membership-verifications',
-    body,
-  )
-}
-
-export function fetchMembershipVerification(
-  verificationId: string,
-): Promise<MembershipVerificationResponseBody> {
-  return clientApi.get<MembershipVerificationResponseBody>(
-    `/api/v1/membership-verifications/${encodeURIComponent(verificationId)}`,
-  )
-}
-
-export function createMicrosoftStoreServiceTickets(): Promise<MicrosoftStoreServiceTicketsResponseBody> {
-  return clientApi.post<MicrosoftStoreServiceTicketsResponseBody>(
-    '/api/v1/memberships/microsoft-store/service-tickets',
-    {},
   )
 }
 
@@ -74,12 +45,6 @@ export function grantMembership(
     plan,
     sku_id: skuId,
     duration_days: durationDays,
-  })
-}
-
-export function revokeMembershipGrant(grantId: string, reason: string): Promise<void> {
-  return clientApi.delete(`/api/v1/membership-grants/${encodeURIComponent(grantId)}`, {
-    body: { reason },
   })
 }
 

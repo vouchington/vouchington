@@ -22,13 +22,7 @@ import adminValkeyCachesClearDefault from '../../../../api-fixtures/v1/responses
 import adminValkeyFlushDefault from '../../../../api-fixtures/v1/responses/web.admin.valkey.flush.default.json'
 import growthMetricsDefault from '../../../../api-fixtures/v1/responses/web.growth-metrics.default.json'
 import rssFeedCategoriesDefault from '../../../../api-fixtures/v1/responses/web.rss-feed-categories.default.json'
-import type {
-  Backfill,
-  QueueDomain,
-  QueueStats,
-  QueueStatsSummary,
-  ScheduledJob,
-} from '@/lib/api/client/mq'
+import type { Backfill, QueueDomain, QueueStats, ScheduledJob } from '@/lib/api/client/mq'
 import type { ArticleSyncJobStatus } from '@/lib/api/client/admin'
 import type { FlushValkeyResponseBody } from '@/types/api-responses'
 import type {
@@ -42,6 +36,8 @@ import type {
 import type { GrowthMetrics } from '@/types/growth-metrics'
 import type { UnmappedCategoryListResponse } from '@/types/rss-feed-categories'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
+import { clientFetch } from '@/lib/api/client/raw-fetch'
+import type { QueueStatsSummary } from '@/test-helpers/api-fixture-response-types'
 
 export const ENGINEERING_DECLARATIONS = [
   defineWebApiFixture<{ domains: QueueDomain[] }>()(
@@ -78,7 +74,11 @@ export const ENGINEERING_DECLARATIONS = [
   defineWebApiFixture<{ stats: QueueStatsSummary }>()(
     'web.admin.mq.stats.default',
     adminMqStatsDefault,
-    context => context.client.mq.fetchQueueStats(),
+    async () => {
+      const response = await clientFetch('/api/v1/mq/stats')
+      if (!response.ok) throw new Error(`Queue stats fixture fetch failed: ${response.status}`)
+      return response.json() as Promise<{ stats: QueueStatsSummary }>
+    },
   ),
   defineWebApiFixture<{ queues: QueueStats[]; total: number }>()(
     'web.admin.mq.queues.default',

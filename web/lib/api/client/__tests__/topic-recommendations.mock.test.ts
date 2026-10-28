@@ -22,7 +22,6 @@ import { clientApi } from '../instance'
 import {
   createTopicRecommendation,
   updateTopicRecommendation,
-  fetchTopicRecommendations,
   approveTopicRecommendation,
   rejectTopicRecommendation,
   withdrawTopicRecommendation,
@@ -47,38 +46,6 @@ describe('topic-recommendations client', () => {
       await withdrawTopicRecommendation('recommendation-1')
 
       expect(mockDelete).toHaveBeenCalledWith('/api/v1/topic-recommendations/recommendation-1')
-    })
-  })
-
-  describe('fetchTopicRecommendations', () => {
-    it('GETs the topic recommendations endpoint with searchParams', async () => {
-      mockGet.mockResolvedValueOnce({ posts: [], cursor: null })
-
-      await fetchTopicRecommendations({ q: 'test', status: 'pending', limit: 10 })
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topic-recommendations', {
-        searchParams: {
-          q: 'test',
-          status: 'pending',
-          limit: 10,
-        },
-        signal: undefined,
-      })
-    })
-
-    it('GETs the endpoint with no options when called with no arguments', async () => {
-      mockGet.mockResolvedValueOnce({ posts: [], cursor: null })
-
-      await fetchTopicRecommendations()
-
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/topic-recommendations', {
-        searchParams: {
-          q: undefined,
-          status: undefined,
-          limit: undefined,
-        },
-        signal: undefined,
-      })
     })
   })
 

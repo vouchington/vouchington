@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import * as clientRoutes from '@/lib/api/client'
+import { createIntegrationClientReads } from '@/test-helpers/integration-client-reads'
 import {
   getMyIdentityVerificationSessionUrl,
   updateMyIdentityVerificationDisplayPreferences,
@@ -11,6 +12,8 @@ import {
   insertTestVoteIntegrityFlag,
 } from '../../../../backend/test-helpers/index.mts'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
+
+const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
 function unset(target: object, key: string) {
   delete (target as Record<string, unknown>)[key]
@@ -30,7 +33,8 @@ describe('client-content-routes', () => {
   describe('vote-integrity client routes (admin only)', () => {
     it('getVoteIntegrityFlagsClient returns 200 with no params', async () => {
       const result = await harness.withClientRuntime(
-        () => clientRoutes.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>(),
+        () =>
+          integrationClientReads.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>(),
         harness.adminCookieHeader,
       )
       expect(result.results.some(flag => flag.id === pendingFlagId)).toBe(true)
@@ -39,7 +43,7 @@ describe('client-content-routes', () => {
     it('getVoteIntegrityFlagsClient returns 200 with status param', async () => {
       const result = await harness.withClientRuntime(
         () =>
-          clientRoutes.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>({
+          integrationClientReads.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>({
             status: 'pending',
           }),
         harness.adminCookieHeader,
@@ -55,7 +59,7 @@ describe('client-content-routes', () => {
 
       const resolved = await harness.withClientRuntime(
         () =>
-          clientRoutes.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>({
+          integrationClientReads.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>({
             status: 'resolved',
           }),
         harness.adminCookieHeader,
@@ -64,7 +68,7 @@ describe('client-content-routes', () => {
 
       const stillPending = await harness.withClientRuntime(
         () =>
-          clientRoutes.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>({
+          integrationClientReads.getVoteIntegrityFlagsClient<{ results: Array<{ id: string }> }>({
             status: 'pending',
           }),
         harness.adminCookieHeader,

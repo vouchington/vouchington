@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import * as clientRoutes from '@/lib/api/client'
+import { createIntegrationClientReads } from '@/test-helpers/integration-client-reads'
 import { installUserAdminRouteHarness } from '../../test-helpers/user-admin-route-harness.mts'
+
+const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
 function unset(target: object, key: string) {
   delete (target as Record<string, unknown>)[key]
@@ -14,7 +17,7 @@ describe('routes — user and admin', () => {
     it('getFriendRecommendations resolves', async () => {
       await expect(
         harness.withClientRuntime(
-          () => clientRoutes.getFriendRecommendations<unknown>(),
+          () => integrationClientReads.getFriendRecommendations<unknown>(),
           harness.userCookieHeader,
         ),
       ).resolves.not.toThrow()

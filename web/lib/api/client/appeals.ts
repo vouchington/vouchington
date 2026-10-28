@@ -60,12 +60,6 @@ export class AppealDraftReconciliationTimeoutError extends Error {
   override name = 'AppealDraftReconciliationTimeoutError'
 }
 
-export function getModerationAppealClient(appealId: string): Promise<ModerationAppeal> {
-  return clientApi
-    .get<{ appeal: ModerationAppeal }>(`/api/v1/appeals/${appealId}`)
-    .then(response => response.appeal)
-}
-
 function getAuthoritativeModerationAppealClient(appealId: string): Promise<ModerationAppeal> {
   return clientApi
     .get<{ appeal: ModerationAppeal }>(`/api/v1/appeals/${appealId}`, {

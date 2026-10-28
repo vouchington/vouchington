@@ -93,17 +93,10 @@ export const OAUTH_MANAGEMENT_DECLARATIONS = [
     'web.admin.oauth-clients.list',
     webAdminOAuthClientsList,
     context =>
-      context.client.adminOAuthClients.fetchAdminOAuthClients({
+      context.server.adminOAuthClients.getAdminOAuthClients({
         verification: 'unverified',
         limit: 1,
       }),
-    [
-      context =>
-        context.server.adminOAuthClients.getAdminOAuthClients({
-          verification: 'unverified',
-          limit: 1,
-        }),
-    ],
   ),
   defineWebApiFixture<{ oauth_client: AdminOAuthClient }>()(
     'web.admin.oauth-clients.verify',

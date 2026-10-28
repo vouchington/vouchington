@@ -22,7 +22,6 @@ import * as clientCopyrightNoticeAssociationTarget from '../../../lib/api/client
 import * as clientDynamicConfig from '../../../lib/api/client/dynamic-config'
 import * as clientEntityRelations from '../../../lib/api/client/entity-relations'
 import * as clientFeatureFlags from '../../../lib/api/client/feature-flags'
-import * as clientFriendRecommendations from '../../../lib/api/client/friend-recommendations'
 import * as clientHouseholds from '../../../lib/api/client/households'
 import * as clientHouseholdInvitations from '../../../lib/api/client/household-invitations'
 import * as clientHostnames from '../../../lib/api/client/hostnames'
@@ -38,7 +37,6 @@ import * as clientOAuthApps from '../../../lib/api/client/oauth-apps'
 import * as clientOAuthGrants from '../../../lib/api/client/oauth-grants'
 import * as clientPodcastEpisodeChapters from '../../../lib/api/client/podcast-episode-chapters'
 import * as clientPsql from '../../../lib/api/client/psql'
-import * as clientReferralClicks from '../../../lib/api/client/referral-clicks'
 import * as clientReferralLinks from '../../../lib/api/client/referral-links'
 import * as clientReports from '../../../lib/api/client/reports'
 import * as clientStories from '../../../lib/api/client/stories'
@@ -104,7 +102,6 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     dynamicConfig: clientDynamicConfig,
     entityRelations: clientEntityRelations,
     featureFlags: clientFeatureFlags,
-    friendRecommendations: clientFriendRecommendations,
     households: clientHouseholds,
     householdInvitations: clientHouseholdInvitations,
     hostnames: clientHostnames,
@@ -120,7 +117,6 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     oauthGrants: clientOAuthGrants,
     podcastEpisodeChapters: clientPodcastEpisodeChapters,
     psql: clientPsql,
-    referralClicks: clientReferralClicks,
     referralLinks: clientReferralLinks,
     reports: clientReports,
     stories: clientStories,

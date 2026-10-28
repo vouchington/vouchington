@@ -17,7 +17,6 @@ import { clientApi } from '../instance'
 import {
   applyVoteRingPenalty,
   getVoteIntegrityFlagClient,
-  getVoteIntegrityFlagsClient,
   getVoteIntegrityPenaltiesClient,
   getVoteIntegrityPenaltyClient,
   resolveVoteIntegrityFlag,
@@ -32,24 +31,6 @@ const mockDelete = vi.mocked(clientApi.delete)
 describe('vote-integrity client api helpers', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  it('forwards vote flag status and cursor query values to the API client', async () => {
-    mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-    await getVoteIntegrityFlagsClient({ status: 'resolved', after: 'cursor ?#%' })
-
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/vote-integrity/flags', {
-      searchParams: { status: 'resolved', after: 'cursor ?#%' },
-    })
-  })
-
-  it('uses an empty vote flag query when no filters are selected', async () => {
-    mockGet.mockResolvedValueOnce({ results: [], page_info: {} })
-
-    await getVoteIntegrityFlagsClient()
-
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/vote-integrity/flags', { searchParams: {} })
   })
 
   it('keeps the mandatory flag source when optional penalty filters are absent', async () => {

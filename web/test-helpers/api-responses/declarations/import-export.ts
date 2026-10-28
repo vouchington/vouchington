@@ -5,13 +5,13 @@ import nativeImportExportTopicsExportDefault from '../../../../api-fixtures/v1/r
 import nativeImportExportTopicsExportDownload from '../../../../api-fixtures/v1/responses/native.import-export.topics.export.download.json'
 import nativeImportExportTopicsImportOutcomes from '../../../../api-fixtures/v1/responses/native.import-export.topics.import.outcomes.json'
 import type {
-  ExportTopic,
   RssFeedImportStatus,
   RssFeedImportSubmission,
   TopicImportResult,
 } from '@/lib/api/client/import-export'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 import { clientFetch } from '@/lib/api/client/raw-fetch'
+import type { ExportTopic } from '@/test-helpers/api-fixture-response-types'
 
 const importId = '70000000-0000-7000-8000-000000000001'
 
@@ -19,12 +19,22 @@ export const IMPORT_EXPORT_DECLARATIONS = [
   defineWebApiFixture<RssFeedImportStatus>()(
     'native.import-export.rss-feeds.status.partial',
     nativeImportExportRssFeedsStatusPartial,
-    context => context.client.importExport.getRssFeedImport(importId),
+    async () => {
+      const response = await clientFetch(`/api/v1/my/import/rss-feeds/${importId}`)
+      if (!response.ok)
+        throw new Error(`RSS import status fixture fetch failed: ${response.status}`)
+      return response.json() as Promise<RssFeedImportStatus>
+    },
   ),
   defineWebApiFixture<RssFeedImportStatus>()(
     'native.import-export.rss-feeds.status.retrying',
     nativeImportExportRssFeedsStatusRetrying,
-    context => context.client.importExport.getRssFeedImport(importId),
+    async () => {
+      const response = await clientFetch(`/api/v1/my/import/rss-feeds/${importId}`)
+      if (!response.ok)
+        throw new Error(`RSS import status fixture fetch failed: ${response.status}`)
+      return response.json() as Promise<RssFeedImportStatus>
+    },
   ),
   defineWebApiFixture<RssFeedImportSubmission>()(
     'native.import-export.rss-feeds.submit.default',

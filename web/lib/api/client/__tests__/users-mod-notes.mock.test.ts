@@ -13,12 +13,7 @@ vi.mock(
 )
 
 import { clientApi } from '../instance'
-import {
-  getUserModerationContext,
-  listUserModNotes,
-  createUserModNote,
-  deleteUserModNote,
-} from '../users'
+import { getUserModerationContext, createUserModNote, deleteUserModNote } from '../users'
 
 const mockGet = vi.mocked(clientApi.get)
 const mockPost = vi.mocked(clientApi.post)
@@ -46,27 +41,6 @@ describe('users mod-notes API client', () => {
       const result = await getUserModerationContext('user-abc')
       expect(mockGet).toHaveBeenCalledWith('/api/v1/users/user-abc/moderation-context')
       expect(result).toEqual(mockResponse)
-    })
-  })
-
-  describe('listUserModNotes', () => {
-    it('GETs /api/v1/users/:userId/mod-notes with search params', async () => {
-      const mockResponse = { notes: [], page_info: { has_next_page: false } }
-      mockGet.mockResolvedValueOnce(mockResponse)
-      const result = await listUserModNotes('user-abc', { after: 'some-cursor', limit: 10 })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/users/user-abc/mod-notes', {
-        searchParams: { after: 'some-cursor', limit: 10 },
-      })
-      expect(result).toEqual(mockResponse)
-    })
-
-    it('GETs /api/v1/users/:userId/mod-notes with no options', async () => {
-      const mockResponse = { notes: [], page_info: { has_next_page: false } }
-      mockGet.mockResolvedValueOnce(mockResponse)
-      await listUserModNotes('user-abc')
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/users/user-abc/mod-notes', {
-        searchParams: {},
-      })
     })
   })
 

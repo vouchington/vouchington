@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import * as clientRoutes from '@/lib/api/client'
+import { createIntegrationClientReads } from '@/test-helpers/integration-client-reads'
 import * as serverRoutes from '@/lib/api/server'
 import { installRoutesExtendedHarness } from '../../test-helpers/routes-extended-harness.mts'
+
+const integrationClientReads = createIntegrationClientReads(clientRoutes.clientApi)
 
 function unset(target: object, key: string) {
   delete (target as Record<string, unknown>)[key]
@@ -85,7 +88,7 @@ describe('routes-extended', () => {
   describe('my referral-clicks client routes', () => {
     it('getMyReferralClicksClient returns 200', async () => {
       const res = await harness.withClientRuntime(
-        () => clientRoutes.getMyReferralClicksClient(),
+        () => integrationClientReads.getMyReferralClicksClient(),
         harness.userCookieHeader,
       )
       expect(res).toBeDefined()

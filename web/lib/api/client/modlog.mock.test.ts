@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchCommunityModlog, fetchAdminModlog } from './modlog'
+import { fetchCommunityModlog } from './modlog'
 
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),
@@ -40,37 +40,6 @@ describe('modlog client api helpers', () => {
       await fetchCommunityModlog('my-community', 'cursor-abc')
       expect(mockGet).toHaveBeenCalledWith('/api/v1/communities/my-community/modlog', {
         searchParams: { after: 'cursor-abc' },
-      })
-    })
-  })
-
-  describe('fetchAdminModlog', () => {
-    it('calls GET /api/v1/admin/modlog without params', async () => {
-      await fetchAdminModlog()
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/admin/modlog', {
-        searchParams: {
-          community_id: undefined,
-          actor_user_id: undefined,
-          action_type: undefined,
-          after: undefined,
-        },
-      })
-    })
-
-    it('passes filters when provided', async () => {
-      await fetchAdminModlog({
-        communityId: 'c-1',
-        actorId: 'u-1',
-        actionType: 'ban',
-        after: 'cursor',
-      })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/admin/modlog', {
-        searchParams: {
-          community_id: 'c-1',
-          actor_user_id: 'u-1',
-          action_type: 'ban',
-          after: 'cursor',
-        },
       })
     })
   })

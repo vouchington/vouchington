@@ -11,19 +11,3 @@ export function fetchCommunityModlog(
     searchParams: { after },
   })
 }
-
-export function fetchAdminModlog(params?: {
-  communityId?: string
-  actorId?: string
-  actionType?: string
-  after?: string
-}): Promise<ModlogResponseBody> {
-  return clientApi.get<ModlogResponseBody>('/api/v1/admin/modlog', {
-    searchParams: {
-      community_id: params?.communityId,
-      actor_user_id: params?.actorId,
-      action_type: params?.actionType,
-      after: params?.after,
-    },
-  })
-}

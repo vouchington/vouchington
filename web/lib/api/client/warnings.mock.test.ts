@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  issueAdminUserWarning,
-  issueCommunityUserWarning,
-  getMyWarningsClient,
-  getAdminUserWarnings,
-} from './warnings'
+import { issueAdminUserWarning, issueCommunityUserWarning, getAdminUserWarnings } from './warnings'
 
 const { mockPost, mockGet } = vi.hoisted(() => ({
   mockPost: vi.fn<VitestLooseMock>(),
@@ -88,23 +83,6 @@ describe('warnings client api helpers', () => {
       const body = { userId: 'user-1', reason: 'Spam' }
       await issueCommunityUserWarning('my community', body)
       expect(mockPost).toHaveBeenCalledWith('/api/v1/communities/my%20community/warnings', body)
-    })
-  })
-
-  describe('getMyWarningsClient', () => {
-    it('calls GET /api/v1/my/warnings with no params', async () => {
-      await getMyWarningsClient()
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/my/warnings')
-    })
-
-    it('forwards after and limit as query string', async () => {
-      await getMyWarningsClient({ after: 'cursor-abc', limit: 10 })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/my/warnings?after=cursor-abc&limit=10')
-    })
-
-    it('omits null after cursor from query string', async () => {
-      await getMyWarningsClient({ after: null, limit: 5 })
-      expect(mockGet).toHaveBeenCalledWith('/api/v1/my/warnings?limit=5')
     })
   })
 

@@ -16,7 +16,7 @@ import { clientApi } from '../instance'
 import { getApiKeys } from '../api-keys'
 import { fetchCaptchaConfig } from '../captcha-config'
 import { getFeatureFlagsClient } from '../feature-flags'
-import { exportRssFeeds, getRssFeedImport } from '../import-export'
+import { exportRssFeeds } from '../import-export'
 import { unsubscribeEmailToken } from '../my'
 import { searchRssFeedsClient } from '../rss-feeds'
 
@@ -59,22 +59,6 @@ describe('simple client api helpers', () => {
 
   it('returns the direct RSS export download URL', () => {
     expect(exportRssFeeds()).toBe('/api/v1/my/export/rss-feeds')
-  })
-
-  it('loads RSS feed import status through the client request helper', async () => {
-    const response = { import: { id: 'import-1' }, rows: [] }
-    mockGet.mockResolvedValueOnce(response)
-
-    await expect(getRssFeedImport('import-1')).resolves.toBe(response)
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/my/import/rss-feeds/import-1')
-  })
-
-  it('requests the next page of an import status with its cursor', async () => {
-    mockGet.mockResolvedValueOnce({ import: { id: 'import-1' }, rows: [] })
-
-    await getRssFeedImport('import-1', { after: 'a b' })
-
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/my/import/rss-feeds/import-1?after=a%20b')
   })
 
   it('searches RSS feeds and returns results array', async () => {

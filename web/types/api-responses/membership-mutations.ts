@@ -1,4 +1,4 @@
-import type { MembershipPurchaseProvider, MembershipVerificationReasonCode } from './memberships'
+import type { MembershipPurchaseProvider } from './memberships'
 
 export type GrantMembershipResponseBody =
   | { membership: null; grant: { id: string }; queued: true }
@@ -21,25 +21,6 @@ export interface MembershipPurchaseIntentResponseBody {
         }
       | { kind: 'microsoft_store'; product_id: string; sku_id: string | null }
     replayed: boolean
-  }
-}
-
-export interface MembershipVerificationResponseBody {
-  verification: {
-    id: string
-    provider: MembershipPurchaseProvider
-    status: 'pending' | 'verified' | 'conflict' | 'rejected'
-    reason_code: MembershipVerificationReasonCode | null
-    created_at: string
-  }
-}
-
-export interface MicrosoftStoreServiceTicketsResponseBody {
-  service_tickets: {
-    collections_service_ticket: string
-    purchase_service_ticket: string
-    publisher_user_id: string
-    expires_at: string
   }
 }
 
