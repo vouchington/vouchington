@@ -75,7 +75,7 @@ export function ModlogFilters({ community, actor }: { community?: string; actor?
         <UserAutocomplete
           key={actor ?? 'all'}
           ariaLabel='Filter by user'
-          label='User'
+          label={actor ? `@${actor}` : ''}
           value={null}
           onChange={selectActor}
           placeholder={actor ? `User: @${actor}` : 'Filter by user'}

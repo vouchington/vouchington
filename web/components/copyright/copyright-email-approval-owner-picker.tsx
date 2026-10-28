@@ -26,7 +26,7 @@ export function CopyrightEmailApprovalOwnerPicker({
     return (
       <PostAutocomplete
         key={`${target.id}:${target.surface}`}
-        label='Post'
+        label=''
         value={target.post_id || null}
         onChange={onPost}
       />
@@ -35,7 +35,7 @@ export function CopyrightEmailApprovalOwnerPicker({
     return (
       <UserAutocomplete
         key={`${target.id}:${target.surface}`}
-        label='User'
+        label=''
         value={target.user_id || null}
         onChange={onUser}
         clearOnTextEdit
@@ -45,7 +45,7 @@ export function CopyrightEmailApprovalOwnerPicker({
     return (
       <TopicAutocomplete
         key={`${target.id}:${target.surface}`}
-        label='Topic'
+        label=''
         value={target.topic_id || null}
         onChange={onTopic}
         clearOnTextEdit
