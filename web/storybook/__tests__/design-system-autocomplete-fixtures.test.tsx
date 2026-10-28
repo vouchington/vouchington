@@ -114,6 +114,8 @@ describe('design system autocomplete fixtures', () => {
     fireEvent.change(screen.getByLabelText('Search urls'), { target: { value: 'example' } })
     fireEvent.click(await screen.findByText('example.com/card-guide'))
 
-    await waitFor(() => expect(screen.getByText('Selected tags: topic-2, post-1, url-1')).toBeDefined())
+    await waitFor(() =>
+      expect(screen.getByText('Selected tags: topic-2, post-1, url-1')).toBeDefined(),
+    )
   })
 })
