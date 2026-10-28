@@ -1133,11 +1133,19 @@ Topic activity metrics for current topic reads.
     ( SELECT count(DISTINCT posts.id) AS count
            FROM ((( SELECT rel.subject_id AS post_id
                    FROM relation__post__category__topic rel
-                  WHERE ((rel.object_id = topic_metrics.topic_id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))
+                  WHERE ((
+                        CASE
+                            WHEN ((rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision)) THEN rel.object_id
+                            ELSE NULL::uuid
+                        END = topic_metrics.topic_id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))
                 UNION ALL
                  SELECT alias_relation.subject_id AS post_id
                    FROM (topic_aliases alias
-                     JOIN relation__post__category__topic_alias alias_relation ON (((alias_relation.object_id = alias.id) AND (alias_relation.deleted_at IS NULL) AND (alias_relation.votes_score_net > (0)::double precision))))
+                     JOIN relation__post__category__topic_alias alias_relation ON (((
+                        CASE
+                            WHEN ((alias_relation.deleted_at IS NULL) AND (alias_relation.votes_score_net > (0)::double precision)) THEN alias_relation.object_id
+                            ELSE NULL::uuid
+                        END = alias.id) AND (alias_relation.deleted_at IS NULL) AND (alias_relation.votes_score_net > (0)::double precision))))
                   WHERE (alias.topic_id = topic_metrics.topic_id)) candidate
              JOIN posts ON ((posts.id = candidate.post_id)))
              JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = posts.id)))
