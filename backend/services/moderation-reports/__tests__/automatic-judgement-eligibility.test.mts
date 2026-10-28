@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import {
   createTestUser,
   deleteTestPost,
@@ -30,24 +31,32 @@ describe('automatic report judgement eligibility', () => {
       slug: `platform-ai-${crypto.randomUUID()}`,
       markdown: 'Platform post',
     })
+    const createdAt = new Date(Date.now() + 60_000)
+    const upperBound = new Date(createdAt.getTime() + 1000)
+    const beforeCursor = {
+      id: timestampToUuidv7LowerBound(upperBound.getTime()),
+      createdAt: upperBound.toISOString(),
+    }
     const communityReportId = await insertTestModerationReport({
       reporterUserId: reporter.id,
       entityType: 'post',
       entityId: communityPostId,
-      createdAt: new Date(Date.now() + 60_000),
+      createdAt,
     })
     const platformReportId = await insertTestModerationReport({
       reporterUserId: reporter.id,
       entityType: 'post',
       entityId: platformPostId,
-      createdAt: new Date(Date.now() + 60_000),
+      createdAt,
     })
-    const listFlat = () => listModerationReports({ limit: 100, sort: 'created_at_desc' })
+    const listFlat = () =>
+      listModerationReports({ limit: 100, sort: 'created_at_desc', beforeCursor })
     const listClustered = () =>
       listClusteredModerationReports({
         limit: 100,
         sort: 'created_at_desc',
         cursorScope: crypto.randomUUID(),
+        beforeCursor,
       })
     const restore = overrideDynamicConfigFieldsForTest(moderationAiConfig, {
       community_judgement_enabled: false,
@@ -85,6 +94,7 @@ describe('automatic report judgement eligibility', () => {
         const redacted = await listRedactedModerationReports({
           limit: 100,
           sort: 'created_at_desc',
+          beforeCursor,
         })
         expect(redacted.reports.find(report => report.id === communityReportId)).not.toHaveProperty(
           'automatic_judgement_enabled',

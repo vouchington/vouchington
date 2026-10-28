@@ -47,6 +47,9 @@ export async function requireTopicClaimOnTopic(
       tc.revoked_at, tc.revoked_by_id, tc.revocation_reason,
       tc.verification_hostname_id, tc.verification_token_issued_at,
       tc.domain_verified_at, tc.created_at, tc.updated_at,
+      COALESCE(topic_row.name, topic_row.slug, 'topic') AS topic_name,
+      claimant_profile.username AS claimant_username,
+      claimant_profile.verified_display_name AS claimant_display_name,
       tc.verification_token_hash,
       topic_row.hostname_id AS current_hostname_id,
       current_hostname.hostname AS current_hostname,
@@ -55,6 +58,7 @@ export async function requireTopicClaimOnTopic(
     JOIN topics topic_row ON topic_row.id = matched_topic.id
     LEFT JOIN url_hostnames current_hostname ON current_hostname.id = topic_row.hostname_id
     LEFT JOIN topic_claims tc ON tc.id = $2 AND tc.topic_id = matched_topic.id
+    LEFT JOIN view_users_public claimant_profile ON claimant_profile.id = tc.claimant_user_id
     LEFT JOIN url_hostnames verification_hostname
       ON verification_hostname.id = tc.verification_hostname_id`,
     [...values, claimId],

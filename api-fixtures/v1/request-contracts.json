@@ -19466,20 +19466,20 @@
         "nbf": {
           "type": "number"
         },
-        "refresh_sid": {
-          "format": "uuid",
-          "type": "string"
-        },
         "refresh_uid": {
-          "format": "uuid",
-          "type": "string"
+          "type": "string",
+          "format": "uuid"
+        },
+        "refresh_sid": {
+          "type": "string",
+          "format": "uuid"
         },
         "sub": {
           "type": "string"
         },
         "ua_hash": {
-          "pattern": "^[a-f0-9]{64}$",
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         }
       },
       "required": ["did"],
@@ -24315,10 +24315,6 @@
             "did": {
               "type": "string"
             },
-            "mfa": {
-              "const": true,
-              "type": "boolean"
-            },
             "mpl": {
               "anyOf": [
                 {
@@ -24356,6 +24352,10 @@
                   "type": "string"
                 }
               ]
+            },
+            "mfa": {
+              "const": true,
+              "type": "boolean"
             }
           },
           "required": ["did", "sid", "uid"],
@@ -24369,10 +24369,6 @@
               "properties": {
                 "did": {
                   "type": "string"
-                },
-                "mfa": {
-                  "const": true,
-                  "type": "boolean"
                 },
                 "mpl": {
                   "anyOf": [
@@ -24411,6 +24407,10 @@
                       "type": "string"
                     }
                   ]
+                },
+                "mfa": {
+                  "const": true,
+                  "type": "boolean"
                 }
               },
               "required": ["did", "sid", "uid"],
@@ -24689,19 +24689,6 @@
     "ModerationAppeal": {
       "additionalProperties": false,
       "properties": {
-        "ai_draft_requested_run_id": {
-          "type": "string"
-        },
-        "ai_draft_run_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
         "ai_drafted_at": {
           "anyOf": [
             {
@@ -24971,6 +24958,19 @@
               "type": "string"
             }
           ]
+        },
+        "ai_draft_run_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "ai_draft_requested_run_id": {
+          "type": "string"
         }
       },
       "required": [
@@ -25866,6 +25866,9 @@
             }
           ]
         },
+        "id": {
+          "type": "string"
+        },
         "household_id": {
           "anyOf": [
             {
@@ -25875,9 +25878,6 @@
               "type": "string"
             }
           ]
-        },
-        "id": {
-          "type": "string"
         },
         "moderation_report_id": {
           "anyOf": [
@@ -26262,9 +26262,6 @@
             "nonce": {
               "type": "string"
             },
-            "re_auth_token": {
-              "type": "string"
-            },
             "token": {
               "type": "string"
             },
@@ -26276,6 +26273,9 @@
                 }
               },
               "type": "object"
+            },
+            "re_auth_token": {
+              "type": "string"
             }
           },
           "required": ["token"],
@@ -26303,10 +26303,10 @@
             "codeVerifier": {
               "type": "string"
             },
-            "re_auth_token": {
+            "redirectUri": {
               "type": "string"
             },
-            "redirectUri": {
+            "re_auth_token": {
               "type": "string"
             }
           },
@@ -34579,10 +34579,6 @@
         "jti": {
           "type": "string"
         },
-        "mfa": {
-          "const": true,
-          "type": "boolean"
-        },
         "mpe": {
           "type": "number"
         },
@@ -34621,8 +34617,8 @@
           "type": "number"
         },
         "ua_hash": {
-          "pattern": "^[a-f0-9]{64}$",
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         },
         "uid": {
           "anyOf": [
@@ -34643,6 +34639,10 @@
               "type": "string"
             }
           ]
+        },
+        "mfa": {
+          "const": true,
+          "type": "boolean"
         }
       },
       "required": ["did", "sid", "uid"],
@@ -38849,6 +38849,9 @@
         "input": {
           "type": "string"
         },
+        "topic_slug": {
+          "type": "string"
+        },
         "status": {
           "enum": [
             "already_following",
@@ -38858,9 +38861,6 @@
             "pending",
             "source_created"
           ],
-          "type": "string"
-        },
-        "topic_slug": {
           "type": "string"
         }
       },
@@ -39192,10 +39192,10 @@
     "VerifyEmailAddressRequest": {
       "additionalProperties": false,
       "properties": {
-        "re_auth_token": {
+        "token": {
           "type": "string"
         },
-        "token": {
+        "re_auth_token": {
           "type": "string"
         }
       },
@@ -40405,7 +40405,14 @@
           "type": "string"
         },
         "created_by_id": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "creator_display_name": {
           "anyOf": [
@@ -40813,6 +40820,130 @@
     }
   },
   "operations": {
+    "POST:/api/v1/auth/re-auth/passkeys/options": {
+      "body": {
+        "type": "object",
+        "properties": {
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["passkey_id"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/passkeys/verification": {
+      "body": {
+        "type": "object",
+        "properties": {
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "response": {
+            "type": "object"
+          }
+        },
+        "required": ["passkey_id", "flow_id", "response"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/challenges": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["apple", "google"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/verification": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["apple", "google"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "credential": {
+            "type": "string"
+          }
+        },
+        "required": ["flow_id", "credential"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/authorizations": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["facebook", "x", "linkedin", "microsoft", "github"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "callback_mode": {
+            "type": "string",
+            "enum": ["web", "native"]
+          },
+          "completion_proof_challenge": {
+            "type": "string"
+          }
+        },
+        "required": ["callback_mode"],
+        "additionalProperties": false
+      }
+    },
+    "POST:/api/v1/auth/re-auth/providers/:provider/proofs": {
+      "path": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["facebook", "x", "linkedin", "microsoft", "github"]
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "flow_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": ["flow_id"],
+        "additionalProperties": false
+      }
+    },
     "DELETE:/api/v1/admin/oauth-clients/:id/verification": {
       "path": {
         "properties": {
@@ -40837,25 +40968,16 @@
     },
     "DELETE:/api/v1/auth/bluesky/link": {
       "body": {
-        "additionalProperties": false,
+        "type": "object",
         "properties": {
           "re_auth_token": {
             "type": "string"
           }
         },
-        "type": "object"
+        "additionalProperties": false
       }
     },
     "DELETE:/api/v1/auth/oauth/:provider/connect": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "re_auth_token": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "path": {
         "properties": {
           "provider": {
@@ -40864,6 +40986,15 @@
         },
         "required": ["provider"],
         "type": "object"
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "re_auth_token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "DELETE:/api/v1/auth/passkeys/:id": {
@@ -41425,15 +41556,6 @@
       }
     },
     "DELETE:/api/v1/my/email-addresses/:email": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "re_auth_token": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "path": {
         "properties": {
           "email": {
@@ -41442,6 +41564,15 @@
         },
         "required": ["email"],
         "type": "object"
+      },
+      "body": {
+        "type": "object",
+        "properties": {
+          "re_auth_token": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "DELETE:/api/v1/my/landing-pages/:pageId": {
@@ -45479,20 +45610,6 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/reports/:id/judgements/:runId": {
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "runId": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "runId"],
-        "type": "object"
-      }
-    },
     "GET:/api/v1/rss-feed-categories": {
       "query": {
         "properties": {
@@ -48053,6 +48170,16 @@
         "$ref": "#/components/schemas/LogoutRequest"
       }
     },
+    "POST:/api/v1/auth/native/email-address/login": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressLoginBody"
+      }
+    },
+    "POST:/api/v1/auth/native/email-address/tokens": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressTokenBody"
+      }
+    },
     "POST:/api/v1/auth/mfa/passkeys/authentication/options": {
       "body": {
         "additionalProperties": false,
@@ -48110,16 +48237,6 @@
           }
         },
         "type": "object"
-      }
-    },
-    "POST:/api/v1/auth/native/email-address/login": {
-      "body": {
-        "$ref": "#/components/schemas/EmailAddressLoginBody"
-      }
-    },
-    "POST:/api/v1/auth/native/email-address/tokens": {
-      "body": {
-        "$ref": "#/components/schemas/EmailAddressTokenBody"
       }
     },
     "POST:/api/v1/auth/oauth/:provider/authorizations": {
@@ -48180,135 +48297,11 @@
           "name": {
             "type": "string"
           },
+          "response": {},
           "re_auth_token": {
             "type": "string"
-          },
-          "response": {}
-        },
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/auth/re-auth/passkeys/options": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "passkey_id": {
-            "format": "uuid",
-            "type": "string"
           }
         },
-        "required": ["passkey_id"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/auth/re-auth/passkeys/verification": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "flow_id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "passkey_id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "response": {
-            "type": "object"
-          }
-        },
-        "required": ["passkey_id", "flow_id", "response"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/auth/re-auth/providers/:provider/authorizations": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "callback_mode": {
-            "enum": ["web", "native"],
-            "type": "string"
-          },
-          "completion_proof_challenge": {
-            "type": "string"
-          }
-        },
-        "required": ["callback_mode"],
-        "type": "object"
-      },
-      "path": {
-        "additionalProperties": false,
-        "properties": {
-          "provider": {
-            "enum": ["facebook", "x", "linkedin", "microsoft", "github"],
-            "type": "string"
-          }
-        },
-        "required": ["provider"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/auth/re-auth/providers/:provider/challenges": {
-      "path": {
-        "additionalProperties": false,
-        "properties": {
-          "provider": {
-            "enum": ["apple", "google"],
-            "type": "string"
-          }
-        },
-        "required": ["provider"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/auth/re-auth/providers/:provider/proofs": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "flow_id": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "required": ["flow_id"],
-        "type": "object"
-      },
-      "path": {
-        "additionalProperties": false,
-        "properties": {
-          "provider": {
-            "enum": ["facebook", "x", "linkedin", "microsoft", "github"],
-            "type": "string"
-          }
-        },
-        "required": ["provider"],
-        "type": "object"
-      }
-    },
-    "POST:/api/v1/auth/re-auth/providers/:provider/verification": {
-      "body": {
-        "additionalProperties": false,
-        "properties": {
-          "credential": {
-            "type": "string"
-          },
-          "flow_id": {
-            "format": "uuid",
-            "type": "string"
-          }
-        },
-        "required": ["flow_id", "credential"],
-        "type": "object"
-      },
-      "path": {
-        "additionalProperties": false,
-        "properties": {
-          "provider": {
-            "enum": ["apple", "google"],
-            "type": "string"
-          }
-        },
-        "required": ["provider"],
         "type": "object"
       }
     },
@@ -50763,6 +50756,20 @@
         "$ref": "#/components/schemas/CreateModerationReportRequest"
       }
     },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "runId"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/reports/:id/judgements": {
       "path": {
         "properties": {
@@ -51966,14 +51973,14 @@
     "GET:/api/v1/report-integrity/penalties/review-due": {
       "additionalProperties": false,
       "properties": {
-        "page_info": {
-          "$ref": "#/components/schemas/PageInfo"
-        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/ReportAbusePenaltyReviewDue"
           },
           "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
         }
       },
       "required": ["page_info", "results"],
@@ -52062,14 +52069,14 @@
     "GET:/api/v1/vote-integrity/penalties/review-due": {
       "additionalProperties": false,
       "properties": {
-        "page_info": {
-          "$ref": "#/components/schemas/PageInfo"
-        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/VoteWeightPenaltyReviewDue"
           },
           "type": "array"
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
         }
       },
       "required": ["page_info", "results"],
@@ -52205,6 +52212,7 @@
       "type": "object"
     },
     "POST:/api/v1/rss-feeds": {
+      "type": "object",
       "additionalProperties": false,
       "properties": {
         "import": {
@@ -52214,8 +52222,7 @@
           "type": "string"
         }
       },
-      "required": ["import", "status_url"],
-      "type": "object"
+      "required": ["import", "status_url"]
     },
     "POST:/api/v1/stories/:storyId/discussions": {
       "$ref": "#/components/schemas/StoryPostResult"

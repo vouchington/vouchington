@@ -9603,6 +9603,9 @@
                           }
                         ]
                       },
+                      "id": {
+                        "type": "string"
+                      },
                       "household_id": {
                         "anyOf": [
                           {
@@ -9612,9 +9615,6 @@
                             "type": "string"
                           }
                         ]
-                      },
-                      "id": {
-                        "type": "string"
                       },
                       "moderation_report_id": {
                         "anyOf": [
@@ -13934,17 +13934,10 @@
               "type": "object",
               "anyOf": [
                 {
-                  "additionalProperties": false,
-                  "properties": {
-                    "import": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "status_url": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["import", "status_url"],
-                  "type": "object"
+                  "$ref": "#/$defs/S2"
+                },
+                {
+                  "$ref": "#/$defs/S2"
                 },
                 {
                   "additionalProperties": false,
@@ -14006,6 +13999,9 @@
                           "input": {
                             "type": "string"
                           },
+                          "topic_slug": {
+                            "type": "string"
+                          },
                           "status": {
                             "enum": [
                               "already_following",
@@ -14015,9 +14011,6 @@
                               "pending",
                               "source_created"
                             ],
-                            "type": "string"
-                          },
-                          "topic_slug": {
                             "type": "string"
                           }
                         },
@@ -14074,6 +14067,19 @@
                     "total_rows"
                   ],
                   "type": "object"
+                },
+                "S2": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "import": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "status_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["import", "status_url"]
                 }
               }
             },
@@ -14086,8 +14092,8 @@
               "voucha/requiredScopes": ["rss-feeds:read", "rss-feeds:write"],
               "voucha/optionOutputPointers": {
                 "submit": "#/anyOf/0",
-                "import": "#/anyOf/0",
-                "import_status": "#/anyOf/1"
+                "import": "#/anyOf/1",
+                "import_status": "#/anyOf/2"
               }
             }
           },
@@ -36421,7 +36427,14 @@
                           "type": "string"
                         },
                         "created_by_id": {
-                          "type": "string"
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         },
                         "creator_display_name": {
                           "anyOf": [
@@ -36905,42 +36918,35 @@
                         "additionalProperties": false,
                         "properties": {
                           "agent_moderation_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "created_at": {
                             "type": "string"
                           },
                           "details": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
+                            "$ref": "#/$defs/S3"
                           },
                           "entity_label": {
                             "type": "string"
                           },
                           "entity_relation_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "flag_type": {
                             "enum": ["ip_correlation", "velocity_spike"],
                             "type": "string"
                           },
                           "hostname": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "hostname_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "id": {
                             "type": "string"
                           },
                           "post_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "resolution": {
                             "anyOf": [
@@ -36959,22 +36965,22 @@
                             ]
                           },
                           "resolved_at": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "resolved_by_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "resolver_display_name": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "resolver_username": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "rss_feed_item_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           },
                           "topic_id": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S1"
                           }
                         },
                         "required": [
@@ -37017,7 +37023,7 @@
                               "const": "flag"
                             },
                             "source_flag_id": {
-                              "$ref": "#/$defs/S3"
+                              "$ref": "#/$defs/S1"
                             }
                           },
                           "required": ["source", "source_flag_id"],
@@ -37027,7 +37033,91 @@
                           "$ref": "#/$defs/S2"
                         },
                         "results": {
-                          "$ref": "#/$defs/S1"
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "created_by_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "creator_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "creator_username": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "penalty_multiplier": {
+                                "type": "number"
+                              },
+                              "reason": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "review_due_at": {
+                                "type": "string"
+                              },
+                              "reviewed_at": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "reviewed_by_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoked_at": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoked_by_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoker_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoker_username": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "source_flag_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "source_flag_type": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "user_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "user_id": {
+                                "type": "string"
+                              },
+                              "user_username": {
+                                "$ref": "#/$defs/S1"
+                              }
+                            },
+                            "required": [
+                              "created_at",
+                              "created_by_id",
+                              "creator_display_name",
+                              "creator_username",
+                              "id",
+                              "penalty_multiplier",
+                              "reason",
+                              "review_due_at",
+                              "reviewed_at",
+                              "reviewed_by_id",
+                              "revoked_at",
+                              "revoked_by_id",
+                              "revoker_display_name",
+                              "revoker_username",
+                              "source_flag_id",
+                              "source_flag_type",
+                              "user_display_name",
+                              "user_id",
+                              "user_username"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
                         }
                       },
                       "required": ["page_info", "results"],
@@ -37036,11 +37126,95 @@
                     {
                       "additionalProperties": false,
                       "properties": {
+                        "results": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "created_by_id": {
+                                "type": "string"
+                              },
+                              "creator_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "creator_username": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "penalty_multiplier": {
+                                "type": "number"
+                              },
+                              "reason": {
+                                "$ref": "#/$defs/S3"
+                              },
+                              "review_due_at": {
+                                "type": "string"
+                              },
+                              "reviewed_at": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "reviewed_by_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoked_at": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoked_by_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoker_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "revoker_username": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "source_flag_id": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "source_flag_type": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "user_display_name": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "user_id": {
+                                "type": "string"
+                              },
+                              "user_username": {
+                                "$ref": "#/$defs/S1"
+                              }
+                            },
+                            "required": [
+                              "created_at",
+                              "created_by_id",
+                              "creator_display_name",
+                              "creator_username",
+                              "id",
+                              "penalty_multiplier",
+                              "reason",
+                              "review_due_at",
+                              "reviewed_at",
+                              "reviewed_by_id",
+                              "revoked_at",
+                              "revoked_by_id",
+                              "revoker_display_name",
+                              "revoker_username",
+                              "source_flag_id",
+                              "source_flag_type",
+                              "user_display_name",
+                              "user_id",
+                              "user_username"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
                         "page_info": {
                           "$ref": "#/$defs/S2"
-                        },
-                        "results": {
-                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["page_info", "results"],
@@ -37051,208 +37225,26 @@
               ],
               "$defs": {
                 "S1": {
-                  "items": {
-                    "additionalProperties": false,
-                    "properties": {
-                      "created_at": {
-                        "type": "string"
-                      },
-                      "created_by_id": {
-                        "type": "string"
-                      },
-                      "creator_display_name": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "creator_username": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "id": {
-                        "type": "string"
-                      },
-                      "penalty_multiplier": {
-                        "type": "number"
-                      },
-                      "reason": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "review_due_at": {
-                        "type": "string"
-                      },
-                      "reviewed_at": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "reviewed_by_id": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "revoked_at": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "revoked_by_id": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "revoker_display_name": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "revoker_username": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "source_flag_id": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "source_flag_type": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "user_display_name": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      },
-                      "user_id": {
-                        "type": "string"
-                      },
-                      "user_username": {
-                        "anyOf": [
-                          {
-                            "type": "null"
-                          },
-                          {
-                            "type": "string"
-                          }
-                        ]
-                      }
+                  "anyOf": [
+                    {
+                      "type": "null"
                     },
-                    "required": [
-                      "created_at",
-                      "created_by_id",
-                      "creator_display_name",
-                      "creator_username",
-                      "id",
-                      "penalty_multiplier",
-                      "reason",
-                      "review_due_at",
-                      "reviewed_at",
-                      "reviewed_by_id",
-                      "revoked_at",
-                      "revoked_by_id",
-                      "revoker_display_name",
-                      "revoker_username",
-                      "source_flag_id",
-                      "source_flag_type",
-                      "user_display_name",
-                      "user_id",
-                      "user_username"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
+                    {
+                      "type": "string"
+                    }
+                  ]
                 },
                 "S2": {
                   "additionalProperties": false,
                   "properties": {
                     "end_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "$ref": "#/$defs/S1"
                     },
                     "has_next_page": {
                       "type": "boolean"
                     },
                     "start_cursor": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["end_cursor", "has_next_page", "start_cursor"],
@@ -37261,10 +37253,10 @@
                 "S3": {
                   "anyOf": [
                     {
-                      "type": "null"
+                      "type": "string"
                     },
                     {
-                      "type": "string"
+                      "type": "null"
                     }
                   ]
                 }

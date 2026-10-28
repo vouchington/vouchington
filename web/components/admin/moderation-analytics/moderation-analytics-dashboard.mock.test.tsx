@@ -105,7 +105,7 @@ describe('ModerationAnalyticsDashboard', () => {
     expect(screen.getByText('Spam Link')).toBeDefined()
     expect(screen.getByText('Bot')).toBeDefined()
     expect(screen.getByText('High')).toBeDefined()
-    expect(screen.getByText('@moduser')).toBeDefined()
+    expect(screen.getByText('Moderator Name')).toBeDefined()
     expect(screen.getByText('Remove (7)')).toBeDefined()
     expect(screen.getAllByTestId('bar-name')).toHaveLength(2)
 
@@ -210,7 +210,9 @@ function makeMetrics(overrides: Partial<ModerationAnalytics> = {}): ModerationAn
           weekly_counts: [],
         },
       ],
-      users: { 'user-1': { username: 'moduser' } },
+      users: {
+        'user-1': { username: 'moduser', verified_display_name: 'Moderator Name' },
+      },
     },
     appeals: {
       total_closed: 4,
