@@ -1,25 +1,21 @@
 import { it, expect, describe } from 'vitest'
-import {
-  getUrlHostnameByAny,
-  getUrlHostnameById,
-  getUrlHostnameCrawlerDetailsById,
-} from './get.mts'
+import { getUrlHostnameByAny, getUrlHostnameCrawlerDetailsById } from './get.mts'
 import { upsertUrlHostnames } from './upsert.mts'
 
 describe('get.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
 
-  it('getUrlHostnameById returns null when hostname does not exist', async () => {
-    const hostname = await getUrlHostnameById('00000000-0000-0000-0000-000000000000')
+  it('getUrlHostnameByAny returns null when hostname does not exist', async () => {
+    const hostname = await getUrlHostnameByAny('00000000-0000-0000-0000-000000000000')
     expect(hostname).toBeNull()
   })
 
-  it('getUrlHostnameById returns hostname by ID', async () => {
+  it('getUrlHostnameByAny returns hostname by ID', async () => {
     const testHostname = `get-test-${suffix}.example.com`
     const hostnamesMap = await upsertUrlHostnames(null, [testHostname])
     const hostnameId = [...hostnamesMap.values()][0]
 
-    const retrieved = await getUrlHostnameById(hostnameId)
+    const retrieved = await getUrlHostnameByAny(hostnameId)
     expect(retrieved).toBeDefined()
     expect(retrieved!.id).toBe(hostnameId)
     expect(retrieved!.hostname).toBe(testHostname)

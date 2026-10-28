@@ -6,7 +6,7 @@ import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { isHostname } from '@ts-shared/utils/urls'
 
-export const getUrlHostnameById = async (id: string): Promise<ViewHostname | null> => {
+const getUrlHostnameById = async (id: string): Promise<ViewHostname | null> => {
   const { rows } = await read<ViewHostname>(sql`/* getUrlHostnameById */
     SELECT * FROM view_url_hostnames
     WHERE id = ${id}

@@ -6,9 +6,9 @@ import {
   type RobotsDependencies,
 } from './fetch-retry.mts'
 
-export const ROBOTS_RULES_CACHE_PREFIX = 'urls-domains-robots'
-export const ROBOTS_UNREACHABLE_CACHE_PREFIX = 'urls-domains-robots-unreachable'
-export const ROBOTS_UNREACHABLE_MARKER = 'unreachable'
+const ROBOTS_RULES_CACHE_PREFIX = 'urls-domains-robots'
+const ROBOTS_UNREACHABLE_CACHE_PREFIX = 'urls-domains-robots-unreachable'
+const ROBOTS_UNREACHABLE_MARKER = 'unreachable'
 const RULES_TTL_SECONDS = 60 * 60 * 24
 const UNREACHABLE_TTL_SECONDS = 15 * 60
 

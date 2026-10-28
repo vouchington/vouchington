@@ -17,16 +17,16 @@ import {
 import { upsertUrlHostnames } from './upsert.mts'
 import { recordHostnameDnsFailure } from './dns-failures.mts'
 import {
-  NETWORK_BACKOFF_FAILURE_THRESHOLD,
-  NETWORK_BACKOFF_MAX_STEP,
-  claimHostnameNetworkProbe,
-  getNetworkBackoffDurationMs,
   isHostnameAnsweredError,
   isHostnameUnreachableError,
   isOutsideHostnameNetworkBackoff,
   recordHostnameNetworkFailure,
   resetHostnameFailures,
 } from './network-backoff.mts'
+
+const NETWORK_BACKOFF_FAILURE_THRESHOLD = 10
+const NETWORK_BACKOFF_MAX_STEP = 5
+const EXPECTED_BACKOFF_DURATIONS_MS = [3_600_000, 7_200_000, 14_400_000, 28_800_000, 57_600_000]
 
 describe('network-backoff', () => {
   let analyticsDir: string
@@ -77,7 +77,7 @@ describe('network-backoff', () => {
 
     const events = await backoffEvents(hostname)
     expect(events.map(event => event.event_type)).toEqual(['network_backoff_opened'])
-    expect(Number(events[0]!.retry_after_ms)).toBe(getNetworkBackoffDurationMs(1))
+    expect(Number(events[0]!.retry_after_ms)).toBe(EXPECTED_BACKOFF_DURATIONS_MS[0])
   })
 
   it('restarts the count when the hostname answers in between', async () => {
@@ -105,10 +105,14 @@ describe('network-backoff', () => {
   it('lets exactly one caller claim the probe after expiry', async () => {
     const { id } = await makeHostname()
     await failTimes(id, NETWORK_BACKOFF_FAILURE_THRESHOLD)
-    expect(await claimHostnameNetworkProbe(id)).toBe(false)
+    const opened = (await getTestHostnameNetworkBackoff(id))!
+    expect(await isOutsideHostnameNetworkBackoff({ id, ...opened })).toBe(false)
     await expireTestHostnameNetworkBackoff(id)
 
-    const claims = await Promise.all(Array.from({ length: 5 }, () => claimHostnameNetworkProbe(id)))
+    const expired = (await getTestHostnameNetworkBackoff(id))!
+    const claims = await Promise.all(
+      Array.from({ length: 5 }, () => isOutsideHostnameNetworkBackoff({ id, ...expired })),
+    )
 
     expect(claims.filter(Boolean)).toHaveLength(1)
     const row = (await getTestHostnameNetworkBackoff(id))!
@@ -122,25 +126,28 @@ describe('network-backoff', () => {
 
     for (let step = 2; step <= NETWORK_BACKOFF_MAX_STEP + 1; step++) {
       await expireTestHostnameNetworkBackoff(id)
-      expect(await claimHostnameNetworkProbe(id)).toBe(true)
+      const expired = (await getTestHostnameNetworkBackoff(id))!
+      expect(await isOutsideHostnameNetworkBackoff({ id, ...expired })).toBe(true)
       await recordHostnameNetworkFailure(id, 'html')
       const row = (await getTestHostnameNetworkBackoff(id))!
       expect(row.network_backoff_step).toBe(Math.min(step, NETWORK_BACKOFF_MAX_STEP))
       expect(row.network_backoff_probe_claimed_at).toBeNull()
       expect(row.network_backoff_ends_at!.getTime()).toBeGreaterThan(
-        Date.now() + getNetworkBackoffDurationMs(Math.min(step, NETWORK_BACKOFF_MAX_STEP)) / 2,
+        Date.now() +
+          EXPECTED_BACKOFF_DURATIONS_MS[Math.min(step, NETWORK_BACKOFF_MAX_STEP) - 1]! / 2,
       )
     }
 
     const durations = (await backoffEvents(hostname)).map(event => Number(event.retry_after_ms))
-    expect(durations).toEqual([1, 2, 3, 4, 5, 5].map(getNetworkBackoffDurationMs))
+    expect(durations).toEqual([...EXPECTED_BACKOFF_DURATIONS_MS, EXPECTED_BACKOFF_DURATIONS_MS[4]])
   })
 
   it('closes on reset and reports the closed backoff', async () => {
     const { id, hostname } = await makeHostname()
     await failTimes(id, NETWORK_BACKOFF_FAILURE_THRESHOLD)
     await expireTestHostnameNetworkBackoff(id)
-    await claimHostnameNetworkProbe(id)
+    const expired = (await getTestHostnameNetworkBackoff(id))!
+    await isOutsideHostnameNetworkBackoff({ id, ...expired })
 
     await resetHostnameFailures(id, { crawlerType: 'html', includeDns: true })
 
@@ -157,7 +164,7 @@ describe('network-backoff', () => {
       ['network_backoff_opened', 'false'],
       ['network_backoff_closed', 'true'],
     ])
-    expect(Number(events[1]!.retry_after_ms)).toBe(getNetworkBackoffDurationMs(1))
+    expect(Number(events[1]!.retry_after_ms)).toBe(EXPECTED_BACKOFF_DURATIONS_MS[0])
   })
 
   it('resets the DNS counter only for a successful crawl or fetch', async () => {

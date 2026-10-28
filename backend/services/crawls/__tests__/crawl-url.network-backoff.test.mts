@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { addUrl } from '@services/urls/upsert'
 import { createCrawler } from '@services/crawlers'
-import { NETWORK_BACKOFF_FAILURE_THRESHOLD } from '@services/urls-hostnames/network-backoff'
+const NETWORK_BACKOFF_FAILURE_THRESHOLD = 10
 import { useCrawlUrlRedirectHarness } from '@voucha/test-helpers/services/crawls/crawl-url-redirect-harness'
 import {
   expireTestHostnameNetworkBackoff,

@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { upsertUrlHostnames } from './upsert.mts'
-import { getUrlHostnameById } from './get.mts'
+import { getUrlHostnameByAny } from './get.mts'
 import { getLocalHostnamePolicy } from './policies.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
 import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
@@ -68,7 +68,7 @@ describe('upsert.generated', () => {
     const hostnamesMap = await upsertUrlHostnames(null, [hostname])
 
     const hostnameId = hostnamesMap.get(hostname)!
-    const record = await getUrlHostnameById(hostnameId)
+    const record = await getUrlHostnameByAny(hostnameId)
     expect(record).not.toBeNull()
     expect(record!.is_crawlable).toBe(true)
     expect(record!.is_blocked).toBe(false)
@@ -85,7 +85,7 @@ describe('upsert.generated', () => {
 
     const child = `sub.${parent}`
     const childMap = await upsertUrlHostnames(null, [child])
-    const record = await getUrlHostnameById(childMap.get(child)!)
+    const record = await getUrlHostnameByAny(childMap.get(child)!)
 
     expect(record!.is_blocked).toBe(true)
     expect(record!.should_skip_web_risk).toBe(false)
@@ -113,7 +113,7 @@ describe('upsert.generated', () => {
     const bucketDays = 31000 + Math.floor(Math.random() * 1000)
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
 
-    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+    expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeNull()
     const candidates = await getCrawlHostnameCandidates(
       {
         sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
@@ -134,7 +134,7 @@ describe('upsert.generated', () => {
     const bucketDays = 29000 + Math.floor(Math.random() * 1000)
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
 
-    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
     const candidates = await getCrawlHostnameCandidates(
       {
         sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
@@ -155,10 +155,10 @@ describe('upsert.generated', () => {
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
     await addUrl(null, `https://${domain}/first`)
 
-    const firstIntroduction = (await getUrlHostnameById(hostnameId))?.publicly_introduced_at
+    const firstIntroduction = (await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at
     expect(firstIntroduction).toBeInstanceOf(Date)
     expect(await resolveEmailDomainHostnameId(`other@${domain}`)).toBe(hostnameId)
-    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toEqual(
+    expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toEqual(
       firstIntroduction,
     )
     const candidates = await getCrawlHostnameCandidates(
@@ -220,7 +220,7 @@ describe('upsert.generated', () => {
     } finally {
       restoreFailure()
     }
-    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
     expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).toMatchObject({
       lease_token: null,
       attempt_count: 1,

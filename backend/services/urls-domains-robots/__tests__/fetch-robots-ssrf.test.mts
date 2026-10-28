@@ -8,7 +8,7 @@ import { readResponseBody as readResponseBodyFn } from '@modules/utils/http-body
 import type { validateUrl as validateUrlFn } from 'ssrf-guard/node'
 import { describe, expect, it, vi } from 'vitest'
 import { RobotsUnsafeTargetError } from '../fetch-pinned.mts'
-import { fetchRobotsTxt } from '../index.mts'
+import { fetchRobotsTxtOutcome } from '../fetch-retry.mts'
 
 type FetchWithTimeoutFn = typeof fetchWithTimeoutFn
 type ValidateUrlFn = typeof validateUrlFn
@@ -48,14 +48,14 @@ describe('fetchRobotsTxt SSRF policy', () => {
     })
 
     await expect(
-      fetchRobotsTxt('unsafe.test', {
+      fetchRobotsTxtOutcome('unsafe.test', {
         checkDomainBlacklisted: async () => false,
         fetchWithTimeoutSimple,
         readResponseBody,
         isNetworkError,
         isRetryableError,
       }),
-    ).resolves.toBe(DISALLOW_ROBOTS_TXT)
+    ).resolves.toMatchObject({ body: DISALLOW_ROBOTS_TXT })
 
     expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(1)
     expect(fetchWithTimeoutSimple).toHaveBeenCalledWith('https://unsafe.test/robots.txt', 10_000)
@@ -74,7 +74,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
       )
 
     await expect(
-      fetchRobotsTxt('evil.test', {
+      fetchRobotsTxtOutcome('evil.test', {
         checkDomainBlacklisted: async () => false,
         validateUrl,
         fetchWithTimeout,
@@ -82,7 +82,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
         isNetworkError,
         isRetryableError,
       }),
-    ).resolves.toBe(DISALLOW_ROBOTS_TXT)
+    ).resolves.toMatchObject({ body: DISALLOW_ROBOTS_TXT })
 
     expect(validateUrl).toHaveBeenCalledWith('https://evil.test/robots.txt', { timeoutMs: 5000 })
     expect(fetchWithTimeout).not.toHaveBeenCalled()
@@ -95,7 +95,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
     const validateUrl = vi.fn<ValidateUrlFn>().mockRejectedValue(timeout)
 
     await expect(
-      fetchRobotsTxt('slow.test', {
+      fetchRobotsTxtOutcome('slow.test', {
         checkDomainBlacklisted: async () => false,
         validateUrl,
         fetchWithTimeout,
@@ -103,7 +103,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
         isNetworkError,
         isRetryableError,
       }),
-    ).resolves.toBe(DISALLOW_ROBOTS_TXT)
+    ).resolves.toMatchObject({ body: DISALLOW_ROBOTS_TXT })
 
     expect(validateUrl).toHaveBeenCalledTimes(3)
     expect(fetchWithTimeout).not.toHaveBeenCalled()
@@ -125,7 +125,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
       .mockResolvedValue('User-agent: *\nDisallow: /private\n')
 
     await expect(
-      fetchRobotsTxt('example.com', {
+      fetchRobotsTxtOutcome('example.com', {
         checkDomainBlacklisted: async () => false,
         validateUrl,
         fetchWithTimeout,
@@ -135,7 +135,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
         isNetworkError,
         isRetryableError,
       }),
-    ).resolves.toBe('User-agent: *\nDisallow: /private\n')
+    ).resolves.toMatchObject({ body: 'User-agent: *\nDisallow: /private\n' })
 
     expect(readResponseBody).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -156,7 +156,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
     const readResponseBody = vi.fn<ReadResponseBodyFn>().mockResolvedValue(ALLOW_ROBOTS_TXT)
 
     await expect(
-      fetchRobotsTxt('example.com', {
+      fetchRobotsTxtOutcome('example.com', {
         checkDomainBlacklisted: async () => false,
         fetchWithTimeoutSimple,
         validateUrl,
@@ -164,7 +164,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
         isNetworkError,
         isRetryableError,
       }),
-    ).resolves.toBe(ALLOW_ROBOTS_TXT)
+    ).resolves.toMatchObject({ body: ALLOW_ROBOTS_TXT })
 
     expect(fetchWithTimeoutSimple).toHaveBeenCalledWith('https://example.com/robots.txt', 10_000)
     expect(validateUrl).not.toHaveBeenCalled()

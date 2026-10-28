@@ -11,7 +11,7 @@ import {
 import { upsertUrlHostnames } from '../urls-hostnames/upsert.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
 import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
-import { getUrlHostnameById } from '../urls-hostnames/get.mts'
+import { getUrlHostnameByAny } from '../urls-hostnames/get.mts'
 import { caches } from '@services/entity-cache/caches'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import {
@@ -133,7 +133,7 @@ describe('sync-db', () => {
     if (!hostnameId) throw new Error('Expected email blocklist hostname')
     const bucketDays = 30000 + Math.floor(Math.random() * 1000)
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
-    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+    expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeNull()
     const candidates = await getCrawlHostnameCandidates(
       {
         sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),

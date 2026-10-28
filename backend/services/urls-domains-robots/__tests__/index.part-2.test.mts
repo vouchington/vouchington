@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { withTruncatedHttpResponseForTest } from '../../../test-helpers/truncated-http-response.mts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchRobotsTxt, fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
-import { defaultRobotsDependencies } from '../fetch-retry.mts'
+import { fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { insertTestDomainBlacklist, insertTestUrlHostname } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
@@ -31,8 +30,8 @@ function isUrlCrawlableForTest(
   return isUrlCrawlable(url, userAgent, { ...options, dependencies })
 }
 
-function fetchRobotsTxtForTest(domain: string) {
-  return fetchRobotsTxt(domain, dependencies)
+function fetchRobotsTxtCachedForTest(domain: string) {
+  return fetchRobotsTxtCached(domain, dependencies)
 }
 
 describe('isUrlCrawlable with ignoreRobotsRules', () => {
@@ -88,7 +87,7 @@ describe('isUrlCrawlable with ignoreRobotsRules', () => {
   })
 })
 
-describe('fetchRobotsTxt', () => {
+describe('fetchRobotsTxtCached', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -103,7 +102,7 @@ describe('fetchRobotsTxt', () => {
     dependencies.isRetryableError.mockReturnValue(true)
     dependencies.readResponseBody.mockResolvedValue('User-agent: *\nAllow: /')
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nAllow: /')
     expect(dependencies.isRetryableError).toHaveBeenCalledWith(retryableError, undefined)
@@ -120,7 +119,7 @@ describe('fetchRobotsTxt', () => {
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(false)
 
-    const result = await fetchRobotsTxtForTest(domain)
+    const result = await fetchRobotsTxtCachedForTest(domain)
 
     expect(result).toBe('User-agent: *\nDisallow: /')
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
@@ -156,7 +155,7 @@ describe('fetchRobotsTxt', () => {
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(false)
 
-    await expect(fetchRobotsTxtForTest(domain)).rejects.toThrow(
+    await expect(fetchRobotsTxtCachedForTest(domain)).rejects.toThrow(
       `Failed to fetch robots.txt for ${domain}: ${status} ${statusText}`,
     )
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(1)
@@ -169,10 +168,9 @@ describe('fetchRobotsTxt', () => {
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(true)
 
-    await expect(fetchRobotsTxt(domain, { ...dependencies, retryDelayMs: 0 })).rejects.toBe(
+    await expect(fetchRobotsTxtCached(domain, { ...dependencies, retryDelayMs: 0 })).rejects.toBe(
       retryableError,
     )
-    expect(defaultRobotsDependencies.retryDelayMs).toBe(1_000)
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
     expect(dependencies.readResponseBody).not.toHaveBeenCalled()
   })
@@ -184,7 +182,7 @@ describe('real terminated robots response bodies', () => {
     await withTruncatedHttpResponseForTest(
       `https://${domain}/robots.txt`,
       async (transport, requestCount) => {
-        const result = await fetchRobotsTxt(domain, {
+        const result = await fetchRobotsTxtCached(domain, {
           fetchWithTimeoutSimple: url => transport(url),
         })
         expect(result).toBe('User-agent: *\nDisallow: /')

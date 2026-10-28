@@ -9,7 +9,7 @@ import {
 import { linkHostnameToSourceTopic, setTopicHostnameLink } from './hostname-link.mts'
 import { getTopicByAny } from './get.mts'
 import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
-import { getUrlHostnameById } from '../urls-hostnames/get.mts'
+import { getUrlHostnameByAny } from '../urls-hostnames/get.mts'
 import { caches } from '@services/entity-cache/caches'
 import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
 import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
@@ -31,10 +31,10 @@ describe('hostname-link', () => {
     })
     const hostnameId = await resolveEmailDomainHostnameId(`owner@topic-${suffix}.example.com`)
     if (!hostnameId) throw new Error('Expected email domain hostname')
-    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+    expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeNull()
 
     await setTopicHostnameLink(topicId, hostnameId)
-    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
   })
 
   it('evicts a cached email-only hostname after its topic link commits', async () => {
@@ -88,7 +88,7 @@ describe('hostname-link', () => {
       } finally {
         restoreFailure()
       }
-      expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+      expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
       expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).toMatchObject({
         lease_token: null,
         attempt_count: 1,

@@ -4,7 +4,7 @@ import {
   countCapturedQueriesByAnnotation,
   withCapturedTestQueries,
 } from '@voucha/test-helpers/query-capture'
-import { getUrlHostnameById } from '@services/urls-hostnames/get'
+import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { addUrls } from './upsert.mts'
 
@@ -58,8 +58,8 @@ describe('URL hostname invalidation', () => {
     expect(completed.map(row => row.url_hostname_id).toSorted()).toEqual(
       [coldId, privateId].toSorted(),
     )
-    expect((await getUrlHostnameById(coldId))?.publicly_introduced_at).toBeInstanceOf(Date)
-    expect((await getUrlHostnameById(privateId))?.publicly_introduced_at).toBeInstanceOf(Date)
-    expect((await getUrlHostnameById(publicId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(coldId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(privateId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect((await getUrlHostnameByAny(publicId))?.publicly_introduced_at).toBeInstanceOf(Date)
   })
 })

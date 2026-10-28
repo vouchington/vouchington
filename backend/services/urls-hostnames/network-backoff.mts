@@ -14,15 +14,15 @@ import { HttpNoBodyError } from '@vouchington/sentry'
 import { trackNetworkBackoffClosed, trackNetworkBackoffOpened } from '@services/analytics'
 
 /** Consecutive counted failures that open the backoff; one URL's retry budget is 3. */
-export const NETWORK_BACKOFF_FAILURE_THRESHOLD = 10
+const NETWORK_BACKOFF_FAILURE_THRESHOLD = 10
 /** The step is capped rather than the duration so analytics can derive the step from it. */
-export const NETWORK_BACKOFF_MAX_STEP = 5
+const NETWORK_BACKOFF_MAX_STEP = 5
 const NETWORK_BACKOFF_BASE_SECONDS = 60 * 60
 const NETWORK_BACKOFF_PROBE_WINDOW_SECONDS = 15 * 60
 
 type BackoffCrawlerType = 'html' | 'rss'
 
-export function getNetworkBackoffDurationMs(step: number): number {
+function getNetworkBackoffDurationMs(step: number): number {
   return NETWORK_BACKOFF_BASE_SECONDS * 1000 * 2 ** (step - 1)
 }
 
@@ -101,7 +101,7 @@ export async function recordHostnameNetworkFailure(
  * network_backoff_ends_at out by the probe window, so exactly one concurrent caller wins and a
  * probe that never reports back is retried after the window.
  */
-export async function claimHostnameNetworkProbe(hostnameId: string): Promise<boolean> {
+async function claimHostnameNetworkProbe(hostnameId: string): Promise<boolean> {
   const { rows } = await write<{ id: string }>(
     `/* claimHostnameNetworkProbe */
     UPDATE url_hostnames SET

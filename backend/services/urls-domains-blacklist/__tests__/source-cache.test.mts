@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestBlacklistSource, deleteTestBlacklistSource } from '@voucha/test-helpers'
 import { resolveEmailDomainHostnameId } from '../../email-address-validator/email-domain-context.mts'
-import { getUrlHostnameById } from '@services/urls-hostnames/get'
+import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { syncDomainsWithDatabase } from '../../urls-domains-blacklist-sync/sync-db.mts'
 import { blocklistBloomReadyKey } from '../ready-marker.mts'
 
@@ -30,20 +30,20 @@ describe('blacklist source cache invalidation', () => {
     })
     try {
       await syncDomainsWithDatabase(sourceId, new Response(`${domain}\n`), 'email')
-      expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+      expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toBeNull()
       await createTestBlacklistSource({
         type: 'url',
         name,
         url: 'https://example.com/source-introduction.txt',
       })
-      const introducedAt = (await getUrlHostnameById(hostnameId))?.publicly_introduced_at
+      const introducedAt = (await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at
       expect(introducedAt).toBeInstanceOf(Date)
       await createTestBlacklistSource({
         type: 'email',
         name,
         url: 'https://example.com/source-introduction.txt',
       })
-      expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toEqual(introducedAt)
+      expect((await getUrlHostnameByAny(hostnameId))?.publicly_introduced_at).toEqual(introducedAt)
     } finally {
       await deleteTestBlacklistSource(sourceId)
     }
